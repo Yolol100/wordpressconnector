@@ -1,0 +1,51 @@
+name: Connector CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch exact revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init source
+          cd source
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=2 origin "${GITHUB_SHA}"
+          git checkout --detach FETCH_HEAD
+
+      - name: Validate PHP, schemas and examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          find plugin/wordpressconnector scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          for file in examples/*.json; do php scripts/validate-request.php "$file"; done
+          php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
+          php tests/policy-contract.php
+          php tests/repository-hygiene.php
+          git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
+
+      - name: Reject dangerous execution primitives
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source
+          if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin scripts; then
+            echo 'Forbidden execution primitive found.' >&2
+            exit 1
+          fi
+          forbidden_event="pull_request""_target"
+          if grep -RIn "$forbidden_event" .github/workflows; then
+            echo 'Privileged pull-request event is forbidden for this repository.' >&2
+            exit 1
+          fi
