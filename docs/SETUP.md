@@ -32,6 +32,9 @@ Set under `Settings -> Secrets and variables -> Actions -> Variables`:
 | `WPCONNECTOR_ALLOW_SENSITIVE` | no | `false`; keep off unless a private, explicitly approved sensitive adapter is required |
 | `WPCONNECTOR_ALLOW_SYSTEM_UPDATES` | no | `false`; controls plugin/theme/core install/update/delete actions |
 | `WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED` | no | keep unset/false; public self-hosted execution is discouraged |
+| `WPCONNECTOR_TRUSTED_REQUEST_ACTOR` | only for automated Orchestrator PRs | exact GitHub App bot login allowed to open same-repository runtime request PRs; keep unset when only the repository owner submits requests |
+
+`WPCONNECTOR_TRUSTED_REQUEST_ACTOR` does not bypass the same-repository, request-schema, path, visibility or self-hosted-runner guards. Set it only to the exact bot login of the dedicated Webactueel GitHub App after that App has been installed on this repository.
 
 No WordPress credential or OpenAI API key is needed because WP-CLI operates inside the trusted WordPress runtime.
 
@@ -55,7 +58,7 @@ Create a branch from `main`, add exactly one JSON file under `requests/`, and op
 - optional files under `assets/inbox/`;
 - generated `results/*.json`.
 
-The guard job validates paths, author, repository visibility, request size and schema before the self-hosted job is scheduled.
+The guard job validates same-repository origin, the repository owner or explicitly configured trusted request actor, repository visibility, changed paths, request size and schema before the self-hosted job is scheduled.
 
 ## 6. Acceptance sequence
 
