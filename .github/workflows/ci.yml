@@ -50,3 +50,18 @@ jobs:
             echo 'Privileged pull-request event is forbidden for this repository.' >&2
             exit 1
           fi
+
+      - name: Build WordPress plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd source/plugin
+          zip -qr "$GITHUB_WORKSPACE/wordpressconnector.zip" wordpressconnector
+
+      - name: Upload WordPress plugin ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: wordpressconnector-plugin
+          path: wordpressconnector.zip
+          if-no-files-found: error
+          retention-days: 1
