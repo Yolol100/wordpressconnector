@@ -8,7 +8,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.field_groups` | privileged | List active ACF field groups and fields for discovery. |
 | `acf.get` | privileged | Read ACF values for a post, term, user or options target. |
 | `acf.update` | mutation, privileged | Update one or more ACF fields through update_field(). |
-| `cache.flush` | mutation | Flush WordPress object cache. |
+| `cache.flush` | mutation, privileged | Flush WordPress object cache. |
 | `comment.get` | privileged, sensitive | Read one comment. |
 | `comment.list` | privileged, sensitive | List comments including private author metadata. |
 | `comment.trash` | mutation, privileged, sensitive | Trash a comment. |
@@ -18,12 +18,12 @@ This catalog is generated from the connector action registrations. Security labe
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
 | `connector.discover` | read-only | Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities. |
 | `connector.rollback` | mutation, privileged | Execute a stored rollback snapshot by request_id. |
-| `core.check_updates` | read-only | Check WordPress core updates. |
-| `core.update` | read-only | Update WordPress core. Non-rollbackable. |
-| `cron.delete` | mutation | Delete scheduled events for one hook. |
-| `cron.list` | read-only | List scheduled cron events. |
-| `cron.run` | mutation | Run one cron hook immediately. |
-| `cron.schedule` | mutation | Schedule a cron event. |
+| `core.check_updates` | privileged | Check WordPress core updates. |
+| `core.update` | mutation, privileged, system_update | Update WordPress core. Non-rollbackable. |
+| `cron.delete` | mutation, privileged | Delete scheduled events for one hook. |
+| `cron.list` | privileged | List scheduled cron events. |
+| `cron.run` | mutation, privileged | Run one cron hook immediately. |
+| `cron.schedule` | mutation, privileged | Schedule a cron event. |
 | `elementor.create_document` | mutation | Create a page, post, product or Elementor library document from Elementor JSON. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
 | `elementor.patch_element` | mutation | Patch an Elementor element by its stable element id. |
@@ -48,22 +48,22 @@ This catalog is generated from the connector action registrations. Security labe
 | `meta.delete` | mutation, privileged | Delete generic post, term, user or comment metadata. |
 | `meta.get` | privileged | Read generic post, term, user or comment metadata. |
 | `meta.update` | mutation, privileged | Update generic post, term, user or comment metadata. |
-| `multisite.site.create` | mutation | Create a multisite site. |
-| `multisite.site.delete` | mutation, system_update | Delete a multisite site. |
-| `multisite.site.list` | read-only | List multisite network sites. |
-| `multisite.site.update` | mutation | Update multisite site fields. |
+| `multisite.site.create` | mutation, privileged, sensitive | Create a multisite site. |
+| `multisite.site.delete` | mutation, privileged, sensitive, system_update | Delete a multisite site. |
+| `multisite.site.list` | privileged, sensitive | List multisite network sites. |
+| `multisite.site.update` | mutation, privileged, sensitive | Update multisite site fields. |
 | `network_option.delete` | mutation, privileged | Delete a multisite network option. |
 | `network_option.get` | privileged | Read a multisite network option. |
 | `network_option.update` | mutation, privileged | Update a multisite network option. |
 | `option.delete` | mutation, privileged | Delete a WordPress option. |
 | `option.get` | privileged | Read a WordPress option. |
 | `option.update` | mutation, privileged | Update a WordPress option. |
-| `plugin.activate` | mutation | Activate an installed plugin. |
-| `plugin.deactivate` | mutation | Deactivate an installed plugin. |
-| `plugin.delete` | read-only | Delete an inactive installed plugin. |
-| `plugin.install` | read-only | Install a plugin from WordPress.org by slug. |
-| `plugin.list` | read-only | List installed plugins and activation state. |
-| `plugin.update` | read-only | Update one installed plugin. |
+| `plugin.activate` | mutation, privileged | Activate an installed plugin. |
+| `plugin.deactivate` | mutation, privileged | Deactivate an installed plugin. |
+| `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
+| `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
+| `plugin.list` | privileged | List installed plugins and activation state. |
+| `plugin.update` | mutation, privileged, system_update | Update one installed plugin. |
 | `post.create` | mutation | Create a post, page or custom post type object. |
 | `post.get` | read-only | Read one post object. |
 | `post.list` | read-only | List posts, pages or custom post types. |
@@ -72,11 +72,11 @@ This catalog is generated from the connector action registrations. Security labe
 | `post.revisions` | read-only | List WordPress revisions for a post. |
 | `post.trash` | mutation | Move a post object to Trash. |
 | `post.update` | mutation | Update a post, page or custom post type object. |
-| `rewrite.flush` | mutation | Flush rewrite rules. |
-| `role.create` | mutation | Create a WordPress role. |
-| `role.delete` | mutation | Delete a WordPress role. |
-| `role.list` | read-only | List roles and capabilities. |
-| `role.update` | mutation | Add or remove capabilities from a role. |
+| `rewrite.flush` | mutation, privileged | Flush rewrite rules. |
+| `role.create` | mutation, privileged | Create a WordPress role. |
+| `role.delete` | mutation, privileged | Delete a WordPress role. |
+| `role.list` | privileged | List roles and capabilities. |
+| `role.update` | mutation, privileged | Add or remove capabilities from a role. |
 | `system.doctor` | read-only | Run connector/runtime preflight diagnostics. |
 | `term.assign` | mutation | Assign taxonomy terms to an object. |
 | `term.create` | mutation | Create a taxonomy term. |
@@ -84,19 +84,19 @@ This catalog is generated from the connector action registrations. Security labe
 | `term.get` | read-only | Read one taxonomy term. |
 | `term.list` | read-only | List terms in any registered taxonomy. |
 | `term.update` | mutation | Update a taxonomy term. |
-| `theme.delete` | read-only | Delete an inactive theme. |
-| `theme.install` | read-only | Install a theme from WordPress.org by slug. |
-| `theme.list` | read-only | List installed themes. |
-| `theme.switch` | mutation | Switch the active theme. |
-| `theme.update` | read-only | Update one installed theme. |
+| `theme.delete` | mutation, privileged, system_update | Delete an inactive theme. |
+| `theme.install` | mutation, privileged, system_update | Install a theme from WordPress.org by slug. |
+| `theme.list` | privileged | List installed themes. |
+| `theme.switch` | mutation, privileged | Switch the active theme. |
+| `theme.update` | mutation, privileged, system_update | Update one installed theme. |
 | `theme_mod.get` | privileged | Read a theme modification. |
 | `theme_mod.remove` | mutation, privileged | Remove a theme modification. |
 | `theme_mod.update` | mutation, privileged | Update a theme modification. |
-| `user.create` | mutation | Create a WordPress user with a server-generated password. |
-| `user.delete` | mutation | Delete a WordPress user. |
-| `user.get` | read-only | Read a WordPress user. |
-| `user.list` | read-only | List WordPress users. |
-| `user.update` | mutation | Update WordPress user profile fields and roles. |
+| `user.create` | mutation, privileged, sensitive | Create a WordPress user with a server-generated password. |
+| `user.delete` | mutation, privileged, sensitive | Delete a WordPress user. |
+| `user.get` | privileged, sensitive | Read a WordPress user. |
+| `user.list` | privileged, sensitive | List WordPress users. |
+| `user.update` | mutation, privileged, sensitive | Update WordPress user profile fields and roles. |
 | `woocommerce.attribute.create` | mutation | Create a global WooCommerce product attribute. |
 | `woocommerce.attribute.delete` | mutation, privileged | Delete a global WooCommerce product attribute. |
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
