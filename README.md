@@ -48,3 +48,5 @@ GitHub recommends avoiding self-hosted runners for public repositories. Make thi
 9. Only then enable production writes.
 
 Actual WordPress/Elementor/WooCommerce/ACF behavior remains `staging-first` until those runtime tests have been executed on the target environment.
+
+<!-- Temporary CI verification branch; intentionally not merged. -->
