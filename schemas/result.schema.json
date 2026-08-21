@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Yolol100/wordpressconnector/schemas/result.schema.json",
+  "title": "WordPress Connector Result",
+  "type": "object",
+  "required": ["version", "ok", "request_id", "action", "dry_run", "completed_at_gmt"],
+  "properties": {
+    "version": {"type": "integer", "const": 1},
+    "ok": {"type": "boolean"},
+    "request_id": {"type": "string"},
+    "action": {"type": "string"},
+    "dry_run": {"type": "boolean"},
+    "completed_at_gmt": {"type": "string"},
+    "data": {"type": "object"},
+    "error": {"type": "string"},
+    "meta": {"type": "object"}
+  }
+}

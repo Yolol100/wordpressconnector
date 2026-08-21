@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "request_id": "acf-update-00001",
+  "action": "acf.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "target": 123,
+    "fields": {
+      "field_abc123": "Nieuwe waarde",
+      "field_gallery": [101, 102, 103]
+    }
+  }
+}

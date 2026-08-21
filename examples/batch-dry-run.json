@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "request_id": "batch-dryrun-001",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {"id": 123, "title": "Nieuwe titel"}
+      },
+      {
+        "action": "term.assign",
+        "payload": {"object_id": 123, "taxonomy": "category", "terms": [4, 7], "append": false}
+      }
+    ]
+  }
+}

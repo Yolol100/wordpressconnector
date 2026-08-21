@@ -1,0 +1,294 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Webactueel\WordPressConnector\Adapters;
+
+use RuntimeException;
+use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Json;
+
+final class ElementorAdapter
+{
+    public function register(Registry $registry): void
+    {
+        $registry->register('elementor.inspect', array($this, 'inspect'), array('description' => 'Read Elementor document JSON and document metadata.'));
+        $registry->register('elementor.create_document', array($this, 'createDocument'), array('mutation' => true, 'description' => 'Create a page, post, product or Elementor library document from Elementor JSON.'));
+        $registry->register('elementor.replace_document', array($this, 'replaceDocument'), array('mutation' => true, 'description' => 'Replace Elementor JSON/settings/type/conditions for a document.'));
+        $registry->register('elementor.patch_element', array($this, 'patchElement'), array('mutation' => true, 'description' => 'Patch an Elementor element by its stable element id.'));
+        $registry->register('elementor.regenerate', array($this, 'regenerate'), array('mutation' => true, 'description' => 'Clear Elementor generated CSS/files cache.'));
+    }
+
+    public function inspect(array $payload): array
+    {
+        $post = $this->post($payload);
+        Policy::assertPostReadable($post);
+        $snapshot = $this->snapshot((int) $post->ID);
+        return array('document' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
+    }
+
+    public function createDocument(array $payload, array $context): array
+    {
+        $postType = isset($payload['post_type']) ? sanitize_key((string) $payload['post_type']) : 'page';
+        if (! post_type_exists($postType)) {
+            throw new RuntimeException('Unknown post type: ' . $postType);
+        }
+        Policy::assertReadablePostType($postType);
+
+        $data = $this->normalizeData($payload['data'] ?? array());
+        $postFields = array(
+            'post_type' => $postType,
+            'post_status' => isset($payload['status']) ? sanitize_key((string) $payload['status']) : 'draft',
+            'post_title' => isset($payload['title']) ? (string) $payload['title'] : 'Elementor document',
+            'post_name' => isset($payload['slug']) ? sanitize_title((string) $payload['slug']) : '',
+            'post_content' => isset($payload['content']) ? (string) $payload['content'] : '',
+        );
+
+        if (! empty($context['dry_run'])) {
+            return array(
+                'would_create' => array('post' => $postFields, 'elementor' => $this->requestedMeta($payload, $data)),
+                '_current_fingerprint' => Fingerprint::make(array('new' => true, 'post_type' => $postType)),
+            );
+        }
+
+        $id = wp_insert_post(wp_slash($postFields), true);
+        if (is_wp_error($id)) {
+            throw new RuntimeException($id->get_error_message());
+        }
+
+        $this->writeDocumentMeta((int) $id, $payload, $data);
+        $this->clearCache();
+
+        return array(
+            'document' => $this->snapshot((int) $id),
+            '_rollback' => array('action' => 'post.trash', 'payload' => array('id' => (int) $id)),
+        );
+    }
+
+    public function replaceDocument(array $payload, array $context): array
+    {
+        $post = $this->post($payload);
+        $before = $this->snapshot((int) $post->ID);
+        $data = array_key_exists('data', $payload) ? $this->normalizeData($payload['data']) : $before['data'];
+
+        $after = $before;
+        $after['data'] = $data;
+        foreach (array('page_settings', 'template_type', 'conditions', 'edit_mode') as $field) {
+            if (array_key_exists($field, $payload)) {
+                $after[$field] = $payload[$field];
+            }
+        }
+
+        $result = array(
+            'before' => $before,
+            'after' => $after,
+            '_current_fingerprint' => Fingerprint::make($before),
+        );
+
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+
+        $this->writeDocumentMeta((int) $post->ID, $payload, $data);
+        $this->clearCache();
+        $result['after'] = $this->snapshot((int) $post->ID);
+        $result['_rollback'] = array('action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload($before));
+        return $result;
+    }
+
+    public function patchElement(array $payload, array $context): array
+    {
+        $post = $this->post($payload);
+        $before = $this->snapshot((int) $post->ID);
+        $elementId = isset($payload['element_id']) ? (string) $payload['element_id'] : '';
+        if ('' === $elementId) {
+            throw new RuntimeException('element_id is required.');
+        }
+
+        $data = $before['data'];
+        $element =& $this->findElement($data, $elementId);
+        $beforeElement = $element;
+
+        if (isset($payload['replace']) && is_array($payload['replace'])) {
+            $replacement = $payload['replace'];
+            if (! isset($replacement['id'])) {
+                $replacement['id'] = $elementId;
+            }
+            $element = $replacement;
+        } else {
+            if (isset($payload['settings']) && is_array($payload['settings'])) {
+                $replaceSettings = ! empty($payload['replace_settings']);
+                $element['settings'] = $replaceSettings
+                    ? $payload['settings']
+                    : array_replace_recursive(isset($element['settings']) && is_array($element['settings']) ? $element['settings'] : array(), $payload['settings']);
+            }
+            if (array_key_exists('widgetType', $payload)) {
+                $element['widgetType'] = (string) $payload['widgetType'];
+            }
+            if (array_key_exists('elType', $payload)) {
+                $element['elType'] = (string) $payload['elType'];
+            }
+        }
+
+        $result = array(
+            'post_id' => (int) $post->ID,
+            'element_id' => $elementId,
+            'before_element' => $beforeElement,
+            'after_element' => $element,
+            '_current_fingerprint' => Fingerprint::make($before),
+        );
+
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+
+        update_post_meta((int) $post->ID, '_elementor_data', wp_slash(wp_json_encode($data)));
+        update_post_meta((int) $post->ID, '_elementor_edit_mode', 'builder');
+        $this->clearCache();
+        $result['_rollback'] = array('action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload($before));
+        return $result;
+    }
+
+    public function regenerate(array $payload, array $context): array
+    {
+        if (! class_exists('Elementor\\Plugin')) {
+            throw new RuntimeException('Elementor is not active.');
+        }
+        if (! empty($context['dry_run'])) {
+            return array('would_clear_elementor_cache' => true, '_current_fingerprint' => Fingerprint::make(array('elementor' => defined('ELEMENTOR_VERSION') ? ELEMENTOR_VERSION : 'active')));
+        }
+        $this->clearCache();
+        return array('cleared' => true, 'rollback_supported' => false);
+    }
+
+    private function post(array $payload): \WP_Post
+    {
+        $post = get_post(isset($payload['id']) ? (int) $payload['id'] : 0);
+        if (! $post instanceof \WP_Post) {
+            throw new RuntimeException('Post not found.');
+        }
+        Policy::assertReadablePostType((string) $post->post_type);
+        return $post;
+    }
+
+    private function snapshot(int $postId): array
+    {
+        $raw = get_post_meta($postId, '_elementor_data', true);
+        $data = $this->normalizeData($raw ?: array());
+        return array(
+            'post_id' => $postId,
+            'data' => $data,
+            'edit_mode' => (string) get_post_meta($postId, '_elementor_edit_mode', true),
+            'template_type' => (string) get_post_meta($postId, '_elementor_template_type', true),
+            'page_settings' => $this->normalizeMetaArray(get_post_meta($postId, '_elementor_page_settings', true)),
+            'conditions' => $this->normalizeMetaArray(get_post_meta($postId, '_elementor_conditions', true)),
+            'elementor_version' => (string) get_post_meta($postId, '_elementor_version', true),
+        );
+    }
+
+    private function requestedMeta(array $payload, array $data): array
+    {
+        return array(
+            'data' => $data,
+            'edit_mode' => isset($payload['edit_mode']) ? (string) $payload['edit_mode'] : 'builder',
+            'template_type' => isset($payload['template_type']) ? (string) $payload['template_type'] : '',
+            'page_settings' => isset($payload['page_settings']) && is_array($payload['page_settings']) ? $payload['page_settings'] : array(),
+            'conditions' => isset($payload['conditions']) && is_array($payload['conditions']) ? $payload['conditions'] : array(),
+        );
+    }
+
+    private function writeDocumentMeta(int $postId, array $payload, array $data): void
+    {
+        update_post_meta($postId, '_elementor_data', wp_slash(wp_json_encode($data)));
+        update_post_meta($postId, '_elementor_edit_mode', isset($payload['edit_mode']) ? (string) $payload['edit_mode'] : 'builder');
+
+        if (array_key_exists('template_type', $payload)) {
+            update_post_meta($postId, '_elementor_template_type', (string) $payload['template_type']);
+        }
+        if (array_key_exists('page_settings', $payload)) {
+            update_post_meta($postId, '_elementor_page_settings', is_array($payload['page_settings']) ? $payload['page_settings'] : array());
+        }
+        if (array_key_exists('conditions', $payload)) {
+            update_post_meta($postId, '_elementor_conditions', is_array($payload['conditions']) ? $payload['conditions'] : array());
+        }
+        if (defined('ELEMENTOR_VERSION')) {
+            update_post_meta($postId, '_elementor_version', ELEMENTOR_VERSION);
+        }
+    }
+
+    private function normalizeData($data): array
+    {
+        if (is_string($data)) {
+            $trimmed = trim($data);
+            if ('' === $trimmed) {
+                return array();
+            }
+            return Json::decode($trimmed);
+        }
+        if (! is_array($data)) {
+            throw new RuntimeException('Elementor data must be an array or JSON string.');
+        }
+        return $data;
+    }
+
+    private function normalizeMetaArray($value): array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        if (is_string($value) && '' !== trim($value)) {
+            $decoded = json_decode($value, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+        return array();
+    }
+
+    private function &findElement(array &$elements, string $elementId): array
+    {
+        foreach ($elements as &$element) {
+            if (! is_array($element)) {
+                continue;
+            }
+            if (isset($element['id']) && (string) $element['id'] === $elementId) {
+                return $element;
+            }
+            if (isset($element['elements']) && is_array($element['elements'])) {
+                try {
+                    return $this->findElement($element['elements'], $elementId);
+                } catch (RuntimeException $error) {
+                    // Continue searching siblings.
+                }
+            }
+        }
+        unset($element);
+        throw new RuntimeException('Elementor element not found: ' . $elementId);
+    }
+
+    private function rollbackPayload(array $snapshot): array
+    {
+        return array(
+            'id' => $snapshot['post_id'],
+            'data' => $snapshot['data'],
+            'edit_mode' => $snapshot['edit_mode'],
+            'template_type' => $snapshot['template_type'],
+            'page_settings' => $snapshot['page_settings'],
+            'conditions' => $snapshot['conditions'],
+        );
+    }
+
+    private function clearCache(): void
+    {
+        if (! class_exists('Elementor\\Plugin')) {
+            return;
+        }
+
+        $plugin = \Elementor\Plugin::$instance;
+        if (isset($plugin->files_manager) && is_object($plugin->files_manager) && method_exists($plugin->files_manager, 'clear_cache')) {
+            $plugin->files_manager->clear_cache();
+        }
+    }
+}

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "request_id": "media-import-0001",
+  "action": "media.import",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "source_path": "example.jpg",
+    "title": "Voorbeeldafbeelding",
+    "alt": "Beschrijvende alt-tekst",
+    "caption": "Bijschrift",
+    "description": "Beschrijving"
+  }
+}

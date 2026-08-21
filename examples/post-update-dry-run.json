@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "request_id": "post-update-0001",
+  "action": "post.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 123,
+    "title": "Nieuwe titel",
+    "excerpt": "Nieuwe samenvatting"
+  }
+}

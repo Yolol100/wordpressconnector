@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "request_id": "elementor-patch-01",
+  "action": "elementor.patch_element",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 123,
+    "element_id": "abc123",
+    "settings": {
+      "title": "Nieuwe heading"
+    }
+  }
+}
