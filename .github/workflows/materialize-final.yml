@@ -3,13 +3,22 @@ name: Materialize validated connector
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
 
 permissions:
   contents: write
+  pull-requests: read
 
 jobs:
   materialize:
-    if: github.repository == 'Yolol100/wordpressconnector'
+    if: >-
+      github.repository == 'Yolol100/wordpressconnector' &&
+      (github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner &&
+      github.head_ref == 'materialize-trigger'))
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
