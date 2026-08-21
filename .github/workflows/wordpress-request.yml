@@ -1,0 +1,229 @@
+name: WordPress Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'requests/**'
+      - 'assets/inbox/**'
+      - 'results/**'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: wordpress-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      request_path: ${{ steps.guard.outputs.request_path }}
+      request_id: ${{ steps.guard.outputs.request_id }}
+    steps:
+      - name: Validate request PR before assigning a self-hosted runner
+        id: guard
+        env:
+          ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${GITHUB_REPOSITORY}" ]]; then
+            echo 'Fork PRs are not allowed to reach the WordPress runner.' >&2
+            exit 1
+          fi
+          if [[ "${{ github.event.pull_request.user.login }}" != "${{ github.repository_owner }}" ]]; then
+            echo 'Only the repository owner may submit WordPress runtime requests.' >&2
+            exit 1
+          fi
+          if [[ "${{ github.event.repository.private }}" != 'true' && "${ALLOW_PUBLIC:-false}" != 'true' ]]; then
+            echo 'Self-hosted WordPress execution is blocked for public repositories by default.' >&2
+            exit 1
+          fi
+
+          git init repo
+          cd repo
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git branch trusted-base FETCH_HEAD
+          git fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
+          git branch request-head FETCH_HEAD
+
+          mapfile -t changed < <(git diff --name-only trusted-base request-head)
+          if (( ${#changed[@]} == 0 )); then
+            echo 'No request files changed.' >&2
+            exit 1
+          fi
+
+          request_count=0
+          request_path=''
+          asset_count=0
+          asset_bytes=0
+          for path in "${changed[@]}"; do
+            mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
+            if [[ -n "$mode" && "$mode" != '100644' && "$mode" != '100755' ]]; then
+              echo "Symlinks/submodules/special file modes are not allowed: $path ($mode)" >&2
+              exit 1
+            fi
+            case "$path" in
+              requests/*.json)
+                ((request_count+=1))
+                request_path="$path"
+                ;;
+              assets/inbox/*)
+                ((asset_count+=1))
+                size=$(git cat-file -s "request-head:$path")
+                ((asset_bytes+=size))
+                ;;
+              results/*.json) ;;
+              *)
+                echo "Disallowed changed path in runtime request PR: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          if (( request_count != 1 )); then
+            echo 'Exactly one requests/*.json file is required.' >&2
+            exit 1
+          fi
+          if (( asset_count > 10 || asset_bytes > 26214400 )); then
+            echo 'Asset limit exceeded (max 10 files / 25 MiB total).' >&2
+            exit 1
+          fi
+          request_bytes=$(git cat-file -s "request-head:$request_path")
+          if (( request_bytes > 262144 )); then
+            echo 'Request JSON exceeds 256 KiB.' >&2
+            exit 1
+          fi
+
+          mkdir -p ../trusted/scripts ../request
+          git show "trusted-base:scripts/validate-request.php" > ../trusted/scripts/validate-request.php
+          git show "request-head:$request_path" > ../request/request.json
+          php ../trusted/scripts/validate-request.php ../request/request.json
+          request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo $d["request_id"];' ../request/request.json)
+
+          echo "request_path=$request_path" >> "$GITHUB_OUTPUT"
+          echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
+
+  execute:
+    needs: guard
+    runs-on: [self-hosted, wordpressconnector]
+    timeout-minutes: 20
+    env:
+      WP_ROOT: ${{ vars.WP_CONNECTOR_WORDPRESS_PATH }}
+      WPCONNECTOR_ALLOW_WRITES: ${{ vars.WPCONNECTOR_ALLOW_WRITES }}
+      WPCONNECTOR_ALLOW_PRIVILEGED: ${{ vars.WPCONNECTOR_ALLOW_PRIVILEGED }}
+      WPCONNECTOR_ALLOW_SENSITIVE: ${{ vars.WPCONNECTOR_ALLOW_SENSITIVE }}
+      WPCONNECTOR_ALLOW_SYSTEM_UPDATES: ${{ vars.WPCONNECTOR_ALLOW_SYSTEM_UPDATES }}
+      WPCONNECTOR_PUBLIC_REPOSITORY: ${{ github.event.repository.private == false }}
+    steps:
+      - name: Prepare trusted connector and untrusted request data
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${WP_ROOT:-}"
+          test -f "$WP_ROOT/wp-load.php"
+          command -v git >/dev/null
+          command -v wp >/dev/null
+
+          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request"
+          git clone --no-checkout --filter=blob:none "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
+          cd "$RUNNER_TEMP/wpconnector-trusted"
+          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git checkout --detach FETCH_HEAD
+
+          mkdir -p "$RUNNER_TEMP/wpconnector-request/assets/inbox" "$RUNNER_TEMP/wpconnector-request/results"
+          git fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
+          git show "${{ github.event.pull_request.head.sha }}:${{ needs.guard.outputs.request_path }}" > "$RUNNER_TEMP/wpconnector-request/request.json"
+
+          while IFS= read -r path; do
+            [[ -z "$path" ]] && continue
+            case "$path" in
+              assets/inbox/*)
+                mkdir -p "$RUNNER_TEMP/wpconnector-request/$(dirname "$path")"
+                git show "${{ github.event.pull_request.head.sha }}:$path" > "$RUNNER_TEMP/wpconnector-request/$path"
+                ;;
+            esac
+          done < <(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
+
+      - name: Deploy trusted connector if enabled
+        if: ${{ vars.WP_CONNECTOR_DEPLOY_PLUGIN == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="$RUNNER_TEMP/wpconnector-trusted/plugin/wordpressconnector"
+          dest="$WP_ROOT/wp-content/plugins/wordpressconnector"
+          backup="$RUNNER_TEMP/wordpressconnector-backup"
+          rm -rf "$backup"
+          if [[ -d "$dest" ]]; then cp -a "$dest" "$backup"; fi
+          rm -rf "$dest.new"
+          mkdir -p "$dest.new"
+          cp -a "$src/." "$dest.new/"
+          rm -rf "$dest"
+          mv "$dest.new" "$dest"
+          if ! wp --path="$WP_ROOT" plugin activate wordpressconnector; then
+            rm -rf "$dest"
+            if [[ -d "$backup" ]]; then mv "$backup" "$dest"; fi
+            exit 1
+          fi
+
+      - name: Runtime preflight and execute
+        id: request
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp --path="$WP_ROOT" core is-installed
+          wp --path="$WP_ROOT" wordpress-connector doctor
+          output="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
+          wp --path="$WP_ROOT" wordpress-connector run \
+            "$RUNNER_TEMP/wpconnector-request/request.json" \
+            --output="$output" \
+            --asset-root="$RUNNER_TEMP/wpconnector-request/assets/inbox"
+
+      - name: Commit result to request branch
+        if: always()
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
+          if [[ ! -s "$result" ]]; then
+            echo 'No connector result file was produced.' >&2
+            exit 0
+          fi
+
+          work="$RUNNER_TEMP/wpconnector-result-push"
+          rm -rf "$work"
+          git clone "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout "${{ github.event.pull_request.head.ref }}"
+          current=$(git rev-parse HEAD)
+          if [[ "$current" != "${{ github.event.pull_request.head.sha }}" ]]; then
+            echo 'Request branch moved after validation; refusing result write.' >&2
+            exit 1
+          fi
+          mkdir -p results
+          cp "$result" "results/${{ needs.guard.outputs.request_id }}.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "results/${{ needs.guard.outputs.request_id }}.json"
+          git commit -m "Add WordPress result ${{ needs.guard.outputs.request_id }}" || exit 0
+          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
+
+      - name: Fail job when connector execution failed
+        if: steps.request.outcome == 'failure'
+        shell: bash
+        run: exit 1
+
+      - name: Cleanup runner workspace
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push" "$RUNNER_TEMP/wordpressconnector-backup"
