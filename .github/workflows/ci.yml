@@ -13,34 +13,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Fetch exact revision
-        shell: bash
-        run: |
-          set -euo pipefail
-          git init source
-          cd source
-          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=2 origin "${GITHUB_SHA}"
-          git checkout --detach FETCH_HEAD
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+          persist-credentials: false
 
-      - name: Validate PHP, schemas and examples
+      - name: Validate PHP, schemas, examples and workflow guards
         shell: bash
         run: |
           set -euo pipefail
-          cd source
           find plugin/wordpressconnector scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l
           for file in examples/*.json; do php scripts/validate-request.php "$file"; done
           php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/repository-hygiene.php
+          php tests/request-workflow-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
 
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
           set -euo pipefail
-          cd source
           if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin scripts; then
             echo 'Forbidden execution primitive found.' >&2
             exit 1

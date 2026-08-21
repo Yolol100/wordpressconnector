@@ -31,7 +31,7 @@ This is intentionally not a remote shell. There are no generic `eval`, arbitrary
 
 Every action registers explicit security metadata: read-only/mutation, privileged, sensitive and system-update. Mutations default to dry-run and require `confirm: true` plus the appropriate runner flags. Requests are idempotent, can use stale-state fingerprints and may create rollback snapshots.
 
-The request workflow validates a request on a GitHub-hosted runner **before** any self-hosted WordPress runner is assigned. Fork PRs, non-owner runtime PRs, unexpected paths and public-repository execution are rejected by default.
+The request workflow validates a request on a GitHub-hosted runner **before** any self-hosted WordPress runner is assigned. Fork PRs, unexpected paths and public-repository execution are rejected by default. Runtime request PRs may be submitted by the repository owner or, when explicitly configured, one exact `WPCONNECTOR_TRUSTED_REQUEST_ACTOR` such as the dedicated Webactueel GitHub App bot; that allowance does not bypass the other guards.
 
 GitHub recommends avoiding self-hosted runners for public repositories. Make this repository private before connecting a production WordPress host. Public-runner execution requires an explicit override and remains intentionally restricted.
 

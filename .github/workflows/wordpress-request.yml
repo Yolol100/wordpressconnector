@@ -28,6 +28,7 @@ jobs:
         id: guard
         env:
           ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
+          TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
         shell: bash
         run: |
           set -euo pipefail
@@ -36,10 +37,16 @@ jobs:
             echo 'Fork PRs are not allowed to reach the WordPress runner.' >&2
             exit 1
           fi
-          if [[ "${{ github.event.pull_request.user.login }}" != "${{ github.repository_owner }}" ]]; then
-            echo 'Only the repository owner may submit WordPress runtime requests.' >&2
-            exit 1
+
+          request_actor="${{ github.event.pull_request.user.login }}"
+          repository_owner="${{ github.repository_owner }}"
+          if [[ "$request_actor" != "$repository_owner" ]]; then
+            if [[ -z "${TRUSTED_REQUEST_ACTOR:-}" || "$request_actor" != "$TRUSTED_REQUEST_ACTOR" ]]; then
+              echo "Only the repository owner or the explicitly configured trusted request actor may submit WordPress runtime requests; actor=$request_actor." >&2
+              exit 1
+            fi
           fi
+
           if [[ "${{ github.event.repository.private }}" != 'true' && "${ALLOW_PUBLIC:-false}" != 'true' ]]; then
             echo 'Self-hosted WordPress execution is blocked for public repositories by default.' >&2
             exit 1
