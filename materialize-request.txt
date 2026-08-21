@@ -1,1 +1,1 @@
-Run the checksum-verified materializer from trusted main.
+Run the checksum-verified materializer from trusted main after workflow-permission fix.
