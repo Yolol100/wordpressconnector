@@ -23,7 +23,7 @@ jobs:
           git fetch --depth=2 origin "${GITHUB_SHA}"
           git checkout --detach FETCH_HEAD
 
-      - name: Validate PHP, schemas and examples
+      - name: Validate PHP, schemas, examples and workflow guards
         shell: bash
         run: |
           set -euo pipefail
@@ -34,6 +34,7 @@ jobs:
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/repository-hygiene.php
+          php tests/request-workflow-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
 
       - name: Reject dangerous execution primitives
