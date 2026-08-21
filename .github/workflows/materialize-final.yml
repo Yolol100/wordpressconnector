@@ -1,0 +1,64 @@
+name: Materialize validated connector
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  materialize:
+    if: >-
+      github.repository == 'Yolol100/wordpressconnector' &&
+      (github.event_name == 'push' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login == github.repository_owner &&
+      github.head_ref == 'materialize-trigger'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_PUSH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Materialize validated source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$RUNNER_TEMP/materialize"
+          archive_b64="$RUNNER_TEMP/wordpressconnector.b64"
+          archive="$RUNNER_TEMP/wordpressconnector.tar.gz"
+          rm -rf "$work"
+          git clone "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout main
+
+          cat \
+            bootstrap/parts/part-00 \
+            bootstrap/parts/part-01 \
+            bootstrap/parts/part-02 \
+            bootstrap/parts/part-03-05 \
+            bootstrap/parts/part-06 \
+            bootstrap/parts/part-07 \
+            bootstrap/parts/part-08 \
+            bootstrap/parts/part-09 \
+            bootstrap/parts/part-10 \
+            bootstrap/parts/part-11 \
+            bootstrap/parts/part-12-final \
+            > "$archive_b64"
+
+          base64 -d "$archive_b64" > "$archive"
+          echo "37292f4d5334a48f8aefd7f38edc021383775236d6cc18c1e89d6f9bade95143  $archive" | sha256sum -c -
+
+          tar -xzf "$archive" -C "$work"
+          git restore --source=HEAD -- .github/workflows
+          rm -rf bootstrap
+
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Build complete WordPress Connector v1.0.0'
+          git push origin main
