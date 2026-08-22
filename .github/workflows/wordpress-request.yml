@@ -30,6 +30,7 @@ jobs:
           ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
           TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
           GH_REPO_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: '0'
         shell: bash
         run: |
           set -euo pipefail
@@ -134,6 +135,7 @@ jobs:
       WPCONNECTOR_ALLOW_SYSTEM_UPDATES: ${{ vars.WPCONNECTOR_ALLOW_SYSTEM_UPDATES }}
       WPCONNECTOR_PUBLIC_REPOSITORY: ${{ github.event.repository.private == false }}
       GH_REPO_TOKEN: ${{ github.token }}
+      GIT_TERMINAL_PROMPT: '0'
     steps:
       - name: Prepare trusted connector and untrusted request data
         shell: bash
@@ -149,7 +151,7 @@ jobs:
           }
 
           rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request"
-          git_auth clone --no-checkout --filter=blob:none "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
+          git_auth clone --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
           cd "$RUNNER_TEMP/wpconnector-trusted"
           git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
           git checkout --detach FETCH_HEAD
