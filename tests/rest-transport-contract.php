@@ -19,15 +19,15 @@ $controllerRequired = array(
     "register_rest_route(self::NAMESPACE, '/health'",
     "register_rest_route(self::NAMESPACE, '/assets'",
     "register_rest_route(self::NAMESPACE, '/execute'",
-    "'permission_callback' => array($this, 'authorize')",
+    "'permission_callback' => array(\$this, 'authorize')",
     "current_user_can('manage_options')",
-    "is_ssl()",
+    'is_ssl()',
     "get_option('wpconnector_rest_enabled', true)",
     'get_json_params()',
     'strlen($body) > self::MAX_REQUEST_BYTES',
     'Request::fromArray($data)',
     "'transport' => 'rest'",
-    "'asset_root' => $this->assets->rootForRequest",
+    "'asset_root' => \$this->assets->rootForRequest",
 );
 foreach ($controllerRequired as $needle) {
     if (strpos($controller, $needle) === false) {
@@ -41,7 +41,7 @@ $assetRequired = array(
     'move_uploaded_file($tmpName, $destination)',
     'MAX_FILES = 10',
     'MAX_TOTAL_BYTES = 26214400',
-    "'.' === $segment || '..' === $segment",
+    "'.' === \$segment || '..' === \$segment",
     'realpath($root)',
     'Refusing unsafe connector asset cleanup path.',
 );
