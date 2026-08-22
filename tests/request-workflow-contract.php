@@ -22,7 +22,7 @@ $required = array(
     'Verify authenticated HTTPS connector health',
     'Upload request assets over authenticated HTTPS',
     'Execute connector request over authenticated HTTPS',
-    "case \"$SITE_URL\" in",
+    'case "$SITE_URL" in',
     'https://*',
 );
 foreach ($required as $needle) {
