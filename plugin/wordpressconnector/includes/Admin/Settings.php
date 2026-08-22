@@ -105,7 +105,7 @@ final class Settings
         $default = (int) self::OPTIONS[$name]['default'];
         $value = (int) get_option($name, $default);
         printf(
-            '<label><input type="checkbox" name="%1$s" value="1" %2$s /> %3$s</label>',
+            '<input type="hidden" name="%1$s" value="0" /><label><input type="checkbox" name="%1$s" value="1" %2$s /> %3$s</label>',
             esc_attr($name),
             checked(1, $value, false),
             esc_html((string) $args['help'])
