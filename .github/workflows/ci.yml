@@ -31,6 +31,8 @@ jobs:
           php tests/action-catalog.php
           php tests/repository-hygiene.php
           php tests/request-workflow-contract.php
+          php tests/execute-workflow-contract.php
+          php tests/rest-transport-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
 
       - name: Reject dangerous execution primitives

@@ -6,10 +6,9 @@ on:
     paths:
       - 'requests/**'
       - 'assets/inbox/**'
-      - 'results/**'
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 concurrency:
@@ -24,10 +23,9 @@ jobs:
       request_path: ${{ steps.guard.outputs.request_path }}
       request_id: ${{ steps.guard.outputs.request_id }}
     steps:
-      - name: Validate request PR before assigning a self-hosted runner
+      - name: Validate request PR without production credentials
         id: guard
         env:
-          ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
           TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
           GH_REPO_TOKEN: ${{ github.token }}
           GIT_TERMINAL_PROMPT: '0'
@@ -36,7 +34,7 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${GITHUB_REPOSITORY}" ]]; then
-            echo 'Fork PRs are not allowed to reach the WordPress runner.' >&2
+            echo 'Fork PRs are not allowed to submit WordPress runtime requests.' >&2
             exit 1
           fi
 
@@ -49,8 +47,8 @@ jobs:
             fi
           fi
 
-          if [[ "${{ github.event.repository.private }}" != 'true' && "${ALLOW_PUBLIC:-false}" != 'true' ]]; then
-            echo 'Self-hosted WordPress execution is blocked for public repositories by default.' >&2
+          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
+            echo 'Remote WordPress execution requires a private repository.' >&2
             exit 1
           fi
 
@@ -123,7 +121,7 @@ jobs:
           echo "request_path=$request_path" >> "$GITHUB_OUTPUT"
           echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
 
-  runner_watchdog:
+  dispatch_trusted_execute:
     needs: guard
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -131,187 +129,43 @@ jobs:
       actions: write
       contents: read
     steps:
-      - name: Cancel request if self-hosted runner stays queued
+      - name: Dispatch trusted main-branch WordPress executor
         env:
           GH_REPO_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.run_id }}
-          REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
           set -euo pipefail
 
-          # The execute job is scheduled in parallel. Poll briefly so healthy
-          # runners do not add a fixed delay, then fail closed after 180 seconds.
-          jobs_url="https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100"
-          execute_status='missing'
-          for attempt in $(seq 1 18); do
-            sleep 10
-            jobs=$(curl --fail-with-body --silent --show-error --location \
-              -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "$jobs_url")
+          payload=$(python3 - <<'PY'
+          import json, os
+          print(json.dumps({
+              'ref': 'main',
+              'inputs': {
+                  'pr_number': os.environ['PR_NUMBER'],
+                  'expected_head_sha': os.environ['EXPECTED_HEAD_SHA'],
+              },
+          }))
+          PY
+          )
 
-            execute_status=$(printf '%s' "$jobs" | python3 -c 'import json,sys; data=json.load(sys.stdin); matches=[job for job in data.get("jobs", []) if job.get("name") == "execute"]; print(matches[-1].get("status", "missing") if matches else "missing")')
-            echo "Self-hosted execute job status at ${attempt}0 seconds: ${execute_status}"
-
-            if [[ "$execute_status" != 'queued' && "$execute_status" != 'missing' ]]; then
-              exit 0
-            fi
-          done
-
-          if [[ "$execute_status" != 'queued' ]]; then
-            echo "Unable to confirm a queued execute job after 180 seconds; not cancelling an uncertain run." >&2
-            exit 1
-          fi
-
-          echo '::error title=WordPress runner unavailable::The self-hosted runner with label wordpressconnector did not pick up the job within 180 seconds. Ensure its systemd service is enabled and active, then reopen or update the request PR.'
-
-          cancel_url="https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/cancel"
+          response="$RUNNER_TEMP/wpconnector-dispatch-response.json"
           http_code=$(curl --silent --show-error --location \
-            --output /tmp/wpconnector-cancel-response \
+            --output "$response" \
             --write-out '%{http_code}' \
-            -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "$cancel_url")
+            --request POST \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_REPO_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            --header 'Content-Type: application/json' \
+            --data "$payload" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/wordpress-execute.yml/dispatches")
 
-          if [[ "$http_code" == '202' ]]; then
-            echo 'Cancellation accepted for the queued WordPress request run.'
-            exit 1
-          fi
-          if [[ "$http_code" == '409' ]]; then
-            echo 'Run state changed before cancellation; leaving the run active.'
-            exit 0
-          fi
-
-          cat /tmp/wpconnector-cancel-response >&2 || true
-          echo "Unable to cancel queued run; GitHub returned HTTP ${http_code}." >&2
-          exit 1
-
-  execute:
-    needs: guard
-    runs-on: [self-hosted, wordpressconnector]
-    timeout-minutes: 20
-    env:
-      WP_ROOT: ${{ vars.WP_CONNECTOR_WORDPRESS_PATH }}
-      WPCONNECTOR_ALLOW_WRITES: ${{ vars.WPCONNECTOR_ALLOW_WRITES }}
-      WPCONNECTOR_ALLOW_PRIVILEGED: ${{ vars.WPCONNECTOR_ALLOW_PRIVILEGED }}
-      WPCONNECTOR_ALLOW_SENSITIVE: ${{ vars.WPCONNECTOR_ALLOW_SENSITIVE }}
-      WPCONNECTOR_ALLOW_SYSTEM_UPDATES: ${{ vars.WPCONNECTOR_ALLOW_SYSTEM_UPDATES }}
-      WPCONNECTOR_PUBLIC_REPOSITORY: ${{ github.event.repository.private == false }}
-      GH_REPO_TOKEN: ${{ github.token }}
-      GIT_TERMINAL_PROMPT: '0'
-    steps:
-      - name: Prepare trusted connector and untrusted request data
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "${WP_ROOT:-}"
-          test -f "$WP_ROOT/wp-load.php"
-          command -v git >/dev/null
-          command -v wp >/dev/null
-
-          git_auth() {
-            git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
-          }
-
-          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request"
-          git_auth clone --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
-          cd "$RUNNER_TEMP/wpconnector-trusted"
-          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
-          git checkout --detach FETCH_HEAD
-
-          mkdir -p "$RUNNER_TEMP/wpconnector-request/assets/inbox" "$RUNNER_TEMP/wpconnector-request/results"
-          git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
-          git show "${{ github.event.pull_request.head.sha }}:${{ needs.guard.outputs.request_path }}" > "$RUNNER_TEMP/wpconnector-request/request.json"
-
-          changed_paths="$RUNNER_TEMP/wpconnector-request/changed-paths"
-          git diff --name-only -z "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > "$changed_paths"
-          while IFS= read -r -d '' path; do
-            case "$path" in
-              assets/inbox/*)
-                mkdir -p "$RUNNER_TEMP/wpconnector-request/$(dirname "$path")"
-                git show "${{ github.event.pull_request.head.sha }}:$path" > "$RUNNER_TEMP/wpconnector-request/$path"
-                ;;
-            esac
-          done < "$changed_paths"
-          rm -f "$changed_paths"
-
-      - name: Deploy trusted connector if enabled
-        if: ${{ vars.WP_CONNECTOR_DEPLOY_PLUGIN == 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          src="$RUNNER_TEMP/wpconnector-trusted/plugin/wordpressconnector"
-          dest="$WP_ROOT/wp-content/plugins/wordpressconnector"
-          backup="$RUNNER_TEMP/wordpressconnector-backup"
-          rm -rf "$backup"
-          if [[ -d "$dest" ]]; then cp -a "$dest" "$backup"; fi
-          rm -rf "$dest.new"
-          mkdir -p "$dest.new"
-          cp -a "$src/." "$dest.new/"
-          rm -rf "$dest"
-          mv "$dest.new" "$dest"
-          if ! wp --path="$WP_ROOT" plugin activate wordpressconnector; then
-            rm -rf "$dest"
-            if [[ -d "$backup" ]]; then mv "$backup" "$dest"; fi
+          if [[ "$http_code" != '200' && "$http_code" != '204' ]]; then
+            cat "$response" >&2 || true
+            echo "Unable to dispatch trusted WordPress executor; GitHub returned HTTP ${http_code}." >&2
             exit 1
           fi
 
-      - name: Runtime preflight and execute
-        id: request
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -euo pipefail
-          wp --path="$WP_ROOT" core is-installed
-          wp --path="$WP_ROOT" wordpress-connector doctor
-          output="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
-          wp --path="$WP_ROOT" wordpress-connector run \
-            "$RUNNER_TEMP/wpconnector-request/request.json" \
-            --output="$output" \
-            --asset-root="$RUNNER_TEMP/wpconnector-request/assets/inbox"
-
-      - name: Commit result to request branch
-        if: always()
-        env:
-          GH_PUSH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          result="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
-          if [[ ! -s "$result" ]]; then
-            echo 'No connector result file was produced.' >&2
-            exit 0
-          fi
-
-          work="$RUNNER_TEMP/wpconnector-result-push"
-          rm -rf "$work"
-          git clone "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
-          cd "$work"
-          git checkout "${{ github.event.pull_request.head.ref }}"
-          current=$(git rev-parse HEAD)
-          if [[ "$current" != "${{ github.event.pull_request.head.sha }}" ]]; then
-            echo 'Request branch moved after validation; refusing result write.' >&2
-            exit 1
-          fi
-          mkdir -p results
-          cp "$result" "results/${{ needs.guard.outputs.request_id }}.json"
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "results/${{ needs.guard.outputs.request_id }}.json"
-          git commit -m "Add WordPress result ${{ needs.guard.outputs.request_id }}" || exit 0
-          git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
-
-      - name: Fail job when connector execution failed
-        if: steps.request.outcome == 'failure'
-        shell: bash
-        run: exit 1
-
-      - name: Cleanup runner workspace
-        if: always()
-        shell: bash
-        run: |
-          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push" "$RUNNER_TEMP/wordpressconnector-backup"
+          echo "Trusted WordPress executor dispatched for PR ${PR_NUMBER} at head ${EXPECTED_HEAD_SHA}."

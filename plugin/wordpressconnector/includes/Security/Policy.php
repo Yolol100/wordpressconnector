@@ -15,6 +15,13 @@ final class Policy
         'wp_user_request',
     );
 
+    private const OPTION_FLAGS = array(
+        'WPCONNECTOR_ALLOW_WRITES' => 'wpconnector_allow_writes',
+        'WPCONNECTOR_ALLOW_PRIVILEGED' => 'wpconnector_allow_privileged',
+        'WPCONNECTOR_ALLOW_SENSITIVE' => 'wpconnector_allow_sensitive',
+        'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' => 'wpconnector_allow_system_updates',
+    );
+
     public static function assertActionAllowed(array $descriptor, bool $dryRun, bool $confirm): void
     {
         if (! empty($descriptor['sensitive'])) {
@@ -48,7 +55,7 @@ final class Policy
         }
 
         if (! self::flag('WPCONNECTOR_ALLOW_WRITES')) {
-            throw new RuntimeException('Writes are disabled. Set WPCONNECTOR_ALLOW_WRITES=1 in the runner environment or wp-config.php.');
+            throw new RuntimeException('Writes are disabled. Enable the WordPress Connector write gate or set WPCONNECTOR_ALLOW_WRITES=1.');
         }
     }
 
@@ -145,11 +152,27 @@ final class Policy
 
     public static function flag(string $name): bool
     {
-        if (defined($name) && true === constant($name)) {
-            return true;
+        if (defined($name)) {
+            return self::truthy(constant($name));
         }
 
-        $value = getenv($name);
+        $environment = getenv($name);
+        if (false !== $environment && '' !== (string) $environment) {
+            return self::truthy($environment);
+        }
+
+        if (isset(self::OPTION_FLAGS[$name]) && function_exists('get_option')) {
+            return self::truthy(get_option(self::OPTION_FLAGS[$name], false));
+        }
+
+        return false;
+    }
+
+    private static function truthy($value): bool
+    {
+        if (true === $value || 1 === $value) {
+            return true;
+        }
         return in_array(strtolower((string) $value), array('1', 'true', 'yes', 'on'), true);
     }
 
