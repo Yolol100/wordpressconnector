@@ -19,6 +19,18 @@ Install the Linux runner on the WordPress host or a trusted management host with
 
 Do not run the runner as root.
 
+### Keep the runner online after reboot
+
+After the GitHub runner has been downloaded and configured once, install it as a persistent systemd service from the dedicated runner account. The repository includes an idempotent helper that refuses root execution, verifies the configured runner files, installs the official `svc.sh` service when needed, enables it for boot, starts it and verifies that it is both enabled and active:
+
+```bash
+./scripts/ensure-runner-service.sh /absolute/path/to/actions-runner
+```
+
+The helper requires `sudo` and `systemd`. A shared-hosting environment without `systemd` needs a provider-supported persistent process supervisor instead; a GitHub workflow cannot start an offline self-hosted runner by itself.
+
+The `WordPress Request` workflow also has a GitHub-hosted watchdog. After the guard succeeds, the watchdog gives the `wordpressconnector` runner 180 seconds to accept the `execute` job. If the job is still queued, the workflow emits a clear runner-unavailable error and cancels the request run instead of leaving a production request queued indefinitely. Reopen or update the request PR only after the runner service is active again.
+
 ## 3. Repository variables
 
 Set under `Settings -> Secrets and variables -> Actions -> Variables`:
