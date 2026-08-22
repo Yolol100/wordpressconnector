@@ -6,7 +6,6 @@ on:
     paths:
       - 'requests/**'
       - 'assets/inbox/**'
-      - 'results/**'
 
 permissions:
   contents: write
@@ -24,10 +23,9 @@ jobs:
       request_path: ${{ steps.guard.outputs.request_path }}
       request_id: ${{ steps.guard.outputs.request_id }}
     steps:
-      - name: Validate request PR before assigning a self-hosted runner
+      - name: Validate request PR before remote WordPress execution
         id: guard
         env:
-          ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
           TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
           GH_REPO_TOKEN: ${{ github.token }}
           GIT_TERMINAL_PROMPT: '0'
@@ -36,7 +34,7 @@ jobs:
           set -euo pipefail
 
           if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${GITHUB_REPOSITORY}" ]]; then
-            echo 'Fork PRs are not allowed to reach the WordPress runner.' >&2
+            echo 'Fork PRs are not allowed to reach WordPress credentials.' >&2
             exit 1
           fi
 
@@ -49,8 +47,8 @@ jobs:
             fi
           fi
 
-          if [[ "${{ github.event.repository.private }}" != 'true' && "${ALLOW_PUBLIC:-false}" != 'true' ]]; then
-            echo 'Self-hosted WordPress execution is blocked for public repositories by default.' >&2
+          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
+            echo 'Remote WordPress execution requires a private repository because the execute job uses production credentials.' >&2
             exit 1
           fi
 
@@ -123,156 +121,127 @@ jobs:
           echo "request_path=$request_path" >> "$GITHUB_OUTPUT"
           echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
 
-  runner_watchdog:
-    needs: guard
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Cancel request if self-hosted runner stays queued
-        env:
-          GH_REPO_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.run_id }}
-          REPOSITORY: ${{ github.repository }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          # The execute job is scheduled in parallel. Poll briefly so healthy
-          # runners do not add a fixed delay, then fail closed after 180 seconds.
-          jobs_url="https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100"
-          execute_status='missing'
-          for attempt in $(seq 1 18); do
-            sleep 10
-            jobs=$(curl --fail-with-body --silent --show-error --location \
-              -H 'Accept: application/vnd.github+json' \
-              -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
-              -H 'X-GitHub-Api-Version: 2022-11-28' \
-              "$jobs_url")
-
-            execute_status=$(printf '%s' "$jobs" | python3 -c 'import json,sys; data=json.load(sys.stdin); matches=[job for job in data.get("jobs", []) if job.get("name") == "execute"]; print(matches[-1].get("status", "missing") if matches else "missing")')
-            echo "Self-hosted execute job status at ${attempt}0 seconds: ${execute_status}"
-
-            if [[ "$execute_status" != 'queued' && "$execute_status" != 'missing' ]]; then
-              exit 0
-            fi
-          done
-
-          if [[ "$execute_status" != 'queued' ]]; then
-            echo "Unable to confirm a queued execute job after 180 seconds; not cancelling an uncertain run." >&2
-            exit 1
-          fi
-
-          echo '::error title=WordPress runner unavailable::The self-hosted runner with label wordpressconnector did not pick up the job within 180 seconds. Ensure its systemd service is enabled and active, then reopen or update the request PR.'
-
-          cancel_url="https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/cancel"
-          http_code=$(curl --silent --show-error --location \
-            --output /tmp/wpconnector-cancel-response \
-            --write-out '%{http_code}' \
-            -X POST \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "$cancel_url")
-
-          if [[ "$http_code" == '202' ]]; then
-            echo 'Cancellation accepted for the queued WordPress request run.'
-            exit 1
-          fi
-          if [[ "$http_code" == '409' ]]; then
-            echo 'Run state changed before cancellation; leaving the run active.'
-            exit 0
-          fi
-
-          cat /tmp/wpconnector-cancel-response >&2 || true
-          echo "Unable to cancel queued run; GitHub returned HTTP ${http_code}." >&2
-          exit 1
-
   execute:
     needs: guard
-    runs-on: [self-hosted, wordpressconnector]
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
-      WP_ROOT: ${{ vars.WP_CONNECTOR_WORDPRESS_PATH }}
-      WPCONNECTOR_ALLOW_WRITES: ${{ vars.WPCONNECTOR_ALLOW_WRITES }}
-      WPCONNECTOR_ALLOW_PRIVILEGED: ${{ vars.WPCONNECTOR_ALLOW_PRIVILEGED }}
-      WPCONNECTOR_ALLOW_SENSITIVE: ${{ vars.WPCONNECTOR_ALLOW_SENSITIVE }}
-      WPCONNECTOR_ALLOW_SYSTEM_UPDATES: ${{ vars.WPCONNECTOR_ALLOW_SYSTEM_UPDATES }}
-      WPCONNECTOR_PUBLIC_REPOSITORY: ${{ github.event.repository.private == false }}
+      SITE_URL: ${{ vars.WPCONNECTOR_SITE_URL }}
+      REST_USERNAME: ${{ secrets.WPCONNECTOR_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD }}
+      REQUEST_ID: ${{ needs.guard.outputs.request_id }}
       GH_REPO_TOKEN: ${{ github.token }}
       GIT_TERMINAL_PROMPT: '0'
     steps:
-      - name: Prepare trusted connector and untrusted request data
+      - name: Prepare exact validated request and assets
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${WP_ROOT:-}"
-          test -f "$WP_ROOT/wp-load.php"
-          command -v git >/dev/null
-          command -v wp >/dev/null
+          test -n "${SITE_URL:-}"
+          test -n "${REST_USERNAME:-}"
+          test -n "${REST_APP_PASSWORD:-}"
+          case "$SITE_URL" in
+            https://*) ;;
+            *) echo 'WPCONNECTOR_SITE_URL must use https://.' >&2; exit 1 ;;
+          esac
 
           git_auth() {
             git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
           }
 
-          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request"
-          git_auth clone --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
-          cd "$RUNNER_TEMP/wpconnector-trusted"
-          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
-          git checkout --detach FETCH_HEAD
-
+          rm -rf "$RUNNER_TEMP/wpconnector-request"
           mkdir -p "$RUNNER_TEMP/wpconnector-request/assets/inbox" "$RUNNER_TEMP/wpconnector-request/results"
+          cd "$RUNNER_TEMP/wpconnector-request"
+          git init repo
+          cd repo
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git branch trusted-base FETCH_HEAD
           git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
-          git show "${{ github.event.pull_request.head.sha }}:${{ needs.guard.outputs.request_path }}" > "$RUNNER_TEMP/wpconnector-request/request.json"
+          git branch request-head FETCH_HEAD
 
+          git show "request-head:${{ needs.guard.outputs.request_path }}" > ../request.json
           changed_paths="$RUNNER_TEMP/wpconnector-request/changed-paths"
-          git diff --name-only -z "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > "$changed_paths"
+          git diff --name-only -z trusted-base request-head > "$changed_paths"
           while IFS= read -r -d '' path; do
             case "$path" in
               assets/inbox/*)
-                mkdir -p "$RUNNER_TEMP/wpconnector-request/$(dirname "$path")"
-                git show "${{ github.event.pull_request.head.sha }}:$path" > "$RUNNER_TEMP/wpconnector-request/$path"
+                relative="${path#assets/inbox/}"
+                mkdir -p "$RUNNER_TEMP/wpconnector-request/assets/inbox/$(dirname "$relative")"
+                git show "request-head:$path" > "$RUNNER_TEMP/wpconnector-request/assets/inbox/$relative"
                 ;;
             esac
           done < "$changed_paths"
           rm -f "$changed_paths"
 
-      - name: Deploy trusted connector if enabled
-        if: ${{ vars.WP_CONNECTOR_DEPLOY_PLUGIN == 'true' }}
+      - name: Verify authenticated HTTPS connector health
         shell: bash
         run: |
           set -euo pipefail
-          src="$RUNNER_TEMP/wpconnector-trusted/plugin/wordpressconnector"
-          dest="$WP_ROOT/wp-content/plugins/wordpressconnector"
-          backup="$RUNNER_TEMP/wordpressconnector-backup"
-          rm -rf "$backup"
-          if [[ -d "$dest" ]]; then cp -a "$dest" "$backup"; fi
-          rm -rf "$dest.new"
-          mkdir -p "$dest.new"
-          cp -a "$src/." "$dest.new/"
-          rm -rf "$dest"
-          mv "$dest.new" "$dest"
-          if ! wp --path="$WP_ROOT" plugin activate wordpressconnector; then
-            rm -rf "$dest"
-            if [[ -d "$backup" ]]; then mv "$backup" "$dest"; fi
-            exit 1
-          fi
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          health="$RUNNER_TEMP/wpconnector-request/health.json"
+          curl --fail-with-body --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+            --header 'Accept: application/json' \
+            --output "$health" \
+            "$base/health"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"]) || ($d["transport"] ?? "") !== "rest") { fwrite(STDERR,"REST connector health check failed.\n"); exit(1); } echo "REST connector health OK; version=".($d["version"] ?? "unknown")."\n";' "$health"
 
-      - name: Runtime preflight and execute
+      - name: Upload request assets over authenticated HTTPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          asset_root="$RUNNER_TEMP/wpconnector-request/assets/inbox"
+          if [[ ! -d "$asset_root" ]]; then exit 0; fi
+
+          while IFS= read -r -d '' file; do
+            relative="${file#$asset_root/}"
+            response="$RUNNER_TEMP/wpconnector-request/asset-response.json"
+            curl --fail-with-body --silent --show-error --location \
+              --connect-timeout 10 --max-time 120 \
+              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+              --header 'Accept: application/json' \
+              --form-string "request_id=${REQUEST_ID}" \
+              --form-string "asset_path=${relative}" \
+              --form "file=@${file}" \
+              --output "$response" \
+              "$base/assets"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,"Asset upload rejected.\n"); exit(1); }' "$response"
+          done < <(find "$asset_root" -type f -print0)
+
+      - name: Execute connector request over authenticated HTTPS
         id: request
         continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
-          wp --path="$WP_ROOT" core is-installed
-          wp --path="$WP_ROOT" wordpress-connector doctor
-          output="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
-          wp --path="$WP_ROOT" wordpress-connector run \
-            "$RUNNER_TEMP/wpconnector-request/request.json" \
-            --output="$output" \
-            --asset-root="$RUNNER_TEMP/wpconnector-request/assets/inbox"
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          request="$RUNNER_TEMP/wpconnector-request/request.json"
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          transport_body="$RUNNER_TEMP/wpconnector-request/transport-body.json"
+
+          set +e
+          http_code=$(curl --silent --show-error --location \
+            --connect-timeout 10 --max-time 180 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data-binary "@$request" \
+            --output "$transport_body" \
+            --write-out '%{http_code}' \
+            "$base/execute")
+          curl_status=$?
+          set -e
+
+          if [[ "$curl_status" -ne 0 || "$http_code" != '200' ]]; then
+            php -r '$r=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $body=@json_decode(@file_get_contents($argv[2]),true); $message="REST transport failed (HTTP ".$argv[3].", curl ".$argv[4].")"; if (is_array($body) && isset($body["message"])) { $message.="; ".(string)$body["message"]; } $out=["version"=>1,"ok"=>false,"request_id"=>$r["request_id"]??"unknown","action"=>$r["action"]??"unknown","dry_run"=>!empty($r["dry_run"]),"completed_at_gmt"=>gmdate("c"),"error"=>$message,"meta"=>["transport"=>"rest"]]; file_put_contents($argv[5],json_encode($out,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");' "$request" "$transport_body" "$http_code" "$curl_status" "$result"
+            exit 1
+          fi
+
+          mv "$transport_body" "$result"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (($d["request_id"] ?? "") !== $argv[2]) { fwrite(STDERR,"REST result request_id mismatch.\n"); exit(1); }' "$result" "$REQUEST_ID"
 
       - name: Commit result to request branch
         if: always()
@@ -281,7 +250,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          result="$RUNNER_TEMP/wpconnector-request/results/${{ needs.guard.outputs.request_id }}.json"
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
           if [[ ! -s "$result" ]]; then
             echo 'No connector result file was produced.' >&2
             exit 0
@@ -298,11 +267,11 @@ jobs:
             exit 1
           fi
           mkdir -p results
-          cp "$result" "results/${{ needs.guard.outputs.request_id }}.json"
+          cp "$result" "results/${REQUEST_ID}.json"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- "results/${{ needs.guard.outputs.request_id }}.json"
-          git commit -m "Add WordPress result ${{ needs.guard.outputs.request_id }}" || exit 0
+          git add -- "results/${REQUEST_ID}.json"
+          git commit -m "Add WordPress result ${REQUEST_ID}" || exit 0
           git push origin HEAD:"${{ github.event.pull_request.head.ref }}"
 
       - name: Fail job when connector execution failed
@@ -310,8 +279,14 @@ jobs:
         shell: bash
         run: exit 1
 
-      - name: Cleanup runner workspace
+      - name: Fail job when connector returned ok=false
+        if: steps.request.outcome == 'success'
+        shell: bash
+        run: |
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,(string)($d["error"]??"Connector request failed")."\n"); exit(1); }' "$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+
+      - name: Cleanup GitHub-hosted workspace
         if: always()
         shell: bash
         run: |
-          rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push" "$RUNNER_TEMP/wordpressconnector-backup"
+          rm -rf "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push"
