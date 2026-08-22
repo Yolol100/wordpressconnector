@@ -2,9 +2,9 @@
 
 GitHub-controlled WordPress management bridge for the default flow:
 
-`ChatGPT Webapp -> GitHub request PR -> guarded GitHub-hosted ubuntu-latest runner -> HTTPS REST -> WordPress Connector -> WordPress -> result JSON -> GitHub -> ChatGPT`
+`ChatGPT Webapp -> request PR -> secretless GitHub guard -> workflow_dispatch -> trusted main-branch ubuntu-latest executor -> HTTPS REST -> WordPress Connector -> WordPress -> result JSON -> GitHub -> ChatGPT`
 
-No VPS or persistent GitHub Actions runner is required. GitHub provisions the `ubuntu-latest` runner for each request job. WordPress is reached over HTTPS using a dedicated WordPress Application Password.
+No VPS or persistent GitHub Actions runner is required. GitHub provisions fresh `ubuntu-latest` runners automatically. WordPress is reached over HTTPS using a dedicated WordPress Application Password.
 
 Local WP-CLI remains available as an optional maintenance and recovery transport.
 
@@ -37,11 +37,13 @@ The HTTPS transport adds these boundaries:
 
 - the repository must be private;
 - request PRs must come from the same repository and from the repository owner or one exact configured trusted actor;
+- the PR-triggered workflow has no WordPress production secrets and can only validate the request and dispatch the trusted executor;
+- the credentialed executor is a separate `workflow_dispatch` workflow run from `main`, and revalidates the PR, current head SHA, latest commit author, allowed paths, limits and request schema before using credentials;
 - WordPress requires HTTPS, an authenticated user and `manage_options` for every connector REST endpoint;
 - use a dedicated WordPress Application Password stored only in GitHub Secrets;
 - write, privileged, sensitive and system-update gates are controlled in `Settings -> WordPress Connector` and default off except the REST transport itself;
 - request JSON is capped at 256 KiB;
-- request assets are capped at 10 files / 25 MiB total and are stored only in a request-scoped temporary directory;
+- request assets are capped at 10 files / 25 MiB total, max 20 MiB each, restricted to WordPress-allowed media extensions, and stored only in a request-scoped temporary directory;
 - generated `results/**` commits do not retrigger execution.
 
 ## Start here
@@ -61,4 +63,4 @@ Actual WordPress/Elementor/WooCommerce/ACF behavior remains `staging-first` unti
 
 ## Optional local WP-CLI transport
 
-The plugin still registers `wp wordpress-connector ...` commands when WP-CLI is present. This is useful for host-local recovery or diagnostics, but the default GitHub workflow no longer depends on a self-hosted runner or a continuously running process.
+The plugin still registers `wp wordpress-connector ...` commands when WP-CLI is present. This is useful for host-local recovery or diagnostics, but the default GitHub workflow no longer depends on a self-hosted runner, SSH, systemd or a continuously running process.
