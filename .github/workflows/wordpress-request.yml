@@ -29,6 +29,7 @@ jobs:
         env:
           ALLOW_PUBLIC: ${{ vars.WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED }}
           TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
+          GH_REPO_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
@@ -52,12 +53,16 @@ jobs:
             exit 1
           fi
 
+          git_auth() {
+            git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
+          }
+
           git init repo
           cd repo
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
-          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
           git branch trusted-base FETCH_HEAD
-          git fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
           git branch request-head FETCH_HEAD
 
           mapfile -t changed < <(git diff --name-only trusted-base request-head)
@@ -128,6 +133,7 @@ jobs:
       WPCONNECTOR_ALLOW_SENSITIVE: ${{ vars.WPCONNECTOR_ALLOW_SENSITIVE }}
       WPCONNECTOR_ALLOW_SYSTEM_UPDATES: ${{ vars.WPCONNECTOR_ALLOW_SYSTEM_UPDATES }}
       WPCONNECTOR_PUBLIC_REPOSITORY: ${{ github.event.repository.private == false }}
+      GH_REPO_TOKEN: ${{ github.token }}
     steps:
       - name: Prepare trusted connector and untrusted request data
         shell: bash
@@ -138,14 +144,18 @@ jobs:
           command -v git >/dev/null
           command -v wp >/dev/null
 
+          git_auth() {
+            git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
+          }
+
           rm -rf "$RUNNER_TEMP/wpconnector-trusted" "$RUNNER_TEMP/wpconnector-request"
-          git clone --no-checkout --filter=blob:none "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
+          git_auth clone --no-checkout --filter=blob:none "https://github.com/${GITHUB_REPOSITORY}.git" "$RUNNER_TEMP/wpconnector-trusted"
           cd "$RUNNER_TEMP/wpconnector-trusted"
-          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
           git checkout --detach FETCH_HEAD
 
           mkdir -p "$RUNNER_TEMP/wpconnector-request/assets/inbox" "$RUNNER_TEMP/wpconnector-request/results"
-          git fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
           git show "${{ github.event.pull_request.head.sha }}:${{ needs.guard.outputs.request_path }}" > "$RUNNER_TEMP/wpconnector-request/request.json"
 
           while IFS= read -r path; do
