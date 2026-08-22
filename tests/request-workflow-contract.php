@@ -15,19 +15,18 @@ $required = array(
     'github.event.pull_request.user.login',
     'github.repository_owner',
     'runs-on: ubuntu-latest',
-    'WPCONNECTOR_SITE_URL',
-    'secrets.WPCONNECTOR_REST_USERNAME',
-    'secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD',
-    'webactueel-wordpress-connector/v1',
-    'Verify authenticated HTTPS connector health',
-    'Upload request assets over authenticated HTTPS',
-    'Execute connector request over authenticated HTTPS',
-    'case "$SITE_URL" in',
-    'https://*',
+    'contents: read',
+    'actions: write',
+    'dispatch_trusted_execute:',
+    'wordpress-execute.yml/dispatches',
+    "'ref': 'main'",
+    "'pr_number': os.environ['PR_NUMBER']",
+    "'expected_head_sha': os.environ['EXPECTED_HEAD_SHA']",
+    'Validate request PR without production credentials',
 );
 foreach ($required as $needle) {
     if (strpos($workflow, $needle) === false) {
-        fwrite(STDERR, "Missing request workflow REST guard: {$needle}\n");
+        fwrite(STDERR, "Missing request workflow dispatch guard: {$needle}\n");
         exit(1);
     }
 }
@@ -39,12 +38,17 @@ $forbidden = array(
     'WP_CONNECTOR_WORDPRESS_PATH',
     'WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED',
     "- 'results/**'",
+    'WPCONNECTOR_SITE_URL',
+    'WPCONNECTOR_REST_USERNAME',
+    'WPCONNECTOR_REST_APPLICATION_PASSWORD',
+    'secrets.',
+    'webactueel-wordpress-connector/v1',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
-        fwrite(STDERR, "Forbidden legacy or privileged workflow pattern: {$needle}\n");
+        fwrite(STDERR, "Forbidden credential or legacy pattern in untrusted request workflow: {$needle}\n");
         exit(1);
     }
 }
 
-echo "request workflow REST contract OK\n";
+echo "request workflow dispatch contract OK\n";
