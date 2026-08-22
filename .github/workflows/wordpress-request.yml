@@ -140,22 +140,29 @@ jobs:
         run: |
           set -euo pipefail
 
-          # The execute job is scheduled in parallel. Give the dedicated runner
-          # a short grace period, then fail closed instead of queueing forever.
-          sleep 180
-
+          # The execute job is scheduled in parallel. Poll briefly so healthy
+          # runners do not add a fixed delay, then fail closed after 180 seconds.
           jobs_url="https://api.github.com/repos/${REPOSITORY}/actions/runs/${RUN_ID}/jobs?filter=latest&per_page=100"
-          jobs=$(curl --fail-with-body --silent --show-error --location \
-            -H 'Accept: application/vnd.github+json' \
-            -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
-            -H 'X-GitHub-Api-Version: 2022-11-28' \
-            "$jobs_url")
+          execute_status='missing'
+          for attempt in $(seq 1 18); do
+            sleep 10
+            jobs=$(curl --fail-with-body --silent --show-error --location \
+              -H 'Accept: application/vnd.github+json' \
+              -H "Authorization: Bearer ${GH_REPO_TOKEN}" \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "$jobs_url")
 
-          execute_status=$(printf '%s' "$jobs" | python3 -c 'import json,sys; data=json.load(sys.stdin); matches=[job for job in data.get("jobs", []) if job.get("name") == "execute"]; print(matches[-1].get("status", "missing") if matches else "missing")')
+            execute_status=$(printf '%s' "$jobs" | python3 -c 'import json,sys; data=json.load(sys.stdin); matches=[job for job in data.get("jobs", []) if job.get("name") == "execute"]; print(matches[-1].get("status", "missing") if matches else "missing")')
+            echo "Self-hosted execute job status at ${attempt}0 seconds: ${execute_status}"
 
-          echo "Self-hosted execute job status after 180 seconds: ${execute_status}"
+            if [[ "$execute_status" != 'queued' && "$execute_status" != 'missing' ]]; then
+              exit 0
+            fi
+          done
+
           if [[ "$execute_status" != 'queued' ]]; then
-            exit 0
+            echo "Unable to confirm a queued execute job after 180 seconds; not cancelling an uncertain run." >&2
+            exit 1
           fi
 
           echo '::error title=WordPress runner unavailable::The self-hosted runner with label wordpressconnector did not pick up the job within 180 seconds. Ensure its systemd service is enabled and active, then reopen or update the request PR.'
