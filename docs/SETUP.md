@@ -2,87 +2,125 @@
 
 ## 1. Repository
 
-For any persistent self-hosted runner connected to a live WordPress host, use a **private** GitHub repository. The workflow blocks public-repository execution unless `WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED=true` is deliberately configured.
+Keep the GitHub repository **private**. The remote WordPress execution job uses production WordPress credentials and refuses public-repository execution.
 
-## 2. Self-hosted runner
+No self-hosted GitHub Actions runner or VPS is required for the default transport. GitHub provisions an `ubuntu-latest` VM automatically for each request job.
 
-In GitHub: `Settings -> Actions -> Runners -> New self-hosted runner`.
+## 2. Install the WordPress Connector plugin
 
-Install the Linux runner on the WordPress host or a trusted management host with:
+Install `plugin/wordpressconnector` in `wp-content/plugins/wordpressconnector` and activate it.
 
-- PHP compatible with the site;
-- WP-CLI;
-- filesystem access to the WordPress installation;
-- outbound HTTPS access to GitHub;
-- a dedicated OS account with the minimum filesystem permissions needed;
-- runner label `wordpressconnector`.
+Version 1.1.0 registers:
 
-Do not run the runner as root.
+- authenticated HTTPS REST transport under `/wp-json/webactueel-wordpress-connector/v1/`;
+- the same semantic action registry used by the local WP-CLI command;
+- `Settings -> WordPress Connector` for execution gates;
+- optional local `wp wordpress-connector ...` commands when WP-CLI is available.
 
-### Keep the runner online after reboot
+The REST route is not a remote shell. It executes only registered connector actions.
 
-After the GitHub runner has been downloaded and configured once, install it as a persistent systemd service from the dedicated runner account. The repository includes an idempotent helper that refuses root execution, verifies the configured runner files, installs the official `svc.sh` service when needed, enables it for boot, starts it and verifies that it is both enabled and active:
+## 3. WordPress security configuration
 
-```bash
-bash ./scripts/ensure-runner-service.sh /absolute/path/to/actions-runner
-```
+Open `Settings -> WordPress Connector` as an administrator.
 
-The helper requires `sudo` and `systemd`. A shared-hosting environment without `systemd` needs a provider-supported persistent process supervisor instead; a GitHub workflow cannot start an offline self-hosted runner by itself.
+Recommended initial state:
 
-The `WordPress Request` workflow also has a GitHub-hosted watchdog. After the guard succeeds, the watchdog gives the `wordpressconnector` runner 180 seconds to accept the `execute` job. If the job is still queued, the workflow emits a clear runner-unavailable error and cancels the request run instead of leaving a production request queued indefinitely. Reopen or update the request PR only after the runner service is active again.
-
-## 3. Repository variables
-
-Set under `Settings -> Secrets and variables -> Actions -> Variables`:
-
-| Variable | Required | Default/recommendation |
+| Gate | Initial value | Enable when |
 | --- | --- | --- |
-| `WP_CONNECTOR_WORDPRESS_PATH` | yes | absolute WordPress root containing `wp-load.php` |
-| `WP_CONNECTOR_DEPLOY_PLUGIN` | no | `false` until staging preflight; `true` lets the trusted base commit deploy the plugin |
-| `WPCONNECTOR_ALLOW_WRITES` | no | `false`; enable after staging write/rollback test |
-| `WPCONNECTOR_ALLOW_PRIVILEGED` | no | `false`; enable only for administration workflows |
-| `WPCONNECTOR_ALLOW_SENSITIVE` | no | `false`; keep off unless a private, explicitly approved sensitive adapter is required |
-| `WPCONNECTOR_ALLOW_SYSTEM_UPDATES` | no | `false`; controls plugin/theme/core install/update/delete actions |
-| `WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED` | no | keep unset/false; public self-hosted execution is discouraged |
-| `WPCONNECTOR_TRUSTED_REQUEST_ACTOR` | only for automated Orchestrator PRs | exact GitHub App bot login allowed to open same-repository runtime request PRs; keep unset when only the repository owner submits requests |
+| HTTPS REST transport | on | required for GitHub-hosted execution |
+| confirmed writes | off | after read-only and dry-run verification |
+| privileged actions | off | needed for post meta/options/users and similar administration actions |
+| sensitive actions | off | only for an explicitly approved private sensitive-data workflow |
+| system updates | off | only for approved plugin/theme/core lifecycle operations |
 
-`WPCONNECTOR_TRUSTED_REQUEST_ACTOR` does not bypass the same-repository, request-schema, path, visibility or self-hosted-runner guards. Set it only to the exact bot login of the dedicated Webactueel GitHub App after that App has been installed on this repository.
+All REST endpoints additionally require:
 
-No WordPress credential or OpenAI API key is needed because WP-CLI operates inside the trusted WordPress runtime.
+- HTTPS;
+- an authenticated WordPress user;
+- `manage_options` capability.
 
-## 4. Install manually if auto-deploy is off
+## 4. Create a dedicated Application Password
 
-Copy `plugin/wordpressconnector` to `wp-content/plugins/wordpressconnector` and activate it. The plugin registers commands only in WP-CLI context and does not expose a public REST/AJAX endpoint.
+Use a dedicated WordPress administrator/service account where practical.
 
-Verify:
+In WordPress, open the user profile and create an Application Password named for this integration, for example `GitHub WordPress Connector`.
+
+Store the generated password immediately. WordPress shows it only once. Do not use the account's normal login password in GitHub.
+
+## 5. Configure GitHub
+
+Under `Settings -> Secrets and variables -> Actions` configure:
+
+### Variable
+
+| Name | Value |
+| --- | --- |
+| `WPCONNECTOR_SITE_URL` | canonical site URL including `https://`, for example `https://example.com` |
+
+### Secrets
+
+| Name | Value |
+| --- | --- |
+| `WPCONNECTOR_REST_USERNAME` | WordPress username for the dedicated connector account |
+| `WPCONNECTOR_REST_APPLICATION_PASSWORD` | the generated WordPress Application Password |
+
+Optional variable:
+
+| Name | Purpose |
+| --- | --- |
+| `WPCONNECTOR_TRUSTED_REQUEST_ACTOR` | exact GitHub App bot login allowed to submit same-repository request PRs; leave unset when only the repository owner submits requests |
+
+The trusted actor allowance never bypasses same-repository origin, private-repository enforcement, request schema validation, path restrictions or WordPress authentication/authorization.
+
+## 6. How a request runs
+
+Create a branch from `main`, add exactly one JSON request under `requests/`, optionally add request assets under `assets/inbox/`, and open a PR.
+
+The workflow performs:
+
+1. GitHub-hosted guard job validates actor, repository visibility, changed paths, request count, request size, asset limits and JSON schema.
+2. GitHub automatically provisions a fresh `ubuntu-latest` runner for `execute`.
+3. The runner authenticates to `/health` over HTTPS with the Application Password.
+4. Optional assets are uploaded to a request-scoped temporary WordPress directory.
+5. The exact validated request JSON is sent to `/execute`.
+6. WordPress runs the existing policy, dry-run, confirmation, fingerprint, idempotency and rollback logic.
+7. The result JSON is committed to the request branch under `results/`.
+8. Result-only commits do not retrigger the workflow.
+9. GitHub destroys the temporary hosted runner after the job.
+
+## 7. Limits
+
+- one `requests/*.json` per runtime PR;
+- request JSON max 256 KiB;
+- max 10 assets / 25 MiB total per request;
+- max 20 MiB per individual uploaded asset;
+- REST requires HTTPS and `manage_options`;
+- no generic shell, arbitrary SQL, arbitrary filesystem path, eval or HTTP-proxy action exists.
+
+## 8. Acceptance sequence
+
+1. Keep all mutation gates off and verify authenticated `/health`.
+2. Run `connector.discover` read-only.
+3. Run `system.doctor` read-only.
+4. Read one published normal page.
+5. Inspect one Gutenberg page.
+6. Inspect one Elementor page/template.
+7. Read one WooCommerce product and variation.
+8. Read one ACF-backed item.
+9. Dry-run one post, Elementor, WooCommerce and ACF mutation.
+10. On staging, enable confirmed writes plus only the privileged gate required by the test and perform a disposable write + rollback.
+11. Import one disposable image through `assets/inbox/`, update/assign it, then rollback/remove it.
+12. Run the representative test set twice after the last code/config change.
+13. Enable production write gates only after the target runtime passes.
+
+## 9. Optional local WP-CLI recovery
+
+If the hosting environment exposes WP-CLI, the plugin still supports:
 
 ```bash
-wp --path=/path/to/wordpress plugin activate wordpressconnector
 wp --path=/path/to/wordpress wordpress-connector doctor
 wp --path=/path/to/wordpress wordpress-connector actions
+wp --path=/path/to/wordpress wordpress-connector run request.json --output=result.json --asset-root=assets/inbox
 ```
 
-## 5. First request
-
-Create a branch from `main`, add exactly one JSON file under `requests/`, and open a PR. Use `examples/discover.json` as the first test. Runtime request PRs may contain only:
-
-- one `requests/*.json` file;
-- optional files under `assets/inbox/`;
-- generated `results/*.json`.
-
-The guard job validates same-repository origin, the repository owner or explicitly configured trusted request actor, repository visibility, changed paths, request size and schema before the self-hosted job is scheduled.
-
-## 6. Acceptance sequence
-
-1. `connector.discover` read-only.
-2. `system.doctor`/CLI doctor.
-3. Read one published normal page.
-4. Inspect one Gutenberg page.
-5. Inspect one Elementor page/template.
-6. Read one WooCommerce product and variation.
-7. Read one ACF-backed item.
-8. Import one disposable image on staging; set title/alt/caption/description; assign it; rollback/remove the test content.
-9. Dry-run one post, Elementor, WooCommerce and ACF mutation.
-10. Enable writes on staging and repeat with rollback.
-11. Run the same representative tests twice after the last code/config change.
-12. Enable production writes only after the target runtime passes.
+This is optional. The GitHub request workflow itself no longer requires a persistent runner, systemd, SSH or a VPS.
