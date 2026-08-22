@@ -5,10 +5,11 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
+$settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/Settings.php');
 $policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 
-foreach (array('controller' => $controller, 'asset store' => $assetStore, 'policy' => $policy, 'bootstrap' => $bootstrap) as $name => $contents) {
+foreach (array('controller' => $controller, 'asset store' => $assetStore, 'settings' => $settings, 'policy' => $policy, 'bootstrap' => $bootstrap) as $name => $contents) {
     if (false === $contents) {
         fwrite(STDERR, "Unable to read REST {$name}.\n");
         exit(1);
@@ -38,9 +39,12 @@ foreach ($controllerRequired as $needle) {
 
 $assetRequired = array(
     'is_uploaded_file($tmpName)',
+    'wp_check_filetype(basename($relativePath), get_allowed_mime_types())',
+    'Asset extension is not an allowed WordPress media type.',
     'move_uploaded_file($tmpName, $destination)',
     'MAX_FILES = 10',
     'MAX_TOTAL_BYTES = 26214400',
+    'MAX_FILE_BYTES = 20971520',
     "'.' === \$segment || '..' === \$segment",
     'realpath($root)',
     'Refusing unsafe connector asset cleanup path.',
@@ -48,6 +52,22 @@ $assetRequired = array(
 foreach ($assetRequired as $needle) {
     if (strpos($assetStore, $needle) === false) {
         fwrite(STDERR, "Missing REST asset security contract: {$needle}\n");
+        exit(1);
+    }
+}
+
+$settingsRequired = array(
+    "'wpconnector_rest_enabled'",
+    "'wpconnector_allow_writes'",
+    "'wpconnector_allow_privileged'",
+    "'wpconnector_allow_sensitive'",
+    "'wpconnector_allow_system_updates'",
+    '<input type="hidden" name="%1$s" value="0" />',
+    "'sanitize_callback' => array(\$this, 'sanitizeBoolean')",
+);
+foreach ($settingsRequired as $needle) {
+    if (strpos($settings, $needle) === false) {
+        fwrite(STDERR, "Missing REST settings safety contract: {$needle}\n");
         exit(1);
     }
 }
