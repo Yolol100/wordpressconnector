@@ -2,9 +2,9 @@
 
 ## 1. Repository
 
-Keep the GitHub repository **private**. The remote WordPress execution job uses production WordPress credentials and refuses public-repository execution.
+Keep the GitHub repository **private**. The trusted WordPress execution workflow uses production WordPress credentials and refuses public-repository execution.
 
-No self-hosted GitHub Actions runner or VPS is required for the default transport. GitHub provisions an `ubuntu-latest` VM automatically for each request job.
+No self-hosted GitHub Actions runner or VPS is required for the default transport. GitHub provisions `ubuntu-latest` VMs automatically for both request validation and trusted execution.
 
 ## 2. Install the WordPress Connector plugin
 
@@ -70,23 +70,28 @@ Optional variable:
 | --- | --- |
 | `WPCONNECTOR_TRUSTED_REQUEST_ACTOR` | exact GitHub App bot login allowed to submit same-repository request PRs; leave unset when only the repository owner submits requests |
 
-The trusted actor allowance never bypasses same-repository origin, private-repository enforcement, request schema validation, path restrictions or WordPress authentication/authorization.
+Leave the trusted actor unset unless it is genuinely required. The trusted executor also requires the latest request commit to be authored by the repository owner or that exact configured actor.
 
 ## 6. How a request runs
 
 Create a branch from `main`, add exactly one JSON request under `requests/`, optionally add request assets under `assets/inbox/`, and open a PR.
 
-The workflow performs:
+The flow is intentionally split at the credential boundary:
 
-1. GitHub-hosted guard job validates actor, repository visibility, changed paths, request count, request size, asset limits and JSON schema.
-2. GitHub automatically provisions a fresh `ubuntu-latest` runner for `execute`.
-3. The runner authenticates to `/health` over HTTPS with the Application Password.
-4. Optional assets are uploaded to a request-scoped temporary WordPress directory.
-5. The exact validated request JSON is sent to `/execute`.
-6. WordPress runs the existing policy, dry-run, confirmation, fingerprint, idempotency and rollback logic.
-7. The result JSON is committed to the request branch under `results/`.
-8. Result-only commits do not retrigger the workflow.
-9. GitHub destroys the temporary hosted runner after the job.
+1. `WordPress Request` runs on a fresh GitHub-hosted runner **without WordPress secrets**. It validates actor, private repository, changed paths, request count, size/asset limits and request schema.
+2. The secretless workflow calls GitHub's workflow-dispatch API for `wordpress-execute.yml` with `ref=main` and only the PR number plus exact expected head SHA.
+3. GitHub provisions a new `ubuntu-latest` VM for `WordPress Execute`, loaded from trusted `main`.
+4. The trusted executor fetches the PR through GitHub's API and independently verifies open state, same repository, base `main`, allowed PR actor, allowed latest commit author and exact head SHA.
+5. The trusted executor repeats changed-path, size and schema validation using `scripts/validate-request.php` from trusted current `main`.
+6. Only after those checks are complete does the executor access the WordPress secrets.
+7. It authenticates to `/health` over HTTPS with the dedicated Application Password.
+8. Optional assets are uploaded to a request-scoped temporary WordPress directory; uploads are limited to WordPress-allowed media extensions.
+9. The PR head SHA is fetched again immediately before `/execute`. A moved branch aborts before WordPress mutation.
+10. The exact revalidated request JSON is sent to `/execute`.
+11. WordPress runs the existing policy, dry-run, confirmation, fingerprint, idempotency and rollback logic.
+12. The result JSON is committed only if the request branch still points to the exact executed head SHA.
+13. Result-only commits do not retrigger the request workflow.
+14. GitHub destroys both hosted VMs after their jobs.
 
 ## 7. Limits
 
@@ -94,7 +99,9 @@ The workflow performs:
 - request JSON max 256 KiB;
 - max 10 assets / 25 MiB total per request;
 - max 20 MiB per individual uploaded asset;
+- assets must have an extension allowed by the current WordPress media policy;
 - REST requires HTTPS and `manage_options`;
+- the PR-triggered workflow contains no WordPress production secrets;
 - no generic shell, arbitrary SQL, arbitrary filesystem path, eval or HTTP-proxy action exists.
 
 ## 8. Acceptance sequence
