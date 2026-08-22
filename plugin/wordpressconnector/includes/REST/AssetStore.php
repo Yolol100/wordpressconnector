@@ -31,6 +31,11 @@ final class AssetStore
             throw new RuntimeException('Asset exceeds the per-file size limit.');
         }
 
+        $fileType = wp_check_filetype(basename($relativePath), get_allowed_mime_types());
+        if (empty($fileType['ext']) || empty($fileType['type'])) {
+            throw new RuntimeException('Asset extension is not an allowed WordPress media type.');
+        }
+
         $root = $this->rootForRequest($requestId, true);
         $usage = $this->usage($root);
         if ($usage['files'] >= self::MAX_FILES || ($usage['bytes'] + $size) > self::MAX_TOTAL_BYTES) {
@@ -66,6 +71,7 @@ final class AssetStore
             'request_id' => $requestId,
             'asset_path' => $relativePath,
             'bytes' => $size,
+            'mime_type' => (string) $fileType['type'],
         );
     }
 
@@ -103,7 +109,8 @@ final class AssetStore
                 continue;
             }
             $path = $base . DIRECTORY_SEPARATOR . $item;
-            if (is_dir($path) && ! is_link($path) && filemtime($path) < $cutoff) {
+            $modified = @filemtime($path);
+            if (is_dir($path) && ! is_link($path) && false !== $modified && $modified < $cutoff) {
                 $this->removeTree($path);
             }
         }
