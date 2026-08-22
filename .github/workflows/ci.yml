@@ -19,11 +19,12 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
-      - name: Validate PHP, schemas, examples and workflow guards
+      - name: Validate PHP, shell, schemas, examples and workflow guards
         shell: bash
         run: |
           set -euo pipefail
           find plugin/wordpressconnector scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          find scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
           for file in examples/*.json; do php scripts/validate-request.php "$file"; done
           php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
           php tests/policy-contract.php
