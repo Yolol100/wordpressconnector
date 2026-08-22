@@ -24,7 +24,7 @@ Do not run the runner as root.
 After the GitHub runner has been downloaded and configured once, install it as a persistent systemd service from the dedicated runner account. The repository includes an idempotent helper that refuses root execution, verifies the configured runner files, installs the official `svc.sh` service when needed, enables it for boot, starts it and verifies that it is both enabled and active:
 
 ```bash
-./scripts/ensure-runner-service.sh /absolute/path/to/actions-runner
+bash ./scripts/ensure-runner-service.sh /absolute/path/to/actions-runner
 ```
 
 The helper requires `sudo` and `systemd`. A shared-hosting environment without `systemd` needs a provider-supported persistent process supervisor instead; a GitHub workflow cannot start an offline self-hosted runner by itself.
