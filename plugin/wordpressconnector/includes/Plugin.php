@@ -12,7 +12,10 @@ use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
+use Webactueel\WordPressConnector\Admin\Settings;
 use Webactueel\WordPressConnector\CLI\Command;
+use Webactueel\WordPressConnector\REST\AssetStore;
+use Webactueel\WordPressConnector\REST\Controller;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
@@ -22,10 +25,6 @@ final class Plugin
 {
     public static function boot(): void
     {
-        if (! defined('WP_CLI') || ! WP_CLI || ! class_exists('WP_CLI')) {
-            return;
-        }
-
         $registry = new Registry();
         $adapters = array(
             new DiscoveryAdapter(),
@@ -45,6 +44,11 @@ final class Plugin
         do_action('wpconnector_register_actions', $registry);
 
         $runner = new Runner($registry, new SnapshotStore(), new ProcessedStore());
-        \WP_CLI::add_command('wordpress-connector', new Command($runner));
+        (new Settings())->register();
+        (new Controller($runner, new AssetStore()))->register();
+
+        if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
+            \WP_CLI::add_command('wordpress-connector', new Command($runner));
+        }
     }
 }
