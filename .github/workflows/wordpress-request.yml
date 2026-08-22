@@ -160,15 +160,17 @@ jobs:
           git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
           git show "${{ github.event.pull_request.head.sha }}:${{ needs.guard.outputs.request_path }}" > "$RUNNER_TEMP/wpconnector-request/request.json"
 
-          while IFS= read -r path; do
-            [[ -z "$path" ]] && continue
+          changed_paths="$RUNNER_TEMP/wpconnector-request/changed-paths"
+          git diff --name-only -z "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > "$changed_paths"
+          while IFS= read -r -d '' path; do
             case "$path" in
               assets/inbox/*)
                 mkdir -p "$RUNNER_TEMP/wpconnector-request/$(dirname "$path")"
                 git show "${{ github.event.pull_request.head.sha }}:$path" > "$RUNNER_TEMP/wpconnector-request/$path"
                 ;;
             esac
-          done < <(git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}")
+          done < "$changed_paths"
+          rm -f "$changed_paths"
 
       - name: Deploy trusted connector if enabled
         if: ${{ vars.WP_CONNECTOR_DEPLOY_PLUGIN == 'true' }}
