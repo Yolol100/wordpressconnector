@@ -16,6 +16,12 @@ $required = array(
     "github.repository_owner",
     "WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED",
     "runs-on: [self-hosted, wordpressconnector]",
+    "runner_watchdog:",
+    "actions: write",
+    "github.run_id",
+    '/actions/runs/${RUN_ID}/jobs',
+    '/actions/runs/${RUN_ID}/cancel',
+    "WordPress runner unavailable",
 );
 foreach ($required as $needle) {
     if (strpos($workflow, $needle) === false) {
