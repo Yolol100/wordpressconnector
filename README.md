@@ -2,7 +2,7 @@
 
 > **Portfoliostatus:** Actief ondersteunend · private Webactueel WordPress-runtimebridge
 
-**Rol in het platform:** deze private connector ontvangt uitsluitend gecontroleerde request-PR's vanuit de [Orchestrator](https://github.com/Yolol100/Orchestrator)-route. WordPress-runtimewrites vereisen expliciete goedkeuring, readback en domeinacceptatie; een aangeroepen workflow is geen geaccepteerd resultaat.
+**Rol in het platform:** de standaard Webactueel-route laat deze private connector gecontroleerde request-PR's ontvangen vanuit de [Orchestrator](https://github.com/Yolol100/Orchestrator)-route. WordPress-runtimewrites vereisen expliciete goedkeuring, readback en domeinacceptatie; een aangeroepen workflow is geen geaccepteerd resultaat.
 
 GitHub-controlled WordPress management bridge for the default flow:
 
