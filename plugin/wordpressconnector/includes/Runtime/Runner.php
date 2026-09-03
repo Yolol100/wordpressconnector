@@ -42,6 +42,8 @@ final class Runner
 
     public function run(Request $request, array $context = array()): array
     {
+        $lockToken = '';
+
         try {
             $descriptor = $this->registry->descriptor($request->action());
             Policy::assertActionAllowed($descriptor, $request->dryRun(), $request->confirm());
@@ -53,6 +55,11 @@ final class Runner
             ));
 
             if (! empty($descriptor['mutation']) && ! $request->dryRun()) {
+                $lockToken = $this->processed->acquireMutationLock();
+                if ('' === $lockToken) {
+                    throw new RuntimeException('Another connector mutation is already in progress. Retry this request.');
+                }
+
                 $existing = $this->processed->get($request->id());
                 if ($existing) {
                     if (! isset($existing['fingerprint']) || ! hash_equals((string) $existing['fingerprint'], $requestFingerprint)) {
@@ -96,6 +103,10 @@ final class Runner
             return Result::failure($request, $error->getMessage(), array(
                 'exception' => get_class($error),
             ));
+        } finally {
+            if ('' !== $lockToken) {
+                $this->processed->releaseMutationLock($lockToken);
+            }
         }
     }
 
