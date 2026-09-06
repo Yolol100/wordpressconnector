@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "filesystem-inspect-00001",
+  "action": "filesystem.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
