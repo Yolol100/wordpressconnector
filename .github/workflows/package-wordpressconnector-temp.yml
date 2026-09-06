@@ -1,0 +1,45 @@
+name: Package WordPress Connector Temp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/package-wordpressconnector-temp.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Validate PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find plugin/wordpressconnector -name '*.php' -print0 | xargs -0 -n1 php -l
+
+      - name: Build installable plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd plugin
+          zip -qr "$GITHUB_WORKSPACE/wordpressconnector.zip" wordpressconnector
+          cd "$GITHUB_WORKSPACE"
+          unzip -Z1 wordpressconnector.zip | grep -qx 'wordpressconnector/wordpressconnector.php'
+          unzip -t wordpressconnector.zip
+          sha256sum wordpressconnector.zip
+
+      - name: Upload plugin ZIP
+        uses: actions/upload-artifact@v7
+        with:
+          name: wordpressconnector-package
+          path: wordpressconnector.zip
+          if-no-files-found: error
+          retention-days: 1
