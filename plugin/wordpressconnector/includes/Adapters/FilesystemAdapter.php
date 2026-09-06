@@ -56,7 +56,7 @@ final class FilesystemAdapter
                 'root_listing' => true,
                 'text_max_bytes' => self::MAX_TEXT_BYTES,
                 'secret_files' => 'blocked',
-                'uploads_content' => 'use media.*',
+                'managed_data_paths' => 'use dedicated WordPress/media/system actions',
             ),
             'write' => array(
                 'scope' => array('existing wp-content/plugins/* text files', 'existing wp-content/themes/* text files'),
@@ -64,6 +64,9 @@ final class FilesystemAdapter
                 'uploads' => false,
                 'connector_self_update' => false,
                 'requires' => array('privileged gate', 'writes gate', 'filesystem-writes gate', 'confirm=true', 'expected_sha256'),
+                'parser_validation' => array('php', 'inc', 'json'),
+                'readback' => 'sha256',
+                'rollback' => true,
             ),
             'wp_file_manager' => array(
                 'installed' => ! empty($fileManager),
@@ -98,7 +101,7 @@ final class FilesystemAdapter
             $child = '.' === $relative ? $name : $relative . '/' . $name;
             try {
                 $child = FilesystemPolicy::assertListable($child);
-                $childAbsolute = $this->resolveExisting($child, false);
+                $childAbsolute = $this->resolveExisting($child, true);
             } catch (RuntimeException $error) {
                 continue;
             }
@@ -139,6 +142,7 @@ final class FilesystemAdapter
         if (false === $content || ! $this->isUtf8($content)) {
             throw new RuntimeException('Filesystem file is not readable UTF-8 text.');
         }
+        $this->assertNoEmbeddedSecrets($content);
         $state = $this->state($relative, $content, $absolute);
 
         return array(
@@ -166,6 +170,7 @@ final class FilesystemAdapter
         if (strlen($before) > self::MAX_TEXT_BYTES) {
             throw new RuntimeException('Existing file exceeds the connector write limit.');
         }
+        $this->assertNoEmbeddedSecrets($before);
         if (! array_key_exists('content', $payload) || ! is_string($payload['content'])) {
             throw new RuntimeException('filesystem.write_text requires payload.content as UTF-8 text.');
         }
@@ -200,9 +205,8 @@ final class FilesystemAdapter
         }
 
         $filesystem = $this->filesystem();
-        $target = trailingslashit((string) $filesystem->abspath()) . $relative;
         $mode = defined('FS_CHMOD_FILE') ? FS_CHMOD_FILE : 0644;
-        if (! $filesystem->put_contents($target, $content, $mode)) {
+        if (! $filesystem->put_contents($absolute, $content, $mode)) {
             throw new RuntimeException('WordPress Filesystem API could not write the target file.');
         }
 
@@ -310,6 +314,23 @@ final class FilesystemAdapter
                 json_decode($content, true, 512, JSON_THROW_ON_ERROR);
             } catch (\JsonException $error) {
                 throw new RuntimeException('Replacement JSON failed validation: ' . $error->getMessage());
+            }
+        }
+    }
+
+    private function assertNoEmbeddedSecrets(string $content): void
+    {
+        $patterns = array(
+            '/[\"\'](?:password|passwd|secret|token|api[_-]?key|client[_-]?secret|private[_-]?key|authorization)[\"\']\s*(?:=>|:)\s*[\"\']([^\"\']{8,})[\"\']/i',
+            '/\$(?:password|passwd|secret|token|api[_-]?key|client[_-]?secret|private[_-]?key)\s*=\s*[\"\']([^\"\']{8,})[\"\']/i',
+            '/define\(\s*[\"\'][A-Z0-9_]*(?:PASSWORD|SECRET|TOKEN|API_KEY|PRIVATE_KEY)[A-Z0-9_]*[\"\']\s*,\s*[\"\']([^\"\']{8,})[\"\']/i',
+        );
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $content, $matches)) {
+                $value = strtolower(trim((string) ($matches[1] ?? '')));
+                if (! preg_match('/^(your|example|sample|dummy|changeme|replace|placeholder|test|xxxx|none|null)/', $value)) {
+                    throw new RuntimeException('File appears to contain an embedded credential or secret literal and cannot be exported or rewritten through the connector.');
+                }
             }
         }
     }
