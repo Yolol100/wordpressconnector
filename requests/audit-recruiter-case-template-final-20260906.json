@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "request_id": "audit-recruiter-case-template-final-20260906",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {"action": "elementor.inspect", "payload": {"id": 4626}},
+      {"action": "post.get", "payload": {"id": 4626}}
+    ]
+  }
+}
