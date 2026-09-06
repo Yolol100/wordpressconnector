@@ -34,7 +34,7 @@ jobs:
           php tests/execute-workflow-contract.php
           php tests/rest-transport-contract.php
           php tests/mutation-lock-contract.php
-          php tests/consolidation-contract.php
+          php tests/single-plugin-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
 
       - name: Build and verify installable plugin ZIP
