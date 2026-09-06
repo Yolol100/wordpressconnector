@@ -24,11 +24,12 @@ This catalog is generated from the connector action registrations. Security labe
 | `cron.list` | privileged | List scheduled cron events. |
 | `cron.run` | mutation, privileged | Run one cron hook immediately. |
 | `cron.schedule` | mutation, privileged | Schedule a cron event. |
-| `elementor.create_document` | mutation | Create a page, post, product or Elementor library document from Elementor JSON. |
+| `elementor.capabilities` | read-only | Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities. |
+| `elementor.create_document` | mutation | Create a page, post, product or Elementor library document through the Elementor document API. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
-| `elementor.patch_element` | mutation | Patch an Elementor element by its stable element id. |
+| `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
 | `elementor.regenerate` | mutation | Clear Elementor generated CSS/files cache. |
-| `elementor.replace_document` | mutation | Replace Elementor JSON/settings/type/conditions for a document. |
+| `elementor.replace_document` | mutation | Replace Elementor elements/settings through the Elementor document API. |
 | `gutenberg.inspect` | read-only | Parse Gutenberg/block content into a block tree. |
 | `gutenberg.patch` | mutation | Patch one block by nested numeric path. |
 | `gutenberg.replace` | mutation | Replace the entire serialized block document. |
@@ -113,3 +114,6 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.get` | read-only | Read a product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a product variation. |
+| `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
+| `yoast.inspect` | privileged | Read supported Yoast SEO fields for one WordPress content object. |
+| `yoast.update` | mutation, privileged | Update supported Yoast SEO fields with dry-run, fingerprint, readback and rollback support. |
