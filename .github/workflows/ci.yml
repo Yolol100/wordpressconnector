@@ -6,7 +6,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   static:
@@ -17,32 +17,24 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 2
-          persist-credentials: true
+          persist-credentials: false
 
-      - name: Fix malformed runtime request on source branch
+      - name: Validate corrected runtime request JSON
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git fetch origin runtime/home-remote-template-20260906
-          git checkout -B runtime-fix FETCH_HEAD
           python3 - <<'PY'
           from pathlib import Path
           p = Path('requests/home-remote-template-create-20260906.json')
           lines = p.read_text(encoding='utf-8').splitlines()
           target = '          ],"isInner":true'
-          if lines[90] != target:
-              raise SystemExit(f'unexpected line 91: {lines[90]!r}')
-          lines[90] = target + '}'
+          for idx in (90, 122):
+              if lines[idx] != target:
+                  raise SystemExit(f'unexpected line {idx + 1}: {lines[idx]!r}')
+              lines[idx] = target + '}'
           p.write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
           python3 -m json.tool requests/home-remote-template-create-20260906.json >/dev/null
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add requests/home-remote-template-create-20260906.json
-          git commit -m 'Fix homepage template request JSON'
-          git push origin HEAD:runtime/home-remote-template-20260906
 
       - name: Validate PHP, shell, schemas, examples and workflow guards
         shell: bash
