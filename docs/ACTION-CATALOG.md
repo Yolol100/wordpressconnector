@@ -28,6 +28,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `cron.schedule` | mutation, privileged | Schedule a cron event. |
 | `elementor.capabilities` | read-only | Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities. |
 | `elementor.create_document` | mutation | Create a page, post, product or Elementor library document through the Elementor document API. |
+| `elementor.form_capabilities` | read-only | Inspect target-runtime V3 Form controls/actions and V4 Atomic Form element/prop schemas. |
+| `elementor.form_inspect` | read-only | Read complete V3 and V4 Elementor form subtrees from one document. |
+| `elementor.form_upsert` | mutation | Insert or fully replace one complete V3 Form widget or V4 Atomic Form subtree with schema checks, readback and rollback. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
 | `elementor.inventory` | read-only | Inventory registered Elementor widget provenance and actual widget/element usage across Elementor documents. |
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
