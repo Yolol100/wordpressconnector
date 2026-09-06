@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "request_id": "recruiter-ux-template-4624-write-20260907",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "expected_fingerprint": "a2afe2f78806032cf425c52c97048e59a867aedf50fb5fd2fc66803ff9a3bfa9",
+        "payload": {
+          "id": 4624,
+          "element_id": "0596f57",
+          "settings": {
+            "background_motion_fx_translateY_effect": "",
+            "background_motion_fx_mouseTrack_effect": ""
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "a210ace",
+          "settings": {
+            "title": "Andrew Baeten · WordPress Engineering · Remote NL/EU"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "1474f84",
+          "settings": {
+            "title": "Senior WordPress Developer"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "67977ff",
+          "settings": {
+            "editor": "<p>I build, debug and improve WordPress and WooCommerce systems end to end — from Elementor/ACF and custom PHP/JavaScript to Git-based QA, performance and release checks. Open to senior remote WordPress roles across the Netherlands and EU.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "c9b32c1",
+          "settings": {
+            "title": "6 selected WordPress cases"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "1952dab",
+          "settings": {
+            "editor": "<p>Custom plugins, WooCommerce, automation and client platforms. Each case shows the problem, what I owned, how it was built and the practical result.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10001",
+          "settings": {
+            "editor": "<p>Built a WordPress admin workflow that centralises ACF, SEO, image and page-text editing with controlled CSV/XLSX review.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10002",
+          "settings": {
+            "editor": "<p>Built controlled export, preview, import and recovery for WordPress, ACF, SEO, WooCommerce and media data.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10003",
+          "settings": {
+            "editor": "<p>Built custom WooCommerce calculation logic for quantities, live pricing, variations, discounts and cart/order metadata.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10004",
+          "settings": {
+            "editor": "<p>Built a React-powered ACF and featured-image mapping workflow with preview, batch controls, audit history and rollback.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10005",
+          "settings": {
+            "editor": "<p>Structured a large recruitment platform around vacancy discovery, employer positioning and a clearer candidate journey.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10006",
+          "settings": {
+            "editor": "<p>Combined products, treatments, memberships, booking and shopping into a clearer responsive WooCommerce journey.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10001",
+          "settings": {
+            "title": "View case study → · ACF · PHP · CSV/XLSX · SEO"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10002",
+          "settings": {
+            "title": "View case study → · WordPress CRUD · ACF · WooCommerce"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10003",
+          "settings": {
+            "title": "View case study → · WooCommerce · AJAX · PHP · JavaScript"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10004",
+          "settings": {
+            "title": "View case study → · React · ACF · WordPress admin · rollback"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10005",
+          "settings": {
+            "title": "View case study → · WordPress · Elementor · ACF · responsive UX"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10006",
+          "settings": {
+            "title": "View case study → · WooCommerce · Elementor · UX · responsive"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "588838f",
+          "settings": {
+            "title": "What I bring to a WordPress team"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "5c1b116",
+          "settings": {
+            "background_motion_fx_mouseTrack_effect": ""
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "e130254",
+          "settings": {
+            "editor": "<p>I work async-friendly and evidence-first: changes are scoped, versioned, reviewable, tested and verified before handoff.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "df10003",
+          "settings": {
+            "title": "Hiring a senior WordPress developer for a remote team?"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "df10004",
+          "settings": {
+            "editor": "<p>Best fit: senior WordPress/front-end roles where I can own builds, debugging, WooCommerce, Elementor/ACF, performance and release quality. Based in Rotterdam (CET), open to remote roles across NL/EU — permanent or contract.</p>"
+          }
+        }
+      }
+    ]
+  }
+}
