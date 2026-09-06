@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "verify-home-template-v2-final-20260906",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 4624}
+}
