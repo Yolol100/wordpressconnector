@@ -1,0 +1,1 @@
+{"version":1,"ok":false,"request_id":"full-readonly-audit-20260906-04","action":"acf.field_groups","dry_run":true,"completed_at_gmt":"2026-09-06T20:58:37+00:00","error":"Privileged actions are disabled.","meta":{"exception":"RuntimeException"}}
