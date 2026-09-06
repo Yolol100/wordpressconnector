@@ -106,13 +106,13 @@ final class ElementorAdapter
             return $result;
         }
 
-        $this->prepareDocumentMeta((int) $post->ID, $payload);
-        $this->saveDocumentViaApi((int) $post->ID, $data, $pageSettings);
-        $this->writeSupplementalMeta((int) $post->ID, $payload);
-        $this->clearCache();
-
-        $result['after'] = $this->snapshot((int) $post->ID);
-        $this->assertDocumentReadback($result['after'], $data, $pageSettings);
+        $result['after'] = $this->applyExistingDocumentMutation(
+            (int) $post->ID,
+            $payload,
+            $data,
+            $pageSettings,
+            $before
+        );
         $result['_rollback'] = array('action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload($before));
         return $result;
     }
@@ -164,15 +164,18 @@ final class ElementorAdapter
             return $result;
         }
 
-        $this->saveDocumentViaApi((int) $post->ID, $data, $before['page_settings']);
-        $this->clearCache();
-
-        $readback = $this->snapshot((int) $post->ID);
-        $this->assertDocumentReadback($readback, $data, $before['page_settings']);
+        $readback = $this->applyExistingDocumentMutation(
+            (int) $post->ID,
+            array(),
+            $data,
+            $before['page_settings'],
+            $before
+        );
         $readbackData = $readback['data'];
         $readbackElement =& $this->findElement($readbackData, $elementId);
         if (! hash_equals(Fingerprint::make($requestedElement), Fingerprint::make($readbackElement))) {
-            throw new RuntimeException('Elementor element readback verification failed.');
+            $this->restoreSnapshot($before);
+            throw new RuntimeException('Elementor element readback verification failed; previous snapshot restored.');
         }
 
         $result['after_element'] = $readbackElement;
@@ -286,6 +289,51 @@ final class ElementorAdapter
         }
 
         clean_post_cache($postId);
+    }
+
+    private function applyExistingDocumentMutation(int $postId, array $payload, array $data, array $pageSettings, array $before): array
+    {
+        try {
+            $this->saveDocumentViaApi($postId, $data, $pageSettings);
+            $this->writeSupplementalMeta($postId, $payload);
+            $this->clearCache();
+            $after = $this->snapshot($postId);
+            $this->assertDocumentReadback($after, $data, $pageSettings);
+            return $after;
+        } catch (Throwable $error) {
+            try {
+                $this->restoreSnapshot($before);
+            } catch (Throwable $rollbackError) {
+                throw new RuntimeException(
+                    'Elementor mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollbackError->getMessage(),
+                    0,
+                    $error
+                );
+            }
+            throw new RuntimeException('Elementor mutation failed; previous snapshot restored: ' . $error->getMessage(), 0, $error);
+        }
+    }
+
+    private function restoreSnapshot(array $snapshot): void
+    {
+        $postId = isset($snapshot['post_id']) ? (int) $snapshot['post_id'] : 0;
+        if ($postId < 1) {
+            throw new RuntimeException('Rollback snapshot is missing post_id.');
+        }
+
+        $payload = $this->rollbackPayload($snapshot);
+        $this->prepareDocumentMeta($postId, $payload);
+        $this->saveDocumentViaApi($postId, $snapshot['data'], $snapshot['page_settings']);
+        $this->writeSupplementalMeta($postId, $payload);
+        $this->clearCache();
+
+        $restored = $this->snapshot($postId);
+        $this->assertDocumentReadback($restored, $snapshot['data'], $snapshot['page_settings']);
+        foreach (array('edit_mode', 'template_type', 'conditions') as $field) {
+            if (! hash_equals(Fingerprint::make($snapshot[$field]), Fingerprint::make($restored[$field]))) {
+                throw new RuntimeException('Elementor rollback readback failed for: ' . $field);
+            }
+        }
     }
 
     private function document(int $postId): object
