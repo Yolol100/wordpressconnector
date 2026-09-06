@@ -10,7 +10,7 @@ No self-hosted GitHub Actions runner or VPS is required for the default transpor
 
 Install `plugin/wordpressconnector` in `wp-content/plugins/wordpressconnector` and activate it.
 
-Version 1.1.0 registers:
+The active plugin registers:
 
 - authenticated HTTPS REST transport under `/wp-json/webactueel-wordpress-connector/v1/`;
 - the same semantic action registry used by the local WP-CLI command;
