@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "request_id": "minimal-portfolio-template-4624-round2-20260907",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "expected_fingerprint": "02003cfc3f38e7800f537cada239607e9a293820ba5acbde7688520453e8396d",
+        "payload": {
+          "id": 4624,
+          "element_id": "d8a4d13",
+          "settings": {
+            "hide_desktop": "hidden-desktop",
+            "hide_tablet": "hidden-tablet",
+            "hide_mobile": "hidden-mobile"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "8a5cf94",
+          "settings": {
+            "link": {"url": "#cases", "is_external": "", "nofollow": "", "custom_attributes": ""},
+            "__dynamic__": {"link": ""},
+            "hover_animation": ""
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "395d246",
+          "settings": {
+            "grid_columns_grid_tablet": {"unit": "fr", "size": 1, "sizes": []},
+            "grid_gaps_tablet": {"column": "2.5", "row": "3", "isLinked": false, "unit": "rem"},
+            "grid_gaps_mobile": {"column": "2", "row": "3", "isLinked": false, "unit": "rem"}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ca10001",
+          "settings": {
+            "flex_gap": {"column": "0.75", "row": "0.75", "isLinked": true, "unit": "rem", "size": 0.75}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ca10003",
+          "settings": {
+            "flex_gap": {"column": "0.75", "row": "0.75", "isLinked": true, "unit": "rem", "size": 0.75}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ca10005",
+          "settings": {
+            "flex_gap": {"column": "0.75", "row": "0.75", "isLinked": true, "unit": "rem", "size": 0.75}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ca10006",
+          "settings": {
+            "flex_gap": {"column": "0.75", "row": "0.75", "isLinked": true, "unit": "rem", "size": 0.75}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cc10001",
+          "settings": {
+            "title": "WORDPRESS PLUGIN · ACF / PHP",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 12, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_letter_spacing": {"unit": "px", "size": 0.6, "sizes": []}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cc10003",
+          "settings": {
+            "title": "WOOCOMMERCE · CUSTOM LOGIC",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 12, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_letter_spacing": {"unit": "px", "size": 0.6, "sizes": []}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cc10005",
+          "settings": {
+            "title": "RECRUITMENT PLATFORM · WORDPRESS",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 12, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_letter_spacing": {"unit": "px", "size": 0.6, "sizes": []}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cc10006",
+          "settings": {
+            "title": "WOOCOMMERCE · CLIENT PLATFORM",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 12, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_letter_spacing": {"unit": "px", "size": 0.6, "sizes": []}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cd10001",
+          "settings": {
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 30, "sizes": []},
+            "typography_font_size_tablet": {"unit": "px", "size": 28, "sizes": []},
+            "typography_font_size_mobile": {"unit": "px", "size": 26, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_line_height": {"unit": "em", "size": 1.12, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cd10003",
+          "settings": {
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 30, "sizes": []},
+            "typography_font_size_tablet": {"unit": "px", "size": 28, "sizes": []},
+            "typography_font_size_mobile": {"unit": "px", "size": 26, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_line_height": {"unit": "em", "size": 1.12, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cd10005",
+          "settings": {
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 30, "sizes": []},
+            "typography_font_size_tablet": {"unit": "px", "size": 28, "sizes": []},
+            "typography_font_size_mobile": {"unit": "px", "size": 26, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_line_height": {"unit": "em", "size": 1.12, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cd10006",
+          "settings": {
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 30, "sizes": []},
+            "typography_font_size_tablet": {"unit": "px", "size": 28, "sizes": []},
+            "typography_font_size_mobile": {"unit": "px", "size": 26, "sizes": []},
+            "typography_font_weight": "700",
+            "typography_line_height": {"unit": "em", "size": 1.12, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10001",
+          "settings": {
+            "editor": "<p>Centralises ACF, SEO, images and page text into one controlled WordPress review workflow.</p>",
+            "text_color": "#D1D1D1",
+            "typography_typography": "custom",
+            "typography_font_family": "Roboto",
+            "typography_font_size": {"unit": "px", "size": 16, "sizes": []},
+            "typography_line_height": {"unit": "em", "size": 1.6, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10003",
+          "settings": {
+            "editor": "<p>Custom WooCommerce calculation logic for quantities, live pricing, variations, discounts and order data.</p>",
+            "text_color": "#D1D1D1",
+            "typography_typography": "custom",
+            "typography_font_family": "Roboto",
+            "typography_font_size": {"unit": "px", "size": 16, "sizes": []},
+            "typography_line_height": {"unit": "em", "size": 1.6, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10005",
+          "settings": {
+            "editor": "<p>A recruitment platform structured around vacancy discovery, employer positioning and a clearer candidate journey.</p>",
+            "text_color": "#D1D1D1",
+            "typography_typography": "custom",
+            "typography_font_family": "Roboto",
+            "typography_font_size": {"unit": "px", "size": 16, "sizes": []},
+            "typography_line_height": {"unit": "em", "size": 1.6, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "ce10006",
+          "settings": {
+            "editor": "<p>Products, treatments, memberships, booking and shopping combined into one responsive WooCommerce journey.</p>",
+            "text_color": "#D1D1D1",
+            "typography_typography": "custom",
+            "typography_font_family": "Roboto",
+            "typography_font_size": {"unit": "px", "size": 16, "sizes": []},
+            "typography_line_height": {"unit": "em", "size": 1.6, "sizes": []},
+            "_margin": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10001",
+          "settings": {
+            "title": "View case study ↗",
+            "title_color": "#F9C221",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 14, "sizes": []},
+            "typography_font_weight": "700"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10003",
+          "settings": {
+            "title": "View case study ↗",
+            "title_color": "#F9C221",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 14, "sizes": []},
+            "typography_font_weight": "700"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10005",
+          "settings": {
+            "title": "View case study ↗",
+            "title_color": "#F9C221",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 14, "sizes": []},
+            "typography_font_weight": "700"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "cf10006",
+          "settings": {
+            "title": "View case study ↗",
+            "title_color": "#F9C221",
+            "typography_font_family": "Chivo",
+            "typography_font_size": {"unit": "px", "size": 14, "sizes": []},
+            "typography_font_weight": "700"
+          }
+        }
+      }
+    ]
+  }
+}
