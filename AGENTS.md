@@ -24,6 +24,8 @@ php tests/repository-hygiene.php
 php tests/request-workflow-contract.php
 php tests/execute-workflow-contract.php
 php tests/rest-transport-contract.php
+php tests/mutation-lock-contract.php
+php tests/single-plugin-contract.php
 ```
 
 When transport or workflow guards change, also ensure `.github/workflows/ci.yml` passes on the exact PR head.
