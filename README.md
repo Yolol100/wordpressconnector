@@ -21,6 +21,7 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - categories, tags, product taxonomies and registered custom taxonomies;
 - Gutenberg/block content, including nested block patches;
 - Elementor document JSON, nested elements, page settings, document creation and Theme Builder metadata;
+- Elementor capability and usage inventory, including Core/Pro/add-on/theme widget provenance, versions when available, per-document usage counts, missing widget types and legacy/container/Atomic architecture signals;
 - WooCommerce products, variations, attributes and coupons through WooCommerce CRUD APIs;
 - ACF fields and field groups through ACF APIs;
 - media import, metadata, featured images, product galleries, site icon and custom logo;
@@ -30,6 +31,12 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - extension actions registered by other WordPress plugins through `wpconnector_register_actions`.
 
 See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md) and [docs/SCOPE.md](docs/SCOPE.md).
+
+## Elementor inventory
+
+`elementor.capabilities` reports what the active Elementor runtime currently registers. `elementor.inventory` additionally scans saved Elementor documents and correlates actual usage with that runtime inventory.
+
+The inventory reports widget source (`elementor-core`, `elementor-pro`, `addon`, `theme` or `unknown`), source slug/name/version when available, instance and document counts, document IDs, unregistered widget types that are still present in saved Elementor data, and legacy/container/Atomic architecture usage. Scans are read-only and paginated with `limit`, `offset`, `has_more` and `next_offset`.
 
 ## Safety model
 
