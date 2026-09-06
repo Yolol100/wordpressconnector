@@ -1,68 +1,84 @@
 # Plugin control bridge
 
-This document records the safe ChatGPT -> GitHub -> WordPress Connector control surface for the AndrewBaeten.nl plugin inventory observed on 2026-09-06. The runtime is capability-driven: use plugin-owned APIs or narrowly allowlisted fields where possible; never export secrets to GitHub; use dry-run, fingerprints, readback and rollback for mutations.
+This document records the generic ChatGPT -> GitHub -> WordPress Connector control surface for supported WordPress plugins. The runtime is capability-driven: prefer plugin-owned APIs or narrowly allowlisted fields, never export credentials to GitHub, and use dry-run, state fingerprints, readback and rollback for mutations.
 
 ## Runtime gates
 
-- `WPCONNECTOR_ALLOW_PRIVILEGED=1` is required for plugin settings reads.
-- `WPCONNECTOR_ALLOW_WRITES=1` plus `confirm:true` is required for non-dry-run settings mutations.
-- `WPCONNECTOR_ALLOW_SENSITIVE=1` is additionally required for high-risk Really Simple Security fields.
-- System updates/install/delete remain behind `WPCONNECTOR_ALLOW_SYSTEM_UPDATES=1`.
-- Secrets, arbitrary code and arbitrary filesystem writes are not exposed through the plugin settings bridge.
+- `WPCONNECTOR_ALLOW_PRIVILEGED=1` is required for privileged plugin settings and filesystem reads.
+- `WPCONNECTOR_ALLOW_WRITES=1` plus `confirm:true` is required for non-dry-run mutations.
+- `WPCONNECTOR_ALLOW_SENSITIVE=1` is additionally required where an adapter explicitly handles sensitive records/settings.
+- `WPCONNECTOR_ALLOW_SYSTEM_UPDATES=1` remains required for plugin/theme/core install, update and delete actions.
+- `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES=1` is separately required for real `filesystem.write_text` operations.
+- Secrets, arbitrary plugin-setting code execution and unrestricted filesystem access are not exposed.
 
-## Installed plugin matrix
+## Plugin control matrix
 
-| Plugin | Observed version | Control mode | Connector surface |
-| --- | ---: | --- | --- |
-| ACF Content Analysis for Yoast SEO | 3.2 | Covered by ACF + Yoast | `acf.*`, `yoast.*` |
-| ACF Page Text Manager | 2.3.42 | Project-specific ACF data | `acf.get`, `acf.update` |
-| Advanced Custom Fields | 6.8.9 | Native adapter | `acf.field_groups`, `acf.get`, `acf.update` |
-| All-in-One WP Migration and Backup | 7.110 | High-risk system operation | No import/export write bridge; staging-first contract required |
-| Asset CleanUp: Page Speed Booster | 1.4.0.5 | Version-bound | No generic write yet; unload rules require browser/regression readback |
-| Auto Image Attributes From Filename With Bulk Updater | 4.9.1 | Native allowlisted settings adapter | `auto_image_attributes.inspect`, `auto_image_attributes.update`, `media.*` |
-| Broken Link Checker | 2.4.14.1 | Version-bound / mixed cloud-local state | No generic settings write yet; exact installed-version contract required |
-| Code Snippets | 3.10.2 | Arbitrary-code boundary | Remote snippet-code writes intentionally blocked |
-| Content Sync Manager | 1.2.61 | Project-specific | Requires its own contract before configuration writes |
-| Duplicate Page | 4.5.9 | No dedicated settings adapter needed | Content duplication can be modeled with `post.get` + `post.create` |
-| Elementor | 4.2.4 | Native adapter | `elementor.capabilities`, `elementor.inspect`, `elementor.inventory`, `elementor.patch_element`, `elementor.replace_document` |
-| Elementor Pro | 4.0.0 | Native adapter | Same Elementor document surface |
-| GTranslate | 3.1.2 | Version-bound | No settings write until an installed-version option/API contract is modeled |
-| Imagify | 2.3.3 | WordPress Abilities API | `plugin.settings.inspect/update` profile `imagify`; API key never returned |
-| Joinchat | 6.3.2 | Version-bound | No settings write until a stable installed-version contract is modeled |
-| LiteSpeed Cache | 7.9.1 | Inactive | No active tuning while WP Rocket is the active cache layer |
-| Loco Translate | 2.8.8 | Filesystem-bound | Translation file writes require a separate filesystem/package contract |
-| Really Simple Security | 9.8.1 | Plugin-owned settings API | `plugin.settings.inspect/update` profile `really_simple_security`; high-risk fields require sensitive gate |
-| Site Kit by Google | 1.186.0 | OAuth/service-bound | Tokens and encrypted service credentials are intentionally excluded from GitHub |
-| Wordfence Security | 9.0.0 | Security/internal-state boundary | No broad settings writes until a stable public API/allowlist is proven; secrets never exported |
-| WordPress Connector | 1.2.0 observed live | Canonical bridge | Connector admin/runtime gates and repository workflow |
-| WP File Manager | 8.0.4 | Arbitrary-filesystem boundary | Generic remote filesystem writes intentionally blocked |
-| WP Mail SMTP | 4.9.0 | Secret/OAuth-bound | Mailer passwords, OAuth tokens and provider secrets never exported to GitHub |
-| WP Rocket | 3.23.2.2 | Official settings functions | `plugin.settings.inspect/update` profile `wp_rocket` |
-| Yoast SEO | 28.4 | Native per-post adapter | `yoast.inspect`, `yoast.update` |
-| Yoast SEO Premium | 27.5 observed live | Native per-post adapter + Premium behavior | `yoast.inspect`, `yoast.update`; Redirect Manager itself remains a separate Premium-level contract |
+| Plugin / integration | Control mode | Connector surface |
+| --- | --- | --- |
+| ACF Content Analysis for Yoast SEO | Covered by ACF + Yoast | `acf.*`, `yoast.*` |
+| ACF Page Text Manager | Project-specific ACF data | `acf.get`, `acf.update` |
+| Advanced Custom Fields | Native adapter | `acf.field_groups`, `acf.get`, `acf.update` |
+| All-in-One WP Migration and Backup | High-risk system operation | No generic import/export bridge; staging-first contract required |
+| Asset CleanUp | Version-bound | No generic settings write; unload rules need browser/regression readback |
+| Auto Image Attributes | Native allowlist | `auto_image_attributes.inspect`, `auto_image_attributes.update`, `media.*` |
+| Broken Link Checker | Version-bound / mixed cloud-local state | Dedicated installed-version contract required before writes |
+| Code Snippets | Arbitrary-code settings boundary | Snippet execution is not exposed as plugin settings; source maintenance is only possible through the separately gated filesystem contract |
+| Content Sync Manager | Project-specific | Dedicated contract required |
+| Duplicate Page | No dedicated adapter required | Model with `post.get` + `post.create` |
+| Elementor / Elementor Pro | Native adapter | `elementor.capabilities`, `elementor.inspect`, `elementor.inventory`, `elementor.patch_element`, `elementor.replace_document` |
+| GTranslate / Joinchat | Version-bound | Dedicated contract required before settings writes |
+| Imagify | WordPress Abilities API | `plugin.settings.inspect/update` profile `imagify`; API key is excluded |
+| LiteSpeed Cache | Version-bound | Do not tune simultaneously with another active cache layer without an explicit migration decision |
+| Loco Translate | Translation/filesystem-bound | Translation-aware workflow required rather than generic raw-file authoring |
+| Really Simple Security | Plugin-owned settings helpers | `plugin.settings.inspect/update` profile `really_simple_security`; high-risk fields require sensitive gate |
+| Site Kit by Google | OAuth/service-bound | OAuth tokens and encrypted service credentials are excluded |
+| Wordfence Security | Security/internal-state boundary | No broad settings writes until stable public interfaces and safe allowlists are proven |
+| WP File Manager | Shared filesystem interface | `filesystem.inspect`, `filesystem.list`, `filesystem.read_text`, `filesystem.write_text` |
+| WP Mail SMTP | Secret/OAuth-bound | SMTP passwords, OAuth tokens and provider secrets are excluded |
+| WP Rocket | Plugin-owned option functions | `plugin.settings.inspect/update` profile `wp_rocket` |
+| Yoast SEO / Yoast SEO Premium | Native per-content adapter | `yoast.inspect`, `yoast.update` |
 
-## Yoast per-post control
+## Yoast per-content control
 
-`yoast.inspect` and `yoast.update` support: `focus_keyphrase`, `title`, `description`, `canonical`, `robots_noindex`, `robots_nofollow`, `robots_advanced`, `breadcrumb_title`, `cornerstone`, `schema_page_type`, `schema_article_type`, `primary_category_term_id`, OpenGraph/Twitter title/description/image/image-id and the legacy/per-post `redirect` meta field.
+`yoast.inspect` and `yoast.update` support focus keyphrase, SEO title/description, canonical URL, robots controls, breadcrumb title, cornerstone state, schema page/article type, primary category, OpenGraph/Twitter title/description/image fields and the legacy per-post redirect meta field.
 
-The adapter performs dry-run planning, validation, state fingerprinting, post-write readback and rollback snapshot creation. The per-post `redirect` field is not a complete replacement for the Premium Redirect Manager.
+The adapter performs dry-run planning, validation, state fingerprinting, post-write readback and rollback snapshot creation. The per-post redirect field is not a complete replacement for the Premium Redirect Manager.
 
 ## WP Rocket control
 
-The adapter uses WP Rocket's own `get_rocket_option()` / `update_rocket_option()` functions and an explicit allowlist for cache, CSS/JS optimization, lazy loading, preload, CDN, WebP and purge interval settings. Unknown fields fail closed.
+The adapter uses WP Rocket's `get_rocket_option()` / `update_rocket_option()` functions and an explicit allowlist for cache, CSS/JS optimization, lazy loading, preload, CDN, WebP and purge interval settings. Unknown fields fail closed.
 
 ## Imagify control
 
-Imagify 2.3+ exposes `imagify/get-settings` and `imagify/update-settings` through WordPress Abilities. The connector uses those abilities and explicitly excludes `api_key` and internal version state.
+Imagify exposes `imagify/get-settings` and `imagify/update-settings` through WordPress Abilities. The connector uses those abilities and explicitly excludes `api_key` and internal version state.
 
 ## Really Simple Security control
 
-The adapter discovers the plugin's own settings fields and reads/writes through `rsssl_get_option()` / `rsssl_update_option()`. Secret-like keys are excluded. Firewall/login/2FA/hardening/header and similar high-risk fields require the connector sensitive gate in addition to normal privileged/write gates.
+The adapter discovers the plugin's own settings fields and reads/writes through `rsssl_get_option()` / `rsssl_update_option()`. Secret-like keys are excluded. Firewall/login/2FA/hardening/header and similar high-risk fields require the connector sensitive gate in addition to the normal privileged/write gates.
 
 ## Auto Image Attributes control
 
-The adapter manages a conservative allowlist of boolean upload/bulk settings stored in the plugin's registered `iaff_settings` option. Individual media title, alt, caption and description remain available through `media.update`.
+The adapter manages a conservative allowlist of upload/bulk settings stored by the plugin. Individual media title, alt text, caption and description remain available through `media.update`.
+
+## WP File Manager and controlled filesystem access
+
+WP File Manager is treated as the visual administrator interface over the same WordPress filesystem. The connector does **not** call or emulate WP File Manager's private `wp_ajax_mk_file_folder_manager` / elFinder request protocol. Instead it uses WordPress' own `WP_Filesystem` abstraction. A file changed through the connector is therefore visible in WP File Manager immediately because both interfaces address the same underlying file.
+
+Filesystem actions intentionally have a narrower blast radius than the File Manager UI:
+
+- `filesystem.inspect`: reports filesystem method, gates and File Manager integration state without exposing absolute server paths.
+- `filesystem.list`: bounded listing inside the WordPress root; dotfiles, secret paths, uploads, caches, backups, upgrade state and security logs are excluded.
+- `filesystem.read_text`: reads bounded UTF-8 text files, blocks credential-like files and refuses files that appear to contain embedded secret literals.
+- `filesystem.write_text`: replaces **existing** UTF-8 text files only under `wp-content/plugins/*` or `wp-content/themes/*`.
+- WordPress core (`wp-admin`, `wp-includes` and root core files) is read-only.
+- Uploads are managed through `media.*`, not raw filesystem writes.
+- The connector cannot rewrite its own installed runtime files; connector releases go through the GitHub/release workflow.
+- New-file creation, delete, rename, chmod, archive extraction and arbitrary directory writes are not part of this contract.
+- Symlink traversal and `..` traversal are rejected.
+- Real writes require direct WordPress filesystem mode; GitHub never supplies interactive FTP/SSH filesystem credentials.
+- Real writes require the normal write gate plus the dedicated filesystem-write gate, `confirm:true`, and a matching `expected_sha256`.
+- PHP/INC replacements are parser-validated, JSON replacements are decoded before write, the written bytes are verified by SHA-256 readback, and rollback stores the previous file contents.
 
 ## Deliberate exclusions
 
-A request for "all plugin settings" does not mean exposing every option row. The bridge must not publish SMTP/OAuth/API credentials, Wordfence secrets, executable snippets, arbitrary files or migration/import payloads through GitHub. Plugins without a stable public API are version-bound and require a dedicated allowlist plus regression tests before writes are enabled.
+A request for "all plugin settings" does not mean exposing every option row or every server file. The bridge does not publish SMTP/OAuth/API credentials, security secrets, executable snippet state, backup archives or unrestricted server paths through GitHub. Integrations without a stable public interface remain version-bound until a dedicated allowlist and regression contract are added.
