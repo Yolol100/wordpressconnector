@@ -22,6 +22,7 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - Gutenberg/block content, including nested block patches;
 - Elementor document JSON, nested elements, page settings, document creation and Theme Builder metadata;
 - Elementor capability and usage inventory, including Core/Pro/add-on/theme widget provenance, versions when available, per-document usage counts, missing widget types and legacy/container/Atomic architecture signals;
+- complete Elementor V3 Form widgets and V4 Atomic Form subtrees, including fields, submit actions, recipients, subject/message/from/reply-to/CC/BCC settings, success/error messages, styles and other runtime-supported settings;
 - WooCommerce products, variations, attributes and coupons through WooCommerce CRUD APIs;
 - ACF fields and field groups through ACF APIs;
 - Yoast SEO/Premium per-content metadata and selected plugin settings through explicit adapters;
@@ -32,13 +33,21 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - users, roles, plugins, themes, cron, rewrite/cache and multisite administration behind privileged/system-update gates;
 - extension actions registered by other WordPress plugins through `wpconnector_register_actions`.
 
-See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md), [docs/PLUGIN-CONTROL.md](docs/PLUGIN-CONTROL.md) and [docs/SCOPE.md](docs/SCOPE.md).
+See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md), [docs/ELEMENTOR-FORMS.md](docs/ELEMENTOR-FORMS.md), [docs/PLUGIN-CONTROL.md](docs/PLUGIN-CONTROL.md) and [docs/SCOPE.md](docs/SCOPE.md).
 
 ## Elementor inventory
 
 `elementor.capabilities` reports what the active Elementor runtime currently registers. `elementor.inventory` additionally scans saved Elementor documents and correlates actual usage with that runtime inventory.
 
 The inventory reports widget source (`elementor-core`, `elementor-pro`, `addon`, `theme` or `unknown`), source slug/name/version when available, instance and document counts, document IDs, unregistered widget types that are still present in saved Elementor data, and legacy/container/Atomic architecture usage. Scans are read-only and paginated with `limit`, `offset`, `has_more` and `next_offset`.
+
+## Elementor forms
+
+`elementor.form_capabilities` reads the target runtime before form authoring. For V3 it exposes the classic Form control schema plus the currently registered submit-action keys. For V4 it inventories the active `e-form*` Atomic types and their Atomic prop/config schemas. The returned `schema_fingerprint` can be supplied to a later write so a changed Elementor/Pro/add-on schema fails closed instead of applying stale JSON.
+
+`elementor.form_inspect` returns complete V3/V4 form subtrees. `elementor.form_upsert` accepts one complete V3 `widgetType=form` widget or V4 `elType=e-form` subtree and inserts it or replaces the existing form with the same element ID. The supplied form JSON is preserved as a whole, so runtime-supported form fields, email content and routing, styling and future settings are not reduced to a small connector allowlist.
+
+V3 and V4 stay separate. V3 submit actions are checked against the target Form widget. V4 typed `$$type/value` settings and registered Atomic element types are checked against the target runtime; nested forms, duplicate element IDs, invalid success/error message structures and anything other than exactly one submit button are rejected. A real write uses Elementor's document save API, exact form readback and automatic restoration of the previous document snapshot on failure.
 
 ## Controlled filesystem access
 
@@ -76,10 +85,10 @@ The HTTPS transport adds these boundaries:
 4. Create a dedicated WordPress Application Password for the administrator/service account used by this connector.
 5. Add GitHub repository variable `WPCONNECTOR_SITE_URL` with the canonical `https://` site URL.
 6. Add GitHub repository secrets `WPCONNECTOR_REST_USERNAME` and `WPCONNECTOR_REST_APPLICATION_PASSWORD`.
-7. Run `connector.discover`, `system.doctor` and `filesystem.inspect` read-only.
+7. Run `connector.discover`, `system.doctor` and the relevant read-only capability action first.
 8. Test dry-runs.
 9. Perform a disposable staging write and rollback before broad production mutation use.
-10. Test representative Gutenberg, Elementor, WooCommerce, ACF, media and filesystem round-trips that match the intended production actions.
+10. Test representative Gutenberg, Elementor/forms, WooCommerce, ACF, media and filesystem round-trips that match the intended production actions.
 
 Actual WordPress/Elementor/WooCommerce/ACF/filesystem behavior remains `staging-first` until those runtime tests have been executed on the target environment.
 

@@ -6,7 +6,7 @@ $root = dirname(__DIR__);
 
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array(
-        'Version: 1.5.0',
+        'Version: 1.6.0',
         'Requires at least: 6.4',
         'includes/Adapters/AutoImageAttributesAdapter.php',
         'includes/Adapters/PluginSettingsAdapter.php',
