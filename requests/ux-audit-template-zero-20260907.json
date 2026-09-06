@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "ux-audit-template-zero-20260907",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 4624}
+}
