@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "request_id": "verify-home-remote-template-20260906",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.document.get",
+        "payload": {"post_id": 4624}
+      },
+      {
+        "action": "elementor.document.get",
+        "payload": {"post_id": 899}
+      }
+    ]
+  }
+}
