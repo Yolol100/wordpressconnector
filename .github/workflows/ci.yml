@@ -19,6 +19,12 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      - name: Diagnose runtime request JSON
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m json.tool requests/home-remote-template-create-20260906.json >/dev/null
+
       - name: Validate PHP, shell, schemas, examples and workflow guards
         shell: bash
         run: |
