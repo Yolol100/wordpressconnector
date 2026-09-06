@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "request_id": "minimal-portfolio-template-4624-round2a-20260907",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "expected_fingerprint": "02003cfc3f38e7800f537cada239607e9a293820ba5acbde7688520453e8396d",
+        "payload": {"id": 4624, "element_id": "55f1530", "settings": {"hide_desktop": "hidden-desktop", "hide_tablet": "hidden-tablet", "hide_mobile": "hidden-mobile"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4624, "element_id": "9778393", "settings": {"hide_desktop": "hidden-desktop", "hide_tablet": "hidden-tablet", "hide_mobile": "hidden-mobile"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4624, "element_id": "e130254", "settings": {"hide_desktop": "hidden-desktop", "hide_tablet": "hidden-tablet", "hide_mobile": "hidden-mobile"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4624, "element_id": "1b6463d", "settings": {"hide_desktop": "hidden-desktop", "hide_tablet": "hidden-tablet", "hide_mobile": "hidden-mobile"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4624, "element_id": "df10001", "settings": {"hide_desktop": "hidden-desktop", "hide_tablet": "hidden-tablet", "hide_mobile": "hidden-mobile"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4624,
+          "element_id": "d8a4d13",
+          "settings": {
+            "padding": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": true},
+            "padding_tablet": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": true},
+            "padding_mobile": {"unit": "px", "top": "0", "right": "0", "bottom": "0", "left": "0", "isLinked": true},
+            "flex_gap": {"column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0},
+            "flex_gap_tablet": {"column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0},
+            "flex_gap_mobile": {"column": "0", "row": "0", "isLinked": true, "unit": "px", "size": 0}
+          }
+        }
+      }
+    ]
+  }
+}
