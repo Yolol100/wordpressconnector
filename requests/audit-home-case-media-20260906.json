@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "request_id": "audit-home-case-media-20260906",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {"action": "media.get", "payload": {"id": 2990}},
+      {"action": "media.get", "payload": {"id": 4109}},
+      {"action": "media.get", "payload": {"id": 2554}},
+      {"action": "media.get", "payload": {"id": 4248}},
+      {"action": "media.get", "payload": {"id": 1272}},
+      {"action": "media.get", "payload": {"id": 1821}}
+    ]
+  }
+}
