@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "request_id": "imagify-00001",
+  "action": "plugin.settings.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "plugin": "imagify",
+    "fields": {
+      "auto_optimize": 1,
+      "backup": 1,
+      "optimization_level": 1,
+      "convert_to_webp": 1
+    }
+  }
+}
