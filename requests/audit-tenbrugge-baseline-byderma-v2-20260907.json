@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "request_id": "audit-tenbrugge-baseline-byderma-v2-20260907",
+  "action": "connector.batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {"post_type": "any", "status": "any", "search": "Tenbrugge", "per_page": 25}
+      },
+      {
+        "action": "post.list",
+        "payload": {"post_type": "elementor_library", "status": "any", "per_page": 100, "orderby": "ID", "order": "DESC"}
+      },
+      {
+        "action": "acf.get",
+        "payload": {"target": 1374}
+      },
+      {
+        "action": "media.get",
+        "payload": {"id": 1821}
+      },
+      {
+        "action": "media.get",
+        "payload": {"id": 1818}
+      },
+      {
+        "action": "media.get",
+        "payload": {"id": 1820}
+      },
+      {
+        "action": "media.get",
+        "payload": {"id": 1819}
+      },
+      {
+        "action": "elementor.capabilities",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
