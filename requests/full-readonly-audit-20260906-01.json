@@ -1,18 +1,8 @@
 {
   "version": 1,
-  "request_id": "full-readonly-audit-20260906-02",
-  "action": "connector.batch",
+  "request_id": "full-readonly-audit-20260906-03",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "operations": [
-      {"action": "elementor.inspect", "payload": {"id": 899}},
-      {"action": "gutenberg.inspect", "payload": {"id": 899}},
-      {"action": "post.revisions", "payload": {"id": 899}},
-      {"action": "elementor.inspect", "payload": {"id": 924}},
-      {"action": "elementor.inspect", "payload": {"id": 4183}},
-      {"action": "elementor.inspect", "payload": {"id": 1210}},
-      {"action": "elementor.inspect", "payload": {"id": 1216}}
-    ]
-  }
+  "payload": {"id": 899}
 }
