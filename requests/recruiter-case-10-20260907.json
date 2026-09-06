@@ -1,0 +1,825 @@
+{
+  "version": 1,
+  "request_id": "recruiter-case-10-dryrun-20260907",
+  "action": "connector.batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcsh001",
+          "settings": {
+            "title": "Byderma — structuring treatments, booking and ecommerce in one WordPress platform"
+          }
+        },
+        "expected_fingerprint": "6df38f559fca75522f010458eb17811d5f4bf4888f6e7fa42a88d5333f4cc794"
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcsintro",
+          "settings": {
+            "editor": "<p>Byderma combines multiple beauty treatments, appointment booking, a large WooCommerce catalogue and member benefits. I structured the WordPress and WooCommerce experience so each journey stays clear while the platform still feels consistent across desktop and mobile.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcsimg1",
+          "settings": {
+            "image_size": "1536x1536"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcsbtns",
+          "replace": {
+            "id": "rcsbtns",
+            "elType": "container",
+            "settings": {
+              "content_width": "full",
+              "flex_direction": "row",
+              "flex_direction_mobile": "column",
+              "flex_gap": {"unit": "px", "size": 12, "column": "12", "row": "12", "isLinked": true}
+            },
+            "elements": [
+              {
+                "id": "rcsbt01",
+                "elType": "widget",
+                "settings": {
+                  "text": "Visit live Byderma site",
+                  "link": {"url": "https://byderma.nl", "is_external": "", "nofollow": "", "custom_attributes": ""},
+                  "text_color": "#111111",
+                  "background_color": "#F9C221",
+                  "button_background_hover_color": "#FFFFFF",
+                  "hover_color": "#111111",
+                  "border_radius": {"unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8", "isLinked": true},
+                  "typography_typography": "custom",
+                  "typography_font_family": "Poppins",
+                  "typography_font_weight": "700",
+                  "typography_font_size": {"unit": "px", "size": 15, "sizes": []}
+                },
+                "elements": [],
+                "widgetType": "button"
+              },
+              {
+                "id": "rcsbt02",
+                "elType": "widget",
+                "settings": {
+                  "text": "View all cases",
+                  "link": {"url": "https://andrewbaeten.nl/cases/", "is_external": "", "nofollow": "", "custom_attributes": ""},
+                  "text_color": "#FFFFFF",
+                  "background_color": "#00000000",
+                  "border_border": "solid",
+                  "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                  "border_color": "#F9C221",
+                  "button_background_hover_color": "#F9C221",
+                  "hover_color": "#111111",
+                  "border_radius": {"unit": "px", "top": "8", "right": "8", "bottom": "8", "left": "8", "isLinked": true},
+                  "typography_typography": "custom",
+                  "typography_font_family": "Poppins",
+                  "typography_font_weight": "700",
+                  "typography_font_size": {"unit": "px", "size": 15, "sizes": []}
+                },
+                "elements": [],
+                "widgetType": "button"
+              }
+            ],
+            "isInner": true
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "chhead01",
+          "settings": {
+            "title": "Three core journeys, one coherent beauty platform"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "chtxt001",
+          "settings": {
+            "editor": "<p>The business combines treatment discovery, appointment booking and ecommerce, with member content supporting those journeys. The challenge was to keep those needs from competing for attention while the experience still feels like one Byderma platform.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "chcards1",
+          "replace": {
+            "id": "chcards1",
+            "elType": "container",
+            "settings": {
+              "content_width": "full",
+              "flex_direction": "row",
+              "flex_direction_mobile": "column",
+              "flex_gap": {"unit": "px", "size": 18, "column": "18", "row": "18", "isLinked": true}
+            },
+            "elements": [
+              {
+                "id": "chcard01",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "26", "right": "26", "bottom": "26", "left": "26", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "chc1h001",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "Treatment discovery",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 23, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "chc1t001",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>Multiple treatment categories need enough context to help visitors choose and then move naturally toward booking.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "chcard02",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "26", "right": "26", "bottom": "26", "left": "26", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "chc2h001",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "Booking handoff",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 23, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "chc2t001",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>Treatment information needs a clear route into appointment booking without turning every service page into a commerce flow.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "chcard03",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "26", "right": "26", "bottom": "26", "left": "26", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "chc3h001",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "Commerce & member support",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 23, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "chc3t001",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>The WooCommerce catalogue stays product-focused, while member and account content remains accessible without interrupting the primary journeys.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              }
+            ],
+            "isInner": true
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "cohead01",
+          "settings": {
+            "title": "I translated that business complexity into a clear WordPress information architecture"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "cotxt001",
+          "settings": {
+            "editor": "<p>My role was WordPress developer. I structured how treatments, booking, WooCommerce and supporting member content relate to each other, then carried the same hierarchy through to smaller screens.</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "cocards1",
+          "replace": {
+            "id": "cocards1",
+            "elType": "container",
+            "settings": {
+              "content_width": "full",
+              "flex_direction": "row",
+              "flex_direction_mobile": "column",
+              "flex_gap": {"unit": "px", "size": 18, "column": "18", "row": "18", "isLinked": true}
+            },
+            "elements": [
+              {
+                "id": "cocard01",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_border": "solid",
+                  "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                  "border_color": "#3A3A3A",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "co1num01",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p style=\"margin:0;font-weight:700\">01</p>",
+                      "text_color": "#F9C221",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 13, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  },
+                  {
+                    "id": "co1head1",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "Information architecture",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 24, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "co1text1",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>I separated treatment discovery, shopping and booking into distinct paths so users can immediately understand what kind of task they are in.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "cocard02",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_border": "solid",
+                  "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                  "border_color": "#3A3A3A",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "co2num01",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p style=\"margin:0;font-weight:700\">02</p>",
+                      "text_color": "#F9C221",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 13, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  },
+                  {
+                    "id": "co2head1",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "WooCommerce journey",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 24, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "co2text1",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>I kept product discovery and purchasing focused inside the shop, while treatment information hands off naturally to appointments.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "cocard03",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "padding": {"unit": "px", "top": "28", "right": "28", "bottom": "28", "left": "28", "isLinked": true},
+                  "background_background": "classic",
+                  "background_color": "#222222",
+                  "border_border": "solid",
+                  "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                  "border_color": "#3A3A3A",
+                  "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "co3num01",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p style=\"margin:0;font-weight:700\">03</p>",
+                      "text_color": "#F9C221",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 13, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  },
+                  {
+                    "id": "co3head1",
+                    "elType": "widget",
+                    "settings": {
+                      "title": "Responsive hierarchy",
+                      "header_size": "h3",
+                      "title_color": "#FFFFFF",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Chivo",
+                      "typography_font_size": {"unit": "px", "size": 24, "sizes": []},
+                      "typography_font_weight": "700"
+                    },
+                    "elements": [],
+                    "widgetType": "heading"
+                  },
+                  {
+                    "id": "co3text1",
+                    "elType": "widget",
+                    "settings": {
+                      "editor": "<p>I preserved the same task priority on mobile instead of collapsing different intents into one generic flow.</p>",
+                      "text_color": "#A1A1A1",
+                      "typography_typography": "custom",
+                      "typography_font_family": "Poppins",
+                      "typography_font_size": {"unit": "px", "size": 16, "sizes": []}
+                    },
+                    "elements": [],
+                    "widgetType": "text-editor"
+                  }
+                ],
+                "isInner": true
+              }
+            ],
+            "isInner": true
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "telab001",
+          "settings": {
+            "editor": "<p style=\"margin:0;text-transform:uppercase;letter-spacing:.1em;font-weight:700\">03 · Engineering decisions</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "tehead01",
+          "settings": {
+            "title": "WordPress decisions behind a mixed service-and-commerce platform"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "tetxt001",
+          "settings": {
+            "editor": "<p>The value of this case is not just the finished interface; it is how the platform is organised. WordPress and WooCommerce support different user intents without forcing treatment discovery, booking and ecommerce into one generic flow.</p><p><strong style=\"color:#F9C221\">Verified stack</strong><br>WordPress · WooCommerce</p><p><strong style=\"color:#F9C221\">Architecture</strong><br>Treatment discovery · appointment routes · product discovery · member/account support</p><p><strong style=\"color:#F9C221\">Responsive principle</strong><br>Preserve the same hierarchy and task separation on smaller screens</p><p><strong style=\"color:#F9C221\">Evidence</strong><br>Live Byderma site · verified project media across desktop, tablet and mobile</p>"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcstake1",
+          "replace": {
+            "id": "rcstake1",
+            "elType": "container",
+            "settings": {
+              "content_width": "boxed",
+              "boxed_width": {"unit": "px", "size": 1180, "sizes": []},
+              "flex_direction": "column",
+              "flex_gap": {"unit": "px", "size": 18, "column": "18", "row": "18", "isLinked": true},
+              "padding": {"unit": "px", "top": "64", "right": "44", "bottom": "64", "left": "44", "isLinked": false},
+              "padding_tablet": {"unit": "px", "top": "48", "right": "28", "bottom": "48", "left": "28", "isLinked": false},
+              "padding_mobile": {"unit": "px", "top": "40", "right": "18", "bottom": "40", "left": "18", "isLinked": false},
+              "background_background": "classic",
+              "background_color": "#222222",
+              "border_border": "solid",
+              "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+              "border_color": "#3A3A3A",
+              "border_radius": {"unit": "px", "top": "16", "right": "16", "bottom": "16", "left": "16", "isLinked": true}
+            },
+            "elements": [
+              {
+                "id": "tklab001",
+                "elType": "widget",
+                "settings": {
+                  "editor": "<p style=\"margin:0;text-transform:uppercase;letter-spacing:.1em;font-weight:700\">04 · Live proof</p>",
+                  "text_color": "#F9C221",
+                  "typography_typography": "custom",
+                  "typography_font_family": "Poppins",
+                  "typography_font_size": {"unit": "px", "size": 13, "sizes": []}
+                },
+                "elements": [],
+                "widgetType": "text-editor"
+              },
+              {
+                "id": "tkhead01",
+                "elType": "widget",
+                "settings": {
+                  "title": "The structure is visible in the live product and responsive project captures",
+                  "header_size": "h2",
+                  "title_color": "#FFFFFF",
+                  "typography_typography": "custom",
+                  "typography_font_family": "Chivo",
+                  "typography_font_size": {"unit": "px", "size": 40, "sizes": []},
+                  "typography_font_size_mobile": {"unit": "px", "size": 28, "sizes": []},
+                  "typography_font_weight": "700"
+                },
+                "elements": [],
+                "widgetType": "heading"
+              },
+              {
+                "id": "tktxt001",
+                "elType": "widget",
+                "settings": {
+                  "editor": "<p>Byderma.nl currently exposes the same core model: treatment categories, appointment booking, a product boutique and member benefits. The verified project media below shows the interface across desktop, tablet and mobile.</p>",
+                  "text_color": "#FFFFFF",
+                  "typography_typography": "custom",
+                  "typography_font_family": "Poppins",
+                  "typography_font_size": {"unit": "px", "size": 18, "sizes": []},
+                  "typography_line_height": {"unit": "em", "size": 1.65, "sizes": []}
+                },
+                "elements": [],
+                "widgetType": "text-editor"
+              },
+              {
+                "id": "proofrow1",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "flex_direction": "row",
+                  "flex_direction_mobile": "column",
+                  "flex_gap": {"unit": "px", "size": 18, "column": "18", "row": "18", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "proofc01",
+                    "elType": "container",
+                    "settings": {
+                      "content_width": "full",
+                      "flex_direction": "column",
+                      "flex_gap": {"unit": "px", "size": 12, "column": "12", "row": "12", "isLinked": true},
+                      "padding": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true},
+                      "background_background": "classic",
+                      "background_color": "#181818",
+                      "border_border": "solid",
+                      "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                      "border_color": "#3A3A3A",
+                      "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                    },
+                    "elements": [
+                      {
+                        "id": "proofi01",
+                        "elType": "widget",
+                        "settings": {
+                          "image": {"id": 1821, "url": "https://andrewbaeten.nl/wp-content/uploads/2026/04/byderma-desktop-homepage-1.png"},
+                          "image_size": "large",
+                          "border_radius": {"unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10", "isLinked": true}
+                        },
+                        "elements": [],
+                        "widgetType": "image"
+                      },
+                      {
+                        "id": "proofh01",
+                        "elType": "widget",
+                        "settings": {
+                          "title": "Desktop homepage",
+                          "header_size": "div",
+                          "title_color": "#FFFFFF",
+                          "typography_typography": "custom",
+                          "typography_font_family": "Chivo",
+                          "typography_font_size": {"unit": "px", "size": 18, "sizes": []},
+                          "typography_font_weight": "600"
+                        },
+                        "elements": [],
+                        "widgetType": "heading"
+                      }
+                    ],
+                    "isInner": true
+                  },
+                  {
+                    "id": "proofc02",
+                    "elType": "container",
+                    "settings": {
+                      "content_width": "full",
+                      "flex_direction": "column",
+                      "flex_gap": {"unit": "px", "size": 12, "column": "12", "row": "12", "isLinked": true},
+                      "padding": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true},
+                      "background_background": "classic",
+                      "background_color": "#181818",
+                      "border_border": "solid",
+                      "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                      "border_color": "#3A3A3A",
+                      "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                    },
+                    "elements": [
+                      {
+                        "id": "proofi02",
+                        "elType": "widget",
+                        "settings": {
+                          "image": {"id": 1818, "url": "https://andrewbaeten.nl/wp-content/uploads/2026/04/byderma-tablet-layout.png"},
+                          "image_size": "large",
+                          "border_radius": {"unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10", "isLinked": true}
+                        },
+                        "elements": [],
+                        "widgetType": "image"
+                      },
+                      {
+                        "id": "proofh02",
+                        "elType": "widget",
+                        "settings": {
+                          "title": "Tablet layout",
+                          "header_size": "div",
+                          "title_color": "#FFFFFF",
+                          "typography_typography": "custom",
+                          "typography_font_family": "Chivo",
+                          "typography_font_size": {"unit": "px", "size": 18, "sizes": []},
+                          "typography_font_weight": "600"
+                        },
+                        "elements": [],
+                        "widgetType": "heading"
+                      }
+                    ],
+                    "isInner": true
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "proofrow2",
+                "elType": "container",
+                "settings": {
+                  "content_width": "full",
+                  "flex_direction": "row",
+                  "flex_direction_mobile": "column",
+                  "flex_gap": {"unit": "px", "size": 18, "column": "18", "row": "18", "isLinked": true}
+                },
+                "elements": [
+                  {
+                    "id": "proofc03",
+                    "elType": "container",
+                    "settings": {
+                      "content_width": "full",
+                      "flex_direction": "column",
+                      "flex_gap": {"unit": "px", "size": 12, "column": "12", "row": "12", "isLinked": true},
+                      "padding": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true},
+                      "background_background": "classic",
+                      "background_color": "#181818",
+                      "border_border": "solid",
+                      "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                      "border_color": "#3A3A3A",
+                      "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                    },
+                    "elements": [
+                      {
+                        "id": "proofi03",
+                        "elType": "widget",
+                        "settings": {
+                          "image": {"id": 1820, "url": "https://andrewbaeten.nl/wp-content/uploads/2026/04/byderma-mobile-view.png"},
+                          "image_size": "large",
+                          "border_radius": {"unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10", "isLinked": true}
+                        },
+                        "elements": [],
+                        "widgetType": "image"
+                      },
+                      {
+                        "id": "proofh03",
+                        "elType": "widget",
+                        "settings": {
+                          "title": "Mobile layout",
+                          "header_size": "div",
+                          "title_color": "#FFFFFF",
+                          "typography_typography": "custom",
+                          "typography_font_family": "Chivo",
+                          "typography_font_size": {"unit": "px", "size": 18, "sizes": []},
+                          "typography_font_weight": "600"
+                        },
+                        "elements": [],
+                        "widgetType": "heading"
+                      }
+                    ],
+                    "isInner": true
+                  },
+                  {
+                    "id": "proofc04",
+                    "elType": "container",
+                    "settings": {
+                      "content_width": "full",
+                      "flex_direction": "column",
+                      "flex_gap": {"unit": "px", "size": 12, "column": "12", "row": "12", "isLinked": true},
+                      "padding": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true},
+                      "background_background": "classic",
+                      "background_color": "#181818",
+                      "border_border": "solid",
+                      "border_width": {"unit": "px", "top": "1", "right": "1", "bottom": "1", "left": "1", "isLinked": true},
+                      "border_color": "#3A3A3A",
+                      "border_radius": {"unit": "px", "top": "14", "right": "14", "bottom": "14", "left": "14", "isLinked": true}
+                    },
+                    "elements": [
+                      {
+                        "id": "proofi04",
+                        "elType": "widget",
+                        "settings": {
+                          "image": {"id": 1819, "url": "https://andrewbaeten.nl/wp-content/uploads/2026/04/byderma-conversion-flow.png"},
+                          "image_size": "large",
+                          "border_radius": {"unit": "px", "top": "10", "right": "10", "bottom": "10", "left": "10", "isLinked": true}
+                        },
+                        "elements": [],
+                        "widgetType": "image"
+                      },
+                      {
+                        "id": "proofh04",
+                        "elType": "widget",
+                        "settings": {
+                          "title": "Mobile conversion flow",
+                          "header_size": "div",
+                          "title_color": "#FFFFFF",
+                          "typography_typography": "custom",
+                          "typography_font_family": "Chivo",
+                          "typography_font_size": {"unit": "px", "size": 18, "sizes": []},
+                          "typography_font_weight": "600"
+                        },
+                        "elements": [],
+                        "widgetType": "heading"
+                      }
+                    ],
+                    "isInner": true
+                  }
+                ],
+                "isInner": true
+              },
+              {
+                "id": "proofout1",
+                "elType": "widget",
+                "settings": {
+                  "editor": "<p><strong style=\"color:#F9C221\">Outcome</strong><br>The live platform keeps treatment discovery, booking, ecommerce and member support recognisable as separate tasks inside one brand experience.</p>",
+                  "text_color": "#FFFFFF",
+                  "typography_typography": "custom",
+                  "typography_font_family": "Poppins",
+                  "typography_font_size": {"unit": "px", "size": 17, "sizes": []},
+                  "typography_line_height": {"unit": "em", "size": 1.65, "sizes": []}
+                },
+                "elements": [],
+                "widgetType": "text-editor"
+              }
+            ],
+            "isInner": false
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "ctahead1",
+          "settings": {
+            "title": "Looking for a WordPress developer who can make complex journeys feel simple?"
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "ctatxt01",
+          "settings": {
+            "editor": "<p style=\"text-align:center\">This case shows how I translate mixed service and ecommerce requirements into a clear WordPress and WooCommerce experience, with decisions that remain understandable across desktop and mobile.</p>"
+          }
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
