@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "request_id": "review-fix-recruiter-case-template-20260906",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4626,
+          "element_id": "rcsimg1",
+          "settings": {
+            "image": {
+              "id": 1821,
+              "url": "https://andrewbaeten.nl/wp-content/uploads/2026/04/byderma-desktop-homepage-1.png"
+            }
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "fdlab01", "settings": {"editor": "<p style=\"margin:0;text-transform:uppercase;letter-spacing:.08em;font-weight:700\">Journeys</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "fdval01", "settings": {"title": "Treatments · Shop · Booking"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "cohead01", "settings": {"title": "I structured the experience around separate user tasks"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "cotxt001", "settings": {"editor": "<p>I structured the WordPress and WooCommerce experience around treatment discovery, shopping and appointment booking. Each journey stays focused, while account and membership content remains accessible without interrupting the main tasks.</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "co1text1", "settings": {"editor": "<p>I separated treatment discovery, shopping and booking into distinct paths so each task stays easy to understand.</p>", "typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "co2text1", "settings": {"editor": "<p>Treatment information leads naturally to appointments, while the WooCommerce shop keeps product discovery and purchasing focused.</p>", "typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "co3head1", "settings": {"title": "Mobile hierarchy"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "co3text1", "settings": {"editor": "<p>On smaller screens, the same hierarchy remains clear without merging the different tasks.</p>", "typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "tetxt001", "settings": {"editor": "<p>The implementation centers on WordPress and WooCommerce, with the content hierarchy separating treatments, ecommerce and appointment booking.</p><p><strong style=\"color:#F9C221\">Stack</strong><br>WordPress · WooCommerce</p><p><strong style=\"color:#F9C221\">Implementation priorities</strong><br>Task separation · clear product discovery · appointment routes · mobile hierarchy</p><p><strong style=\"color:#F9C221\">Case focus</strong><br>Beauty treatments · ecommerce · membership content · booking</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "tktxt001", "settings": {"editor": "<p>This case demonstrates how I structure a WordPress and WooCommerce platform around several user goals, keeping treatment discovery, shopping and booking distinct while maintaining one consistent experience.</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "ctalab01", "settings": {"editor": "<p style=\"margin:0;text-align:center;text-transform:uppercase;letter-spacing:.1em;font-weight:700\">Open to WordPress opportunities</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "ctahead1", "settings": {"title": "Looking for a WordPress developer who combines structure, UX and implementation?"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "ctatxt01", "settings": {"editor": "<p style=\"text-align:center\">I work across WordPress, WooCommerce, Elementor, UX and performance, with a focus on clear structure and maintainable delivery.</p>"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "chc1t001", "settings": {"typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "chc2t001", "settings": {"typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "chc3h001", "settings": {"title": "Supporting content"}}
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {"id": 4626, "element_id": "chc3t001", "settings": {"editor": "<p>Account and membership content stays accessible without interrupting the main treatment, shopping and booking journeys.</p>", "typography_font_size": {"unit": "px", "size": 16, "sizes": []}}}
+      }
+    ]
+  }
+}
