@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "request_id": "audit-portfolio-template-list-20260906",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "elementor_library",
+    "status": "any",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "modified",
+    "order": "DESC"
+  }
+}
