@@ -3,7 +3,7 @@
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
  * Description: Single GitHub-controlled bridge for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings and administration workflows over authenticated HTTPS REST or local WP-CLI.
- * Version: 1.4.0
+ * Version: 1.5.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Webactueel
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('WPCONNECTOR_VERSION', '1.4.0');
+define('WPCONNECTOR_VERSION', '1.5.0');
 define('WPCONNECTOR_FILE', __FILE__);
 define('WPCONNECTOR_PATH', plugin_dir_path(__FILE__));
 
@@ -39,6 +39,7 @@ $files = array(
     'includes/Adapters/GutenbergAdapter.php',
     'includes/Adapters/ElementorCapabilitiesAdapter.php',
     'includes/Adapters/ElementorAdapter.php',
+    'includes/Adapters/ElementorFormsAdapter.php',
     'includes/Adapters/WooCommerceAdapter.php',
     'includes/Adapters/AcfAdapter.php',
     'includes/Adapters/YoastAdapter.php',
