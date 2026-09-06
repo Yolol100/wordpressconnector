@@ -2,8 +2,8 @@
 /**
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
- * Description: Single GitHub-controlled bridge for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings and administration workflows over authenticated HTTPS REST or local WP-CLI.
- * Version: 1.4.0
+ * Description: Single GitHub-controlled bridge for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings, controlled filesystem access and administration workflows over authenticated HTTPS REST or local WP-CLI.
+ * Version: 1.5.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Webactueel
@@ -20,7 +20,7 @@ if (! defined('ABSPATH')) {
     exit;
 }
 
-define('WPCONNECTOR_VERSION', '1.4.0');
+define('WPCONNECTOR_VERSION', '1.5.0');
 define('WPCONNECTOR_FILE', __FILE__);
 define('WPCONNECTOR_PATH', plugin_dir_path(__FILE__));
 
@@ -28,6 +28,7 @@ $files = array(
     'includes/Support/Json.php',
     'includes/Support/Fingerprint.php',
     'includes/Security/Policy.php',
+    'includes/Security/FilesystemPolicy.php',
     'includes/Runtime/Request.php',
     'includes/Runtime/Result.php',
     'includes/Runtime/SnapshotStore.php',
@@ -45,6 +46,7 @@ $files = array(
     'includes/Adapters/MediaAdapter.php',
     'includes/Adapters/AutoImageAttributesAdapter.php',
     'includes/Adapters/PluginSettingsAdapter.php',
+    'includes/Adapters/FilesystemAdapter.php',
     'includes/Adapters/SystemAdapter.php',
     'includes/Runtime/Runner.php',
     'includes/REST/AssetStore.php',
