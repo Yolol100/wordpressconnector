@@ -22,7 +22,7 @@ final class Settings
         'wpconnector_allow_privileged' => array(
             'label' => 'Allow privileged actions',
             'default' => 0,
-            'help' => 'Required for options, post meta, ACF, Yoast, users and other privileged connector actions.',
+            'help' => 'Required for options, post meta, ACF, Yoast, filesystem reads and other privileged connector actions.',
         ),
         'wpconnector_allow_sensitive' => array(
             'label' => 'Allow sensitive data actions',
@@ -33,6 +33,11 @@ final class Settings
             'label' => 'Allow plugin/theme/core system updates',
             'default' => 0,
             'help' => 'Controls connector actions that install, update or delete system components.',
+        ),
+        'wpconnector_allow_filesystem_writes' => array(
+            'label' => 'Allow controlled plugin/theme file writes',
+            'default' => 0,
+            'help' => 'Allows filesystem.write_text only for existing plugin/theme text files with expected SHA-256, parser validation, readback and rollback. Core, uploads, secrets and connector self-edits remain blocked.',
         ),
     );
 
@@ -92,7 +97,7 @@ final class Settings
 
     public function renderSection(): void
     {
-        echo '<p>' . esc_html__('Start read-only. Enable confirmed writes only after connector.discover and dry-run verification. Keep sensitive and system-update gates off unless they are explicitly required.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Start read-only. Enable confirmed writes only after connector.discover and dry-run verification. Keep sensitive, filesystem and system-update gates off unless they are explicitly required.', 'wordpressconnector') . '</p>';
     }
 
     public function renderCheckbox(array $args): void
@@ -123,7 +128,7 @@ final class Settings
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p>' . esc_html__('One connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media and controlled administration. GitHub credentials stay in GitHub Actions; this WordPress plugin only exposes the authenticated HTTPS runtime bridge.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('One connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, controlled plugin settings and bounded filesystem workflows. GitHub credentials stay in GitHub Actions; this WordPress plugin only exposes the authenticated HTTPS runtime bridge.', 'wordpressconnector') . '</p>';
 
         if ($legacyActive) {
             echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
@@ -135,7 +140,7 @@ final class Settings
         echo '<table class="widefat striped" style="max-width:900px"><tbody>';
         echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
         echo '<tr><td><strong>' . esc_html__('REST endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Menus · Users · Plugins/Themes/Core', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem · Menus · Users · Plugins/Themes/Core', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — migration check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
         echo '</tbody></table>';
 
@@ -154,7 +159,7 @@ final class Settings
         echo '</form>';
 
         echo '<h2>' . esc_html__('4. First test', 'wordpressconnector') . '</h2>';
-        echo '<p><code>' . esc_html__('connector.discover → system.doctor → elementor.capabilities → dry-run mutation', 'wordpressconnector') . '</code></p>';
+        echo '<p><code>' . esc_html__('connector.discover → system.doctor → filesystem.inspect → elementor.capabilities → dry-run mutation', 'wordpressconnector') . '</code></p>';
         echo '</div>';
     }
 
