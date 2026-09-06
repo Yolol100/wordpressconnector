@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "request_id": "full-readonly-audit-20260906-03",
-  "action": "elementor.inspect",
+  "request_id": "full-readonly-audit-20260906-04",
+  "action": "acf.field_groups",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id": 899}
+  "payload": {}
 }
