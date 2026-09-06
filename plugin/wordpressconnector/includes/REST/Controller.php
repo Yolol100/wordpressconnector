@@ -95,6 +95,7 @@ final class Controller
                 'privileged' => Policy::flag('WPCONNECTOR_ALLOW_PRIVILEGED'),
                 'sensitive' => Policy::flag('WPCONNECTOR_ALLOW_SENSITIVE'),
                 'system_updates' => Policy::flag('WPCONNECTOR_ALLOW_SYSTEM_UPDATES'),
+                'filesystem_writes' => Policy::flag('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),
             ),
             'limits' => array(
                 'request_bytes' => self::MAX_REQUEST_BYTES,

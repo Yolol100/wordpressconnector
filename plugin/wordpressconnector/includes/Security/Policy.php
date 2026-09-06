@@ -20,6 +20,7 @@ final class Policy
         'WPCONNECTOR_ALLOW_PRIVILEGED' => 'wpconnector_allow_privileged',
         'WPCONNECTOR_ALLOW_SENSITIVE' => 'wpconnector_allow_sensitive',
         'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' => 'wpconnector_allow_system_updates',
+        'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' => 'wpconnector_allow_filesystem_writes',
     );
 
     public static function assertActionAllowed(array $descriptor, bool $dryRun, bool $confirm): void
