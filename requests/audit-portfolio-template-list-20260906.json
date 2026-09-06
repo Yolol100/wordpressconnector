@@ -1,15 +1,10 @@
 {
   "version": 1,
-  "request_id": "audit-portfolio-template-list-20260906-v2",
-  "action": "post.list",
+  "request_id": "audit-portfolio-item-template-20260906",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "elementor_library",
-    "status": "any",
-    "per_page": 100,
-    "page": 1,
-    "orderby": "modified",
-    "order": "DESC"
+    "id": 3670
   }
 }
