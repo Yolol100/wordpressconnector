@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "request_id": "full-readonly-audit-20260906-01",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {"action": "system.doctor", "payload": {}},
+      {"action": "connector.actions", "payload": {}},
+      {"action": "elementor.capabilities", "payload": {}},
+      {"action": "post.list", "payload": {"post_type": "page", "status": "any", "per_page": 100, "page": 1, "orderby": "ID", "order": "ASC"}},
+      {"action": "post.list", "payload": {"post_type": "post", "status": "any", "per_page": 100, "page": 1, "orderby": "ID", "order": "ASC"}},
+      {"action": "post.list", "payload": {"post_type": "elementor_library", "status": "any", "per_page": 100, "page": 1, "orderby": "ID", "order": "ASC"}},
+      {"action": "media.list", "payload": {"per_page": 100, "page": 1}},
+      {"action": "menu.list", "payload": {}}
+    ]
+  }
+}
