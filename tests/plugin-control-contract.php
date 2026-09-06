@@ -6,51 +6,51 @@ $root = dirname(__DIR__);
 
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array(
-        "Version: 1.3.0",
-        "Requires at least: 6.4",
-        "includes/Adapters/AutoImageAttributesAdapter.php",
-        "includes/Adapters/PluginSettingsAdapter.php",
+        'Version: 1.3.0',
+        'Requires at least: 6.4',
+        'includes/Adapters/AutoImageAttributesAdapter.php',
+        'includes/Adapters/PluginSettingsAdapter.php',
     ),
     'plugin/wordpressconnector/includes/Plugin.php' => array(
         'new AutoImageAttributesAdapter()',
         'new PluginSettingsAdapter()',
     ),
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array(
-        "plugin.settings.catalog",
-        "plugin.settings.inspect",
-        "plugin.settings.update",
-        "update_rocket_option",
-        "imagify/get-settings",
-        "imagify/update-settings",
-        "rsssl_get_option",
-        "rsssl_update_option",
-        "WPCONNECTOR_ALLOW_SENSITIVE",
+        'plugin.settings.catalog',
+        'plugin.settings.inspect',
+        'plugin.settings.update',
+        'update_rocket_option',
+        'imagify/get-settings',
+        'imagify/update-settings',
+        'rsssl_get_option',
+        'rsssl_update_option',
+        'WPCONNECTOR_ALLOW_SENSITIVE',
     ),
     'plugin/wordpressconnector/includes/Adapters/AutoImageAttributesAdapter.php' => array(
-        "auto_image_attributes.inspect",
-        "auto_image_attributes.update",
-        "iaff_settings",
-        "_current_fingerprint",
-        "_rollback",
+        'auto_image_attributes.inspect',
+        'auto_image_attributes.update',
+        'iaff_settings',
+        '_current_fingerprint',
+        '_rollback',
     ),
     'plugin/wordpressconnector/includes/Adapters/YoastAdapter.php' => array(
-        "focus_keyphrase",
-        "robots_advanced",
-        "cornerstone",
-        "schema_page_type",
-        "schema_article_type",
-        "primary_category_term_id",
-        "opengraph_image",
-        "twitter_image",
-        "_current_fingerprint",
-        "_rollback",
+        'focus_keyphrase',
+        'robots_advanced',
+        'cornerstone',
+        'schema_page_type',
+        'schema_article_type',
+        'primary_category_term_id',
+        'opengraph_image',
+        'twitter_image',
+        '_current_fingerprint',
+        '_rollback',
     ),
     'docs/ACTION-CATALOG.md' => array(
-        "`plugin.settings.catalog`",
-        "`plugin.settings.inspect`",
-        "`plugin.settings.update`",
-        "`auto_image_attributes.inspect`",
-        "`auto_image_attributes.update`",
+        '`plugin.settings.catalog`',
+        '`plugin.settings.inspect`',
+        '`plugin.settings.update`',
+        '`auto_image_attributes.inspect`',
+        '`auto_image_attributes.update`',
     ),
     'docs/PLUGIN-CONTROL.md' => array(
         'Broken Link Checker',
@@ -90,12 +90,12 @@ foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(') as $
     }
 }
 
-if (strpos($settingsAdapter, "unset($settings['api_key']") === false) {
+if (strpos($settingsAdapter, "unset(\$settings['api_key']") === false) {
     fwrite(STDERR, "Imagify API-key redaction contract missing.\n");
     exit(1);
 }
 
-if (strpos($settingsAdapter, "blocked_arbitrary_code") === false || strpos($settingsAdapter, "blocked_arbitrary_filesystem") === false) {
+if (strpos($settingsAdapter, 'blocked_arbitrary_code') === false || strpos($settingsAdapter, 'blocked_arbitrary_filesystem') === false) {
     fwrite(STDERR, "Arbitrary code/filesystem control boundaries are missing from plugin catalog.\n");
     exit(1);
 }
