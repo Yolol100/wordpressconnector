@@ -6,6 +6,7 @@ namespace Webactueel\WordPressConnector;
 
 use Webactueel\WordPressConnector\Adapters\AbilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\AcfAdapter;
+use Webactueel\WordPressConnector\Adapters\AutoImageAttributesAdapter;
 use Webactueel\WordPressConnector\Adapters\CoreAdapter;
 use Webactueel\WordPressConnector\Adapters\DiscoveryAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
@@ -41,6 +42,7 @@ final class Plugin
             new AcfAdapter(),
             new YoastAdapter(),
             new MediaAdapter(),
+            new AutoImageAttributesAdapter(),
             new PluginSettingsAdapter(),
             new SystemAdapter(),
         );
