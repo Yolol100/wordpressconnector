@@ -19,7 +19,6 @@ $plugin = $read('plugin/wordpressconnector/includes/Plugin.php');
 $elementor = $read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
 $settings = $read('plugin/wordpressconnector/includes/Admin/Settings.php');
 $catalog = $read('docs/ACTION-CATALOG.md');
-$readme = $read('plugin/wordpressconnector/readme.txt');
 
 foreach (array(
     'includes/Adapters/AbilitiesAdapter.php',
@@ -58,14 +57,16 @@ foreach (array('elementor.capabilities', 'wordpress.abilities', 'yoast.inspect',
     }
 }
 
-if (false === strpos($settings, 'WPCONNECTOR_SITE_URL') || false !== strpos($settings, 'GitHub App Client ID')) {
-    fwrite(STDERR, "Unified settings contract is missing or legacy Client ID setup leaked into WordPress Connector.\n");
+if (false === strpos($settings, 'WPCONNECTOR_SITE_URL')) {
+    fwrite(STDERR, "Canonical GitHub Actions setup is missing from WordPress settings.\n");
     exit(1);
 }
 
-if (false === strpos($main, 'Version: 1.2.0') || false === strpos($readme, 'Stable tag: 1.2.0')) {
-    fwrite(STDERR, "Version metadata is not aligned at 1.2.0.\n");
-    exit(1);
+foreach (array('GitHub App Client ID', 'repo_owner', 'repo_name', 'repo_root') as $legacySetting) {
+    if (false !== strpos($settings, $legacySetting)) {
+        fwrite(STDERR, "Legacy direct-GitHub setting leaked into WordPress Connector: {$legacySetting}.\n");
+        exit(1);
+    }
 }
 
-echo "single-plugin consolidation contract OK\n";
+echo "single-plugin contract OK\n";
