@@ -48,6 +48,7 @@ final class FilesystemPolicy
         $path = self::normalize($path);
         if ('.' !== $path) {
             self::assertNoHiddenOrSecretPath($path);
+            self::assertNoManagedDataPath($path);
         }
         return $path;
     }
@@ -59,9 +60,7 @@ final class FilesystemPolicy
             throw new RuntimeException('A file path is required.');
         }
         self::assertNoHiddenOrSecretPath($path);
-        if (0 === strpos($path, 'wp-content/uploads/')) {
-            throw new RuntimeException('Uploaded file contents must be accessed through the media workflow, not filesystem.read_text.');
-        }
+        self::assertNoManagedDataPath($path);
         self::assertTextExtension($path);
         return $path;
     }
@@ -100,6 +99,23 @@ final class FilesystemPolicy
         $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
         if ('' === $extension || ! in_array($extension, self::TEXT_EXTENSIONS, true)) {
             throw new RuntimeException('Unsupported text file extension for connector filesystem access.');
+        }
+    }
+
+    private static function assertNoManagedDataPath(string $path): void
+    {
+        $normalized = strtolower(rtrim($path, '/'));
+        foreach (array(
+            'wp-content/uploads',
+            'wp-content/cache',
+            'wp-content/wflogs',
+            'wp-content/updraft',
+            'wp-content/ai1wm-backups',
+            'wp-content/upgrade',
+        ) as $prefix) {
+            if ($normalized === $prefix || 0 === strpos($normalized, $prefix . '/')) {
+                throw new RuntimeException('Managed uploads, cache, backup, upgrade and security-log paths are not exposed through filesystem actions. Use the dedicated WordPress/media/system workflow instead.');
+            }
         }
     }
 
