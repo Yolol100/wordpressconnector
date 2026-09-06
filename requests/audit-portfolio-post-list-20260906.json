@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "request_id": "audit-portfolio-post-list-20260906",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "DESC"
+  }
+}
