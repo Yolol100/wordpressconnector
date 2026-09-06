@@ -17,6 +17,7 @@ $expected = array(
     'cron.list' => 'privileged',
     'cron.run' => 'mutation, privileged',
     'cron.schedule' => 'mutation, privileged',
+    'elementor.inventory' => 'read-only',
     'multisite.site.create' => 'mutation, privileged, sensitive',
     'multisite.site.delete' => 'mutation, privileged, sensitive, system_update',
     'multisite.site.list' => 'privileged, sensitive',
