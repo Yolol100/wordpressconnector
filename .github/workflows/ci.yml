@@ -30,6 +30,7 @@ jobs:
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/elementor-inventory-contract.php
+          php tests/elementor-forms-contract.php
           php tests/plugin-control-contract.php
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
