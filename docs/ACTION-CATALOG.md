@@ -33,6 +33,10 @@ This catalog is generated from the connector action registrations. Security labe
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
 | `elementor.regenerate` | mutation | Clear Elementor generated CSS/files cache. |
 | `elementor.replace_document` | mutation | Replace Elementor elements/settings through the Elementor document API. |
+| `filesystem.inspect` | privileged | Inspect safe filesystem capabilities and WP File Manager integration state without exposing absolute paths. |
+| `filesystem.list` | privileged | List a bounded directory inside the WordPress root while excluding secret and managed-data paths. |
+| `filesystem.read_text` | privileged | Read a bounded non-secret UTF-8 text file inside the WordPress root. |
+| `filesystem.write_text` | mutation, privileged | Replace an existing plugin/theme text file with dedicated gate, checksum guard, parser validation, readback and rollback. |
 | `gutenberg.inspect` | read-only | Parse Gutenberg/block content into a block tree. |
 | `gutenberg.patch` | mutation | Patch one block by nested numeric path. |
 | `gutenberg.replace` | mutation | Replace the entire serialized block document. |
