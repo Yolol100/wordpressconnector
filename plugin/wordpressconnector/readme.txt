@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ WordPress Connector is the canonical single-plugin bridge for WordPress posts/pa
 
 The default GitHub workflow uses a temporary GitHub-hosted Ubuntu runner and authenticates to WordPress over HTTPS with a WordPress Application Password. No GitHub Client ID is stored in WordPress and no VPS or continuously running self-hosted GitHub Actions runner is required.
 
-Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes both active Elementor capability inventory and a read-only site inventory that maps registered widgets to their Core, Pro, add-on or theme source and counts actual usage per Elementor document.
+Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes active Elementor capability/usage inventory plus complete V3 Form and V4 Atomic Form inspection/upsert with runtime-schema validation and rollback.
 
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
@@ -27,6 +27,16 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Use a private GitHub repository. Store the dedicated WordPress Application Password only in GitHub Actions Secrets. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.5.0 =
+* Add runtime-aware `elementor.form_capabilities` for V3 Form controls/actions and V4 Atomic Form element/prop schemas.
+* Add `elementor.form_inspect` for complete V3/V4 form subtree readback.
+* Add `elementor.form_upsert` to insert or fully replace complete forms while preserving all supplied runtime-supported settings, including email/action configuration.
+* Validate V3 field IDs and registered submit actions; validate V4 typed props, registered Atomic types, required message structures, exactly one submit button and nested-form rejection.
+* Add stale-schema fingerprint guards, exact readback verification and automatic full-document rollback on failed writes.
+
+= 1.4.0 =
+* Add safe plugin-settings control bridge for supported optimization, SEO and security plugins.
 
 = 1.3.0 =
 * Add read-only `elementor.inventory` with paginated site-wide Elementor document scanning.
