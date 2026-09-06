@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "chatgpt-connectivity-test-20260906-2333",
+  "action": "connector.discover",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
