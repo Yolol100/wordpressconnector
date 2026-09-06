@@ -17,6 +17,7 @@ $read = static function (string $relative) use ($root): string {
 $main = $read('plugin/wordpressconnector/wordpressconnector.php');
 $plugin = $read('plugin/wordpressconnector/includes/Plugin.php');
 $elementor = $read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
+$elementorCapabilities = $read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
 $settings = $read('plugin/wordpressconnector/includes/Admin/Settings.php');
 $catalog = $read('docs/ACTION-CATALOG.md');
 
@@ -50,9 +51,16 @@ foreach (array('->save(', 'get_elements_data', 'get_db_document_settings', 'asse
     }
 }
 
-foreach (array('elementor.capabilities', 'wordpress.abilities', 'yoast.inspect', 'yoast.update') as $action) {
+foreach (array('elementor.capabilities', 'elementor.inventory', 'wordpress.abilities', 'yoast.inspect', 'yoast.update') as $action) {
     if (false === strpos($catalog, '`' . $action . '`')) {
         fwrite(STDERR, "Action catalog is missing {$action}.\n");
+        exit(1);
+    }
+}
+
+foreach (array("register('elementor.inventory'", 'missing_widgets', 'widgetSource', 'next_offset') as $needle) {
+    if (false === strpos($elementorCapabilities, $needle)) {
+        fwrite(STDERR, "Elementor inventory contract is missing: {$needle}.\n");
         exit(1);
     }
 }
