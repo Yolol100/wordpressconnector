@@ -24,13 +24,15 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - Elementor capability and usage inventory, including Core/Pro/add-on/theme widget provenance, versions when available, per-document usage counts, missing widget types and legacy/container/Atomic architecture signals;
 - WooCommerce products, variations, attributes and coupons through WooCommerce CRUD APIs;
 - ACF fields and field groups through ACF APIs;
+- Yoast SEO/Premium per-content metadata and selected plugin settings through explicit adapters;
 - media import, metadata, featured images, product galleries, site icon and custom logo;
+- bounded WordPress filesystem inspection plus existing plugin/theme text-file replacement through `WP_Filesystem`;
 - classic menus and menu locations;
 - WordPress and multisite options/theme mods behind privileged gates;
 - users, roles, plugins, themes, cron, rewrite/cache and multisite administration behind privileged/system-update gates;
 - extension actions registered by other WordPress plugins through `wpconnector_register_actions`.
 
-See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md) and [docs/SCOPE.md](docs/SCOPE.md).
+See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md), [docs/PLUGIN-CONTROL.md](docs/PLUGIN-CONTROL.md) and [docs/SCOPE.md](docs/SCOPE.md).
 
 ## Elementor inventory
 
@@ -38,9 +40,17 @@ See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md) and [docs/SCOPE.md](docs/SC
 
 The inventory reports widget source (`elementor-core`, `elementor-pro`, `addon`, `theme` or `unknown`), source slug/name/version when available, instance and document counts, document IDs, unregistered widget types that are still present in saved Elementor data, and legacy/container/Atomic architecture usage. Scans are read-only and paginated with `limit`, `offset`, `has_more` and `next_offset`.
 
+## Controlled filesystem access
+
+`filesystem.inspect`, `filesystem.list` and `filesystem.read_text` provide bounded inspection inside the WordPress root. Secret/dotfile paths, uploads, caches, backups, upgrade state and security logs are excluded from this raw-file surface.
+
+`filesystem.write_text` is deliberately narrower than a browser file-manager UI. It only replaces an **existing** UTF-8 text file under `wp-content/plugins/*` or `wp-content/themes/*`. WordPress core, uploads and the connector's own runtime are never writable through this action. Real writes require the normal write gate plus the dedicated filesystem-write gate, `confirm:true` and a matching `expected_sha256`; PHP/INC and JSON are validated before write, then verified by SHA-256 readback and stored with rollback data.
+
+When WP File Manager is installed, it remains a visual admin interface over the same files. The connector does not emulate WP File Manager's private AJAX/elFinder protocol; it uses WordPress' `WP_Filesystem` abstraction, so successful connector changes are naturally visible in File Manager.
+
 ## Safety model
 
-This is intentionally not a remote shell. There are no generic `eval`, arbitrary SQL, arbitrary filesystem write or arbitrary HTTP proxy actions.
+This is intentionally not a remote shell. There are no generic `eval`, arbitrary SQL, unrestricted filesystem write or arbitrary HTTP proxy actions.
 
 Every action registers explicit security metadata: read-only/mutation, privileged, sensitive and system-update. Mutations default to dry-run and require `confirm: true`. Requests are idempotent, can use stale-state fingerprints and may create rollback snapshots.
 
@@ -52,7 +62,8 @@ The HTTPS transport adds these boundaries:
 - the credentialed executor is a separate `workflow_dispatch` workflow run from `main`, and revalidates the PR, current head SHA, latest commit author, allowed paths, limits and request schema before using credentials;
 - WordPress requires HTTPS, an authenticated user and `manage_options` for every connector REST endpoint;
 - use a dedicated WordPress Application Password stored only in GitHub Secrets;
-- write, privileged, sensitive and system-update gates are controlled in `Settings -> WordPress Connector` and default off except the REST transport itself;
+- write, privileged, sensitive, system-update and filesystem-write gates are controlled in `Settings -> WordPress Connector`; high-risk gates default off;
+- filesystem writes additionally require direct WordPress filesystem mode; FTP/SSH credentials are never supplied through GitHub;
 - request JSON is capped at 256 KiB;
 - request assets are capped at 10 files / 25 MiB total, max 20 MiB each, restricted to WordPress-allowed media extensions, and stored only in a request-scoped temporary directory;
 - generated `results/**` commits do not retrigger execution.
@@ -61,16 +72,16 @@ The HTTPS transport adds these boundaries:
 
 1. Install and activate `plugin/wordpressconnector` on the WordPress site.
 2. Keep the GitHub repository private.
-3. In WordPress, open `Settings -> WordPress Connector`. Keep sensitive/system-update gates off; enable writes and privileged actions only when required by an approved workflow.
+3. In WordPress, open `Settings -> WordPress Connector`. Keep sensitive/system-update/filesystem-write gates off; enable writes and privileged actions only when required by an approved workflow.
 4. Create a dedicated WordPress Application Password for the administrator/service account used by this connector.
 5. Add GitHub repository variable `WPCONNECTOR_SITE_URL` with the canonical `https://` site URL.
 6. Add GitHub repository secrets `WPCONNECTOR_REST_USERNAME` and `WPCONNECTOR_REST_APPLICATION_PASSWORD`.
-7. Run `connector.discover` read-only.
+7. Run `connector.discover`, `system.doctor` and `filesystem.inspect` read-only.
 8. Test dry-runs.
 9. Perform a disposable staging write and rollback before broad production mutation use.
-10. Test representative Gutenberg, Elementor, WooCommerce, ACF and media round-trips.
+10. Test representative Gutenberg, Elementor, WooCommerce, ACF, media and filesystem round-trips that match the intended production actions.
 
-Actual WordPress/Elementor/WooCommerce/ACF behavior remains `staging-first` until those runtime tests have been executed on the target environment.
+Actual WordPress/Elementor/WooCommerce/ACF/filesystem behavior remains `staging-first` until those runtime tests have been executed on the target environment.
 
 ## Optional local WP-CLI transport
 
