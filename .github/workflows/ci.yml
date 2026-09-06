@@ -29,6 +29,7 @@ jobs:
           php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
           php tests/policy-contract.php
           php tests/action-catalog.php
+          php tests/elementor-inventory-contract.php
           php tests/repository-hygiene.php
           php tests/request-workflow-contract.php
           php tests/execute-workflow-contract.php
