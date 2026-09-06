@@ -11,6 +11,7 @@ use Webactueel\WordPressConnector\Adapters\CoreAdapter;
 use Webactueel\WordPressConnector\Adapters\DiscoveryAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter;
+use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
@@ -44,6 +45,7 @@ final class Plugin
             new MediaAdapter(),
             new AutoImageAttributesAdapter(),
             new PluginSettingsAdapter(),
+            new FilesystemAdapter(),
             new SystemAdapter(),
         );
 
