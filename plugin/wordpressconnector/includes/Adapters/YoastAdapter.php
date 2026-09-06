@@ -18,23 +18,33 @@ final class YoastAdapter
         'canonical' => '_yoast_wpseo_canonical',
         'robots_noindex' => '_yoast_wpseo_meta-robots-noindex',
         'robots_nofollow' => '_yoast_wpseo_meta-robots-nofollow',
+        'robots_advanced' => '_yoast_wpseo_meta-robots-adv',
         'breadcrumb_title' => '_yoast_wpseo_bctitle',
+        'cornerstone' => '_yoast_wpseo_is_cornerstone',
+        'schema_page_type' => '_yoast_wpseo_schema_page_type',
+        'schema_article_type' => '_yoast_wpseo_schema_article_type',
+        'redirect' => '_yoast_wpseo_redirect',
+        'primary_category_term_id' => '_yoast_wpseo_primary_category',
         'opengraph_title' => '_yoast_wpseo_opengraph-title',
         'opengraph_description' => '_yoast_wpseo_opengraph-description',
+        'opengraph_image' => '_yoast_wpseo_opengraph-image',
+        'opengraph_image_id' => '_yoast_wpseo_opengraph-image-id',
         'twitter_title' => '_yoast_wpseo_twitter-title',
         'twitter_description' => '_yoast_wpseo_twitter-description',
+        'twitter_image' => '_yoast_wpseo_twitter-image',
+        'twitter_image_id' => '_yoast_wpseo_twitter-image-id',
     );
 
     public function register(Registry $registry): void
     {
         $registry->register('yoast.inspect', array($this, 'inspect'), array(
             'privileged' => true,
-            'description' => 'Read supported Yoast SEO fields for one WordPress content object.',
+            'description' => 'Read supported Yoast SEO and Yoast SEO Premium fields for one WordPress content object.',
         ));
         $registry->register('yoast.update', array($this, 'update'), array(
             'mutation' => true,
             'privileged' => true,
-            'description' => 'Update supported Yoast SEO fields with dry-run, fingerprint and rollback support.',
+            'description' => 'Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support.',
         ));
     }
 
@@ -47,6 +57,8 @@ final class YoastAdapter
             'post_id' => (int) $post->ID,
             'yoast_active' => defined('WPSEO_VERSION') || defined('YOAST_SEO_VERSION'),
             'yoast_version' => defined('WPSEO_VERSION') ? WPSEO_VERSION : (defined('YOAST_SEO_VERSION') ? YOAST_SEO_VERSION : null),
+            'yoast_premium_active' => defined('WPSEO_PREMIUM_VERSION'),
+            'yoast_premium_version' => defined('WPSEO_PREMIUM_VERSION') ? WPSEO_PREMIUM_VERSION : null,
             'fields' => $fields,
             'fingerprint' => Fingerprint::make($fields),
         );
@@ -72,7 +84,7 @@ final class YoastAdapter
         $before = $this->snapshot((int) $post->ID);
         $after = $before;
         foreach ($updates as $field => $value) {
-            $after[$field] = null === $value ? null : (string) $value;
+            $after[$field] = null === $value ? null : $this->sanitizeField((string) $field, $value);
         }
 
         $result = array(
@@ -88,17 +100,17 @@ final class YoastAdapter
 
         foreach ($updates as $field => $value) {
             $metaKey = self::FIELDS[$field];
-            if (null === $value) {
+            if (null === $value || '' === (string) $value) {
                 delete_post_meta((int) $post->ID, $metaKey);
             } else {
-                update_post_meta((int) $post->ID, $metaKey, (string) $value);
+                update_post_meta((int) $post->ID, $metaKey, $this->sanitizeField((string) $field, $value));
             }
         }
 
         clean_post_cache((int) $post->ID);
         $readback = $this->snapshot((int) $post->ID);
         foreach ($updates as $field => $value) {
-            $expected = null === $value ? null : (string) $value;
+            $expected = null === $value || '' === (string) $value ? null : $this->sanitizeField((string) $field, $value);
             if ($readback[$field] !== $expected) {
                 throw new RuntimeException('Yoast readback verification failed for field: ' . (string) $field);
             }
@@ -134,5 +146,51 @@ final class YoastAdapter
             $result[$field] = '' === $value ? null : (string) $value;
         }
         return $result;
+    }
+
+    private function sanitizeField(string $field, $value): string
+    {
+        $value = (string) $value;
+
+        if (in_array($field, array('canonical', 'redirect', 'opengraph_image', 'twitter_image'), true)) {
+            $clean = esc_url_raw($value);
+            if ('' !== $value && '' === $clean) {
+                throw new RuntimeException('Yoast field requires a valid URL: ' . $field);
+            }
+            return $clean;
+        }
+
+        if (in_array($field, array('opengraph_image_id', 'twitter_image_id', 'primary_category_term_id'), true)) {
+            $id = (int) $value;
+            if ($id < 1) {
+                throw new RuntimeException('Yoast field requires a positive integer ID: ' . $field);
+            }
+            return (string) $id;
+        }
+
+        if ('robots_noindex' === $field && ! in_array($value, array('0', '1', '2'), true)) {
+            throw new RuntimeException('robots_noindex must be 0 (default), 1 (noindex), or 2 (index).');
+        }
+        if ('robots_nofollow' === $field && ! in_array($value, array('0', '1'), true)) {
+            throw new RuntimeException('robots_nofollow must be 0 (follow) or 1 (nofollow).');
+        }
+        if ('robots_advanced' === $field) {
+            $allowed = array('noimageindex', 'noarchive', 'nosnippet');
+            $parts = array_filter(array_map('trim', explode(',', $value)));
+            foreach ($parts as $part) {
+                if (! in_array($part, $allowed, true)) {
+                    throw new RuntimeException('Unsupported advanced robots directive: ' . $part);
+                }
+            }
+            return implode(',', array_values(array_unique($parts)));
+        }
+        if ('cornerstone' === $field) {
+            if (! in_array(strtolower($value), array('true', 'false'), true)) {
+                throw new RuntimeException('cornerstone must be true or false.');
+            }
+            return strtolower($value);
+        }
+
+        return sanitize_text_field($value);
     }
 }
