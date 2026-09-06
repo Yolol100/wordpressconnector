@@ -8,6 +8,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.field_groups` | privileged | List active ACF field groups and fields for discovery. |
 | `acf.get` | privileged | Read ACF values for a post, term, user or options target. |
 | `acf.update` | mutation, privileged | Update one or more ACF fields through update_field(). |
+| `auto_image_attributes.inspect` | privileged | Read safe Auto Image Attributes upload and bulk-update settings. |
+| `auto_image_attributes.update` | mutation, privileged | Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback. |
 | `cache.flush` | mutation, privileged | Flush WordPress object cache. |
 | `comment.get` | privileged, sensitive | Read one comment. |
 | `comment.list` | privileged, sensitive | List comments including private author metadata. |
@@ -64,6 +66,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
 | `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
 | `plugin.list` | privileged | List installed plugins and activation state. |
+| `plugin.settings.catalog` | privileged | List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets. |
+| `plugin.settings.inspect` | privileged | Read allowlisted settings through a plugin-owned API and return a state fingerprint. |
+| `plugin.settings.update` | mutation, privileged | Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback. |
 | `plugin.update` | mutation, privileged, system_update | Update one installed plugin. |
 | `post.create` | mutation | Create a post, page or custom post type object. |
 | `post.get` | read-only | Read one post object. |
@@ -107,13 +112,13 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.coupon.list` | privileged | List WooCommerce coupons without customer/order data. |
 | `woocommerce.coupon.update` | mutation, privileged | Update a WooCommerce coupon. |
 | `woocommerce.product.create` | mutation | Create a WooCommerce product. |
-| `woocommerce.product.get` | read-only | Read a WooCommerce product. |
+| `woocommerce.product.get` | read-only | Read one WooCommerce product. |
 | `woocommerce.product.list` | read-only | List WooCommerce products through WooCommerce CRUD. |
-| `woocommerce.product.update` | mutation | Update a WooCommerce product. |
+| `woocommerce.product.update` | mutation | Update one WooCommerce product. |
 | `woocommerce.variation.create` | mutation | Create a product variation. |
-| `woocommerce.variation.get` | read-only | Read a product variation. |
+| `woocommerce.variation.get` | read-only | Read one product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a product variation. |
 | `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
-| `yoast.inspect` | privileged | Read supported Yoast SEO fields for one WordPress content object. |
-| `yoast.update` | mutation, privileged | Update supported Yoast SEO fields with dry-run, fingerprint, readback and rollback support. |
+| `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
+| `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |
