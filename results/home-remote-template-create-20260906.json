@@ -1,0 +1,1 @@
+{"version":1,"ok":false,"request_id":"home-remote-template-create-20260906","action":"elementor.create_document","dry_run":false,"completed_at_gmt":"2026-09-06T21:18:59+00:00","error":"Writes are disabled. Enable the WordPress Connector write gate or set WPCONNECTOR_ALLOW_WRITES=1.","meta":{"exception":"RuntimeException"}}
