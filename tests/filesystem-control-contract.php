@@ -9,7 +9,7 @@ use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array(
-        'Version: 1.5.0',
+        'Version: 1.6.0',
         'includes/Security/FilesystemPolicy.php',
         'includes/Adapters/FilesystemAdapter.php',
     ),
@@ -34,7 +34,7 @@ $mustContain = array(
         'filesystem.read_text',
         'filesystem.write_text',
         'WP_Filesystem',
-        "'direct' !== $method",
+        "'direct' !== \$method",
         'expected_sha256',
         'TOKEN_PARSE',
         'JSON_THROW_ON_ERROR',
