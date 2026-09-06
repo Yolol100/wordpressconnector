@@ -22,6 +22,7 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - Gutenberg/block content, including nested block patches;
 - Elementor document JSON, nested elements, page settings, document creation and Theme Builder metadata;
 - Elementor capability and usage inventory, including Core/Pro/add-on/theme widget provenance, versions when available, per-document usage counts, missing widget types and legacy/container/Atomic architecture signals;
+- complete Elementor V3 Form widgets and V4 Atomic Form subtrees, including fields, labels, validation settings, submit actions, recipients, subject/message/from/reply-to/cc/bcc settings, success/error messages, styles and other runtime-supported form settings;
 - WooCommerce products, variations, attributes and coupons through WooCommerce CRUD APIs;
 - ACF fields and field groups through ACF APIs;
 - media import, metadata, featured images, product galleries, site icon and custom logo;
@@ -30,13 +31,21 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - users, roles, plugins, themes, cron, rewrite/cache and multisite administration behind privileged/system-update gates;
 - extension actions registered by other WordPress plugins through `wpconnector_register_actions`.
 
-See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md) and [docs/SCOPE.md](docs/SCOPE.md).
+See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md), [docs/SCOPE.md](docs/SCOPE.md) and [docs/ELEMENTOR-FORMS.md](docs/ELEMENTOR-FORMS.md).
 
 ## Elementor inventory
 
 `elementor.capabilities` reports what the active Elementor runtime currently registers. `elementor.inventory` additionally scans saved Elementor documents and correlates actual usage with that runtime inventory.
 
 The inventory reports widget source (`elementor-core`, `elementor-pro`, `addon`, `theme` or `unknown`), source slug/name/version when available, instance and document counts, document IDs, unregistered widget types that are still present in saved Elementor data, and legacy/container/Atomic architecture usage. Scans are read-only and paginated with `limit`, `offset`, `has_more` and `next_offset`.
+
+## Elementor forms
+
+Use `elementor.form_capabilities` before generating or modifying a form. It reports the exact V3 Form controls and registered submit-action keys plus the active V4 `e-form*` Atomic types and their runtime Atomic schemas. The returned `schema_fingerprint` can be supplied to `elementor.form_upsert` to refuse stale writes after Elementor/Pro/add-on schema changes.
+
+`elementor.form_inspect` returns complete form subtrees from a document. `elementor.form_upsert` accepts one complete V3 `widgetType=form` widget or V4 `elType=e-form` subtree and either inserts it into a document or fully replaces the existing form with the same element ID. The connector does not strip form settings: runtime-supported email content, recipients, fields, action configuration, styling and nested V4 atoms remain part of the supplied JSON.
+
+V3 and V4 are deliberately not converted into each other automatically. V3 submit actions are validated against the active Form widget control options. V4 element types and typed `$$type/value` settings are validated against the active runtime, nested forms are rejected, exactly one V4 submit button is required, and success/error message structures are checked before Elementor's document save API is called. Every non-dry-run form mutation is read back exactly and restores the previous document snapshot on failure.
 
 ## Safety model
 
@@ -68,7 +77,7 @@ The HTTPS transport adds these boundaries:
 7. Run `connector.discover` read-only.
 8. Test dry-runs.
 9. Perform a disposable staging write and rollback before broad production mutation use.
-10. Test representative Gutenberg, Elementor, WooCommerce, ACF and media round-trips.
+10. Test representative Gutenberg, Elementor, forms, WooCommerce, ACF and media round-trips.
 
 Actual WordPress/Elementor/WooCommerce/ACF behavior remains `staging-first` until those runtime tests have been executed on the target environment.
 
