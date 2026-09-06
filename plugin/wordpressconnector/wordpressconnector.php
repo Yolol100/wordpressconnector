@@ -43,6 +43,7 @@ $files = array(
     'includes/Adapters/AcfAdapter.php',
     'includes/Adapters/YoastAdapter.php',
     'includes/Adapters/MediaAdapter.php',
+    'includes/Adapters/AutoImageAttributesAdapter.php',
     'includes/Adapters/PluginSettingsAdapter.php',
     'includes/Adapters/SystemAdapter.php',
     'includes/Runtime/Runner.php',
