@@ -18,12 +18,14 @@ $main = $read('plugin/wordpressconnector/wordpressconnector.php');
 $plugin = $read('plugin/wordpressconnector/includes/Plugin.php');
 $elementor = $read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
 $elementorCapabilities = $read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
+$elementorForms = $read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
 $settings = $read('plugin/wordpressconnector/includes/Admin/Settings.php');
 $catalog = $read('docs/ACTION-CATALOG.md');
 
 foreach (array(
     'includes/Adapters/AbilitiesAdapter.php',
     'includes/Adapters/ElementorCapabilitiesAdapter.php',
+    'includes/Adapters/ElementorFormsAdapter.php',
     'includes/Adapters/YoastAdapter.php',
 ) as $relative) {
     if (false === strpos($main, $relative)) {
@@ -32,7 +34,7 @@ foreach (array(
     }
 }
 
-foreach (array('AbilitiesAdapter', 'ElementorCapabilitiesAdapter', 'YoastAdapter') as $class) {
+foreach (array('AbilitiesAdapter', 'ElementorCapabilitiesAdapter', 'ElementorFormsAdapter', 'YoastAdapter') as $class) {
     if (false === strpos($plugin, 'new ' . $class . '()')) {
         fwrite(STDERR, "Plugin registry is missing {$class}.\n");
         exit(1);
@@ -43,6 +45,10 @@ if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $element
     fwrite(STDERR, "ElementorAdapter must not write _elementor_data directly.\n");
     exit(1);
 }
+if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $elementorForms)) {
+    fwrite(STDERR, "ElementorFormsAdapter must not write _elementor_data directly.\n");
+    exit(1);
+}
 
 foreach (array('->save(', 'get_elements_data', 'get_db_document_settings', 'assertDocumentReadback') as $needle) {
     if (false === strpos($elementor, $needle)) {
@@ -51,7 +57,16 @@ foreach (array('->save(', 'get_elements_data', 'get_db_document_settings', 'asse
     }
 }
 
-foreach (array('elementor.capabilities', 'elementor.inventory', 'wordpress.abilities', 'yoast.inspect', 'yoast.update') as $action) {
+foreach (array(
+    'elementor.capabilities',
+    'elementor.inventory',
+    'elementor.form_capabilities',
+    'elementor.form_inspect',
+    'elementor.form_upsert',
+    'wordpress.abilities',
+    'yoast.inspect',
+    'yoast.update',
+) as $action) {
     if (false === strpos($catalog, '`' . $action . '`')) {
         fwrite(STDERR, "Action catalog is missing {$action}.\n");
         exit(1);
@@ -61,6 +76,21 @@ foreach (array('elementor.capabilities', 'elementor.inventory', 'wordpress.abili
 foreach (array("register('elementor.inventory'", 'missing_widgets', 'widgetSource', 'next_offset') as $needle) {
     if (false === strpos($elementorCapabilities, $needle)) {
         fwrite(STDERR, "Elementor inventory contract is missing: {$needle}.\n");
+        exit(1);
+    }
+}
+
+foreach (array(
+    "register('elementor.form_capabilities'",
+    "register('elementor.form_inspect'",
+    "register('elementor.form_upsert'",
+    'schema_fingerprint',
+    'submit_action_choice_keys',
+    'atomic_props_schema',
+    'restoreSnapshot',
+) as $needle) {
+    if (false === strpos($elementorForms, $needle)) {
+        fwrite(STDERR, "Elementor forms contract is missing: {$needle}.\n");
         exit(1);
     }
 }
