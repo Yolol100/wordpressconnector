@@ -68,14 +68,23 @@ final class DiscoveryAdapter
             );
         }
 
+        $yoastVersion = defined('WPSEO_VERSION')
+            ? WPSEO_VERSION
+            : (defined('YOAST_SEO_VERSION') ? YOAST_SEO_VERSION : null);
+
         $builders = array(
             'gutenberg' => function_exists('parse_blocks'),
             'elementor' => class_exists('Elementor\\Plugin'),
             'elementor_version' => defined('ELEMENTOR_VERSION') ? ELEMENTOR_VERSION : null,
+            'elementor_pro' => defined('ELEMENTOR_PRO_VERSION'),
+            'elementor_pro_version' => defined('ELEMENTOR_PRO_VERSION') ? ELEMENTOR_PRO_VERSION : null,
             'woocommerce' => class_exists('WooCommerce'),
             'woocommerce_version' => defined('WC_VERSION') ? WC_VERSION : null,
             'acf' => function_exists('get_fields'),
             'acf_version' => defined('ACF_VERSION') ? ACF_VERSION : null,
+            'yoast' => null !== $yoastVersion || class_exists('WPSEO_Options'),
+            'yoast_version' => $yoastVersion,
+            'wordpress_abilities' => function_exists('wp_get_abilities'),
         );
 
         return array(
@@ -105,6 +114,7 @@ final class DiscoveryAdapter
             ),
             'actions' => isset($context['registry']) && $context['registry'] instanceof Registry ? $context['registry']->catalog() : array(),
             'public_repository_mode' => Policy::publicRepositoryContext(),
+            'connector_mode' => 'single_canonical_bridge',
         );
     }
 }

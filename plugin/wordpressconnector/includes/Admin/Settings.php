@@ -22,7 +22,7 @@ final class Settings
         'wpconnector_allow_privileged' => array(
             'label' => 'Allow privileged actions',
             'default' => 0,
-            'help' => 'Required for options, post meta, users and other privileged connector actions.',
+            'help' => 'Required for options, post meta, ACF, Yoast, users and other privileged connector actions.',
         ),
         'wpconnector_allow_sensitive' => array(
             'label' => 'Allow sensitive data actions',
@@ -57,7 +57,7 @@ final class Settings
 
         add_settings_section(
             'wpconnector_security',
-            'Transport and execution gates',
+            '3. Transport and execution gates',
             array($this, 'renderSection'),
             self::PAGE
         );
@@ -92,7 +92,7 @@ final class Settings
 
     public function renderSection(): void
     {
-        echo '<p>' . esc_html__('The REST transport requires HTTPS and an authenticated WordPress administrator. Use a dedicated Application Password for GitHub; keep the sensitive and system-update gates disabled unless they are explicitly needed.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Start read-only. Enable confirmed writes only after connector.discover and dry-run verification. Keep sensitive and system-update gates off unless they are explicitly required.', 'wordpressconnector') . '</p>';
     }
 
     public function renderCheckbox(array $args): void
@@ -118,14 +118,65 @@ final class Settings
             return;
         }
 
+        $healthUrl = rest_url('webactueel-wordpress-connector/v1/health');
+        $legacyActive = $this->legacyBridgeActive();
+
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p><code>' . esc_html(rest_url('webactueel-wordpress-connector/v1/health')) . '</code></p>';
-        echo '<form method="post" action="options.php">';
+        echo '<p>' . esc_html__('One connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media and controlled administration. GitHub credentials stay in GitHub Actions; this WordPress plugin only exposes the authenticated HTTPS runtime bridge.', 'wordpressconnector') . '</p>';
+
+        if ($legacyActive) {
+            echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
+            echo esc_html__('Do not configure its separate Repository screen for the new route. WordPress Connector is the canonical bridge. Keep the legacy plugin only until your read-only/dry-run/staging parity test has passed, then deactivate it.', 'wordpressconnector');
+            echo '</p></div>';
+        }
+
+        echo '<h2>' . esc_html__('1. WordPress connection', 'wordpressconnector') . '</h2>';
+        echo '<table class="widefat striped" style="max-width:900px"><tbody>';
+        echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
+        echo '<tr><td><strong>' . esc_html__('REST endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Menus · Users · Plugins/Themes/Core', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — migration check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
+        echo '</tbody></table>';
+
+        echo '<h2>' . esc_html__('2. GitHub configuration', 'wordpressconnector') . '</h2>';
+        echo '<p>' . esc_html__('Configure these values in the private wordpressconnector repository under Settings → Secrets and variables → Actions. Do not paste GitHub client secrets or WordPress passwords into this page.', 'wordpressconnector') . '</p>';
+        echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>' . esc_html__('Type', 'wordpressconnector') . '</th><th>' . esc_html__('Name', 'wordpressconnector') . '</th><th>' . esc_html__('Value', 'wordpressconnector') . '</th></tr></thead><tbody>';
+        echo '<tr><td>' . esc_html__('Variable', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_SITE_URL</code></td><td>' . esc_html__('Canonical https:// URL of this site', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_USERNAME</code></td><td>' . esc_html__('Dedicated WordPress administrator/service username', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_APPLICATION_PASSWORD</code></td><td>' . esc_html__('Dedicated WordPress Application Password', 'wordpressconnector') . '</td></tr>';
+        echo '</tbody></table>';
+
+        echo '<form method="post" action="options.php" style="max-width:900px">';
         settings_fields(self::PAGE);
         do_settings_sections(self::PAGE);
         submit_button();
         echo '</form>';
+
+        echo '<h2>' . esc_html__('4. First test', 'wordpressconnector') . '</h2>';
+        echo '<p><code>' . esc_html__('connector.discover → system.doctor → elementor.capabilities → dry-run mutation', 'wordpressconnector') . '</code></p>';
         echo '</div>';
+    }
+
+    private function legacyBridgeActive(): bool
+    {
+        if (class_exists('Webactueel\\ElementorJsonBridge\\Plugin')) {
+            return true;
+        }
+
+        if (! function_exists('is_plugin_active')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
+
+        foreach (array(
+            'elementor-json-bridge/elementor-json-bridge.php',
+            'Elementorconnector/elementor-json-bridge.php',
+        ) as $pluginFile) {
+            if (function_exists('is_plugin_active') && is_plugin_active($pluginFile)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

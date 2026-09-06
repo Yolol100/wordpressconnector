@@ -34,7 +34,23 @@ jobs:
           php tests/execute-workflow-contract.php
           php tests/rest-transport-contract.php
           php tests/mutation-lock-contract.php
+          php tests/consolidation-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
+
+      - name: Build and verify installable plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd plugin
+          zip -qr "$RUNNER_TEMP/wordpressconnector.zip" wordpressconnector
+          cd "$GITHUB_WORKSPACE"
+          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
+          unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
+          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
+            echo 'Development-only content leaked into plugin ZIP.' >&2
+            exit 1
+          fi
+          sha256sum "$RUNNER_TEMP/wordpressconnector.zip"
 
       - name: Reject dangerous execution primitives
         shell: bash
