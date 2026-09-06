@@ -6,14 +6,16 @@ $root = dirname(__DIR__);
 
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array(
-        'Version: 1.4.0',
+        'Version: 1.5.0',
         'Requires at least: 6.4',
         'includes/Adapters/AutoImageAttributesAdapter.php',
         'includes/Adapters/PluginSettingsAdapter.php',
+        'includes/Adapters/FilesystemAdapter.php',
     ),
     'plugin/wordpressconnector/includes/Plugin.php' => array(
         'new AutoImageAttributesAdapter()',
         'new PluginSettingsAdapter()',
+        'new FilesystemAdapter()',
     ),
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array(
         'plugin.settings.catalog',
@@ -26,7 +28,8 @@ $mustContain = array(
         'rsssl_update_option',
         'WPCONNECTOR_ALLOW_SENSITIVE',
         'blocked_arbitrary_code',
-        'blocked_arbitrary_filesystem',
+        'shared_filesystem_interface',
+        'bounded_filesystem_bridge',
     ),
     'plugin/wordpressconnector/includes/Adapters/AutoImageAttributesAdapter.php' => array(
         'auto_image_attributes.inspect',
@@ -47,20 +50,13 @@ $mustContain = array(
         '_current_fingerprint',
         '_rollback',
     ),
-    'docs/ACTION-CATALOG.md' => array(
-        '`elementor.inventory`',
-        '`plugin.settings.catalog`',
-        '`plugin.settings.inspect`',
-        '`plugin.settings.update`',
-        '`auto_image_attributes.inspect`',
-        '`auto_image_attributes.update`',
-    ),
     'docs/PLUGIN-CONTROL.md' => array(
         'Broken Link Checker',
         'Wordfence Security',
         'WP Mail SMTP',
         'Code Snippets',
         'WP File Manager',
+        'WP File Manager and controlled filesystem access',
     ),
 );
 
@@ -95,6 +91,11 @@ foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(') as $
 
 if (strpos($settingsAdapter, "unset(\$settings['api_key']") === false) {
     fwrite(STDERR, "Imagify API-key redaction contract missing.\n");
+    exit(1);
+}
+
+if (strpos($settingsAdapter, "'arbitrary_filesystem' => false") === false) {
+    fwrite(STDERR, "Unrestricted filesystem boundary is missing from plugin catalog.\n");
     exit(1);
 }
 
