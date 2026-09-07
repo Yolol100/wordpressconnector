@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "request_id": "byderma-spacing-dryrun-20260907",
+  "action": "connector.batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4733,
+          "element_id": "e2100010",
+          "settings": {
+            "padding": {"unit":"rem","top":"2","right":"0","bottom":"2","left":"0","isLinked":false},
+            "padding_tablet": {"unit":"rem","top":"2","right":"2","bottom":"2","left":"2","isLinked":false},
+            "padding_mobile": {"unit":"rem","top":"1.5","right":"1","bottom":"1.5","left":"1","isLinked":false}
+          }
+        }
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4733,
+          "element_id": "e2100030",
+          "settings": {
+            "padding": {"unit":"rem","top":"2","right":"0","bottom":"2","left":"0","isLinked":false},
+            "padding_tablet": {"unit":"rem","top":"2","right":"2","bottom":"2","left":"2","isLinked":false},
+            "padding_mobile": {"unit":"rem","top":"1.5","right":"1","bottom":"1.5","left":"1","isLinked":false}
+          }
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
