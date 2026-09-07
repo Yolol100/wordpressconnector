@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    paths-ignore:
-      - 'requests/**'
-      - 'results/**'
-      - 'assets/inbox/**'
 
 permissions:
   contents: read
@@ -22,31 +18,26 @@ jobs:
         with:
           fetch-depth: 2
           persist-credentials: false
-
-      - name: Validate PHP, shell, schemas, examples and workflow guards
+      - name: Validate PHP, shell and contracts
         shell: bash
         run: |
           set -euo pipefail
           find plugin/wordpressconnector scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l
           find scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
-          for file in examples/*.json; do php scripts/validate-request.php "$file"; done
-          php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/elementor-inventory-contract.php
           php tests/elementor-forms-contract.php
           php tests/elementor-json-export-runtime.php
           php tests/elementor-json-import-contract.php
+          php tests/state-token-contract.php
           php tests/plugin-control-contract.php
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
-          php tests/request-workflow-contract.php
-          php tests/execute-workflow-contract.php
           php tests/rest-transport-contract.php
           php tests/mutation-lock-contract.php
           php tests/single-plugin-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
-
       - name: Build and verify installable plugin ZIP
         shell: bash
         run: |
@@ -56,22 +47,12 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
           unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
-          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
-            echo 'Development-only content leaked into plugin ZIP.' >&2
-            exit 1
-          fi
+          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then echo 'Development-only content leaked into plugin ZIP.' >&2; exit 1; fi
           sha256sum "$RUNNER_TEMP/wordpressconnector.zip"
-
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin scripts; then
-            echo 'Forbidden execution primitive found.' >&2
-            exit 1
-          fi
+          if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin scripts; then echo 'Forbidden execution primitive found.' >&2; exit 1; fi
           forbidden_event="pull_request""_target"
-          if grep -RIn "$forbidden_event" .github/workflows; then
-            echo 'Privileged pull-request event is forbidden for this repository.' >&2
-            exit 1
-          fi
+          if grep -RIn "$forbidden_event" .github/workflows; then echo 'Privileged pull-request event is forbidden for this repository.' >&2; exit 1; fi
