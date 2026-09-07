@@ -120,14 +120,16 @@ if (false !== strpos($elementorExport, 'filename=\\"')) {
     exit(1);
 }
 
-if (false === strpos($settings, 'WPCONNECTOR_SITE_URL')) {
-    fwrite(STDERR, "Canonical GitHub Actions setup is missing from WordPress settings.\n");
-    exit(1);
+foreach (array('WP Agent connection', 'authenticated HTTPS REST', 'GitHub is used only for source control, CI, review and releases') as $needle) {
+    if (false === strpos($settings, $needle)) {
+        fwrite(STDERR, "WP Agent runtime setup contract is missing: {$needle}.\n");
+        exit(1);
+    }
 }
 
-foreach (array('GitHub App Client ID', 'repo_owner', 'repo_name', 'repo_root') as $legacySetting) {
+foreach (array('WPCONNECTOR_SITE_URL', 'WPCONNECTOR_REST_USERNAME', 'WPCONNECTOR_REST_APPLICATION_PASSWORD', 'GitHub App Client ID', 'repo_owner', 'repo_name', 'repo_root') as $legacySetting) {
     if (false !== strpos($settings, $legacySetting)) {
-        fwrite(STDERR, "Legacy direct-GitHub setting leaked into WordPress Connector: {$legacySetting}.\n");
+        fwrite(STDERR, "Retired GitHub transport setting leaked into WordPress Connector: {$legacySetting}.\n");
         exit(1);
     }
 }

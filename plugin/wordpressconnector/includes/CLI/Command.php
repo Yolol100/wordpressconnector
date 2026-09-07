@@ -19,22 +19,22 @@ final class Command
     }
 
     /**
-     * Execute one connector request file.
+     * Execute one connector request file for local diagnostics or recovery.
      *
      * ## OPTIONS
      *
      * <request>
-     * : Path to a request JSON file.
+     * : Path to a local request JSON file.
      *
      * [--output=<path>]
      * : Write the result JSON atomically to this path.
      *
      * [--asset-root=<path>]
-     * : Trusted root used by media.import source_path.
+     * : Trusted local root used by media.import source_path.
      *
      * ## EXAMPLES
      *
-     *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
+     *     wp wordpress-connector run /tmp/connector-request.json --output=/tmp/connector-result.json
      *
      * @subcommand run
      */

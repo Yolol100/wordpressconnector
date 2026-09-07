@@ -1,34 +1,46 @@
-# Architecture and reference patterns
+# Architecture
 
-WordPress Connector combines established patterns rather than copying another project.
+WordPress Connector is the advanced execution layer behind WP Agent.
 
-- **WordPress REST API + Application Passwords:** the default remote transport uses WordPress-native HTTPS authentication for external applications and keeps authorization inside WordPress.
-- **GitHub-hosted runners:** GitHub provisions fresh `ubuntu-latest` virtual machines per job; no persistent runner or VPS is required.
-- **Split credential boundary:** the PR-triggered workflow has no WordPress secrets. It can only validate a request and dispatch a separate executor explicitly from trusted `main`.
-- **WP-CLI:** remains an optional local diagnostics/recovery transport with explicit command contracts and machine-readable output.
-- **Semantic action registry:** both REST and WP-CLI call the same registry, policy layer, idempotency store, fingerprint guards and rollback engine.
-- **Release hygiene:** runtime/generated request and result files stay outside the permanent product source and distributable plugin boundaries remain explicit.
+## Canonical flow
 
-## Default remote flow
+`ChatGPT -> WP Agent -> WordPress REST -> WordPress Connector -> WordPress/Elementor/ACF/WooCommerce`
 
-`request PR -> secretless GitHub guard -> workflow_dispatch(ref=main) -> trusted GitHub-hosted executor -> authenticated HTTPS -> WordPress Connector REST controller -> shared Runner -> semantic adapter -> result JSON -> request branch`
+WP Agent owns the remote transport to the connected WordPress site. The connector owns only capabilities that need a richer WordPress-side implementation than WP Agent provides directly.
 
-The PR guard validates same-repository origin, trusted actor, private repository, allowed paths, request schema and request/asset limits without access to WordPress credentials.
+GitHub is not part of the live request path. It is used only for source control, CI, review and releases.
 
-The guard then dispatches `wordpress-execute.yml` using `ref=main`. The trusted executor independently fetches and validates the current PR, exact head SHA, base branch, latest commit author, changed paths, request limits and schema using validator code from trusted current `main`. The WordPress secrets are scoped only to later transport steps in this trusted workflow.
+## Runtime contract
 
-Immediately before `/execute`, the trusted workflow checks that the PR still points to the validated head SHA. After execution, the result is pushed only if the branch is still on that same SHA. If the branch moves after a mutation is transmitted, the existing stable request ID/idempotency contract permits safe reconciliation on a later rerun rather than assuming an unverified outcome.
+The connector exposes authenticated HTTPS REST endpoints under `/wp-json/webactueel-wordpress-connector/v1/` and routes `/execute` through one shared semantic action registry and Runner.
 
-WordPress independently requires HTTPS, a logged-in user and `manage_options` for the connector endpoints. Mutation/security gates remain WordPress-owned settings and are not controlled by request payloads.
+Every connector action declares security metadata and is executed through the same WordPress-side policy, dry-run, confirmation, fingerprint, idempotency and rollback controls.
 
-## Asset flow
+The connector remains deliberately capability-based rather than becoming a remote shell. Arbitrary PHP, shell/process execution, SQL, unrestricted filesystem writes and generic HTTP proxying remain excluded.
 
-Files under `assets/inbox/` are uploaded to a request-scoped temporary directory. The REST asset controller enforces real HTTP upload provenance, WordPress-allowed media extensions, safe relative paths, per-file/total size limits and cleanup. `media.import` then applies the existing canonical path, MIME, extension and size checks before importing anything into the Media Library.
+## Transport and authentication
 
-## State model
+WP Agent connects to WordPress and can call custom WordPress REST endpoints. Connector REST endpoints additionally require HTTPS, an authenticated WordPress user and `manage_options`.
 
-A request has one stable `request_id`, normalized payload and fingerprint. Mutating requests are idempotent. Optional `expected_fingerprint` prevents stale writes. A mutation may register a rollback snapshot; batches compensate completed operations in reverse order when a later operation fails.
+The connector does not store WP Agent credentials and does not implement a second remote transport layer.
 
-## Runtime ownership
+## Abilities direction
 
-GitHub owns request transport and audit history. WordPress remains the source of truth for content/runtime state, authentication and authorization. The connector does not mirror the WordPress database into GitHub and does not store WordPress credentials in repository source or runtime request PRs.
+Where WordPress or an installed plugin exposes a stable WordPress Ability, prefer discovery and use of that supported capability over duplicating it in a bespoke adapter. The existing `AbilitiesAdapter` discovers selected exposed abilities and their schemas; connector-specific adapters remain appropriate for capabilities that are not sufficiently covered upstream.
+
+## State and write safety
+
+A connector request has a stable `request_id`, normalized payload and fingerprint. Mutations are idempotent. Optional `expected_fingerprint` prevents stale writes. Supported mutations can store rollback snapshots, and batches compensate completed operations in reverse order when a later operation fails.
+
+WordPress is the source of truth for runtime state, authentication and authorization.
+
+## Assets
+
+The connector retains its bounded `/assets` endpoint because some advanced connector actions, such as controlled media import, require request-scoped binary input that cannot be represented by the JSON `/execute` body alone. Asset storage enforces WordPress MIME rules, safe relative paths, size limits and cleanup.
+
+## Ownership
+
+- WP Agent: ChatGPT-to-WordPress transport.
+- WordPress Connector: advanced WordPress execution, safety and rollback.
+- Domain Skills: decide what should change.
+- GitHub: code, CI, review and release evidence only.

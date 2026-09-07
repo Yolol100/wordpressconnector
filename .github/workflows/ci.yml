@@ -4,10 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    paths-ignore:
-      - 'requests/**'
-      - 'results/**'
-      - 'assets/inbox/**'
 
 permissions:
   contents: read
@@ -23,14 +19,11 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
-      - name: Validate PHP, shell, schemas, examples and workflow guards
+      - name: Validate PHP and runtime contracts
         shell: bash
         run: |
           set -euo pipefail
-          find plugin/wordpressconnector scripts tests -name '*.php' -print0 | xargs -0 -n1 php -l
-          find scripts -name '*.sh' -print0 | xargs -0 -r -n1 bash -n
-          for file in examples/*.json; do php scripts/validate-request.php "$file"; done
-          php -r 'foreach (["schemas/request.schema.json","schemas/result.schema.json"] as $f) { json_decode(file_get_contents($f), true, 512, JSON_THROW_ON_ERROR); echo "$f OK\n"; }'
+          find plugin/wordpressconnector tests -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/elementor-inventory-contract.php
@@ -39,8 +32,6 @@ jobs:
           php tests/plugin-control-contract.php
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
-          php tests/request-workflow-contract.php
-          php tests/execute-workflow-contract.php
           php tests/rest-transport-contract.php
           php tests/mutation-lock-contract.php
           php tests/single-plugin-contract.php
@@ -65,7 +56,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin scripts; then
+          if grep -RInE --include='*.php' '\b(eval|shell_exec|passthru|proc_open|popen)\s*\(' plugin; then
             echo 'Forbidden execution primitive found.' >&2
             exit 1
           fi

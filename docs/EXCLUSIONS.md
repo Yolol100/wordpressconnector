@@ -1,15 +1,15 @@
 # Intentional exclusions
 
-“Manage everything editable in WordPress” does not mean exposing arbitrary execution.
-
-The generic connector intentionally excludes:
+WordPress Connector must not expose:
 
 - arbitrary PHP, shell/process or WP-CLI command passthrough;
-- arbitrary SQL and database-table writes;
-- arbitrary filesystem read/write/delete outside named media/deploy operations;
+- arbitrary SQL or database-table writes;
+- unrestricted filesystem read/write/delete;
 - generic remote HTTP proxying;
 - passwords, salts, cookies, tokens, API keys or credential stores;
-- transactional order/refund/payment/subscription operations;
-- generic export of customer, patient, medical, intake or prescription records.
+- generic order/refund/payment/subscription/customer-record operations;
+- generic export of private or medical/intake records.
 
-If a future plugin owns data that is not covered by the existing adapters, add a named semantic adapter against that plugin's supported API and classify its security/privacy risk explicitly.
+If WP Agent, WordPress core, WooCommerce or a stable WordPress/plugin Ability already covers a capability safely, do not duplicate it here.
+
+Add a connector adapter only for a proven capability gap with a supported API, explicit security classification and appropriate validation/readback/rollback.
