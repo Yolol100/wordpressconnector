@@ -1,49 +1,46 @@
 # Architecture
 
-WordPress Connector is the advanced WordPress execution layer behind WP Agent.
+WordPress Connector is the advanced execution layer behind WP Agent.
 
-## Default live flow
+## Canonical flow
 
-`ChatGPT -> WP Agent -> WordPress REST -> WordPress Connector REST controller -> Runner -> Registry -> semantic adapter -> WordPress`
+`ChatGPT -> WP Agent -> WordPress REST -> WordPress Connector -> WordPress/Elementor/ACF/WooCommerce`
 
-GitHub is not part of the live request path. It remains the source-control, CI, review and release system for this repository.
+WP Agent owns the remote transport to the connected WordPress site. The connector owns only capabilities that need a richer WordPress-side implementation than WP Agent provides directly.
 
-## Runtime ownership
+GitHub is not part of the live request path. It is used only for source control, CI, review and releases.
 
-- ChatGPT and the relevant Webactueel skill own the requested business/domain decision.
-- WP Agent owns the standard ChatGPT-to-WordPress transport and site connection.
-- WordPress Connector owns only the advanced semantic operations it explicitly registers.
-- WordPress owns authentication, authorization and runtime state.
-- GitHub owns code history, CI and releases only.
+## Runtime contract
 
-## Shared runtime
+The connector exposes authenticated HTTPS REST endpoints under `/wp-json/webactueel-wordpress-connector/v1/` and routes `/execute` through one shared semantic action registry and Runner.
 
-REST and optional local WP-CLI use the same semantic Registry, Runner, policy gates, fingerprint/idempotency logic and rollback engine. A transport must not bypass those layers.
+Every connector action declares security metadata and is executed through the same WordPress-side policy, dry-run, confirmation, fingerprint, idempotency and rollback controls.
 
-The connector keeps `/health`, `/assets` and `/execute` under `webactueel-wordpress-connector/v1` because WP Agent can reach advanced connector actions through authenticated WordPress REST.
+The connector remains deliberately capability-based rather than becoming a remote shell. Arbitrary PHP, shell/process execution, SQL, unrestricted filesystem writes and generic HTTP proxying remain excluded.
 
-## Capability selection
+## Transport and authentication
 
-Use the smallest safe capability that already exists:
+WP Agent connects to WordPress and can call custom WordPress REST endpoints. Connector REST endpoints additionally require HTTPS, an authenticated WordPress user and `manage_options`.
 
-1. WP Agent native capability when sufficient.
-2. Native WordPress/WooCommerce/plugin Ability when it exposes the required typed contract.
-3. WordPress Connector semantic action when extra Elementor, ACF, filesystem, plugin-specific, rollback or administrative behavior is required.
+The connector does not store WP Agent credentials and does not implement a second remote transport layer.
 
-Do not duplicate a native WP Agent or WordPress Ability merely to create another route. Keep a connector adapter only when it adds a real capability, safety boundary, compatibility layer, readback or rollback contract.
+## Abilities direction
 
-## WordPress Abilities API
+Where WordPress or an installed plugin exposes a stable WordPress Ability, prefer discovery and use of that supported capability over duplicating it in a bespoke adapter. The existing `AbilitiesAdapter` discovers selected exposed abilities and their schemas; connector-specific adapters remain appropriate for capabilities that are not sufficiently covered upstream.
 
-`AbilitiesAdapter` discovers selected exposed Abilities API entries and their schemas. This is a discovery/interop layer. The connector's own Registry remains necessary for advanced operations that are not represented by a suitable native Ability.
+## State and write safety
 
-## State and safety
+A connector request has a stable `request_id`, normalized payload and fingerprint. Mutations are idempotent. Optional `expected_fingerprint` prevents stale writes. Supported mutations can store rollback snapshots, and batches compensate completed operations in reverse order when a later operation fails.
 
-A connector request has a stable request ID and normalized fingerprint. Mutations can reject stale state, remain idempotent and register rollback snapshots. Batches compensate completed operations in reverse order when supported.
+WordPress is the source of truth for runtime state, authentication and authorization.
 
-WordPress-side gates remain authoritative for writes, privileged actions, sensitive actions, system updates and filesystem writes.
+## Assets
 
-## Repository boundary
+The connector retains its bounded `/assets` endpoint because some advanced connector actions, such as controlled media import, require request-scoped binary input that cannot be represented by the JSON `/execute` body alone. Asset storage enforces WordPress MIME rules, safe relative paths, size limits and cleanup.
 
-The repository contains reusable implementation, tests and documentation only. Runtime `requests/**`, `results/**`, request schemas/examples and GitHub execution workflows are not part of the product architecture.
+## Ownership
 
-CI is allowed to lint, test and package the plugin. It must not become a second production transport path.
+- WP Agent: ChatGPT-to-WordPress transport.
+- WordPress Connector: advanced WordPress execution, safety and rollback.
+- Domain Skills: decide what should change.
+- GitHub: code, CI, review and release evidence only.
