@@ -1,15 +1,10 @@
 {
   "version": 1,
-  "request_id": "homepage-pages-20260907-a2",
-  "action": "post.list",
+  "request_id": "homepage-elementor-20260907-a3",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "page",
-    "status": "publish",
-    "per_page": 100,
-    "page": 1,
-    "orderby": "ID",
-    "order": "ASC"
+    "id": 899
   }
 }
