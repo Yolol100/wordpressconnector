@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "request_id": "homepage-header-20260907-a5",
+  "request_id": "homepage-footer-20260907-a6",
   "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 924
+    "id": 4183
   }
 }
