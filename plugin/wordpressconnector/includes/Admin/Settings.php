@@ -62,7 +62,7 @@ final class Settings
 
         add_settings_section(
             'wpconnector_security',
-            '3. Transport and execution gates',
+            '2. Transport and execution gates',
             array($this, 'renderSection'),
             self::PAGE
         );
@@ -128,28 +128,22 @@ final class Settings
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p>' . esc_html__('One connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, controlled plugin settings and bounded filesystem workflows. GitHub credentials stay in GitHub Actions; this WordPress plugin only exposes the authenticated HTTPS runtime bridge.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Advanced WordPress execution layer behind WP Agent for Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings, controlled filesystem and administration workflows.', 'wordpressconnector') . '</p>';
 
         if ($legacyActive) {
             echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
-            echo esc_html__('Do not configure its separate Repository screen for the new route. WordPress Connector is the canonical bridge. Keep the legacy plugin only until your read-only/dry-run/staging parity test has passed, then deactivate it.', 'wordpressconnector');
+            echo esc_html__('WordPress Connector is the canonical advanced bridge. Keep the legacy plugin only until read-only, dry-run and staging parity checks have passed, then deactivate it.', 'wordpressconnector');
             echo '</p></div>';
         }
 
-        echo '<h2>' . esc_html__('1. WordPress connection', 'wordpressconnector') . '</h2>';
+        echo '<h2>' . esc_html__('1. WP Agent connection', 'wordpressconnector') . '</h2>';
+        echo '<p>' . esc_html__('Connect this site through WP Agent. WP Agent is the standard ChatGPT-to-WordPress transport; this plugin supplies advanced actions over authenticated HTTPS REST.', 'wordpressconnector') . '</p>';
         echo '<table class="widefat striped" style="max-width:900px"><tbody>';
         echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('REST endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Health endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Authentication', 'wordpressconnector') . '</strong></td><td>' . esc_html__('HTTPS + authenticated WordPress user + manage_options. Use a dedicated WordPress Application Password/service account where practical.', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem · Menus · Users · Plugins/Themes/Core', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — migration check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
-        echo '</tbody></table>';
-
-        echo '<h2>' . esc_html__('2. GitHub configuration', 'wordpressconnector') . '</h2>';
-        echo '<p>' . esc_html__('Configure these values in the private wordpressconnector repository under Settings → Secrets and variables → Actions. Do not paste GitHub client secrets or WordPress passwords into this page.', 'wordpressconnector') . '</p>';
-        echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>' . esc_html__('Type', 'wordpressconnector') . '</th><th>' . esc_html__('Name', 'wordpressconnector') . '</th><th>' . esc_html__('Value', 'wordpressconnector') . '</th></tr></thead><tbody>';
-        echo '<tr><td>' . esc_html__('Variable', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_SITE_URL</code></td><td>' . esc_html__('Canonical https:// URL of this site', 'wordpressconnector') . '</td></tr>';
-        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_USERNAME</code></td><td>' . esc_html__('Dedicated WordPress administrator/service username', 'wordpressconnector') . '</td></tr>';
-        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_APPLICATION_PASSWORD</code></td><td>' . esc_html__('Dedicated WordPress Application Password', 'wordpressconnector') . '</td></tr>';
         echo '</tbody></table>';
 
         echo '<form method="post" action="options.php" style="max-width:900px">';
@@ -158,8 +152,9 @@ final class Settings
         submit_button();
         echo '</form>';
 
-        echo '<h2>' . esc_html__('4. First test', 'wordpressconnector') . '</h2>';
-        echo '<p><code>' . esc_html__('connector.discover → system.doctor → filesystem.inspect → elementor.capabilities → dry-run mutation', 'wordpressconnector') . '</code></p>';
+        echo '<h2>' . esc_html__('3. First test', 'wordpressconnector') . '</h2>';
+        echo '<p><code>' . esc_html__('WP Agent connection → connector.discover → system.doctor → relevant read-only capability → dry-run mutation → staging write/readback/rollback', 'wordpressconnector') . '</code></p>';
+        echo '<p>' . esc_html__('GitHub is used only for source control, CI, review and releases. Do not configure GitHub Actions as a live WordPress request transport.', 'wordpressconnector') . '</p>';
         echo '</div>';
     }
 
