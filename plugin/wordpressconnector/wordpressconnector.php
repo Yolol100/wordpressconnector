@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
- * Description: Single GitHub-controlled bridge for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings, controlled filesystem access and administration workflows over authenticated HTTPS REST or local WP-CLI.
+ * Description: Advanced WordPress runtime bridge behind WP Agent for Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings, controlled filesystem access and administration workflows over authenticated HTTPS REST or local WP-CLI.
  * Version: 1.7.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
