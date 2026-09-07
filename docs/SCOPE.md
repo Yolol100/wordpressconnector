@@ -19,7 +19,8 @@ WordPress admin adds:
 - **Export Elementor JSON** for Elementor-built Pages and Posts;
 - Saved Template native export with connector fallback when Elementor's row action is absent;
 - **Export Elementor + Site Parts** for Pages/Posts when Elementor Pro Theme Builder can resolve the active header/footer;
-- **Import Elementor JSON** for Pages, Posts and Saved Templates, with explicit replace-existing or create-new-draft behavior.
+- **Import Elementor JSON** for Pages, Posts and Saved Templates, with explicit replace-existing or create-new-draft behavior;
+- **Export Elementor JSON (ZIP)** as a bulk action for Pages, Posts and Saved Templates, bounded to 100 selected items and 50 MB generated JSON per request.
 
 Imports and connector mutations do not directly write `_elementor_data`.
 
