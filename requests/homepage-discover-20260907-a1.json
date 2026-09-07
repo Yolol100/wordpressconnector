@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "homepage-discover-20260907-a1",
+  "action": "connector.discover",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
