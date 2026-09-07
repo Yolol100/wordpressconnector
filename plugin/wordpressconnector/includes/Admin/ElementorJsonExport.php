@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Admin;
 
 use RuntimeException;
+use Throwable;
 
 final class ElementorJsonExport
 {
@@ -85,6 +86,8 @@ final class ElementorJsonExport
             }
         } catch (RuntimeException $error) {
             wp_die(esc_html($error->getMessage()), '', array('response' => 400));
+        } catch (Throwable $error) {
+            wp_die(esc_html__('The Elementor JSON export could not be completed.', 'wordpressconnector'), '', array('response' => 500));
         }
 
         $filename = sanitize_file_name('elementor-' . $postId . '-' . gmdate('Y-m-d') . '.json');
@@ -121,6 +124,13 @@ final class ElementorJsonExport
             throw new RuntimeException('The Elementor document is empty.');
         }
 
+        // Match Elementor's local-template export hook so add-ons can prepare
+        // their element data before the JSON is serialized.
+        $content = apply_filters('elementor/template_library/sources/local/export/elements', $content);
+        if (! is_array($content)) {
+            throw new RuntimeException('Elementor export filters returned invalid document content.');
+        }
+
         $type = '';
         if ('elementor_library' === (string) $post->post_type) {
             $type = (string) get_post_meta((int) $post->ID, '_elementor_template_type', true);
@@ -134,13 +144,35 @@ final class ElementorJsonExport
 
         $version = class_exists('Elementor\\DB') ? (string) \Elementor\DB::DB_VERSION : '0.4';
 
-        return array(
+        $payload = array(
             'content' => $content,
             'page_settings' => $settings,
             'version' => $version,
             'title' => (string) $post->post_title,
             'type' => $type,
         );
+
+        // Elementor's current native template export enriches importable JSON
+        // with snapshots for referenced global classes and variables. Reuse the
+        // same public filter contract so page/post exports keep those references
+        // portable without duplicating Elementor's internal snapshot logic.
+        $snapshots = apply_filters(
+            'elementor/template_library/export/build_snapshots',
+            array(),
+            $content,
+            (int) $post->ID,
+            $payload
+        );
+        if (is_array($snapshots)) {
+            if (! empty($snapshots['global_classes'])) {
+                $payload['global_classes'] = $snapshots['global_classes'];
+            }
+            if (! empty($snapshots['global_variables'])) {
+                $payload['global_variables'] = $snapshots['global_variables'];
+            }
+        }
+
+        return $payload;
     }
 
     private function isElementorDocument(int $postId): bool
@@ -170,8 +202,8 @@ final class ElementorJsonExport
         }
 
         $document = $manager->get($postId);
-        if (! is_object($document) || ! method_exists($document, 'get_elements_data')) {
-            throw new RuntimeException('This item is not an editable Elementor document.');
+        if (! is_object($document) || ! method_exists($document, 'get_elements_data') || ! method_exists($document, 'get_export_data')) {
+            throw new RuntimeException('This item is not an exportable Elementor document.');
         }
 
         return $document;
