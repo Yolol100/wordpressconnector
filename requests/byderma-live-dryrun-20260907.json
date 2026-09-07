@@ -1,0 +1,24 @@
+{
+  "version":1,
+  "request_id":"byderma-live-dryrun-20260907",
+  "action":"connector.batch",
+  "payload":{"operations":[
+    {
+      "action":"post.update",
+      "payload":{"id":4733,"status":"publish"},
+      "expected_fingerprint":"371b907984fb0b1d70ed93a0520fd1cd5647d56219fa4b4c8e1df57731c2021d"
+    },
+    {
+      "action":"elementor.replace_document",
+      "payload":{"id":4733,"conditions":["include/singular/post/1374"]},
+      "expected_fingerprint":"47d23b54057a8fa843bb2fef86eb6cf7f546841a118609d601729a08136d94a4"
+    },
+    {
+      "action":"elementor.replace_document",
+      "payload":{"id":1216,"conditions":["include/singular/post","exclude/singular/post/1374"]},
+      "expected_fingerprint":"f8ef26a528192ab65b7c0be2c9935fef5ad7de1995407d9c7d84cc6920cfd7a9"
+    }
+  ]},
+  "dry_run":true,
+  "confirm":false
+}
