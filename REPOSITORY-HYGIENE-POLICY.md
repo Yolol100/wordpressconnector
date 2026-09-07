@@ -1,20 +1,15 @@
 # Repository Hygiene Policy
 
-`main` contains only reusable connector implementation, tests, documentation and development/release automation.
+`main` contains only generic connector source, tests, current documentation and minimal CI/maintenance metadata.
 
-The default branch must not retain:
+Do not store on `main`:
+- runtime requests or results;
+- client domains or target-specific payloads;
+- credentials, Application Passwords, tokens or private exports;
+- generated debug residue or date-stamped run artifacts;
+- retired transport workflows, schemas or validators;
+- duplicate adapters for capabilities already safely covered by WP Agent, WordPress core or stable WordPress/plugin Abilities.
 
-- live WordPress request payloads or generated results;
-- client domains or target-specific exports;
-- production credentials, Application Passwords, tokens or secrets;
-- date-stamped debugging/audit residue;
-- runtime transport queues, inboxes or state;
-- obsolete GitHub request/execution workflows or schemas used only by that retired transport.
+GitHub is source control, CI, review and release infrastructure only. It is not the live ChatGPT-to-WordPress transport.
 
-WP Agent is the standard live transport. Runtime state belongs in WordPress/WP Agent and the relevant workflow evidence layer, not in this source repository.
-
-GitHub Actions in this repository are limited to development concerns such as static validation, tests and packaging. They must not become a parallel production WordPress transport.
-
-Do not commit private customer/order/patient/medical data, WordPress configuration secrets or temporary target artifacts.
-
-Implementation completion requires static validation, a clean default tree and separate reporting of source/package proof versus actual WordPress runtime proof.
+Implementation completion requires source/static validation, no target-specific residue and separate reporting of source/package proof versus actual WordPress runtime proof.
