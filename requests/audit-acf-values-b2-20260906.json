@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "request_id": "audit-acf-values-b2-20260906",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {"action":"acf.get","payload":{"post_id":1352,"fields":["client","category","role","link","description_1","description_2"]}},
+      {"action":"acf.get","payload":{"post_id":1367,"fields":["client","category","role","link","description_1","description_2"]}},
+      {"action":"acf.get","payload":{"post_id":1369,"fields":["client","category","role","link","description_1","description_2"]}},
+      {"action":"acf.get","payload":{"post_id":1368,"fields":["client","category","role","link","description_1","description_2"]}},
+      {"action":"acf.get","payload":{"post_id":1370,"fields":["client","category","role","link","description_1","description_2"]}}
+    ]
+  }
+}
