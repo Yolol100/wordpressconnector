@@ -12,7 +12,7 @@ final class Settings
         'wpconnector_rest_enabled' => array(
             'label' => 'Enable HTTPS REST transport',
             'default' => 1,
-            'help' => 'Allows authenticated administrators to use the connector REST endpoints over HTTPS.',
+            'help' => 'Allows authenticated administrators to use connector REST endpoints over HTTPS.',
         ),
         'wpconnector_allow_writes' => array(
             'label' => 'Allow confirmed writes',
@@ -22,12 +22,12 @@ final class Settings
         'wpconnector_allow_privileged' => array(
             'label' => 'Allow privileged actions',
             'default' => 0,
-            'help' => 'Required for options, post meta, ACF, Yoast, filesystem reads and other privileged connector actions.',
+            'help' => 'Required for administrative and broadly scoped connector actions.',
         ),
         'wpconnector_allow_sensitive' => array(
             'label' => 'Allow sensitive data actions',
             'default' => 0,
-            'help' => 'Keep disabled unless a private, explicitly approved workflow needs sensitive records.',
+            'help' => 'Keep disabled unless an explicitly approved workflow needs sensitive records.',
         ),
         'wpconnector_allow_system_updates' => array(
             'label' => 'Allow plugin/theme/core system updates',
@@ -37,15 +37,13 @@ final class Settings
         'wpconnector_allow_filesystem_writes' => array(
             'label' => 'Allow controlled plugin/theme file writes',
             'default' => 0,
-            'help' => 'Allows filesystem.write_text only for existing plugin/theme text files with expected SHA-256, parser validation, readback and rollback. Core, uploads, secrets and connector self-edits remain blocked.',
+            'help' => 'Allows filesystem.write_text only for existing plugin/theme text files with expected SHA-256, parser validation, readback and rollback.',
         ),
     );
 
     public function register(): void
     {
-        if (! is_admin()) {
-            return;
-        }
+        if (! is_admin()) { return; }
         add_action('admin_init', array($this, 'registerSettings'));
         add_action('admin_menu', array($this, 'registerPage'));
     }
@@ -59,54 +57,28 @@ final class Settings
                 'sanitize_callback' => array($this, 'sanitizeBoolean'),
             ));
         }
-
-        add_settings_section(
-            'wpconnector_security',
-            '3. Transport and execution gates',
-            array($this, 'renderSection'),
-            self::PAGE
-        );
-
+        add_settings_section('wpconnector_security', '2. Transport and execution gates', array($this, 'renderSection'), self::PAGE);
         foreach (self::OPTIONS as $name => $definition) {
-            add_settings_field(
-                $name,
-                (string) $definition['label'],
-                array($this, 'renderCheckbox'),
-                self::PAGE,
-                'wpconnector_security',
-                array('name' => $name, 'help' => (string) $definition['help'])
-            );
+            add_settings_field($name, (string) $definition['label'], array($this, 'renderCheckbox'), self::PAGE, 'wpconnector_security', array('name' => $name, 'help' => (string) $definition['help']));
         }
     }
 
     public function registerPage(): void
     {
-        add_options_page(
-            'WordPress Connector',
-            'WordPress Connector',
-            'manage_options',
-            self::PAGE,
-            array($this, 'renderPage')
-        );
+        add_options_page('WordPress Connector', 'WordPress Connector', 'manage_options', self::PAGE, array($this, 'renderPage'));
     }
 
-    public function sanitizeBoolean($value): int
-    {
-        return empty($value) ? 0 : 1;
-    }
+    public function sanitizeBoolean($value): int { return empty($value) ? 0 : 1; }
 
     public function renderSection(): void
     {
-        echo '<p>' . esc_html__('Start read-only. Enable confirmed writes only after connector.discover and dry-run verification. Keep sensitive, filesystem and system-update gates off unless they are explicitly required.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Start read-only. Enable confirmed writes only after connector.discover and dry-run verification. Keep sensitive, filesystem and system-update gates off unless explicitly required.', 'wordpressconnector') . '</p>';
     }
 
     public function renderCheckbox(array $args): void
     {
         $name = isset($args['name']) ? (string) $args['name'] : '';
-        if (! isset(self::OPTIONS[$name])) {
-            return;
-        }
-
+        if (! isset(self::OPTIONS[$name])) { return; }
         $default = (int) self::OPTIONS[$name]['default'];
         $value = (int) get_option($name, $default);
         printf(
@@ -119,37 +91,28 @@ final class Settings
 
     public function renderPage(): void
     {
-        if (! current_user_can('manage_options')) {
-            return;
-        }
+        if (! current_user_can('manage_options')) { return; }
 
         $healthUrl = rest_url('webactueel-wordpress-connector/v1/health');
         $legacyActive = $this->legacyBridgeActive();
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p>' . esc_html__('One connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, controlled plugin settings and bounded filesystem workflows. GitHub credentials stay in GitHub Actions; this WordPress plugin only exposes the authenticated HTTPS runtime bridge.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Canonical WordPress and Elementor runtime bridge for WP Agent and other approved authenticated HTTPS clients.', 'wordpressconnector') . '</p>';
 
         if ($legacyActive) {
             echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
-            echo esc_html__('Do not configure its separate Repository screen for the new route. WordPress Connector is the canonical bridge. Keep the legacy plugin only until your read-only/dry-run/staging parity test has passed, then deactivate it.', 'wordpressconnector');
+            echo esc_html__('WordPress Connector is the canonical bridge. Keep the legacy plugin only until the staging parity and rollback checklist has passed, then deactivate it.', 'wordpressconnector');
             echo '</p></div>';
         }
 
-        echo '<h2>' . esc_html__('1. WordPress connection', 'wordpressconnector') . '</h2>';
+        echo '<h2>' . esc_html__('1. Connection', 'wordpressconnector') . '</h2>';
         echo '<table class="widefat striped" style="max-width:900px"><tbody>';
         echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('REST endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem · Menus · Users · Plugins/Themes/Core', 'wordpressconnector') . '</td></tr>';
-        echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — migration check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
-        echo '</tbody></table>';
-
-        echo '<h2>' . esc_html__('2. GitHub configuration', 'wordpressconnector') . '</h2>';
-        echo '<p>' . esc_html__('Configure these values in the private wordpressconnector repository under Settings → Secrets and variables → Actions. Do not paste GitHub client secrets or WordPress passwords into this page.', 'wordpressconnector') . '</p>';
-        echo '<table class="widefat striped" style="max-width:900px"><thead><tr><th>' . esc_html__('Type', 'wordpressconnector') . '</th><th>' . esc_html__('Name', 'wordpressconnector') . '</th><th>' . esc_html__('Value', 'wordpressconnector') . '</th></tr></thead><tbody>';
-        echo '<tr><td>' . esc_html__('Variable', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_SITE_URL</code></td><td>' . esc_html__('Canonical https:// URL of this site', 'wordpressconnector') . '</td></tr>';
-        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_USERNAME</code></td><td>' . esc_html__('Dedicated WordPress administrator/service username', 'wordpressconnector') . '</td></tr>';
-        echo '<tr><td>' . esc_html__('Secret', 'wordpressconnector') . '</td><td><code>WPCONNECTOR_REST_APPLICATION_PASSWORD</code></td><td>' . esc_html__('Dedicated WordPress Application Password', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('REST health endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Preferred client', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WP Agent / approved authenticated HTTPS client', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — staging removal check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
         echo '</tbody></table>';
 
         echo '<form method="post" action="options.php" style="max-width:900px">';
@@ -158,30 +121,18 @@ final class Settings
         submit_button();
         echo '</form>';
 
-        echo '<h2>' . esc_html__('4. First test', 'wordpressconnector') . '</h2>';
-        echo '<p><code>' . esc_html__('connector.discover → system.doctor → filesystem.inspect → elementor.capabilities → dry-run mutation', 'wordpressconnector') . '</code></p>';
+        echo '<h2>' . esc_html__('3. First test', 'wordpressconnector') . '</h2>';
+        echo '<p><code>' . esc_html__('health -> connector.discover -> system.doctor -> elementor.capabilities -> dry-run mutation -> staging write + rollback', 'wordpressconnector') . '</code></p>';
         echo '</div>';
     }
 
     private function legacyBridgeActive(): bool
     {
-        if (class_exists('Webactueel\\ElementorJsonBridge\\Plugin')) {
-            return true;
+        if (class_exists('Webactueel\\ElementorJsonBridge\\Plugin')) { return true; }
+        if (! function_exists('is_plugin_active')) { require_once ABSPATH . 'wp-admin/includes/plugin.php'; }
+        foreach (array('elementor-json-bridge/elementor-json-bridge.php', 'Elementorconnector/elementor-json-bridge.php') as $pluginFile) {
+            if (function_exists('is_plugin_active') && is_plugin_active($pluginFile)) { return true; }
         }
-
-        if (! function_exists('is_plugin_active')) {
-            require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        }
-
-        foreach (array(
-            'elementor-json-bridge/elementor-json-bridge.php',
-            'Elementorconnector/elementor-json-bridge.php',
-        ) as $pluginFile) {
-            if (function_exists('is_plugin_active') && is_plugin_active($pluginFile)) {
-                return true;
-            }
-        }
-
         return false;
     }
 }

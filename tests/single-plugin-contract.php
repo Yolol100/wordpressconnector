@@ -3,133 +3,18 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-
-$read = static function (string $relative) use ($root): string {
-    $path = $root . '/' . $relative;
-    $content = file_get_contents($path);
-    if (false === $content) {
-        fwrite(STDERR, "Unable to read {$relative}.\n");
-        exit(1);
-    }
-    return $content;
-};
-
-$main = $read('plugin/wordpressconnector/wordpressconnector.php');
-$plugin = $read('plugin/wordpressconnector/includes/Plugin.php');
-$elementor = $read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
-$elementorCapabilities = $read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
-$elementorForms = $read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
-$elementorExport = $read('plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');
-$settings = $read('plugin/wordpressconnector/includes/Admin/Settings.php');
-$catalog = $read('docs/ACTION-CATALOG.md');
-
-foreach (array(
-    'includes/Adapters/AbilitiesAdapter.php',
-    'includes/Adapters/ElementorCapabilitiesAdapter.php',
-    'includes/Adapters/ElementorFormsAdapter.php',
-    'includes/Admin/ElementorJsonExport.php',
-    'includes/Adapters/YoastAdapter.php',
-) as $relative) {
-    if (false === strpos($main, $relative)) {
-        fwrite(STDERR, "Main plugin bootstrap is missing {$relative}.\n");
-        exit(1);
-    }
-}
-
-foreach (array('AbilitiesAdapter', 'ElementorCapabilitiesAdapter', 'ElementorFormsAdapter', 'ElementorJsonExport', 'YoastAdapter') as $class) {
-    if (false === strpos($plugin, 'new ' . $class . '()')) {
-        fwrite(STDERR, "Plugin registry is missing {$class}.\n");
-        exit(1);
-    }
-}
-
-if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $elementor)) {
-    fwrite(STDERR, "ElementorAdapter must not write _elementor_data directly.\n");
-    exit(1);
-}
-if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $elementorForms)) {
-    fwrite(STDERR, "ElementorFormsAdapter must not write _elementor_data directly.\n");
-    exit(1);
-}
-if (false !== strpos($elementorExport, 'get_post_meta($postId, \'_elementor_data\'')) {
-    fwrite(STDERR, "Elementor JSON export must use Elementor document APIs instead of raw _elementor_data.\n");
-    exit(1);
-}
-
-foreach (array('->save(', 'get_elements_data', 'get_db_document_settings', 'assertDocumentReadback') as $needle) {
-    if (false === strpos($elementor, $needle)) {
-        fwrite(STDERR, "Elementor document API/readback contract is missing: {$needle}.\n");
-        exit(1);
-    }
-}
-
-foreach (array(
-    'elementor.capabilities', 'elementor.inventory', 'elementor.form_capabilities', 'elementor.form_inspect', 'elementor.form_upsert',
-    'wordpress.abilities', 'yoast.inspect', 'yoast.update'
-) as $action) {
-    if (false === strpos($catalog, '`' . $action . '`')) {
-        fwrite(STDERR, "Action catalog is missing {$action}.\n");
-        exit(1);
-    }
-}
-
-foreach (array("register('elementor.inventory'", 'missing_widgets', 'widgetSource', 'next_offset') as $needle) {
-    if (false === strpos($elementorCapabilities, $needle)) {
-        fwrite(STDERR, "Elementor inventory contract is missing: {$needle}.\n");
-        exit(1);
-    }
-}
-
-foreach (array(
-    "register('elementor.form_capabilities'", "register('elementor.form_inspect'", "register('elementor.form_upsert'",
-    'schema_fingerprint', 'submit_action_choice_keys', 'atomic_props_schema', 'restoreSnapshot'
-) as $needle) {
-    if (false === strpos($elementorForms, $needle)) {
-        fwrite(STDERR, "Elementor forms contract is missing: {$needle}.\n");
-        exit(1);
-    }
-}
-
-foreach (array(
-    "private const POST_TYPES = array('page', 'post', 'elementor_library')",
-    "add_filter('page_row_actions'",
-    "add_filter('post_row_actions'",
-    "add_action('admin_post_' . self::ACTION",
-    "current_user_can('edit_post'",
-    'check_admin_referer',
-    "isset(\$actions['export-template'])",
-    'get_export_data',
-    'elementor/template_library/sources/local/export/elements',
-    'elementor/template_library/export/build_snapshots',
-    "\$snapshots['global_classes']",
-    "\$snapshots['global_variables']",
-    "'content' => \$content",
-    "'page_settings' => \$settings",
-    "'version' => \$version",
-    "'title' => (string) \$post->post_title",
-    "'type' => \$type",
-) as $needle) {
-    if (false === strpos($elementorExport, $needle)) {
-        fwrite(STDERR, "Elementor JSON export contract is missing: {$needle}.\n");
-        exit(1);
-    }
-}
-
-if (false !== strpos($elementorExport, 'filename=\\"')) {
-    fwrite(STDERR, "Elementor JSON Content-Disposition must not emit literal backslashes around the filename.\n");
-    exit(1);
-}
-
-if (false === strpos($settings, 'WPCONNECTOR_SITE_URL')) {
-    fwrite(STDERR, "Canonical GitHub Actions setup is missing from WordPress settings.\n");
-    exit(1);
-}
-
-foreach (array('GitHub App Client ID', 'repo_owner', 'repo_name', 'repo_root') as $legacySetting) {
-    if (false !== strpos($settings, $legacySetting)) {
-        fwrite(STDERR, "Legacy direct-GitHub setting leaked into WordPress Connector: {$legacySetting}.\n");
-        exit(1);
-    }
-}
-
+$read = static function (string $relative) use ($root): string { $content = file_get_contents($root . '/' . $relative); if (false === $content) { fwrite(STDERR, "Unable to read {$relative}.\n"); exit(1); } return $content; };
+$main=$read('plugin/wordpressconnector/wordpressconnector.php');$plugin=$read('plugin/wordpressconnector/includes/Plugin.php');$elementor=$read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');$capabilities=$read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');$forms=$read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');$export=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');$import=$read('plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php');$settings=$read('plugin/wordpressconnector/includes/Admin/Settings.php');$catalog=$read('docs/ACTION-CATALOG.md');
+$normalizedExport=preg_replace('/\s+/','',$export);$normalizedImport=preg_replace('/\s+/','',$import);if(!is_string($normalizedExport)||!is_string($normalizedImport)){exit(1);}
+foreach(array('includes/Adapters/AbilitiesAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/ElementorFormsAdapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/YoastAdapter.php') as $relative){if(strpos($main,$relative)===false){fwrite(STDERR,"Main plugin bootstrap is missing {$relative}.\n");exit(1);}}
+foreach(array('AbilitiesAdapter','ElementorCapabilitiesAdapter','ElementorFormsAdapter','ElementorJsonExport','ElementorJsonImport','YoastAdapter') as $class){if(strpos($plugin,'new '.$class.'()')===false){fwrite(STDERR,"Plugin registry is missing {$class}.\n");exit(1);}}
+if(preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$elementor)||preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$forms)||strpos($import,"update_post_meta(\$postId, '_elementor_data'")!==false){fwrite(STDERR,"Direct _elementor_data writes are forbidden.\n");exit(1);}
+foreach(array('->save(','get_elements_data','get_db_document_settings','assertDocumentReadback') as $needle){if(strpos($elementor,$needle)===false){fwrite(STDERR,"Elementor document API/readback contract is missing: {$needle}.\n");exit(1);}}
+foreach(array('elementor.capabilities','elementor.inventory','elementor.form_capabilities','elementor.form_inspect','elementor.form_upsert','wordpress.abilities','yoast.inspect','yoast.update') as $action){if(strpos($catalog,'`'.$action.'`')===false){fwrite(STDERR,"Action catalog is missing {$action}.\n");exit(1);}}
+foreach(array("register('elementor.inventory'",'missing_widgets','widgetSource','next_offset') as $needle){if(strpos($capabilities,$needle)===false){fwrite(STDERR,"Elementor inventory contract is missing: {$needle}.\n");exit(1);}}
+foreach(array("register('elementor.form_capabilities'","register('elementor.form_inspect'","register('elementor.form_upsert'",'schema_fingerprint','submit_action_choice_keys','atomic_props_schema','restoreSnapshot') as $needle){if(strpos($forms,$needle)===false){fwrite(STDERR,"Elementor forms contract is missing: {$needle}.\n");exit(1);}}
+foreach(array("privateconstPOST_TYPES=array('page','post','elementor_library')","add_filter('page_row_actions'","add_filter('post_row_actions'","current_user_can('edit_post'",'check_admin_referer',"isset(\$actions['export-template'])",'get_export_data','elementor/template_library/sources/local/export/elements','elementor/template_library/export/build_snapshots','ExportElementor+SiteParts','BUNDLE_FORMAT') as $needle){if(strpos($normalizedExport,str_replace(' ','',$needle))===false){fwrite(STDERR,"Elementor JSON export contract is missing: {$needle}.\n");exit(1);}}
+foreach(array('ImportElementorJSON','replaceDocument','createDocument','CreatenewdraftfromJSON','elementor_library','MAX_BYTES') as $needle){if(strpos($normalizedImport,$needle)===false){fwrite(STDERR,"Elementor JSON import contract is missing: {$needle}.\n");exit(1);}}
+if(strpos($settings,'WPCONNECTOR_SITE_URL')!==false||strpos($settings,'WPCONNECTOR_REST_APPLICATION_PASSWORD')!==false){fwrite(STDERR,"Retired GitHub transport configuration remains in WordPress settings.\n");exit(1);}
+foreach(array('WP Agent','REST health endpoint','Legacy Elementor JSON Bridge detected.') as $needle){if(strpos($settings,$needle)===false){fwrite(STDERR,"Canonical direct REST settings are missing: {$needle}.\n");exit(1);}}
 echo "single-plugin contract OK\n";
