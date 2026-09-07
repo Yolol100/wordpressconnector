@@ -4,13 +4,17 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths-ignore:
+      - 'requests/**'
+      - 'results/**'
+      - 'assets/inbox/**'
 
 permissions:
   contents: read
 
 jobs:
   static:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Checkout exact event revision

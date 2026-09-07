@@ -14,6 +14,7 @@ $required = array(
     'WPCONNECTOR_TRUSTED_REQUEST_ACTOR',
     'github.event.pull_request.user.login',
     'github.repository_owner',
+    "github.actor != 'github-actions[bot]'",
     'runs-on: ubuntu-latest',
     'contents: read',
     'actions: write',
