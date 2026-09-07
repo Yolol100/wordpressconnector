@@ -16,6 +16,8 @@ Parse, inspect, replace and patch serialized block trees using WordPress block p
 
 Inspect/create/replace Elementor documents and patch nested elements by stable Elementor element ID. Supports Elementor document JSON, edit mode, page settings, template type and stored Theme Builder conditions. Cache/CSS invalidation is requested after writes when Elementor exposes the relevant API.
 
+For local WordPress-admin use, Elementor-built pages and posts expose an `Export Elementor JSON` row action. The download is generated from Elementor's document `get_export_data()` API and uses the import-oriented `content`, `page_settings`, `version`, `title` and `type` fields. Saved Templates continue to use Elementor's native export action; the connector provides a fallback for editable `elementor_library` items only when the native action is absent. Local exports require `edit_post` permission and a document-specific nonce.
+
 ## WooCommerce
 
 Products and variations are managed through WooCommerce product CRUD objects, not direct product-table/postmeta assumptions. Supported surface includes descriptions, SKU, pricing/sales, stock/backorders, tax, shipping, dimensions, virtual/downloadable state, downloads, categories/tags, images/gallery, upsells/cross-sells, attributes/defaults and variations. Global attributes and coupons are supported; coupons are privileged.
