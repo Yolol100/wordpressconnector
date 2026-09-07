@@ -26,7 +26,9 @@ Elementor writes use Elementor document APIs. Direct `_elementor_data` writes ar
 
 Admin JSON import can replace an explicit existing Page/Post/Saved Template or create a new draft. Existing-target writes are read back and restored automatically if verification fails.
 
-JSON export requires `edit_post` and a document-specific WordPress nonce. Saved Templates keep Elementor's native export when available. Optional Theme Builder site-parts export resolves the active header/footer through Elementor Pro's condition manager.
+Single JSON export requires `edit_post` and a document-specific WordPress nonce. Saved Templates keep Elementor's native export when available. Optional Theme Builder site-parts export resolves the active header/footer through Elementor Pro's condition manager.
+
+Bulk Elementor JSON export uses the WordPress bulk-action nonce and checks `edit_post` for every selected item before export. Non-Elementor or unauthorized items are skipped and recorded in `manifest.json`. A request fails closed above 100 selected items or 50 MB of generated JSON, before a partial ZIP is sent.
 
 ## REST asset uploads
 
