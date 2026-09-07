@@ -37,6 +37,8 @@ Pages, Posts and Saved Templates also expose **Import Elementor JSON**. You can:
 - replace the Elementor structure/settings of an explicitly selected existing item; or
 - create a new draft from the uploaded Elementor JSON.
 
+For multiple Pages, Posts or Saved Templates, select the items and choose **Export Elementor JSON (ZIP)** under Bulk actions. The ZIP contains one JSON file per exported Elementor document plus `manifest.json` with exported and skipped items. One run is limited to 100 selected items and 50 MB of generated JSON; larger selections fail before a partial download is produced.
+
 Imports use `ElementorAdapter` document create/save/readback/rollback paths. Direct `_elementor_data` writes are not used.
 
 ## State safety
