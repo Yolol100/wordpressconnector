@@ -162,7 +162,7 @@ final class AssetStore
             if ('' === $segment || '.' === $segment || '..' === $segment) {
                 throw new RuntimeException('asset_path contains an invalid path segment.');
             }
-            if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/', $segment)) {
+            if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z/', $segment)) {
                 throw new RuntimeException('asset_path contains unsupported characters.');
             }
         }
@@ -172,7 +172,7 @@ final class AssetStore
 
     private function assertRequestId(string $requestId): void
     {
-        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$/', $requestId)) {
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
             throw new RuntimeException('request_id must be 8-100 safe characters.');
         }
     }

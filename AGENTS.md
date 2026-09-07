@@ -34,6 +34,7 @@ php tests/elementor-forms-contract.php
 php tests/elementor-json-export-runtime.php
 php tests/elementor-json-import-contract.php
 php tests/state-token-contract.php
+php tests/request-input-boundaries.php
 php tests/plugin-control-contract.php
 php tests/filesystem-control-contract.php
 php tests/repository-hygiene.php
