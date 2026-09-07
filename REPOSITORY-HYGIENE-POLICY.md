@@ -1,9 +1,20 @@
 # Repository Hygiene Policy
 
-`main` contains only generic connector implementation, schemas, documentation, examples and reusable workflow infrastructure. It must not retain client domains, production request payloads, generated target results, credentials, private exports or date-stamped debugging residue.
+`main` contains only reusable connector implementation, tests, documentation and development/release automation.
 
-Runtime WordPress work uses short-lived request branches/PRs. Such PRs contain only one `requests/*.json`, optional `assets/inbox/**`, and generated `results/*.json`; close them without merge after evidence is collected unless a human explicitly wants to preserve a generic non-sensitive fixture.
+The default branch must not retain:
 
-Do not commit secrets, credentials, private customer/order/patient/medical data, runner registration tokens or WordPress configuration. Production self-hosted runners should use a private repository.
+- live WordPress request payloads or generated results;
+- client domains or target-specific exports;
+- production credentials, Application Passwords, tokens or secrets;
+- date-stamped debugging/audit residue;
+- runtime transport queues, inboxes or state;
+- obsolete GitHub request/execution workflows or schemas used only by that retired transport.
 
-Implementation completion requires static validation, no target-specific residue and separate reporting of package/static proof versus actual WordPress runtime proof.
+WP Agent is the standard live transport. Runtime state belongs in WordPress/WP Agent and the relevant workflow evidence layer, not in this source repository.
+
+GitHub Actions in this repository are limited to development concerns such as static validation, tests and packaging. They must not become a parallel production WordPress transport.
+
+Do not commit private customer/order/patient/medical data, WordPress configuration secrets or temporary target artifacts.
+
+Implementation completion requires static validation, a clean default tree and separate reporting of source/package proof versus actual WordPress runtime proof.
