@@ -19,6 +19,7 @@ $plugin = $read('plugin/wordpressconnector/includes/Plugin.php');
 $elementor = $read('plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php');
 $elementorCapabilities = $read('plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
 $elementorForms = $read('plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
+$elementorExport = $read('plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');
 $settings = $read('plugin/wordpressconnector/includes/Admin/Settings.php');
 $catalog = $read('docs/ACTION-CATALOG.md');
 
@@ -26,6 +27,7 @@ foreach (array(
     'includes/Adapters/AbilitiesAdapter.php',
     'includes/Adapters/ElementorCapabilitiesAdapter.php',
     'includes/Adapters/ElementorFormsAdapter.php',
+    'includes/Admin/ElementorJsonExport.php',
     'includes/Adapters/YoastAdapter.php',
 ) as $relative) {
     if (false === strpos($main, $relative)) {
@@ -34,7 +36,7 @@ foreach (array(
     }
 }
 
-foreach (array('AbilitiesAdapter', 'ElementorCapabilitiesAdapter', 'ElementorFormsAdapter', 'YoastAdapter') as $class) {
+foreach (array('AbilitiesAdapter', 'ElementorCapabilitiesAdapter', 'ElementorFormsAdapter', 'ElementorJsonExport', 'YoastAdapter') as $class) {
     if (false === strpos($plugin, 'new ' . $class . '()')) {
         fwrite(STDERR, "Plugin registry is missing {$class}.\n");
         exit(1);
@@ -47,6 +49,10 @@ if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $element
 }
 if (preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s", $elementorForms)) {
     fwrite(STDERR, "ElementorFormsAdapter must not write _elementor_data directly.\n");
+    exit(1);
+}
+if (false !== strpos($elementorExport, 'get_post_meta($postId, \'_elementor_data\'')) {
+    fwrite(STDERR, "Elementor JSON export must use Elementor document APIs instead of raw _elementor_data.\n");
     exit(1);
 }
 
@@ -80,6 +86,27 @@ foreach (array(
 ) as $needle) {
     if (false === strpos($elementorForms, $needle)) {
         fwrite(STDERR, "Elementor forms contract is missing: {$needle}.\n");
+        exit(1);
+    }
+}
+
+foreach (array(
+    "private const POST_TYPES = array('page', 'post', 'elementor_library')",
+    "add_filter('page_row_actions'",
+    "add_filter('post_row_actions'",
+    "add_action('admin_post_' . self::ACTION",
+    "current_user_can('edit_post'",
+    'check_admin_referer',
+    "isset(\$actions['export-template'])",
+    'get_export_data',
+    "'content' => \$content",
+    "'page_settings' => \$settings",
+    "'version' => \$version",
+    "'title' => (string) \$post->post_title",
+    "'type' => \$type",
+) as $needle) {
+    if (false === strpos($elementorExport, $needle)) {
+        fwrite(STDERR, "Elementor JSON export contract is missing: {$needle}.\n");
         exit(1);
     }
 }
