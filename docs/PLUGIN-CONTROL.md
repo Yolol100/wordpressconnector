@@ -1,6 +1,6 @@
 # Plugin control bridge
 
-This document records the generic ChatGPT -> GitHub -> WordPress Connector control surface for supported WordPress plugins. The runtime is capability-driven: prefer plugin-owned APIs or narrowly allowlisted fields, never export credentials to GitHub, and use dry-run, state fingerprints, readback and rollback for mutations.
+This document records the generic WP Agent / approved authenticated HTTPS client -> WordPress Connector control surface for supported WordPress plugins. The runtime is capability-driven: prefer plugin-owned APIs or narrowly allowlisted fields, never expose credentials through the connector transport, and use dry-run, state fingerprints, readback and rollback for mutations.
 
 ## Runtime gates
 
@@ -75,10 +75,10 @@ Filesystem actions intentionally have a narrower blast radius than the File Mana
 - The connector cannot rewrite its own installed runtime files; connector releases go through the GitHub/release workflow.
 - New-file creation, delete, rename, chmod, archive extraction and arbitrary directory writes are not part of this contract.
 - Symlink traversal and `..` traversal are rejected.
-- Real writes require direct WordPress filesystem mode; GitHub never supplies interactive FTP/SSH filesystem credentials.
+- Real writes require direct WordPress filesystem mode; the connector never accepts interactive FTP/SSH credentials through the agent/REST transport.
 - Real writes require the normal write gate plus the dedicated filesystem-write gate, `confirm:true`, and a matching `expected_sha256`.
 - PHP/INC replacements are parser-validated, JSON replacements are decoded before write, the written bytes are verified by SHA-256 readback, and rollback stores the previous file contents.
 
 ## Deliberate exclusions
 
-A request for "all plugin settings" does not mean exposing every option row or every server file. The bridge does not publish SMTP/OAuth/API credentials, security secrets, executable snippet state, backup archives or unrestricted server paths through GitHub. Integrations without a stable public interface remain version-bound until a dedicated allowlist and regression contract are added.
+A request for "all plugin settings" does not mean exposing every option row or every server file. The bridge does not publish SMTP/OAuth/API credentials, security secrets, executable snippet state, backup archives or unrestricted server paths through the connector transport. Integrations without a stable public interface remain version-bound until a dedicated allowlist and regression contract are added.
