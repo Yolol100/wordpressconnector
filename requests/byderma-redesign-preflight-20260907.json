@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "request_id": "byderma-redesign-preflight-20260907",
+  "action": "connector.batch",
+  "payload": {
+    "operations": [
+      {"action": "system.doctor", "payload": {}},
+      {"action": "elementor.capabilities", "payload": {}},
+      {"action": "elementor.inspect", "payload": {"id": 4733}},
+      {"action": "post.get", "payload": {"id": 4733}},
+      {"action": "post.get", "payload": {"id": 1374}},
+      {"action": "media.get", "payload": {"id": 1821}},
+      {"action": "media.get", "payload": {"id": 1818}},
+      {"action": "media.get", "payload": {"id": 1820}},
+      {"action": "media.get", "payload": {"id": 1819}},
+      {"action": "post.get", "payload": {"id": 4470}}
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
