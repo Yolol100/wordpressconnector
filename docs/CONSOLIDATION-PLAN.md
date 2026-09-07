@@ -1,45 +1,35 @@
 # WordPress Connector consolidation
 
-This branch completes the repository-level consolidation of `Yolol100/Elementorconnector` into `Yolol100/wordpressconnector` while keeping `Yolol100/elementorjson` separate as the controlled Elementor JSON QA/validation lab.
+Repository-level consolidation is complete.
 
 ## Canonical ownership
 
 - Live WordPress/Elementor read/write/rollback bridge: `Yolol100/wordpressconnector`.
-- Elementor JSON validation, disposable import/roundtrip/render evidence: `Yolol100/elementorjson`.
-- Legacy migration source only: `Yolol100/Elementorconnector`.
+- Elementor JSON validation, disposable import/roundtrip/render/browser evidence: `Yolol100/elementorjson`.
+- Legacy source only: `Yolol100/Elementorconnector`.
 
-## Preserved Elementorconnector capability mapping
+## Preserved capability mapping
 
-The old bridge's runtime responsibilities are retained in WordPress Connector through the existing adapters and safety/runtime layers:
+WordPress Connector owns WordPress content, Gutenberg, Elementor documents/capabilities/forms, ACF, WooCommerce, Yoast, media, runtime locking, idempotency, stale-state protection, exact readback and rollback.
 
-- WordPress posts/pages/CPT/taxonomies -> `CoreAdapter` and `GutenbergAdapter`.
-- Elementor document inspect/create/replace/patch/save/readback -> `ElementorAdapter`.
-- Elementor Core/Pro/add-on/widget/breakpoint capability inventory -> `ElementorCapabilitiesAdapter`.
-- Elementor V3/V4 forms -> `ElementorFormsAdapter`.
-- ACF field identity and values -> `AcfAdapter`.
-- WooCommerce products/variations/taxonomies/coupons -> `WooCommerceAdapter`.
-- Yoast SEO metadata/settings -> `YoastAdapter`.
-- Same-site media/import/metadata -> `MediaAdapter`.
-- WordPress Abilities discovery -> `AbilitiesAdapter`.
-- State fingerprinting, idempotency, request locks, snapshots, readback and rollback -> `Runtime/*`, `Security/*`, and adapter-specific rollback logic.
-- Controlled GitHub/HTTPS request execution -> `REST/*`, `Runtime/Runner.php`, and the repository workflows.
+Version 1.9.0 additionally closes the remaining repository parity gaps:
 
-No direct `_elementor_data` write path is reintroduced.
+- admin Elementor JSON import can replace an explicit existing Page/Post/Template or create a new draft;
+- Page/Post export can include the matching Elementor Pro Theme Builder header/footer as a site-parts bundle;
+- `expected_state_token` adds a site-scoped HMAC stale-state guard alongside `expected_fingerprint`;
+- the retired GitHub `requests/`, `results/`, request schemas/examples and request/execute workflows are removed.
 
-## Elementor JSON admin UX
+## Removal gate for Elementorconnector
 
-WordPress Connector 1.8.0 owns the single live admin implementation:
+`Yolol100/Elementorconnector` can be removed after all of these are true:
 
-- Elementor-built Pages and Posts: row action **Export Elementor JSON**.
-- Saved Templates: Elementor native export remains canonical, with connector fallback when missing.
-- Pages, Posts and Saved Templates: row action/menu **Import Elementor JSON**.
-- Import accepts standard Elementor document JSON and replaces the selected target's Elementor `content` and `page_settings` through `ElementorAdapter`.
-- Import performs the normal Elementor document API save, exact readback and automatic rollback on failure.
+1. WordPress Connector 1.9.0+ is installed on every site that previously used Elementorconnector.
+2. Read-only capability checks pass.
+3. A representative Elementor create/replace/readback test passes on staging.
+4. A rollback test passes.
+5. Page/Post import create + replace pass.
+6. Saved Template import/export passes.
+7. Theme Builder site-parts export passes where Elementor Pro is used.
+8. No active WordPress site still has the legacy Elementor JSON Bridge enabled.
 
-`elementorjson` documents and validates this transfer contract but does not become a second production bridge.
-
-## Removal gate
-
-`Yolol100/Elementorconnector` is the repository that becomes removable/archiveable after this consolidation is merged **and** the target staging runtime passes the parity checklist in `docs/ELEMENTORCONNECTOR-MIGRATION.md`.
-
-Do not remove `Yolol100/elementorjson`; it remains the separate QA/validation evidence layer.
+`Yolol100/elementorjson` must remain; it is the separate QA/evidence layer.
