@@ -1,8 +1,15 @@
 {
   "version": 1,
-  "request_id": "homepage-discover-20260907-a1",
-  "action": "connector.discover",
+  "request_id": "homepage-pages-20260907-a2",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "post_type": "page",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  }
 }
