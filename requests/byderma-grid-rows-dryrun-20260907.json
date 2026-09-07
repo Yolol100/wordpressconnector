@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "request_id": "byderma-grid-rows-dryrun-20260907",
+  "action": "connector.batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4733,
+          "element_id": "e2100010",
+          "settings": {
+            "grid_rows_grid": {"unit":"fr","size":1,"sizes":[]},
+            "grid_rows_grid_tablet": {"unit":"fr","size":2,"sizes":[]},
+            "grid_rows_grid_mobile": {"unit":"fr","size":4,"sizes":[]}
+          }
+        },
+        "expected_fingerprint": "fdac56fbe04e4b57c486ec282a1bcfd3fd8168fdc0f9525138f41fa9a1f067da"
+      },
+      {
+        "action": "elementor.patch_element",
+        "payload": {
+          "id": 4733,
+          "element_id": "e2100030",
+          "settings": {
+            "grid_rows_grid": {"unit":"fr","size":1,"sizes":[]},
+            "grid_rows_grid_tablet": {"unit":"fr","size":1,"sizes":[]},
+            "grid_rows_grid_mobile": {"unit":"fr","size":2,"sizes":[]}
+          }
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
