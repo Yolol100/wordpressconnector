@@ -1,34 +1,49 @@
-# Architecture and reference patterns
+# Architecture
 
-WordPress Connector combines established patterns rather than copying another project.
+WordPress Connector is the advanced WordPress execution layer behind WP Agent.
 
-- **WordPress REST API + Application Passwords:** the default remote transport uses WordPress-native HTTPS authentication for external applications and keeps authorization inside WordPress.
-- **GitHub-hosted runners:** GitHub provisions fresh `ubuntu-latest` virtual machines per job; no persistent runner or VPS is required.
-- **Split credential boundary:** the PR-triggered workflow has no WordPress secrets. It can only validate a request and dispatch a separate executor explicitly from trusted `main`.
-- **WP-CLI:** remains an optional local diagnostics/recovery transport with explicit command contracts and machine-readable output.
-- **Semantic action registry:** both REST and WP-CLI call the same registry, policy layer, idempotency store, fingerprint guards and rollback engine.
-- **Release hygiene:** runtime/generated request and result files stay outside the permanent product source and distributable plugin boundaries remain explicit.
+## Default live flow
 
-## Default remote flow
+`ChatGPT -> WP Agent -> WordPress REST -> WordPress Connector REST controller -> Runner -> Registry -> semantic adapter -> WordPress`
 
-`request PR -> secretless GitHub guard -> workflow_dispatch(ref=main) -> trusted GitHub-hosted executor -> authenticated HTTPS -> WordPress Connector REST controller -> shared Runner -> semantic adapter -> result JSON -> request branch`
-
-The PR guard validates same-repository origin, trusted actor, private repository, allowed paths, request schema and request/asset limits without access to WordPress credentials.
-
-The guard then dispatches `wordpress-execute.yml` using `ref=main`. The trusted executor independently fetches and validates the current PR, exact head SHA, base branch, latest commit author, changed paths, request limits and schema using validator code from trusted current `main`. The WordPress secrets are scoped only to later transport steps in this trusted workflow.
-
-Immediately before `/execute`, the trusted workflow checks that the PR still points to the validated head SHA. After execution, the result is pushed only if the branch is still on that same SHA. If the branch moves after a mutation is transmitted, the existing stable request ID/idempotency contract permits safe reconciliation on a later rerun rather than assuming an unverified outcome.
-
-WordPress independently requires HTTPS, a logged-in user and `manage_options` for the connector endpoints. Mutation/security gates remain WordPress-owned settings and are not controlled by request payloads.
-
-## Asset flow
-
-Files under `assets/inbox/` are uploaded to a request-scoped temporary directory. The REST asset controller enforces real HTTP upload provenance, WordPress-allowed media extensions, safe relative paths, per-file/total size limits and cleanup. `media.import` then applies the existing canonical path, MIME, extension and size checks before importing anything into the Media Library.
-
-## State model
-
-A request has one stable `request_id`, normalized payload and fingerprint. Mutating requests are idempotent. Optional `expected_fingerprint` prevents stale writes. A mutation may register a rollback snapshot; batches compensate completed operations in reverse order when a later operation fails.
+GitHub is not part of the live request path. It remains the source-control, CI, review and release system for this repository.
 
 ## Runtime ownership
 
-GitHub owns request transport and audit history. WordPress remains the source of truth for content/runtime state, authentication and authorization. The connector does not mirror the WordPress database into GitHub and does not store WordPress credentials in repository source or runtime request PRs.
+- ChatGPT and the relevant Webactueel skill own the requested business/domain decision.
+- WP Agent owns the standard ChatGPT-to-WordPress transport and site connection.
+- WordPress Connector owns only the advanced semantic operations it explicitly registers.
+- WordPress owns authentication, authorization and runtime state.
+- GitHub owns code history, CI and releases only.
+
+## Shared runtime
+
+REST and optional local WP-CLI use the same semantic Registry, Runner, policy gates, fingerprint/idempotency logic and rollback engine. A transport must not bypass those layers.
+
+The connector keeps `/health`, `/assets` and `/execute` under `webactueel-wordpress-connector/v1` because WP Agent can reach advanced connector actions through authenticated WordPress REST.
+
+## Capability selection
+
+Use the smallest safe capability that already exists:
+
+1. WP Agent native capability when sufficient.
+2. Native WordPress/WooCommerce/plugin Ability when it exposes the required typed contract.
+3. WordPress Connector semantic action when extra Elementor, ACF, filesystem, plugin-specific, rollback or administrative behavior is required.
+
+Do not duplicate a native WP Agent or WordPress Ability merely to create another route. Keep a connector adapter only when it adds a real capability, safety boundary, compatibility layer, readback or rollback contract.
+
+## WordPress Abilities API
+
+`AbilitiesAdapter` discovers selected exposed Abilities API entries and their schemas. This is a discovery/interop layer. The connector's own Registry remains necessary for advanced operations that are not represented by a suitable native Ability.
+
+## State and safety
+
+A connector request has a stable request ID and normalized fingerprint. Mutations can reject stale state, remain idempotent and register rollback snapshots. Batches compensate completed operations in reverse order when supported.
+
+WordPress-side gates remain authoritative for writes, privileged actions, sensitive actions, system updates and filesystem writes.
+
+## Repository boundary
+
+The repository contains reusable implementation, tests and documentation only. Runtime `requests/**`, `results/**`, request schemas/examples and GitHub execution workflows are not part of the product architecture.
+
+CI is allowed to lint, test and package the plugin. It must not become a second production transport path.
