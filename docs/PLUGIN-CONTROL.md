@@ -1,6 +1,8 @@
 # Plugin control bridge
 
-This document records the generic ChatGPT -> GitHub -> WordPress Connector control surface for supported WordPress plugins. The runtime is capability-driven: prefer plugin-owned APIs or narrowly allowlisted fields, never export credentials to GitHub, and use dry-run, state fingerprints, readback and rollback for mutations.
+This document records the advanced WordPress Connector control surface used behind WP Agent. The runtime is capability-driven: prefer WP Agent native capabilities or plugin-owned APIs first, then use narrowly modeled Connector actions only when they add a required capability, safety boundary, readback or rollback contract.
+
+GitHub is not part of the live control path and never stores WordPress runtime credentials or request payloads.
 
 ## Runtime gates
 
@@ -38,47 +40,33 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 | WP Rocket | Plugin-owned option functions | `plugin.settings.inspect/update` profile `wp_rocket` |
 | Yoast SEO / Yoast SEO Premium | Native per-content adapter | `yoast.inspect`, `yoast.update` |
 
-## Yoast per-content control
+## WordPress Abilities
 
-`yoast.inspect` and `yoast.update` support focus keyphrase, SEO title/description, canonical URL, robots controls, breadcrumb title, cornerstone state, schema page/article type, primary category, OpenGraph/Twitter title/description/image fields and the legacy per-post redirect meta field.
+When WordPress or an installed plugin exposes a suitable typed Ability, prefer it over a duplicate Connector implementation. The connector can discover selected exposed abilities via `wordpress.abilities`.
 
-The adapter performs dry-run planning, validation, state fingerprinting, post-write readback and rollback snapshot creation. The per-post redirect field is not a complete replacement for the Premium Redirect Manager.
+Imagify is one example where the Connector can use plugin-owned WordPress Abilities while still applying its own allowlist, secret exclusions, fingerprints and rollback behavior.
 
-## WP Rocket control
+## Advanced adapter rules
 
-The adapter uses WP Rocket's `get_rocket_option()` / `update_rocket_option()` functions and an explicit allowlist for cache, CSS/JS optimization, lazy loading, preload, CDN, WebP and purge interval settings. Unknown fields fail closed.
+`yoast.inspect` / `yoast.update`, WP Rocket settings, Really Simple Security settings and Auto Image Attributes settings use narrow supported contracts rather than arbitrary option-table access. Unknown or secret-like fields fail closed.
 
-## Imagify control
+## Controlled filesystem access
 
-Imagify exposes `imagify/get-settings` and `imagify/update-settings` through WordPress Abilities. The connector uses those abilities and explicitly excludes `api_key` and internal version state.
+WP File Manager is treated as a visual administrator interface over the same WordPress filesystem. The connector does not emulate its private AJAX/elFinder protocol; it uses WordPress' `WP_Filesystem` abstraction.
 
-## Really Simple Security control
+Filesystem actions intentionally have a narrow blast radius:
 
-The adapter discovers the plugin's own settings fields and reads/writes through `rsssl_get_option()` / `rsssl_update_option()`. Secret-like keys are excluded. Firewall/login/2FA/hardening/header and similar high-risk fields require the connector sensitive gate in addition to the normal privileged/write gates.
+- `filesystem.inspect` reports capabilities without exposing absolute paths;
+- `filesystem.list` and `filesystem.read_text` are bounded and exclude secret/managed-data paths;
+- `filesystem.write_text` replaces existing UTF-8 text files only under permitted plugin/theme locations;
+- WordPress core and the Connector's own installed runtime are not writable through this action;
+- uploads are managed through `media.*`;
+- new-file creation, delete, rename, chmod, archive extraction and arbitrary directory writes are excluded;
+- real writes require direct WordPress filesystem mode, the normal write gate, the filesystem-write gate, `confirm:true` and matching `expected_sha256`;
+- supported PHP/JSON replacements are validated, verified by SHA-256 readback and rollback stores previous bytes.
 
-## Auto Image Attributes control
-
-The adapter manages a conservative allowlist of upload/bulk settings stored by the plugin. Individual media title, alt text, caption and description remain available through `media.update`.
-
-## WP File Manager and controlled filesystem access
-
-WP File Manager is treated as the visual administrator interface over the same WordPress filesystem. The connector does **not** call or emulate WP File Manager's private `wp_ajax_mk_file_folder_manager` / elFinder request protocol. Instead it uses WordPress' own `WP_Filesystem` abstraction. A file changed through the connector is therefore visible in WP File Manager immediately because both interfaces address the same underlying file.
-
-Filesystem actions intentionally have a narrower blast radius than the File Manager UI:
-
-- `filesystem.inspect`: reports filesystem method, gates and File Manager integration state without exposing absolute server paths.
-- `filesystem.list`: bounded listing inside the WordPress root; dotfiles, secret paths, uploads, caches, backups, upgrade state and security logs are excluded.
-- `filesystem.read_text`: reads bounded UTF-8 text files, blocks credential-like files and refuses files that appear to contain embedded secret literals.
-- `filesystem.write_text`: replaces **existing** UTF-8 text files only under `wp-content/plugins/*` or `wp-content/themes/*`.
-- WordPress core (`wp-admin`, `wp-includes` and root core files) is read-only.
-- Uploads are managed through `media.*`, not raw filesystem writes.
-- The connector cannot rewrite its own installed runtime files; connector releases go through the GitHub/release workflow.
-- New-file creation, delete, rename, chmod, archive extraction and arbitrary directory writes are not part of this contract.
-- Symlink traversal and `..` traversal are rejected.
-- Real writes require direct WordPress filesystem mode; GitHub never supplies interactive FTP/SSH filesystem credentials.
-- Real writes require the normal write gate plus the dedicated filesystem-write gate, `confirm:true`, and a matching `expected_sha256`.
-- PHP/INC replacements are parser-validated, JSON replacements are decoded before write, the written bytes are verified by SHA-256 readback, and rollback stores the previous file contents.
+Connector releases themselves remain a normal source-control/release operation; GitHub may build and review releases but is not used to transport live WordPress action requests.
 
 ## Deliberate exclusions
 
-A request for "all plugin settings" does not mean exposing every option row or every server file. The bridge does not publish SMTP/OAuth/API credentials, security secrets, executable snippet state, backup archives or unrestricted server paths through GitHub. Integrations without a stable public interface remain version-bound until a dedicated allowlist and regression contract are added.
+A request for "all plugin settings" does not mean exposing every option row or server file. The bridge does not publish SMTP/OAuth/API credentials, security secrets, executable snippet state, backup archives or unrestricted server paths. Integrations without a stable public interface remain version-bound until a dedicated allowlist and regression contract are added.
