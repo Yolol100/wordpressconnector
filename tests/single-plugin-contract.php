@@ -99,6 +99,10 @@ foreach (array(
     'check_admin_referer',
     "isset(\$actions['export-template'])",
     'get_export_data',
+    'elementor/template_library/sources/local/export/elements',
+    'elementor/template_library/export/build_snapshots',
+    "\$snapshots['global_classes']",
+    "\$snapshots['global_variables']",
     "'content' => \$content",
     "'page_settings' => \$settings",
     "'version' => \$version",
@@ -109,6 +113,11 @@ foreach (array(
         fwrite(STDERR, "Elementor JSON export contract is missing: {$needle}.\n");
         exit(1);
     }
+}
+
+if (false !== strpos($elementorExport, 'filename=\\"')) {
+    fwrite(STDERR, "Elementor JSON Content-Disposition must not emit literal backslashes around the filename.\n");
+    exit(1);
 }
 
 if (false === strpos($settings, 'WPCONNECTOR_SITE_URL')) {
