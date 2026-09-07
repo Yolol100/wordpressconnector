@@ -39,3 +39,5 @@ The connector does not provide arbitrary PHP evaluation, shell/process execution
 ## Operational rules
 
 Start read-only. Keep write/privileged/sensitive/system-update/filesystem-write gates off unless needed. Use staging for first writes, Elementor/WooCommerce/ACF mutations and rollback tests. Never treat a green source CI run as proof of target-site compatibility.
+
+Request IDs, action names, asset path segments and hexadecimal state guards are matched to the absolute end of the input. Trailing newlines or control characters are invalid; never trim them into a different request identity.
