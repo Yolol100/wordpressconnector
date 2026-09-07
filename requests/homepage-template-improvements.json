@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "request_id": "homepage-current-inspect-20260907",
+  "request_id": "elementor-library-template-inspect-20260907",
   "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 899
+    "id": 1219
   }
 }
