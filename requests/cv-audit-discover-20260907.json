@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "cv-audit-discover-20260907",
+  "action": "connector.discover",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
