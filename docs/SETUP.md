@@ -2,69 +2,51 @@
 
 ## 1. Install WordPress Connector
 
-Install `plugin/wordpressconnector` in `wp-content/plugins/wordpressconnector` and activate it.
+Install `plugin/wordpressconnector` on the WordPress site and activate it.
 
-The plugin registers:
+The plugin exposes authenticated HTTPS REST endpoints under:
 
-- authenticated HTTPS REST under `/wp-json/webactueel-wordpress-connector/v1/`;
-- the semantic action Registry and Runner;
-- `Settings -> WordPress Connector` for execution gates;
-- optional local `wp wordpress-connector ...` WP-CLI commands.
+`/wp-json/webactueel-wordpress-connector/v1/`
 
-The REST surface is not a remote shell. It executes registered connector actions only.
+Important endpoints:
+- `/health`
+- `/execute`
+- `/assets`
 
-## 2. Connect the site through WP Agent
+## 2. Connect the site with WP Agent
 
-WP Agent is the standard transport between ChatGPT and WordPress. Connect the site through WP Agent and use a dedicated WordPress Application Password/service account where practical.
+Use WP Agent to connect the WordPress site. WP Agent is the canonical remote transport from ChatGPT to WordPress.
 
-The live architecture is:
+The connector does not need GitHub Actions credentials for live execution.
 
-`ChatGPT -> WP Agent -> WordPress REST -> WordPress Connector -> advanced action`
+## 3. Security gates
 
-Do not configure GitHub repository secrets or request workflows for live WordPress execution. GitHub is used only for source control, CI and releases.
+In `Settings -> WordPress Connector` keep all high-risk gates off until needed.
 
-## 3. Configure WordPress security gates
+Recommended default:
+- REST transport: on
+- confirmed writes: off
+- privileged actions: off
+- sensitive actions: off
+- system updates: off
+- filesystem writes: off
 
-Open `Settings -> WordPress Connector` as an administrator.
+All connector REST endpoints additionally require HTTPS, an authenticated WordPress user and `manage_options`.
 
-Recommended initial state:
+## 4. First verification
 
-| Gate | Initial value | Enable when |
-| --- | --- | --- |
-| HTTPS REST transport | on | required for remote connector access |
-| confirmed writes | off | after read-only and dry-run verification |
-| privileged actions | off | only for approved administrative actions |
-| sensitive actions | off | only for explicitly approved sensitive workflows |
-| system updates | off | only for approved plugin/theme/core lifecycle work |
-| filesystem writes | off | only for approved bounded plugin/theme file replacement |
+Run in this order:
+1. `/health`
+2. `connector.actions`
+3. `connector.discover`
+4. the relevant read-only capability action
+5. dry-run mutation
+6. representative staging write + readback + rollback when the task has meaningful blast radius
 
-All REST endpoints additionally require HTTPS, an authenticated WordPress user and `manage_options`.
+## 5. GitHub
 
-## 4. Acceptance sequence
+Use GitHub only for source control, CI, review and releases. Runtime requests/results do not belong in the repository.
 
-1. Verify WP Agent can reach the site.
-2. Verify Connector `/health` with the intended authenticated account.
-3. Run `connector.discover` read-only.
-4. Run `system.doctor` or the relevant read-only capability action.
-5. Inspect representative Gutenberg, Elementor, WooCommerce and ACF content where applicable.
-6. Run representative mutations as dry-runs.
-7. On staging, enable only the write/privilege gate required for the test.
-8. Perform one disposable mutation.
-9. Verify exact readback.
-10. Test rollback where the action supports it.
-11. Repeat representative tests after the last code/configuration change.
-12. Enable production mutation gates only after the intended target runtime passes.
+## 6. Optional WP-CLI
 
-## 5. Capability selection
-
-Prefer WP Agent's native WordPress capability when it already does the job. Use WordPress Connector only for advanced capabilities such as Elementor JSON/forms, ACF, bounded filesystem access, advanced WooCommerce/plugin settings, rollback or privileged administration.
-
-When WordPress or a plugin exposes a suitable Abilities API contract, prefer that native ability instead of duplicating it. `wordpress.abilities` can discover selected exposed abilities on supported WordPress runtimes.
-
-## 6. Optional local WP-CLI recovery
-
-If the hosting environment exposes WP-CLI, the plugin still supports local diagnostics/recovery commands. WP-CLI is optional and is not the default ChatGPT transport.
-
-## 7. Operational rule
-
-Keep broad writes staging-first. A successful REST response proves transport/runtime execution only; the originating domain skill and QA process still own acceptance of the actual website change.
+WP-CLI remains an optional local recovery/diagnostics path when the hosting environment already provides it. It is not part of the normal ChatGPT-to-site transport.
