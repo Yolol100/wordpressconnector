@@ -21,6 +21,7 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - categories, tags, product taxonomies and registered custom taxonomies;
 - Gutenberg/block content, including nested block patches;
 - Elementor document JSON, nested elements, page settings, document creation and Theme Builder metadata;
+- local WordPress-admin Elementor JSON downloads for Elementor-built pages and posts; Saved Templates keep Elementor's native export and receive a connector fallback when needed;
 - Elementor capability and usage inventory, including Core/Pro/add-on/theme widget provenance, versions when available, per-document usage counts, missing widget types and legacy/container/Atomic architecture signals;
 - complete Elementor V3 Form widgets and V4 Atomic Form subtrees, including fields, submit actions, recipients, subject/message/from/reply-to/CC/BCC settings, success/error messages, styles and other runtime-supported settings;
 - WooCommerce products, variations, attributes and coupons through WooCommerce CRUD APIs;
@@ -34,6 +35,12 @@ The connector discovers the actual WordPress runtime and exposes semantic action
 - extension actions registered by other WordPress plugins through `wpconnector_register_actions`.
 
 See [docs/ACTION-CATALOG.md](docs/ACTION-CATALOG.md), [docs/ELEMENTOR-FORMS.md](docs/ELEMENTOR-FORMS.md), [docs/PLUGIN-CONTROL.md](docs/PLUGIN-CONTROL.md) and [docs/SCOPE.md](docs/SCOPE.md).
+
+## Elementor local JSON export
+
+Elementor already exposes a native export action for Saved Templates (`elementor_library`). WordPress Connector restores equivalent one-click JSON download for Elementor-built **Pages** and **Posts** from their WordPress admin list row actions. If Elementor's native Saved Templates row action is absent for an otherwise editable Elementor template, the connector supplies the same local download action as a fallback.
+
+The download is built from Elementor's document `get_export_data()` API and contains the standard import-oriented fields `content`, `page_settings`, `version`, `title` and `type`. It does not read raw `_elementor_data` for the export. A user must be allowed to edit the document and every download URL is protected by a document-specific WordPress nonce.
 
 ## Elementor inventory
 
