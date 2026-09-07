@@ -74,7 +74,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
 | `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
 | `plugin.list` | privileged | List installed plugins and activation state. |
-| `plugin.settings.catalog` | privileged | List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets. |
+| `plugin.settings.catalog` | privileged | List installed plugins and their safe agent/connector control mode without exposing secrets. |
 | `plugin.settings.inspect` | privileged | Read allowlisted settings through a plugin-owned API and return a state fingerprint. |
 | `plugin.settings.update` | mutation, privileged | Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback. |
 | `plugin.update` | mutation, privileged, system_update | Update one installed plugin. |
