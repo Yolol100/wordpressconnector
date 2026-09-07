@@ -1,15 +1,10 @@
 {
   "version": 1,
-  "request_id": "homepage-templates-20260907-a4",
-  "action": "post.list",
+  "request_id": "homepage-header-20260907-a5",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "elementor_library",
-    "status": "publish",
-    "per_page": 100,
-    "page": 1,
-    "orderby": "ID",
-    "order": "ASC"
+    "id": 924
   }
 }
