@@ -1,42 +1,36 @@
 # WordPress Connector repository instructions
 
 ## Scope
-- This repository contains the advanced WordPress runtime bridge owned technically by `wordpressqualityarchitect`.
-- `webactueel-workflow` remains the controller for cross-skill routing, approvals, handoffs and total workflow closure.
-- WP Agent is the standard live transport between ChatGPT and WordPress.
-- GitHub is used for source control, CI, review and releases only; do not add a second production request transport here.
-- The Connector is not a generic remote shell and does not own SEO, Design or Elementor decisions.
+- This repository owns the advanced WordPress execution plugin behind WP Agent.
+- WP Agent is the canonical ChatGPT-to-WordPress transport.
+- `webactueel-workflow` remains controller for cross-skill routing and closure.
+- `wordpressqualityarchitect` owns plugin/runtime safety and correctness.
+- Domain Skills such as SEO, Design and Elementor decide what should change; this plugin only executes supported actions safely.
+
+## Keep the repository small
+Keep only:
+- `plugin/wordpressconnector/**`;
+- runtime/security/rollback/idempotency code required by the plugin;
+- tests for the retained runtime;
+- `.github/workflows/ci.yml` plus minimal repository maintenance metadata;
+- current documentation for actions, scope, security, setup and architecture.
+
+Do not reintroduce:
+- request/result queues;
+- GitHub Actions as live WordPress transport;
+- request/result schemas used only by that retired transport;
+- generic remote shell, arbitrary SQL or unrestricted filesystem execution;
+- target-specific runtime residue.
 
 ## Before changing files
-- Read `README.md`, `docs/ARCHITECTURE.md`, `docs/ACTION-CATALOG.md`, `docs/SCOPE.md`, `docs/SECURITY.md` and the relevant runtime adapter/test.
-- Preserve `/health`, `/execute`, Registry, Runner, policy gates, idempotency/fingerprints and rollback unless a migration explicitly replaces them with equal or stronger evidence.
-- Prefer WP Agent native capabilities when sufficient; use Connector actions for capabilities WP Agent does not safely provide.
-- Prefer native WordPress/WooCommerce/plugin Abilities where they already provide the required typed contract.
-- Do not add arbitrary shell, SQL, filesystem-write, eval or HTTP-proxy primitives.
-- Do not store live requests, results, credentials or target-specific residue on the default branch.
+- Read `README.md`, `docs/ACTION-CATALOG.md`, `docs/SCOPE.md` and `docs/SECURITY.md`.
+- Preserve `/execute`, Registry, Runner, policy gates, idempotency/fingerprints, rollback and readback contracts unless an explicit migration proves a replacement.
+- Prefer native WordPress/plugin Abilities or supported APIs when they safely cover a capability; avoid duplicate adapters.
 
 ## Validation
-Run the same static checks enforced by Connector CI:
+Run the same source/runtime checks enforced by Connector CI. CI proves code/package contracts only; target WordPress behavior still needs appropriate runtime readback.
 
-```bash
-find plugin/wordpressconnector tests -name '*.php' -print0 | xargs -0 -n1 php -l
-php tests/policy-contract.php
-php tests/action-catalog.php
-php tests/elementor-inventory-contract.php
-php tests/elementor-forms-contract.php
-php tests/elementor-json-export-runtime.php
-php tests/plugin-control-contract.php
-php tests/filesystem-control-contract.php
-php tests/repository-hygiene.php
-php tests/rest-transport-contract.php
-php tests/mutation-lock-contract.php
-php tests/single-plugin-contract.php
-```
-
-Also verify the installable plugin ZIP and reject dangerous execution primitives as defined in `.github/workflows/ci.yml`.
-
-## Safety and acceptance
-- Mutations remain confirmation-gated, idempotent and fingerprint/rollback aware.
-- Remote execution requires HTTPS, WordPress authentication, `manage_options`, Connector health and the relevant WordPress-side gates.
-- A successful REST execution proves transport/runtime evidence only. `wordpressqualityarchitect` owns WordPress mutation safety/runtime correctness and the originating domain owner still accepts the requested business/content change.
-- Broad production changes remain staging-first unless equivalent target-runtime evidence already exists.
+## Safety
+- Mutations remain dry-run/confirmation gated, idempotent and fingerprint/rollback aware.
+- Do not expose arbitrary PHP, shell/process execution, SQL, unrestricted filesystem operations, generic HTTP proxying or secret export.
+- High-risk production mutations remain staging-first or require explicit approval and rollback evidence.
