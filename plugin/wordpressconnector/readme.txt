@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 1.7.0
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,7 +16,7 @@ WordPress Connector is the canonical single-plugin bridge for WordPress posts/pa
 
 The default GitHub workflow uses a temporary GitHub-hosted Ubuntu runner and authenticates to WordPress over HTTPS with a WordPress Application Password. No GitHub Client ID is stored in WordPress and no VPS or continuously running self-hosted GitHub Actions runner is required.
 
-Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes active Elementor capability/usage inventory plus complete V3 Form and V4 Atomic Form inspection/upsert with runtime-schema validation and rollback. Elementor-built pages and posts also get an "Export Elementor JSON" row action in WordPress admin; saved templates keep Elementor's native export action, with a connector fallback when that action is unavailable.
+Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes active Elementor capability/usage inventory plus complete V3 Form and V4 Atomic Form inspection/upsert with runtime-schema validation and rollback. Elementor-built pages and posts get an "Export Elementor JSON" row action in WordPress admin; saved templates keep Elementor's native export action, with a connector fallback when that action is unavailable. Pages, posts and saved templates also get an "Import Elementor JSON" action for replacing the target Elementor structure and page settings through the same verified document-save/rollback path.
 
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
@@ -27,6 +27,13 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Use a private GitHub repository. Store the dedicated WordPress Application Password only in GitHub Actions Secrets. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.8.0 =
+* Add "Import Elementor JSON" actions for WordPress Pages, Posts and Elementor Saved Templates.
+* Allow choosing an existing target and uploading a standard Elementor JSON document up to 5 MB.
+* Reuse the canonical ElementorAdapter save/readback/automatic-rollback path; no direct `_elementor_data` writes are introduced.
+* Keep row-level export limited to Elementor-built Pages/Posts and the existing Saved Templates native/fallback export behavior.
+* Continue the Elementorconnector consolidation into this single canonical live plugin.
 
 = 1.7.0 =
 * Restore local Elementor JSON download for Elementor-built WordPress pages and posts from their admin list row actions.
