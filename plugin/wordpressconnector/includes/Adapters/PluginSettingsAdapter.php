@@ -58,7 +58,7 @@ final class PluginSettingsAdapter
         'litespeed-cache/litespeed-cache.php' => array('id' => 'litespeed_cache', 'mode' => 'inactive_or_version_bound', 'actions' => array()),
         'loco-translate/loco.php' => array('id' => 'loco_translate', 'mode' => 'filesystem_bound', 'actions' => array(), 'note' => 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.'),
         'really-simple-ssl/rlrsssl-really-simple-ssl.php' => array('id' => 'really_simple_security', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
-        'google-site-kit/google-site-kit.php' => array('id' => 'site_kit', 'mode' => 'oauth_bound', 'actions' => array(), 'note' => 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.'),
+        'google-site-kit/google-site-kit.php' => array('id' => 'site_kit', 'mode' => 'oauth_bound', 'actions' => array(), 'note' => 'OAuth tokens, service connections and encrypted settings are intentionally not exposed through the connector transport.'),
         'wordfence/wordfence.php' => array('id' => 'wordfence', 'mode' => 'limited_stable_api', 'actions' => array(), 'note' => 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.'),
         'wordpressconnector/wordpressconnector.php' => array('id' => 'wordpress_connector', 'mode' => 'canonical_bridge', 'actions' => array('connector.discover', 'connector.actions')),
         'wp-file-manager/file_folder_manager.php' => array(
@@ -67,7 +67,7 @@ final class PluginSettingsAdapter
             'actions' => array('filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text'),
             'note' => 'WP File Manager remains the visual admin UI. The connector does not reuse its private AJAX/elFinder protocol; both operate on the same WordPress filesystem, with connector writes bounded to existing plugin/theme text files.',
         ),
-        'wp-mail-smtp/wp_mail_smtp.php' => array('id' => 'wp_mail_smtp', 'mode' => 'secret_bound', 'actions' => array(), 'note' => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'),
+        'wp-mail-smtp/wp_mail_smtp.php' => array('id' => 'wp_mail_smtp', 'mode' => 'secret_bound', 'actions' => array(), 'note' => 'SMTP passwords, OAuth tokens and provider secrets are never exposed through the connector transport.'),
         'wp-rocket/wp-rocket.php' => array('id' => 'wp_rocket', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
         'wordpress-seo/wp-seo.php' => array('id' => 'yoast', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update')),
         'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update')),
@@ -77,7 +77,7 @@ final class PluginSettingsAdapter
     {
         $registry->register('plugin.settings.catalog', array($this, 'catalog'), array(
             'privileged' => true,
-            'description' => 'List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets.',
+            'description' => 'List installed plugins and their safe agent/connector control mode without exposing secrets.',
         ));
         $registry->register('plugin.settings.inspect', array($this, 'inspect'), array(
             'privileged' => true,
