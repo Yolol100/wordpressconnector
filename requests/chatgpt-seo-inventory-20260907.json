@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "request_id": "chatgpt-seo-inventory-20260907",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "per_page": 100,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "post",
+          "status": "publish",
+          "per_page": 100,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      }
+    ]
+  }
+}
