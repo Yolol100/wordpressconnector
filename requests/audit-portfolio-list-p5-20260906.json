@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "request_id": "audit-portfolio-list-p5-20260906",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 20,
+    "page": 5,
+    "orderby": "ID",
+    "order": "DESC"
+  }
+}
