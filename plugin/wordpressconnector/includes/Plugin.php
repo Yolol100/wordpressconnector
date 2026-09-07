@@ -19,6 +19,7 @@ use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
+use Webactueel\WordPressConnector\Admin\ElementorJsonExport;
 use Webactueel\WordPressConnector\Admin\Settings;
 use Webactueel\WordPressConnector\CLI\Command;
 use Webactueel\WordPressConnector\REST\AssetStore;
@@ -59,6 +60,7 @@ final class Plugin
 
         $runner = new Runner($registry, new SnapshotStore(), new ProcessedStore());
         (new Settings())->register();
+        (new ElementorJsonExport())->register();
         (new Controller($runner, new AssetStore()))->register();
 
         if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
