@@ -1,8 +1,0 @@
-{
-  "version": 1,
-  "request_id": "audit-acf-portfolio-discovery-20260906",
-  "action": "connector.discover",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {}
-}
