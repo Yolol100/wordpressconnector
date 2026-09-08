@@ -15,6 +15,27 @@ final class Policy
         'wp_user_request',
     );
 
+    private const BLOCKED_OPTION_KEYS = array(
+        'active_plugins',
+        'active_sitewide_plugins',
+        'allowedthemes',
+        'cron',
+        'current_theme',
+        'default_role',
+        'home',
+        'recently_activated',
+        'rewrite_rules',
+        'site_admins',
+        'siteurl',
+        'stylesheet',
+        'template',
+        'uninstall_plugins',
+        'upload_path',
+        'upload_url_path',
+        'users_can_register',
+        'wp_user_roles',
+    );
+
     private const OPTION_FLAGS = array(
         'WPCONNECTOR_ALLOW_WRITES' => 'wpconnector_allow_writes',
         'WPCONNECTOR_ALLOW_PRIVILEGED' => 'wpconnector_allow_privileged',
@@ -40,6 +61,13 @@ final class Policy
             }
             if (! self::flag('WPCONNECTOR_ALLOW_PRIVILEGED')) {
                 throw new RuntimeException('Privileged actions are disabled.');
+            }
+        }
+
+        if (! empty($descriptor['capability'])) {
+            $capability = (string) $descriptor['capability'];
+            if (! function_exists('current_user_can') || ! current_user_can($capability)) {
+                throw new RuntimeException('Current user lacks the required WordPress capability: ' . $capability . '.');
             }
         }
 
@@ -103,6 +131,22 @@ final class Policy
     {
         if ((bool) preg_match('/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i', $key)) {
             throw new RuntimeException('Secret-like keys cannot be read or written through the connector.');
+        }
+    }
+
+    public static function assertMetaKeyAllowed(string $key): void
+    {
+        self::assertKeyAllowed($key);
+        if (isset($key[0]) && '_' === $key[0]) {
+            throw new RuntimeException('Protected/internal metadata must use its dedicated semantic adapter.');
+        }
+    }
+
+    public static function assertOptionKeyAllowed(string $key): void
+    {
+        self::assertKeyAllowed($key);
+        if (in_array(strtolower($key), self::BLOCKED_OPTION_KEYS, true)) {
+            throw new RuntimeException('System-owned option must use its dedicated semantic action instead of generic option access.');
         }
     }
 
