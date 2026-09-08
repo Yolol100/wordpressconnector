@@ -1,13 +1,13 @@
 # Repository Hygiene Policy
 
-`main` contains only reusable connector source, tests, documentation and CI.
+`main` contains only reusable connector source, tests, documentation, CI and the guarded private GitHub runtime transport.
 
-Do not commit production request payloads, generated WordPress results, client exports, credentials, private runtime state or date-stamped debugging residue.
+The optional GitHub runtime transport may contain its reusable validator and workflows on `main`, but production request payloads, generated WordPress results, client exports, credentials, private runtime state and date-stamped debugging residue must never be merged into the implementation branch.
 
-The retired GitHub request/result transport must not return. In particular, `requests/`, `results/`, request/result schemas, example transport payloads and WordPress request/execute workflows are forbidden on the implementation branch.
+Runtime request PRs are temporary transport branches only. They may contain exactly the intended `requests/*.json`, bounded `assets/inbox/*` files and generated `results/*.json`. They must stay same-repository, private-repository, trusted-actor only and must be closed without merge after result collection.
 
-Runtime operations happen through the authenticated WordPress Connector REST interface (normally via WP Agent). WordPress remains the source of truth for content and runtime state.
+WordPress credentials belong only in GitHub Actions Secrets. Site URLs belong in GitHub Actions Variables. Do not commit passwords, application passwords, tokens, salts, private customer/order/patient data or WordPress configuration.
 
-Do not commit passwords, application passwords, tokens, salts, private customer/order/patient data or WordPress configuration.
+The GitHub runtime is an authenticated HTTPS client for WordPress Connector, not a second WordPress implementation. WordPress remains the source of truth for content and runtime state, and all requests still pass connector authentication, semantic security gates, idempotency, mutation locks, stale-state guards, readback and rollback.
 
-Completion requires source/static validation plus separate staging/runtime proof for any claim about actual WordPress or Elementor mutation behavior.
+Completion requires source/static validation plus separate target-runtime proof for any claim about actual WordPress or Elementor mutation behavior.
