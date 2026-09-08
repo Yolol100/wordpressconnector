@@ -121,7 +121,7 @@ final class AssetStore
             return $fileType;
         }
 
-        if (preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip$#', $relativePath)) {
+        if (preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relativePath)) {
             $zipType = wp_check_filetype($basename, array('zip' => 'application/zip'));
             if (! empty($zipType['ext']) && ! empty($zipType['type'])) {
                 return $zipType;
@@ -167,9 +167,8 @@ final class AssetStore
 
     private function normalizeRelativePath(string $path): string
     {
-        $path = str_replace('\\', '/', trim($path));
-        if ('' === $path || strlen($path) > 240 || '/' === $path[0]) {
-            throw new RuntimeException('asset_path must be a short relative path.');
+        if ('' === $path || strlen($path) > 240 || preg_match('/[\x00-\x20\x7F]/', $path) || '/' === $path[0] || false !== strpos($path, '\\')) {
+            throw new RuntimeException('asset_path must be a short relative path without whitespace or control characters.');
         }
 
         $segments = explode('/', $path);
@@ -177,7 +176,7 @@ final class AssetStore
             if ('' === $segment || '.' === $segment || '..' === $segment) {
                 throw new RuntimeException('asset_path contains an invalid path segment.');
             }
-            if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/', $segment)) {
+            if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z/', $segment)) {
                 throw new RuntimeException('asset_path contains unsupported characters.');
             }
         }
@@ -187,7 +186,7 @@ final class AssetStore
 
     private function assertRequestId(string $requestId): void
     {
-        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$/', $requestId)) {
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
             throw new RuntimeException('request_id must be 8-100 safe characters.');
         }
     }
