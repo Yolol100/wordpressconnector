@@ -2,9 +2,9 @@
 Contributors: webactueel
 Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
-Tested up to: 6.9
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.8.0
+Stable tag: 1.10.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,11 +12,13 @@ Single controlled GitHub-to-WordPress bridge over authenticated HTTPS REST with 
 
 == Description ==
 
-WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, controlled filesystem access and controlled system actions behind separate safety gates.
+WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions behind separate safety gates.
 
 The default GitHub workflow uses a temporary GitHub-hosted Ubuntu runner and authenticates to WordPress over HTTPS with a WordPress Application Password. No GitHub Client ID is stored in WordPress and no VPS or continuously running self-hosted GitHub Actions runner is required.
 
 Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes active Elementor capability/usage inventory plus complete V3 Form and V4 Atomic Form inspection/upsert with runtime-schema validation and rollback. Elementor-built pages and posts get an "Export Elementor JSON" row action in WordPress admin; saved templates keep Elementor's native export action, with a connector fallback when that action is unavailable. Pages, posts and saved templates also get an "Import Elementor JSON" action for replacing the target Elementor structure and page settings through the same verified document-save/rollback path.
+
+WordPress Additional CSS can be read and replaced through WordPress core Custom CSS APIs. Writes are bounded, privileged, require the normal mutation gate, support stale-state guards, verify exact readback and store a rollback snapshot.
 
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
@@ -27,6 +29,12 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Use a private GitHub repository. Store the dedicated WordPress Application Password only in GitHub Actions Secrets. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.10.0 =
+* Add privileged `custom_css.inspect` and `custom_css.update` actions for WordPress Additional CSS.
+* Use WordPress core Custom CSS APIs instead of direct database or filesystem mutation.
+* Add a 512 KiB request bound, installed-theme validation, stale-state fingerprint support, exact readback and rollback.
+* Align the plugin stable tag with the runtime version and add CI coverage for the Additional CSS contract.
 
 = 1.8.0 =
 * Add "Import Elementor JSON" actions for WordPress Pages, Posts and Elementor Saved Templates.
