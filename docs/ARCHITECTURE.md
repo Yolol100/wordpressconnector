@@ -23,7 +23,7 @@ REST and optional WP-CLI use the same `Registry`, `Runner`, security policy, ide
 
 Private repositories may write the full connector result to `results/*.json` on the unchanged temporary branch.
 
-Public repositories never persist the full connector response. The trusted executor runs `scripts/build-public-receipt.php` inside temporary runner storage and commits only `receipts/*.json`. Those receipts contain bounded status/readback evidence and deterministic fingerprints, not WordPress content, state tokens, rollback payloads or raw errors.
+Public repositories never persist the full connector response. The trusted executor runs `scripts/build-public-receipt.php` inside temporary runner storage and commits only `receipts/*.json`. Those receipts contain bounded status/readback evidence and deterministic fingerprints; connector-update receipts may also contain safe semantic versions and a verified package SHA-256. Raw WordPress content, health gates/user ids, state tokens, rollback payloads and raw errors are not persisted.
 
 Runtime request, asset, result and receipt payloads are temporary branch state and must never be merged into `main`.
 
@@ -33,12 +33,20 @@ Public mode deliberately does not expose the complete connector action catalog. 
 
 - `post.update`;
 - post-targeted `acf.update`;
-- `connector.batch` containing only those two actions;
-- `connector.rollback`.
+- `connector.batch` containing only those two content actions;
+- `connector.rollback`;
+- `connector.update.check` with an empty payload;
+- `connector.update.apply` with an empty payload, dry-run-first fingerprint protection and confirmation for a real update.
 
-This is a transport policy, not a change to the connector registry. Direct/private clients still use the normal semantic action metadata and WordPress-side gates.
+The public self-update is a special narrow exception, not a general privileged-action bridge. Only the two canonical connector update actions carry `public_repository_safe`; the WordPress privileged gate remains required, and a real apply also requires the write and system-update gates. Sensitive actions remain blocked in public-repository mode.
+
+The self-update request cannot supply package bytes, a package URL, release URL or requested version. The WordPress adapter resolves only the canonical `Yolol100/wordpressconnector` release, verifies the checksum and ZIP/plugin identity, and performs exact installed-version readback. `plugin.install_package` remains excluded from public mode because custom/private ZIP bytes must never pass through a public request branch.
 
 Public request validation also blocks secret-like keys, string ACF targets such as options/users/terms, non-publish status changes and `expected_state_token` values. Public stale-state control uses `expected_fingerprint` values derived from sanitized receipts.
+
+## Bootstrap boundary
+
+A live connector that predates `connector.update.apply` cannot invoke that action. Generic filesystem access and `plugin.install_package` deliberately block connector self-replacement, so older runtimes require one manual package bootstrap to a release containing the self-updater. This is an intentional trust boundary rather than a missing remote-code path.
 
 ## State model
 
@@ -61,4 +69,4 @@ WordPress admin import/export is implemented in this plugin. `elementorjson` rem
 
 ## Repository hygiene
 
-Permanent source may contain the guarded GitHub transport workflows, validators, receipt builder and contract tests. Permanent source must not contain production request/result/receipt payloads, site credentials or private runtime state.
+Permanent source may contain the guarded GitHub transport workflows, validators, receipt builder and contract tests. Permanent source must not contain production request/result/receipt payloads, site credentials, private plugin packages or private runtime state.
