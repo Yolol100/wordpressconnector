@@ -57,6 +57,30 @@ jobs:
             echo 'Development-only content leaked into plugin ZIP.' >&2
             exit 1
           fi
+          python3 - "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector-a.spdx.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+
+          zip_path = Path(sys.argv[1])
+          sbom = json.loads(Path(sys.argv[2]).read_text())
+          package = sbom['packages'][0]
+          if package.get('filesAnalyzed') is not True:
+              raise SystemExit('SPDX filesAnalyzed must be true.')
+          code = package.get('packageVerificationCode', {}).get('packageVerificationCodeValue', '')
+          sha1_values = []
+          for entry in sbom.get('files', []):
+              checksums = {item['algorithm']: item['checksumValue'] for item in entry.get('checksums', [])}
+              if 'SHA1' not in checksums or 'SHA256' not in checksums:
+                  raise SystemExit('Every SPDX file requires SHA1 and SHA256.')
+              sha1_values.append(checksums['SHA1'])
+          expected = hashlib.sha1(''.join(sorted(sha1_values)).encode('ascii')).hexdigest()
+          if code != expected:
+              raise SystemExit('SPDX packageVerificationCode is invalid.')
+          zip_sha256 = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+          package_checksums = {item['algorithm']: item['checksumValue'] for item in package.get('checksums', [])}
+          if package_checksums.get('SHA256') != zip_sha256:
+              raise SystemExit('SPDX package checksum does not match ZIP bytes.')
+          PY
           python3 -m json.tool "$RUNNER_TEMP/wordpressconnector-a.spdx.json" >/dev/null
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
@@ -82,7 +106,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ['8.2', '8.3', '8.4', '8.5']
+        php: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
     steps:
       - name: Checkout exact event revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -97,6 +121,21 @@ jobs:
       - name: Run complete contract suite
         shell: bash
         run: bash scripts/run-contracts.sh
+
+  plugin-check:
+    name: WordPress Plugin Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Run official WordPress Plugin Check
+        uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+        with:
+          plugins: plugin/wordpressconnector
 
   dependency-review:
     if: github.event_name == 'pull_request'
