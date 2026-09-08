@@ -22,6 +22,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `connector.rollback` | mutation, privileged | Execute a stored rollback snapshot by request_id. |
 | `core.check_updates` | privileged | Check WordPress core updates. |
 | `core.update` | mutation, privileged, system_update | Update WordPress core. Non-rollbackable. |
+| `custom_css.inspect` | privileged | Read WordPress Additional CSS for one installed theme stylesheet. |
+| `custom_css.update` | mutation, privileged | Replace WordPress Additional CSS with stale-state protection, readback and rollback. |
 | `cron.delete` | mutation, privileged | Delete scheduled events for one hook. |
 | `cron.list` | privileged | List scheduled cron events. |
 | `cron.run` | mutation, privileged | Run one cron hook immediately. |
@@ -124,7 +126,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.product.list` | read-only | List WooCommerce products through WooCommerce CRUD. |
 | `woocommerce.product.update` | mutation | Update a WooCommerce product. |
 | `woocommerce.variation.create` | mutation | Create a product variation. |
-| `woocommerce.variation.get` | read-only | Read a product variation. |
+| `woocommerce.variation.get` | read-only | Read a WooCommerce product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a product variation. |
 | `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
