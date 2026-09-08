@@ -12,12 +12,20 @@ final class Registry
 
     public function register(string $name, callable $handler, array $metadata = array()): void
     {
-        if (! preg_match('/^[a-z0-9][a-z0-9._-]*$/', $name)) {
+        if (! preg_match('/^[a-z0-9][a-z0-9._-]*\z/', $name)) {
             throw new RuntimeException('Invalid action name: ' . $name);
         }
 
         if (isset($this->actions[$name])) {
             throw new RuntimeException('Duplicate action registration: ' . $name);
+        }
+
+        $capability = null;
+        if (array_key_exists('capability', $metadata)) {
+            if (! is_string($metadata['capability']) || ! preg_match('/^[a-z][a-z0-9_]*\z/', $metadata['capability'])) {
+                throw new RuntimeException('Invalid WordPress capability for action: ' . $name);
+            }
+            $capability = $metadata['capability'];
         }
 
         $this->actions[$name] = array(
@@ -27,6 +35,8 @@ final class Registry
             'privileged' => ! empty($metadata['privileged']),
             'sensitive' => ! empty($metadata['sensitive']),
             'system_update' => ! empty($metadata['system_update']),
+            'public_repository_safe' => ! empty($metadata['public_repository_safe']),
+            'capability' => $capability,
             'description' => isset($metadata['description']) ? (string) $metadata['description'] : '',
         );
     }
@@ -60,6 +70,8 @@ final class Registry
                 'privileged' => $descriptor['privileged'],
                 'sensitive' => $descriptor['sensitive'],
                 'system_update' => $descriptor['system_update'],
+                'public_repository_safe' => $descriptor['public_repository_safe'],
+                'capability' => $descriptor['capability'],
                 'description' => $descriptor['description'],
             );
         }
