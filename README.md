@@ -28,6 +28,7 @@ The GitHub route is a transport client, not a second connector. It uses GitHub-h
 - media import and assignment;
 - verified plugin ZIP install/overwrite through authenticated REST request assets;
 - bounded plugin/theme filesystem inspection and replacement;
+- canonical connector self-update from verified GitHub releases;
 - dry-run, confirmations, privileged/sensitive gates, idempotency, mutation locks, exact readback and rollback.
 
 `connector.discover` is the canonical site-overview action: it returns WordPress/PHP runtime data, active theme, installed plugins, post types, taxonomies, builders, media sizes and the registered action catalog without requiring a second connector plugin.
@@ -40,7 +41,7 @@ The optional GitHub runtime provides repository-driven WordPress operations with
 - `.github/workflows/wordpress-execute.yml` runs only through trusted `workflow_dispatch` on `main`, revalidates the exact PR head and then calls the connector over HTTPS.
 - `scripts/validate-request.php` validates the common request envelope.
 - `scripts/validate-public-request.php` adds the restricted public-repository policy.
-- `scripts/build-public-receipt.php` converts a full in-run connector response into a content-free public receipt.
+- `scripts/build-public-receipt.php` converts a full in-run connector response into a minimized public receipt.
 - Runtime requests, results and receipts live only on short-lived request branches and must never be merged to `main`.
 
 ### Private repository mode
@@ -49,20 +50,26 @@ Private repositories keep the broad transport behavior. A trusted request may us
 
 ### Public repository mode
 
-Public repositories fail closed to a smaller content-editing contract instead of exposing full WordPress responses.
+Public repositories fail closed to a deliberately small contract instead of exposing broad privileged WordPress operations or full responses.
 
 Allowed actions are currently:
 
 - `post.update` for an existing published post/page/CPT;
 - `acf.update` for a positive integer post target only;
-- `connector.batch` containing only those two operations;
-- `connector.rollback` for a known connector request id.
+- `connector.batch` containing only those two content operations;
+- `connector.rollback` for a known connector request id;
+- `connector.update.check` with an empty payload;
+- `connector.update.apply` with an empty payload, using dry-run first and `expected_fingerprint` plus `confirm:true` for a real update.
+
+The two connector update actions are the only privileged actions explicitly marked `public_repository_safe`. They still require the normal WordPress privileged gate; a real apply also requires the write and system-update gates. The updater is pinned to release assets from `Yolol100/wordpressconnector`, validates SHA-256, package structure, plugin identity and version, and performs exact installed-version readback.
+
+`plugin.install_package` is intentionally **not** public-safe. Never put a private/custom plugin ZIP on a public GitHub request branch. Use direct authenticated REST or a private repository transport for private packages.
 
 Public requests reject secret-like payload keys, non-post ACF targets, non-published status changes and `expected_state_token`. Use `expected_fingerprint` for stale-state protection in public mode.
 
-The executor never commits the full WordPress response in public mode. It writes only `receipts/<request_id>.json` containing request identity, success/failure category, readback status and deterministic before/after fingerprints. Before/after content, state tokens, rollback payloads and raw connector errors remain inside the temporary GitHub-hosted runner and are deleted during cleanup.
+The executor never commits the full WordPress response in public mode. It writes only `receipts/<request_id>.json` with minimized execution evidence. Content operations expose readback status and deterministic fingerprints. Connector self-update receipts may additionally expose safe semantic versions and the verified package SHA-256. The connector health version may be included as `connector_version`; health gates, user ids, before/after content, state tokens, rollback payloads and raw connector errors are not persisted.
 
-See `docs/SETUP.md` for the required GitHub variable/secrets and the request flow.
+See `docs/SETUP.md` for the required GitHub variable/secrets and request flow.
 
 ## REST plugin package delivery
 
@@ -78,6 +85,20 @@ The package action is a privileged system-update mutation. Real writes therefore
 Use `dry_run:true` first. REST execution deliberately cleans request assets after every attempt, including dry-run. Re-upload the exact same ZIP with the same request ID/path before the confirmed call and pass the dry-run `current_state_token` as `expected_state_token`. The checksum proves the re-uploaded package bytes are unchanged.
 
 See `docs/PLUGIN-PACKAGE-REST.md` for the exact request sequence and payloads.
+
+## Connector self-update
+
+From 1.12.2 onward the canonical self-update can also be driven through a public GitHub request without publishing package bytes or the full WordPress response. The request payload is always empty: WordPress resolves only the latest canonical `Yolol100/wordpressconnector` release itself.
+
+Use this sequence:
+
+1. run `connector.update.apply` with `dry_run:true`, `confirm:false` and an empty payload;
+2. require `update_plan_verified:true` and read `before_fingerprint` from the sanitized receipt;
+3. run `connector.update.apply` again with `dry_run:false`, `confirm:true`, the same empty payload and that `expected_fingerprint`;
+4. require `readback_verified:true` and check `to_version` plus `package_sha256` in the sanitized receipt;
+5. on a later request, verify `connector_version` reports the installed version.
+
+Installations that do not yet contain `connector.update.apply` cannot bootstrap themselves through it. They require one manual installation of a newer release first; after that, subsequent updates can use this route.
 
 ## Elementor JSON in WordPress admin
 
