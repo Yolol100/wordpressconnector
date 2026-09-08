@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "request_id": "public-smoke-20260908",
+  "action": "post.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 4933
+  }
+}
