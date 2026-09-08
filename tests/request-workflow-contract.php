@@ -9,6 +9,7 @@ $required = array(
     'pull_request:',
     "- 'requests/**'",
     "- 'assets/inbox/**'",
+    "if: github.actor != 'github-actions[bot]'",
     'github.event.pull_request.head.repo.full_name',
     'WPCONNECTOR_TRUSTED_REQUEST_ACTOR',
     'github.event.pull_request.user.login',
@@ -28,6 +29,8 @@ $required = array(
     "'expected_head_sha': os.environ['EXPECTED_HEAD_SHA']",
     'Validate request PR without production credentials',
     'Exactly one requests/*.json file is required.',
+    'Only regular non-executable request files are allowed:',
+    '"$mode" != \'100644\'',
 );
 foreach ($required as $needle) {
     if (strpos($workflow, $needle) === false) {
@@ -48,6 +51,7 @@ $forbidden = array(
     'secrets.',
     'webactueel-wordpress-connector/v1',
     'Remote WordPress execution requires a private repository.',
+    '100755',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
