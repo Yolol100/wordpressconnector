@@ -1,0 +1,30 @@
+name: Audit Final Patches
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: contains(github.event.head_commit.message, '[apply-final-audit]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact audit revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+      - name: Apply exact audited patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/apply-audit-final-patches.py
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/wordpress-execute.yml plugin/wordpressconnector/includes/Adapters
+          git commit -m 'Finish runtime boundary hardening'
+          git push origin HEAD:main
