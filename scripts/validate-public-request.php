@@ -45,6 +45,10 @@ if (! in_array($action, $publicActions, true)) {
     $errors[] = 'Action is not allowed in public GitHub runtime mode: ' . $action;
 }
 
+if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+    $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+}
+
 $secretKeyPattern = '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer[_-]?secret|client[_-]?secret|authorization|cookie|application[_-]?password|license[_-]?key)/i';
 
 $scanKeys = static function ($value, string $context = 'payload') use (&$scanKeys, &$errors, $secretKeyPattern): void {
@@ -121,10 +125,10 @@ if ('connector.batch' === $action) {
             $errors[] = $context . ' must be an object.';
             continue;
         }
-        $allowedOperationKeys = array('action', 'payload', 'expected_fingerprint', 'expected_state_token');
+        $allowedOperationKeys = array('action', 'payload', 'expected_fingerprint');
         foreach (array_keys($operation) as $key) {
             if (! in_array((string) $key, $allowedOperationKeys, true)) {
-                $errors[] = $context . ' has unknown key: ' . (string) $key;
+                $errors[] = $context . ' has unknown or public-forbidden key: ' . (string) $key;
             }
         }
         $nestedAction = isset($operation['action']) ? (string) $operation['action'] : '';
@@ -133,12 +137,9 @@ if ('connector.batch' === $action) {
         }
         $nestedPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
         $validateLeaf($nestedAction, $nestedPayload, $context . '.payload');
-        foreach (array('expected_fingerprint', 'expected_state_token') as $guard) {
-            if (! array_key_exists($guard, $operation) || null === $operation[$guard]) {
-                continue;
-            }
-            if (! is_string($operation[$guard]) || ! preg_match('/^[a-f0-9]{64}$/D', $operation[$guard])) {
-                $errors[] = $context . '.' . $guard . ' must be a SHA-256 hex string.';
+        if (array_key_exists('expected_fingerprint', $operation) && null !== $operation['expected_fingerprint']) {
+            if (! is_string($operation['expected_fingerprint']) || ! preg_match('/^[a-f0-9]{64}$/D', $operation['expected_fingerprint'])) {
+                $errors[] = $context . '.expected_fingerprint must be a SHA-256 hex string.';
             }
         }
     }
