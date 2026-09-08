@@ -25,6 +25,7 @@ final class PluginPackageAdapter
                 'mutation' => true,
                 'privileged' => true,
                 'system_update' => true,
+                'capability' => 'install_plugins',
                 'description' => 'Install or overwrite a plugin from a verified ZIP uploaded to the trusted request asset root.',
             )
         );
