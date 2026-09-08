@@ -1,0 +1,79 @@
+name: Connector Release
+
+on:
+  workflow_run:
+    workflows: ["Connector CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout exact tested revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Read and validate release version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(php -r '$s=file_get_contents("plugin/wordpressconnector/wordpressconnector.php"); if(!preg_match("/^[ \\t*#\\/]*Version:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
+          stable="$(php -r '$s=file_get_contents("plugin/wordpressconnector/readme.txt"); if(!preg_match("/^Stable tag:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
+          test "$version" = "$stable"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip an existing immutable release
+        id: existing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${{ steps.version.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build and verify exact plugin package
+        if: steps.existing.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd plugin
+          zip -qr "$RUNNER_TEMP/wordpressconnector.zip" wordpressconnector
+          cd "$GITHUB_WORKSPACE"
+          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
+          unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
+          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
+            echo 'Development-only content leaked into plugin ZIP.' >&2
+            exit 1
+          fi
+          sha256sum "$RUNNER_TEMP/wordpressconnector.zip" | awk '{print $1 "  wordpressconnector.zip"}' > "$RUNNER_TEMP/wordpressconnector.zip.sha256"
+          grep -Eq '^[a-f0-9]{64}  wordpressconnector\.zip$' "$RUNNER_TEMP/wordpressconnector.zip.sha256"
+
+      - name: Publish immutable GitHub release
+        if: steps.existing.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create "${{ steps.version.outputs.tag }}" \
+            "$RUNNER_TEMP/wordpressconnector.zip" \
+            "$RUNNER_TEMP/wordpressconnector.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "${{ github.event.workflow_run.head_sha }}" \
+            --title "WordPress Connector ${{ steps.version.outputs.version }}" \
+            --notes "Automated immutable release from a successful Connector CI run on main."
