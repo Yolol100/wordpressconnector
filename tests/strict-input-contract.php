@@ -25,35 +25,55 @@ $expectRuntimeException = static function (callable $callback, string $label): v
     exit(1);
 };
 
-$valid = Request::fromArray(array(
+$baseRequest = array(
+    'version' => 1,
     'request_id' => 'request-1234',
-    'action' => 'plugin.install_package',
+    'action' => 'connector.actions',
+    'dry_run' => true,
+    'confirm' => false,
     'payload' => array(),
+);
+
+$valid = Request::fromArray($baseRequest + array(
     'expected_fingerprint' => str_repeat('a', 64),
     'expected_state_token' => str_repeat('b', 64),
 ));
-if ('request-1234' !== $valid->id() || 'plugin.install_package' !== $valid->action()) {
-    fwrite(STDERR, "Valid strict request identity was not preserved.\n");
+if ('request-1234' !== $valid->id() || 'connector.actions' !== $valid->action() || ! $valid->dryRun() || $valid->confirm()) {
+    fwrite(STDERR, "Valid strict request envelope was not preserved.\n");
     exit(1);
 }
 
+$invalidEnvelopes = array(
+    'missing version' => array_diff_key($baseRequest, array('version' => true)),
+    'string version' => array_merge($baseRequest, array('version' => '1')),
+    'unknown top-level key' => array_merge($baseRequest, array('unexpected' => true)),
+    'missing payload' => array_diff_key($baseRequest, array('payload' => true)),
+    'string dry_run false' => array_merge($baseRequest, array('dry_run' => 'false')),
+    'integer dry_run zero' => array_merge($baseRequest, array('dry_run' => 0)),
+    'string confirm false' => array_merge($baseRequest, array('confirm' => 'false')),
+    'integer confirm one' => array_merge($baseRequest, array('confirm' => 1)),
+    'integer request id' => array_merge($baseRequest, array('request_id' => 12345678)),
+    'integer action' => array_merge($baseRequest, array('action' => 12345678)),
+);
+foreach ($invalidEnvelopes as $label => $request) {
+    $expectRuntimeException(static function () use ($request): void {
+        Request::fromArray($request);
+    }, $label);
+}
+
 foreach (array("request-1234\n", "request-1234\r", "request-1234\t", "request-1234\0") as $value) {
-    $expectRuntimeException(static function () use ($value): void {
-        Request::fromArray(array('request_id' => $value, 'action' => 'connector.actions'));
+    $expectRuntimeException(static function () use ($baseRequest, $value): void {
+        Request::fromArray(array_merge($baseRequest, array('request_id' => $value)));
     }, 'request_id control suffix');
 }
 foreach (array("connector.actions\n", "connector.actions\r", "connector.actions\t", "connector.actions\0") as $value) {
-    $expectRuntimeException(static function () use ($value): void {
-        Request::fromArray(array('request_id' => 'request-1234', 'action' => $value));
+    $expectRuntimeException(static function () use ($baseRequest, $value): void {
+        Request::fromArray(array_merge($baseRequest, array('action' => $value)));
     }, 'action control suffix');
 }
 foreach (array("\n", "\r", "\t", "\0") as $suffix) {
-    $expectRuntimeException(static function () use ($suffix): void {
-        Request::fromArray(array(
-            'request_id' => 'request-1234',
-            'action' => 'connector.actions',
-            'expected_fingerprint' => str_repeat('a', 64) . $suffix,
-        ));
+    $expectRuntimeException(static function () use ($baseRequest, $suffix): void {
+        Request::fromArray(array_merge($baseRequest, array('expected_fingerprint' => str_repeat('a', 64) . $suffix)));
     }, 'fingerprint control suffix');
 }
 
