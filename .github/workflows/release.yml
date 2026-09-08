@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -23,7 +25,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-          fetch-depth: 1
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Read and validate release version
@@ -34,38 +36,69 @@ jobs:
           version="$(php -r '$s=file_get_contents("plugin/wordpressconnector/wordpressconnector.php"); if(!preg_match("/^[ \\t*#\\/]*Version:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
           stable="$(php -r '$s=file_get_contents("plugin/wordpressconnector/readme.txt"); if(!preg_match("/^Stable tag:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
           test "$version" = "$stable"
+          source_sha="$(git log -1 --format=%H -- plugin/wordpressconnector)"
+          source_epoch="$(git show -s --format=%ct "$source_sha")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          echo "source_sha=$source_sha" >> "$GITHUB_OUTPUT"
+          echo "source_epoch=$source_epoch" >> "$GITHUB_OUTPUT"
 
-      - name: Skip an existing immutable release
+      - name: Build deterministic release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/build-release-package.py \
+            --source plugin/wordpressconnector \
+            --zip "$RUNNER_TEMP/wordpressconnector.zip" \
+            --sbom "$RUNNER_TEMP/wordpressconnector.spdx.json" \
+            --source-commit "${{ steps.version.outputs.source_sha }}" \
+            --source-date-epoch "${{ steps.version.outputs.source_epoch }}"
+          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
+          unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
+          python3 -m json.tool "$RUNNER_TEMP/wordpressconnector.spdx.json" >/dev/null
+          sha256sum "$RUNNER_TEMP/wordpressconnector.zip" | awk '{print $1 "  wordpressconnector.zip"}' > "$RUNNER_TEMP/wordpressconnector.zip.sha256"
+          grep -Eq '^[a-f0-9]{64}  wordpressconnector\.zip$' "$RUNNER_TEMP/wordpressconnector.zip.sha256"
+
+      - name: Detect and verify existing versioned release
         id: existing
         shell: bash
         run: |
           set -euo pipefail
-          if gh release view "${{ steps.version.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
+          tag="${{ steps.version.outputs.tag }}"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "exists=false" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-
-      - name: Build and verify exact plugin package
-        if: steps.existing.outputs.exists != 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd plugin
-          zip -qr "$RUNNER_TEMP/wordpressconnector.zip" wordpressconnector
-          cd "$GITHUB_WORKSPACE"
-          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
-          unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
-          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
-            echo 'Development-only content leaked into plugin ZIP.' >&2
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/existing"
+          gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'wordpressconnector.zip' --pattern 'wordpressconnector.zip.sha256' --dir "$RUNNER_TEMP/existing"
+          test -f "$RUNNER_TEMP/existing/wordpressconnector.zip"
+          test -f "$RUNNER_TEMP/existing/wordpressconnector.zip.sha256"
+          (cd "$RUNNER_TEMP/existing" && sha256sum -c wordpressconnector.zip.sha256)
+          if ! cmp "$RUNNER_TEMP/wordpressconnector.zip" "$RUNNER_TEMP/existing/wordpressconnector.zip"; then
+            echo "Existing release ${tag} has different plugin bytes. Bump the plugin version before publishing changed runtime code." >&2
             exit 1
           fi
-          sha256sum "$RUNNER_TEMP/wordpressconnector.zip" | awk '{print $1 "  wordpressconnector.zip"}' > "$RUNNER_TEMP/wordpressconnector.zip.sha256"
-          grep -Eq '^[a-f0-9]{64}  wordpressconnector\.zip$' "$RUNNER_TEMP/wordpressconnector.zip.sha256"
+          if gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | grep -qx 'wordpressconnector.spdx.json'; then
+            gh release download "$tag" --repo "$GITHUB_REPOSITORY" --pattern 'wordpressconnector.spdx.json' --dir "$RUNNER_TEMP/existing"
+            cmp "$RUNNER_TEMP/wordpressconnector.spdx.json" "$RUNNER_TEMP/existing/wordpressconnector.spdx.json"
+          else
+            echo "Legacy release ${tag} predates SBOM publication; package bytes still match."
+          fi
 
-      - name: Publish immutable GitHub release
+      - name: Attest plugin package provenance
+        if: steps.existing.outputs.exists != 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ runner.temp }}/wordpressconnector.zip
+
+      - name: Attest SBOM provenance
+        if: steps.existing.outputs.exists != 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4
+        with:
+          subject-path: ${{ runner.temp }}/wordpressconnector.spdx.json
+
+      - name: Publish versioned GitHub release
         if: steps.existing.outputs.exists != 'true'
         shell: bash
         run: |
@@ -73,7 +106,24 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             "$RUNNER_TEMP/wordpressconnector.zip" \
             "$RUNNER_TEMP/wordpressconnector.zip.sha256" \
+            "$RUNNER_TEMP/wordpressconnector.spdx.json" \
             --repo "$GITHUB_REPOSITORY" \
             --target "${{ github.event.workflow_run.head_sha }}" \
             --title "WordPress Connector ${{ steps.version.outputs.version }}" \
-            --notes "Automated immutable release from a successful Connector CI run on main."
+            --notes "Automated versioned release from a successful Connector CI run on main. Package and SBOM have GitHub artifact attestations."
+
+      - name: Verify published release bytes
+        if: steps.existing.outputs.exists != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/published"
+          gh release download "${{ steps.version.outputs.tag }}" --repo "$GITHUB_REPOSITORY" \
+            --pattern 'wordpressconnector.zip' \
+            --pattern 'wordpressconnector.zip.sha256' \
+            --pattern 'wordpressconnector.spdx.json' \
+            --dir "$RUNNER_TEMP/published"
+          cmp "$RUNNER_TEMP/wordpressconnector.zip" "$RUNNER_TEMP/published/wordpressconnector.zip"
+          cmp "$RUNNER_TEMP/wordpressconnector.zip.sha256" "$RUNNER_TEMP/published/wordpressconnector.zip.sha256"
+          cmp "$RUNNER_TEMP/wordpressconnector.spdx.json" "$RUNNER_TEMP/published/wordpressconnector.spdx.json"
+          (cd "$RUNNER_TEMP/published" && sha256sum -c wordpressconnector.zip.sha256)
