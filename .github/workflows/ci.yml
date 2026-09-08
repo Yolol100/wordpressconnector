@@ -38,6 +38,7 @@ jobs:
           php tests/state-token-contract.php
           php tests/plugin-control-contract.php
           php tests/plugin-package-contract.php
+          php tests/connector-update-contract.php
           php tests/strict-input-contract.php
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
