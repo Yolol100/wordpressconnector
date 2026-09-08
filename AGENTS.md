@@ -15,6 +15,7 @@ Read `README.md`, `docs/ARCHITECTURE.md`, `docs/ACTION-CATALOG.md`, `docs/SCOPE.
 
 Preserve:
 
+- strict top-level request input validation;
 - dry-run and explicit confirmation gates;
 - privileged/sensitive/system-update/filesystem-write separation;
 - stable request IDs and idempotency;
@@ -43,6 +44,7 @@ php tests/elementor-json-import-contract.php
 php tests/state-token-contract.php
 php tests/plugin-control-contract.php
 php tests/plugin-package-contract.php
+php tests/strict-input-contract.php
 php tests/filesystem-control-contract.php
 php tests/repository-hygiene.php
 php tests/rest-transport-contract.php
