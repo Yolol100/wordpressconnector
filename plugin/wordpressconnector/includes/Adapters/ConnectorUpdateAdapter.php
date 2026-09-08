@@ -22,12 +22,14 @@ final class ConnectorUpdateAdapter
     {
         $registry->register('connector.update.check', array($this, 'check'), array(
             'privileged' => true,
+            'public_repository_safe' => true,
             'description' => 'Check the canonical GitHub release for a newer verified WordPress Connector package.',
         ));
         $registry->register('connector.update.apply', array($this, 'apply'), array(
             'mutation' => true,
             'privileged' => true,
             'system_update' => true,
+            'public_repository_safe' => true,
             'description' => 'Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification.',
         ));
     }
