@@ -10,7 +10,6 @@ require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
 require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once $root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php';
 
-use RuntimeException;
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\REST\AssetStore;
 use Webactueel\WordPressConnector\REST\Controller;
@@ -19,7 +18,7 @@ use Webactueel\WordPressConnector\Runtime\Request;
 $expectRuntimeException = static function (callable $callback, string $label): void {
     try {
         $callback();
-    } catch (RuntimeException $error) {
+    } catch (\RuntimeException $error) {
         return;
     }
     fwrite(STDERR, "Expected RuntimeException for {$label}.\n");
