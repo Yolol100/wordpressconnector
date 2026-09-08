@@ -39,6 +39,7 @@ foreach ($controllerRequired as $needle) {
 
 $assetRequired = array(
     'is_uploaded_file($tmpName)',
+    'filesize($tmpName)',
     'allowedFileType($relativePath)',
     'get_allowed_mime_types()',
     "plugin-packages/",
@@ -50,6 +51,13 @@ $assetRequired = array(
     'MAX_FILE_BYTES = 20971520',
     "'.' === \$segment || '..' === \$segment",
     'realpath($root)',
+    'sys_get_temp_dir()',
+    "defined('WPCONNECTOR_ASSET_ROOT')",
+    'assertOutsideWebRoot',
+    'must be stored outside the public WordPress root',
+    '@chmod($base, 0700)',
+    '@chmod($directory, 0700)',
+    '@chmod($destination, 0600)',
     'Refusing unsafe connector asset cleanup path.',
 );
 foreach ($assetRequired as $needle) {
@@ -57,6 +65,14 @@ foreach ($assetRequired as $needle) {
         fwrite(STDERR, "Missing REST asset security contract: {$needle}\n");
         exit(1);
     }
+}
+if (strpos($assetStore, 'wp_upload_dir()') !== false) {
+    fwrite(STDERR, "Request assets must not default to the web-served WordPress uploads tree.\n");
+    exit(1);
+}
+if (strpos($assetStore, "isset(\$file['size'])") !== false) {
+    fwrite(STDERR, "Upload limits must use the actual temporary-file size, not client metadata.\n");
+    exit(1);
 }
 
 $settingsRequired = array(
