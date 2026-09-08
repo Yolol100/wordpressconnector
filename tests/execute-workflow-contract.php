@@ -24,6 +24,8 @@ $required = array(
     'build-public-receipt.php',
     'Exactly one requests/*.json file is required.',
     'Full results are forbidden on public runtime request branches.',
+    'Only regular non-executable request files are allowed:',
+    '"$mode" != \'100644\'',
     'Revalidate PR head immediately before execution',
     'Request branch moved after validation; refusing WordPress execution.',
     'WPCONNECTOR_SITE_URL',
@@ -58,6 +60,7 @@ $forbidden = array(
     'cancel-in-progress: true',
     'Remote WordPress execution requires a private repository.',
     '$body["message"]',
+    '100755',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
