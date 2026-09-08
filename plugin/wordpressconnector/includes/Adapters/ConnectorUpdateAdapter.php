@@ -258,10 +258,14 @@ final class ConnectorUpdateAdapter
                 }
 
                 $normalized = '/' === substr($name, -1) ? rtrim($name, '/') : $name;
-                if ('' === $normalized || 0 !== strpos($normalized, 'wordpressconnector')) {
+                if ('' === $normalized) {
+                    throw new RuntimeException('Connector release ZIP contains an invalid root entry.');
+                }
+                $segments = explode('/', $normalized);
+                if ('wordpressconnector' !== $segments[0]) {
                     throw new RuntimeException('Connector release ZIP contains an unexpected top-level path.');
                 }
-                foreach (explode('/', $normalized) as $segment) {
+                foreach ($segments as $segment) {
                     if ('' === $segment || '.' === $segment || '..' === $segment) {
                         throw new RuntimeException('Connector release ZIP contains path traversal or an invalid segment.');
                     }
