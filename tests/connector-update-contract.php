@@ -8,9 +8,10 @@ $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconn
 $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/Plugin.php');
 $readme = file_get_contents($root . '/plugin/wordpressconnector/readme.txt');
 $workflow = file_get_contents($root . '/.github/workflows/release.yml');
+$builder = file_get_contents($root . '/scripts/build-release-package.py');
 $catalog = file_get_contents($root . '/docs/ACTION-CATALOG.md');
 
-foreach (array('adapter' => $adapter, 'bootstrap' => $bootstrap, 'plugin' => $plugin, 'readme' => $readme, 'release workflow' => $workflow, 'catalog' => $catalog) as $name => $source) {
+foreach (array('adapter' => $adapter, 'bootstrap' => $bootstrap, 'plugin' => $plugin, 'readme' => $readme, 'release workflow' => $workflow, 'release builder' => $builder, 'catalog' => $catalog) as $name => $source) {
     if (false === $source) {
         fwrite(STDERR, "Unable to read connector update {$name}.\n");
         exit(1);
@@ -78,23 +79,46 @@ $workflowRequired = array(
     "github.event.workflow_run.conclusion == 'success'",
     "github.event.workflow_run.head_branch == 'main'",
     "github.event.workflow_run.event == 'push'",
-    'permissions:',
     'contents: write',
+    'id-token: write',
+    'attestations: write',
     'ref: ${{ github.event.workflow_run.head_sha }}',
+    'scripts/build-release-package.py',
     'wordpressconnector.zip.sha256',
-    'sha256sum',
+    'wordpressconnector.spdx.json',
+    'actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6',
+    'Existing release ${tag} has different plugin bytes.',
+    'cmp "$RUNNER_TEMP/wordpressconnector.zip"',
     'gh release create',
     '--target "${{ github.event.workflow_run.head_sha }}"',
+    'Verify published release bytes',
+    'sha256sum -c wordpressconnector.zip.sha256',
 );
 foreach ($workflowRequired as $needle) {
     if (strpos($workflow, $needle) === false) {
-        fwrite(STDERR, "Missing connector release workflow guard: {$needle}\n");
+        fwrite(STDERR, "Missing hardened connector release workflow guard: {$needle}\n");
         exit(1);
     }
 }
-if (strpos($workflow, 'pull_request_target') !== false) {
-    fwrite(STDERR, "Connector release workflow must not use pull_request_target.\n");
+if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'Publish immutable GitHub release') !== false) {
+    fwrite(STDERR, "Connector release workflow contains a forbidden privileged event or false immutability claim.\n");
     exit(1);
+}
+
+$builderRequired = array(
+    "date_time=fixed_time",
+    "fixed_time = (1980, 1, 1, 0, 0, 0)",
+    "stat.S_IFREG | 0o644",
+    "sort_keys=True",
+    "'spdxVersion': 'SPDX-2.3'",
+    "'algorithm': 'SHA256'",
+    "Symlinks are forbidden in release packages",
+);
+foreach ($builderRequired as $needle) {
+    if (strpos($builder, $needle) === false) {
+        fwrite(STDERR, "Missing deterministic release-builder contract: {$needle}\n");
+        exit(1);
+    }
 }
 
 foreach (array(
