@@ -163,7 +163,7 @@ final class Controller
 
     public function validateRequestId($value): bool
     {
-        return is_string($value) && (bool) preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$/', $value);
+        return is_string($value) && (bool) preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value);
     }
 
     public function validateAssetPath($value): bool
@@ -172,7 +172,7 @@ final class Controller
             return false;
         }
         foreach (explode('/', $value) as $segment) {
-            if ('' === $segment || '.' === $segment || '..' === $segment || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/', $segment)) {
+            if ('' === $segment || '.' === $segment || '..' === $segment || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z/', $segment)) {
                 return false;
             }
         }
