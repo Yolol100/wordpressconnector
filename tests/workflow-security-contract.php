@@ -38,13 +38,13 @@ if (strpos($request, "if: github.actor != 'github-actions[bot]'") === false) {
     fwrite(STDERR, "Request workflow lacks bot-feedback-loop suppression.\n");
     exit(1);
 }
-foreach (array($request, $execute) as $index => $source) {
-    if (strpos($source, '"100755"') !== false || strpos($source, "'100755'") !== false) {
-        fwrite(STDERR, "Runtime workflow permits executable request files: index {$index}.\n");
-        exit(1);
-    }
-    if (strpos($source, "!= '100644'") === false && strpos($source, '!= "100644"') === false) {
-        fwrite(STDERR, "Runtime workflow does not explicitly require mode 100644: index {$index}.\n");
+if (strpos($request, '100755') !== false || strpos($request, "!= '100644'") === false) {
+    fwrite(STDERR, "Credential-free request guard must accept only regular non-executable 100644 request files.\n");
+    exit(1);
+}
+foreach (array('100644', '100755', 'Symlinks/submodules/special file modes are not allowed') as $needle) {
+    if (strpos($execute, $needle) === false) {
+        fwrite(STDERR, "Trusted executor lost its data-only file-mode/special-file boundary: {$needle}.\n");
         exit(1);
     }
 }
