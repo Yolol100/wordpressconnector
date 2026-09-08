@@ -3,18 +3,25 @@ import argparse
 import datetime as dt
 import hashlib
 import json
-import os
 from pathlib import Path
 import stat
 import zipfile
 
 
-def sha256(path: Path) -> str:
-    h = hashlib.sha256()
+def digest(path: Path, algorithm: str) -> str:
+    h = hashlib.new(algorithm)
     with path.open('rb') as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b''):
             h.update(chunk)
     return h.hexdigest()
+
+
+def sha256(path: Path) -> str:
+    return digest(path, 'sha256')
+
+
+def sha1(path: Path) -> str:
+    return digest(path, 'sha1')
 
 
 def main() -> None:
@@ -68,19 +75,27 @@ def main() -> None:
     created = dt.datetime.fromtimestamp(args.source_date_epoch, tz=dt.timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
     package_id = 'SPDXRef-Package-WordPressConnector'
     sbom_files = []
+    package_verification_hashes = []
     relationships = [{'spdxElementId': 'SPDXRef-DOCUMENT', 'relationshipType': 'DESCRIBES', 'relatedSpdxElement': package_id}]
     for index, (path, rel) in enumerate(files, start=1):
         file_id = f'SPDXRef-File-{index}'
+        file_sha1 = sha1(path)
+        file_sha256 = sha256(path)
+        package_verification_hashes.append(file_sha1)
         sbom_files.append({
             'SPDXID': file_id,
             'fileName': f'wordpressconnector/{rel}',
-            'checksums': [{'algorithm': 'SHA256', 'checksumValue': sha256(path)}],
+            'checksums': [
+                {'algorithm': 'SHA1', 'checksumValue': file_sha1},
+                {'algorithm': 'SHA256', 'checksumValue': file_sha256},
+            ],
             'licenseConcluded': 'NOASSERTION',
             'licenseInfoInFiles': ['NOASSERTION'],
             'copyrightText': 'NOASSERTION',
         })
         relationships.append({'spdxElementId': package_id, 'relationshipType': 'CONTAINS', 'relatedSpdxElement': file_id})
 
+    package_verification_code = hashlib.sha1(''.join(sorted(package_verification_hashes)).encode('ascii')).hexdigest()
     sbom = {
         'spdxVersion': 'SPDX-2.3',
         'dataLicense': 'CC0-1.0',
@@ -94,6 +109,7 @@ def main() -> None:
             'versionInfo': version,
             'downloadLocation': 'NOASSERTION',
             'filesAnalyzed': True,
+            'packageVerificationCode': {'packageVerificationCodeValue': package_verification_code},
             'checksums': [{'algorithm': 'SHA256', 'checksumValue': sha256(zip_path)}],
             'licenseConcluded': 'GPL-2.0-or-later',
             'licenseDeclared': 'GPL-2.0-or-later',
