@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.12.0
+Stable tag: 1.12.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,8 @@ Custom or private plugin ZIPs can be uploaded through the authenticated REST ass
 
 From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to immutable releases from `Yolol100/wordpressconnector`, requires the normal privileged/write/system-update gates, downloads only the canonical `wordpressconnector.zip` plus its checksum asset, verifies SHA-256 and ZIP identity before overwrite, and performs exact version readback. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
 
+`system.doctor` reports the universal WordPress runtime as healthy when WordPress bootstrap and database access are available. WP-CLI remains a separate informational capability because authenticated REST is the canonical remote transport and local WP-CLI is optional recovery tooling.
+
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 == Security ==
@@ -33,6 +35,11 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Use a private GitHub repository for workflows that can contain site-specific request data. Store the dedicated WordPress Application Password only in protected connector credentials. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.12.1 =
+* Make `system.doctor` treat WP-CLI as optional informational recovery capability instead of a requirement for healthy REST runtime status.
+* Finish strict request-identity hardening for rollback request IDs by requiring an absolute regex end boundary.
+* Make connector release-contract version checks derive the active release version instead of hardcoding one patch version.
 
 = 1.12.0 =
 * Add `connector.update.check` and `connector.update.apply` for a dedicated self-update path from canonical GitHub releases.

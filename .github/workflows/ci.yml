@@ -40,6 +40,7 @@ jobs:
           php tests/plugin-package-contract.php
           php tests/connector-update-contract.php
           php tests/strict-input-contract.php
+          php tests/runtime-preflight-contract.php
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
           php tests/rest-transport-contract.php

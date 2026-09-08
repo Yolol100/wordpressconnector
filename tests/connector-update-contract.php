@@ -59,8 +59,11 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
     fwrite(STDERR, "Connector updater is not bootstrapped and registered.\n");
     exit(1);
 }
-if (strpos($bootstrap, 'Version: 1.12.0') === false || strpos($bootstrap, "WPCONNECTOR_VERSION','1.12.0'") === false || strpos($readme, 'Stable tag: 1.12.0') === false) {
-    fwrite(STDERR, "Connector 1.12.0 release metadata is not aligned.\n");
+if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
+    ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
+    $version[1] !== $stable[1] ||
+    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
+    fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }
 

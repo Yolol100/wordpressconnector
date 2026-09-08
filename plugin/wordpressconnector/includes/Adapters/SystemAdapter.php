@@ -75,7 +75,7 @@ final class SystemAdapter
             'acf' => function_exists('get_fields'),
             'multisite' => is_multisite(),
         );
-        $checks['ok'] = $checks['wordpress_bootstrap'] && $checks['database'] && $checks['wp_cli'];
+        $checks['ok'] = $checks['wordpress_bootstrap'] && $checks['database'];
         return $checks;
     }
 
