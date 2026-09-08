@@ -1,0 +1,342 @@
+name: WordPress Execute
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Runtime request pull request number
+        required: true
+        type: string
+      expected_head_sha:
+        description: Exact PR head SHA validated by the request workflow
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: wordpress-execute-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Revalidate request from trusted main workflow
+        id: preflight
+        env:
+          GH_REPO_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
+          GIT_TERMINAL_PROMPT: '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
+            echo 'Remote WordPress execution requires a private repository.' >&2
+            exit 1
+          fi
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Invalid PR number.' >&2; exit 1; }
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Invalid expected head SHA.' >&2; exit 1; }
+
+          api_headers=(
+            --header 'Accept: application/vnd.github+json'
+            --header "Authorization: Bearer ${GH_REPO_TOKEN}"
+            --header 'X-GitHub-Api-Version: 2026-03-10'
+          )
+
+          root="$RUNNER_TEMP/wpconnector-request"
+          rm -rf "$root"
+          mkdir -p "$root/assets/inbox" "$root/results"
+
+          pr_json="$root/pr.json"
+          curl --fail-with-body --silent --show-error --location \
+            "${api_headers[@]}" \
+            --output "$pr_json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
+
+          metadata=$(php -r '
+            $p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            $repo=getenv("GITHUB_REPOSITORY");
+            $owner=getenv("REPOSITORY_OWNER");
+            $trusted=getenv("TRUSTED_REQUEST_ACTOR") ?: "";
+            $expected=getenv("EXPECTED_HEAD_SHA");
+            $actor=(string)($p["user"]["login"] ?? "");
+            $headRepo=(string)($p["head"]["repo"]["full_name"] ?? "");
+            $headSha=(string)($p["head"]["sha"] ?? "");
+            $headRef=(string)($p["head"]["ref"] ?? "");
+            $baseRepo=(string)($p["base"]["repo"]["full_name"] ?? "");
+            $baseRef=(string)($p["base"]["ref"] ?? "");
+            $baseSha=(string)($p["base"]["sha"] ?? "");
+            $state=(string)($p["state"] ?? "");
+            $allowed=($actor===$owner || ($trusted!=="" && hash_equals($trusted,$actor)));
+            if ($state!=="open" || !$allowed || $headRepo!==$repo || $baseRepo!==$repo || $baseRef!=="main" || !hash_equals($expected,$headSha)) { fwrite(STDERR,"Trusted executor PR validation failed.\n"); exit(1); }
+            if (!preg_match("/^[a-f0-9]{40}$/D",$baseSha) || !preg_match("/^[A-Za-z0-9._\/-]{1,200}$/D",$headRef) || strpos($headRef,"..")!==false) { fwrite(STDERR,"Unsafe PR metadata.\n"); exit(1); }
+            echo $baseSha."\t".$headSha."\t".$headRef."\t".$actor;
+          ' "$pr_json")
+          IFS=$'\t' read -r base_sha head_sha head_ref request_actor <<< "$metadata"
+
+          commit_json="$root/head-commit.json"
+          curl --fail-with-body --silent --show-error --location \
+            "${api_headers[@]}" \
+            --output "$commit_json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${head_sha}"
+          head_author=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo (string)($d["author"]["login"] ?? "");' "$commit_json")
+          if [[ "$head_author" != "$REPOSITORY_OWNER" ]]; then
+            if [[ -z "${TRUSTED_REQUEST_ACTOR:-}" || "$head_author" != "$TRUSTED_REQUEST_ACTOR" ]]; then
+              echo "Latest request commit must be authored by the repository owner or configured trusted actor; author=${head_author:-unknown}." >&2
+              exit 1
+            fi
+          fi
+
+          git_auth() {
+            git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
+          }
+
+          cd "$root"
+          git init repo
+          cd repo
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git_auth fetch --depth=1 origin main
+          git branch trusted-main FETCH_HEAD
+          git_auth fetch --depth=1 origin "$base_sha"
+          git branch request-base FETCH_HEAD
+          git_auth fetch --depth=1 origin "$head_sha"
+          git branch request-head FETCH_HEAD
+
+          mapfile -t changed < <(git diff --name-only request-base request-head)
+          if (( ${#changed[@]} == 0 )); then
+            echo 'No request files changed.' >&2
+            exit 1
+          fi
+
+          request_count=0
+          request_path=''
+          asset_count=0
+          asset_bytes=0
+          for path in "${changed[@]}"; do
+            mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
+            if [[ -n "$mode" && "$mode" != '100644' && "$mode" != '100755' ]]; then
+              echo "Symlinks/submodules/special file modes are not allowed: $path ($mode)" >&2
+              exit 1
+            fi
+            case "$path" in
+              requests/*.json)
+                ((request_count+=1))
+                request_path="$path"
+                ;;
+              assets/inbox/*)
+                ((asset_count+=1))
+                size=$(git cat-file -s "request-head:$path")
+                ((asset_bytes+=size))
+                ;;
+              results/*.json) ;;
+              *)
+                echo "Disallowed changed path in runtime request PR: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          if (( request_count != 1 )); then
+            echo 'Exactly one requests/*.json file is required.' >&2
+            exit 1
+          fi
+          if (( asset_count > 10 || asset_bytes > 26214400 )); then
+            echo 'Asset limit exceeded (max 10 files / 25 MiB total).' >&2
+            exit 1
+          fi
+          request_bytes=$(git cat-file -s "request-head:$request_path")
+          if (( request_bytes > 262144 )); then
+            echo 'Request JSON exceeds 256 KiB.' >&2
+            exit 1
+          fi
+
+          mkdir -p "$root/trusted/scripts"
+          git show "trusted-main:scripts/validate-request.php" > "$root/trusted/scripts/validate-request.php"
+          git show "request-head:$request_path" > "$root/request.json"
+          php "$root/trusted/scripts/validate-request.php" "$root/request.json"
+          request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo $d["request_id"];' "$root/request.json")
+
+          changed_paths="$root/changed-paths"
+          git diff --name-only -z request-base request-head > "$changed_paths"
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              assets/inbox/*)
+                relative="${path#assets/inbox/}"
+                mkdir -p "$root/assets/inbox/$(dirname "$relative")"
+                git show "request-head:$path" > "$root/assets/inbox/$relative"
+                ;;
+            esac
+          done < "$changed_paths"
+
+          echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+
+      - name: Verify authenticated HTTPS connector health
+        env:
+          SITE_URL: ${{ vars.WPCONNECTOR_SITE_URL }}
+          REST_USERNAME: ${{ secrets.WPCONNECTOR_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}"
+          test -n "${REST_USERNAME:-}"
+          test -n "${REST_APP_PASSWORD:-}"
+          case "$SITE_URL" in
+            https://*) ;;
+            *) echo 'WPCONNECTOR_SITE_URL must use https://.' >&2; exit 1 ;;
+          esac
+
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          health="$RUNNER_TEMP/wpconnector-request/health.json"
+          curl --fail-with-body --silent --show-error --location \
+            --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+            --header 'Accept: application/json' \
+            --output "$health" \
+            "$base/health"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"]) || ($d["transport"] ?? "") !== "rest") { fwrite(STDERR,"REST connector health check failed.\n"); exit(1); } echo "REST connector health OK; version=".($d["version"] ?? "unknown")."\n";' "$health"
+
+      - name: Upload request assets over authenticated HTTPS
+        env:
+          SITE_URL: ${{ vars.WPCONNECTOR_SITE_URL }}
+          REST_USERNAME: ${{ secrets.WPCONNECTOR_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          asset_root="$RUNNER_TEMP/wpconnector-request/assets/inbox"
+          while IFS= read -r -d '' file; do
+            relative="${file#$asset_root/}"
+            response="$RUNNER_TEMP/wpconnector-request/asset-response.json"
+            curl --fail-with-body --silent --show-error --location \
+              --connect-timeout 10 --max-time 120 \
+              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+              --header 'Accept: application/json' \
+              --form-string "request_id=${REQUEST_ID}" \
+              --form-string "asset_path=${relative}" \
+              --form "file=@${file}" \
+              --output "$response" \
+              "$base/assets"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,"Asset upload rejected.\n"); exit(1); }' "$response"
+          done < <(find "$asset_root" -type f -print0)
+
+      - name: Revalidate PR head immediately before execution
+        env:
+          GH_REPO_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_head=$(curl --fail-with-body --silent --show-error --location \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_REPO_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            | php -r '$d=json_decode(stream_get_contents(STDIN),true,512,JSON_THROW_ON_ERROR); echo (string)($d["head"]["sha"] ?? "");')
+          if [[ "$current_head" != "$EXPECTED_HEAD_SHA" ]]; then
+            echo 'Request branch moved after validation; refusing WordPress execution.' >&2
+            exit 1
+          fi
+
+      - name: Execute connector request over authenticated HTTPS
+        id: request
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ vars.WPCONNECTOR_SITE_URL }}
+          REST_USERNAME: ${{ secrets.WPCONNECTOR_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          request="$RUNNER_TEMP/wpconnector-request/request.json"
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          transport_body="$RUNNER_TEMP/wpconnector-request/transport-body.json"
+
+          set +e
+          http_code=$(curl --silent --show-error --location \
+            --connect-timeout 10 --max-time 180 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --data-binary "@$request" \
+            --output "$transport_body" \
+            --write-out '%{http_code}' \
+            "$base/execute")
+          curl_status=$?
+          set -e
+
+          if [[ "$curl_status" -ne 0 || "$http_code" != '200' ]]; then
+            php -r '$r=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $body=@json_decode(@file_get_contents($argv[2]),true); $message="REST transport failed (HTTP ".$argv[3].", curl ".$argv[4].")"; if (is_array($body) && isset($body["message"])) { $message.="; ".(string)$body["message"]; } $out=["version"=>1,"ok"=>false,"request_id"=>$r["request_id"]??"unknown","action"=>$r["action"]??"unknown","dry_run"=>!empty($r["dry_run"]),"completed_at_gmt"=>gmdate("c"),"error"=>$message,"meta"=>["transport"=>"rest"]]; file_put_contents($argv[5],json_encode($out,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");' "$request" "$transport_body" "$http_code" "$curl_status" "$result"
+            exit 1
+          fi
+
+          mv "$transport_body" "$result"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (($d["request_id"] ?? "") !== $argv[2]) { fwrite(STDERR,"REST result request_id mismatch.\n"); exit(1); }' "$result" "$REQUEST_ID"
+
+      - name: Commit result to exact request branch
+        if: always()
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+          PR_HEAD_REF: ${{ steps.preflight.outputs.head_ref }}
+          PR_HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          if [[ ! -s "$result" ]]; then
+            echo 'No connector result file was produced.' >&2
+            exit 0
+          fi
+
+          work="$RUNNER_TEMP/wpconnector-result-push"
+          rm -rf "$work"
+          git clone "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout "$PR_HEAD_REF"
+          current=$(git rev-parse HEAD)
+          if [[ "$current" != "$PR_HEAD_SHA" ]]; then
+            echo 'Request branch moved after execution; refusing result write.' >&2
+            exit 1
+          fi
+          mkdir -p results
+          cp "$result" "results/${REQUEST_ID}.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "results/${REQUEST_ID}.json"
+          git commit -m "Add WordPress result ${REQUEST_ID}" || exit 0
+          git push origin HEAD:"$PR_HEAD_REF"
+
+      - name: Fail job when connector execution failed
+        if: steps.request.outcome == 'failure'
+        shell: bash
+        run: exit 1
+
+      - name: Fail job when connector returned ok=false
+        if: steps.request.outcome == 'success'
+        env:
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,(string)($d["error"]??"Connector request failed")."\n"); exit(1); }' "$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+
+      - name: Cleanup GitHub-hosted workspace
+        if: always()
+        shell: bash
+        run: |
+          rm -rf "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push"
