@@ -84,12 +84,12 @@ $verifyLeaf = static function (string $leafAction, array $payload, array $leafRe
 
 $errorCode = static function (string $message): string {
     $value = strtolower($message);
-    if (str_contains($value, 'stale target')) return 'stale_target';
-    if (str_contains($value, 'not found')) return 'not_found';
-    if (str_contains($value, 'disabled') || str_contains($value, 'requires') || str_contains($value, 'permission')) return 'permission_gate';
-    if (str_contains($value, 'another connector mutation')) return 'mutation_lock';
-    if (str_contains($value, 'invalid') || str_contains($value, 'required')) return 'invalid_request';
-    if (str_contains($value, 'transport')) return 'transport_error';
+    if (false !== strpos($value, 'stale target')) return 'stale_target';
+    if (false !== strpos($value, 'not found')) return 'not_found';
+    if (false !== strpos($value, 'disabled') || false !== strpos($value, 'requires') || false !== strpos($value, 'permission')) return 'permission_gate';
+    if (false !== strpos($value, 'another connector mutation')) return 'mutation_lock';
+    if (false !== strpos($value, 'invalid') || false !== strpos($value, 'required')) return 'invalid_request';
+    if (false !== strpos($value, 'transport')) return 'transport_error';
     return 'connector_error';
 };
 
