@@ -31,10 +31,7 @@ final class AssetStore
             throw new RuntimeException('Asset exceeds the per-file size limit.');
         }
 
-        $fileType = wp_check_filetype(basename($relativePath), get_allowed_mime_types());
-        if (empty($fileType['ext']) || empty($fileType['type'])) {
-            throw new RuntimeException('Asset extension is not an allowed WordPress media type.');
-        }
+        $fileType = $this->allowedFileType($relativePath);
 
         $root = $this->rootForRequest($requestId, true);
         $usage = $this->usage($root);
@@ -114,6 +111,24 @@ final class AssetStore
                 $this->removeTree($path);
             }
         }
+    }
+
+    private function allowedFileType(string $relativePath): array
+    {
+        $basename = basename($relativePath);
+        $fileType = wp_check_filetype($basename, get_allowed_mime_types());
+        if (! empty($fileType['ext']) && ! empty($fileType['type'])) {
+            return $fileType;
+        }
+
+        if (preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip$#', $relativePath)) {
+            $zipType = wp_check_filetype($basename, array('zip' => 'application/zip'));
+            if (! empty($zipType['ext']) && ! empty($zipType['type'])) {
+                return $zipType;
+            }
+        }
+
+        throw new RuntimeException('Asset extension is not an allowed WordPress media type or connector plugin package.');
     }
 
     private function baseRoot(bool $create): string

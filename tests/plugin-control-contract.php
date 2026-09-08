@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $mustContain = array(
-    'plugin/wordpressconnector/wordpressconnector.php' => array('Version: 1.9.0', 'Requires at least: 6.4', 'includes/Adapters/AutoImageAttributesAdapter.php', 'includes/Adapters/PluginSettingsAdapter.php', 'includes/Adapters/FilesystemAdapter.php'),
-    'plugin/wordpressconnector/includes/Plugin.php' => array('new AutoImageAttributesAdapter()', 'new PluginSettingsAdapter()', 'new FilesystemAdapter()'),
+    'plugin/wordpressconnector/wordpressconnector.php' => array('Version: 1.11.0', 'Requires at least: 6.4', 'includes/Adapters/AutoImageAttributesAdapter.php', 'includes/Adapters/PluginSettingsAdapter.php', 'includes/Adapters/FilesystemAdapter.php', 'includes/Adapters/PluginPackageAdapter.php'),
+    'plugin/wordpressconnector/includes/Plugin.php' => array('new AutoImageAttributesAdapter()', 'new PluginSettingsAdapter()', 'new FilesystemAdapter()', 'new PluginPackageAdapter()'),
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array('plugin.settings.catalog', 'plugin.settings.inspect', 'plugin.settings.update', 'update_rocket_option', 'imagify/get-settings', 'imagify/update-settings', 'rsssl_get_option', 'rsssl_update_option', 'WPCONNECTOR_ALLOW_SENSITIVE', 'blocked_arbitrary_code', 'shared_filesystem_interface', 'bounded_filesystem_bridge'),
     'plugin/wordpressconnector/includes/Adapters/AutoImageAttributesAdapter.php' => array('auto_image_attributes.inspect', 'auto_image_attributes.update', 'iaff_settings', '_current_fingerprint', '_rollback'),
     'plugin/wordpressconnector/includes/Adapters/YoastAdapter.php' => array('focus_keyphrase', 'robots_advanced', 'cornerstone', 'schema_page_type', 'schema_article_type', 'primary_category_term_id', 'opengraph_image', 'twitter_image', '_current_fingerprint', '_rollback'),

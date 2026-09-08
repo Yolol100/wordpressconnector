@@ -39,8 +39,11 @@ foreach ($controllerRequired as $needle) {
 
 $assetRequired = array(
     'is_uploaded_file($tmpName)',
-    'wp_check_filetype(basename($relativePath), get_allowed_mime_types())',
-    'Asset extension is not an allowed WordPress media type.',
+    'allowedFileType($relativePath)',
+    'get_allowed_mime_types()',
+    "plugin-packages/",
+    "array('zip' => 'application/zip')",
+    'Asset extension is not an allowed WordPress media type or connector plugin package.',
     'move_uploaded_file($tmpName, $destination)',
     'MAX_FILES = 10',
     'MAX_TOTAL_BYTES = 26214400',

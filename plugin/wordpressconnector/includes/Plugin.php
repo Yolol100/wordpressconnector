@@ -16,6 +16,7 @@ use Webactueel\WordPressConnector\Adapters\ElementorFormsAdapter;
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
+use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
@@ -52,6 +53,7 @@ final class Plugin
             new PluginSettingsAdapter(),
             new CustomCssAdapter(),
             new FilesystemAdapter(),
+            new PluginPackageAdapter(),
             new SystemAdapter(),
         );
 
