@@ -21,8 +21,11 @@ $requiredTransport = array(
     '.github/workflows/wordpress-request.yml',
     '.github/workflows/wordpress-execute.yml',
     'scripts/validate-request.php',
+    'scripts/validate-public-request.php',
+    'scripts/build-public-receipt.php',
     'tests/request-workflow-contract.php',
     'tests/execute-workflow-contract.php',
+    'tests/public-runtime-contract.php',
 );
 foreach ($requiredTransport as $path) {
     if (! file_exists($root . '/' . $path)) {
@@ -31,7 +34,7 @@ foreach ($requiredTransport as $path) {
     }
 }
 
-foreach (array('requests', 'results', 'assets/inbox', 'examples') as $directory) {
+foreach (array('requests', 'results', 'receipts', 'assets/inbox', 'examples') as $directory) {
     $path = $root . '/' . $directory;
     if (! is_dir($path)) { continue; }
     $items = array_values(array_filter(scandir($path) ?: array(), static function (string $item): bool {
@@ -47,6 +50,8 @@ $sourceFiles = array(
     $root . '/.github/workflows/wordpress-request.yml',
     $root . '/.github/workflows/wordpress-execute.yml',
     $root . '/scripts/validate-request.php',
+    $root . '/scripts/validate-public-request.php',
+    $root . '/scripts/build-public-receipt.php',
 );
 foreach ($sourceFiles as $file) {
     $content = (string) file_get_contents($file);
