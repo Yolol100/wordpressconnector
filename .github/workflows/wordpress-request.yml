@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   guard:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -77,8 +78,8 @@ jobs:
           asset_bytes=0
           for path in "${changed[@]}"; do
             mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
-            if [[ -n "$mode" && "$mode" != '100644' && "$mode" != '100755' ]]; then
-              echo "Symlinks/submodules/special file modes are not allowed: $path ($mode)" >&2
+            if [[ -n "$mode" && "$mode" != '100644' ]]; then
+              echo "Only regular non-executable request files are allowed: $path ($mode)" >&2
               exit 1
             fi
             case "$path" in
