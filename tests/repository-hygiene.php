@@ -7,13 +7,8 @@ $forbidden = array(
     'bootstrap-manifest.json',
     '.github/workflows/bootstrap-materialize.yml',
     '.github/workflows/package-wordpressconnector-temp.yml',
-    '.github/workflows/wordpress-request.yml',
-    '.github/workflows/wordpress-execute.yml',
-    'scripts/validate-request.php',
     'schemas/request.schema.json',
     'schemas/result.schema.json',
-    'tests/request-workflow-contract.php',
-    'tests/execute-workflow-contract.php',
 );
 foreach ($forbidden as $path) {
     if (file_exists($root . '/' . $path)) {
@@ -21,13 +16,46 @@ foreach ($forbidden as $path) {
         exit(1);
     }
 }
-foreach (array('requests', 'results', 'assets/inbox', 'examples') as $directory) {
-    $path = $root . '/' . $directory;
-    if (! is_dir($path)) { continue; }
-    $items = array_values(array_filter(scandir($path) ?: array(), static function (string $item): bool { return ! in_array($item, array('.', '..'), true); }));
-    if ($items) {
-        fwrite(STDERR, "Legacy/runtime residue on default implementation tree: {$directory}\n");
+
+$requiredTransport = array(
+    '.github/workflows/wordpress-request.yml',
+    '.github/workflows/wordpress-execute.yml',
+    'scripts/validate-request.php',
+    'tests/request-workflow-contract.php',
+    'tests/execute-workflow-contract.php',
+);
+foreach ($requiredTransport as $path) {
+    if (! file_exists($root . '/' . $path)) {
+        fwrite(STDERR, "Missing guarded GitHub runtime transport source: {$path}\n");
         exit(1);
     }
 }
+
+foreach (array('requests', 'results', 'assets/inbox', 'examples') as $directory) {
+    $path = $root . '/' . $directory;
+    if (! is_dir($path)) { continue; }
+    $items = array_values(array_filter(scandir($path) ?: array(), static function (string $item): bool {
+        return ! in_array($item, array('.', '..', '.gitkeep'), true);
+    }));
+    if ($items) {
+        fwrite(STDERR, "Runtime payload residue on implementation tree: {$directory}\n");
+        exit(1);
+    }
+}
+
+$sourceFiles = array(
+    $root . '/.github/workflows/wordpress-request.yml',
+    $root . '/.github/workflows/wordpress-execute.yml',
+    $root . '/scripts/validate-request.php',
+);
+foreach ($sourceFiles as $file) {
+    $content = (string) file_get_contents($file);
+    foreach (array('BEGIN RSA PRIVATE KEY', 'BEGIN OPENSSH PRIVATE KEY', 'wp-config.php', 'REST_APP_PASSWORD=') as $secretPattern) {
+        if (strpos($content, $secretPattern) !== false) {
+            fwrite(STDERR, "Credential/config residue detected in transport source: {$file}\n");
+            exit(1);
+        }
+    }
+}
+
 echo "repository hygiene OK\n";
