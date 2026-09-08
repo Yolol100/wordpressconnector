@@ -8,6 +8,7 @@ use Webactueel\WordPressConnector\Adapters\AbilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\AcfAdapter;
 use Webactueel\WordPressConnector\Adapters\AutoImageAttributesAdapter;
 use Webactueel\WordPressConnector\Adapters\CoreAdapter;
+use Webactueel\WordPressConnector\Adapters\CustomCssAdapter;
 use Webactueel\WordPressConnector\Adapters\DiscoveryAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter;
@@ -49,6 +50,7 @@ final class Plugin
             new MediaAdapter(),
             new AutoImageAttributesAdapter(),
             new PluginSettingsAdapter(),
+            new CustomCssAdapter(),
             new FilesystemAdapter(),
             new SystemAdapter(),
         );
