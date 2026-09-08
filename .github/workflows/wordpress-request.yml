@@ -1,0 +1,171 @@
+name: WordPress Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'requests/**'
+      - 'assets/inbox/**'
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: wordpress-request-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      request_path: ${{ steps.guard.outputs.request_path }}
+      request_id: ${{ steps.guard.outputs.request_id }}
+    steps:
+      - name: Validate request PR without production credentials
+        id: guard
+        env:
+          TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
+          GH_REPO_TOKEN: ${{ github.token }}
+          GIT_TERMINAL_PROMPT: '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${GITHUB_REPOSITORY}" ]]; then
+            echo 'Fork PRs are not allowed to submit WordPress runtime requests.' >&2
+            exit 1
+          fi
+
+          request_actor="${{ github.event.pull_request.user.login }}"
+          repository_owner="${{ github.repository_owner }}"
+          if [[ "$request_actor" != "$repository_owner" ]]; then
+            if [[ -z "${TRUSTED_REQUEST_ACTOR:-}" || "$request_actor" != "$TRUSTED_REQUEST_ACTOR" ]]; then
+              echo "Only the repository owner or configured trusted actor may submit WordPress runtime requests; actor=$request_actor." >&2
+              exit 1
+            fi
+          fi
+
+          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
+            echo 'Remote WordPress execution requires a private repository.' >&2
+            exit 1
+          fi
+
+          git_auth() {
+            git -c url."https://x-access-token:${GH_REPO_TOKEN}@github.com/".insteadOf="https://github.com/" "$@"
+          }
+
+          git init repo
+          cd repo
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          git branch trusted-base FETCH_HEAD
+          git_auth fetch --depth=1 origin "${{ github.event.pull_request.head.sha }}"
+          git branch request-head FETCH_HEAD
+
+          mapfile -t changed < <(git diff --name-only trusted-base request-head)
+          if (( ${#changed[@]} == 0 )); then
+            echo 'No request files changed.' >&2
+            exit 1
+          fi
+
+          request_count=0
+          request_path=''
+          asset_count=0
+          asset_bytes=0
+          for path in "${changed[@]}"; do
+            mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
+            if [[ -n "$mode" && "$mode" != '100644' && "$mode" != '100755' ]]; then
+              echo "Symlinks/submodules/special file modes are not allowed: $path ($mode)" >&2
+              exit 1
+            fi
+            case "$path" in
+              requests/*.json)
+                ((request_count+=1))
+                request_path="$path"
+                ;;
+              assets/inbox/*)
+                ((asset_count+=1))
+                size=$(git cat-file -s "request-head:$path")
+                ((asset_bytes+=size))
+                ;;
+              results/*.json) ;;
+              *)
+                echo "Disallowed changed path in runtime request PR: $path" >&2
+                exit 1
+                ;;
+            esac
+          done
+
+          if (( request_count != 1 )); then
+            echo 'Exactly one requests/*.json file is required.' >&2
+            exit 1
+          fi
+          if (( asset_count > 10 || asset_bytes > 26214400 )); then
+            echo 'Asset limit exceeded (max 10 files / 25 MiB total).' >&2
+            exit 1
+          fi
+          request_bytes=$(git cat-file -s "request-head:$request_path")
+          if (( request_bytes > 262144 )); then
+            echo 'Request JSON exceeds 256 KiB.' >&2
+            exit 1
+          fi
+
+          mkdir -p ../trusted/scripts ../request
+          git show "trusted-base:scripts/validate-request.php" > ../trusted/scripts/validate-request.php
+          git show "request-head:$request_path" > ../request/request.json
+          php ../trusted/scripts/validate-request.php ../request/request.json
+          request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo $d["request_id"];' ../request/request.json)
+
+          echo "request_path=$request_path" >> "$GITHUB_OUTPUT"
+          echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
+
+  dispatch_trusted_execute:
+    needs: guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch trusted main-branch WordPress executor
+        env:
+          GH_REPO_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          payload=$(python3 - <<'PY'
+          import json, os
+          print(json.dumps({
+              'ref': 'main',
+              'inputs': {
+                  'pr_number': os.environ['PR_NUMBER'],
+                  'expected_head_sha': os.environ['EXPECTED_HEAD_SHA'],
+              },
+          }))
+          PY
+          )
+
+          response="$RUNNER_TEMP/wpconnector-dispatch-response.json"
+          http_code=$(curl --silent --show-error --location \
+            --output "$response" \
+            --write-out '%{http_code}' \
+            --request POST \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_REPO_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            --header 'Content-Type: application/json' \
+            --data "$payload" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/wordpress-execute.yml/dispatches")
+
+          if [[ "$http_code" != '200' && "$http_code" != '204' ]]; then
+            cat "$response" >&2 || true
+            echo "Unable to dispatch trusted WordPress executor; GitHub returned HTTP ${http_code}." >&2
+            exit 1
+          fi
+
+          echo "Trusted WordPress executor dispatched for PR ${PR_NUMBER} at head ${EXPECTED_HEAD_SHA}."
