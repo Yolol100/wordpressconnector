@@ -35,8 +35,8 @@ final class Policy
         }
 
         if (! empty($descriptor['privileged'])) {
-            if (self::publicRepositoryContext()) {
-                throw new RuntimeException('Privileged actions are blocked in public-repository mode.');
+            if (self::publicRepositoryContext() && empty($descriptor['public_repository_safe'])) {
+                throw new RuntimeException('Privileged actions are blocked in public-repository mode unless explicitly marked public_repository_safe.');
             }
             if (! self::flag('WPCONNECTOR_ALLOW_PRIVILEGED')) {
                 throw new RuntimeException('Privileged actions are disabled.');
