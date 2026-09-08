@@ -37,7 +37,7 @@ final class PluginPackageAdapter
         }
 
         $sourcePath = isset($payload['source_path']) ? str_replace('\\', '/', (string) $payload['source_path']) : '';
-        if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip$#', $sourcePath)) {
+        if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $sourcePath)) {
             throw new RuntimeException('source_path must be plugin-packages/<safe-name>.zip.');
         }
 
@@ -55,7 +55,7 @@ final class PluginPackageAdapter
         }
 
         $expectedSha256 = isset($payload['sha256']) ? strtolower((string) $payload['sha256']) : '';
-        if (! preg_match('/^[a-f0-9]{64}$/', $expectedSha256)) {
+        if (! preg_match('/^[a-f0-9]{64}\z/', $expectedSha256)) {
             throw new RuntimeException('sha256 must be a 64-character lowercase hexadecimal checksum.');
         }
         $actualSha256 = hash_file('sha256', $package);
@@ -64,7 +64,7 @@ final class PluginPackageAdapter
         }
 
         $expectedPlugin = isset($payload['expected_plugin']) ? str_replace('\\', '/', (string) $payload['expected_plugin']) : '';
-        if (! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php$/', $expectedPlugin)) {
+        if (! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expectedPlugin)) {
             throw new RuntimeException('expected_plugin must be an exact plugin file such as plugin-slug/plugin.php.');
         }
 
@@ -254,7 +254,7 @@ final class PluginPackageAdapter
             }
 
             $pluginFile = (string) $headers[0]['path'];
-            if (! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php$/', $pluginFile)) {
+            if (! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $pluginFile)) {
                 throw new RuntimeException('Main plugin file must use a safe plugin directory and PHP filename.');
             }
 
