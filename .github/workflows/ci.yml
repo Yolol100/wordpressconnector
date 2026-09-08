@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    paths-ignore:
+      - 'requests/**'
+      - 'results/**'
+      - 'assets/inbox/**'
 
 permissions:
   contents: read
@@ -23,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          find plugin/wordpressconnector tests -name '*.php' -print0 | xargs -0 -n1 php -l
+          find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/policy-contract.php
           php tests/action-catalog.php
           php tests/custom-css-contract.php
@@ -38,6 +42,8 @@ jobs:
           php tests/filesystem-control-contract.php
           php tests/repository-hygiene.php
           php tests/rest-transport-contract.php
+          php tests/request-workflow-contract.php
+          php tests/execute-workflow-contract.php
           php tests/mutation-lock-contract.php
           php tests/single-plugin-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
