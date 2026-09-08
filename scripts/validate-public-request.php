@@ -30,6 +30,8 @@ $publicActions = array(
     'acf.update',
     'connector.batch',
     'connector.rollback',
+    'connector.update.check',
+    'connector.update.apply',
 );
 
 $leafActions = array(
@@ -149,6 +151,17 @@ if ('connector.rollback' === $action) {
     $rollbackId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
     if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$/D', $rollbackId)) {
         $errors[] = 'payload.request_id must be a valid connector request id.';
+    }
+}
+
+if (in_array($action, array('connector.update.check', 'connector.update.apply'), true) && $payload !== array()) {
+    $errors[] = $action . ' requires an empty payload in public GitHub runtime mode.';
+}
+
+if ('connector.update.apply' === $action && isset($data['dry_run']) && false === $data['dry_run']) {
+    $fingerprint = $data['expected_fingerprint'] ?? null;
+    if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+        $errors[] = 'Confirmed connector.update.apply requires expected_fingerprint from the preceding dry-run.';
     }
 }
 
