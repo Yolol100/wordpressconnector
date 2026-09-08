@@ -4,49 +4,108 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 
 ## Why this is a separate action
 
-`plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing public contract stays backwards compatible.
+`plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing public contract stays backwards compatible and no caller-controlled remote package URL is introduced.
+
+## Preconditions
+
+- Use HTTPS and an authenticated WordPress administrator. A dedicated WordPress Application Password is the preferred REST credential.
+- Real mutations require the connector write, privileged and system-update gates plus `confirm:true`.
+- The WordPress user needs `install_plugins`; overwrite additionally needs `update_plugins`; activation needs `activate_plugins`; network activation needs `manage_network_plugins`.
+- PHP `ZipArchive` must be available.
+- Use staging first for a new or unproven package. Package install/overwrite is intentionally non-rollbackable.
 
 ## Flow
 
-1. Upload the package to `POST /wp-json/webactueel-wordpress-connector/v1/assets` as multipart form data.
-   - `request_id`: the request identity used for the following execute call.
-   - `asset_path`: must be `plugin-packages/<safe-name>.zip`.
-   - `file`: the ZIP bytes.
-2. Calculate the SHA-256 of the exact ZIP bytes before dispatch.
-3. Call `POST /wp-json/webactueel-wordpress-connector/v1/execute` with action `plugin.install_package` and the same `request_id`.
-4. Use payload fields:
-   - `source_path`: same `plugin-packages/<safe-name>.zip` path;
-   - `sha256`: lowercase 64-character SHA-256;
-   - `expected_plugin`: exact main plugin path, for example `my-plugin/my-plugin.php`;
-   - `overwrite`: `false` for a new install, `true` only for the same already-installed plugin identity;
-   - `activate`: optional activation after verified install;
-   - `network_wide`: optional multisite network activation.
-5. Use `dry_run:true` first. A real mutation requires `confirm:true`.
+### 1. Upload the exact ZIP
 
-## Runtime gates
+POST multipart form data to:
 
-The REST endpoint still requires HTTPS, authentication and `manage_options`. The semantic action additionally requires the connector privileged and system-update gates. A real non-dry-run mutation also requires the write gate and `confirm:true`.
+`/wp-json/webactueel-wordpress-connector/v1/assets`
 
-WordPress capabilities are checked close to the package operation: `install_plugins`, `update_plugins` when overwriting, `activate_plugins` when activating, and `manage_network_plugins` for network-wide activation.
+Fields:
+
+- `request_id`: 8-100 safe characters, for example `plugin-package-20260908-001`;
+- `asset_path`: exactly `plugin-packages/<safe-name>.zip`;
+- `file`: the ZIP bytes.
+
+Calculate SHA-256 over the exact ZIP bytes before dispatch and keep the lowercase 64-character checksum.
+
+### 2. Dry-run the package
+
+POST JSON to:
+
+`/wp-json/webactueel-wordpress-connector/v1/execute`
+
+```json
+{
+  "request_id": "plugin-package-20260908-001",
+  "action": "plugin.install_package",
+  "payload": {
+    "source_path": "plugin-packages/acme-tools.zip",
+    "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "expected_plugin": "acme-tools/acme-tools.php",
+    "overwrite": false,
+    "activate": true,
+    "network_wide": false
+  },
+  "dry_run": true,
+  "confirm": false
+}
+```
+
+A successful dry-run verifies the stored bytes, archive structure and target state and returns `current_state_token` for stale-state protection.
+
+Important: REST execute cleanup is fail-closed. A dry-run consumes and removes that request's uploaded assets. Re-upload the exact same ZIP with the same `request_id` and `asset_path` before the real execution. The SHA-256 must still match.
+
+### 3. Re-upload, then confirm
+
+After re-uploading the exact package, repeat the execute request with `dry_run:false`, `confirm:true` and pass the dry-run token as `expected_state_token`:
+
+```json
+{
+  "request_id": "plugin-package-20260908-001",
+  "action": "plugin.install_package",
+  "payload": {
+    "source_path": "plugin-packages/acme-tools.zip",
+    "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "expected_plugin": "acme-tools/acme-tools.php",
+    "overwrite": false,
+    "activate": true,
+    "network_wide": false
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_state_token": "replace-with-current_state_token-from-dry-run"
+}
+```
+
+The confirmed execute call also cleans its request assets after the attempt. If a retry is needed, upload the package again.
+
+## Install versus overwrite
+
+- New plugin: use `overwrite:false`. The exact plugin must not already be installed and its destination directory must not already exist.
+- Existing custom/private plugin replacement: use `overwrite:true`. `expected_plugin` must already be installed and the caller must have `update_plugins`.
+- `activate:true, network_wide:false` ensures normal activation.
+- `activate:true, network_wide:true` ensures network activation on multisite, even if the plugin was already active only on the current site.
+- WordPress Connector itself cannot be replaced through this action. Connector releases continue through the repository/deployment path.
 
 ## Package validation
 
 Before WordPress `Plugin_Upgrader` receives the ZIP, the connector verifies:
 
-- request-scoped asset-root containment;
+- exact `plugin-packages/<safe-name>.zip` request path and request-scoped asset-root containment;
 - `.zip` extension and maximum compressed package size;
 - caller-supplied SHA-256 against the stored bytes;
 - bounded entry count and bounded total uncompressed bytes;
-- no absolute paths, traversal segments, backslash paths, NUL path bytes or symlink entries;
+- no absolute paths, Windows drive paths, traversal segments, backslash paths, NUL/control characters, duplicate archive paths or symlink entries;
 - exactly one top-level plugin directory;
-- exactly one detectable main plugin file with a `Plugin Name` header;
-- exact equality between the detected main plugin file and `expected_plugin`;
-- no ambiguous overwrite or destination-directory collision.
+- exactly one detectable main plugin file directly inside that directory with a `Plugin Name` header;
+- exact equality between that detected main plugin file and `expected_plugin`;
+- no ambiguous overwrite or destination-directory collision;
+- exact installed-plugin identity readback after WordPress finishes.
 
-The connector refuses to replace its own active runtime through `plugin.install_package`; connector releases continue through the repository/deployment path.
+Nested PHP files are not treated as candidate main-plugin headers. This avoids rejecting legitimate packages that contain examples, tests or libraries with plugin-like comments below the top-level plugin directory.
 
 ## Limits
 
-Default package limit: 20 MiB compressed. The environment variable `WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES` may lower that limit but is capped at 20 MiB. ZIP inspection also caps archive entries at 2,500 and total uncompressed data at 100 MiB.
-
-Package installation/overwrite is intentionally non-rollbackable. Use staging first for a new package or a package whose upgrade behavior has not already been proven.
+Default package limit: 20 MiB compressed. `WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES` may lower that limit but is capped at 20 MiB. ZIP inspection caps archive entries at 2,500 and total uncompressed data at 100 MiB.

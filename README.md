@@ -37,7 +37,11 @@ The package flow is deliberately two-step:
 1. upload one ZIP through `/wp-json/webactueel-wordpress-connector/v1/assets` using an `asset_path` under `plugin-packages/`;
 2. execute `plugin.install_package` through `/wp-json/webactueel-wordpress-connector/v1/execute` with the matching `source_path`, SHA-256 checksum and exact `expected_plugin` file.
 
-The package action is a privileged system-update mutation. Real writes therefore require the normal write gate, privileged gate, system-update gate and `confirm:true`. ZIP packages are bounded and inspected before WordPress' `Plugin_Upgrader` receives them: checksum, size, path traversal, symlinks, archive size, top-level structure and plugin identity are validated. The connector refuses to replace its own active runtime through this action.
+The package action is a privileged system-update mutation. Real writes therefore require the normal write gate, privileged gate, system-update gate and `confirm:true`. ZIP packages are bounded and inspected before WordPress' `Plugin_Upgrader` receives them: checksum, size, path traversal, control characters, duplicate paths, symlinks, archive expansion, top-level structure and exact plugin identity are validated. Only a main plugin header directly inside the single top-level plugin directory is considered. The connector refuses to replace its own active runtime through this action.
+
+Use `dry_run:true` first. REST execution deliberately cleans request assets after every attempt, including dry-run. Re-upload the exact same ZIP with the same request ID/path before the confirmed call and pass the dry-run `current_state_token` as `expected_state_token`. The checksum proves the re-uploaded package bytes are unchanged.
+
+See `docs/PLUGIN-PACKAGE-REST.md` for the exact request sequence and payloads.
 
 ## Elementor JSON in WordPress admin
 

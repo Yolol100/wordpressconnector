@@ -36,12 +36,12 @@ final class PluginPackageAdapter
             throw new RuntimeException('plugin.install_package requires a trusted request asset root.');
         }
 
-        $sourcePath = isset($payload['source_path']) ? (string) $payload['source_path'] : '';
-        if ('' === $sourcePath) {
-            throw new RuntimeException('source_path is required.');
+        $sourcePath = isset($payload['source_path']) ? str_replace('\\', '/', (string) $payload['source_path']) : '';
+        if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip$#', $sourcePath)) {
+            throw new RuntimeException('source_path must be plugin-packages/<safe-name>.zip.');
         }
 
-        $candidate = $assetRoot . DIRECTORY_SEPARATOR . ltrim(str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $sourcePath), DIRECTORY_SEPARATOR);
+        $candidate = $assetRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $sourcePath);
         $package = Policy::assertLocalAssetPath($candidate, $assetRoot);
         if ('zip' !== strtolower((string) pathinfo($package, PATHINFO_EXTENSION))) {
             throw new RuntimeException('Plugin package must be a ZIP file.');
@@ -135,10 +135,15 @@ final class PluginPackageAdapter
             throw new RuntimeException('Installed plugin identity did not match the verified package identity.');
         }
 
-        if ($activate && ! is_plugin_active($expectedPlugin) && ! is_plugin_active_for_network($expectedPlugin)) {
-            $activated = activate_plugin($expectedPlugin, '', $networkWide, true);
-            if (is_wp_error($activated)) {
-                throw new RuntimeException($activated->get_error_message());
+        if ($activate) {
+            $needsActivation = $networkWide
+                ? ! is_plugin_active_for_network($expectedPlugin)
+                : ! is_plugin_active($expectedPlugin);
+            if ($needsActivation) {
+                $activated = activate_plugin($expectedPlugin, '', $networkWide, true);
+                if (is_wp_error($activated)) {
+                    throw new RuntimeException($activated->get_error_message());
+                }
             }
         }
 
@@ -176,6 +181,7 @@ final class PluginPackageAdapter
             }
 
             $roots = array();
+            $paths = array();
             $headers = array();
             $uncompressedBytes = 0;
 
@@ -186,7 +192,7 @@ final class PluginPackageAdapter
                 }
 
                 $name = (string) $stat['name'];
-                if ('' === $name || strlen($name) > 512 || false !== strpos($name, "\0") || false !== strpos($name, '\\') || '/' === $name[0] || preg_match('/^[A-Za-z]:/', $name)) {
+                if ('' === $name || strlen($name) > 512 || false !== strpos($name, "\0") || preg_match('/[\x01-\x1F\x7F]/', $name) || false !== strpos($name, '\\') || '/' === $name[0] || preg_match('/^[A-Za-z]:/', $name)) {
                     throw new RuntimeException('Plugin ZIP contains an unsafe entry path.');
                 }
 
@@ -203,6 +209,11 @@ final class PluginPackageAdapter
                     }
                 }
                 $roots[$segments[0]] = true;
+
+                if (isset($paths[$normalized])) {
+                    throw new RuntimeException('Plugin ZIP contains duplicate entry paths.');
+                }
+                $paths[$normalized] = true;
 
                 $entryBytes = isset($stat['size']) ? (int) $stat['size'] : 0;
                 if ($entryBytes < 0) {
@@ -222,7 +233,7 @@ final class PluginPackageAdapter
                     }
                 }
 
-                if ($directory || 'php' !== strtolower((string) pathinfo($normalized, PATHINFO_EXTENSION))) {
+                if ($directory || 1 !== substr_count($normalized, '/') || 'php' !== strtolower((string) pathinfo($normalized, PATHINFO_EXTENSION))) {
                     continue;
                 }
 
@@ -239,12 +250,12 @@ final class PluginPackageAdapter
                 throw new RuntimeException('Plugin ZIP must contain exactly one top-level plugin directory.');
             }
             if (1 !== count($headers)) {
-                throw new RuntimeException('Plugin ZIP must contain exactly one detectable main plugin file.');
+                throw new RuntimeException('Plugin ZIP must contain exactly one detectable main plugin file directly inside that directory.');
             }
 
             $pluginFile = (string) $headers[0]['path'];
-            if (1 !== substr_count($pluginFile, '/') || ! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php$/', $pluginFile)) {
-                throw new RuntimeException('Main plugin file must be directly inside one safe top-level plugin directory.');
+            if (! preg_match('/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php$/', $pluginFile)) {
+                throw new RuntimeException('Main plugin file must use a safe plugin directory and PHP filename.');
             }
 
             return array(
