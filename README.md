@@ -4,11 +4,15 @@
 
 WordPress Connector is the single production/runtime connector for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast, media and bounded administration actions.
 
-Canonical route:
+Primary route:
 
-`ChatGPT / WP Agent -> authenticated HTTPS REST -> WordPress Connector -> WordPress/Elementor -> exact readback + rollback`
+`approved client -> authenticated HTTPS REST -> WordPress Connector -> WordPress/Elementor -> exact readback + rollback`
 
-The old GitHub request/result execution transport is removed. GitHub remains source control and CI only.
+Optional private GitHub route:
+
+`temporary request PR -> secretless guard -> trusted main executor -> authenticated HTTPS REST -> WordPress Connector -> result on request branch`
+
+The GitHub route is a transport client, not a second connector. It is private-repository only, uses GitHub-hosted runners, keeps WordPress credentials only in GitHub Actions Secrets and preserves all connector security gates, stale-state guards, idempotency, readback and rollback.
 
 ## Main capabilities
 
@@ -28,6 +32,18 @@ The old GitHub request/result execution transport is removed. GitHub remains sou
 
 `connector.discover` is the canonical site-overview action: it returns WordPress/PHP runtime data, active theme, installed plugins, post types, taxonomies, builders, media sizes and the registered action catalog without requiring a second connector plugin.
 
+## Private GitHub runtime
+
+The optional GitHub runtime restores repository-driven WordPress operations without returning to the old self-hosted runner model.
+
+- `.github/workflows/wordpress-request.yml` validates a same-repository request PR without WordPress credentials.
+- `.github/workflows/wordpress-execute.yml` runs only through trusted `workflow_dispatch` on `main`, revalidates the exact PR head and then calls the connector over HTTPS.
+- `scripts/validate-request.php` validates the request envelope, including `expected_fingerprint` and `expected_state_token`.
+- Runtime requests and results live only on short-lived request branches and must never be merged to `main`.
+- Public repositories are rejected by both runtime workflows.
+
+See `docs/SETUP.md` for the required GitHub variable/secrets and the request flow.
+
 ## REST plugin package delivery
 
 `plugin.install` remains the WordPress.org-slug installer. Custom/private plugin packages use `plugin.install_package` instead.
@@ -37,22 +53,13 @@ The package flow is deliberately two-step:
 1. upload one ZIP through `/wp-json/webactueel-wordpress-connector/v1/assets` using an `asset_path` under `plugin-packages/`;
 2. execute `plugin.install_package` through `/wp-json/webactueel-wordpress-connector/v1/execute` with the matching `source_path`, SHA-256 checksum and exact `expected_plugin` file.
 
-The package action is a privileged system-update mutation. Real writes therefore require the normal write gate, privileged gate, system-update gate and `confirm:true`. ZIP packages are bounded and inspected before WordPress' `Plugin_Upgrader` receives them: checksum, size, path traversal, symlinks, archive size, top-level structure and plugin identity are validated. The connector refuses to replace its own active runtime through this action.
+The package action is a privileged system-update mutation. Real writes require the normal write gate, privileged gate, system-update gate and `confirm:true`. Packages are bounded and inspected before WordPress' `Plugin_Upgrader` receives them. The connector refuses to replace its own active runtime through this action.
 
 ## Elementor JSON in WordPress admin
 
-Pages and Posts built with Elementor show **Export Elementor JSON** in their row actions.
+Pages and Posts built with Elementor show **Export Elementor JSON**. When Elementor Pro Theme Builder is available, **Export Elementor + Site Parts** also includes the safely resolved active header/footer.
 
-When Elementor Pro Theme Builder is available, Pages and Posts also show **Export Elementor + Site Parts**. That bundle contains the page/post document plus the matching Theme Builder header/footer when they can be resolved safely.
-
-Saved Templates keep Elementor's native export. WordPress Connector provides a fallback export only when the native action is absent.
-
-Pages, Posts and Saved Templates also expose **Import Elementor JSON**. You can:
-
-- replace the Elementor structure/settings of an explicitly selected existing item; or
-- create a new draft from the uploaded Elementor JSON.
-
-Imports use `ElementorAdapter` document create/save/readback/rollback paths. Direct `_elementor_data` writes are not used.
+Pages, Posts and Saved Templates expose **Import Elementor JSON** for explicit replacement or creation of a new draft. Imports use Elementor document APIs; direct `_elementor_data` writes are not used.
 
 ## State safety
 
@@ -61,16 +68,16 @@ Mutations support both:
 - `expected_fingerprint`: deterministic SHA-256 stale-state guard;
 - `expected_state_token`: site-scoped HMAC state guard derived from the same fingerprint and the WordPress auth salt.
 
-Read actions that return a fingerprint also return a `state_token`. Dry-run mutation previews expose `current_state_token` when a current fingerprint is available.
+Read actions that return a fingerprint also return a `state_token`. Dry-run mutation previews expose `current_state_token` when available.
 
 ## Installation
 
-Install `plugin/wordpressconnector` in WordPress and activate it. The plugin exposes authenticated HTTPS REST routes under `/wp-json/webactueel-wordpress-connector/v1/`, the shared semantic action registry, WordPress admin settings and optional WP-CLI commands.
+Install `plugin/wordpressconnector` in WordPress and activate it. The plugin exposes authenticated HTTPS REST routes under `/wp-json/webactueel-wordpress-connector/v1/`, the semantic action registry, WordPress admin settings and optional WP-CLI commands.
 
-Start read-only. Verify `connector.discover`, `system.doctor`, Elementor capabilities and representative content reads before enabling writes. Use staging for the first disposable writes and rollback tests.
+Start read-only. Verify health/discovery and representative reads before writes. Use staging or equivalent target-runtime evidence for first disposable writes and rollback tests.
 
 ## Repository roles
 
-- `Yolol100/wordpressconnector`: live WordPress/Elementor bridge.
+- `Yolol100/wordpressconnector`: live WordPress/Elementor bridge plus optional private GitHub HTTPS transport.
 - `Yolol100/elementorjson`: separate Elementor JSON validation/import-roundtrip/render/browser QA lab.
-- `Yolol100/Elementorconnector`: legacy migration source only; removable after runtime parity is accepted and no site still runs that plugin.
+- `Yolol100/Elementorconnector`: legacy migration source only.
