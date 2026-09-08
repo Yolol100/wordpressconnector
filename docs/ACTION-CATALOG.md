@@ -7,7 +7,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.delete` | mutation, privileged | Delete one or more ACF field values through delete_field(). |
 | `acf.field_groups` | privileged | List active ACF field groups and fields for discovery. |
 | `acf.get` | privileged | Read ACF values for a post, term, user or options target. |
-| `acf.update` | mutation, privileged | Update one or more ACF fields through update_field(). |
+| `acf.update` | mutation, privileged | Update ACF values for a post, term, user or options target. |
 | `auto_image_attributes.inspect` | privileged | Read safe Auto Image Attributes upload and bulk-update settings. |
 | `auto_image_attributes.update` | mutation, privileged | Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback. |
 | `cache.flush` | mutation, privileged | Flush WordPress object cache. |
@@ -19,6 +19,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `connector.batch` | mutation | Execute up to 25 connector operations with compensation on failure. |
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
 | `connector.discover` | read-only | Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities. |
+| `connector.update.check` | privileged | Check the canonical GitHub release for a newer verified WordPress Connector package. |
+| `connector.update.apply` | mutation, privileged, system_update | Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification. |
 | `connector.rollback` | mutation, privileged | Execute a stored rollback snapshot by request_id. |
 | `core.check_updates` | privileged | Check WordPress core updates. |
 | `core.update` | mutation, privileged, system_update | Update WordPress core. Non-rollbackable. |
@@ -128,7 +130,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.create` | mutation | Create a product variation. |
 | `woocommerce.variation.get` | read-only | Read a WooCommerce product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
-| `woocommerce.variation.update` | mutation | Update a product variation. |
+| `woocommerce.variation.update` | mutation | Update a WooCommerce product variation. |
 | `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
 | `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
 | `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |
