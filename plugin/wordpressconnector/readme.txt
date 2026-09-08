@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.10.0
+Stable tag: 1.11.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,6 +20,8 @@ Elementor writes use Elementor's document save API for element data and page set
 
 WordPress Additional CSS can be read and replaced through WordPress core Custom CSS APIs. Writes are bounded, privileged, require the normal mutation gate, support stale-state guards, verify exact readback and store a rollback snapshot.
 
+Custom or private plugin ZIPs can be uploaded through the authenticated REST asset endpoint and installed or overwritten through `plugin.install_package`. Packages require a matching SHA-256 checksum and exact plugin identity and are checked for size limits, unsafe paths, symlinks and archive expansion before WordPress Plugin_Upgrader receives them. The connector cannot replace its own active runtime through this action.
+
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 == Security ==
@@ -29,6 +31,12 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Use a private GitHub repository. Store the dedicated WordPress Application Password only in GitHub Actions Secrets. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.11.0 =
+* Add `plugin.install_package` for verified custom/private plugin ZIP delivery through authenticated REST request assets.
+* Require SHA-256 verification, exact expected plugin identity and strict ZIP structure checks before installation or overwrite.
+* Keep package operations behind privileged, write and system-update gates and block connector self-replacement.
+* Extend the request asset transport with a narrow `plugin-packages/*.zip` allowance while preserving normal media restrictions.
 
 = 1.10.0 =
 * Add privileged `custom_css.inspect` and `custom_css.update` actions for WordPress Additional CSS.
