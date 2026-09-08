@@ -25,4 +25,5 @@ php tests/execute-workflow-contract.php
 php tests/public-runtime-contract.php
 php tests/workflow-security-contract.php
 php tests/mutation-lock-contract.php
+php tests/audit-hardening-contract.php
 php tests/single-plugin-contract.php
