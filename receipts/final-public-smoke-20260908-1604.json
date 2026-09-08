@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "final-public-smoke-20260908-1604",
+    "action": "post.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-08T16:06:11+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "before_fingerprint": "e414107ccb0583c948445510b9b5a646b821a71055376cc41cc426f320afb0f5",
+    "after_fingerprint": "e414107ccb0583c948445510b9b5a646b821a71055376cc41cc426f320afb0f5"
+}
