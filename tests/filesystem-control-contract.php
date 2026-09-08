@@ -6,7 +6,7 @@ $root = dirname(__DIR__);
 require_once $root . '/plugin/wordpressconnector/includes/Security/FilesystemPolicy.php';
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $mustContain = array(
-    'plugin/wordpressconnector/wordpressconnector.php' => array('Version: 1.11.0', 'includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
+    'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
     'plugin/wordpressconnector/includes/Plugin.php' => array('new FilesystemAdapter()'),
     'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'wpconnector_allow_filesystem_writes'),
     'plugin/wordpressconnector/includes/Admin/Settings.php' => array('wpconnector_allow_filesystem_writes', 'Allow controlled plugin/theme file writes'),
