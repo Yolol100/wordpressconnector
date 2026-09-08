@@ -4,7 +4,9 @@ The connector covers the editable WordPress object model without becoming an unr
 
 ## WordPress Core
 
-Pages, posts, registered custom post types, revisions, trash/restore, registered metadata, taxonomies, classic menus, theme mods, comments, options and network options.
+Pages, posts, registered custom post types, revisions, trash/restore, registered metadata, taxonomies, classic menus, theme mods, comments, options, network options and WordPress Additional CSS.
+
+Additional CSS is handled through WordPress core `wp_get_custom_css()`, `wp_get_custom_css_post()` and `wp_update_custom_css_post()` APIs. The connector does not write theme stylesheets directly for this feature.
 
 ## Gutenberg
 

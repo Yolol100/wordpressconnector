@@ -20,9 +20,12 @@ The old GitHub request/result execution transport is removed. GitHub remains sou
 - WooCommerce products, variations, attributes and coupons;
 - ACF fields and field groups;
 - Yoast SEO metadata/settings;
+- WordPress Additional CSS inspect/update through core Custom CSS APIs;
 - media import and assignment;
 - bounded plugin/theme filesystem inspection and replacement;
 - dry-run, confirmations, privileged/sensitive gates, idempotency, mutation locks, exact readback and rollback.
+
+`connector.discover` is the canonical site-overview action: it returns WordPress/PHP runtime data, active theme, installed plugins, post types, taxonomies, builders, media sizes and the registered action catalog without requiring a second connector plugin.
 
 ## Elementor JSON in WordPress admin
 
