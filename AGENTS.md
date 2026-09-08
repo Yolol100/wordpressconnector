@@ -29,39 +29,25 @@ Preserve:
 - public mode limited to the explicit public-safe action contract;
 - sensitive actions always blocked in public-repository mode;
 - only the canonical connector self-update actions may use the narrow `public_repository_safe` privileged exception;
-- public connector self-update accepts no caller-supplied package URL/version/archive and still requires the normal WordPress gates plus dry-run/fingerprint confirmation;
+- public connector self-update accepts no caller-supplied package URL/version/archive and still requires normal WordPress capability, privileged, write and system-update gates plus dry-run/fingerprint confirmation;
 - `plugin.install_package` and private/custom plugin ZIP bytes never routed through public request branches;
 - public mode never persists full connector responses and never logs response bodies;
 - sanitized public receipts contain only bounded status/readback evidence, deterministic fingerprints and explicitly safe connector version/checksum evidence;
-- runtime request/result/receipt payloads never merged to `main`.
+- runtime request/result/receipt payloads never merged to `main`;
+- every third-party GitHub Action pinned to a full commit SHA;
+- release ZIP and SPDX SBOM built deterministically, reproducibly and attested against exact release bytes;
+- plugin-declared PHP support covered by CI rather than assumed;
+- uninstall removes plugin-owned settings and temporary runtime state;
+- temporary migration or self-writing workflows removed immediately after their one-time purpose is complete.
 
 ## Validation
 
-Run the same checks as Connector CI:
+Run the same canonical contract runner as Connector CI:
 
 ```bash
-find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
-php tests/policy-contract.php
-php tests/action-catalog.php
-php tests/custom-css-contract.php
-php tests/elementor-inventory-contract.php
-php tests/elementor-forms-contract.php
-php tests/elementor-json-export-runtime.php
-php tests/elementor-json-import-contract.php
-php tests/state-token-contract.php
-php tests/plugin-control-contract.php
-php tests/plugin-package-contract.php
-php tests/connector-update-contract.php
-php tests/strict-input-contract.php
-php tests/runtime-preflight-contract.php
-php tests/filesystem-control-contract.php
-php tests/repository-hygiene.php
-php tests/rest-transport-contract.php
-php tests/request-workflow-contract.php
-php tests/execute-workflow-contract.php
-php tests/public-runtime-contract.php
-php tests/mutation-lock-contract.php
-php tests/single-plugin-contract.php
+bash scripts/run-contracts.sh
 ```
 
-Repository CI is source/static proof only. Live compatibility and mutation safety remain staging-first or require equivalent target-runtime evidence. A connector version that predates a capability cannot safely bootstrap itself through that missing capability; keep the manual bootstrap boundary instead of adding a generic remote-code workaround.
+Connector CI additionally verifies the supported PHP matrix, deterministic package/SBOM reproducibility, supply-chain policy and pull-request dependency changes. Repository CI is source/static proof only. Live compatibility and mutation safety remain staging-first or require equivalent target-runtime evidence.
+
+A connector version that predates a capability cannot safely bootstrap itself through that missing capability; keep the manual bootstrap boundary instead of adding a generic remote-code workaround.
