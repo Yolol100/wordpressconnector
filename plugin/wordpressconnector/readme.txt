@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.11.0
+Stable tag: 1.12.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -20,7 +20,9 @@ Elementor writes use Elementor's document save API for element data and page set
 
 WordPress Additional CSS can be read and replaced through WordPress core Custom CSS APIs. Writes are bounded, privileged, require the normal mutation gate, support stale-state guards, verify exact readback and store a rollback snapshot.
 
-Custom or private plugin ZIPs can be uploaded through the authenticated REST asset endpoint and installed or overwritten through `plugin.install_package`. Packages require a matching SHA-256 checksum and exact plugin identity and are checked for size limits, unsafe paths, symlinks and archive expansion before WordPress Plugin_Upgrader receives them. The connector cannot replace its own active runtime through this action.
+Custom or private plugin ZIPs can be uploaded through the authenticated REST asset endpoint and installed or overwritten through `plugin.install_package`. Packages require a matching SHA-256 checksum and exact plugin identity and are checked for size limits, unsafe paths, symlinks and archive expansion before WordPress Plugin_Upgrader receives them. The generic package action cannot replace the connector itself.
+
+From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to immutable releases from `Yolol100/wordpressconnector`, requires the normal privileged/write/system-update gates, downloads only the canonical `wordpressconnector.zip` plus its checksum asset, verifies SHA-256 and ZIP identity before overwrite, and performs exact version readback. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
 
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
@@ -28,9 +30,15 @@ Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 REST endpoints require HTTPS, an authenticated WordPress user and the manage_options capability. Confirmed writes, privileged actions, sensitive actions, filesystem writes and system updates use separate WordPress-side gates under Settings -> WordPress Connector. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
 
-Use a private GitHub repository. Store the dedicated WordPress Application Password only in GitHub Actions Secrets. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
+Use a private GitHub repository for workflows that can contain site-specific request data. Store the dedicated WordPress Application Password only in protected connector credentials. Do not commit credentials, passwords, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.12.0 =
+* Add `connector.update.check` and `connector.update.apply` for a dedicated self-update path from canonical GitHub releases.
+* Pin self-updates to `Yolol100/wordpressconnector` release assets and require SHA-256, semantic-version, ZIP path, symlink and exact plugin identity validation before overwrite.
+* Add an immutable release workflow that only publishes after successful `Connector CI` on `main`, with `wordpressconnector.zip` and `wordpressconnector.zip.sha256` assets.
+* Keep self-update behind privileged, write and system-update gates and preserve the generic `plugin.install_package` self-replacement block.
 
 = 1.11.0 =
 * Add `plugin.install_package` for verified custom/private plugin ZIP delivery through authenticated REST request assets.
