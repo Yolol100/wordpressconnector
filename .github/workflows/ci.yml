@@ -26,6 +26,7 @@ jobs:
           find plugin/wordpressconnector tests -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/policy-contract.php
           php tests/action-catalog.php
+          php tests/custom-css-contract.php
           php tests/elementor-inventory-contract.php
           php tests/elementor-forms-contract.php
           php tests/elementor-json-export-runtime.php
