@@ -1,0 +1,28 @@
+from pathlib import Path
+
+
+def replace(path, old, new, expected=1):
+    p = Path(path)
+    text = p.read_text()
+    count = text.count(old)
+    if count != expected:
+        raise SystemExit(f'{path}: expected {expected} match(es), got {count}: {old!r}')
+    p.write_text(text.replace(old, new, expected))
+
+path = 'plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php'
+replace(path, "private const CHECKSUM_ASSET = 'wordpressconnector.zip.sha256';", "private const CHECKSUM_ASSET = 'wordpressconnector.zip.sha256';\n    private const SBOM_ASSET = 'wordpressconnector.spdx.json';")
+replace(path, "'public_repository_safe' => true,\n            'description' => 'Check the canonical GitHub release", "'public_repository_safe' => true,\n            'capability' => 'update_plugins',\n            'description' => 'Check the canonical GitHub release")
+replace(path, "'public_repository_safe' => true,\n            'description' => 'Update WordPress Connector", "'public_repository_safe' => true,\n            'capability' => 'update_plugins',\n            'description' => 'Update WordPress Connector")
+replace(path, "'checksum_asset' => self::CHECKSUM_ASSET,\n        );", "'checksum_asset' => self::CHECKSUM_ASSET,\n            'sbom_asset' => self::SBOM_ASSET,\n            'github_asset_digest' => $release['package_digest'],\n        );", 2)
+replace(path, "$expectedSha256 = $this->checksum($release['checksum_url']);", "$expectedSha256 = $this->checksum($release['checksum_url'], $release['checksum_digest']);\n        if (! hash_equals('sha256:' . $expectedSha256, $release['package_digest'])) {\n            throw new RuntimeException('GitHub package asset digest does not match the canonical checksum asset.');\n        }")
+replace(path, "if (! is_string($actualSha256) || ! hash_equals($expectedSha256, strtolower($actualSha256))) {", "if (! is_string($actualSha256) || ! hash_equals($expectedSha256, strtolower($actualSha256)) || ! hash_equals($release['package_digest'], 'sha256:' . strtolower($actualSha256))) {")
+replace(path, "if (! is_array($decoded) || empty($decoded['tag_name']) || empty($decoded['assets']) || ! is_array($decoded['assets'])) {", "if (! is_array($decoded) || empty($decoded['tag_name']) || empty($decoded['assets']) || ! is_array($decoded['assets']) || ! empty($decoded['draft']) || ! empty($decoded['prerelease'])) {")
+replace(path, "$packageUrl = '';\n        $checksumUrl = '';", "$packageUrl = '';\n        $checksumUrl = '';\n        $sbomUrl = '';\n        $packageDigest = '';\n        $checksumDigest = '';")
+replace(path, "if (self::PACKAGE_ASSET === $name) {\n                $packageUrl = $url;\n            } elseif (self::CHECKSUM_ASSET === $name) {\n                $checksumUrl = $url;\n            }", "if (self::PACKAGE_ASSET === $name) {\n                $packageUrl = $url;\n                $packageDigest = isset($asset['digest']) ? strtolower((string) $asset['digest']) : '';\n            } elseif (self::CHECKSUM_ASSET === $name) {\n                $checksumUrl = $url;\n                $checksumDigest = isset($asset['digest']) ? strtolower((string) $asset['digest']) : '';\n            } elseif (self::SBOM_ASSET === $name) {\n                $sbomUrl = $url;\n            }")
+replace(path, "if (! preg_match('#^https://github\\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\\.zip\\.sha256\\z#', $checksumUrl)) {\n            throw new RuntimeException('Canonical release is missing the expected checksum asset.');\n        }", "if (! preg_match('#^https://github\\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\\.zip\\.sha256\\z#', $checksumUrl)) {\n            throw new RuntimeException('Canonical release is missing the expected checksum asset.');\n        }\n        if (! preg_match('#^https://github\\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\\.spdx\\.json\\z#', $sbomUrl)) {\n            throw new RuntimeException('Canonical release is missing the expected SPDX SBOM asset.');\n        }\n        if (! preg_match('/^sha256:[a-f0-9]{64}\\z/', $packageDigest) || ! preg_match('/^sha256:[a-f0-9]{64}\\z/', $checksumDigest)) {\n            throw new RuntimeException('Canonical release assets are missing GitHub SHA-256 digests.');\n        }")
+replace(path, "'checksum_url' => $checksumUrl,\n        );", "'checksum_url' => $checksumUrl,\n            'sbom_url' => $sbomUrl,\n            'package_digest' => $packageDigest,\n            'checksum_digest' => $checksumDigest,\n        );")
+replace(path, "private function checksum(string $url): string", "private function checksum(string $url, string $expectedAssetDigest): string")
+replace(path, "$body = trim((string) wp_remote_retrieve_body($response));\n        if (! preg_match('/^([a-f0-9]{64})  wordpressconnector\\.zip\\z/', $body, $matches)) {", "$rawBody = (string) wp_remote_retrieve_body($response);\n        $actualAssetDigest = 'sha256:' . hash('sha256', $rawBody);\n        if (! hash_equals($expectedAssetDigest, $actualAssetDigest)) {\n            throw new RuntimeException('Connector checksum asset GitHub digest verification failed.');\n        }\n        $body = trim($rawBody);\n        if (! preg_match('/^([a-f0-9]{64})  wordpressconnector\\.zip\\z/', $body, $matches)) {")
+
+path = 'plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php'
+replace(path, "'system_update' => true,\n                'description' => 'Install or overwrite a plugin from a verified ZIP", "'system_update' => true,\n                'capability' => 'install_plugins',\n                'description' => 'Install or overwrite a plugin from a verified ZIP")
