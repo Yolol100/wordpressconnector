@@ -27,8 +27,12 @@ Preserve:
 - same-repository, trusted-actor and latest-commit-author validation;
 - exact PR head-SHA revalidation before execution and before result/receipt writeback;
 - public mode limited to the explicit public-safe action contract;
+- sensitive actions always blocked in public-repository mode;
+- only the canonical connector self-update actions may use the narrow `public_repository_safe` privileged exception;
+- public connector self-update accepts no caller-supplied package URL/version/archive and still requires the normal WordPress gates plus dry-run/fingerprint confirmation;
+- `plugin.install_package` and private/custom plugin ZIP bytes never routed through public request branches;
 - public mode never persists full connector responses and never logs response bodies;
-- sanitized public receipts contain only bounded status/readback evidence and deterministic fingerprints;
+- sanitized public receipts contain only bounded status/readback evidence, deterministic fingerprints and explicitly safe connector version/checksum evidence;
 - runtime request/result/receipt payloads never merged to `main`.
 
 ## Validation
@@ -49,6 +53,7 @@ php tests/plugin-control-contract.php
 php tests/plugin-package-contract.php
 php tests/connector-update-contract.php
 php tests/strict-input-contract.php
+php tests/runtime-preflight-contract.php
 php tests/filesystem-control-contract.php
 php tests/repository-hygiene.php
 php tests/rest-transport-contract.php
@@ -59,4 +64,4 @@ php tests/mutation-lock-contract.php
 php tests/single-plugin-contract.php
 ```
 
-Repository CI is source/static proof only. Live compatibility and mutation safety remain staging-first or require equivalent target-runtime evidence.
+Repository CI is source/static proof only. Live compatibility and mutation safety remain staging-first or require equivalent target-runtime evidence. A connector version that predates a capability cannot safely bootstrap itself through that missing capability; keep the manual bootstrap boundary instead of adding a generic remote-code workaround.
