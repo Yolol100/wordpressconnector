@@ -106,6 +106,22 @@ $receipt = array(
     'full_result_persisted' => false,
 );
 
+$resultDirectory = dirname($resultPath);
+if ('results' === basename($resultDirectory)) {
+    $healthPath = dirname($resultDirectory) . '/health.json';
+    if (is_file($healthPath) && is_readable($healthPath)) {
+        try {
+            $health = json_decode((string) file_get_contents($healthPath), true, 512, JSON_THROW_ON_ERROR);
+            $connectorVersion = is_array($health) ? (string) ($health['version'] ?? '') : '';
+            if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', $connectorVersion)) {
+                $receipt['connector_version'] = $connectorVersion;
+            }
+        } catch (JsonException $error) {
+            // Health metadata is supplemental. Never fail or expose raw health data here.
+        }
+    }
+}
+
 if (! $ok) {
     $receipt['error_code'] = $errorCode((string) ($result['error'] ?? 'connector error'));
 } else {
@@ -156,6 +172,56 @@ if (! $ok) {
     } elseif ('connector.rollback' === $action) {
         $receipt['readback_verified'] = null;
         $receipt['rollback_executed'] = true;
+    } elseif ('connector.update.check' === $action) {
+        $update = isset($data['update']) && is_array($data['update']) ? $data['update'] : array();
+        $current = (string) ($update['current_version'] ?? '');
+        $latest = (string) ($update['latest_version'] ?? '');
+        if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', $current) && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', $latest)) {
+            $receipt['current_version'] = $current;
+            $receipt['latest_version'] = $latest;
+            $receipt['update_available'] = ! empty($update['update_available']);
+        }
+        $receipt['readback_verified'] = null;
+    } elseif ('connector.update.apply' === $action) {
+        if ($dryRun) {
+            $plan = isset($data['would_update_connector']) && is_array($data['would_update_connector']) ? $data['would_update_connector'] : array();
+            $from = (string) ($plan['from_version'] ?? '');
+            $to = (string) ($plan['to_version'] ?? '');
+            $tag = (string) ($plan['tag'] ?? '');
+            $planValid = preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', $from)
+                && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', $to)
+                && $tag === 'v' . $to
+                && version_compare($to, $from, '>');
+            $receipt['update_plan_verified'] = (bool) $planValid;
+            if ($planValid) {
+                $receipt['from_version'] = $from;
+                $receipt['to_version'] = $to;
+            }
+            $currentFingerprint = (string) ($data['_current_fingerprint'] ?? '');
+            if (preg_match('/^[a-f0-9]{64}\z/', $currentFingerprint)) {
+                $receipt['before_fingerprint'] = $currentFingerprint;
+            }
+            $receipt['readback_verified'] = null;
+        } else {
+            $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : array();
+            $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : array();
+            $releaseTag = (string) ($data['release_tag'] ?? '');
+            $afterVersion = (string) ($after['version'] ?? '');
+            $verified = (string) ($after['plugin_file'] ?? '') === 'wordpressconnector/wordpressconnector.php'
+                && preg_match('/^v([0-9]+\.[0-9]+\.[0-9]+)\z/', $releaseTag, $matches)
+                && $afterVersion === (string) ($matches[1] ?? '');
+            $receipt['readback_verified'] = (bool) $verified;
+            if (isset($before['version']) && preg_match('/^[0-9]+\.[0-9]+\.[0-9]+\z/', (string) $before['version'])) {
+                $receipt['from_version'] = (string) $before['version'];
+            }
+            if ($verified) {
+                $receipt['to_version'] = $afterVersion;
+            }
+            $packageSha = (string) ($data['package_sha256'] ?? '');
+            if (preg_match('/^[a-f0-9]{64}\z/', $packageSha)) {
+                $receipt['package_sha256'] = $packageSha;
+            }
+        }
     }
 }
 
