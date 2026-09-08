@@ -4,7 +4,9 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 
 ## Why this is a separate action
 
-`plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing public contract stays backwards compatible and no caller-controlled remote package URL is introduced.
+`plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing action contract stays backwards compatible and no caller-controlled remote package URL is introduced.
+
+`plugin.install_package` is deliberately excluded from the public GitHub runtime allowlist. A ZIP committed to a public request branch is public data, so custom/private packages must use direct authenticated REST or a private repository transport.
 
 ## Preconditions
 
@@ -13,6 +15,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 - The WordPress user needs `install_plugins`; overwrite additionally needs `update_plugins`; activation needs `activate_plugins`; network activation needs `manage_network_plugins`.
 - PHP `ZipArchive` must be available.
 - Use staging first for a new or unproven package. Package install/overwrite is intentionally non-rollbackable.
+- Do not place a private/custom package under `assets/inbox/` on a public GitHub branch.
 
 ## Flow
 
@@ -87,7 +90,7 @@ The confirmed execute call also cleans its request assets after the attempt. If 
 - Existing custom/private plugin replacement: use `overwrite:true`. `expected_plugin` must already be installed and the caller must have `update_plugins`.
 - `activate:true, network_wide:false` ensures normal activation.
 - `activate:true, network_wide:true` ensures network activation on multisite, even if the plugin was already active only on the current site.
-- WordPress Connector itself cannot be replaced through this action. Connector releases continue through the repository/deployment path.
+- WordPress Connector itself cannot be replaced through this generic action. Connector self-update uses the dedicated `connector.update.check` / `connector.update.apply` path pinned to canonical `Yolol100/wordpressconnector` releases.
 
 ## Package validation
 
