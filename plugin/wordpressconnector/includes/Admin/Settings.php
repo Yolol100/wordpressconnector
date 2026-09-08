@@ -98,7 +98,7 @@ final class Settings
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p>' . esc_html__('Canonical WordPress and Elementor runtime bridge for WP Agent and other approved authenticated HTTPS clients.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Canonical WordPress and Elementor runtime bridge for approved authenticated HTTPS clients, including the guarded GitHub runtime.', 'wordpressconnector') . '</p>';
 
         if ($legacyActive) {
             echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
@@ -110,7 +110,7 @@ final class Settings
         echo '<table class="widefat striped" style="max-width:900px"><tbody>';
         echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
         echo '<tr><td><strong>' . esc_html__('REST health endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('Preferred client', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WP Agent / approved authenticated HTTPS client', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('Preferred client', 'wordpressconnector') . '</strong></td><td>' . esc_html__('Approved authenticated HTTPS client / guarded GitHub runtime', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Legacy bridge', 'wordpressconnector') . '</strong></td><td>' . esc_html($legacyActive ? __('Active — staging removal check still required', 'wordpressconnector') : __('Not active', 'wordpressconnector')) . '</td></tr>';
         echo '</tbody></table>';
