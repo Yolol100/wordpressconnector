@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.12.2
+Stable tag: 1.12.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ WordPress Additional CSS can be read and replaced through WordPress core Custom 
 
 Custom or private plugin ZIPs can be uploaded through the authenticated REST asset endpoint and installed or overwritten through `plugin.install_package`. Packages require a matching SHA-256 checksum and exact plugin identity and are checked for size limits, unsafe paths, symlinks and archive expansion before WordPress Plugin_Upgrader receives them. The generic package action cannot replace the connector itself. Private plugin ZIPs must not be placed on a public GitHub request branch; use direct authenticated REST or a private transport for those packages.
 
-From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to immutable releases from `Yolol100/wordpressconnector`, requires the normal privileged/write/system-update gates, downloads only the canonical `wordpressconnector.zip` plus its checksum asset, verifies SHA-256 and ZIP identity before overwrite, and performs exact version readback. From 1.12.2 onward these two canonical self-update actions may also run through the guarded public GitHub runtime: the public request must use an empty payload, a dry-run is required to obtain the current fingerprint, and a confirmed apply must carry that fingerprint. Sanitized receipts expose only safe version/integrity evidence. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
+From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to canonical release assets from `Yolol100/wordpressconnector`, requires the normal privileged/write/system-update gates, downloads only the canonical package/checksum/SBOM set, verifies GitHub asset digests, checksum bytes, SHA-256 and ZIP identity before overwrite, and performs exact version readback. From 1.12.2 onward these two canonical self-update actions may also run through the guarded public GitHub runtime: the public request must use an empty payload, a dry-run is required to obtain the current fingerprint, and a confirmed apply must carry that fingerprint. Sanitized receipts expose only safe version/integrity evidence. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
 
 Installations that predate the self-update actions cannot bootstrap themselves through those actions. Such installations require one manual upgrade to a release that contains the updater before future updates can use the automated route.
 
@@ -37,6 +37,14 @@ REST endpoints require HTTPS, an authenticated WordPress user and the manage_opt
 Public GitHub transport is deliberately reduced. Only explicitly allowlisted public-safe actions may be submitted, full WordPress responses are never persisted, and sensitive actions remain blocked. Store the dedicated WordPress Application Password only in protected GitHub Actions Secrets. Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.12.3 =
+* Bind connector self-update to GitHub-provided package/checksum asset SHA-256 digests and require the canonical SPDX SBOM asset before installation.
+* Add explicit `update_plugins` and `install_plugins` action capabilities so authorization fails at the registry boundary before deeper lifecycle checks.
+* Produce reproducible SPDX 2.3 SBOMs with SHA-1/SHA-256 file checksums and a valid package verification code, while retaining exact ZIP SHA-256 evidence.
+* Expand CI across declared PHP 7.4-8.5 support, run the official WordPress Plugin Check action, and keep all third-party actions pinned to full commit SHAs.
+* Complete uninstall cleanup for all connector gates, mutation locks, rollback snapshots and idempotency records, including multisite cleanup.
+* Remove the one-time self-writing audit migration workflow after use and add regression coverage for the audit hardening boundaries.
 
 = 1.12.2 =
 * Add a narrowly marked `public_repository_safe` exception for the two canonical connector self-update actions while keeping sensitive actions blocked and privileged/write/system-update gates mandatory.
@@ -53,7 +61,7 @@ Public GitHub transport is deliberately reduced. Only explicitly allowlisted pub
 = 1.12.0 =
 * Add `connector.update.check` and `connector.update.apply` for a dedicated self-update path from canonical GitHub releases.
 * Pin self-updates to `Yolol100/wordpressconnector` release assets and require SHA-256, semantic-version, ZIP path, symlink and exact plugin identity validation before overwrite.
-* Add an immutable release workflow that only publishes after successful `Connector CI` on `main`, with `wordpressconnector.zip` and `wordpressconnector.zip.sha256` assets.
+* Add a release workflow that publishes only after successful `Connector CI` on `main`, with package, checksum and reproducible SBOM assets plus provenance attestation.
 * Keep self-update behind privileged, write and system-update gates and preserve the generic `plugin.install_package` self-replacement block.
 
 = 1.11.0 =
@@ -84,7 +92,7 @@ Public GitHub transport is deliberately reduced. Only explicitly allowlisted pub
 = 1.6.0 =
 * Add runtime-aware `elementor.form_capabilities` for V3 Form controls/actions and V4 Atomic Form element/prop schemas.
 * Add `elementor.form_inspect` for complete V3/V4 form subtree readback.
-* Add `elementor.form_upsert` to insert or fully replace complete forms while preserving all supplied runtime-supported settings, including email/action configuration.
+* Add `elementor.form_upsert` to insert or fully replace one complete V3 Form widget or V4 Atomic Form subtree with schema checks, readback and rollback.
 * Validate V3 field IDs and registered submit actions; validate V4 typed props, registered Atomic types, required messages, exactly one submit button and nested-form rejection.
 * Add stale-schema fingerprint guards, exact readback verification and automatic full-document rollback on failed writes.
 
