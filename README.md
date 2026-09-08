@@ -8,11 +8,11 @@ Primary route:
 
 `approved client -> authenticated HTTPS REST -> WordPress Connector -> WordPress/Elementor -> exact readback + rollback`
 
-Optional private GitHub route:
+Optional GitHub route:
 
-`temporary request PR -> secretless guard -> trusted main executor -> authenticated HTTPS REST -> WordPress Connector -> result on request branch`
+`temporary request PR -> secretless guard -> trusted main executor -> authenticated HTTPS REST -> WordPress Connector -> private result or sanitized public receipt`
 
-The GitHub route is a transport client, not a second connector. It is private-repository only, uses GitHub-hosted runners, keeps WordPress credentials only in GitHub Actions Secrets and preserves all connector security gates, strict input validation, stale-state guards, idempotency, readback and rollback.
+The GitHub route is a transport client, not a second connector. It uses GitHub-hosted runners, keeps WordPress credentials only in GitHub Actions Secrets and preserves connector security gates, strict input validation, stale-state guards, idempotency, readback and rollback.
 
 ## Main capabilities
 
@@ -32,15 +32,35 @@ The GitHub route is a transport client, not a second connector. It is private-re
 
 `connector.discover` is the canonical site-overview action: it returns WordPress/PHP runtime data, active theme, installed plugins, post types, taxonomies, builders, media sizes and the registered action catalog without requiring a second connector plugin.
 
-## Private GitHub runtime
+## GitHub runtime
 
-The optional GitHub runtime restores repository-driven WordPress operations without returning to the old self-hosted runner model.
+The optional GitHub runtime provides repository-driven WordPress operations without a self-hosted runner.
 
 - `.github/workflows/wordpress-request.yml` validates a same-repository request PR without WordPress credentials.
 - `.github/workflows/wordpress-execute.yml` runs only through trusted `workflow_dispatch` on `main`, revalidates the exact PR head and then calls the connector over HTTPS.
-- `scripts/validate-request.php` validates the request envelope, including `expected_fingerprint` and `expected_state_token`.
-- Runtime requests and results live only on short-lived request branches and must never be merged to `main`.
-- Public repositories are rejected by both runtime workflows.
+- `scripts/validate-request.php` validates the common request envelope.
+- `scripts/validate-public-request.php` adds the restricted public-repository policy.
+- `scripts/build-public-receipt.php` converts a full in-run connector response into a content-free public receipt.
+- Runtime requests, results and receipts live only on short-lived request branches and must never be merged to `main`.
+
+### Private repository mode
+
+Private repositories keep the broad transport behavior. A trusted request may use the connector action catalog, and the full connector result can be written back under `results/*.json` on the temporary request branch.
+
+### Public repository mode
+
+Public repositories fail closed to a smaller content-editing contract instead of exposing full WordPress responses.
+
+Allowed actions are currently:
+
+- `post.update` for an existing published post/page/CPT;
+- `acf.update` for a positive integer post target only;
+- `connector.batch` containing only those two operations;
+- `connector.rollback` for a known connector request id.
+
+Public requests reject secret-like payload keys, non-post ACF targets, non-published status changes and `expected_state_token`. Use `expected_fingerprint` for stale-state protection in public mode.
+
+The executor never commits the full WordPress response in public mode. It writes only `receipts/<request_id>.json` containing request identity, success/failure category, readback status and deterministic before/after fingerprints. Before/after content, state tokens, rollback payloads and raw connector errors remain inside the temporary GitHub-hosted runner and are deleted during cleanup.
 
 See `docs/SETUP.md` for the required GitHub variable/secrets and the request flow.
 
@@ -78,7 +98,7 @@ Mutations support both:
 - `expected_fingerprint`: deterministic SHA-256 stale-state guard;
 - `expected_state_token`: site-scoped HMAC state guard derived from the same fingerprint and the WordPress auth salt.
 
-Read actions that return a fingerprint also return a `state_token`. Dry-run mutation previews expose `current_state_token` when a current fingerprint is available.
+Read actions that return a fingerprint also return a `state_token`. Dry-run mutation previews expose `current_state_token` when a current fingerprint is available. Public GitHub runtime requests deliberately do not publish state tokens; their sanitized receipts expose deterministic fingerprints instead.
 
 ## Installation
 
@@ -88,6 +108,6 @@ Start read-only. Verify `connector.discover`, `system.doctor`, Elementor capabil
 
 ## Repository roles
 
-- `Yolol100/wordpressconnector`: live WordPress/Elementor bridge plus optional private GitHub HTTPS transport.
+- `Yolol100/wordpressconnector`: live WordPress/Elementor bridge plus optional guarded GitHub HTTPS transport.
 - `Yolol100/elementorjson`: separate Elementor JSON validation/import-roundtrip/render/browser QA lab.
 - `Yolol100/Elementorconnector`: legacy migration source only.

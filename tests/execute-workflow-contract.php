@@ -12,6 +12,7 @@ $required = array(
     'runs-on: ubuntu-latest',
     'cancel-in-progress: false',
     'github.event.repository.private',
+    "public_mode='true'",
     'WPCONNECTOR_TRUSTED_REQUEST_ACTOR',
     '/pulls/${PR_NUMBER}',
     '/commits/${head_sha}',
@@ -19,7 +20,10 @@ $required = array(
     'git_auth fetch --depth=1 origin main',
     'git branch trusted-main FETCH_HEAD',
     'git show "trusted-main:scripts/validate-request.php"',
+    'validate-public-request.php',
+    'build-public-receipt.php',
     'Exactly one requests/*.json file is required.',
+    'Full results are forbidden on public runtime request branches.',
     'Revalidate PR head immediately before execution',
     'Request branch moved after validation; refusing WordPress execution.',
     'WPCONNECTOR_SITE_URL',
@@ -29,8 +33,14 @@ $required = array(
     'Verify authenticated HTTPS connector health',
     'Upload request assets over authenticated HTTPS',
     'Execute connector request over authenticated HTTPS',
-    'Commit result to exact request branch',
-    'Request branch moved after execution; refusing result write.',
+    'Commit full result to private request branch',
+    "steps.preflight.outputs.public_mode != 'true'",
+    'Commit sanitized receipt to public request branch',
+    "steps.preflight.outputs.public_mode == 'true'",
+    'receipts/${REQUEST_ID}.json',
+    'Request branch moved after execution; refusing public receipt write.',
+    'Validate connector result without exposing response data',
+    'Public readback verification failed.',
 );
 foreach ($required as $needle) {
     if (strpos($workflow, $needle) === false) {
@@ -46,10 +56,12 @@ $forbidden = array(
     'WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED',
     'runner_watchdog:',
     'cancel-in-progress: true',
+    'Remote WordPress execution requires a private repository.',
+    '$body["message"]',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
-        fwrite(STDERR, "Forbidden legacy or untrusted pattern in trusted execute workflow: {$needle}\n");
+        fwrite(STDERR, "Forbidden legacy or public-leak pattern in trusted execute workflow: {$needle}\n");
         exit(1);
     }
 }
@@ -66,4 +78,4 @@ if (false === $preflightPosition || false === $firstSecretPosition || $firstSecr
     exit(1);
 }
 
-echo "trusted execute workflow contract OK\n";
+echo "trusted execute workflow public/private contract OK\n";

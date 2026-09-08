@@ -22,6 +22,7 @@ jobs:
     outputs:
       request_path: ${{ steps.guard.outputs.request_path }}
       request_id: ${{ steps.guard.outputs.request_id }}
+      public_mode: ${{ steps.guard.outputs.public_mode }}
     steps:
       - name: Validate request PR without production credentials
         id: guard
@@ -47,9 +48,9 @@ jobs:
             fi
           fi
 
+          public_mode='false'
           if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
-            echo 'Remote WordPress execution requires a private repository.' >&2
-            exit 1
+            public_mode='true'
           fi
 
           git_auth() {
@@ -90,7 +91,13 @@ jobs:
                 size=$(git cat-file -s "request-head:$path")
                 ((asset_bytes+=size))
                 ;;
-              results/*.json) ;;
+              receipts/*.json) ;;
+              results/*.json)
+                if [[ "$public_mode" == 'true' ]]; then
+                  echo 'Full results are forbidden on public runtime request branches.' >&2
+                  exit 1
+                fi
+                ;;
               *)
                 echo "Disallowed changed path in runtime request PR: $path" >&2
                 exit 1
@@ -116,10 +123,18 @@ jobs:
           git show "trusted-base:scripts/validate-request.php" > ../trusted/scripts/validate-request.php
           git show "request-head:$request_path" > ../request/request.json
           php ../trusted/scripts/validate-request.php ../request/request.json
+
+          if [[ "$public_mode" == 'true' ]]; then
+            git show "trusted-base:scripts/validate-public-request.php" > ../trusted/scripts/validate-public-request.php
+            php ../trusted/scripts/validate-public-request.php ../request/request.json
+          fi
+
           request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo $d["request_id"];' ../request/request.json)
 
           echo "request_path=$request_path" >> "$GITHUB_OUTPUT"
           echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
+          echo "public_mode=$public_mode" >> "$GITHUB_OUTPUT"
+          echo "Validated request ${request_id}; public_mode=${public_mode}."
 
   dispatch_trusted_execute:
     needs: guard
@@ -163,7 +178,6 @@ jobs:
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/wordpress-execute.yml/dispatches")
 
           if [[ "$http_code" != '200' && "$http_code" != '204' ]]; then
-            cat "$response" >&2 || true
             echo "Unable to dispatch trusted WordPress executor; GitHub returned HTTP ${http_code}." >&2
             exit 1
           fi

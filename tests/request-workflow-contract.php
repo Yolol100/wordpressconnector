@@ -14,6 +14,10 @@ $required = array(
     'github.event.pull_request.user.login',
     'github.repository_owner',
     'github.event.repository.private',
+    "public_mode='true'",
+    'validate-public-request.php',
+    'receipts/*.json',
+    'Full results are forbidden on public runtime request branches.',
     'runs-on: ubuntu-latest',
     'contents: read',
     'actions: write',
@@ -43,12 +47,13 @@ $forbidden = array(
     'WPCONNECTOR_REST_APPLICATION_PASSWORD',
     'secrets.',
     'webactueel-wordpress-connector/v1',
+    'Remote WordPress execution requires a private repository.',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
-        fwrite(STDERR, "Forbidden credential or legacy pattern in request workflow: {$needle}\n");
+        fwrite(STDERR, "Forbidden credential or unsafe pattern in request workflow: {$needle}\n");
         exit(1);
     }
 }
 
-echo "request workflow dispatch contract OK\n";
+echo "request workflow public/private dispatch contract OK\n";

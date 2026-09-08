@@ -38,12 +38,13 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
-            echo 'Remote WordPress execution requires a private repository.' >&2
-            exit 1
-          fi
           [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || { echo 'Invalid PR number.' >&2; exit 1; }
           [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]] || { echo 'Invalid expected head SHA.' >&2; exit 1; }
+
+          public_mode='false'
+          if [[ "${{ github.event.repository.private }}" != 'true' ]]; then
+            public_mode='true'
+          fi
 
           api_headers=(
             --header 'Accept: application/vnd.github+json'
@@ -53,13 +54,18 @@ jobs:
 
           root="$RUNNER_TEMP/wpconnector-request"
           rm -rf "$root"
-          mkdir -p "$root/assets/inbox" "$root/results"
+          mkdir -p "$root/assets/inbox" "$root/results" "$root/receipts" "$root/trusted/scripts"
 
           pr_json="$root/pr.json"
-          curl --fail-with-body --silent --show-error --location \
+          http_code=$(curl --silent --show-error --location \
             "${api_headers[@]}" \
             --output "$pr_json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}"
+            --write-out '%{http_code}' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+          if [[ "$http_code" != '200' ]]; then
+            echo 'Unable to read runtime request PR.' >&2
+            exit 1
+          fi
 
           metadata=$(php -r '
             $p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
@@ -83,10 +89,15 @@ jobs:
           IFS=$'\t' read -r base_sha head_sha head_ref request_actor <<< "$metadata"
 
           commit_json="$root/head-commit.json"
-          curl --fail-with-body --silent --show-error --location \
+          http_code=$(curl --silent --show-error --location \
             "${api_headers[@]}" \
             --output "$commit_json" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${head_sha}"
+            --write-out '%{http_code}' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${head_sha}")
+          if [[ "$http_code" != '200' ]]; then
+            echo 'Unable to validate runtime request commit.' >&2
+            exit 1
+          fi
           head_author=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo (string)($d["author"]["login"] ?? "");' "$commit_json")
           if [[ "$head_author" != "$REPOSITORY_OWNER" ]]; then
             if [[ -z "${TRUSTED_REQUEST_ACTOR:-}" || "$head_author" != "$TRUSTED_REQUEST_ACTOR" ]]; then
@@ -136,7 +147,13 @@ jobs:
                 size=$(git cat-file -s "request-head:$path")
                 ((asset_bytes+=size))
                 ;;
-              results/*.json) ;;
+              receipts/*.json) ;;
+              results/*.json)
+                if [[ "$public_mode" == 'true' ]]; then
+                  echo 'Full results are forbidden on public runtime request branches.' >&2
+                  exit 1
+                fi
+                ;;
               *)
                 echo "Disallowed changed path in runtime request PR: $path" >&2
                 exit 1
@@ -158,10 +175,16 @@ jobs:
             exit 1
           fi
 
-          mkdir -p "$root/trusted/scripts"
           git show "trusted-main:scripts/validate-request.php" > "$root/trusted/scripts/validate-request.php"
           git show "request-head:$request_path" > "$root/request.json"
           php "$root/trusted/scripts/validate-request.php" "$root/request.json"
+
+          if [[ "$public_mode" == 'true' ]]; then
+            git show "trusted-main:scripts/validate-public-request.php" > "$root/trusted/scripts/validate-public-request.php"
+            git show "trusted-main:scripts/build-public-receipt.php" > "$root/trusted/scripts/build-public-receipt.php"
+            php "$root/trusted/scripts/validate-public-request.php" "$root/request.json"
+          fi
+
           request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo $d["request_id"];' "$root/request.json")
 
           changed_paths="$root/changed-paths"
@@ -179,6 +202,8 @@ jobs:
           echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+          echo "public_mode=$public_mode" >> "$GITHUB_OUTPUT"
+          echo "Validated trusted request ${request_id}; public_mode=${public_mode}."
 
       - name: Verify authenticated HTTPS connector health
         env:
@@ -198,13 +223,21 @@ jobs:
 
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
           health="$RUNNER_TEMP/wpconnector-request/health.json"
-          curl --fail-with-body --silent --show-error --location \
+          set +e
+          http_code=$(curl --silent --show-error --location \
             --connect-timeout 10 --max-time 30 \
             --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
             --header 'Accept: application/json' \
             --output "$health" \
-            "$base/health"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"]) || ($d["transport"] ?? "") !== "rest") { fwrite(STDERR,"REST connector health check failed.\n"); exit(1); } echo "REST connector health OK; version=".($d["version"] ?? "unknown")."\n";' "$health"
+            --write-out '%{http_code}' \
+            "$base/health")
+          curl_status=$?
+          set -e
+          if [[ "$curl_status" -ne 0 || "$http_code" != '200' ]]; then
+            echo 'REST connector health check failed.' >&2
+            exit 1
+          fi
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"]) || ($d["transport"] ?? "") !== "rest") { fwrite(STDERR,"REST connector health check failed.\n"); exit(1); } echo "REST connector health OK.\n";' "$health"
 
       - name: Upload request assets over authenticated HTTPS
         env:
@@ -220,7 +253,8 @@ jobs:
           while IFS= read -r -d '' file; do
             relative="${file#$asset_root/}"
             response="$RUNNER_TEMP/wpconnector-request/asset-response.json"
-            curl --fail-with-body --silent --show-error --location \
+            set +e
+            http_code=$(curl --silent --show-error --location \
               --connect-timeout 10 --max-time 120 \
               --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
               --header 'Accept: application/json' \
@@ -228,7 +262,14 @@ jobs:
               --form-string "asset_path=${relative}" \
               --form "file=@${file}" \
               --output "$response" \
-              "$base/assets"
+              --write-out '%{http_code}' \
+              "$base/assets")
+            curl_status=$?
+            set -e
+            if [[ "$curl_status" -ne 0 || "$http_code" != '200' ]]; then
+              echo 'Asset upload failed.' >&2
+              exit 1
+            fi
             php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,"Asset upload rejected.\n"); exit(1); }' "$response"
           done < <(find "$asset_root" -type f -print0)
 
@@ -240,7 +281,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          current_head=$(curl --fail-with-body --silent --show-error --location \
+          current_head=$(curl --silent --show-error --location \
             --header 'Accept: application/vnd.github+json' \
             --header "Authorization: Bearer ${GH_REPO_TOKEN}" \
             --header 'X-GitHub-Api-Version: 2026-03-10' \
@@ -281,15 +322,32 @@ jobs:
           set -e
 
           if [[ "$curl_status" -ne 0 || "$http_code" != '200' ]]; then
-            php -r '$r=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $body=@json_decode(@file_get_contents($argv[2]),true); $message="REST transport failed (HTTP ".$argv[3].", curl ".$argv[4].")"; if (is_array($body) && isset($body["message"])) { $message.="; ".(string)$body["message"]; } $out=["version"=>1,"ok"=>false,"request_id"=>$r["request_id"]??"unknown","action"=>$r["action"]??"unknown","dry_run"=>!empty($r["dry_run"]),"completed_at_gmt"=>gmdate("c"),"error"=>$message,"meta"=>["transport"=>"rest"]]; file_put_contents($argv[5],json_encode($out,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");' "$request" "$transport_body" "$http_code" "$curl_status" "$result"
+            php -r '$r=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $out=["version"=>1,"ok"=>false,"request_id"=>$r["request_id"]??"unknown","action"=>$r["action"]??"unknown","dry_run"=>!empty($r["dry_run"]),"completed_at_gmt"=>gmdate("c"),"error"=>"REST transport failed.","meta"=>["transport"=>"rest","http_status"=>(int)$argv[2],"curl_status"=>(int)$argv[3]]]; file_put_contents($argv[4],json_encode($out,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES)."\n");' "$request" "$http_code" "$curl_status" "$result"
             exit 1
           fi
 
           mv "$transport_body" "$result"
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (($d["request_id"] ?? "") !== $argv[2]) { fwrite(STDERR,"REST result request_id mismatch.\n"); exit(1); }' "$result" "$REQUEST_ID"
 
-      - name: Commit result to exact request branch
-        if: always()
+      - name: Build sanitized public receipt
+        if: always() && steps.preflight.outputs.public_mode == 'true'
+        env:
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          if [[ ! -s "$result" ]]; then
+            echo 'No connector result file was produced.' >&2
+            exit 0
+          fi
+          php "$RUNNER_TEMP/wpconnector-request/trusted/scripts/build-public-receipt.php" \
+            "$RUNNER_TEMP/wpconnector-request/request.json" \
+            "$result" \
+            "$RUNNER_TEMP/wpconnector-request/receipts/${REQUEST_ID}.json"
+
+      - name: Commit full result to private request branch
+        if: always() && steps.preflight.outputs.public_mode != 'true'
         env:
           GH_PUSH_TOKEN: ${{ github.token }}
           REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
@@ -322,21 +380,65 @@ jobs:
           git commit -m "Add WordPress result ${REQUEST_ID}" || exit 0
           git push origin HEAD:"$PR_HEAD_REF"
 
+      - name: Commit sanitized receipt to public request branch
+        if: always() && steps.preflight.outputs.public_mode == 'true'
+        env:
+          GH_PUSH_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+          PR_HEAD_REF: ${{ steps.preflight.outputs.head_ref }}
+          PR_HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/wpconnector-request/receipts/${REQUEST_ID}.json"
+          if [[ ! -s "$receipt" ]]; then
+            echo 'No public receipt was produced.' >&2
+            exit 0
+          fi
+
+          work="$RUNNER_TEMP/wpconnector-receipt-push"
+          rm -rf "$work"
+          git clone "https://x-access-token:${GH_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout "$PR_HEAD_REF"
+          current=$(git rev-parse HEAD)
+          if [[ "$current" != "$PR_HEAD_SHA" ]]; then
+            echo 'Request branch moved after execution; refusing public receipt write.' >&2
+            exit 1
+          fi
+          mkdir -p receipts
+          cp "$receipt" "receipts/${REQUEST_ID}.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- "receipts/${REQUEST_ID}.json"
+          git commit -m "Add sanitized WordPress receipt ${REQUEST_ID}" || exit 0
+          git push origin HEAD:"$PR_HEAD_REF"
+
       - name: Fail job when connector execution failed
         if: steps.request.outcome == 'failure'
         shell: bash
-        run: exit 1
+        run: |
+          echo 'WordPress Connector transport or execution failed.' >&2
+          exit 1
 
-      - name: Fail job when connector returned ok=false
+      - name: Validate connector result without exposing response data
         if: steps.request.outcome == 'success'
         env:
           REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+          PUBLIC_MODE: ${{ steps.preflight.outputs.public_mode }}
         shell: bash
         run: |
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,(string)($d["error"]??"Connector request failed")."\n"); exit(1); }' "$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector-request/results/${REQUEST_ID}.json"
+          receipt="$RUNNER_TEMP/wpconnector-request/receipts/${REQUEST_ID}.json"
+          if [[ "$PUBLIC_MODE" == 'true' ]]; then
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,"Connector returned ok=false.\n"); exit(1); } if (array_key_exists("readback_verified",$d) && false === $d["readback_verified"]) { fwrite(STDERR,"Public readback verification failed.\n"); exit(1); } echo "Public connector receipt verified.\n";' "$receipt"
+          else
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if (empty($d["ok"])) { fwrite(STDERR,(string)($d["error"]??"Connector request failed")."\n"); exit(1); }' "$result"
+          fi
 
       - name: Cleanup GitHub-hosted workspace
         if: always()
         shell: bash
         run: |
-          rm -rf "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push"
+          rm -rf "$RUNNER_TEMP/wpconnector-request" "$RUNNER_TEMP/wpconnector-result-push" "$RUNNER_TEMP/wpconnector-receipt-push"

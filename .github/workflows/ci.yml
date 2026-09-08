@@ -7,6 +7,7 @@ on:
     paths-ignore:
       - 'requests/**'
       - 'results/**'
+      - 'receipts/**'
       - 'assets/inbox/**'
 
 permissions:
@@ -46,6 +47,7 @@ jobs:
           php tests/rest-transport-contract.php
           php tests/request-workflow-contract.php
           php tests/execute-workflow-contract.php
+          php tests/public-runtime-contract.php
           php tests/mutation-lock-contract.php
           php tests/single-plugin-contract.php
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
