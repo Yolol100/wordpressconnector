@@ -7,6 +7,7 @@ namespace Webactueel\WordPressConnector;
 use Webactueel\WordPressConnector\Adapters\AbilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\AcfAdapter;
 use Webactueel\WordPressConnector\Adapters\AutoImageAttributesAdapter;
+use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 use Webactueel\WordPressConnector\Adapters\CoreAdapter;
 use Webactueel\WordPressConnector\Adapters\CustomCssAdapter;
 use Webactueel\WordPressConnector\Adapters\DiscoveryAdapter;
@@ -54,6 +55,7 @@ final class Plugin
             new CustomCssAdapter(),
             new FilesystemAdapter(),
             new PluginPackageAdapter(),
+            new ConnectorUpdateAdapter(),
             new SystemAdapter(),
         );
 
