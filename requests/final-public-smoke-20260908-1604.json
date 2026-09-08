@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "request_id": "final-public-smoke-20260908-1604",
+  "action": "post.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 4933,
+    "excerpt": "Healthcare platform organising care services, locations and registration routes so clients, families and referrers can quickly find relevant support and practical next steps."
+  }
+}
