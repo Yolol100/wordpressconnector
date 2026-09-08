@@ -237,14 +237,14 @@ final class CoreAdapter
     public function metaGet(array $payload): array
     {
         list($type, $id, $key) = $this->metaTarget($payload);
-        Policy::assertKeyAllowed($key);
+        Policy::assertMetaKeyAllowed($key);
         return array('value' => get_metadata($type, $id, $key, true));
     }
 
     public function metaUpdate(array $payload, array $context): array
     {
         list($type, $id, $key) = $this->metaTarget($payload);
-        Policy::assertKeyAllowed($key);
+        Policy::assertMetaKeyAllowed($key);
         $before = get_metadata($type, $id, $key, true);
         $after = array_key_exists('value', $payload) ? $payload['value'] : null;
         $result = array('before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make($before));
@@ -264,7 +264,7 @@ final class CoreAdapter
     public function metaDelete(array $payload, array $context): array
     {
         list($type, $id, $key) = $this->metaTarget($payload);
-        Policy::assertKeyAllowed($key);
+        Policy::assertMetaKeyAllowed($key);
         $before = get_metadata($type, $id, $key, true);
         $result = array('before' => $before, '_current_fingerprint' => Fingerprint::make($before));
         if (! empty($context['dry_run'])) {
@@ -503,14 +503,14 @@ final class CoreAdapter
     public function optionGet(array $payload): array
     {
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         return array('name' => $name, 'value' => get_option($name, null));
     }
 
     public function optionUpdate(array $payload, array $context): array
     {
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         $before = get_option($name, null);
         $value = $payload['value'] ?? null;
         if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make($before));
@@ -521,7 +521,7 @@ final class CoreAdapter
     public function optionDelete(array $payload, array $context): array
     {
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         $before = get_option($name, null);
         if (! empty($context['dry_run'])) return array('before' => $before, '_current_fingerprint' => Fingerprint::make($before));
         delete_option($name);
@@ -532,7 +532,7 @@ final class CoreAdapter
     {
         if (! is_multisite()) throw new RuntimeException('Not a multisite installation.');
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         return array('name' => $name, 'value' => get_site_option($name, null));
     }
 
@@ -540,7 +540,7 @@ final class CoreAdapter
     {
         if (! is_multisite()) throw new RuntimeException('Not a multisite installation.');
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         $before = get_site_option($name, null);
         $value = $payload['value'] ?? null;
         if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make($before));
@@ -552,7 +552,7 @@ final class CoreAdapter
     {
         if (! is_multisite()) throw new RuntimeException('Not a multisite installation.');
         $name = $this->requireKey($payload, 'name');
-        Policy::assertKeyAllowed($name);
+        Policy::assertOptionKeyAllowed($name);
         $before = get_site_option($name, null);
         if (! empty($context['dry_run'])) return array('before' => $before, '_current_fingerprint' => Fingerprint::make($before));
         delete_site_option($name);

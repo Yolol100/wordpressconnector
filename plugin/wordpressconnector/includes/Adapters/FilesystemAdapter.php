@@ -159,6 +159,10 @@ final class FilesystemAdapter
         }
 
         $relative = FilesystemPolicy::assertWritableText(isset($payload['path']) ? (string) $payload['path'] : '');
+        $requiredCapability = 0 === strpos($relative, 'wp-content/plugins/') ? 'edit_plugins' : 'edit_themes';
+        if (! current_user_can($requiredCapability)) {
+            throw new RuntimeException('Current user lacks the required filesystem capability: ' . $requiredCapability . '.');
+        }
         $absolute = $this->resolveExisting($relative, false);
         if (! is_file($absolute)) {
             throw new RuntimeException('filesystem.write_text only replaces existing regular files.');
