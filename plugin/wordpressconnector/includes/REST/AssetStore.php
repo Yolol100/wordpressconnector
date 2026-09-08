@@ -23,13 +23,14 @@ final class AssetStore
         }
 
         $tmpName = isset($file['tmp_name']) ? (string) $file['tmp_name'] : '';
-        $size = isset($file['size']) ? (int) $file['size'] : 0;
         if ('' === $tmpName || ! is_uploaded_file($tmpName)) {
             throw new RuntimeException('Asset upload is not a valid HTTP upload.');
         }
-        if ($size <= 0 || $size > self::MAX_FILE_BYTES) {
+        $actualSize = filesize($tmpName);
+        if (false === $actualSize || $actualSize <= 0 || $actualSize > self::MAX_FILE_BYTES) {
             throw new RuntimeException('Asset exceeds the per-file size limit.');
         }
+        $size = (int) $actualSize;
 
         $fileType = $this->allowedFileType($relativePath);
 
@@ -44,6 +45,7 @@ final class AssetStore
         if (! is_dir($parent) && ! wp_mkdir_p($parent)) {
             throw new RuntimeException('Could not create request asset directory.');
         }
+        @chmod($parent, 0700);
 
         $rootReal = realpath($root);
         $parentReal = realpath($parent);
@@ -80,6 +82,9 @@ final class AssetStore
 
         if ($create && ! is_dir($directory) && ! wp_mkdir_p($directory)) {
             throw new RuntimeException('Could not create request asset root.');
+        }
+        if ($create) {
+            @chmod($directory, 0700);
         }
 
         return $directory;
@@ -133,16 +138,64 @@ final class AssetStore
 
     private function baseRoot(bool $create): string
     {
-        $uploads = wp_upload_dir();
-        if (! empty($uploads['error']) || empty($uploads['basedir'])) {
-            throw new RuntimeException('WordPress uploads directory is unavailable.');
+        $configured = defined('WPCONNECTOR_ASSET_ROOT') ? trim((string) constant('WPCONNECTOR_ASSET_ROOT')) : '';
+        if ('' !== $configured) {
+            if (! $this->isAbsolutePath($configured)) {
+                throw new RuntimeException('WPCONNECTOR_ASSET_ROOT must be an absolute private filesystem path.');
+            }
+            $base = rtrim($configured, '/\\');
+        } else {
+            $temp = rtrim((string) sys_get_temp_dir(), '/\\');
+            if ('' === $temp || ! $this->isAbsolutePath($temp)) {
+                throw new RuntimeException('A private system temporary directory is unavailable.');
+            }
+            $siteNamespace = substr(hash('sha256', home_url('/')), 0, 20);
+            $base = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $siteNamespace;
         }
 
-        $base = rtrim((string) $uploads['basedir'], '/\\') . DIRECTORY_SEPARATOR . 'wpconnector-inbox';
+        $this->assertOutsideWebRoot($base);
+
         if ($create && ! is_dir($base) && ! wp_mkdir_p($base)) {
             throw new RuntimeException('Could not create connector asset base directory.');
         }
+        if ($create) {
+            @chmod($base, 0700);
+            $resolved = realpath($base);
+            if (false === $resolved) {
+                throw new RuntimeException('Could not resolve connector asset base directory.');
+            }
+            $this->assertOutsideWebRoot($resolved);
+        }
         return $base;
+    }
+
+    private function assertOutsideWebRoot(string $path): void
+    {
+        $webRoot = defined('ABSPATH') ? realpath(ABSPATH) : false;
+        if (false === $webRoot) {
+            return;
+        }
+
+        $webRoot = rtrim($webRoot, DIRECTORY_SEPARATOR);
+        $resolved = realpath($path);
+        if (false !== $resolved) {
+            $candidate = rtrim($resolved, DIRECTORY_SEPARATOR);
+        } else {
+            $parent = realpath(dirname($path));
+            if (false === $parent) {
+                throw new RuntimeException('Connector asset root parent cannot be resolved.');
+            }
+            $candidate = rtrim($parent, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . basename($path);
+        }
+
+        if ($candidate === $webRoot || 0 === strpos($candidate, $webRoot . DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('Connector request assets must be stored outside the public WordPress root.');
+        }
+    }
+
+    private function isAbsolutePath(string $path): bool
+    {
+        return '/' === substr($path, 0, 1) || 1 === preg_match('/^[A-Za-z]:[\\\\\/]/', $path);
     }
 
     private function usage(string $root): array
