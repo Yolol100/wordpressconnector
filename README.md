@@ -22,10 +22,22 @@ The old GitHub request/result execution transport is removed. GitHub remains sou
 - Yoast SEO metadata/settings;
 - WordPress Additional CSS inspect/update through core Custom CSS APIs;
 - media import and assignment;
+- verified plugin ZIP install/overwrite through authenticated REST request assets;
 - bounded plugin/theme filesystem inspection and replacement;
 - dry-run, confirmations, privileged/sensitive gates, idempotency, mutation locks, exact readback and rollback.
 
 `connector.discover` is the canonical site-overview action: it returns WordPress/PHP runtime data, active theme, installed plugins, post types, taxonomies, builders, media sizes and the registered action catalog without requiring a second connector plugin.
+
+## REST plugin package delivery
+
+`plugin.install` remains the WordPress.org-slug installer. Custom/private plugin packages use `plugin.install_package` instead.
+
+The package flow is deliberately two-step:
+
+1. upload one ZIP through `/wp-json/webactueel-wordpress-connector/v1/assets` using an `asset_path` under `plugin-packages/`;
+2. execute `plugin.install_package` through `/wp-json/webactueel-wordpress-connector/v1/execute` with the matching `source_path`, SHA-256 checksum and exact `expected_plugin` file.
+
+The package action is a privileged system-update mutation. Real writes therefore require the normal write gate, privileged gate, system-update gate and `confirm:true`. ZIP packages are bounded and inspected before WordPress' `Plugin_Upgrader` receives them: checksum, size, path traversal, symlinks, archive size, top-level structure and plugin identity are validated. The connector refuses to replace its own active runtime through this action.
 
 ## Elementor JSON in WordPress admin
 
