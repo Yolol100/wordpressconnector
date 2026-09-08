@@ -21,6 +21,7 @@ $adapterRequired = array(
     "'connector.update.check'",
     "'connector.update.apply'",
     "'system_update' => true",
+    "'public_repository_safe' => true",
     'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest',
     "PACKAGE_ASSET = 'wordpressconnector.zip'",
     "CHECKSUM_ASSET = 'wordpressconnector.zip.sha256'",
@@ -51,6 +52,10 @@ foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_
     }
 }
 
+if (substr_count($adapter, "'public_repository_safe' => true") !== 2) {
+    fwrite(STDERR, "Only the two canonical connector self-update actions may carry the public_repository_safe marker in ConnectorUpdateAdapter.\n");
+    exit(1);
+}
 if (strpos($adapter, "Yolol100/wordpressconnector/releases/download/") === false) {
     fwrite(STDERR, "Connector updater is not pinned to the canonical GitHub release path.\n");
     exit(1);
