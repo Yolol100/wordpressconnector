@@ -24,49 +24,42 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
-      - name: Validate PHP and contracts
+      - name: Validate PHP and complete contracts
         shell: bash
         run: |
           set -euo pipefail
-          find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
-          php tests/policy-contract.php
-          php tests/action-catalog.php
-          php tests/custom-css-contract.php
-          php tests/elementor-inventory-contract.php
-          php tests/elementor-forms-contract.php
-          php tests/elementor-json-export-runtime.php
-          php tests/elementor-json-import-contract.php
-          php tests/state-token-contract.php
-          php tests/plugin-control-contract.php
-          php tests/plugin-package-contract.php
-          php tests/connector-update-contract.php
-          php tests/strict-input-contract.php
-          php tests/payload-boolean-contract.php
-          php tests/runtime-preflight-contract.php
-          php tests/filesystem-control-contract.php
-          php tests/repository-hygiene.php
-          php tests/rest-transport-contract.php
-          php tests/request-workflow-contract.php
-          php tests/execute-workflow-contract.php
-          php tests/public-runtime-contract.php
-          php tests/mutation-lock-contract.php
-          php tests/single-plugin-contract.php
+          bash scripts/run-contracts.sh
           git diff --check HEAD^ HEAD 2>/dev/null || git diff --check
 
-      - name: Build and verify installable plugin ZIP
+      - name: Build reproducible package twice
         shell: bash
         run: |
           set -euo pipefail
-          cd plugin
-          zip -qr "$RUNNER_TEMP/wordpressconnector.zip" wordpressconnector
-          cd "$GITHUB_WORKSPACE"
-          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
-          unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
-          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
+          source_sha="$(git log -1 --format=%H -- plugin/wordpressconnector)"
+          source_epoch="$(git show -s --format=%ct "$source_sha")"
+          python3 scripts/build-release-package.py \
+            --source plugin/wordpressconnector \
+            --zip "$RUNNER_TEMP/wordpressconnector-a.zip" \
+            --sbom "$RUNNER_TEMP/wordpressconnector-a.spdx.json" \
+            --source-commit "$source_sha" \
+            --source-date-epoch "$source_epoch"
+          python3 scripts/build-release-package.py \
+            --source plugin/wordpressconnector \
+            --zip "$RUNNER_TEMP/wordpressconnector-b.zip" \
+            --sbom "$RUNNER_TEMP/wordpressconnector-b.spdx.json" \
+            --source-commit "$source_sha" \
+            --source-date-epoch "$source_epoch"
+          cmp "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector-b.zip"
+          cmp "$RUNNER_TEMP/wordpressconnector-a.spdx.json" "$RUNNER_TEMP/wordpressconnector-b.spdx.json"
+          unzip -t "$RUNNER_TEMP/wordpressconnector-a.zip"
+          unzip -Z1 "$RUNNER_TEMP/wordpressconnector-a.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
+          if unzip -Z1 "$RUNNER_TEMP/wordpressconnector-a.zip" | grep -Eq '(^|/)(\.git|\.github|tests|node_modules|__pycache__)(/|$)'; then
             echo 'Development-only content leaked into plugin ZIP.' >&2
             exit 1
           fi
-          sha256sum "$RUNNER_TEMP/wordpressconnector.zip"
+          python3 -m json.tool "$RUNNER_TEMP/wordpressconnector-a.spdx.json" >/dev/null
+          sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
+          sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
 
       - name: Reject dangerous execution primitives
         shell: bash
@@ -81,3 +74,38 @@ jobs:
             echo 'Privileged pull-request event is forbidden for this repository.' >&2
             exit 1
           fi
+
+  php-compatibility:
+    name: PHP ${{ matrix.php }} contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4', '8.5']
+    steps:
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Set up PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+      - name: Run complete contract suite
+        shell: bash
+        run: bash scripts/run-contracts.sh
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
