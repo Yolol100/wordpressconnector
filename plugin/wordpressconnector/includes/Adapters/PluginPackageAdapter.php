@@ -8,6 +8,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class PluginPackageAdapter
 {
@@ -74,9 +75,9 @@ final class PluginPackageAdapter
         }
         $this->assertNotSelf($expectedPlugin);
 
-        $overwrite = ! empty($payload['overwrite']);
-        $activate = ! empty($payload['activate']);
-        $networkWide = ! empty($payload['network_wide']);
+        $overwrite = Input::bool($payload, 'overwrite');
+        $activate = Input::bool($payload, 'activate');
+        $networkWide = Input::bool($payload, 'network_wide');
         $this->assertCapabilities($overwrite, $activate, $networkWide);
 
         require_once ABSPATH . 'wp-admin/includes/plugin.php';

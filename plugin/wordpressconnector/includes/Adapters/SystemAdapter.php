@@ -7,6 +7,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class SystemAdapter
 {
@@ -168,7 +169,7 @@ final class SystemAdapter
         $before = $role->capabilities;
         if (! empty($context['dry_run'])) return array('before' => $before, 'add' => $payload['add'] ?? array(), 'remove' => $payload['remove'] ?? array(), '_current_fingerprint' => Fingerprint::make($before));
         foreach ((array) ($payload['add'] ?? array()) as $cap => $grant) {
-            if (is_int($cap)) $role->add_cap((string) $grant, true); else $role->add_cap((string) $cap, (bool) $grant);
+            if (is_int($cap)) $role->add_cap((string) $grant, true); else $role->add_cap((string) $cap, Input::boolValue($grant, 'payload.add.' . (string) $cap));
         }
         foreach ((array) ($payload['remove'] ?? array()) as $cap) $role->remove_cap((string) $cap);
         return array('role' => $roleName, 'capabilities' => get_role($roleName)->capabilities, 'rollback_supported' => false);
@@ -201,10 +202,11 @@ final class SystemAdapter
         $file = $this->pluginFile($payload);
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         $before = is_plugin_active($file);
-        if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => true, '_current_fingerprint' => Fingerprint::make($before));
-        $result = activate_plugin($file, '', ! empty($payload['network_wide']), true);
+        $networkWide = Input::bool($payload, 'network_wide');
+        if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => true, 'network_wide' => $networkWide, '_current_fingerprint' => Fingerprint::make($before));
+        $result = activate_plugin($file, '', $networkWide, true);
         if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
-        return array('file' => $file, 'active' => true, '_rollback' => array('action' => 'plugin.deactivate', 'payload' => array('file' => $file, 'network_wide' => ! empty($payload['network_wide']))));
+        return array('file' => $file, 'active' => true, '_rollback' => array('action' => 'plugin.deactivate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)));
     }
 
     public function pluginDeactivate(array $payload, array $context): array
@@ -212,9 +214,10 @@ final class SystemAdapter
         $file = $this->pluginFile($payload);
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         $before = is_plugin_active($file);
-        if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => false, '_current_fingerprint' => Fingerprint::make($before));
-        deactivate_plugins($file, false, ! empty($payload['network_wide']));
-        return array('file' => $file, 'active' => false, '_rollback' => $before ? array('action' => 'plugin.activate', 'payload' => array('file' => $file, 'network_wide' => ! empty($payload['network_wide']))) : null);
+        $networkWide = Input::bool($payload, 'network_wide');
+        if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => false, 'network_wide' => $networkWide, '_current_fingerprint' => Fingerprint::make($before));
+        deactivate_plugins($file, false, $networkWide);
+        return array('file' => $file, 'active' => false, '_rollback' => $before ? array('action' => 'plugin.activate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)) : null);
     }
 
     public function pluginInstall(array $payload, array $context): array
@@ -391,8 +394,9 @@ final class SystemAdapter
 
     public function rewriteFlush(array $payload, array $context): array
     {
-        if (! empty($context['dry_run'])) return array('would_flush' => true, '_current_fingerprint' => Fingerprint::make(get_option('rewrite_rules', array())));
-        flush_rewrite_rules(! empty($payload['hard']));
+        $hard = Input::bool($payload, 'hard');
+        if (! empty($context['dry_run'])) return array('would_flush' => true, 'hard' => $hard, '_current_fingerprint' => Fingerprint::make(get_option('rewrite_rules', array())));
+        flush_rewrite_rules($hard);
         return array('flushed' => true, 'rollback_supported' => false);
     }
 
@@ -415,8 +419,9 @@ final class SystemAdapter
         $domain = isset($payload['domain']) ? strtolower(trim((string) $payload['domain'])) : '';
         $path = isset($payload['path']) ? '/' . trim((string) $payload['path'], '/') . '/' : '/';
         if ('' === $domain) throw new RuntimeException('domain is required.');
-        if (! empty($context['dry_run'])) return array('would_create' => compact('domain', 'path'), '_current_fingerprint' => Fingerprint::make(array('new_site' => $domain . $path)));
-        $siteId = wp_insert_site(array('domain' => $domain, 'path' => $path, 'network_id' => isset($payload['network_id']) ? (int) $payload['network_id'] : get_current_network_id(), 'public' => isset($payload['public']) ? (int) (bool) $payload['public'] : 1));
+        $public = Input::bool($payload, 'public', true);
+        if (! empty($context['dry_run'])) return array('would_create' => compact('domain', 'path', 'public'), '_current_fingerprint' => Fingerprint::make(array('new_site' => $domain . $path)));
+        $siteId = wp_insert_site(array('domain' => $domain, 'path' => $path, 'network_id' => isset($payload['network_id']) ? (int) $payload['network_id'] : get_current_network_id(), 'public' => (int) $public));
         if (is_wp_error($siteId)) throw new RuntimeException($siteId->get_error_message());
         return array('site' => $this->siteSnapshot(get_site($siteId)), '_rollback' => array('action' => 'multisite.site.delete', 'payload' => array('id' => (int) $siteId)));
     }
@@ -430,7 +435,7 @@ final class SystemAdapter
         $before = $this->siteSnapshot($site);
         $data = array();
         foreach (array('domain', 'path', 'registered', 'last_updated') as $field) if (array_key_exists($field, $payload)) $data[$field] = (string) $payload[$field];
-        foreach (array('public', 'archived', 'mature', 'spam', 'deleted') as $field) if (array_key_exists($field, $payload)) $data[$field] = (int) (bool) $payload[$field];
+        foreach (array('public', 'archived', 'mature', 'spam', 'deleted') as $field) if (array_key_exists($field, $payload)) $data[$field] = (int) Input::bool($payload, $field);
         if (! empty($context['dry_run'])) return array('before' => $before, 'changes' => $data, '_current_fingerprint' => Fingerprint::make($before));
         $updated = wp_update_site($id, $data);
         if (is_wp_error($updated)) throw new RuntimeException($updated->get_error_message());

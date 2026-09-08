@@ -8,6 +8,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class CoreAdapter
 {
@@ -286,7 +287,7 @@ final class CoreAdapter
         }
         $args = array(
             'taxonomy' => $taxonomy,
-            'hide_empty' => isset($payload['hide_empty']) ? (bool) $payload['hide_empty'] : false,
+            'hide_empty' => Input::bool($payload, 'hide_empty'),
             'number' => isset($payload['per_page']) ? max(1, min(200, (int) $payload['per_page'])) : 100,
             'offset' => isset($payload['offset']) ? max(0, (int) $payload['offset']) : 0,
             'search' => isset($payload['search']) ? sanitize_text_field((string) $payload['search']) : '',
@@ -384,7 +385,7 @@ final class CoreAdapter
         $objectId = isset($payload['object_id']) ? (int) $payload['object_id'] : 0;
         $taxonomy = isset($payload['taxonomy']) ? sanitize_key((string) $payload['taxonomy']) : '';
         $terms = isset($payload['terms']) && is_array($payload['terms']) ? $payload['terms'] : array();
-        $append = ! empty($payload['append']);
+        $append = Input::bool($payload, 'append');
         if (! $objectId || ! taxonomy_exists($taxonomy)) throw new RuntimeException('object_id and valid taxonomy are required.');
         $before = wp_get_object_terms($objectId, $taxonomy, array('fields' => 'ids'));
         if (is_wp_error($before)) throw new RuntimeException($before->get_error_message());
@@ -513,7 +514,7 @@ final class CoreAdapter
         $before = get_option($name, null);
         $value = $payload['value'] ?? null;
         if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make($before));
-        update_option($name, $value, isset($payload['autoload']) ? (bool) $payload['autoload'] : null);
+        update_option($name, $value, array_key_exists('autoload', $payload) ? Input::bool($payload, 'autoload') : null);
         return array('name' => $name, 'value' => get_option($name, null), '_rollback' => array('action' => 'option.update', 'payload' => array('name' => $name, 'value' => $before)));
     }
 

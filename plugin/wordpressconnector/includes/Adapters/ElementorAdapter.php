@@ -10,6 +10,7 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Json;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class ElementorAdapter
 {
@@ -138,7 +139,7 @@ final class ElementorAdapter
             $element = $replacement;
         } else {
             if (isset($payload['settings']) && is_array($payload['settings'])) {
-                $replaceSettings = ! empty($payload['replace_settings']);
+                $replaceSettings = Input::bool($payload, 'replace_settings');
                 $element['settings'] = $replaceSettings
                     ? $payload['settings']
                     : array_replace_recursive(isset($element['settings']) && is_array($element['settings']) ? $element['settings'] : array(), $payload['settings']);

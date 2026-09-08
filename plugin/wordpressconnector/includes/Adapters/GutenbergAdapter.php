@@ -8,6 +8,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class GutenbergAdapter
 {
@@ -83,7 +84,7 @@ final class GutenbergAdapter
             $block = $payload['replace_block'];
         } else {
             if (isset($payload['attrs']) && is_array($payload['attrs'])) {
-                $replaceAttrs = ! empty($payload['replace_attrs']);
+                $replaceAttrs = Input::bool($payload, 'replace_attrs');
                 $block['attrs'] = $replaceAttrs ? $payload['attrs'] : array_merge(isset($block['attrs']) && is_array($block['attrs']) ? $block['attrs'] : array(), $payload['attrs']);
             }
             if (array_key_exists('innerHTML', $payload)) {

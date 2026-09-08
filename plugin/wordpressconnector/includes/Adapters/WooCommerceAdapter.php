@@ -8,6 +8,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class WooCommerceAdapter
 {
@@ -465,7 +466,7 @@ final class WooCommerceAdapter
         if (isset($payload['slug'])) $args['slug'] = wc_sanitize_taxonomy_name((string) $payload['slug']);
         if (isset($payload['type'])) $args['type'] = sanitize_key((string) $payload['type']);
         if (isset($payload['order_by'])) $args['order_by'] = sanitize_key((string) $payload['order_by']);
-        if (isset($payload['has_archives'])) $args['has_archives'] = (bool) $payload['has_archives'];
+        if (array_key_exists('has_archives', $payload)) $args['has_archives'] = Input::bool($payload, 'has_archives');
         if (! $partial && empty($args['name'])) throw new RuntimeException('Attribute name is required.');
         return $args;
     }
