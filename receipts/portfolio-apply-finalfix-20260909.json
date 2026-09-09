@@ -1,0 +1,85 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-apply-finalfix-20260909",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-09T02:33:26+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a0236ece38cd2655f77fae098edee86c07333e22d5fe67a0ac0cdef9d65a5284",
+            "after_fingerprint": "4fb97778f5bfdf11df46448987f840615e96cfebd3f1a36931b3a1b4d9b8eab0"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0091b696f81fee3e00a3a149bd74cbf58849164f8dd831beafd7c2fec07c31ad",
+            "after_fingerprint": "f120d18f44734502696f41cd34bc2d0f0f7eb6b1effcdf91a6ddaa55754582d8"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "55a60187d1471cf934df2cca2575205a7d3321d9849379ed2460b1cef6d29610",
+            "after_fingerprint": "c497c78e73872999e3822466b0f759bab8974a0a303677641eaefe220e4fa77e"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "7560946b87e8a6f0f1bfd906c3ac293c4ef5928100d396d2acdf96a3717033b5",
+            "after_fingerprint": "5d419cee7ea5014b513f7c73057ab06d77bb5787de8303f081317961c90a07fb"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "9adc26af45fa8f9538949cea36f02493e1aaf201a53cdb0e4c7a788260f061f9",
+            "after_fingerprint": "e761d289d7fa5becc5e7626bb51596c1d7e037ab2b845adb4fd92b6ee0e71e9c"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "012bc05587be9fdf789599c142b5b7fe2bd8739b19a35f80e652c79ead272292",
+            "after_fingerprint": "cbbd16dbc72a50d865293f6b64f473c09e2201895f9fa65cce3f4beb3c14981b"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8615dde9c0ed6e6d0f4606a54070f7e5309d327c2fcb1884901fb1d44a7991dc",
+            "after_fingerprint": "85405bac8a1185056c9140258180fba0979fb641dcc1722ca4ae70cb12be3083"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "5ad188d9b2454448b6039eae9b9e24c9e69d7dc73b1a9cf18fb131d6232c366e",
+            "after_fingerprint": "1575054a77deaea5e159f7075e5797066f168699a7bd7e92f063c42e270d8408"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "e5dbb9de0e2b483357e980965aeafeeda9cddd72a620f57a9d7741d0df417d44",
+            "after_fingerprint": "5be16376792414051e77311a1e14cbd826a83625f75a60d6f10ba2239a620f6f"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "88ce8dac9e133a42040d6a1e88ee51dfe5b63814bd055986c37c68036ad8da37",
+            "after_fingerprint": "9e156e89600b70d978994ac1e0632c13c500be2ee4980228ded9f167bc20dbaa"
+        }
+    ],
+    "rollback_available": true
+}
