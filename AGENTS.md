@@ -43,6 +43,7 @@ Preserve:
 - every third-party GitHub Action pinned to a full commit SHA;
 - release ZIP and SPDX SBOM built deterministically, reproducibly and attested against exact release bytes;
 - plugin-declared PHP support covered by CI rather than assumed;
+- uninstall removes plugin-owned settings, OIDC/transient runtime state, mutation locks, rollback snapshots and idempotency state;
 - temporary migration or diagnostic workflows removed immediately after their one-time purpose is complete.
 
 ## Discovery boundary
