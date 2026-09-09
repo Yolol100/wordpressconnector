@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/temp-doctorcura-dynamic-pagination-fix-v9.yml'
       - 'scripts/temp-doctorcura-dynamic-pagination-fix-v9.py'
+      - 'scripts/temp-doctorcura-dynamic-pagination-fix-v10-1.py'
 
 permissions:
   contents: read
@@ -13,15 +14,15 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Apply guarded dynamic pagination V10
-        run: python3 scripts/temp-doctorcura-dynamic-pagination-fix-v9.py
+      - name: Apply cache-aware guarded dynamic pagination V10
+        run: python3 scripts/temp-doctorcura-dynamic-pagination-fix-v10-1.py
       - name: Upload V10 verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
