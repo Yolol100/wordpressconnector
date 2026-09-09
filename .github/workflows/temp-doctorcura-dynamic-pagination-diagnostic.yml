@@ -1,0 +1,31 @@
+name: Temporary DoctorCura Dynamic Pagination Diagnostic
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-dynamic-pagination-diagnostic.yml'
+      - 'scripts/temp-doctorcura-dynamic-pagination-diagnostic.py'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: https://doctorcura.com
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run read-only diagnostic
+        run: python3 scripts/temp-doctorcura-dynamic-pagination-diagnostic.py
+      - name: Upload diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-dynamic-pagination-diagnostic
+          path: doctorcura-dynamic-pagination-diagnostic.json
+          if-no-files-found: error
+          retention-days: 1
