@@ -1,0 +1,140 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-human-final-qa-d-20260909",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-09T17:10:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "64dc7e0b89b508fb60c22aa553ef09889bc7ab74eefd9a9946deda69f065cece",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8c0672a6bc55b5132b1fcf371be162f0847a62e93512760074de1e9117f0cbf9",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "9406054226b3849fc805880f2ff91177dcbe494a0ed1604d8aaf10a6951aa1d4",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "1720a523316c1895d250e8b8cc543351f2dc6fe0bb709865be1fa0f7828e096d",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a85fd96418e314d6494b24dd72d2e6961b65db8d0a616e6550ea0663593a50b1",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "79050b56391f8187dc205319b929a6220bc075a8e5c5fd0f6670058f1c07dae4",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8697f0111153756a4242122597e540f2bd5e0c19bfacb3c0b26d30f041b1094c",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "3936cc5ab5641023d7fb58eac3c3bd7b9711ec48c1b2e4d305cb293618ec6820",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ff47c35c3278fc97a3152becb8cc5b8c8c69286a292bdf93a8a9c0dd852533c3",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b82fd84b4e0532104bdbcd5a80750d5b772f644031b3663ffd614539b487ee92",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 10,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "9dc95bd37eb43c99dbdbd2cd53d69aa5ee8d0a592365070977da3596b6da3fb9",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 11,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "44247c477e5145f11624aa68000dc989c7be40f0ecb119631894f9b177da921d",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 12,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ac1955547bdb4565a5a0f1d3722f03cbef4fb36dbc6e00cbafe202fb8c0634a9",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 13,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "efdbb141fa3eff88adeebeabbae2394996139f8b8c7359ce4470c03ec6e39b48",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 14,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "caafec18b26326fa27f5387ba3c6de51999997ae26bfa76ff5fd6768ecb78dfb",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 15,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "efe672083a75d0339004a365ec33df0a79a23be58b09e4f3bccc4fb9d68c823a",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 16,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b6793233bc49100a9643f9f118ab5ec790a96e8099eaef9287843e16c1d3c68d",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        },
+        {
+            "index": 17,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "bd3da2809c06db638ba2ab3ec042611a288eb8c925d434297500af305b650e75",
+            "after_fingerprint": "1da3c5dd820981e5f1ed4f5bde6b11dfb26176617f11cc58331700b3618c2e43"
+        }
+    ]
+}
