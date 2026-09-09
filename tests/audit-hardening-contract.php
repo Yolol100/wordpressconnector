@@ -49,14 +49,7 @@ if (2 !== substr_count($sources['updater'], "'capability' => 'update_plugins'"))
 }
 
 $require('package adapter', array("'capability' => 'install_plugins'"));
-
-$require('builder', array(
-    "'algorithm': 'SHA1'",
-    "'packageVerificationCode'",
-    'package_verification_hashes',
-    "sorted(package_verification_hashes)",
-));
-
+$require('builder', array("'algorithm': 'SHA1'", "'packageVerificationCode'", 'package_verification_hashes', "sorted(package_verification_hashes)"));
 $require('uninstall', array(
     'WP_UNINSTALL_PLUGIN',
     'wpconnector_rest_enabled',
@@ -68,6 +61,9 @@ $require('uninstall', array(
     'wpconnector_mutation_lock',
     'wpconnector_snapshot_',
     'wpconnector_processed_',
+    "delete_transient('wpconnector_github_oidc_jwks_v1')",
+    '_transient_wpconnector_oidc_jti_',
+    '_transient_timeout_wpconnector_oidc_jti_',
     'get_sites(',
     'switch_to_blog(',
     'restore_current_blog(',
@@ -97,10 +93,7 @@ $require('release', array(
 ));
 $require('agents', array('bash scripts/run-contracts.sh', 'full commit SHA', 'uninstall removes'));
 
-foreach (array(
-    $root . '/.github/workflows/audit-updater-apply.yml',
-    $root . '/scripts/apply-updater-hardening.py',
-) as $temporary) {
+foreach (array($root . '/.github/workflows/audit-updater-apply.yml', $root . '/scripts/apply-updater-hardening.py') as $temporary) {
     if (file_exists($temporary)) {
         fwrite(STDERR, "Temporary self-writing audit helper must not remain in the repository: {$temporary}\n");
         exit(1);
