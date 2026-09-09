@@ -1,0 +1,12 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "doctorcura-connection-check-20260909",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-09T15:39:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "error_code": "connector_error"
+}
