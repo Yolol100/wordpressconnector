@@ -1,98 +1,160 @@
 #!/usr/bin/env python3
-import base64
-import hashlib
-import json
-import os
-import re
-import subprocess
-import tempfile
+import base64, json, os, re, secrets, subprocess, tempfile
 
-SITE = os.environ.get('SITE_URL', '').rstrip('/')
-USER = os.environ.get('REST_USERNAME', '')
-PASSWORD = os.environ.get('REST_APP_PASSWORD', '')
-SNIPPET_API = f'{SITE}/wp-json/code-snippets/v1/snippets/43'
-V8_MARKER = 'DoctorCura blog pagination canonical cleanup V8'
+SITE=os.environ.get('SITE_URL','').rstrip('/')
+USER=os.environ.get('REST_USERNAME','')
+PASSWORD=os.environ.get('REST_APP_PASSWORD','')
+API=f'{SITE}/wp-json/code-snippets/v1/snippets/43'
+MARKER='DoctorCura blog pagination origin cleanup V8.1'
 
+BLOCK=r'''
 
-def auth_header():
-    return 'Basic ' + base64.b64encode(f'{USER}:{PASSWORD}'.encode()).decode()
-
-
-def read_snippet():
-    fd, path = tempfile.mkstemp(prefix='dc-snippet-', suffix='.json')
-    os.close(fd)
-    p = subprocess.run([
-        'curl','--silent','--show-error','--location','--connect-timeout','10','--max-time','30',
-        '--header',f'Authorization: {auth_header()}','--header','Accept: application/json',
-        '--output',path,'--write-out','%{http_code}',SNIPPET_API
-    ],capture_output=True,text=True,timeout=40)
-    status=int(p.stdout.strip()) if p.stdout.strip().isdigit() else 0
-    data=json.load(open(path,encoding='utf-8')) if status==200 else {}
-    os.unlink(path)
-    if p.returncode or status!=200:
-        raise RuntimeError(f'Cannot read snippet 43: HTTP {status}')
-    code=str(data.get('code') or '')
-    return {
-        'id':int(data.get('id') or 0),
-        'name':str(data.get('name') or data.get('display_name') or ''),
-        'active':bool(data.get('active')),
-        'v8_marker_present':V8_MARKER in code,
-        'code_sha256':hashlib.sha256(code.encode()).hexdigest(),
-        'signals':{
-            'wpseo_canonical_count':code.count('wpseo_canonical'),
-            'template_redirect_count':code.count('template_redirect'),
-            'x_robots_count':code.count('X-Robots-Tag'),
-            'rocket_clean_domain_count':code.count('rocket_clean_domain'),
-            'purge_helper_present':'one-time cache purge helper' in code,
-        }
+/* DoctorCura blog pagination origin cleanup V8.1 - 2026-09-09 */
+add_filter( 'wpseo_canonical', function ( $canonical ) {
+    $path = wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH );
+    if ( ! is_string( $path ) ) {
+        return $canonical;
     }
+    if ( preg_match( '#^/(?:fr/|en/)?blogs/(4|5)/?$#', $path, $m ) ) {
+        $prefix = preg_match( '#^/(fr|en)/#', $path, $lang ) ? '/' . $lang[1] : '';
+        return home_url( $prefix . '/blogs/' . (int) $m[1] . '/' );
+    }
+    return $canonical;
+}, 99 );
 
+add_action( 'template_redirect', function () {
+    $path = wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH );
+    if ( ! is_string( $path ) ) {
+        return;
+    }
+    if ( preg_match( '#^/(?:fr/|en/)?blogs/page/5/?$#', $path ) ) {
+        $prefix = preg_match( '#^/(fr|en)/#', $path, $lang ) ? '/' . $lang[1] : '';
+        wp_safe_redirect( home_url( $prefix . '/blogs/5/' ), 301, 'DoctorCura SEO pagination cleanup' );
+        exit;
+    }
+    if ( preg_match( '#^/(?:fr/|en/)?blogs/6/?$#', $path ) ) {
+        global $wp_query;
+        if ( $wp_query instanceof WP_Query ) {
+            $wp_query->set_404();
+        }
+        status_header( 404 );
+        nocache_headers();
+        $template = get_404_template();
+        if ( $template ) {
+            include $template;
+        } else {
+            echo '404 Not Found';
+        }
+        exit;
+    }
+}, 0 );
+'''
 
-def probe(url):
-    td=tempfile.mkdtemp(prefix='dc-layer-')
-    hdr=os.path.join(td,'headers.txt'); body=os.path.join(td,'body.html')
-    p=subprocess.run([
-        'curl','--silent','--show-error','--location','--compressed','--connect-timeout','8','--max-time','25',
-        '--user-agent','Mozilla/5.0 (compatible; DoctorCuraPaginationLayerAudit/1.0)',
-        '--dump-header',hdr,'--output',body,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}',url
-    ],capture_output=True,text=True,timeout=35)
+def auth():
+    return 'Basic '+base64.b64encode(f'{USER}:{PASSWORD}'.encode()).decode()
+
+def request(method,url,payload=None,auth_required=False,follow=True):
+    fd,path=tempfile.mkstemp(prefix='dc-',suffix='.out'); os.close(fd)
+    cmd=['curl','--silent','--show-error','--connect-timeout','10','--max-time','45','--output',path,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}']
+    if follow: cmd.append('--location')
+    if auth_required: cmd += ['--header',f'Authorization: {auth()}']
+    if method=='POST': cmd += ['--request','POST','--header','X-HTTP-Method-Override: PUT','--header','Content-Type: application/json','--data-binary','@'+payload]
+    p=subprocess.run(cmd+[url],capture_output=True,text=True,timeout=55)
     parts=p.stdout.strip().split('\t'); status=int(parts[0]) if parts and parts[0].isdigit() else 0
     final=parts[1] if len(parts)>1 else ''; redirects=int(parts[2]) if len(parts)>2 and parts[2].isdigit() else 0
-    html=open(body,'rb').read().decode('utf-8','ignore') if os.path.exists(body) else ''
-    raw=open(hdr,'rb').read().decode('iso-8859-1','replace') if os.path.exists(hdr) else ''
-    blocks=[b for b in re.split(r'\r?\n\r?\n',raw) if b.strip().startswith('HTTP/')]
-    last=blocks[-1] if blocks else ''
-    headers={}
-    for line in last.splitlines()[1:]:
-        if ':' in line:
-            k,v=line.split(':',1); headers.setdefault(k.lower().strip(),[]).append(v.strip())
-    def one(pattern):
-        m=re.search(pattern,html,re.I|re.S); return m.group(1).strip() if m else None
-    canonical=one(r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)') or one(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical[^"\']*["\']')
-    robots=one(r'<meta[^>]+name=["\']robots["\'][^>]+content=["\']([^"\']+)') or one(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']robots["\']')
-    return {
-        'url':url,'status':status,'final_url':final,'redirects':redirects,'canonical':canonical,'meta_robots':robots,
-        'cache_headers':{k:headers.get(k) for k in ('cache-control','x-cache','x-rocket-cache','cf-cache-status','age','vary') if headers.get(k)},
-        'body_sha256':hashlib.sha256(html.encode()).hexdigest(),
-        'curl_error':None if p.returncode==0 else p.stderr.strip(),
-    }
+    raw=open(path,'rb').read(); os.unlink(path)
+    if p.returncode: raise RuntimeError(p.stderr.strip() or 'curl failed')
+    return status,final,redirects,raw
 
+def get_snippet():
+    status,_,_,raw=request('GET',API,auth_required=True)
+    if status!=200: raise RuntimeError(f'Cannot read snippet: HTTP {status}')
+    d=json.loads(raw.decode('utf-8'))
+    if int(d.get('id') or 0)!=43 or 'doctorcura seo indexation cleanup' not in str(d.get('name') or d.get('display_name') or '').lower() or not d.get('active'):
+        raise RuntimeError('Snippet 43 identity/state validation failed')
+    return d
+
+def update_code(code):
+    fd,path=tempfile.mkstemp(prefix='dc-update-',suffix='.json'); os.close(fd)
+    with open(path,'w',encoding='utf-8') as f: json.dump({'code':code},f,separators=(',',':'))
+    try: status,_,_,raw=request('POST',API,payload=path,auth_required=True)
+    finally: os.unlink(path)
+    if status!=200: raise RuntimeError(f'Snippet update failed: HTTP {status}')
+    return json.loads(raw.decode('utf-8'))
+
+def purge_helper(token):
+    return r'''
+
+/* DoctorCura one-time cache purge helper - removed automatically */
+add_action( 'init', function () {
+    $expected='__TOKEN__';
+    $actual=isset($_GET['doctorcura_seo_purge']) ? (string) $_GET['doctorcura_seo_purge'] : '';
+    if ( ! hash_equals($expected,$actual) ) return;
+    if ( function_exists('rocket_clean_domain') ) rocket_clean_domain();
+    if ( function_exists('wp_cache_flush') ) wp_cache_flush();
+    header('X-DoctorCura-SEO-Purge: done');
+}, 1 );
+'''.replace('__TOKEN__',token)
+
+def purge(token):
+    status,_,_,_=request('GET',f'{SITE}/?doctorcura_seo_purge={token}')
+    if status!=200: raise RuntimeError(f'Cache purge trigger failed: HTTP {status}')
+
+def canonical(html):
+    for pat in [r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)',r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical[^"\']*["\']']:
+        m=re.search(pat,html,re.I|re.S)
+        if m:return m.group(1).strip()
+    return None
+
+def probe(url,follow=True):
+    status,final,redirects,raw=request('GET',url,follow=follow)
+    html=raw.decode('utf-8','ignore')
+    return {'url':url,'status':status,'final_url':final,'redirects':redirects,'canonical':canonical(html)}
+
+def verify():
+    urls=[
+      f'{SITE}/blogs/4/',f'{SITE}/blogs/5/',
+      f'{SITE}/fr/blogs/4/',f'{SITE}/fr/blogs/5/',
+      f'{SITE}/en/blogs/4/',f'{SITE}/en/blogs/5/',
+      f'{SITE}/fr/blogs/page/5/',f'{SITE}/fr/blogs/6/'
+    ]
+    rows=[probe(u) for u in urls]
+    expected=[
+      (200,f'{SITE}/blogs/4/',f'{SITE}/blogs/4/'),(200,f'{SITE}/blogs/5/',f'{SITE}/blogs/5/'),
+      (200,f'{SITE}/fr/blogs/4/',f'{SITE}/fr/blogs/4/'),(200,f'{SITE}/fr/blogs/5/',f'{SITE}/fr/blogs/5/'),
+      (200,f'{SITE}/en/blogs/4/',f'{SITE}/en/blogs/4/'),(200,f'{SITE}/en/blogs/5/',f'{SITE}/en/blogs/5/')]
+    for row,(status,final,canon) in zip(rows[:6],expected):
+        if row['status']!=status or row['final_url']!=final or row['canonical']!=canon:
+            raise RuntimeError('Canonical verification failed: '+json.dumps(row,separators=(',',':')))
+    alias=rows[6]
+    if alias['status']!=200 or alias['final_url']!=f'{SITE}/fr/blogs/5/' or alias['redirects']<1:
+        raise RuntimeError('Duplicate alias redirect verification failed: '+json.dumps(alias,separators=(',',':')))
+    p6=rows[7]
+    if p6['status']!=404 or p6['final_url']!=f'{SITE}/fr/blogs/6/':
+        raise RuntimeError('Out-of-range 404 verification failed: '+json.dumps(p6,separators=(',',':')))
+    return rows
+
+def restore(original):
+    token=secrets.token_urlsafe(24)
+    try:
+        update_code(original.rstrip()+purge_helper(token)+'\n'); purge(token)
+    finally:
+        update_code(original)
 
 def main():
-    if SITE!='https://doctorcura.com' or not USER or not PASSWORD:
-        raise RuntimeError('DoctorCura environment incomplete')
-    snippet=read_snippet()
-    urls=[
-        f'{SITE}/blogs/4/', f'{SITE}/blogs/5/',
-        f'{SITE}/fr/blogs/4/', f'{SITE}/fr/blogs/5/',
-        f'{SITE}/en/blogs/4/', f'{SITE}/en/blogs/5/',
-        f'{SITE}/fr/blogs/6/', f'{SITE}/fr/blogs/page/5/',
-        f'{SITE}/fr/blogs/4/?doctorcura_diag=20260909', f'{SITE}/fr/blogs/5/?doctorcura_diag=20260909'
-    ]
-    result={'mode':'read_only_diagnostic','snippet':snippet,'probes':[probe(u) for u in urls]}
-    with open('doctorcura-pagination-fix-verification.json','w',encoding='utf-8') as f:
-        json.dump(result,f,ensure_ascii=False,indent=2)
-    print(json.dumps({'snippet':snippet,'probe_count':len(urls)},ensure_ascii=False))
+    if SITE!='https://doctorcura.com' or not USER or not PASSWORD: raise RuntimeError('DoctorCura environment incomplete')
+    d=get_snippet(); original=str(d.get('code') or '')
+    final=original if MARKER in original else original.rstrip()+BLOCK+'\n'
+    applied=False
+    try:
+        token=secrets.token_urlsafe(24)
+        update_code(final.rstrip()+purge_helper(token)+'\n'); applied=True; purge(token); update_code(final)
+        rb=get_snippet(); code=str(rb.get('code') or '')
+        if MARKER not in code or 'one-time cache purge helper' in code: raise RuntimeError('Snippet readback failed')
+        rows=verify()
+        with open('doctorcura-pagination-fix-verification.json','w',encoding='utf-8') as f: json.dump({'snippet_id':43,'active':True,'marker':MARKER,'verification':rows},f,indent=2)
+    except Exception:
+        if applied: restore(original)
+        raise
 
-if __name__=='__main__':
-    main()
+if __name__=='__main__': main()
