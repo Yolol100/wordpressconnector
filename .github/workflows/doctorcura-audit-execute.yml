@@ -1,0 +1,126 @@
+name: DoctorCura SEO Audit Execute
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+      expected_head_sha:
+        required: true
+        type: string
+      request_id:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: doctorcura-seo-audit-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Revalidate trusted DoctorCura audit request
+        env:
+          GH_REPO_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          REQUEST_ID: ${{ inputs.request_id }}
+          REPOSITORY_OWNER: ${{ github.repository_owner }}
+          TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]] || exit 1
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]] || exit 1
+          [[ "$REQUEST_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$ ]] || exit 1
+          pr="$RUNNER_TEMP/pr.json"
+          code=$(curl --silent --show-error --location --output "$pr" --write-out '%{http_code}' --header 'Accept: application/vnd.github+json' --header "Authorization: Bearer ${GH_REPO_TOKEN}" --header 'X-GitHub-Api-Version: 2026-03-10' "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+          [[ "$code" == '200' ]] || exit 1
+          python3 - "$pr" <<'PY'
+          import json,os,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          repo=os.environ['GITHUB_REPOSITORY']; owner=os.environ['REPOSITORY_OWNER']; trusted=os.environ.get('TRUSTED_REQUEST_ACTOR',''); expected=os.environ['EXPECTED_HEAD_SHA']
+          actor=(p.get('user') or {}).get('login','')
+          ok=(p.get('state')=='open' and actor in {owner,trusted} and actor and (p.get('head') or {}).get('sha')==expected and ((p.get('head') or {}).get('repo') or {}).get('full_name')==repo and ((p.get('base') or {}).get('repo') or {}).get('full_name')==repo and (p.get('base') or {}).get('ref')=='main')
+          if not ok: raise SystemExit('Trusted DoctorCura audit validation failed.')
+          PY
+
+      - name: Run fixed read-only DoctorCura audit
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+          REQUEST_ID: ${{ inputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
+          root="$RUNNER_TEMP/doctorcura-seo-audit"
+          rm -rf "$root" && mkdir -p "$root"
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+
+          health_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/health.json" --write-out '%{http_code}' "$base/health")
+          [[ "$health_code" == '200' ]] || { echo "DoctorCura health failed: HTTP $health_code" >&2; exit 1; }
+
+          call_action() {
+            suffix="$1"; action="$2"; payload="$3"
+            req="$root/request-$suffix.json"; out="$root/result-$suffix.json"
+            python3 - "$req" "$REQUEST_ID" "$suffix" "$action" "$payload" <<'PY'
+          import json,sys
+          path,rid,suffix,action,payload=sys.argv[1:]
+          request_id=(rid+'-'+suffix)[:100]
+          data={'version':1,'request_id':request_id,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)}
+          with open(path,'w',encoding='utf-8') as f: json.dump(data,f,separators=(',',':'))
+          PY
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$req" --output "$out" --write-out '%{http_code}' "$base/execute")
+            if [[ "$code" != '200' ]]; then
+              python3 - "$out" "$action" "$code" <<'PY'
+          import json,sys
+          with open(sys.argv[1],'w',encoding='utf-8') as f: json.dump({'ok':False,'action':sys.argv[2],'error':'transport_http_'+sys.argv[3]},f)
+          PY
+            fi
+          }
+
+          call_action discover connector.discover '{}'
+          call_action doctor system.doctor '{}'
+          call_action plugins plugin.list '{}'
+          call_action catalog plugin.settings.catalog '{}'
+          call_action rocket plugin.settings.inspect '{"plugin":"wp_rocket"}'
+
+          python3 - "$root" <<'PY'
+          import json,os,sys
+          root=sys.argv[1]
+          def load(name):
+              try:
+                  with open(os.path.join(root,name),encoding='utf-8') as f: return json.load(f)
+              except Exception as e: return {'ok':False,'error':'unreadable_result'}
+          def data(result): return result.get('data') if isinstance(result.get('data'),dict) else {}
+          health=load('health.json'); discover=load('result-discover.json'); doctor=load('result-doctor.json'); plugins=load('result-plugins.json'); catalog=load('result-catalog.json'); rocket=load('result-rocket.json')
+          dd=data(discover); pd=data(plugins); cd=data(catalog); rd=data(rocket)
+          safe_plugins=[]
+          for p in pd.get('plugins',[]) if isinstance(pd.get('plugins'),list) else []:
+              if isinstance(p,dict): safe_plugins.append({k:p.get(k) for k in ('file','name','version','active','network_active')})
+          safe_catalog=[]
+          for p in cd.get('plugins',[]) if isinstance(cd.get('plugins'),list) else []:
+              if isinstance(p,dict): safe_catalog.append({k:p.get(k) for k in ('file','name','version','active','id','mode','actions','note') if k in p})
+          summary={
+            'target':'https://doctorcura.com',
+            'connector':{'ok':health.get('ok'),'version':health.get('version'),'transport':health.get('transport'),'gates':health.get('gates')},
+            'discover':{'ok':discover.get('ok'),'error':discover.get('error'),'public_repository_mode':dd.get('public_repository_mode'),'wordpress':dd.get('wordpress'),'theme':dd.get('theme'),'builders':dd.get('builders')},
+            'doctor':{'ok':doctor.get('ok'),'error':doctor.get('error'),'checks':data(doctor)},
+            'plugins':{'ok':plugins.get('ok'),'error':plugins.get('error'),'items':safe_plugins},
+            'plugin_control':{'ok':catalog.get('ok'),'error':catalog.get('error'),'items':safe_catalog,'supported_setting_profiles':cd.get('supported_setting_profiles')},
+            'wp_rocket':{'ok':rocket.get('ok'),'error':rocket.get('error'),'plugin':rd.get('plugin'),'settings':rd.get('settings'),'fingerprint':rd.get('fingerprint')}
+          }
+          print('DOCTORCURA_AUDIT_SUMMARY_BEGIN')
+          print(json.dumps(summary,ensure_ascii=False,indent=2,sort_keys=True))
+          print('DOCTORCURA_AUDIT_SUMMARY_END')
+          PY
