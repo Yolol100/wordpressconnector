@@ -1,0 +1,50 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-human-format-phase01-write",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-09T14:59:49+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "3ec29afbe5d86d343b14adc8d8999d4773552b9a0feea5fb663046a2e8559830",
+            "after_fingerprint": "cf6a24a597cc8869b00defcd6f58181ecf188b1f6c396fbcc901b50789834a56"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a175f53153fdfea347d0a10eb5f1adffcf7b2f12969dfde8683e6409d3e2cfdb",
+            "after_fingerprint": "b1f85f5ac12131f4520bd4f2abd713663ec091016c6d86fd6edb5022dabb1cdb"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b21e2359ac5ecf99c4e519929a95c75f940c8d985fa484e1153fde9fb234287b",
+            "after_fingerprint": "3d71ba83a457332821ef97d7328944d8e3507cd8280b3919cab5bad7e927cb1b"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "3ac7d3cbfd4067546cab73fc9041c02691e44441514a66806ff48819536c8685",
+            "after_fingerprint": "cb757eb8e6a39cb8e53430221e417ddef5b3987acc6201223219da2b15a65963"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "38ea3736b1836d5cf26e7c02e0fb93edbaceaad415c12bf7f9e930f94252d840",
+            "after_fingerprint": "885bdd883a34709524f4cdbf0dadd55018b620c0b3edb9c319f4a3b1f4fa8878"
+        }
+    ],
+    "rollback_available": true
+}
