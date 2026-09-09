@@ -1,0 +1,49 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-human-phase09-20260909-dry",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-09T15:26:02+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "2be04b000faee1731e0b801342c03ad2b5cdf3100a6e4ca3d4b7c079cf9e89c8",
+            "after_fingerprint": "b2fbaeccc811337b5874fe3e5084f5d43abf4749a281c07b184de067f6eb204c"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "58ebfd82067b528b86acb8d98281bfee315500ee911916fedd5426a1b4764de3",
+            "after_fingerprint": "d5e463ba0d0809ce868eb23ea0ee127902907f69fe7c9d262dea2bf8aea2f154"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "e064ee1d7311077ff17656b99b8f1c14332f199171b77e46c5e0bf5ad118e467",
+            "after_fingerprint": "e46380a678ec911ba21ca16e03e144d308c7150bd18c2102994e01ba060c232f"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "9c0c3c71bee73d90da4c1a3771c4e57cc1538b2fdc68c29e35ef32a95ed34a2e",
+            "after_fingerprint": "2824da572ff0893f3d4220a2164b5fec9ed75efdad04d138773457f82e12770c"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a77fbd7fe4e55f18a8edff803a7af2693fec636b1430260a60e31958173238e8",
+            "after_fingerprint": "a503ace0d722722356e1284545eb40aad79879aba4e09ebe1f42b225ee4ab070"
+        }
+    ]
+}
