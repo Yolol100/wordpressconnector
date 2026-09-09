@@ -1,0 +1,177 @@
+name: Temporary DoctorCura Pagination Fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-pagination-fix.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Update snippet 43, purge caches, and verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
+          root="$RUNNER_TEMP/dc-pagination-fix"
+          mkdir -p "$root"
+          api="${SITE_URL%/}/wp-json/code-snippets/v1/snippets/43"
+
+          get_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/original.json" --write-out '%{http_code}' "$api")
+          [[ "$get_code" == '200' ]] || { echo "Cannot read snippet 43: HTTP $get_code" >&2; exit 1; }
+
+          python3 - "$root/original.json" "$root/update-with-purge.json" "$root/update-final.json" "$root/original-update.json" <<'PY'
+          import json, secrets, sys
+          src,with_purge_path,final_path,orig_path=sys.argv[1:]
+          d=json.load(open(src,encoding='utf-8'))
+          if int(d.get('id') or 0) != 43:
+              raise SystemExit('Snippet ID mismatch')
+          name=str(d.get('name') or d.get('display_name') or '')
+          if 'doctorcura seo indexation cleanup' not in name.lower():
+              raise SystemExit('Snippet name mismatch: '+name)
+          if not d.get('active'):
+              raise SystemExit('Snippet 43 is not active')
+          original=str(d.get('code') or '')
+          marker='DoctorCura blog pagination canonical cleanup V8'
+          if marker in original:
+              final=original
+          else:
+              block=r'''
+
+/* DoctorCura blog pagination canonical cleanup V8 - 2026-09-09 */
+add_filter( 'wpseo_canonical', function ( $canonical ) {
+    $path = wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH );
+    if ( is_string( $path ) && preg_match( '#^/fr/blogs/([2-5])/?$#', $path, $matches ) ) {
+        return home_url( '/fr/blogs/' . (int) $matches[1] . '/' );
+    }
+    return $canonical;
+}, 20 );
+
+add_action( 'template_redirect', function () {
+    $path = wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '', PHP_URL_PATH );
+    if ( ! is_string( $path ) ) {
+        return;
+    }
+
+    if ( preg_match( '#^/fr/blogs/page/5/?$#', $path ) ) {
+        wp_safe_redirect( home_url( '/fr/blogs/5/' ), 301, 'DoctorCura SEO pagination cleanup' );
+        exit;
+    }
+
+    if ( preg_match( '#^/fr/blogs/6/?$#', $path ) ) {
+        global $wp_query;
+        if ( $wp_query instanceof WP_Query ) {
+            $wp_query->set_404();
+        }
+        status_header( 404 );
+        nocache_headers();
+        $template = get_404_template();
+        if ( $template ) {
+            include $template;
+        }
+        exit;
+    }
+}, 0 );
+'''
+              final=original.rstrip()+block+'\n'
+          nonce=secrets.token_urlsafe(24)
+          purge=r'''
+
+/* DoctorCura one-time cache purge helper - removed automatically */
+add_action( 'init', function () {
+    $expected = '__PURGE_TOKEN__';
+    $actual = isset( $_GET['doctorcura_seo_purge'] ) ? (string) $_GET['doctorcura_seo_purge'] : '';
+    if ( ! hash_equals( $expected, $actual ) ) {
+        return;
+    }
+    if ( function_exists( 'rocket_clean_domain' ) ) {
+        rocket_clean_domain();
+    }
+    if ( function_exists( 'wp_cache_flush' ) ) {
+        wp_cache_flush();
+    }
+    header( 'X-DoctorCura-SEO-Purge: done' );
+}, 1 );
+'''.replace('__PURGE_TOKEN__',nonce)
+          json.dump({'code':final+purge},open(with_purge_path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'code':final},open(final_path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'code':original},open(orig_path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          open(with_purge_path+'.token','w',encoding='utf-8').write(nonce)
+          PY
+
+          update_snippet() {
+            payload="$1"; out="$2"
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --header 'Accept: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
+            [[ "$code" == '200' ]] || return 1
+          }
+
+          rollback() {
+            echo 'Rolling back snippet 43.' >&2
+            update_snippet "$root/original-update.json" "$root/rollback.json" || true
+          }
+          trap 'rollback' ERR
+
+          update_snippet "$root/update-with-purge.json" "$root/update1.json"
+          token=$(cat "$root/update-with-purge.json.token")
+          purge_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 45 --output /dev/null --write-out '%{http_code}' "${SITE_URL%/}/?doctorcura_seo_purge=${token}")
+          [[ "$purge_code" == '200' || "$purge_code" == '301' || "$purge_code" == '302' ]] || { echo "Cache purge trigger failed: HTTP $purge_code" >&2; false; }
+
+          update_snippet "$root/update-final.json" "$root/update2.json"
+          readback_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/readback.json" --write-out '%{http_code}' "$api")
+          [[ "$readback_code" == '200' ]] || false
+          python3 - "$root/readback.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          code=str(d.get('code') or '')
+          if 'DoctorCura blog pagination canonical cleanup V8' not in code:
+              raise SystemExit('V8 marker missing after update')
+          if 'one-time cache purge helper' in code:
+              raise SystemExit('Temporary purge helper still present')
+          if not d.get('active'):
+              raise SystemExit('Snippet became inactive')
+          PY
+
+          trap - ERR
+
+          python3 - "$root/verify.json" <<'PY'
+          import hashlib,json,os,re,subprocess,sys,tempfile
+          out=sys.argv[1]
+          urls=['https://doctorcura.com/fr/blogs/4/','https://doctorcura.com/fr/blogs/5/','https://doctorcura.com/fr/blogs/6/','https://doctorcura.com/fr/blogs/page/5/']
+          def probe(url):
+              td=tempfile.mkdtemp(prefix='dc-verify-'); hdr=os.path.join(td,'h'); body=os.path.join(td,'b')
+              p=subprocess.run(['curl','--silent','--show-error','--location','--compressed','--connect-timeout','8','--max-time','25','--user-agent','Mozilla/5.0 (compatible; DoctorCuraPaginationVerify/1.0)','--dump-header',hdr,'--output',body,'--write-out','%{http_code}\t%{url_effective}',url],capture_output=True,text=True,timeout=30)
+              parts=p.stdout.strip().split('\t',1); status=int(parts[0]) if parts and parts[0].isdigit() else 0; final=parts[1] if len(parts)>1 else ''
+              data=open(body,'rb').read().decode('utf-8','ignore') if os.path.exists(body) else ''
+              def one(pattern):
+                  m=re.search(pattern,data,re.I|re.S); return m.group(1).strip() if m else None
+              canonical=one(r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)') or one(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical[^"\']*["\']')
+              robots=one(r'<meta[^>]+name=["\']robots["\'][^>]+content=["\']([^"\']+)') or one(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']robots["\']')
+              return {'url':url,'status':status,'final_url':final,'canonical':canonical,'meta_robots':robots,'visible_sha256':hashlib.sha256(re.sub(r'\s+',' ',re.sub(r'<[^>]+>',' ',data)).encode()).hexdigest(),'curl_error':None if p.returncode==0 else p.stderr.strip()}
+          rows=[probe(u) for u in urls]
+          json.dump(rows,open(out,'w',encoding='utf-8'),indent=2)
+          p4,p5,p6,alias=rows
+          if p4['status']!=200 or p4['final_url']!='https://doctorcura.com/fr/blogs/4/' or p4['canonical']!='https://doctorcura.com/fr/blogs/4/': raise SystemExit('page 4 verification failed')
+          if p5['status']!=200 or p5['final_url']!='https://doctorcura.com/fr/blogs/5/' or p5['canonical']!='https://doctorcura.com/fr/blogs/5/': raise SystemExit('page 5 verification failed')
+          if alias['final_url']!='https://doctorcura.com/fr/blogs/5/' or alias['status']!=200: raise SystemExit('page/5 redirect verification failed')
+          if p6['status']!=404 or p6['final_url']!='https://doctorcura.com/fr/blogs/6/': raise SystemExit('page 6 404 verification failed')
+          PY
+          cp "$root/verify.json" ./doctorcura-pagination-fix-verification.json
+
+      - name: Upload verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-pagination-fix-verification
+          path: doctorcura-pagination-fix-verification.json
+          if-no-files-found: error
+          retention-days: 1
