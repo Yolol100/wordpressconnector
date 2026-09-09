@@ -31,6 +31,7 @@ jobs:
           PR_NUMBER: ${{ inputs.pr_number }}
           EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
           OWNER: ${{ github.repository_owner }}
+          TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
         shell: bash
         run: |
           set -euo pipefail
@@ -38,16 +39,41 @@ jobs:
           [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
           root="$RUNNER_TEMP/wpconnector"
           rm -rf "$root"
-          mkdir -p "$root/trusted" "$root/results" "$root/receipts"
+          mkdir -p "$root/trusted" "$root/results" "$root/receipts" "$root/assets/inbox"
+
+          api_headers=(
+            --header 'Accept: application/vnd.github+json'
+            --header "Authorization: Bearer ${GH_TOKEN}"
+            --header 'X-GitHub-Api-Version: 2026-03-10'
+          )
+
           pr="$root/pr.json"
           code=$(curl --silent --show-error --output "$pr" --write-out '%{http_code}' \
-            --header 'Accept: application/vnd.github+json' \
-            --header "Authorization: Bearer ${GH_TOKEN}" \
-            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            "${api_headers[@]}" \
             "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
           [[ "$code" == 200 ]]
-          meta=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$repo=getenv("GITHUB_REPOSITORY");$owner=getenv("OWNER");$expected=getenv("EXPECTED_HEAD_SHA");$actor=(string)($p["user"]["login"]??"");$headRepo=(string)($p["head"]["repo"]["full_name"]??"");$headSha=(string)($p["head"]["sha"]??"");$headRef=(string)($p["head"]["ref"]??"");$baseSha=(string)($p["base"]["sha"]??"");$baseRepo=(string)($p["base"]["repo"]["full_name"]??"");$baseRef=(string)($p["base"]["ref"]??"");if(($p["state"]??"")!=="open"||$actor!==$owner||$headRepo!==$repo||$baseRepo!==$repo||$baseRef!=="main"||!hash_equals($expected,$headSha)){fwrite(STDERR,"Untrusted runtime request.\n");exit(1);}echo $baseSha."\t".$headSha."\t".$headRef;' "$pr")
+
+          meta=$(php -r '
+            $p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            $repo=getenv("GITHUB_REPOSITORY");$owner=getenv("OWNER");$trusted=getenv("TRUSTED_REQUEST_ACTOR")?:"";$expected=getenv("EXPECTED_HEAD_SHA");
+            $actor=(string)($p["user"]["login"]??"");$headRepo=(string)($p["head"]["repo"]["full_name"]??"");$headSha=(string)($p["head"]["sha"]??"");$headRef=(string)($p["head"]["ref"]??"");$baseSha=(string)($p["base"]["sha"]??"");$baseRepo=(string)($p["base"]["repo"]["full_name"]??"");$baseRef=(string)($p["base"]["ref"]??"");
+            $allowed=($actor===$owner||($trusted!==""&&hash_equals($trusted,$actor)));
+            if(($p["state"]??"")!=="open"||!$allowed||$headRepo!==$repo||$baseRepo!==$repo||$baseRef!=="main"||!hash_equals($expected,$headSha)){fwrite(STDERR,"Untrusted runtime request.\n");exit(1);}
+            if(!preg_match("/^[a-f0-9]{40}$/D",$baseSha)||!preg_match("/^[A-Za-z0-9._\/-]{1,200}$/D",$headRef)||strpos($headRef,"..")!==false){fwrite(STDERR,"Unsafe runtime PR metadata.\n");exit(1);}
+            echo $baseSha."\t".$headSha."\t".$headRef;
+          ' "$pr")
           IFS=$'\t' read -r base_sha head_sha head_ref <<< "$meta"
+
+          commit="$root/head-commit.json"
+          code=$(curl --silent --show-error --output "$commit" --write-out '%{http_code}' \
+            "${api_headers[@]}" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${head_sha}")
+          [[ "$code" == 200 ]]
+          head_author=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo (string)($d["author"]["login"]??"");' "$commit")
+          if [[ "$head_author" != "$OWNER" ]]; then
+            [[ -n "${TRUSTED_REQUEST_ACTOR:-}" && "$head_author" == "$TRUSTED_REQUEST_ACTOR" ]] || { echo 'Latest request commit must be authored by the repository owner or configured trusted actor.' >&2; exit 1; }
+          fi
+
           cd "$root"
           git init repo
           cd repo
@@ -58,22 +84,38 @@ jobs:
           git branch request-base FETCH_HEAD
           git fetch --depth=1 origin "$head_sha"
           git branch request-head FETCH_HEAD
+
           mapfile -t changed < <(git diff --name-only request-base request-head)
           request_count=0
           request_path=''
+          asset_count=0
+          asset_bytes=0
           for path in "${changed[@]}"; do
             mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
             [[ -z "$mode" || "$mode" == 100644 ]] || { echo "Unsafe runtime file mode: $path" >&2; exit 1; }
             case "$path" in
-              requests/*.json) ((request_count+=1)); request_path="$path" ;;
-              receipts/*.json|results/*.json) ;;
+              requests/*.json)
+                ((request_count+=1)); request_path="$path"
+                ;;
+              assets/inbox/*)
+                ((asset_count+=1)); size=$(git cat-file -s "request-head:$path"); ((asset_bytes+=size))
+                ;;
+              receipts/*.json) ;;
+              results/*.json)
+                [[ "${{ github.event.repository.private }}" == true ]] || { echo 'Full results are forbidden on public runtime branches.' >&2; exit 1; }
+                ;;
               *) echo "Disallowed runtime path: $path" >&2; exit 1 ;;
             esac
           done
           (( request_count == 1 )) || { echo 'Exactly one request JSON is required.' >&2; exit 1; }
+          (( asset_count <= 10 && asset_bytes <= 26214400 )) || { echo 'Asset limit exceeded (max 10 files / 25 MiB total).' >&2; exit 1; }
+          request_bytes=$(git cat-file -s "request-head:$request_path")
+          (( request_bytes <= 262144 )) || { echo 'Request JSON exceeds 256 KiB.' >&2; exit 1; }
+
           git show "trusted-main:scripts/validate-request.php" > "$root/trusted/validate-request.php"
           git show "request-head:$request_path" > "$root/request.json"
           php "$root/trusted/validate-request.php" "$root/request.json"
+
           public_mode=false
           if [[ "${{ github.event.repository.private }}" != true ]]; then
             public_mode=true
@@ -81,6 +123,19 @@ jobs:
             git show "trusted-main:scripts/build-public-receipt.php" > "$root/trusted/build-public-receipt.php"
             php "$root/trusted/validate-public-request.php" "$root/request.json"
           fi
+
+          changed_paths="$root/changed-paths"
+          git diff --name-only -z request-base request-head > "$changed_paths"
+          while IFS= read -r -d '' path; do
+            case "$path" in
+              assets/inbox/*)
+                relative="${path#assets/inbox/}"
+                mkdir -p "$root/assets/inbox/$(dirname "$relative")"
+                git show "request-head:$path" > "$root/assets/inbox/$relative"
+                ;;
+            esac
+          done < "$changed_paths"
+
           request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["request_id"];' "$root/request.json")
           site_url=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["site_url"];' "$root/request.json")
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);unset($d["site_url"]);file_put_contents($argv[2],json_encode($d,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");' "$root/request.json" "$root/connector-request.json"
@@ -97,9 +152,53 @@ jobs:
         run: |
           set -euo pipefail
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-          code=$(curl --silent --show-error --output "$RUNNER_TEMP/presence.json" --write-out '%{http_code}' "$base/presence")
+          code=$(curl --silent --show-error --output "$RUNNER_TEMP/presence.json" --write-out '%{http_code}' --connect-timeout 10 --max-time 30 "$base/presence")
           [[ "$code" == 200 ]]
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(empty($d["ok"])||empty($d["zero_config"]))exit(1);' "$RUNNER_TEMP/presence.json"
+
+      - name: Upload request assets with short-lived GitHub OIDC
+        env:
+          SITE_URL: ${{ steps.preflight.outputs.site_url }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          audience=$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$base")
+          asset_root="$RUNNER_TEMP/wpconnector/assets/inbox"
+          while IFS= read -r -d '' file; do
+            relative="${file#$asset_root/}"
+            token_json=$(curl --silent --show-error --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")
+            oidc=$(OIDC="$token_json" python3 -c 'import json,os;print(json.loads(os.environ["OIDC"])["value"])')
+            response="$RUNNER_TEMP/wpconnector/asset-response.json"
+            code=$(curl --silent --show-error --output "$response" --write-out '%{http_code}' \
+              --connect-timeout 10 --max-time 120 \
+              --header 'Accept: application/json' \
+              --header "X-Webactueel-GitHub-OIDC: ${oidc}" \
+              --form-string "request_id=${REQUEST_ID}" \
+              --form-string "asset_path=${relative}" \
+              --form "file=@${file}" \
+              "$base/assets")
+            unset oidc token_json
+            [[ "$code" == 201 ]]
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(empty($d["ok"]))exit(1);' "$response"
+          done < <(find "$asset_root" -type f -print0)
+
+      - name: Revalidate request head before execution
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current_head=$(curl --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}" \
+            | php -r '$d=json_decode(stream_get_contents(STDIN),true,512,JSON_THROW_ON_ERROR);echo (string)($d["head"]["sha"]??"");')
+          [[ "$current_head" == "$EXPECTED_HEAD_SHA" ]] || { echo 'Request branch moved after validation; refusing execution.' >&2; exit 1; }
 
       - name: Execute with short-lived GitHub OIDC
         id: execute
