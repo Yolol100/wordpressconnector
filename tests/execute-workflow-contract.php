@@ -3,82 +3,57 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
-$workflow = (string) file_get_contents($root . '/.github/workflows/wordpress-execute.yml');
-
+$workflow = (string) file_get_contents($root . '/.github/workflows/wordpress-zero-config-execute.yml');
 $required = array(
     'workflow_dispatch:',
     'pr_number:',
     'expected_head_sha:',
     'runs-on: ubuntu-latest',
     'cancel-in-progress: false',
+    'id-token: write',
     'github.event.repository.private',
-    "public_mode='true'",
-    'WPCONNECTOR_TRUSTED_REQUEST_ACTOR',
+    'github.repository_owner',
     '/pulls/${PR_NUMBER}',
-    '/commits/${head_sha}',
-    'Latest request commit must be authored by the repository owner or configured trusted actor',
-    'git_auth fetch --depth=1 origin main',
     'git branch trusted-main FETCH_HEAD',
-    'git show "trusted-main:scripts/validate-request.php"',
+    'validate-request.php',
     'validate-public-request.php',
     'build-public-receipt.php',
-    'Exactly one requests/*.json file is required.',
-    'Full results are forbidden on public runtime request branches.',
-    'Symlinks/submodules/special file modes are not allowed:',
-    '100644',
-    '100755',
-    'Revalidate PR head immediately before execution',
-    'Request branch moved after validation; refusing WordPress execution.',
-    'WPCONNECTOR_SITE_URL',
-    'secrets.WPCONNECTOR_REST_USERNAME',
-    'secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD',
-    'webactueel-wordpress-connector/v1',
-    'Verify authenticated HTTPS connector health',
-    'Upload request assets over authenticated HTTPS',
-    'Execute connector request over authenticated HTTPS',
-    'Commit full result to private request branch',
-    "steps.preflight.outputs.public_mode != 'true'",
-    'Commit sanitized receipt to public request branch',
-    "steps.preflight.outputs.public_mode == 'true'",
-    'receipts/${REQUEST_ID}.json',
-    'Request branch moved after execution; refusing public receipt write.',
-    'Validate connector result without exposing response data',
-    'Public readback verification failed.',
+    'Exactly one request JSON is required.',
+    'site_url',
+    '/presence',
+    'ACTIONS_ID_TOKEN_REQUEST_URL',
+    'ACTIONS_ID_TOKEN_REQUEST_TOKEN',
+    'X-Webactueel-GitHub-OIDC',
+    'Execute with short-lived GitHub OIDC',
+    'Persist sanitized public receipt',
+    'Persist private result',
 );
 foreach ($required as $needle) {
     if (strpos($workflow, $needle) === false) {
-        fwrite(STDERR, "Missing trusted execute workflow guard: {$needle}\n");
+        fwrite(STDERR, "Missing zero-config execute workflow guard: {$needle}\n");
         exit(1);
     }
 }
-
 $forbidden = array(
     'pull_request_target',
-    'runs-on: [self-hosted, wordpressconnector]',
-    'WP_CONNECTOR_WORDPRESS_PATH',
-    'WPCONNECTOR_ALLOW_PUBLIC_SELF_HOSTED',
-    'runner_watchdog:',
-    'cancel-in-progress: true',
-    'Remote WordPress execution requires a private repository.',
-    '$body["message"]',
+    'self-hosted',
+    'WPCONNECTOR_SITE_URL',
+    'WPCONNECTOR_REST_USERNAME',
+    'WPCONNECTOR_REST_APPLICATION_PASSWORD',
+    'secrets.',
+    '--user ',
+    'REST_APP_PASSWORD',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
-        fwrite(STDERR, "Forbidden legacy or public-leak pattern in trusted execute workflow: {$needle}\n");
+        fwrite(STDERR, "Forbidden long-lived credential or unsafe pattern in zero-config executor: {$needle}\n");
         exit(1);
     }
 }
-
-if (substr_count($workflow, 'secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD') < 3) {
-    fwrite(STDERR, "Application Password must be scoped only to trusted transport steps.\n");
+$preflight = strpos($workflow, 'Validate trusted runtime request');
+$oidc = strpos($workflow, 'ACTIONS_ID_TOKEN_REQUEST_TOKEN');
+if (false === $preflight || false === $oidc || $oidc < $preflight) {
+    fwrite(STDERR, "OIDC token access must happen only after trusted request validation.\n");
     exit(1);
 }
-
-$preflightPosition = strpos($workflow, 'Revalidate request from trusted main workflow');
-$firstSecretPosition = strpos($workflow, 'secrets.WPCONNECTOR_REST_APPLICATION_PASSWORD');
-if (false === $preflightPosition || false === $firstSecretPosition || $firstSecretPosition < $preflightPosition) {
-    fwrite(STDERR, "Production secrets must not precede trusted PR revalidation.\n");
-    exit(1);
-}
-
-echo "trusted execute workflow public/private contract OK\n";
+echo "zero-config execute workflow contract OK\n";
