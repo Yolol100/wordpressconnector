@@ -24,7 +24,7 @@ concurrency:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Revalidate trusted DoctorCura audit request
         env:
@@ -94,23 +94,124 @@ jobs:
           call_action plugins plugin.list '{}'
           call_action catalog plugin.settings.catalog '{}'
           call_action rocket plugin.settings.inspect '{"plugin":"wp_rocket"}'
+          call_action gtranslate option.get '{"name":"GTranslate"}'
+          call_action fs-main filesystem.read_text '{"path":"wp-content/plugins/doctorcura-core/doctorcura-core.php"}'
+          call_action fs-plugin filesystem.read_text '{"path":"wp-content/plugins/doctorcura-core/includes/class-plugin.php"}'
+          call_action products-1 post.list '{"post_type":"product","status":"publish","per_page":100,"page":1}'
 
-          python3 - "$root" <<'PY'
+          product_pages=$(python3 - "$root/result-products-1.json" <<'PY'
+          import json,sys
+          try:
+              d=json.load(open(sys.argv[1],encoding='utf-8'))
+              print(max(1,min(10,int((d.get('data') or {}).get('pages') or 1))))
+          except Exception:
+              print(1)
+          PY
+          )
+          if (( product_pages > 1 )); then
+            for page in $(seq 2 "$product_pages"); do
+              call_action "products-$page" post.list "{\"post_type\":\"product\",\"status\":\"publish\",\"per_page\":100,\"page\":$page}"
+            done
+          fi
+
+          python3 - "$root" "$product_pages" <<'PY' > "$root/target-products.tsv"
           import json,os,sys
-          root=sys.argv[1]
+          root=sys.argv[1]; pages=int(sys.argv[2])
+          targets={'doxycycline','champix','condyline','emla-creme','terbinafine','malarone','zopiclon','priligy','microgynon','yasmin','provera','fluconazol','imigran-tabletten','primolut','zithromax','xenical','epipen','emtricitabine-tenofovirdisoproxil','vardenafil','bricanyl','temazepam','airomir'}
+          seen=set()
+          for page in range(1,pages+1):
+              try:
+                  d=json.load(open(os.path.join(root,f'result-products-{page}.json'),encoding='utf-8'))
+              except Exception:
+                  continue
+              for p in (d.get('data') or {}).get('items',[]):
+                  if isinstance(p,dict) and p.get('slug') in targets and p.get('slug') not in seen:
+                      seen.add(p['slug']); print(f"{p['slug']}\t{int(p['id'])}")
+          PY
+          while IFS=$'\t' read -r slug post_id; do
+            [[ -n "$slug" && "$post_id" =~ ^[1-9][0-9]*$ ]] || continue
+            safe_slug=${slug//[^A-Za-z0-9_-]/-}
+            call_action "yoast-$safe_slug" yoast.inspect "{\"id\":$post_id}"
+          done < "$root/target-products.tsv"
+
+          python3 - "$root/url-probes.json" <<'PY'
+          import concurrent.futures, json, os, re, subprocess, sys, tempfile
+          out_path=sys.argv[1]
+          urls=[
+          'https://doctorcura.com/robots.txt','https://doctorcura.com/sitemap_index.xml',
+          'https://doctorcura.com/fr/blogs/5/','https://doctorcura.com/fr/product/doxycycline/','https://doctorcura.com/en/product/champix/','https://doctorcura.com/fr/product/condyline/','https://doctorcura.com/product/emla-creme/','https://doctorcura.com/product-category/adhs-konzentration/feed/','https://doctorcura.com/product-category/alle-medikamente/feed/','https://doctorcura.com/fr/wp-json/','https://doctorcura.com/en/wp-json/complianz/v1/','https://doctorcura.com/product-category/malaria/feed/','https://doctorcura.com/wp-json/complianz/v1/','https://doctorcura.com/wp-json/','https://doctorcura.com/en/product/terbinafine/','https://doctorcura.com/fr/product/malarone/','https://doctorcura.com/en/blogs/','https://doctorcura.com/en/wp-json/','https://doctorcura.com/fr/wie-funktioniert-eine-online-behandlungsanfrage/','https://doctorcura.com/fr/product-category/verhuetung/','https://doctorcura.com/en/product/zopiclon/','https://doctorcura.com/product/priligy/','https://doctorcura.com/fr/product/microgynon/','https://doctorcura.com/product-category/chlamydien/feed/','https://doctorcura.com/en/product-category/alle-medikamente/page/3/','https://doctorcura.com/product/yasmin/','https://doctorcura.com/product/provera/','https://doctorcura.com/product-category/sexuelle-probleme/feed/','https://doctorcura.com/fr/wp-json/complianz/v1/','https://doctorcura.com/product-category/scheidenpilz/feed/','https://doctorcura.com/product-category/feigwarzen/feed/','https://doctorcura.com/product-category/schlafprobleme/feed/','https://doctorcura.com/product/fluconazol/','https://doctorcura.com/product-category/migraene/feed/','https://doctorcura.com/fr/product/imigran-tabletten/','https://doctorcura.com/product-category/gewichtsverlust/feed/','https://doctorcura.com/shop/feed/','https://doctorcura.com/product-category/lungenprobleme/feed/','https://doctorcura.com/product-category/schmerzen/feed/','https://doctorcura.com/fr/privacy-policy/','https://doctorcura.com/product-category/herpes-simplex/feed/','https://doctorcura.com/product-category/menstruation-verschieben/feed/','https://doctorcura.com/product-category/haarausfall/feed/','https://doctorcura.com/product/champix/','https://doctorcura.com/product/primolut/','https://doctorcura.com/product-category/verhuetung/feed/','https://doctorcura.com/product/zithromax/','https://doctorcura.com/product-category/alle-behandlungen/feed/','https://doctorcura.com/product/xenical/','https://doctorcura.com/product/epipen/','https://doctorcura.com/product/champix/?attribute_pa_wirkstarke=050&attribute_pa_medikament=generikum&attribute_pa_menge=56','https://doctorcura.com/product/epipen/?attribute_pa_wirkstarke=150mcg&attribute_pa_menge=3&attribute_pa_medikament=epipen','https://doctorcura.com/product/temazepam/?attribute_pa_wirkstarke=20&attribute_pa_menge=30','https://doctorcura.com/product/airomir/?attribute_pa_medication-strength=100-mcg-autohaler&attribute_pa_amount=2-puffers','https://doctorcura.com/product/emtricitabine-tenofovirdisoproxil/','https://doctorcura.com/product/vardenafil/','https://doctorcura.com/product/bricanyl/','https://doctorcura.com/product/champix/?attribute_pa_medication-strength=startverpakking&attribute_pa_medication=generic&attribute_pa_amount=53','https://doctorcura.com/fr/product-categorie/sexual-problems/'
+          ]
+          skipped=[
+          'https://doctorcura.com/fr/wc-api/stripe_add_payment_method/?nonce=d68ecf89db&payment_method=stripe_sepa&context=checkout','https://doctorcura.com/fr/wc-api/stripe_add_payment_method/?nonce=3ea6fa5040&payment_method=stripe_upm&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=e75d0ff51c&payment_method=stripe_klarna&context=checkout','https://doctorcura.com/fr/wc-api/stripe_add_payment_method/?nonce=2415a582f1&payment_method=stripe_bancontact&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=3070d776fb&payment_method=stripe_applepay&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=06fed8d223&payment_method=stripe_payment_request&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=2415a582f1&payment_method=stripe_bancontact&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=424840e3ce&payment_method=stripe_promptpay&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=ceaa3ed0e4&payment_method=stripe_wechat&context=checkout','https://doctorcura.com/en/wc-api/stripe_add_payment_method/?nonce=46187a4c59&payment_method=stripe_mobilepay&context=checkout','https://doctorcura.com/?wc-ajax=%25%25endpoint%25%25','https://doctorcura.com/fr/?wc-ajax=%25%25endpoint%25%25','https://doctorcura.com/en/?wc-ajax=%25%25endpoint%25%25'
+          ]
+          def probe(url):
+              td=tempfile.mkdtemp(prefix='dc-probe-'); hdr=os.path.join(td,'h'); body=os.path.join(td,'b')
+              cmd=['curl','--silent','--show-error','--location','--compressed','--connect-timeout','8','--max-time','25','--user-agent','Mozilla/5.0 (compatible; DoctorCuraSEOAudit/1.0)','--dump-header',hdr,'--output',body,'--write-out','%{http_code}\t%{url_effective}\t%{content_type}',url]
+              try:
+                  p=subprocess.run(cmd,capture_output=True,text=True,timeout=30)
+                  parts=p.stdout.strip().split('\t',2); status=int(parts[0]) if parts and parts[0].isdigit() else 0; final=parts[1] if len(parts)>1 else ''; ctype=parts[2] if len(parts)>2 else ''
+                  raw=open(hdr,'rb').read().decode('iso-8859-1','replace') if os.path.exists(hdr) else ''
+                  blocks=[b for b in re.split(r'\r?\n\r?\n',raw) if b.strip().startswith('HTTP/')]
+                  last=blocks[-1] if blocks else ''
+                  headers={}
+                  for line in last.splitlines()[1:]:
+                      if ':' in line:
+                          k,v=line.split(':',1); headers.setdefault(k.lower().strip(),[]).append(v.strip())
+                  data=open(body,'rb').read(600000).decode('utf-8','ignore') if os.path.exists(body) else ''
+                  def one(pattern):
+                      m=re.search(pattern,data,re.I|re.S); return m.group(1).strip() if m else None
+                  canonical=one(r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)') or one(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical[^"\']*["\']')
+                  robots=one(r'<meta[^>]+name=["\']robots["\'][^>]+content=["\']([^"\']+)') or one(r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+name=["\']robots["\']')
+                  lang=one(r'<html[^>]+lang=["\']([^"\']+)')
+                  hre=[]
+                  for tag in re.findall(r'<link\b[^>]*>',data,re.I):
+                      if not re.search(r'rel=["\'][^"\']*alternate[^"\']*["\']',tag,re.I): continue
+                      hm=re.search(r'hreflang=["\']([^"\']+)',tag,re.I); um=re.search(r'href=["\']([^"\']+)',tag,re.I)
+                      if hm and um: hre.append([hm.group(1),um.group(1)])
+                  return {'url':url,'status':status,'final_url':final,'content_type':ctype,'x_robots':', '.join(headers.get('x-robots-tag',[])) or None,'canonical':canonical,'meta_robots':robots,'html_lang':lang,'hreflang':hre[:12],'error':None if p.returncode==0 else 'curl_'+str(p.returncode)}
+              except Exception as e:
+                  return {'url':url,'status':0,'error':type(e).__name__}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+              rows=list(ex.map(probe,urls))
+          rows.extend({'url':u,'skipped':'runtime/payment endpoint - deliberately not requested'} for u in skipped)
+          json.dump(rows,open(out_path,'w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          PY
+
+          python3 - "$root" "$product_pages" <<'PY'
+          import json,os,re,sys
+          root=sys.argv[1]; product_pages=int(sys.argv[2])
           def load(name):
               try:
                   with open(os.path.join(root,name),encoding='utf-8') as f: return json.load(f)
-              except Exception as e: return {'ok':False,'error':'unreadable_result'}
+              except Exception: return {'ok':False,'error':'unreadable_result'}
           def data(result): return result.get('data') if isinstance(result.get('data'),dict) else {}
-          health=load('health.json'); discover=load('result-discover.json'); doctor=load('result-doctor.json'); plugins=load('result-plugins.json'); catalog=load('result-catalog.json'); rocket=load('result-rocket.json')
-          dd=data(discover); pd=data(plugins); cd=data(catalog); rd=data(rocket)
+          health=load('health.json'); discover=load('result-discover.json'); doctor=load('result-doctor.json'); plugins=load('result-plugins.json'); catalog=load('result-catalog.json'); rocket=load('result-rocket.json'); gt=load('result-gtranslate.json'); fsm=load('result-fs-main.json'); fsp=load('result-fs-plugin.json')
+          dd=data(discover); pd=data(plugins); cd=data(catalog); rd=data(rocket); gd=data(gt); fmd=data(fsm); fpd=data(fsp)
           safe_plugins=[]
           for p in pd.get('plugins',[]) if isinstance(pd.get('plugins'),list) else []:
               if isinstance(p,dict): safe_plugins.append({k:p.get(k) for k in ('file','name','version','active','network_active')})
           safe_catalog=[]
           for p in cd.get('plugins',[]) if isinstance(cd.get('plugins'),list) else []:
               if isinstance(p,dict): safe_catalog.append({k:p.get(k) for k in ('file','name','version','active','id','mode','actions','note') if k in p})
+          gtv=gd.get('value') if isinstance(gd.get('value'),dict) else {}
+          gt_safe={k:gtv.get(k) for k in ('default_language','pro_version','enterprise_version','url_structure','incl_langs','fincl_langs','language_codes','language_codes2','detect_browser_language','enable_cdn','custom_domains') if k in gtv}
+          live_main=fmd.get('content','') if isinstance(fmd.get('content'),str) else ''
+          live_plugin=fpd.get('content','') if isinstance(fpd.get('content'),str) else ''
+          version_header=(re.search(r'^\s*\*\s*Version:\s*([^\r\n]+)',live_main,re.M) or [None,None])[1] if live_main else None
+          version_const=(re.search(r"DCAF_VERSION'\s*,\s*'([^']+)'",live_main) or [None,None])[1] if live_main else None
+          products={}
+          for page in range(1,product_pages+1):
+              d=data(load(f'result-products-{page}.json'))
+              for p in d.get('items',[]) if isinstance(d.get('items'),list) else []:
+                  if isinstance(p,dict): products[p.get('slug')]=p
+          targets=[]
+          if os.path.exists(os.path.join(root,'target-products.tsv')):
+              for line in open(os.path.join(root,'target-products.tsv'),encoding='utf-8'):
+                  slug,pid=line.rstrip('\n').split('\t',1); p=products.get(slug,{})
+                  y=data(load('result-yoast-'+re.sub(r'[^A-Za-z0-9_-]','-',slug)+'.json'))
+                  fields=y.get('fields') if isinstance(y.get('fields'),dict) else {}
+                  targets.append({'slug':slug,'id':int(pid),'status':p.get('status'),'permalink':p.get('permalink'),'yoast':{'canonical':fields.get('canonical'),'robots_noindex':fields.get('robots_noindex'),'robots_nofollow':fields.get('robots_nofollow'),'redirect':fields.get('redirect')},'yoast_fingerprint':y.get('fingerprint')})
+          urls=load('url-probes.json')
           summary={
             'target':'https://doctorcura.com',
             'connector':{'ok':health.get('ok'),'version':health.get('version'),'transport':health.get('transport'),'gates':health.get('gates')},
@@ -118,9 +219,13 @@ jobs:
             'doctor':{'ok':doctor.get('ok'),'error':doctor.get('error'),'checks':data(doctor)},
             'plugins':{'ok':plugins.get('ok'),'error':plugins.get('error'),'items':safe_plugins},
             'plugin_control':{'ok':catalog.get('ok'),'error':catalog.get('error'),'items':safe_catalog,'supported_setting_profiles':cd.get('supported_setting_profiles')},
-            'wp_rocket':{'ok':rocket.get('ok'),'error':rocket.get('error'),'plugin':rd.get('plugin'),'settings':rd.get('settings'),'fingerprint':rd.get('fingerprint')}
+            'wp_rocket':{'ok':rocket.get('ok'),'error':rocket.get('error'),'plugin':rd.get('plugin'),'settings':rd.get('settings'),'fingerprint':rd.get('fingerprint')},
+            'gtranslate':{'ok':gt.get('ok'),'error':gt.get('error'),'safe_settings':gt_safe},
+            'doctorcura_core_live':{'main_ok':fsm.get('ok'),'main_file':fmd.get('file'),'header_version':version_header,'constant_version':version_const,'plugin_class_file':fpd.get('file'),'seo_hook_markers':{'x_robots':('X-Robots-Tag' in live_main or 'X-Robots-Tag' in live_plugin),'template_redirect':('template_redirect' in live_main or 'template_redirect' in live_plugin),'wp_robots':('wp_robots' in live_main or 'wp_robots' in live_plugin)}},
+            'target_products':targets,
+            'url_probes':urls
           }
-          print('DOCTORCURA_AUDIT_SUMMARY_BEGIN')
+          print('DOCTORCURA_DEEP_AUDIT_BEGIN')
           print(json.dumps(summary,ensure_ascii=False,indent=2,sort_keys=True))
-          print('DOCTORCURA_AUDIT_SUMMARY_END')
+          print('DOCTORCURA_DEEP_AUDIT_END')
           PY
