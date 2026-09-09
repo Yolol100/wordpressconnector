@@ -1,10 +1,11 @@
-name: Temporary DoctorCura Pagination Cache Audit
+name: Temporary DoctorCura Pagination Validity Audit
 
 on:
   push:
     branches: [main]
     paths:
       - '.github/workflows/temp-doctorcura-pagination-redirect-layer.yml'
+      - 'scripts/temp-doctorcura-route-query-diagnostic.py'
 
 permissions:
   contents: read
@@ -18,26 +19,6 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Check rollback and cache headers
-        shell: bash
-        run: |
-          set -euo pipefail
-          tmp="$(mktemp)"
-          curl -fsS --user "$REST_USERNAME:$REST_APP_PASSWORD" "$SITE_URL/wp-json/code-snippets/v1/snippets/43" > "$tmp"
-          python3 - "$tmp" <<'PY'
-          import hashlib,json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); code=str(d.get('code') or '')
-          print('CODE_SHA256='+hashlib.sha256(code.encode()).hexdigest())
-          print('HAS_V82='+str('DoctorCura blog pagination cleanup V8.2' in code).lower())
-          print('HAS_V91='+str('DoctorCura dynamic blog pagination cleanup V9.1' in code).lower())
-          print('HAS_HELPER='+str('one-time dynamic pagination cache helper' in code).lower())
-          PY
-          rm -f "$tmp"
-          nonce="$(date +%s%N)"
-          for n in 6 7 8 9 10; do
-            for suffix in "" "?doctorcura_cache_probe=$nonce$n"; do
-              echo "=== /blogs/$n/$suffix ==="
-              curl -sS --connect-timeout 10 --max-time 25 --max-redirs 0 -D - -o /dev/null "$SITE_URL/blogs/$n/$suffix" \
-                | grep -Ei '^(HTTP/|location:|x-redirect-by:|server:|cache-control:|age:|x-hcdn-cache-status:|x-hcdn-request-id:|x-litespeed-cache:|x-cache:|x-cache-status:)' || true
-            done
-          done
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Inspect WordPress query validity for pages 6-10 and auto-rollback
+        run: python3 scripts/temp-doctorcura-route-query-diagnostic.py
