@@ -24,6 +24,23 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      - name: Zero-config policy contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/policy-contract.php
+      - name: GitHub OIDC contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/github-oidc-contract.php
+      - name: Zero-config REST contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/rest-transport-contract.php
+      - name: Zero-config request workflow contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/request-workflow-contract.php
+      - name: Zero-config execute workflow contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/execute-workflow-contract.php
+      - name: Zero-config workflow security contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/workflow-security-contract.php
+      - name: Zero-config repository hygiene contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/repository-hygiene.php
+      - name: Zero-config single-plugin contract
+        run: php -d auto_prepend_file=tests/php-compat.php tests/single-plugin-contract.php
+
       - name: Validate PHP and complete contracts
         shell: bash
         run: |
@@ -60,7 +77,6 @@ jobs:
           python3 - "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector-a.spdx.json" <<'PY'
           import hashlib, json, sys
           from pathlib import Path
-
           zip_path = Path(sys.argv[1])
           sbom = json.loads(Path(sys.argv[2]).read_text())
           package = sbom['packages'][0]

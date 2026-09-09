@@ -8,14 +8,16 @@ use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
     'plugin/wordpressconnector/includes/Plugin.php' => array('new FilesystemAdapter()'),
-    'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'wpconnector_allow_filesystem_writes'),
-    'plugin/wordpressconnector/includes/Admin/Settings.php' => array('wpconnector_allow_filesystem_writes', 'Allow controlled plugin/theme file writes'),
+    'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'AUTO_ENABLED_FLAGS'),
+    'plugin/wordpressconnector/includes/Admin/Settings.php' => array('Zero-config runtime bridge.', 'Optional emergency policy overrides'),
     'plugin/wordpressconnector/includes/REST/Controller.php' => array('filesystem_writes', 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),
     'plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php' => array('filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text', 'WP_Filesystem', "'direct' !== \$method", 'expected_sha256', 'TOKEN_PARSE', 'JSON_THROW_ON_ERROR', 'readback verification failed', "'_rollback'", 'assertNoEmbeddedSecrets', "'private_ajax_reused' => false"),
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array('shared_filesystem_interface', 'filesystem.inspect', 'filesystem.write_text', 'bounded_filesystem_bridge'),
     'docs/PLUGIN-CONTROL.md' => array('WP File Manager and controlled filesystem access', 'WP_Filesystem', 'expected_sha256', 'WordPress core'),
 );
 foreach ($mustContain as $relative => $needles) { $source = file_get_contents($root . '/' . $relative); if ($source === false) { fwrite(STDERR, "Unable to read {$relative}.\n"); exit(1); } foreach ($needles as $needle) { if (strpos($source, $needle) === false) { fwrite(STDERR, "Missing filesystem contract fragment in {$relative}: {$needle}\n"); exit(1); } } }
+$settings=(string)file_get_contents($root.'/plugin/wordpressconnector/includes/Admin/Settings.php');
+foreach(array('register_setting(','renderCheckbox','wpconnector_allow_filesystem_writes') as $legacy){if(strpos($settings,$legacy)!==false){fwrite(STDERR,"Legacy filesystem setup remains in WordPress settings: {$legacy}\n");exit(1);}}
 $writable = array('wp-content/plugins/example-plugin/example.php', 'wp-content/themes/example-theme/style.css');
 foreach ($writable as $path) { if (FilesystemPolicy::assertWritableText($path) !== $path) { fwrite(STDERR, "Expected writable filesystem path rejected: {$path}\n"); exit(1); } }
 $blockedWrites = array('../wp-config.php','wp-config.php','wp-admin/includes/file.php','wp-includes/load.php','wp-content/uploads/private.txt','wp-content/cache/cache.txt','wp-content/wflogs/attack-data.php','wp-content/updraft/backup.txt','wp-content/plugins/wordpressconnector/wordpressconnector.php','wp-content/plugins/example-plugin/.env','wp-content/plugins/example-plugin/private.pem','wp-content/plugins/example-plugin/image.png','/etc/passwd','wp-content/plugins/example-plugin/../other.php');
@@ -29,4 +31,4 @@ if ($adapter === false) { exit(1); }
 foreach (array('mk_file_folder_manager_action_callback','elFinderConnector','shell_exec(','exec(','passthru(','proc_open(','popen(') as $forbidden) { if (strpos($adapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden filesystem adapter primitive/protocol found: {$forbidden}\n"); exit(1); } }
 $docs = file_get_contents($root . '/docs/PLUGIN-CONTROL.md'); if ($docs === false) { exit(1); }
 foreach (array('AndrewBaeten.nl','Observed version','observed on 2026-') as $residue) { if (stripos($docs, $residue) !== false) { fwrite(STDERR, "Client/runtime residue remains in generic plugin-control docs: {$residue}\n"); exit(1); } }
-echo "filesystem control contract OK\n";
+echo "filesystem zero-config control contract OK\n";

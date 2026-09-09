@@ -4,25 +4,31 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.12.3
+Stable tag: 1.13.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Single controlled GitHub-to-WordPress bridge over authenticated HTTPS REST with optional local WP-CLI recovery.
+Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST with optional local WP-CLI recovery.
 
 == Description ==
 
-WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions behind separate safety gates.
+WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-The default GitHub workflow uses a temporary GitHub-hosted Ubuntu runner and authenticates to WordPress over HTTPS with a WordPress Application Password. No GitHub Client ID is stored in WordPress and no VPS or continuously running self-hosted GitHub Actions runner is required.
+Version 1.13.0 makes the guarded GitHub runtime zero-config after plugin activation. The WordPress admin no longer requires connector checkboxes, GitHub repository variables, WordPress usernames or Application Passwords for the canonical GitHub path. The trusted GitHub Actions executor requests a short-lived GitHub OIDC token and WordPress validates its signature, audience, repository identity, owner identity, main-branch workflow identity, runner environment, validity window and replay identifier before execution.
+
+A minimal HTTPS presence endpoint allows a known site URL to prove that the connector is installed without exposing WordPress content. The target site URL travels with the temporary runtime request and is validated before execution. GitHub cannot securely enumerate arbitrary unknown websites merely because a plugin was installed; global site discovery requires a separate authenticated registry and is intentionally not simulated with public crawling or leaked site lists.
+
+Mutation safety remains request-scoped: real writes require confirm=true, privileged actions still require WordPress capabilities, stale-state fingerprints/tokens remain available, mutations remain idempotent and serialized, and supported changes retain exact readback and rollback. Optional WPCONNECTOR_ALLOW_* constants or environment variables can still disable execution classes server-side without requiring WordPress admin setup.
+
+Public GitHub repositories remain deliberately restricted. Public runtime branches may only use the explicit public-safe action contract, sensitive actions stay blocked, full WordPress responses are never persisted publicly, and only sanitized receipts are written back.
 
 Elementor writes use Elementor's document save API for element data and page settings, followed by readback verification. The connector exposes active Elementor capability/usage inventory plus complete V3 Form and V4 Atomic Form inspection/upsert with runtime-schema validation and rollback. Elementor-built pages and posts get an "Export Elementor JSON" row action in WordPress admin; saved templates keep Elementor's native export action, with a connector fallback when that action is unavailable. Pages, posts and saved templates also get an "Import Elementor JSON" action for replacing the target Elementor structure and page settings through the same verified document-save/rollback path.
 
-WordPress Additional CSS can be read and replaced through WordPress core Custom CSS APIs. Writes are bounded, privileged, require the normal mutation gate, support stale-state guards, verify exact readback and store a rollback snapshot.
+WordPress Additional CSS can be read and replaced through WordPress core Custom CSS APIs. Writes are bounded, privileged, support stale-state guards, verify exact readback and store a rollback snapshot.
 
 Custom or private plugin ZIPs can be uploaded through the authenticated REST asset endpoint and installed or overwritten through `plugin.install_package`. Packages require a matching SHA-256 checksum and exact plugin identity and are checked for size limits, unsafe paths, symlinks and archive expansion before WordPress Plugin_Upgrader receives them. The generic package action cannot replace the connector itself. Private plugin ZIPs must not be placed on a public GitHub request branch; use direct authenticated REST or a private transport for those packages.
 
-From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to canonical release assets from `Yolol100/wordpressconnector`, requires the normal privileged/write/system-update gates, downloads only the canonical package/checksum/SBOM set, verifies GitHub asset digests, checksum bytes, SHA-256 and ZIP identity before overwrite, and performs exact version readback. From 1.12.2 onward these two canonical self-update actions may also run through the guarded public GitHub runtime: the public request must use an empty payload, a dry-run is required to obtain the current fingerprint, and a confirmed apply must carry that fingerprint. Sanitized receipts expose only safe version/integrity evidence. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
+From 1.12.0 onward, `connector.update.check` and `connector.update.apply` provide a dedicated connector self-update route. It is pinned to canonical release assets from `Yolol100/wordpressconnector`, downloads only the canonical package/checksum/SBOM set, verifies GitHub asset digests, checksum bytes, SHA-256 and ZIP identity before overwrite, and performs exact version readback. From 1.12.2 onward these two canonical self-update actions may also run through the guarded public GitHub runtime: the public request must use an empty payload, a dry-run is required to obtain the current fingerprint, and a confirmed apply must carry that fingerprint. Sanitized receipts expose only safe version/integrity evidence. Connector self-updates are intentionally non-rollbackable, so staging remains the preferred first target.
 
 Installations that predate the self-update actions cannot bootstrap themselves through those actions. Such installations require one manual upgrade to a release that contains the updater before future updates can use the automated route.
 
@@ -32,11 +38,21 @@ Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 == Security ==
 
-REST endpoints require HTTPS, an authenticated WordPress user and the manage_options capability. Confirmed writes, privileged actions, sensitive actions, filesystem writes and system updates use separate WordPress-side gates under Settings -> WordPress Connector. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
+REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
 
-Public GitHub transport is deliberately reduced. Only explicitly allowlisted public-safe actions may be submitted, full WordPress responses are never persisted, and sensitive actions remain blocked. Store the dedicated WordPress Application Password only in protected GitHub Actions Secrets. Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
+Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions.
+
+Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.13.0 =
+* Replace long-lived GitHub-to-WordPress Application Password transport with short-lived GitHub Actions OIDC for the canonical GitHub executor.
+* Remove normal connector setup checkboxes, GitHub site variables and WordPress credential requirements from the canonical GitHub route.
+* Add an HTTPS-only zero-config presence endpoint and validated per-request `site_url` targeting.
+* Bind OIDC tokens to the canonical repository, repository/owner IDs, main-branch workflow, GitHub-hosted runner, site-specific audience, validity window and replay protection.
+* Preserve public-repository privacy restrictions, request confirmation, WordPress capabilities, stale-state protection, idempotency, readback and rollback.
+* Keep optional server-side WPCONNECTOR_ALLOW_* overrides as emergency kill switches without WordPress admin setup.
 
 = 1.12.3 =
 * Bind connector self-update to GitHub-provided package/checksum asset SHA-256 digests and require the canonical SPDX SBOM asset before installation.

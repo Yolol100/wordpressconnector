@@ -1,72 +1,46 @@
 # Architecture
 
-## Canonical runtime
+## Canonical paths
 
-WordPress Connector remains the single live bridge:
+### 1. Direct HTTPS REST
 
-`approved client -> HTTPS REST -> WordPress Connector -> semantic adapter -> WordPress/Elementor -> readback/rollback`
+Approved WordPress-authenticated client -> HTTPS REST -> strict request parser -> policy/capability checks -> semantic adapter -> readback/result.
 
-Two approved client routes can reach the same authenticated REST boundary:
+### 2. Zero-config GitHub runtime
 
-1. direct approved client access;
-2. guarded GitHub runtime transport: temporary request PR -> secretless request guard -> trusted main-branch executor -> HTTPS REST -> WordPress Connector -> private full result or sanitized public receipt.
+ChatGPT/GitHub request branch -> `wordpress-request.yml` credential-free guard -> trusted `wordpress-zero-config-execute.yml` on `main` -> GitHub Actions OIDC -> WordPress HTTPS REST -> semantic connector runtime -> private full result or sanitized public receipt.
 
-The GitHub route is transport and audit history only. It does not duplicate WordPress logic, does not execute request content as code and does not store WordPress credentials in repository source or request PRs.
+The untrusted request PR never receives production credentials. The trusted executor has no persistent WordPress credential either; it obtains short-lived OIDC tokens from GitHub for the exact WordPress audience.
 
-REST and optional WP-CLI use the same `Registry`, `Runner`, security policy, idempotency store, mutation lock, stale-state guards and rollback snapshots.
+## Target selection
 
-## GitHub trust split
+`site_url` is part of the temporary GitHub request envelope. It is validated as canonical HTTPS and removed before the semantic request is passed to `Runtime\Request`.
 
-`.github/workflows/wordpress-request.yml` runs on the request PR without production secrets. It accepts only same-repository PRs from the repository owner or configured trusted actor, limits request and asset size, and validates exactly one request file using trusted source from the base revision. Public repositories run an additional reduced-action validator at this stage.
+This removes the old repository-variable dependency while keeping target selection explicit and reviewable.
 
-`.github/workflows/wordpress-execute.yml` is dispatched from `main`. It revalidates the PR, actor, latest commit author, exact head SHA and allowed paths before production credentials are scoped to HTTPS transport steps. The executor verifies connector health, uploads bounded request assets, sends the request to `/execute` and verifies the returned request identity.
+## WordPress authentication adapter
 
-Private repositories may write the full connector result to `results/*.json` on the unchanged temporary branch.
+`Security\GitHubOidc` verifies GitHub's JWT signature and fixed claims. On success it sets a WordPress administrator execution context; normal action-level capability checks then apply. Invalid issuer, signature, audience, repository, owner, workflow, ref, event, runner, time window or replay fails closed.
 
-Public repositories never persist the full connector response. The trusted executor runs `scripts/build-public-receipt.php` inside temporary runner storage and commits only `receipts/*.json`. Those receipts contain bounded status/readback evidence and deterministic fingerprints; connector-update receipts may also contain safe semantic versions and a verified package SHA-256. Raw WordPress content, health gates/user ids, state tokens, rollback payloads and raw errors are not persisted.
+## Request assets
 
-Runtime request, asset, result and receipt payloads are temporary branch state and must never be merged into `main`.
+Request branches may include bounded `assets/inbox/*` data. The trusted executor validates file modes, file count and total size before extraction. Each authenticated asset request uses short-lived GitHub OIDC, followed by a fresh authenticated token for final `/execute`. Public branches may contain only assets already safe to disclose; private/custom plugin packages remain excluded from public mode.
 
-## Public action boundary
+## Request trust split
 
-Public mode deliberately does not expose the complete connector action catalog. Its transport allowlist currently contains:
+The request workflow and trusted executor both validate same-repository origin and the allowed actor. The executor also validates the latest request commit author and exact head SHA, then re-reads the PR head immediately before WordPress execution. Result/receipt writeback checks the unchanged request branch again.
 
-- `post.update`;
-- post-targeted `acf.update`;
-- `connector.batch` containing only those two content actions;
-- `connector.rollback`;
-- `connector.update.check` with an empty payload;
-- `connector.update.apply` with an empty payload, dry-run-first fingerprint protection and confirmation for a real update.
+## Public/private split
 
-The public self-update is a special narrow exception, not a general privileged-action bridge. Only the two canonical connector update actions carry `public_repository_safe`; the WordPress privileged gate remains required, and a real apply also requires the write and system-update gates. Sensitive actions remain blocked in public-repository mode.
+Repository visibility comes from the verified GitHub OIDC claim and is propagated into `Security\Policy`.
 
-The self-update request cannot supply package bytes, a package URL, release URL or requested version. The WordPress adapter resolves only the canonical `Yolol100/wordpressconnector` release, verifies the checksum and ZIP/plugin identity, and performs exact installed-version readback. `plugin.install_package` remains excluded from public mode because custom/private ZIP bytes must never pass through a public request branch.
+- public: sensitive actions blocked; privileged actions only when marked public-safe; sanitized receipt only;
+- private: authenticated capabilities and request-level safeguards govern the broader action catalog; full results may be written to the private request branch.
 
-Public request validation also blocks secret-like keys, string ACF targets such as options/users/terms, non-publish status changes and `expected_state_token` values. Public stale-state control uses `expected_fingerprint` values derived from sanitized receipts.
+## Discovery
 
-## Bootstrap boundary
+The `/presence` route gives deterministic recognition for a known domain. There is intentionally no anonymous global site registry inside this plugin. Enumerating unknown installations requires a separate authenticated registry/pairing component because neither GitHub nor WordPress can securely infer an unknown domain from plugin activation alone.
 
-A live connector that predates `connector.update.apply` cannot invoke that action. Generic filesystem access and `plugin.install_package` deliberately block connector self-replacement, so older runtimes require one manual package bootstrap to a release containing the self-updater. This is an intentional trust boundary rather than a missing remote-code path.
+## State and mutation safety
 
-## State model
-
-Every request has a stable `request_id`, action and payload. Real mutations are idempotent and serialized by a mutation lock.
-
-Two optional stale-state guards are supported by the connector:
-
-- `expected_fingerprint`: SHA-256 over normalized current state;
-- `expected_state_token`: HMAC-SHA-256 over that fingerprint using the WordPress auth salt.
-
-A mismatch aborts before the real write. Mutations that expose rollback metadata are stored by request ID and can be restored through `connector.rollback`.
-
-Public GitHub receipts expose only deterministic before/after fingerprints. They do not publish site-scoped HMAC state tokens.
-
-## Elementor
-
-Elementor documents are written through Elementor document APIs. Direct `_elementor_data` mutation is not a supported write path.
-
-WordPress admin import/export is implemented in this plugin. `elementorjson` remains an external QA/evidence runtime, not a second production bridge.
-
-## Repository hygiene
-
-Permanent source may contain the guarded GitHub transport workflows, validators, receipt builder and contract tests. Permanent source must not contain production request/result/receipt payloads, site credentials, private plugin packages or private runtime state.
+The semantic connector runtime remains unchanged in principle: strict request IDs, dry-run, `confirm=true` for real mutations, capability checks, idempotency, mutation locking, stale-state fingerprints/tokens, exact readback and rollback where supported. GitHub OIDC changes transport authentication, not the semantic action contract.

@@ -19,8 +19,15 @@ $cleanupCurrentSite = static function (): void {
         delete_option($option);
     }
 
+    delete_transient('wpconnector_github_oidc_jwks_v1');
+
     global $wpdb;
-    foreach (array('wpconnector_snapshot_', 'wpconnector_processed_') as $prefix) {
+    foreach (array(
+        'wpconnector_snapshot_',
+        'wpconnector_processed_',
+        '_transient_wpconnector_oidc_jti_',
+        '_transient_timeout_wpconnector_oidc_jti_',
+    ) as $prefix) {
         $like = $wpdb->esc_like($prefix) . '%';
         $names = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
         foreach ((array) $names as $name) {

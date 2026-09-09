@@ -145,7 +145,7 @@ jobs:
       actions: write
       contents: read
     steps:
-      - name: Dispatch trusted main-branch WordPress executor
+      - name: Dispatch trusted zero-config WordPress executor
         env:
           GH_REPO_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
@@ -176,11 +176,11 @@ jobs:
             --header 'X-GitHub-Api-Version: 2026-03-10' \
             --header 'Content-Type: application/json' \
             --data "$payload" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/wordpress-execute.yml/dispatches")
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/workflows/wordpress-zero-config-execute.yml/dispatches")
 
           if [[ "$http_code" != '200' && "$http_code" != '204' ]]; then
             echo "Unable to dispatch trusted WordPress executor; GitHub returned HTTP ${http_code}." >&2
             exit 1
           fi
 
-          echo "Trusted WordPress executor dispatched for PR ${PR_NUMBER} at head ${EXPECTED_HEAD_SHA}."
+          echo "Trusted zero-config WordPress executor dispatched for PR ${PR_NUMBER} at head ${EXPECTED_HEAD_SHA}."
