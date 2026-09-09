@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "small-live-test-portfolio-20260909-dry",
+    "action": "post.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-09T13:50:26+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "before_fingerprint": "e414107ccb0583c948445510b9b5a646b821a71055376cc41cc426f320afb0f5",
+    "after_fingerprint": "1f0133041375bd9405abfdbe20f377969cebc7c29ac48b0096895abf114bfacb"
+}
