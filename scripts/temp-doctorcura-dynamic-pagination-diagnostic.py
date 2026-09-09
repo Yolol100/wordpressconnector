@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-import base64
 import hashlib
 import json
 import math
 import os
 import re
-import urllib.error
-import urllib.parse
-import urllib.request
+import subprocess
+import tempfile
 
 SITE = os.environ.get('SITE_URL', '').rstrip('/')
 USER = os.environ.get('REST_USERNAME', '')
@@ -17,44 +15,38 @@ OUT = 'doctorcura-dynamic-pagination-diagnostic.json'
 if SITE != 'https://doctorcura.com' or not USER or not PASSWORD:
     raise RuntimeError('DoctorCura environment mismatch')
 
-AUTH = 'Basic ' + base64.b64encode(f'{USER}:{PASSWORD}'.encode()).decode()
-
-class TrackingRedirect(urllib.request.HTTPRedirectHandler):
-    def __init__(self):
-        super().__init__()
-        self.redirects = 0
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        self.redirects += 1
-        return super().redirect_request(req, fp, code, msg, headers, newurl)
-
 def request(url, auth=False):
-    handler = TrackingRedirect()
-    opener = urllib.request.build_opener(handler)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (compatible; DoctorCuraDynamicPaginationAudit/1.0)',
-        'Accept-Encoding': 'identity',
-    }
-    if auth:
-        headers['Authorization'] = AUTH
-    req = urllib.request.Request(url, headers=headers, method='GET')
-    try:
-        with opener.open(req, timeout=30) as response:
-            body = response.read()
-            return {
-                'status': response.status,
-                'final_url': response.geturl(),
-                'redirects': handler.redirects,
-                'headers': dict(response.headers.items()),
-                'body': body,
-            }
-    except urllib.error.HTTPError as error:
-        body = error.read()
+    with tempfile.TemporaryDirectory(prefix='dc-dyn-') as td:
+        hdr = os.path.join(td, 'headers.txt')
+        body = os.path.join(td, 'body.bin')
+        cmd = [
+            'curl', '--silent', '--show-error', '--location', '--compressed',
+            '--connect-timeout', '10', '--max-time', '40',
+            '--user-agent', 'Mozilla/5.0 (compatible; DoctorCuraDynamicPaginationAudit/1.0)',
+            '--dump-header', hdr, '--output', body,
+            '--write-out', '%{http_code}\t%{url_effective}\t%{num_redirects}',
+        ]
+        if auth:
+            cmd += ['--user', f'{USER}:{PASSWORD}']
+        run = subprocess.run(cmd + [url], capture_output=True, text=True, timeout=45)
+        if run.returncode:
+            raise RuntimeError(run.stderr.strip() or f'curl exit {run.returncode}')
+        parts = run.stdout.strip().split('\t')
+        raw_headers = open(hdr, 'rb').read().decode('iso-8859-1', 'replace')
+        raw_body = open(body, 'rb').read()
+        blocks = [b for b in re.split(r'\r?\n\r?\n', raw_headers) if b.strip().startswith('HTTP/')]
+        last = blocks[-1] if blocks else ''
+        headers = {}
+        for line in last.splitlines()[1:]:
+            if ':' in line:
+                key, value = line.split(':', 1)
+                headers[key.lower().strip()] = value.strip()
         return {
-            'status': error.code,
-            'final_url': error.geturl(),
-            'redirects': handler.redirects,
-            'headers': dict(error.headers.items()),
-            'body': body,
+            'status': int(parts[0]),
+            'final_url': parts[1],
+            'redirects': int(parts[2]),
+            'headers': headers,
+            'body': raw_body,
         }
 
 def json_get(path, auth=False):
@@ -113,10 +105,9 @@ if isinstance(pages, list) and pages:
     }
 
 _, post_headers = json_get('/wp-json/wp/v2/posts?per_page=1&_fields=id', auth=False)
-post_total = int(post_headers.get('X-WP-Total') or post_headers.get('x-wp-total') or 0)
+post_total = int(post_headers.get('x-wp-total') or 0)
 calculated_pages = math.ceil(post_total / posts_per_page) if posts_per_page else None
 
-# Probe current live page space plus one future/out-of-range slot.
 max_probe = max(7, (calculated_pages or 5) + 2)
 rows = []
 for prefix in ('', '/fr', '/en', '/de'):
@@ -132,8 +123,8 @@ result = {
         'name': name,
         'code_sha256': hashlib.sha256(code.encode()).hexdigest(),
         'has_v82_marker': 'DoctorCura blog pagination cleanup V8.2' in code,
-        'has_hardcoded_4_5': "blogs/(4|5)" in code,
-        'has_hardcoded_page_5': "blogs/page/5" in code,
+        'has_hardcoded_4_5': 'blogs/(4|5)' in code,
+        'has_hardcoded_page_5': 'blogs/page/5' in code,
     },
     'wordpress': {
         'show_on_front': show_on_front,
@@ -145,7 +136,6 @@ result = {
     },
     'probes': rows,
 }
-
 with open(OUT, 'w', encoding='utf-8') as handle:
     json.dump(result, handle, ensure_ascii=False, indent=2)
 print(json.dumps(result, ensure_ascii=False, indent=2))
