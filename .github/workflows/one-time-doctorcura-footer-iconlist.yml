@@ -1,0 +1,38 @@
+name: One-time DoctorCura footer icon list inspect
+on:
+  push:
+    branches: [main]
+    paths: ['doctorcura-footer-iconlist/*.json']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect footer icon lists
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/x"; mkdir -p "$root"
+          python3 - "$root/r.json" <<'PY'
+          import json,sys,uuid
+          json.dump({'version':1,'request_id':'dc-icons-'+uuid.uuid4().hex[:20],'action':'elementor.inspect','dry_run':True,'confirm':False,'payload':{'id':95}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r.json" -o "$root/o.json" "${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/execute"
+          python3 - "$root/o.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); doc=(d.get('data') or {}).get('document') or {}
+          def walk(v,path='root'):
+              if isinstance(v,dict):
+                  if 'icon_list' in v: print(path+'.icon_list',json.dumps(v['icon_list'],ensure_ascii=False))
+                  for k,x in v.items(): walk(x,path+'.'+str(k))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,path+f'[{i}]')
+          walk(doc)
+          PY
