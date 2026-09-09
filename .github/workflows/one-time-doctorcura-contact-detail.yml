@@ -1,0 +1,57 @@
+name: One-time DoctorCura contact detail inspect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-contact-detail/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect pages 3, 11 and footer 95
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-detail"; mkdir -p "$root"
+          for id in 3 11 95; do
+            for action in post.get elementor.inspect; do
+              key="${action//./-}-$id"
+              python3 - "$root/r-$key.json" "$action" "$id" <<'PY'
+          import json,sys,uuid
+          p,a,i=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-detail-'+uuid.uuid4().hex[:20],'action':a,'dry_run':True,'confirm':False,'payload':{'id':int(i)}},open(p,'w'),separators=(',',':'))
+          PY
+              code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$key.json" -o "$root/o-$key.json" -w '%{http_code}' "$base/execute")
+              echo "$key HTTP $code"
+            done
+          done
+          python3 - "$root" <<'PY'
+          import json,os,sys
+          root=sys.argv[1]
+          needles=['Keizersgracht 241','08 550 55 433','085 505 5433','0855055433','contact@doctorcura.com']
+          for pid in [3,11,95]:
+              print('TARGET',pid)
+              for kind in ['post-get','elementor-inspect']:
+                  p=os.path.join(root,f'o-{kind}-{pid}.json')
+                  d=json.load(open(p,encoding='utf-8'))
+                  raw=json.dumps(d.get('data'),ensure_ascii=False)
+                  print(kind,'ok=',d.get('ok'),'length=',len(raw))
+                  for n in needles:
+                      print(' contains',repr(n), n in raw)
+                  for n in needles[:4]:
+                      i=raw.find(n)
+                      if i>=0:
+                          print(' context',raw[max(0,i-100):i+len(n)+160])
+          PY
