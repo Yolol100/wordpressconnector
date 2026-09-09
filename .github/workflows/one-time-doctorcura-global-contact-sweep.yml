@@ -1,0 +1,261 @@
+name: One-time DoctorCura global contact sweep
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-global-contact-sweep/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-global-contact-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Replace legacy address and phone across WordPress, WooCommerce, Elementor and snippets
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target.' >&2; exit 1; }
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          snippets="$site/wp-json/code-snippets/v1/snippets"
+          root="$RUNNER_TEMP/dc-global-contact"; rm -rf "$root"; mkdir -p "$root"
+
+          call() {
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload_file="$5"
+            python3 - "$root/r-$suffix.json" "$action" "$dry" "$confirm" "$payload_file" <<'PY'
+          import json,sys,uuid
+          path,action,dry,confirm,payload_file=sys.argv[1:]
+          payload=json.load(open(payload_file,encoding='utf-8'))
+          req={'version':1,'request_id':'dc-global-'+uuid.uuid4().hex[:24],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':payload}
+          json.dump(req,open(path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute")
+            [[ "$code" == '200' ]] || { echo "$action transport failed HTTP $code" >&2; cat "$root/o-$suffix.json" >&2 || true; return 1; }
+            python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'): raise SystemExit('connector action returned ok=false')
+          PY
+          }
+
+          health_code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health")
+          [[ "$health_code" == '200' ]] || exit 1
+
+          # Exact legacy values only, to avoid changing unrelated Amsterdam content.
+          cat > "$root/replacements.json" <<'JSON'
+          {
+            "address_variants": [
+              "Keizersgracht 241, 1016 EA Amsterdam, Netherlands",
+              "Keizersgracht 241, 1016 EA Amsterdam, Niederlande",
+              "Keizersgracht 241, 1016 EA, Amsterdam, The Netherlands",
+              "Keizersgracht 241, 1016 EA, Amsterdam, Netherlands",
+              "Keizersgracht 241, 1016 EA, Amsterdam, Niederlande",
+              "Keizersgracht 241, 1016 EA Amsterdam, The Netherlands",
+              "Keizersgracht 241<br>1016 EA Amsterdam, Netherlands",
+              "Keizersgracht 241<br>1016 EA Amsterdam, Niederlande",
+              "Keizersgracht 241<br />1016 EA Amsterdam, Netherlands",
+              "Keizersgracht 241<br />1016 EA Amsterdam, Niederlande"
+            ],
+            "phone_variants": [
+              "08 550 55 433",
+              "085 505 5433",
+              "0855055433",
+              "+31 (0)85 505 5433",
+              "+31 85 505 5433"
+            ]
+          }
+          JSON
+
+          # Discover all common content objects, then inspect/update post content and Elementor JSON.
+          : > "$root/objects.tsv"
+          for type in page post product elementor_library wp_block; do
+            printf '{"post_type":"%s","status":"any","per_page":100,"page":1}' "$type" > "$root/list-$type.json"
+            if call "list-$type" post.list true false "$root/list-$type.json"; then
+              python3 - "$root/o-list-$type.json" "$type" >> "$root/objects.tsv" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); typ=sys.argv[2]
+          for x in (d.get('data') or {}).get('items',[]):
+              if isinstance(x,dict) and isinstance(x.get('id'),int): print(f"{x['id']}\t{typ}")
+          PY
+            fi
+          done
+          sort -u "$root/objects.tsv" -o "$root/objects.tsv"
+
+          changed_posts=0; changed_elementor=0
+          while IFS=$'\t' read -r id type; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "get-$id" post.get true false "$root/id.json" || continue
+            call "el-$id" elementor.inspect true false "$root/id.json" || true
+
+            python3 - "$root/o-get-$id.json" "$root/o-el-$id.json" "$root/replacements.json" "$root/post-$id.json" "$root/el-$id.json" <<'PY'
+          import json,os,sys
+          postf,elf,repf,postout,elout=sys.argv[1:]
+          r=json.load(open(repf,encoding='utf-8'))
+          old_addr=r['address_variants']; old_phone=r['phone_variants']
+          new_addr='Veldbloemlaan 93\n3452CK Vleuten, The Netherlands'
+          new_addr_inline='Veldbloemlaan 93, 3452CK Vleuten, The Netherlands'
+          new_phone='+31 85 505 54 33'
+          def replace_text(s):
+              # Preserve HTML line-break style where practical.
+              for old in old_addr:
+                  if old in s:
+                      target = 'Veldbloemlaan 93<br>3452CK Vleuten, The Netherlands' if '<br>' in old else ('Veldbloemlaan 93<br />3452CK Vleuten, The Netherlands' if '<br />' in old else new_addr_inline)
+                      s=s.replace(old,target)
+              for old in old_phone:
+                  s=s.replace(old,new_phone)
+              s=s.replace('tel:0855055433','tel:+31855055433')
+              s=s.replace('tel:+31 85 505 54 33','tel:+31855055433')
+              return s
+          def walk(v):
+              if isinstance(v,str): return replace_text(v)
+              if isinstance(v,list): return [walk(x) for x in v]
+              if isinstance(v,dict): return {k:walk(x) for k,x in v.items()}
+              return v
+          pd=json.load(open(postf,encoding='utf-8')); post=(pd.get('data') or {}).get('post') or {}
+          content=post.get('content','') if isinstance(post,dict) else ''
+          ncontent=replace_text(content)
+          json.dump({'id':int(post.get('id',0)),'content':ncontent,'status':post.get('status','publish')},open(postout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          open(postout+'.changed','w').write('1' if ncontent!=content else '0')
+          if os.path.exists(elf):
+              try:
+                  ed=json.load(open(elf,encoding='utf-8')); doc=(ed.get('data') or {}).get('document') or {}
+                  data=doc.get('data',[]); settings=doc.get('page_settings',{})
+                  nd=walk(data); ns=walk(settings)
+                  json.dump({'id':int(post.get('id',0)),'data':nd,'page_settings':ns},open(elout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+                  open(elout+'.changed','w').write('1' if nd!=data or ns!=settings else '0')
+              except Exception:
+                  open(elout+'.changed','w').write('0')
+          else:
+              open(elout+'.changed','w').write('0')
+          PY
+            if [[ "$(cat "$root/post-$id.json.changed")" == 1 ]]; then
+              call "write-post-$id" post.update false true "$root/post-$id.json"
+              changed_posts=$((changed_posts+1))
+            fi
+            if [[ "$(cat "$root/el-$id.json.changed")" == 1 ]]; then
+              call "write-el-$id" elementor.replace_document false true "$root/el-$id.json"
+              changed_elementor=$((changed_elementor+1))
+            fi
+          done < "$root/objects.tsv"
+
+          # WooCommerce store address options.
+          declare -A woovalues=(
+            [woocommerce_store_address]='Veldbloemlaan 93'
+            [woocommerce_store_address_2]=''
+            [woocommerce_store_city]='Vleuten'
+            [woocommerce_store_postcode]='3452CK'
+            [woocommerce_default_country]='NL'
+          )
+          changed_woo=0
+          for key in "${!woovalues[@]}"; do
+            python3 - "$root/opt.json" "$key" <<'PY'
+          import json,sys
+          json.dump({'name':sys.argv[1]},open(sys.argv[2] if False else '/dev/null','w'))
+          PY
+            printf '{"name":"%s"}' "$key" > "$root/opt-get.json"
+            if call "optget-${key//_/-}" option.get true false "$root/opt-get.json"; then
+              python3 - "$root/opt-write.json" "$key" "${woovalues[$key]}" <<'PY'
+          import json,sys
+          path,key,value=sys.argv[1:]
+          json.dump({'name':key,'value':value},open(path,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+              call "optwrite-${key//_/-}" option.update false true "$root/opt-write.json"
+              changed_woo=$((changed_woo+1))
+            fi
+          done
+
+          # Update legacy strings inside Code Snippets when present, preserving snippet metadata.
+          changed_snippets=0
+          scode=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/snippets.json" -w '%{http_code}' "$snippets?per_page=100&page=1" || true)
+          if [[ "$scode" == 200 ]]; then
+            python3 - "$root/snippets.json" "$root/replacements.json" "$root/snippet-updates" <<'PY'
+          import json,os,sys
+          sf,rf,outdir=sys.argv[1:]; os.makedirs(outdir,exist_ok=True)
+          d=json.load(open(sf,encoding='utf-8')); items=d if isinstance(d,list) else d.get('items',d.get('snippets',[])) if isinstance(d,dict) else []
+          r=json.load(open(rf,encoding='utf-8'))
+          def rep(s):
+              for old in r['address_variants']: s=s.replace(old,'Veldbloemlaan 93, 3452CK Vleuten, The Netherlands')
+              for old in r['phone_variants']: s=s.replace(old,'+31 85 505 54 33')
+              s=s.replace('tel:0855055433','tel:+31855055433')
+              return s
+          for x in items:
+              if not isinstance(x,dict) or not isinstance(x.get('id'),int): continue
+              code=x.get('code',''); ncode=rep(code) if isinstance(code,str) else code
+              if ncode==code: continue
+              payload={k:x[k] for k in ('name','desc','tags','scope','priority','active') if k in x}
+              payload['code']=ncode
+              json.dump(payload,open(os.path.join(outdir,str(x['id'])+'.json'),'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            shopt -s nullglob
+            for f in "$root/snippet-updates"/*.json; do
+              sid=$(basename "$f" .json)
+              code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$f" -o "$root/snippet-$sid.json" -w '%{http_code}' "$snippets/$sid")
+              [[ "$code" == 200 ]] || { echo "Snippet $sid update HTTP $code" >&2; exit 1; }
+              changed_snippets=$((changed_snippets+1))
+            done
+          fi
+
+          # Live DoctorCura Core request-email source file, if filesystem writes are enabled.
+          printf '%s' '{"path":"wp-content/plugins/doctorcura-core/includes/extra-request-form.php"}' > "$root/fs-read.json"
+          changed_file=0
+          if call fsread filesystem.read_text true false "$root/fs-read.json"; then
+            python3 - "$root/o-fsread.json" "$root/replacements.json" "$root/fs-write.json" "$root/fs-needed" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); r=json.load(open(sys.argv[2],encoding='utf-8')); data=d.get('data') or {}; content=data.get('content',''); state=data.get('file') or {}
+          s=content
+          for old in r['address_variants']: s=s.replace(old,'Veldbloemlaan 93, 3452CK Vleuten, The Netherlands')
+          for old in r['phone_variants']: s=s.replace(old,'+31 85 505 54 33')
+          s=s.replace('tel:0855055433','tel:+31855055433')
+          json.dump({'path':'wp-content/plugins/doctorcura-core/includes/extra-request-form.php','content':s,'expected_sha256':state.get('sha256','')},open(sys.argv[3],'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          open(sys.argv[4],'w').write('1' if s!=content else '0')
+          PY
+            if [[ "$(cat "$root/fs-needed")" == 1 ]]; then
+              if call fswrite filesystem.write_text false true "$root/fs-write.json"; then changed_file=1; else echo 'Filesystem write gate unavailable; live content objects and settings were still updated.'; fi
+            fi
+          fi
+
+          printf '%s' '{}' > "$root/empty.json"
+          call regen elementor.regenerate false true "$root/empty.json" || true
+          call cache cache.flush false true "$root/empty.json" || true
+
+          # Final focused readback: privacy, terms and footer must contain no legacy address/phone.
+          for id in 3 11 95; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "verify-post-$id" post.get true false "$root/id.json" || true
+            call "verify-el-$id" elementor.inspect true false "$root/id.json" || true
+          done
+          python3 - "$root" "$root/replacements.json" <<'PY'
+          import glob,json,os,sys
+          root,rf=sys.argv[1:]; r=json.load(open(rf,encoding='utf-8'))
+          legacy=r['address_variants']+r['phone_variants']+['tel:0855055433','Keizersgracht 241']
+          checked=[]
+          for p in glob.glob(root+'/o-verify-*.json'):
+              try: raw=json.dumps(json.load(open(p,encoding='utf-8')).get('data'),ensure_ascii=False)
+              except Exception: continue
+              checked.append((os.path.basename(p),raw))
+          hits=[]
+          for name,raw in checked:
+              for old in legacy:
+                  if old in raw: hits.append((name,old))
+          if hits: raise SystemExit('Legacy values remain in focused readback: '+repr(hits[:10]))
+          footer=''.join(raw for name,raw in checked if name.endswith('-95.json'))
+          if '+31 85 505 54 33' not in footer or 'Veldbloemlaan 93' not in footer: raise SystemExit('Footer final values missing')
+          privacy=''.join(raw for name,raw in checked if name.endswith('-3.json'))
+          if 'Veldbloemlaan 93' not in privacy: raise SystemExit('Privacy final address missing')
+          print('FINAL_VERIFY_OK')
+          PY
+
+          echo "GLOBAL_SWEEP_OK posts=$changed_posts elementor=$changed_elementor woo_options=$changed_woo snippets=$changed_snippets plugin_file=$changed_file"
