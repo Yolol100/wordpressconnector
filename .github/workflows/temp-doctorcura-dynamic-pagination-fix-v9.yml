@@ -1,4 +1,4 @@
-name: Temporary DoctorCura Dynamic Pagination V9 Fix
+name: Temporary DoctorCura Dynamic Pagination V10 Fix
 
 on:
   push:
@@ -13,19 +13,19 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-      - name: Apply guarded dynamic pagination V9
+      - name: Apply guarded dynamic pagination V10
         run: python3 scripts/temp-doctorcura-dynamic-pagination-fix-v9.py
-      - name: Upload V9 verification
+      - name: Upload V10 verification
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: doctorcura-dynamic-pagination-v9-verification
-          path: doctorcura-dynamic-pagination-v9-verification.json
+          name: doctorcura-dynamic-pagination-v10-verification
+          path: doctorcura-dynamic-pagination-v10-verification.json
           if-no-files-found: error
           retention-days: 1
