@@ -1,1 +1,1 @@
-DoctorCura cache purge, temporary snippet self-cleanup, and hreflang verification marker. No secrets. Close without merge.
+DoctorCura cache purge and hreflang verification marker v4b. Uses authenticated one-time REST purge callback and self-cleanup. No secrets. Close without merge.
