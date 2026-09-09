@@ -1,0 +1,105 @@
+name: One-time DoctorCura exact legal update
+on:
+  push:
+    branches: [main]
+    paths: ['doctorcura-legal-update-exact/*.json']
+permissions:
+  contents: read
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Update privacy page and verify shared footer
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]]
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-legal"; mkdir -p "$root"
+          call() {
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"
+            python3 - "$root/r-$suffix.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          path,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-legal-'+uuid.uuid4().hex[:20],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(path,'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+            code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute")
+            [[ "$code" == '200' ]] || { echo "$action HTTP $code" >&2; exit 1; }
+            python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'): raise SystemExit('Connector action returned ok=false')
+          PY
+          }
+
+          call post3 post.get true false '{"id":3}'
+          call el3 elementor.inspect true false '{"id":3}'
+          call footer elementor.inspect true false '{"id":95}'
+
+          python3 - "$root/o-post3.json" "$root/o-el3.json" "$root/o-footer.json" "$root/post-write.json" "$root/el-write.json" <<'PY'
+          import json,sys
+          postf,elf,footerf,postout,elout=sys.argv[1:]
+          old_variants=[
+            'Keizersgracht 241, 1016 EA Amsterdam, Niederlande.',
+            'Keizersgracht 241, 1016 EA Amsterdam, Niederlande',
+            'Keizersgracht 241, 1016 EA Amsterdam, Netherlands.',
+            'Keizersgracht 241, 1016 EA Amsterdam, Netherlands',
+            'Keizersgracht 241, 1016 EA, Amsterdam, The Netherlands',
+          ]
+          new_inline='Veldbloemlaan 93, 3452CK Vleuten, The Netherlands'
+          def rep(s):
+              for old in old_variants:
+                  if old in s:
+                      suffix='.' if old.endswith('.') else ''
+                      s=s.replace(old,new_inline+suffix)
+              return s
+          def walk(v):
+              if isinstance(v,str): return rep(v)
+              if isinstance(v,list): return [walk(x) for x in v]
+              if isinstance(v,dict): return {k:walk(x) for k,x in v.items()}
+              return v
+
+          pd=json.load(open(postf,encoding='utf-8')); post=(pd.get('data') or {}).get('post') or {}
+          content=post.get('content',''); new_content=rep(content)
+          if 'Keizersgracht 241' in new_content: raise SystemExit('Old privacy address remained in post content')
+          if 'Veldbloemlaan 93' not in new_content: raise SystemExit('New privacy address missing from post content')
+          json.dump({'id':3,'content':new_content,'status':'publish'},open(postout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+
+          ed=json.load(open(elf,encoding='utf-8')); doc=(ed.get('data') or {}).get('document') or {}
+          ndata=walk(doc.get('data',[])); nsettings=walk(doc.get('page_settings',{}))
+          raw=json.dumps(ndata,ensure_ascii=False)
+          if 'Keizersgracht 241' in raw: raise SystemExit('Old privacy address remained in Elementor data')
+          if 'Veldbloemlaan 93' not in raw: raise SystemExit('New privacy address missing from Elementor data')
+          json.dump({'id':3,'data':ndata,'page_settings':nsettings},open(elout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+
+          fd=json.load(open(footerf,encoding='utf-8')); fdoc=(fd.get('data') or {}).get('document') or {}
+          fraw=json.dumps(fdoc.get('data',[]),ensure_ascii=False)
+          for expected in ['+31 85 505 54 33','Veldbloemlaan 93<br>3452CK Vleuten, The Netherlands']:
+              if expected not in fraw: raise SystemExit('Footer expected value missing: '+expected)
+          if 'Keizersgracht 241' in fraw: raise SystemExit('Old footer address still present')
+          PY
+
+          call postwrite post.update false true "$(cat "$root/post-write.json")"
+          call elwrite elementor.replace_document false true "$(cat "$root/el-write.json")"
+          call regen elementor.regenerate false true '{}'
+          call cache cache.flush false true '{}'
+
+          call post3check post.get true false '{"id":3}'
+          call el3check elementor.inspect true false '{"id":3}'
+          call footercheck elementor.inspect true false '{"id":95}'
+          python3 - "$root/o-post3check.json" "$root/o-el3check.json" "$root/o-footercheck.json" <<'PY'
+          import json,sys
+          raws=[]
+          for p in sys.argv[1:]:
+              d=json.load(open(p,encoding='utf-8')); raws.append(json.dumps(d.get('data'),ensure_ascii=False))
+          if 'Keizersgracht 241' in ''.join(raws): raise SystemExit('Readback still contains old address')
+          if 'Veldbloemlaan 93' not in raws[0] or 'Veldbloemlaan 93' not in raws[1]: raise SystemExit('Privacy readback missing new address')
+          if '+31 85 505 54 33' not in raws[2] or 'Veldbloemlaan 93<br>3452CK Vleuten, The Netherlands' not in raws[2]: raise SystemExit('Footer readback mismatch')
+          print('READBACK_OK privacy_page=3 terms_page=11 footer_template=95')
+          PY
