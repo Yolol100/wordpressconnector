@@ -1,0 +1,192 @@
+name: WordPress Zero Config Execute
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        required: true
+        type: string
+      expected_head_sha:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: read
+  id-token: write
+
+concurrency:
+  group: wordpress-zero-config-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate trusted runtime request
+        id: preflight
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+          OWNER: ${{ github.repository_owner }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$PR_NUMBER" =~ ^[1-9][0-9]*$ ]]
+          [[ "$EXPECTED_HEAD_SHA" =~ ^[a-f0-9]{40}$ ]]
+          root="$RUNNER_TEMP/wpconnector"
+          rm -rf "$root"
+          mkdir -p "$root/trusted" "$root/results" "$root/receipts"
+          pr="$root/pr.json"
+          code=$(curl --silent --show-error --output "$pr" --write-out '%{http_code}' \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header 'X-GitHub-Api-Version: 2026-03-10' \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}")
+          [[ "$code" == 200 ]]
+          meta=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$repo=getenv("GITHUB_REPOSITORY");$owner=getenv("OWNER");$expected=getenv("EXPECTED_HEAD_SHA");$actor=(string)($p["user"]["login"]??"");$headRepo=(string)($p["head"]["repo"]["full_name"]??"");$headSha=(string)($p["head"]["sha"]??"");$headRef=(string)($p["head"]["ref"]??"");$baseSha=(string)($p["base"]["sha"]??"");$baseRepo=(string)($p["base"]["repo"]["full_name"]??"");$baseRef=(string)($p["base"]["ref"]??"");if(($p["state"]??"")!=="open"||$actor!==$owner||$headRepo!==$repo||$baseRepo!==$repo||$baseRef!=="main"||!hash_equals($expected,$headSha)){fwrite(STDERR,"Untrusted runtime request.\n");exit(1);}echo $baseSha."\t".$headSha."\t".$headRef;' "$pr")
+          IFS=$'\t' read -r base_sha head_sha head_ref <<< "$meta"
+          cd "$root"
+          git init repo
+          cd repo
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --depth=1 origin main
+          git branch trusted-main FETCH_HEAD
+          git fetch --depth=1 origin "$base_sha"
+          git branch request-base FETCH_HEAD
+          git fetch --depth=1 origin "$head_sha"
+          git branch request-head FETCH_HEAD
+          mapfile -t changed < <(git diff --name-only request-base request-head)
+          request_count=0
+          request_path=''
+          for path in "${changed[@]}"; do
+            mode=$(git ls-tree request-head -- "$path" | awk '{print $1}')
+            [[ -z "$mode" || "$mode" == 100644 ]] || { echo "Unsafe runtime file mode: $path" >&2; exit 1; }
+            case "$path" in
+              requests/*.json) ((request_count+=1)); request_path="$path" ;;
+              receipts/*.json|results/*.json) ;;
+              *) echo "Disallowed runtime path: $path" >&2; exit 1 ;;
+            esac
+          done
+          (( request_count == 1 )) || { echo 'Exactly one request JSON is required.' >&2; exit 1; }
+          git show "trusted-main:scripts/validate-request.php" > "$root/trusted/validate-request.php"
+          git show "request-head:$request_path" > "$root/request.json"
+          php "$root/trusted/validate-request.php" "$root/request.json"
+          public_mode=false
+          if [[ "${{ github.event.repository.private }}" != true ]]; then
+            public_mode=true
+            git show "trusted-main:scripts/validate-public-request.php" > "$root/trusted/validate-public-request.php"
+            git show "trusted-main:scripts/build-public-receipt.php" > "$root/trusted/build-public-receipt.php"
+            php "$root/trusted/validate-public-request.php" "$root/request.json"
+          fi
+          request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["request_id"];' "$root/request.json")
+          site_url=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["site_url"];' "$root/request.json")
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);unset($d["site_url"]);file_put_contents($argv[2],json_encode($d,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");' "$root/request.json" "$root/connector-request.json"
+          echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
+          echo "site_url=$site_url" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+          echo "public_mode=$public_mode" >> "$GITHUB_OUTPUT"
+
+      - name: Verify connector presence
+        env:
+          SITE_URL: ${{ steps.preflight.outputs.site_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          code=$(curl --silent --show-error --output "$RUNNER_TEMP/presence.json" --write-out '%{http_code}' "$base/presence")
+          [[ "$code" == 200 ]]
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(empty($d["ok"])||empty($d["zero_config"]))exit(1);' "$RUNNER_TEMP/presence.json"
+
+      - name: Execute with short-lived GitHub OIDC
+        id: execute
+        continue-on-error: true
+        env:
+          SITE_URL: ${{ steps.preflight.outputs.site_url }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
+          audience=$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$base")
+          token_json=$(curl --silent --show-error --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")
+          oidc=$(OIDC="$token_json" python3 -c 'import json,os;print(json.loads(os.environ["OIDC"])["value"])')
+          result="$RUNNER_TEMP/wpconnector/results/${REQUEST_ID}.json"
+          code=$(curl --silent --show-error --output "$result" --write-out '%{http_code}' \
+            --connect-timeout 10 --max-time 180 \
+            --header 'Accept: application/json' \
+            --header 'Content-Type: application/json' \
+            --header "X-Webactueel-GitHub-OIDC: ${oidc}" \
+            --data-binary "@$RUNNER_TEMP/wpconnector/connector-request.json" \
+            "$base/execute")
+          unset oidc token_json
+          [[ "$code" == 200 ]]
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(($d["request_id"]??"")!==$argv[2])exit(1);' "$result" "$REQUEST_ID"
+
+      - name: Build public receipt
+        if: always() && steps.preflight.outputs.public_mode == 'true'
+        env:
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector/results/${REQUEST_ID}.json"
+          [[ -s "$result" ]] || exit 0
+          php "$RUNNER_TEMP/wpconnector/trusted/build-public-receipt.php" "$RUNNER_TEMP/wpconnector/connector-request.json" "$result" "$RUNNER_TEMP/wpconnector/receipts/${REQUEST_ID}.json"
+
+      - name: Persist sanitized public receipt
+        if: always() && steps.preflight.outputs.public_mode == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+          HEAD_REF: ${{ steps.preflight.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          receipt="$RUNNER_TEMP/wpconnector/receipts/${REQUEST_ID}.json"
+          [[ -s "$receipt" ]] || exit 0
+          work="$RUNNER_TEMP/result-push"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout "$HEAD_REF"
+          [[ "$(git rev-parse HEAD)" == "$HEAD_SHA" ]]
+          mkdir -p receipts
+          cp "$receipt" "receipts/${REQUEST_ID}.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "receipts/${REQUEST_ID}.json"
+          git commit -m "Add sanitized WordPress receipt ${REQUEST_ID}" || exit 0
+          git push origin HEAD:"$HEAD_REF"
+
+      - name: Persist private result
+        if: always() && steps.preflight.outputs.public_mode != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
+          HEAD_REF: ${{ steps.preflight.outputs.head_ref }}
+          HEAD_SHA: ${{ steps.preflight.outputs.head_sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/wpconnector/results/${REQUEST_ID}.json"
+          [[ -s "$result" ]] || exit 0
+          work="$RUNNER_TEMP/result-push"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$work"
+          cd "$work"
+          git checkout "$HEAD_REF"
+          [[ "$(git rev-parse HEAD)" == "$HEAD_SHA" ]]
+          mkdir -p results
+          cp "$result" "results/${REQUEST_ID}.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "results/${REQUEST_ID}.json"
+          git commit -m "Add WordPress result ${REQUEST_ID}" || exit 0
+          git push origin HEAD:"$HEAD_REF"
+
+      - name: Fail when execution failed
+        if: steps.execute.outcome == 'failure'
+        run: exit 1
