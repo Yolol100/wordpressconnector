@@ -1,91 +1,59 @@
 #!/usr/bin/env python3
-import hashlib,json,os,secrets,subprocess,tempfile
+import hashlib,json,os,re,subprocess,tempfile
 
 SITE=os.environ.get('SITE_URL','').rstrip('/')
 USER=os.environ.get('REST_USERNAME','')
 PASSWORD=os.environ.get('REST_APP_PASSWORD','')
 API=f'{SITE}/wp-json/code-snippets/v1/snippets/43'
-EXPECTED='6a7c7520a8030055756bc4dc02e1562c6b75917ffef4d52303f27be247931cf3'
-MARKER='DoctorCura temporary cache purge and redirect trace'
+EXPECTED='83a05b5734751d01d93488fcfbcd601ce2e245a7f41e6d2675beaf38af1dec7b'
+MARKER='DoctorCura dynamic blog pagination cleanup V10'
 if SITE!='https://doctorcura.com' or not USER or not PASSWORD: raise RuntimeError('DoctorCura environment mismatch')
 
-def curl(url,payload=None,auth=False,trace=False):
-    with tempfile.TemporaryDirectory(prefix='dc-cache-trace-') as td:
-        hdr=os.path.join(td,'headers.txt'); body=os.path.join(td,'body.bin')
-        cmd=['curl','--silent','--show-error','--compressed','--connect-timeout','10','--max-time','45','--dump-header',hdr,'--output',body,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}']
-        if trace: cmd += ['--header','Cache-Control: no-cache, no-store, max-age=0','--header','Pragma: no-cache','--header','X-DoctorCura-Diagnostic: cache-trace']
+def curl(url,auth=False,follow=False):
+    with tempfile.TemporaryDirectory(prefix='dc-v10-public-qa-') as td:
+        hdr=os.path.join(td,'headers.txt');body=os.path.join(td,'body.bin')
+        cmd=['curl','--silent','--show-error','--compressed','--connect-timeout','10','--max-time','45','--user-agent','Mozilla/5.0 (compatible; DoctorCuraPublicPaginationQA/1.0)','--dump-header',hdr,'--output',body,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}']
+        if follow: cmd.append('--location')
         if auth: cmd += ['--user',f'{USER}:{PASSWORD}']
-        if payload is not None:
-            p=os.path.join(td,'payload.json')
-            with open(p,'w',encoding='utf-8') as h: json.dump(payload,h,separators=(',',':'))
-            cmd += ['--request','POST','--header','X-HTTP-Method-Override: PUT','--header','Content-Type: application/json','--data-binary','@'+p]
         r=subprocess.run(cmd+[url],capture_output=True,text=True,timeout=55)
         if r.returncode: raise RuntimeError(r.stderr.strip() or f'curl {r.returncode}')
-        parts=r.stdout.strip().split('\t'); raw_headers=open(hdr,'rb').read().decode('iso-8859-1','replace'); raw_body=open(body,'rb').read()
+        parts=r.stdout.strip().split('\t');raw_headers=open(hdr,'rb').read().decode('iso-8859-1','replace');raw_body=open(body,'rb').read()
         blocks=[b for b in raw_headers.replace('\r\n','\n').split('\n\n') if b.strip().startswith('HTTP/')]
-        first=blocks[0] if blocks else ''; headers={}
-        for line in first.splitlines()[1:]:
-            if ':' in line:
-                k,v=line.split(':',1); headers.setdefault(k.lower().strip(),[]).append(v.strip())
-        return int(parts[0]),parts[1],int(parts[2]),headers,raw_body
+        def parse(block):
+            out={}
+            for line in block.splitlines()[1:]:
+                if ':' in line:
+                    k,v=line.split(':',1);out.setdefault(k.lower().strip(),[]).append(v.strip())
+            return out
+        return int(parts[0]),parts[1],int(parts[2]),parse(blocks[0] if blocks else ''),parse(blocks[-1] if blocks else ''),raw_body
 
-def get_snippet():
-    s,_,_,_,raw=curl(API,auth=True); d=json.loads(raw.decode()) if s==200 else {}
-    if s!=200 or int(d.get('id') or 0)!=43 or not d.get('active'): raise RuntimeError('snippet readback mismatch')
-    return d
+def canonical(raw):
+    html=raw.decode('utf-8','ignore')
+    for pat in (r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)',r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical[^"\']*["\']'):
+        m=re.search(pat,html,re.I|re.S)
+        if m:return m.group(1).strip()
+    return None
 
-def put(code):
-    s,_,_,_,raw=curl(API,payload={'code':code},auth=True)
-    if s!=200: raise RuntimeError(f'snippet PUT HTTP {s}')
-    return json.loads(raw.decode())
+def snippet_state():
+    s,_,_,_,_,raw=curl(API,auth=True);d=json.loads(raw.decode()) if s==200 else {}
+    code=str(d.get('code') or '');sha=hashlib.sha256(code.encode()).hexdigest()
+    return {'status':s,'id':d.get('id'),'active':d.get('active'),'sha256':sha,'marker':MARKER in code,'old_marker':'DoctorCura blog pagination cleanup V8.2' in code}
 
-def block(token):
-    return r'''
-/* DoctorCura temporary cache purge and redirect trace - removed automatically */
-add_action('template_redirect',function(){
- if(!isset($_GET['doctorcura_cache_purge'])||!hash_equals('__TOKEN__',(string)$_GET['doctorcura_cache_purge']))return;
- if(function_exists('rocket_clean_domain'))rocket_clean_domain();
- if(function_exists('wp_cache_flush'))wp_cache_flush();
- header('X-LiteSpeed-Purge: *');
- nocache_headers(); status_header(204); exit;
-},-9999);
-add_action('send_headers',function(){
- if(isset($_SERVER['HTTP_X_DOCTORCURA_DIAGNOSTIC'])&&'cache-trace'===(string)$_SERVER['HTTP_X_DOCTORCURA_DIAGNOSTIC']){
-  nocache_headers(); header('X-DoctorCura-Origin: reached');
- }
-},-9999);
-add_filter('wp_redirect',function($location,$status){
- if(!isset($_SERVER['HTTP_X_DOCTORCURA_DIAGNOSTIC'])||'cache-trace'!==(string)$_SERVER['HTTP_X_DOCTORCURA_DIAGNOSTIC'])return $location;
- $frames=debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,14);$names=array();
- foreach($frames as $frame){$name='';if(isset($frame['class']))$name.=$frame['class'].(isset($frame['type'])?$frame['type']:'');if(isset($frame['function']))$name.=$frame['function'];if($name&&false===strpos($name,'{closure}'))$names[]=$name;if(count($names)>=8)break;}
- header('X-DoctorCura-Redirect-Caller: '.substr(implode(' <- ',$names),0,900));
- header('X-DoctorCura-Redirect-Status: '.(int)$status);
- return $location;
-},9999,2);
-'''.replace('__TOKEN__',token)
-
-def trace_row(path):
-    s,f,r,h,_=curl(SITE+path,trace=True)
-    return {'path':path,'status':s,'final_url':f,'redirects':r,'location':(h.get('location') or [None])[0],
-            'x_redirect_by':(h.get('x-redirect-by') or [None])[0],'hcdn':(h.get('x-hcdn-cache-status') or [None])[0],
-            'origin':(h.get('x-doctorcura-origin') or [None])[0],'caller':(h.get('x-doctorcura-redirect-caller') or [None])[0],
-            'trace_status':(h.get('x-doctorcura-redirect-status') or [None])[0]}
+def row(path,follow=False):
+    url=SITE+path;s,f,r,first,last,raw=curl(url,follow=follow)
+    return {'path':path,'status':s,'final_url':f,'redirects':r,'location':(first.get('location') or [None])[0],'x_redirect_by':(first.get('x-redirect-by') or [None])[0],'hcdn':(first.get('x-hcdn-cache-status') or [None])[0],'cache_control':(first.get('cache-control') or [None])[0],'canonical':canonical(raw),'x_robots':', '.join(last.get('x-robots-tag',[])) or None}
 
 def main():
-    d=get_snippet(); original=str(d.get('code') or ''); sha=hashlib.sha256(original.encode()).hexdigest()
-    if sha!=EXPECTED or MARKER in original: raise RuntimeError('stale V8.2 preflight')
-    token=secrets.token_urlsafe(24); applied=False
-    try:
-        put(original.rstrip()+'\n'+block(token)); applied=True
-        if MARKER not in str(get_snippet().get('code') or ''): raise RuntimeError('temporary helper readback failed')
-        s,_,r,h,_=curl(f'{SITE}/?doctorcura_cache_purge={token}')
-        if s!=204 or r!=0: raise RuntimeError(f'cache purge helper failed HTTP {s} redirects {r}')
-        rows=[trace_row(p) for p in ('/blogs/6/','/blogs/7/','/blogs/8/','/blogs/9/','/fr/blogs/8/','/en/blogs/8/')]
-        print(json.dumps({'purge_status':s,'purge_hcdn':(h.get('x-hcdn-cache-status') or [None])[0],'rows':rows},ensure_ascii=False,indent=2))
-    finally:
-        if applied: put(original)
-        restored=str(get_snippet().get('code') or ''); after=hashlib.sha256(restored.encode()).hexdigest()
-        if after!=sha or MARKER in restored: raise RuntimeError('rollback verification failed')
-        print(json.dumps({'rollback_verified':True,'sha256':after},separators=(',',':')))
+    state=snippet_state()
+    if state['status']!=200 or int(state['id'] or 0)!=43 or not state['active'] or state['sha256']!=EXPECTED or not state['marker'] or state['old_marker']:
+        raise RuntimeError('V10 snippet state mismatch: '+json.dumps(state,separators=(',',':')))
+    paths=[]
+    for prefix in ('','/fr','/en'):
+        paths += [f'{prefix}/blogs/{n}/' for n in (2,5,6,8,16,17)]
+        paths += [f'{prefix}/blogs/page/{n}/' for n in (6,16,17)]
+    paths += ['/de/blogs/6/','/de/blogs/16/','/de/blogs/17/']
+    first=[row(p,False) for p in paths]
+    followed=[row(p,True) for p in paths]
+    print(json.dumps({'snippet':state,'first_hop':first,'followed':followed},ensure_ascii=False,indent=2))
 
-if __name__=='__main__': main()
+if __name__=='__main__':main()
