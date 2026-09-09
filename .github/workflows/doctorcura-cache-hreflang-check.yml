@@ -47,7 +47,7 @@ jobs:
           print('Trusted DoctorCura cache-check marker PASS.')
           PY
 
-      - name: Purge caches, remove temporary snippet and verify hreflang
+      - name: Purge caches and verify hreflang
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
           REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -92,28 +92,27 @@ jobs:
           if len(matches)>1: raise SystemExit('Multiple temporary cache purge snippets exist; refusing ambiguous cleanup.')
           with open(sys.argv[3],'w',encoding='utf-8') as f:
               if matches:
-                  item=matches[0]
-                  sid=int(item.get('id') or 0)
-                  if sid<1: raise SystemExit('Temporary snippet has invalid id.')
-                  f.write(f'EXISTS=true\nSNIPPET_ID={sid}\nWAS_ACTIVE='+('true' if bool(item.get('active')) else 'false')+'\n')
-                  print('Found leftover temporary cache snippet; id='+str(sid)+' active='+str(bool(item.get('active'))).lower())
+                  x=matches[0]; sid=int(x.get('id') or 0)
+                  if sid<1: raise SystemExit('Temporary snippet id invalid.')
+                  f.write(f'EXISTS=true\nSNIPPET_ID={sid}\n')
+                  print('Found temporary snippet id='+str(sid)+' active='+str(bool(x.get('active'))).lower())
               else:
-                  f.write('EXISTS=false\nSNIPPET_ID=\nWAS_ACTIVE=false\n')
-                  print('No leftover temporary cache snippet found.')
+                  f.write('EXISTS=false\nSNIPPET_ID=\n')
+                  print('No temporary snippet found.')
           PY
           source "$root/state.env"
 
           if [[ "$EXISTS" == 'true' ]]; then
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
               --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST \
-              --header 'Accept: application/json' --output "$root/deactivate-leftover.json" \
+              --header 'Accept: application/json' --output "$root/deactivate.json" \
               "$snippets/$SNIPPET_ID/deactivate" >/dev/null || true
           else
             python3 - "$root/placeholder.json" <<'PY'
           import json,sys
           json.dump({
               'name':'DoctorCura one-time cache purge',
-              'desc':'Temporary one-time cache purge placeholder.',
+              'desc':'Temporary inactive placeholder for one-time cache purge.',
               'code':'// Temporary inactive placeholder.',
               'tags':['temporary','cache'],
               'scope':'global','active':False,'priority':10,
@@ -134,6 +133,17 @@ jobs:
           )
           fi
 
+          inactive_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
+            --output "$root/inactive.json" --write-out '%{http_code}' "$snippets/$SNIPPET_ID")
+          [[ "$inactive_code" == '200' ]] || exit 1
+          python3 - "$root/inactive.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); x=d.get('snippet',d) if isinstance(d,dict) else {}
+          if bool(x.get('active')): raise SystemExit('Temporary snippet is still active after preflight deactivation.')
+          print('Temporary snippet inactive preflight PASS.')
+          PY
+
           purge_token=$(python3 - <<'PY'
           import secrets
           print(secrets.token_hex(24))
@@ -143,33 +153,58 @@ jobs:
           export PURGE_SNIPPET_ID="$SNIPPET_ID"
           python3 - "$root/purge.json" <<'PY'
           import json,os,sys
-          token=os.environ['PURGE_TOKEN']
-          sid=int(os.environ['PURGE_SNIPPET_ID'])
-          code="""if ( isset( $_GET['wa_doctorcura_cache_purge'] ) ) {
-              $value = sanitize_text_field( wp_unslash( (string) $_GET['wa_doctorcura_cache_purge'] ) );
-              if ( hash_equals( '%s', $value ) ) {
-                  $object_ok = wp_cache_flush();
-                  $rocket_ok = false;
-                  if ( function_exists( 'rocket_clean_domain' ) ) {
-                      rocket_clean_domain();
-                      $rocket_ok = true;
-                  }
-                  $self_deleted = false;
-                  if ( function_exists( 'Code_Snippets\\deactivate_snippet' ) && function_exists( 'Code_Snippets\\delete_snippet' ) ) {
-                      \\Code_Snippets\\deactivate_snippet( %d );
-                      $self_deleted = \\Code_Snippets\\delete_snippet( %d );
-                  }
-                  if ( ! headers_sent() ) {
-                      header( 'X-WA-Object-Cache: ' . ( $object_ok ? 'flushed' : 'failed' ), true );
-                      header( 'X-WA-WP-Rocket: ' . ( $rocket_ok ? 'purged' : 'unavailable' ), true );
-                      header( 'X-WA-Temp-Snippet: ' . ( $self_deleted ? 'deleted' : 'not-deleted' ), true );
-                  }
+          token=os.environ['PURGE_TOKEN']; sid=int(os.environ['PURGE_SNIPPET_ID'])
+          code="""add_action(
+              'rest_api_init',
+              static function (): void {
+                  register_rest_route(
+                      'webactueel-temp/v1',
+                      '/cache-purge/(?P<token>[a-f0-9]{48})',
+                      array(
+                          'methods' => WP_REST_Server::READABLE,
+                          'permission_callback' => static function (): bool {
+                              return current_user_can( 'manage_options' );
+                          },
+                          'callback' => static function ( WP_REST_Request $request ) {
+                              $token = (string) $request->get_param( 'token' );
+                              if ( ! hash_equals( '%s', $token ) ) {
+                                  return new WP_Error( 'invalid_token', 'Invalid one-time token.', array( 'status' => 403 ) );
+                              }
+
+                              $object_ok = wp_cache_flush();
+                              $rocket_ok = false;
+                              if ( function_exists( 'rocket_clean_domain' ) ) {
+                                  rocket_clean_domain();
+                                  $rocket_ok = true;
+                              }
+
+                              $deactivated = false;
+                              $deleted = false;
+                              if ( function_exists( 'Code_Snippets\\deactivate_snippet' ) ) {
+                                  $deactivated = (bool) \\Code_Snippets\\deactivate_snippet( %d );
+                              }
+                              if ( function_exists( 'Code_Snippets\\delete_snippet' ) ) {
+                                  $deleted = (bool) \\Code_Snippets\\delete_snippet( %d );
+                              }
+
+                              return rest_ensure_response(
+                                  array(
+                                      'ok' => $object_ok && $rocket_ok && $deleted,
+                                      'object_cache_flushed' => (bool) $object_ok,
+                                      'wp_rocket_purged' => (bool) $rocket_ok,
+                                      'temporary_snippet_deactivated' => (bool) $deactivated,
+                                      'temporary_snippet_deleted' => (bool) $deleted,
+                                  )
+                              );
+                          },
+                      )
+                  );
               }
-          }
+          );
           """ % (token,sid,sid)
           json.dump({
               'name':'DoctorCura one-time cache purge',
-              'desc':'Temporary token-gated object-cache and WP Rocket purge; self-deletes after use.',
+              'desc':'Temporary authenticated one-time cache-purge REST callback; self-deletes after execution.',
               'code':code,
               'tags':['temporary','cache'],
               'scope':'global','active':False,'priority':10,
@@ -182,42 +217,47 @@ jobs:
             --data-binary "@$root/purge.json" --output "$root/update.json" --write-out '%{http_code}' "$snippets/$SNIPPET_ID")
           [[ "$update_code" == '200' ]] || { echo "Temporary purge snippet update failed HTTP $update_code" >&2; exit 1; }
 
-          read_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
-            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
-            --output "$root/readback-inactive.json" --write-out '%{http_code}' "$snippets/$SNIPPET_ID")
-          [[ "$read_code" == '200' ]] || exit 1
-          python3 - "$root/readback-inactive.json" "$SNIPPET_ID" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); x=d.get('snippet',d) if isinstance(d,dict) else {}
-          if int(x.get('id') or 0)!=int(sys.argv[2]) or x.get('name')!='DoctorCura one-time cache purge': raise SystemExit('Temporary snippet readback identity mismatch.')
-          if bool(x.get('active')): raise SystemExit('Temporary snippet unexpectedly active before explicit activation.')
-          print('Temporary purge snippet exact identity/inactive readback PASS.')
-          PY
-
           activate_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
             --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST \
             --header 'Accept: application/json' --output "$root/activate.json" --write-out '%{http_code}' "$snippets/$SNIPPET_ID/activate")
           [[ "$activate_code" == '200' || "$activate_code" == '201' ]] || { echo "Temporary snippet activation failed HTTP $activate_code" >&2; exit 1; }
 
-          trigger_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 90 \
+          active_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
+            --output "$root/active.json" --write-out '%{http_code}' "$snippets/$SNIPPET_ID")
+          [[ "$active_code" == '200' ]] || exit 1
+          python3 - "$root/active.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); x=d.get('snippet',d) if isinstance(d,dict) else {}
+          if not bool(x.get('active')): raise SystemExit('Temporary cache-purge snippet is not active after activation.')
+          print('Temporary cache-purge snippet active readback PASS.')
+          PY
+
+          purge_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 90 \
             --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
             --header 'Accept: application/json' --header 'Cache-Control: no-cache' \
-            --output "$root/trigger.json" --dump-header "$root/purge.headers" --write-out '%{http_code}' \
-            "$connector/health?wa_doctorcura_cache_purge=$purge_token")
-          [[ "$trigger_code" == '200' ]] || { echo "Authenticated purge trigger failed HTTP $trigger_code" >&2; exit 1; }
-          grep -Eiq '^X-WA-Object-Cache:[[:space:]]*flushed[[:space:]]*$' "$root/purge.headers" || { echo 'Object cache purge confirmation missing.' >&2; exit 1; }
-          grep -Eiq '^X-WA-WP-Rocket:[[:space:]]*purged[[:space:]]*$' "$root/purge.headers" || { echo 'WP Rocket purge confirmation missing.' >&2; exit 1; }
-          grep -Eiq '^X-WA-Temp-Snippet:[[:space:]]*deleted[[:space:]]*$' "$root/purge.headers" || { echo 'Temporary snippet self-delete confirmation missing.' >&2; exit 1; }
-          echo 'WordPress object cache + WP Rocket page cache purge PASS; temporary snippet self-delete PASS.'
+            --output "$root/purge-result.json" --write-out '%{http_code}' \
+            "$site/wp-json/webactueel-temp/v1/cache-purge/$purge_token")
+          [[ "$purge_code" == '200' ]] || { echo "One-time cache purge route failed HTTP $purge_code" >&2; cat "$root/purge-result.json" >&2; exit 1; }
+          python3 - "$root/purge-result.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          expected=('object_cache_flushed','wp_rocket_purged','temporary_snippet_deleted')
+          if not d.get('ok') or not all(d.get(k) is True for k in expected):
+              raise SystemExit('Cache purge callback did not confirm all required results: '+repr(d))
+          print('WordPress object cache purge PASS.')
+          print('WP Rocket full page cache purge PASS.')
+          print('Temporary purge snippet self-delete PASS.')
+          PY
 
           list_snippets > "$root/list-after.json"
           python3 - "$root/list-after.json" "$temp_name" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1],encoding='utf-8'))
           items=d if isinstance(d,list) else d.get('items',d.get('snippets',[])) if isinstance(d,dict) else []
-          matches=[x for x in items if isinstance(x,dict) and x.get('name')==sys.argv[2]]
-          if matches: raise SystemExit('Temporary purge snippet still exists after self-delete.')
-          print('Temporary purge snippet absence readback PASS.')
+          if any(isinstance(x,dict) and x.get('name')==sys.argv[2] for x in items):
+              raise SystemExit('Temporary cache-purge snippet still exists after self-delete.')
+          print('Temporary cache-purge snippet absence readback PASS.')
           PY
 
           nonce=$(python3 - <<'PY'
@@ -257,7 +297,8 @@ jobs:
               print('Observed page '+str(i+1)+' hreflang='+repr(p.alts)+' canonical='+repr(p.canon[:2]))
               bad=[k for k,v in expected.items() if p.alts.get(k,'').rstrip('/')!=v.rstrip('/')]
               if bad: raise SystemExit('Page '+str(i+1)+' hreflang missing/incorrect: '+repr(bad))
-              if not p.canon or p.canon[0].rstrip('/')!=canon[i].rstrip('/'): raise SystemExit('Page '+str(i+1)+' canonical mismatch: '+repr(p.canon[:2]))
+              if not p.canon or p.canon[0].rstrip('/')!=canon[i].rstrip('/'):
+                  raise SystemExit('Page '+str(i+1)+' canonical mismatch: '+repr(p.canon[:2]))
               print('Page '+str(i+1)+' hreflang/canonical PASS.')
           print('HREFLANG_RESULT PASS reciprocal de/fr/en + self-canonical on all three Condyline variants.')
           PY
