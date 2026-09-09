@@ -19,5 +19,6 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
       - name: Inspect exact WordPress route query and auto-rollback
         run: python3 scripts/temp-doctorcura-route-query-diagnostic.py
