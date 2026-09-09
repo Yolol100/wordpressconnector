@@ -1,8 +1,10 @@
 {
   "version": 1,
-  "request_id": "doctorcura-privileged-gate-recheck-20260909",
-  "action": "connector.update.check",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {}
+  "request_id": "doctorcura-write-gate-recheck-20260909",
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "id": 999999999999
+  }
 }
