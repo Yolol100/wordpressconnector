@@ -1,0 +1,50 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-human-phase16-20260909-write",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-09T16:07:04+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "connector_version": "1.10.0",
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b856f99eccd55606e8bfe8c138f9b4fba1c30ba13bdb76c51d5e4dbd9c9a1bb9",
+            "after_fingerprint": "64dc7e0b89b508fb60c22aa553ef09889bc7ab74eefd9a9946deda69f065cece"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "5353b86d6632caf0494c7d681306564687e12e3b53c36fde8b99a6f651d3a546",
+            "after_fingerprint": "8c0672a6bc55b5132b1fcf371be162f0847a62e93512760074de1e9117f0cbf9"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "91240492ced2858e4e2569e81bc99dd42d415c2dfc7b1c7a093ffe5052d8e075",
+            "after_fingerprint": "9406054226b3849fc805880f2ff91177dcbe494a0ed1604d8aaf10a6951aa1d4"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "fc185f487f118ba695d9c93f6e6fabf91cc4792398ae6ffc0109045f6e8f7bfd",
+            "after_fingerprint": "1720a523316c1895d250e8b8cc543351f2dc6fe0bb709865be1fa0f7828e096d"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "6a87b99c20c8dda66ee57bbd50dd0400ce356d29aacd6af9332911efa27f83da",
+            "after_fingerprint": "a85fd96418e314d6494b24dd72d2e6961b65db8d0a616e6550ea0663593a50b1"
+        }
+    ],
+    "rollback_available": true
+}
