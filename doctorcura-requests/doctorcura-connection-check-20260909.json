@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "request_id": "doctorcura-connection-check-20260909",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
