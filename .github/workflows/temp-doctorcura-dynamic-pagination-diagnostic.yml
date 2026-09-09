@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE_URL: https://doctorcura.com
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
-      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APP_PASSWORD }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Run read-only diagnostic
