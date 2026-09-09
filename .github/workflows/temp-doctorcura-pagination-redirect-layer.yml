@@ -1,0 +1,48 @@
+name: Temporary DoctorCura Pagination Redirect Layer Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-pagination-redirect-layer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Verify rollback marker and inspect redirect headers
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp)"
+          curl -fsS --user "$REST_USERNAME:$REST_APP_PASSWORD" \
+            "$SITE_URL/wp-json/code-snippets/v1/snippets/43" > "$tmp"
+          python3 - "$tmp" <<'PY'
+          import hashlib,json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          code=str(d.get('code') or '')
+          print('SNIPPET_ID='+str(d.get('id')))
+          print('ACTIVE='+str(bool(d.get('active'))).lower())
+          print('CODE_SHA256='+hashlib.sha256(code.encode()).hexdigest())
+          print('HAS_V82='+str('DoctorCura blog pagination cleanup V8.2' in code).lower())
+          print('HAS_V9='+str('DoctorCura dynamic blog pagination cleanup V9' in code).lower())
+          print('HAS_HELPER='+str('one-time dynamic pagination refresh helper' in code).lower())
+          PY
+          rm -f "$tmp"
+          for path in \
+            /blogs/6/ /blogs/page/6/ \
+            /fr/blogs/6/ /fr/blogs/page/6/ \
+            /en/blogs/6/ /en/blogs/page/6/; do
+            echo "=== $path ==="
+            curl -sS --connect-timeout 10 --max-time 25 --max-redirs 0 \
+              -D - -o /dev/null "$SITE_URL$path" \
+              | grep -Ei '^(HTTP/|location:|x-redirect-by:|server:|x-powered-by:|x-gt-|cache-control:|cf-cache-status:)' || true
+          done
