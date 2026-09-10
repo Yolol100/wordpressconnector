@@ -62,12 +62,14 @@ jobs:
           echo '=== TARGETED ORIGIN/CACHE-BUST VERIFY ==='
           for n in 1 2 3; do
             q="dc_v84c_cache=$n-$(date +%s%N)"
-            rh="$tmp/root-$n.h"; curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$rh" --output /dev/null "$base/datenschutz/?$q"
-            rs=$(awk '/^HTTP\/{print $2;exit}' "$rh"); rl=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$rh"); rc=$(awk 'BEGIN{IGNORECASE=1}/^cache-control:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$rh")
+            rh="$tmp/root-$n.h"
+            rmeta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$rh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/datenschutz/?$q")
+            rs=${rmeta%%$'\t'*}; rl=${rmeta#*$'\t'}; rc=$(grep -i '^cache-control:' "$rh" | head -n1 | cut -d: -f2- | tr -d '\r' | sed 's/^[[:space:]]*//')
             echo "ROOT round=$n status=$rs location=$rl cache_control=$rc"; [[ "$rs" == 301 && "$rl" == "$base/privacy-policy/" && "$rc" == *no-store* ]]
             for lang in fr en; do
-              hh="$tmp/$lang-$n.h"; curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$hh" --output /dev/null "$base/$lang/datenschutz/?$q"
-              ss=$(awk '/^HTTP\/{print $2;exit}' "$hh"); ll=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hh")
+              hh="$tmp/$lang-$n.h"
+              meta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$hh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/$lang/datenschutz/?$q")
+              ss=${meta%%$'\t'*}; ll=${meta#*$'\t'}
               echo "TRANSLATED lang=$lang round=$n status=$ss location=$ll"; [[ "$ss" == 404 && -z "$ll" ]]
             done
           done
@@ -84,4 +86,5 @@ jobs:
           echo '=== CLEAN EDGE OBSERVATION (NON-GATING) ==='
           for lang in fr en; do curl "${c[@]}" --dump-header "$tmp/clean-$lang.h" --output /dev/null --write-out "CLEAN_$lang=%{http_code} REDIRECT=%{redirect_url}\n" "$base/$lang/datenschutz/"; grep -iE '^(location:|x-hcdn-cache-status:|age:|cache-control:)' "$tmp/clean-$lang.h" || true; done
           changed=0
+          echo "NEW_EXPECTED_SNIPPET_HASH=$newhash"
           echo V84C_CACHE_ISOLATION_GREEN
