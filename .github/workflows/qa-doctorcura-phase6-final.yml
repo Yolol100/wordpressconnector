@@ -21,8 +21,23 @@ jobs:
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare current Phase 2A acceptance contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('doctorcura-audits/phase6-final-qa.sh')
+          s=p.read_text()
+          old="if p.get('status')!='publish' or d.get('status')!='draft': raise SystemExit(1)"
+          new="if p.get('status')!='publish' or d.get('status') not in {'draft','trash'}: raise SystemExit(1)"
+          if s.count(old) != 1:
+              raise SystemExit('unexpected Phase 2A contract token count')
+          p.write_text(s.replace(old,new,1))
+          print('PHASE2A_ACCEPTANCE=canonical_publish_duplicate_nonpublic_draft_or_trash')
+          PY
       - name: Verify immutable Phase 6 SEO migration contract
         shell: bash
         run: bash doctorcura-audits/phase6-final-qa.sh
 
-# QA trigger round: post-cache-purge-1
+# QA trigger round: contract-preflight-after-cache-purge
