@@ -30,10 +30,11 @@ jobs:
           echo '=== LIVE SNIPPET V8.4c ==='
           h=$(curl "${c[@]}" --location --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$tmp/s43.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43"); [[ "$h" == 200 ]]
           php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "hash=".hash("sha256",$c)." active=".(!empty($s["active"])?"yes":"no").PHP_EOL;file_put_contents($argv[2],$c);' "$tmp/s43.json" "$tmp/s43.php"
-          nl -ba "$tmp/s43.php" | sed -n '260,300p'
+          nl -ba "$tmp/s43.php" | sed -n '283,296p'
 
           probe(){
-            local path="$1" label="$2" suffix="$3" url="$base$path"
+            local path="$1" label="$2" suffix="$3"
+            local url="$base$path"
             [[ "$suffix" == clean ]] || { if [[ "$url" == *'?'* ]]; then url="$url&dc_diag=$suffix"; else url="$url?dc_diag=$suffix"; fi; }
             curl "${c[@]}" --dump-header "$tmp/$label-$suffix.h" --output "$tmp/$label-$suffix.body" --write-out "$label/$suffix FIRST=%{http_code} REDIRECT=%{redirect_url} EFFECTIVE=%{url_effective}\n" "$url"
             grep -iE '^(HTTP/|location:|x-redirect-by:|x-hcdn-cache-status:|age:|cache-control:|vary:|server:)' "$tmp/$label-$suffix.h" || true
