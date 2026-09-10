@@ -1,0 +1,81 @@
+name: DoctorCura Phase 3C Render Divergence
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3c-render-divergence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Transient exact source change then mandatory rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          read_api="$base/wp-json/wp/v2/pages/11?context=edit"; write_api="$base/wp-json/wp/v2/pages/11"
+          tmp="$RUNNER_TEMP/p3c-div"; mkdir -p "$tmp"
+          old='http://www.doctorcura.com'; new='https://doctorcura.com/'
+          baseline='890f2cca24c5e0de3ab501cb83fb2fe0e54a4fff076b0520ab4de9144e0933c6'
+          changed=0
+          payload(){ php -r '$r=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["content"=>$r],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          write(){ local src="$1" label="$2" http; payload "$src" "$tmp/$label.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/$label.json" --output "$tmp/$label-response.json" --write-out '%{http_code}' "$write_api"); echo "WRITE label=$label http=$http"; [[ "$http" == 200 ]]; }
+          report(){ python3 - "$1" "$old" "$new" <<'PY'
+          import hashlib,json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); c=p.get('content') or {}; raw=str(c.get('raw') or ''); rnd=str(c.get('rendered') or '')
+          print(f"REPORT status={p.get('status')} modified={p.get('modified_gmt')} raw_hash={hashlib.sha256(raw.encode()).hexdigest()} raw_old={raw.count(sys.argv[2])} raw_new={raw.count(sys.argv[3])} rendered_old={rnd.count(sys.argv[2])} rendered_new={rnd.count(sys.argv[3])} raw_bytes={len(raw.encode())} rendered_bytes={len(rnd.encode())}")
+          PY
+          }
+          rollback(){
+            local rc=$?; set +e
+            if [[ "$changed" == 1 ]]; then write "$tmp/original.raw" rollback >/dev/null 2>&1 || true; fi
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$read_api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rb.json" ]]; then report "$tmp/rb.json"; fi
+            echo "MANDATORY_ROLLBACK_COMPLETE original_rc=$rc"
+            exit "$rc"
+          }
+          trap rollback EXIT
+
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/before.json" "$read_api"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$r=(string)(($p["content"]??[])["raw"]??"");if(hash("sha256",$r)!==$argv[3]||substr_count($r,$argv[4])!==1)exit(2);file_put_contents($argv[2],$r);' "$tmp/before.json" "$tmp/original.raw" "$baseline" "$old"
+          echo BEFORE; report "$tmp/before.json"
+          python3 - "$tmp/original.raw" "$tmp/new.raw" "$old" "$new" <<'PY'
+          import sys
+          s=open(sys.argv[1],encoding='utf-8').read(); assert s.count(sys.argv[3])==1
+          t=s.replace(sys.argv[3],sys.argv[4],1); assert t.replace(sys.argv[4],sys.argv[3],1)==s
+          open(sys.argv[2],'w',encoding='utf-8',newline='').write(t)
+          PY
+          write "$tmp/new.raw" diagnostic; changed=1
+
+          echo WRITE_RESPONSE
+          report "$tmp/diagnostic-response.json"
+          for n in 1 2 3; do
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after-$n.json" "$read_api"
+            echo "AFTER_GET_$n"; report "$tmp/after-$n.json"
+          done
+          terms=$(python3 - "$tmp/after-3.json" <<'PY'
+          import json,sys
+          print(json.load(open(sys.argv[1],encoding='utf-8')).get('link',''),end='')
+          PY
+          )
+          curl "${c[@]}" --compressed --header 'Cache-Control: no-cache' --output "$tmp/public.html" "${terms}?doctorcura_render_div=$(date +%s%N)"
+          python3 - "$tmp/public.html" "$old" "$new" <<'PY'
+          import sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); print(f"PUBLIC old={s.count(sys.argv[2])} new={s.count(sys.argv[3])} bytes={len(s.encode())}")
+          PY
+          # Diagnosis succeeds regardless of rendered divergence; EXIT trap always restores the original page.
+          true
