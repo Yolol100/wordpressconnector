@@ -1,4 +1,4 @@
-name: Audit DoctorCura Duplicate State After Rollback
+name: Audit DoctorCura Rollback And Snippet 43
 
 on:
   push:
@@ -13,61 +13,42 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect exact duplicate post and live route state
+      - name: Verify rollback and inspect snippet 43
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"
           [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-duplicate-state"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-snippet43"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
           redapi="$base/wp-json/redirection/v1"
-          slug='welche-medikamente-beeinflussen-die-erektion'
 
-          echo '=== EXACT POSTS BY ID ==='
-          for id in 900066 900067; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/p$id.json" --write-out '%{http_code}' "$wpapi/posts/$id?context=edit")
-            echo "id=$id rest_status=$code"
-            [[ "$code" == '200' ]] || continue
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "  status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured=".($p["featured_media"]??0)." date=".($p["date_gmt"]??"")." modified=".($p["modified_gmt"]??"").PHP_EOL;echo "  title_sha=".hash("sha256",(string)($p["title"]["raw"]??""))." content_sha=".hash("sha256",(string)($p["content"]["raw"]??""))." excerpt_sha=".hash("sha256",(string)($p["excerpt"]["raw"]??"")).PHP_EOL;' "$tmp/p$id.json"
-          done
-
-          echo '=== QUERY BY ORIGINAL SLUG ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts?slug=$slug&context=edit&per_page=100" > "$tmp/by-slug.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p)echo "  id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"").PHP_EOL;' "$tmp/by-slug.json"
-
-          echo '=== QUERY BOTH IDS ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts?include=900066,900067&context=edit&per_page=100" > "$tmp/by-ids.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p)echo "  id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"").PHP_EOL;' "$tmp/by-ids.json"
-
-          echo '=== LIVE URLS ==='
-          for path in "/$slug/" "/$slug-2/"; do
-            out="$tmp/live$(echo "$path" | tr '/?' '__').html"
-            r=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output "$out" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
-            canon=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$out" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            postid=$(grep -Eo '"post":\{"id":[0-9]+' "$out" | head -1 || true)
-            echo "path=$path result=$r canonical=$canon resolver=$postid"
-          done
-
-          echo '=== POST SITEMAP ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
-          for u in "$base/$slug/" "$base/$slug-2/"; do
-            count=$(grep -Fc "<loc>$u</loc>" "$tmp/post-sitemap.xml" || true)
-            echo "sitemap_url=$u count=$count"
-          done
-
-          echo '=== REDIRECT/TEXT STATE ==='
-          for source in '/datenschutz/' '/product-categorie/gewichtsverlust/'; do
+          echo '=== VERIFY SECOND ROLLBACK ==='
+          for source in '/datenschutz/' '/product-categorie/gewichtsverlust/' '/welche-medikamente-beeinflussen-die-erektion-2/'; do
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
             total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/red.json")
             echo "redirect_source=$source total=$total"
           done
+          for id in 900066 900067; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/p$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "post=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0).PHP_EOL;' "$tmp/p$id.json"
+          done
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
           php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "terms_http_www_count=".substr_count($raw,"href=\"http://www.doctorcura.com\"").PHP_EOL;' "$tmp/terms.json"
+
+          echo '=== SNIPPET 43 METADATA ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" --output "$tmp/snippet43.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43")
+          echo "snippet_rest_status=$code"
+          [[ "$code" == '200' ]] || exit 1
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($s["id"]??"")." name=".($s["name"]??"")." active=".json_encode($s["active"]??null)." scope=".($s["scope"]??"")." code_sha=".hash("sha256",(string)($s["code"]??""))." code_len=".strlen((string)($s["code"]??"")).PHP_EOL;' "$tmp/snippet43.json"
+          echo '=== SNIPPET 43 CODE START ==='
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($s["code"]??"");' "$tmp/snippet43.json"
+          echo
+          echo '=== SNIPPET 43 CODE END ==='
