@@ -25,4 +25,4 @@ jobs:
         shell: bash
         run: bash doctorcura-audits/phase6-final-qa.sh
 
-# QA trigger round: 1
+# QA trigger round: post-cache-purge-1
