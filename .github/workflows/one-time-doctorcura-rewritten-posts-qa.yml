@@ -1,0 +1,113 @@
+name: One-time DoctorCura rewritten posts QA
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-rewritten-posts-qa/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Audit titles metadata content preservation and links
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-rewritten-qa"; rm -rf "$root"; mkdir -p "$root/posts"
+          ids=(900060 900048 900043 6050 6048 6046 6044 6042 6033 6020 6008 5999 5995 5993 5990 5986 5904 5896 5892)
+          for id in "${ids[@]}"; do
+            for attempt in $(seq 1 5); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/posts/$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit" || true)
+              [[ "$code" == 200 ]] && break
+              sleep 8
+            done
+            [[ "$code" == 200 ]] || { echo "POST_FETCH_FAILED $id HTTP=$code"; exit 1; }
+          done
+          python3 - "$root" "$site" <<'PY'
+          import concurrent.futures,html,json,os,re,sys,urllib.parse,urllib.request
+          root,site=sys.argv[1:]
+          ids=[900060,900048,900043,6050,6048,6046,6044,6042,6033,6020,6008,5999,5995,5993,5990,5986,5904,5896,5892]
+          rows=[]; all_links=[]
+          rx_us=re.compile(r'\bUSA\b|\bUnited States(?: of America)?\b|\bU\.\s*S\.\s*A?\.?\b|\bUS[- ][A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*\b|\bVereinigte Staaten\b|\bUS-amerikan\w*\b|\bamerikan(?:isch|ische|ischen|ischer|isches|ischem)\b|\bFDA\b|\bDEA\b|\bHIPAA\b|\bNew York\b|\bCalifornia\b|\bTexas\b|\bFlorida\b|\bUSD\b',re.I)
+          def strip(s):
+              s=re.sub(r'(?is)<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>',' ',s or '')
+              return re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',s))).strip()
+          for id in ids:
+              p=json.load(open(f'{root}/posts/{id}.json',encoding='utf-8'))
+              title=html.unescape((p.get('title') or {}).get('raw') or (p.get('title') or {}).get('rendered') or '')
+              content=(p.get('content') or {}).get('raw') or ''
+              text=strip(content)
+              yh=p.get('yoast_head_json') or {}
+              desc=html.unescape(yh.get('description') or '')
+              og=html.unescape(yh.get('og_description') or '')
+              hrefs=re.findall(r'href=["\']([^"\']+)',content,re.I)
+              abslinks=[]
+              for h in hrefs:
+                  h=html.unescape(h.strip())
+                  if not h or h.startswith(('#','mailto:','tel:','javascript:','data:')): continue
+                  u=urllib.parse.urljoin(p.get('link') or site+'/',h)
+                  if u.startswith(('http://','https://')): abslinks.append(u)
+              all_links.extend((id,u) for u in abslinks)
+              headings=[strip(x) for x in re.findall(r'(?is)<h[1-6]\b[^>]*>(.*?)</h[1-6]>',content)]
+              rows.append({
+                  'id':id,'status':p.get('status'),'slug':p.get('slug'),'link':p.get('link'),'title':title,
+                  'description':desc,'description_length':len(desc),'og_description':og,'og_length':len(og),
+                  'word_count':len(re.findall(r'\b\w+\b',text,re.U)),'headings':headings,'link_count':len(abslinks),
+                  'us_in_desc':bool(rx_us.search(desc)),'us_in_og':bool(rx_us.search(og)),
+                  'content_preview':text[:700]
+              })
+          unique=sorted(set(u for _,u in all_links))
+          def check(u):
+              try:
+                  req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 (compatible; DoctorCuraQA/1.0)'},method='HEAD')
+                  with urllib.request.urlopen(req,timeout=12) as r: return u,r.status,r.geturl()
+              except Exception:
+                  try:
+                      req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 (compatible; DoctorCuraQA/1.0)'})
+                      with urllib.request.urlopen(req,timeout=15) as r: return u,r.status,r.geturl()
+                  except Exception as e:
+                      code=getattr(e,'code',0) or 0; return u,int(code),u
+          status={}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+              for u,code,final in ex.map(check,unique): status[u]={'status':code,'final':final}
+          broken=[]
+          for id,u in all_links:
+              code=status[u]['status']
+              # External 401/403/405/429 may block automated checks; internal links must be 2xx/3xx.
+              internal=urllib.parse.urlparse(u).netloc.lower().endswith('doctorcura.com')
+              bad=not (200<=code<400) if internal else (code==0 or code>=500 or code==404)
+              if bad: broken.append({'id':id,'url':u,'status':code,'internal':internal})
+          report={'posts':rows,'link_status':status,'broken':broken}
+          json.dump(report,open(f'{root}/rewritten-posts-qa.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print('POSTS',len(rows),'UNIQUE_LINKS',len(unique),'BROKEN',len(broken))
+          for r in rows:
+              print('POST',r['id'],'|',r['slug'],'|',r['title'])
+              print('DESC',r['description_length'],'|',r['description'])
+              print('STRUCT words=',r['word_count'],'headings=',len(r['headings']),'links=',r['link_count'],'status=',r['status'],'us_desc=',r['us_in_desc'],'us_og=',r['us_in_og'])
+              if r['headings']: print('HEADINGS | '+' || '.join(r['headings'][:12]))
+              print('PREVIEW |',r['content_preview'])
+          for b in broken: print('BROKEN',b['id'],b['status'],b['url'])
+          if any(r['status']!='publish' for r in rows): raise SystemExit('Not all target posts are published')
+          if any(r['us_in_desc'] or r['us_in_og'] for r in rows): raise SystemExit('US reference remains in target metadata')
+          if broken: raise SystemExit('Broken links found')
+          print('REWRITTEN_POSTS_TECHNICAL_QA_OK')
+          PY
+
+      - name: Upload rewritten posts QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-rewritten-posts-qa
+          path: ${{ runner.temp }}/dc-rewritten-qa/rewritten-posts-qa.json
+          retention-days: 7
+          if-no-files-found: warn
