@@ -1,0 +1,123 @@
+name: One-time DoctorCura phase 3 editorial audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-phase3-editorial-audit/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-phase3-editorial-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Audit German editorial and metadata residue
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target' >&2; exit 1; }
+          root="$RUNNER_TEMP/dc-phase3-editorial"; rm -rf "$root"; mkdir -p "$root/pages"
+          get200(){
+            url="$1"; out="$2"
+            for n in $(seq 1 8); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 75 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$url" || true)
+              [[ "$code" == 200 ]] && return 0
+              [[ "$code" == 000 || "$code" == 429 || "$code" == 503 ]] && { echo "RETRY $n HTTP=$code"; sleep 12; continue; }
+              echo "HTTP_FAIL=$code $url" >&2; return 1
+            done
+            return 1
+          }
+          get200 "$site/wp-json/webactueel-wordpress-connector/v1/health" "$root/health.json"
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('PHASE3_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+          page=1
+          while (( page <= 20 )); do
+            get200 "$site/wp-json/wp/v2/posts?context=edit&per_page=100&page=$page&status=any" "$root/pages/$page.json"
+            count=$(python3 - "$root/pages/$page.json" <<'PY'
+          import json,sys
+          print(len(json.load(open(sys.argv[1],encoding='utf-8'))))
+          PY
+          )
+            (( count < 100 )) && break
+            page=$((page+1))
+          done
+          jq -s 'add' "$root"/pages/*.json > "$root/all-posts.json"
+          python3 - "$root/all-posts.json" <<'PY'
+          import html,json,re,sys
+          posts=json.load(open(sys.argv[1],encoding='utf-8'))
+          patterns={
+            'country_grammar':[r'\bin meinem Deutschland\b',r'\bin dem Deutschland\b',r'\bim Deutschland\b'],
+            'compound_spacing':[
+              r'\bGLP1\b',r'\bWegovy Rezept\b',r'\bMounjaro Rezept\b',r'\bOnline Rezept\b',r'\bSchlafmittel online Rezept\b',
+              r'\bWegovy Behandlung\b',r'\bMounjaro Behandlung\b',r'\bOnline Behandlung\b'
+            ],
+            'awkward_german':[r'\bRezeptmedizin\b',r'\bMounjaro oder Wegovy Unterschied\b',r'\bDie beste online Behandlungen\b',r'\bBeste online Behandlungen\b'],
+            'english_seo_residue':[
+              r'consultation included',r'doctor review',r'shipping included',r'prescription included',r'delivery included',r'medical review included'
+            ]
+          }
+          def clean(s):
+            s=re.sub(r'(?is)<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>',' ',s or '')
+            return re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',s))).strip()
+          hits=[]
+          for p in posts:
+            yh=p.get('yoast_head_json') or {}
+            fields={
+              'title':(p.get('title') or {}).get('raw') or '',
+              'excerpt':(p.get('excerpt') or {}).get('raw') or '',
+              'content':(p.get('content') or {}).get('raw') or '',
+              'yoast_title':yh.get('title') or '',
+              'yoast_description':yh.get('description') or '',
+              'yoast_og_title':yh.get('og_title') or '',
+              'yoast_og_description':yh.get('og_description') or ''
+            }
+            for field,raw in fields.items():
+              text=clean(raw) if field in ('content','excerpt') else html.unescape(str(raw))
+              for family,regs in patterns.items():
+                for pat in regs:
+                  for m in re.finditer(pat,text,re.I):
+                    hits.append({'id':p.get('id'),'status':p.get('status'),'slug':p.get('slug'),'field':field,'family':family,'term':m.group(0),'context':text[max(0,m.start()-180):min(len(text),m.end()+320)]})
+            # Text-node punctuation only, avoiding false positives created by stripping HTML.
+            raw=(p.get('content') or {}).get('raw') or ''
+            for node in re.split(r'(<[^>]+>)',raw)[::2]:
+              m=re.search(r'[ \t]+[,.!?;:]',html.unescape(node))
+              if m:
+                txt=re.sub(r'\s+',' ',html.unescape(node)).strip()
+                hits.append({'id':p.get('id'),'status':p.get('status'),'slug':p.get('slug'),'field':'content','family':'punctuation_spacing','term':m.group(0),'context':txt[:700]})
+                break
+          ded=[]; seen=set()
+          for h in hits:
+            k=(h['id'],h['field'],h['family'],h['term'],h['context'])
+            if k not in seen: seen.add(k); ded.append(h)
+          hits=ded
+          by={}
+          for h in hits: by[h['family']]=by.get(h['family'],0)+1
+          print('PHASE3_EDITORIAL_SUMMARY '+json.dumps({'posts_checked':len(posts),'hit_records':len(hits),'hit_post_ids':sorted({int(h['id']) for h in hits if isinstance(h.get('id'),int)}),'by_family':by},ensure_ascii=False,separators=(',',':')))
+          for h in hits: print('EDITORIAL_HIT '+json.dumps(h,ensure_ascii=False,separators=(',',':')))
+          for p in posts:
+            if int(p.get('id') or 0) in (5984,5902,5900,6012,6018,6037):
+              yh=p.get('yoast_head_json') or {}
+              snap={
+                'id':p.get('id'),'slug':p.get('slug'),'title':(p.get('title') or {}).get('raw') or '',
+                'excerpt':clean((p.get('excerpt') or {}).get('raw') or ''),
+                'yoast_title':html.unescape(str(yh.get('title') or '')),
+                'yoast_description':html.unescape(str(yh.get('description') or '')),
+                'yoast_og_description':html.unescape(str(yh.get('og_description') or ''))
+              }
+              print('METADATA_SNAPSHOT '+json.dumps(snap,ensure_ascii=False,separators=(',',':')))
+          print('PHASE3_EDITORIAL_AUDIT_COMPLETE')
+          PY
