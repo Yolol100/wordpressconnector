@@ -18,124 +18,36 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect live DoctorCura homepage Elementor hero
+      - name: Inspect exact DoctorCura hero container settings
         shell: bash
         run: |
           set -euo pipefail
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
-
-          root="$RUNNER_TEMP/doctorcura-hero-flags"
-          rm -rf "$root" && mkdir -p "$root"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || exit 1
+          root="$RUNNER_TEMP/dc"; mkdir -p "$root"
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-
-          health_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
-            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
-            --header 'Accept: application/json' \
-            --output "$root/health.json" \
-            --write-out '%{http_code}' "$base/health")
-          [[ "$health_code" == '200' ]] || { echo "DoctorCura health failed: HTTP $health_code" >&2; exit 1; }
-          python3 - "$root/health.json" <<'PY'
+          call_action(){ suffix="$1"; action="$2"; payload="$3"; req="$root/r-$suffix.json"; out="$root/o-$suffix.json"; python3 - "$req" "$suffix" "$action" "$payload" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          if not d.get('ok'):
-              raise SystemExit('Connector health ok=false')
-          print('connector_version=' + str(d.get('version') or d.get('connector_version') or 'unknown'))
-          print('transport=' + str(d.get('transport') or 'unknown'))
+          p,s,a,x=sys.argv[1:]; json.dump({'version':1,'request_id':'dc-hero-settings-'+s,'action':a,'dry_run':True,'confirm':False,'payload':json.loads(x)},open(p,'w'),separators=(',',':'))
           PY
-
-          call_action() {
-            suffix="$1"; action="$2"; payload="$3"
-            req="$root/request-$suffix.json"; out="$root/result-$suffix.json"
-            python3 - "$req" "$suffix" "$action" "$payload" <<'PY'
-          import json,sys
-          path,suffix,action,payload=sys.argv[1:]
-          data={'version':1,'request_id':'doctorcura-hero-inspect-'+suffix,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)}
-          with open(path,'w',encoding='utf-8') as f:
-              json.dump(data,f,separators=(',',':'))
-          PY
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 120 \
-              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
-              --header 'Accept: application/json' \
-              --header 'Content-Type: application/json' \
-              --data-binary "@$req" \
-              --output "$out" \
-              --write-out '%{http_code}' "$base/execute")
-            [[ "$code" == '200' ]] || { echo "$action failed: HTTP $code" >&2; exit 1; }
-            python3 - "$out" "$action" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          if not d.get('ok'):
-              raise SystemExit(sys.argv[2] + ' returned ok=false: ' + str(d.get('error','connector error'))[:180])
-          PY
-          }
-
+            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]]; }
           call_action front option.get '{"name":"page_on_front"}'
-          page_id=$(python3 - "$root/result-front.json" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          value=(d.get('data') or {}).get('value')
-          try:
-              value=int(value)
-          except Exception:
-              value=0
-          if value < 1:
-              raise SystemExit('page_on_front is missing or invalid')
-          print(value)
+          page_id=$(python3 - "$root/o-front.json" <<'PY'
+          import json,sys; print(int((json.load(open(sys.argv[1])).get('data') or {}).get('value')))
           PY
           )
-          echo "front_page_id=$page_id"
-
-          call_action post post.get "{\"id\":$page_id}"
-          python3 - "$root/result-post.json" <<'PY'
+          call_action el elementor.inspect "{\"id\":$page_id}"
+          python3 - "$root/o-el.json" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          p=(d.get('data') or {}).get('post') or {}
-          print('front_page_title=' + str(p.get('title','')))
-          print('front_page_slug=' + str(p.get('slug','')))
-          print('front_page_permalink=' + str(p.get('permalink','')))
-          PY
-
-          call_action elementor elementor.inspect "{\"id\":$page_id}"
-          python3 - "$root/result-elementor.json" <<'PY'
-          import json,sys,re
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          data=d.get('data') or {}
-          doc=data.get('document') or {}
-          nodes=doc.get('data') or []
-          print('elementor_fingerprint=' + str(data.get('fingerprint','')))
-          print('elementor_document_type=' + str(doc.get('document_type','')))
-          print('elementor_version=' + str(doc.get('elementor_version','')))
-          print('top_level_count=' + str(len(nodes)))
-
-          def clip(v, n=150):
-              if isinstance(v,dict):
-                  x={k:v.get(k) for k in ('id','url','alt','size') if k in v}
-                  return x
-              s=re.sub(r'\s+',' ',str(v)).strip()
-              return s[:n]
-
-          candidates=[]
-          printed=0
-          def walk(items,path='',top_index=None,depth=0):
-              global printed
-              for i,e in enumerate(items if isinstance(items,list) else []):
-                  if not isinstance(e,dict):
-                      continue
-                  p=f'{path}/{i}' if path else str(i)
-                  ti=i if top_index is None else top_index
-                  st=e.get('settings') if isinstance(e.get('settings'),dict) else {}
-                  row={'path':p,'depth':depth,'top':ti,'id':e.get('id'),'elType':e.get('elType'),'widgetType':e.get('widgetType'),'children':len(e.get('elements') or [])}
-                  for key in ('title','editor','text','html','image','background_image','css_classes','_css_classes','flex_direction','flex_justify_content','flex_align_items','content_width','width'):
-                      if key in st and st.get(key) not in ('',None,[],{}):
-                          row[key]=clip(st.get(key))
-                  if printed < 100 and depth <= 5:
-                      print('TREE ' + json.dumps(row,ensure_ascii=False,separators=(',',':')))
-                      printed += 1
-                  if ti == 0 and e.get('widgetType') == 'image':
-                      img=st.get('image') if isinstance(st.get('image'),dict) else {}
-                      candidates.append({'path':p,'id':e.get('id'),'url':img.get('url',''),'parent_path':path})
-                  walk(e.get('elements') or [],p,ti,depth+1)
+          d=json.load(open(sys.argv[1])); doc=(d.get('data') or {}).get('document') or {}; nodes=doc.get('data') or []
+          ids={'4a5ba936','7bc7e6ad','198df693','6f15141e'}
+          def walk(a):
+            for e in a if isinstance(a,list) else []:
+              if isinstance(e,dict):
+                if e.get('id') in ids:
+                  print('NODE '+e.get('id')+' '+json.dumps({'elType':e.get('elType'),'widgetType':e.get('widgetType'),'settings':e.get('settings') or {},'child_ids':[x.get('id') for x in e.get('elements') or [] if isinstance(x,dict)]},ensure_ascii=False,separators=(',',':')))
+                walk(e.get('elements') or [])
           walk(nodes)
-          print('FIRST_SECTION_IMAGE_CANDIDATES=' + json.dumps(candidates,ensure_ascii=False,separators=(',',':')))
+          print('fingerprint='+str((d.get('data') or {}).get('fingerprint','')))
+          print('page_id='+str(doc.get('post_id','')))
           PY
