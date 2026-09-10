@@ -1,0 +1,70 @@
+name: DoctorCura Phase 3C Elementor URLs
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3c-elementor-urls.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect normalized Elementor data URLs and restore helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/p3c-urls"; mkdir -p "$tmp"
+          baseline='939d9bc10b33e053c1c668b58f13491b2ac6a87c9673bd9ae76ade739bc77c40'; marker='DoctorCura one-time Elementor URL diagnostic'; token=$(openssl rand -hex 24); helper=0
+          make_payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          put(){ local src="$1" label="$2" http; make_payload "$src" "$tmp/$label.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$label.json" --output "$tmp/$label-out.json" --write-out '%{http_code}' "$api"); [[ "$http" == 200 ]]; }
+          cleanup(){ local rc=$?; set +e; if [[ "$helper" == 1 ]]; then put "$tmp/original.php" cleanup >/dev/null 2>&1 || true; fi; curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$api" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "FINAL hash=".hash("sha256",$c)." marker=".(strpos($c,$argv[2])===false?"absent":"present").PHP_EOL;' "$tmp/rb.json" "$marker"; fi; exit "$rc"; }
+          trap cleanup EXIT
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" "$api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$code=(string)($s["code"]??"");if(hash("sha256",$code)!==$argv[3]||strpos($code,$argv[4])!==false)exit(2);file_put_contents($argv[2],$code);' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
+          cp "$tmp/original.php" "$tmp/helper.php"
+          cat >> "$tmp/helper.php" <<PHP
+
+          /* DoctorCura one-time Elementor URL diagnostic */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_elementor_urls'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_elementor_urls'] ) ) return;
+              \$raw = (string) get_post_meta( 11, '_elementor_data', true );
+              \$decoded = json_decode( \$raw, true );
+              \$urls = array();
+              \$walk = function ( \$v, \$path = '$' ) use ( &\$walk, &\$urls ) {
+                  if ( is_array( \$v ) ) { foreach ( \$v as \$k => \$x ) \$walk( \$x, \$path . '/' . (string) \$k ); return; }
+                  if ( ! is_string( \$v ) || false === stripos( \$v, 'doctorcura.com' ) ) return;
+                  if ( preg_match_all( '#https?://(?:www\\.)?doctorcura\\.com[^"\\s<>]*#i', \$v, \$m ) ) foreach ( \$m[0] as \$u ) \$urls[] = array( 'path' => \$path, 'url' => \$u );
+              };
+              \$walk( \$decoded );
+              wp_send_json( array( 'bytes' => strlen( \$raw ), 'sha256' => hash( 'sha256', \$raw ), 'json_valid' => is_array( \$decoded ), 'urls' => \$urls ) );
+          }, 1 );
+          PHP
+          put "$tmp/helper.php" install; helper=1
+          curl "${c[@]}" --compressed --output "$tmp/result.json" "$base/?doctorcura_elementor_urls=$token"
+          python3 - "$tmp/result.json" <<'PY'
+          import json,sys,urllib.parse
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print(f"ELEMENTOR_DATA bytes={d.get('bytes')} sha256={d.get('sha256')} json_valid={d.get('json_valid')}")
+          rows=d.get('urls',[]); print('URL_COUNT='+str(len(rows)))
+          for r in rows:
+              u=r.get('url',''); p=urllib.parse.urlsplit(u); print(f"URL path={r.get('path')} scheme={p.scheme} host={p.netloc} pathname={p.path}")
+          print('OLD_HTTP_WWW_COUNT='+str(sum(1 for r in rows if r.get('url','').lower().startswith('http://www.doctorcura.com'))))
+          PY
+          put "$tmp/original.php" remove; helper=0
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/final.json" "$api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");if(hash("sha256",$c)!==$argv[3]||strpos($c,$argv[2])!==false)exit(2);echo "FINAL hash=".hash("sha256",$c)." marker=absent".PHP_EOL;' "$tmp/final.json" "$marker" "$baseline"
+          trap - EXIT
+          echo PHASE3C_ELEMENTOR_URL_DIAGNOSTIC_COMPLETE
