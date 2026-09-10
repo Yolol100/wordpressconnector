@@ -1,0 +1,149 @@
+name: One-time DoctorCura US metadata rewrite
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-us-meta-rewrite/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-us-meta-rewrite
+  cancel-in-progress: false
+
+jobs:
+  rewrite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Rewrite affected Yoast descriptions and preserve post content links
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-us-meta"; rm -rf "$root"; mkdir -p "$root/before" "$root/after" "$root/inspect-before" "$root/inspect-after"
+
+          cat > "$root/descriptions.tsv" <<'EOF'
+          900060	Rezeptpflichtige Therapie digital anfragen: So laufen ärztliche Prüfung, Rezept und diskreter Arzneimittelversand Schritt für Schritt ab.
+          900048	Wegovy Erfahrungen medizinisch eingeordnet: Erfahren Sie mehr über Wirkung, Nebenwirkungen, Dosierung und die Bedeutung ärztlicher Kontrollen.
+          900043	Viagra Wirkung Review: Wie Sildenafil wirkt, wann der Effekt einsetzt, welche Risiken wichtig sind und warum die ärztliche Prüfung dazugehört.
+          6050	Mounjaro Bewertung beim Gewichtsmanagement: Wirkung, Eignung, Risiken und ärztliche Kriterien für eine verantwortungsvolle Therapieentscheidung.
+          6048	Digitale Rezeptbehandlung verständlich erklärt: vom medizinischen Fragebogen über die ärztliche Prüfung bis zu Rezept und diskretem Versand.
+          6046	Rezeptpflichtige Schlafhilfe digital anfragen: Erfahren Sie, wie ärztliche Prüfung, Risiken und der Ablauf einer diskreten Online-Behandlung zusammengehören.
+          6044	Digitales Rezept oder Praxisbesuch? Erfahren Sie, wann Telemedizin passen kann und wann eine persönliche ärztliche Untersuchung sinnvoller ist.
+          6042	Rezept online erhalten: So funktionieren ärztliche Prüfung, sichere Verordnung und diskreter Arzneimittelversand Schritt für Schritt.
+          6033	Was kostet eine GLP-1-Therapie? Erfahren Sie, welche Kosten für Medikament, ärztliche Prüfung, Rezept, Versand und Betreuung eine Rolle spielen.
+          6020	Diskrete Medikamentenbestellung erklärt: von der medizinischen Prüfung über das Rezept bis zum neutralen Versand nach Hause.
+          6008	Sofort Rezept online: Erfahren Sie, wie ärztliche Prüfung, digitale Verordnung und diskreter Arzneimittelversand verantwortungsvoll ablaufen.
+          5999	Ist Wegovy für mich geeignet? Welche medizinischen Kriterien, Risiken und nächsten Schritte bei einer ärztlichen Prüfung wichtig sind.
+          5995	Wer bekommt Mounjaro verschrieben? Erfahren Sie, welche medizinischen Voraussetzungen zählen, wann es ungeeignet sein kann und wie die Prüfung abläuft.
+          5993	Online-Rezept für Wegovy: So laufen ärztliche Prüfung, mögliche Verordnung und diskreter Versand strukturiert und medizinisch verantwortungsvoll ab.
+          5990	Potenzbehandlung digital beantragen: So funktionieren ärztliche Prüfung, mögliche Rezeptausstellung und diskrete Arzneimittellieferung.
+          5986	Gewichtsverlust-Medikamente im Vergleich: Unterschiede bei Wegovy, Zepbound, Mounjaro und Saxenda sowie Wirkung, Risiken und ärztliche Auswahl.
+          5904	Behandlung erektiler Dysfunktion online: Erfahren Sie, wie Telemedizin, ärztliche Prüfung und eine diskrete Behandlung strukturiert ablaufen.
+          5896	Medikamente aus EU-Apotheke sicher bestellen: Worauf es bei Rezept, Zulassung, Versand und einer diskreten Lieferung wirklich ankommt.
+          5892	Ist ein Online-Rezept in Deutschland legal? Erfahren Sie, worauf es bei ärztlicher Prüfung, Rezeptausstellung und regulierten Abläufen ankommt.
+          EOF
+          sed -i 's/^          //' "$root/descriptions.tsv"
+
+          us_rx='USA|United States|U\.S\.|US-[A-Za-zÄÖÜäöüß]|Vereinigte Staaten|US-amerikan|amerikanisch|FDA|DEA|HIPAA|New York|California|Texas|Florida|USD'
+
+          call() {
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload_file="$5"
+            python3 - "$root/r-$suffix.json" "$action" "$dry" "$confirm" "$payload_file" <<'PY'
+          import json,sys,uuid
+          out,action,dry,confirm,payload_file=sys.argv[1:]
+          payload=json.load(open(payload_file,encoding='utf-8'))
+          req={'version':1,'request_id':'dc-usmeta-'+uuid.uuid4().hex[:22],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':payload}
+          json.dump(req,open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            for attempt in $(seq 1 6); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+              if [[ "$code" == 200 ]] && python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          try: d=json.load(open(sys.argv[1],encoding='utf-8'))
+          except: raise SystemExit(1)
+          raise SystemExit(0 if d.get('ok') else 1)
+          PY
+              then return 0; fi
+              [[ "$code" == 503 ]] && sleep 12 && continue
+              echo "$action failed HTTP $code" >&2; cat "$root/o-$suffix.json" >&2 || true; return 1
+            done
+            return 1
+          }
+
+          health=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health")
+          [[ "$health" == 200 ]] || exit 1
+
+          changed=0
+          while IFS=$'\t' read -r id newdesc; do
+            [[ "$id" =~ ^[0-9]+$ ]] || continue
+            code=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/before/$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit")
+            [[ "$code" == 200 ]] || { echo "Baseline post $id HTTP $code" >&2; exit 1; }
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "inspect-before-$id" yoast.inspect true false "$root/id.json"
+            cp "$root/o-inspect-before-$id.json" "$root/inspect-before/$id.json"
+
+            python3 - "$root/inspect-before/$id.json" "$root/update-$id.json" "$newdesc" <<'PY'
+          import json,re,sys
+          src,out,newdesc=sys.argv[1:]
+          d=json.load(open(src,encoding='utf-8')); data=d.get('data') or {}; fields=data.get('fields') or {}
+          rx=re.compile(r'\bUSA\b|\bUnited States(?: of America)?\b|\bU\.\s*S\.\s*A?\.?\b|\bUS[- ][A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*\b|\bVereinigte Staaten\b|\bUS-amerikan\w*\b|\bamerikan(?:isch|ische|ischen|ischer|isches|ischem)\b|\bFDA\b|\bDEA\b|\bHIPAA\b|\bNew York\b|\bCalifornia\b|\bTexas\b|\bFlorida\b|\bUSD\b',re.I)
+          if not rx.search(str(fields.get('description') or '')):
+              raise SystemExit('Expected US reference missing in Yoast description; refusing stale write')
+          updates={'description':newdesc}
+          for k in ('opengraph_description','twitter_description'):
+              v=fields.get(k)
+              if isinstance(v,str) and rx.search(v): updates[k]=newdesc
+          json.dump({'id':int(data.get('post_id') or 0),'fields':updates},open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            call "update-$id" yoast.update false true "$root/update-$id.json"
+            call "inspect-after-$id" yoast.inspect true false "$root/id.json"
+            cp "$root/o-inspect-after-$id.json" "$root/inspect-after/$id.json"
+            code=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/after/$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit")
+            [[ "$code" == 200 ]] || exit 1
+            changed=$((changed+1))
+          done < "$root/descriptions.tsv"
+
+          python3 - "$root" <<'PY'
+          import glob,hashlib,json,os,re,sys
+          root=sys.argv[1]
+          rx=re.compile(r'\bUSA\b|\bUnited States(?: of America)?\b|\bU\.\s*S\.\s*A?\.?\b|\bUS[- ][A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*\b|\bVereinigte Staaten\b|\bUS-amerikan\w*\b|\bamerikan(?:isch|ische|ischen|ischer|isches|ischem)\b|\bFDA\b|\bDEA\b|\bHIPAA\b|\bNew York\b|\bCalifornia\b|\bTexas\b|\bFlorida\b|\bUSD\b',re.I)
+          reports=[]
+          for bp in sorted(glob.glob(root+'/before/*.json')):
+              id=os.path.basename(bp).split('.')[0]; ap=root+'/after/'+id+'.json'; ip=root+'/inspect-after/'+id+'.json'
+              b=json.load(open(bp,encoding='utf-8')); a=json.load(open(ap,encoding='utf-8')); yi=json.load(open(ip,encoding='utf-8'))
+              for field in ('content','title','excerpt'):
+                  bv=(b.get(field) or {}).get('raw') if isinstance(b.get(field),dict) else b.get(field)
+                  av=(a.get(field) or {}).get('raw') if isinstance(a.get(field),dict) else a.get(field)
+                  if (bv or '')!=(av or ''): raise SystemExit(f'post {id} {field} changed unexpectedly')
+              if b.get('slug')!=a.get('slug') or b.get('status')!=a.get('status'): raise SystemExit(f'post {id} identity changed unexpectedly')
+              href=lambda s: re.findall(r'href=["\']([^"\']+)',s or '',re.I)
+              if href((b.get('content') or {}).get('raw',''))!=href((a.get('content') or {}).get('raw','')): raise SystemExit(f'post {id} links changed')
+              yh=a.get('yoast_head_json') or {}
+              for k in ('description','og_description'):
+                  if rx.search(str(yh.get(k) or '')): raise SystemExit(f'post {id} rendered Yoast {k} still has US reference')
+              fields=(yi.get('data') or {}).get('fields') or {}
+              for k,v in fields.items():
+                  if isinstance(v,str) and rx.search(v): raise SystemExit(f'post {id} stored Yoast field {k} still has US reference')
+              reports.append({'id':int(id),'slug':a.get('slug'),'description':yh.get('description'),'links_preserved':True,'content_preserved':True})
+          json.dump(reports,open(root+'/meta-rewrite-report.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print('US_META_REWRITE_VERIFY_OK changed=',len(reports),'content_and_links_preserved=yes')
+          PY
+
+      - name: Upload US metadata rewrite evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-us-meta-rewrite-evidence
+          path: |
+            ${{ runner.temp }}/dc-us-meta/meta-rewrite-report.json
+          retention-days: 7
+          if-no-files-found: warn
