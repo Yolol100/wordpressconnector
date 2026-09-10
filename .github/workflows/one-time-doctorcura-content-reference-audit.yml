@@ -124,7 +124,6 @@ jobs:
               except Exception: continue
               strings=[]
               for path,val in walk_strings(doc):
-                  # Ignore URL-only strings to preserve links and avoid URL-name false positives.
                   if re.match(r'^https?://',val.strip(),re.I): continue
                   hits=scan_text(strip_html(val))
                   if hits: strings.append({'path':path,'hits':hits,'value':val})
@@ -179,7 +178,7 @@ jobs:
 
       - name: Upload comprehensive audit evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: doctorcura-content-reference-audit
           path: |
