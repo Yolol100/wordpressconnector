@@ -1,0 +1,79 @@
+name: DoctorCura SEO Repair Source Check
+
+on:
+  push:
+    branches:
+      - runtime/doctorcura-seo-repair-20260911
+    paths:
+      - '.github/workflows/doctorcura-seo-repair-source-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  source-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Resolve exact live owners before mutation
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || exit 1
+          root="$RUNNER_TEMP/dc-source-check"; rm -rf "$root"; mkdir -p "$root"
+          site="${SITE_URL%/}"; api="$site/wp-json/webactueel-wordpress-connector/v1"
+
+          call_connector() {
+            suffix="$1"; action="$2"; payload="$3"
+            python3 - "$root/request-$suffix.json" "$action" "$payload" <<'PY'
+          import json,sys
+          out,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':('dc-source-'+out.split('/')[-1].replace('request-','').replace('.json',''))[:100],'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$root/request-$suffix.json" --output "$root/result-$suffix.json" --write-out '%{http_code}' "$api/execute")
+            [[ "$code" == '200' ]] || exit 1
+          }
+
+          call_connector article post.get '{"id":900067}'
+          call_connector featured media.get '{"id":5925}'
+          call_connector article-elementor elementor.inspect '{"id":900067}'
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/article.html" "$site/welche-medikamente-beeinflussen-die-erektion/"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/blogs.html" "$site/blogs/"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/en-blogs.html" "$site/en/blogs/"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/fr-blogs.html" "$site/fr/blogs/"
+          curl --silent --show-error --connect-timeout 10 --max-time 30 --dump-header "$root/about-first.headers" --output /dev/null "$site/de/about-us/"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/snippet43.json" "$site/wp-json/code-snippets/v1/snippets/43"
+
+          python3 - "$root" <<'PY'
+          import hashlib,json,os,re,sys
+          root=sys.argv[1]; missing='welche-medikamente-beeinflussen-die-erektion-featured.webp'
+          def load(name): return json.load(open(os.path.join(root,name),encoding='utf-8'))
+          article=load('result-article.json'); media=load('result-featured.json'); el=load('result-article-elementor.json'); sn=load('snippet43.json')
+          p=(article.get('data') or {}).get('post') or {}
+          print('ARTICLE id='+str(p.get('id'))+' featured_media='+str(p.get('featured_media'))+' content_has_missing='+str(missing in str(p.get('content') or '')).lower())
+          m=(media.get('data') or {}).get('media') or {}
+          print('FEATURED_MEDIA id='+str(m.get('id'))+' url='+str(m.get('url'))+' title='+json.dumps(m.get('title')))
+          ed=(el.get('data') or {}).get('document') or {}
+          blob=json.dumps(ed.get('data',[]),ensure_ascii=False)
+          print('ARTICLE_ELEMENTOR fingerprint='+str((el.get('data') or {}).get('fingerprint') or '')+' has_missing='+str(missing in blob).lower())
+          for fn in ('article.html','blogs.html','en-blogs.html','fr-blogs.html'):
+              text=open(os.path.join(root,fn),encoding='utf-8',errors='ignore').read()
+              print(fn+' missing_refs='+str(text.count(missing)))
+          item=sn.get('snippet',sn) if isinstance(sn,dict) else {}
+          code=str(item.get('code') or '').replace('\r\n','\n').strip()
+          markers=['DoctorCura article social image alignment V8.3','DoctorCura gewichtsverlust legacy final redirect V8.4b','DoctorCura datenschutz root-only migration V8.4c','DoctorCura product variation hreflang cleanup V8.4d','DoctorCura GSC-proven legacy category redirects V8.4e','DoctorCura French request-2 migration V8.4f']
+          print('SNIPPET43 sha256='+hashlib.sha256(code.encode()).hexdigest()+' len='+str(len(code))+' markers='+json.dumps({x:(x in code) for x in markers},sort_keys=True)+' about_us_mentions='+str(code.lower().count('about-us'))+' de_about_mentions='+str(code.lower().count('/de/about-us')))
+          raw=open(os.path.join(root,'about-first.headers'),encoding='iso-8859-1',errors='replace').read()
+          selected=[]
+          for line in raw.splitlines():
+              low=line.lower()
+              if line.startswith('HTTP/') or low.startswith('location:') or low.startswith('x-redirect-by:') or low.startswith('x-gt-') or low.startswith('server:') or low.startswith('cf-'):
+                  selected.append(line.strip())
+          print('ABOUT_FIRST '+json.dumps(selected))
+          PY
