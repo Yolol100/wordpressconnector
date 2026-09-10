@@ -1,4 +1,4 @@
-name: Diagnose DoctorCura SEO Root Causes
+name: Diagnose DoctorCura Redirect Owners
 
 on:
   push:
@@ -13,79 +13,51 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Read-only root-cause diagnostics
+      - name: Inspect exact redirect entries and first-hop headers read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-root-causes"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-redirect-owners"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          red="$base/wp-json/redirection/v1/redirect"
           expected_hash='2fc561ed59d45aebe0e8b8c770c582c8359560316544f34ab228a9d4f8cabaa8'
-          canonical_of(){ local f="$1"; grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true; }
-          meta_robots(){ local f="$1"; grep -Eio '<meta[^>]+name="robots"[^>]*>' "$f" | head -1 || true; }
-          public_probe(){
-            local label="$1" url="$2"
-            local html="$tmp/$label.html" headers="$tmp/$label.h" result first canon xrobots robots
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$headers" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
-            first=$(awk '/^HTTP\//{print $2; exit}' "$headers" || true)
-            canon=$(canonical_of "$html")
-            xrobots=$(sed -n 's/^x-robots-tag:[[:space:]]*//Ip' "$headers" | tr -d '\r' | paste -sd ';' -)
-            robots=$(meta_robots "$html")
-            printf '%s\t%s\tfirst=%s\tcanonical=%s\txrobots=%s\trobots=%s\n' "$label" "$result" "$first" "$canon" "$xrobots" "$robots"
-          }
 
-          echo '=== SNIPPET FEED LOGIC ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2])exit(2);foreach(preg_split("/\R/",$c) as $i=>$line){if(preg_match("/(feed|x-robots|wpseo_robots|robots)/i",$line))echo($i+1).":".$line.PHP_EOL;}' "$tmp/snippet.json" "$expected_hash"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo"snippet_hash=".hash("sha256",$c)." active=".(!empty($s["active"])?"true":"false").PHP_EOL;if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura redirect and feed cleanup V8.4")!==false)exit(2);' "$tmp/snippet.json" "$expected_hash"
 
-          echo '=== FEEDS ==='
-          public_probe feed-root "$base/feed/"
-          public_probe feed-comments "$base/comments/feed/"
-          public_probe feed-shop "$base/shop/feed/"
-
-          echo '=== TERMS RAW + RENDERED ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/pages/11?context=edit" > "$tmp/terms.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$r=(string)($p["content"]["raw"]??"");echo"page_id=".($p["id"]??"")." status=".($p["status"]??"")." old_http_www_count=".substr_count($r,"http://www.doctorcura.com")." https_home_count=".substr_count($r,"https://doctorcura.com/").PHP_EOL;' "$tmp/terms.json"
-          for lang in base fr en; do
-            if [[ "$lang" == base ]]; then url="$base/geschaftsbedingungen/"; else url="$base/$lang/geschaftsbedingungen/"; fi
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$url" > "$tmp/terms-$lang.html"
-            old=$(grep -Fco 'http://www.doctorcura.com' "$tmp/terms-$lang.html" || true)
-            echo "terms-$lang old_http_www_count=$old"
+          echo '=== FIRST HOP HEADERS ==='
+          for spec in \
+            'comments:/comments/feed/' \
+            'weight:/product-categorie/gewichtsverlust/' \
+            'frweight:/fr/product-categorie/gewichtsverlust/' \
+            'frmalaria:/fr/product-categorie/malaria/' \
+            'privacy:/datenschutz/'; do
+            label="${spec%%:*}"; path="${spec#*:}"
+            curl --silent --show-error --connect-timeout 10 --max-time 30 --max-redirs 0 --dump-header "$tmp/$label.h" --output /dev/null "$base$path" || true
+            echo "-- $label $path --"
+            grep -Ei '^(HTTP/|location:|x-redirect-by:|x-robots-tag:|server:|x-powered-by:)' "$tmp/$label.h" | tr -d '\r' || true
           done
 
-          echo '=== LEGACY CATEGORY SURFACES ==='
-          public_probe old-fr-malaria "$base/fr/product-categorie/malaria/"
-          public_probe target-fr-malaria "$base/fr/product-category/malaria/"
-          public_probe old-en-sleep "$base/en/product-categorie/schlafprobleme/"
-          public_probe target-en-sleep "$base/en/product-category/schlafprobleme/"
-          public_probe old-weight-de "$base/product-categorie/gewichtsverlust/"
-          public_probe target-weight-de "$base/product-category/gewichtsverlust/"
-
-          echo '=== PARAMETER HREFLANG ==='
-          public_probe epipen-variation "$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"
-          public_probe epipen-utm "$base/product/epipen/?utm_source=deep-seo-audit"
-          public_probe shop-orderby "$base/shop/?orderby=price"
-          for label in epipen-variation epipen-utm shop-orderby; do
-            echo "-- $label alternates --"
-            grep -Eio '<link[^>]+rel="alternate"[^>]*>' "$tmp/$label.html" | grep -Ei 'hreflang=' | head -12 || true
+          echo '=== REDIRECTION EXACT SEARCH ==='
+          for path in \
+            '/comments/feed/' \
+            '/product-categorie/gewichtsverlust/' \
+            '/fr/product-categorie/gewichtsverlust/' \
+            '/en/product-categorie/gewichtsverlust/' \
+            '/product-categorie/malaria/' \
+            '/fr/product-categorie/malaria/' \
+            '/en/product-categorie/malaria/' \
+            '/datenschutz/' '/fr/datenschutz/' '/en/datenschutz/'; do
+            key=$(printf '%s' "$path" | tr '/:' '__')
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$path" --data-urlencode 'per_page=100' "$red" > "$tmp/$key.json"
+            echo "-- $path --"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["items"]??[])as$x){$url="";if(is_array($x["action_data"]??null))$url=(string)($x["action_data"]["url"]??"");elseif(is_string($x["action_data"]??null))$url=(string)$x["action_data"];echo json_encode(["id"=>$x["id"]??null,"url"=>$x["url"]??null,"action_type"=>$x["action_type"]??null,"action_code"=>$x["action_code"]??null,"target"=>$url,"match_type"=>$x["match_type"]??null,"status"=>$x["status"]??null,"group_id"=>$x["group_id"]??null],JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$tmp/$key.json"
           done
-
-          echo '=== PRODUCT MARKUP IMAGE REFERENCES ==='
-          for slug in malarone epipen; do
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$base/product/$slug/" > "$tmp/product-$slug.html"
-            php -r '$h=file_get_contents($argv[1]);preg_match_all("~(?:href|src|data-src|data-large_image|data-thumb)=([\"\x27])([^\"\x27>]+)\\1~i",$h,$m,PREG_SET_ORDER);foreach($m as$x){if(preg_match("/(MALARONE|EPIPEN|JUNIOR)/i",html_entity_decode($x[2],ENT_QUOTES|ENT_HTML5)))echo$x[0].PHP_EOL;}' "$tmp/product-$slug.html"
-          done
-
-          echo '=== LANGUAGE-HOME + PAGE1 LINK SOURCES ==='
-          curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$base/fr/cialis-online-mit-rezept-sicher-bestellen/" > "$tmp/fr-article.html"
-          php -r '$h=file_get_contents($argv[1]);preg_match_all("~href=([\"\x27])([^\"\x27>]+)\\1~i",$h,$m,PREG_SET_ORDER);$seen=[];foreach($m as$x){$u=html_entity_decode($x[2],ENT_QUOTES|ENT_HTML5);if(in_array($u,["https://doctorcura.com/fr","https://doctorcura.com/en","/fr","/en"],true)&&!isset($seen[$u])){echo"language_home_href=$u\n";$seen[$u]=1;}}' "$tmp/fr-article.html"
-          curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$base/blogs/2/" > "$tmp/blog2.html"
-          php -r '$h=file_get_contents($argv[1]);preg_match_all("~href=([\"\x27])([^\"\x27>]+)\\1~i",$h,$m,PREG_SET_ORDER);$seen=[];foreach($m as$x){$u=html_entity_decode($x[2],ENT_QUOTES|ENT_HTML5);if(preg_match("~/blogs/(?:1/)?(?:[?#].*)?$~",$u)&&!isset($seen[$u])){echo"blog_page1_href=$u\n";$seen[$u]=1;}}' "$tmp/blog2.html"
-
-          echo 'ROOT_CAUSE_DIAGNOSTIC_COMPLETE'
+          echo 'REDIRECT_OWNER_DIAGNOSTIC_COMPLETE'
