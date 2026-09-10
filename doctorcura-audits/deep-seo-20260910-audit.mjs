@@ -58,7 +58,8 @@ function parseHtml(html, pageUrl) {
       try { ogUrl = new URL(a.content || '', pageUrl).href; } catch {}
     }
   }
-  for (const m of html.matchAll(/<a\b[^>]*>/gi)) {
+  const linkHtml = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi,' ').replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi,' ');
+  for (const m of linkHtml.matchAll(/<a\b[^>]*>/gi)) {
     const a = attrs(m[0]);
     if (!a.href) continue;
     const raw = a.href.trim();
@@ -336,12 +337,14 @@ for (const [u,target] of knownLegacy) {
   if (!r || r.firstStatus!==301 || r.finalStatus!==200 || r.finalUrl!==target || !selfCanonical(r)) addAnom('HIGH','known_legacy_migration_invalid',u,JSON.stringify({first:r?.firstStatus,loc:r?.firstLocation,final:r?.finalUrl,status:r?.finalStatus,canonical:r?.canonical,redirects:r?.redirects,expected:target}));
 }
 
-// Discover any other product-categorie behavior, but don't call a never-known spelling an error solely because it 404s.
+// Discover any other product-categorie behavior. Empty 200 bodies can be transient translation/proxy responses, so they require readback before being treated as indexable legacy content.
 for (const r of results) {
   if (!r.url.includes('/product-categorie/')) continue;
   if (knownLegacy.has(r.url)) continue;
-  if (r.firstStatus===200 && indexable(r)) addAnom('HIGH','unexpected_indexable_product_categorie',r.url,`canonical=${r.canonical||''}`);
-  else if (r.firstStatus>=300 && r.firstStatus<400) addInfo('other_product_categorie_redirect',r.url,`status=${r.firstStatus} location=${r.firstLocation} final=${r.finalUrl}`);
+  if (r.firstStatus===200 && indexable(r)) {
+    if ((r.bodyBytes||0)===0 || (r.textLength||0)===0) addInfo('product_categorie_empty_200_needs_serial_readback',r.url,`bytes=${r.bodyBytes||0} canonical=${r.canonical||''}`);
+    else addAnom('HIGH','unexpected_indexable_product_categorie',r.url,`canonical=${r.canonical||''} bytes=${r.bodyBytes||0}`);
+  } else if (r.firstStatus>=300 && r.firstStatus<400) addInfo('other_product_categorie_redirect',r.url,`status=${r.firstStatus} location=${r.firstLocation} final=${r.finalUrl}`);
 }
 
 // 7) GSC historical URL revalidation.
@@ -352,7 +355,13 @@ for (const u of gscUrls) {
   const p=new URL(u).pathname;
   const expectedTechnical = /\/feed\/$/.test(p) || p==='/comments/feed/';
   if (expectedTechnical) {
-    if (r.finalStatus!==200 || !`${r.robots||''} ${r.xRobots||''}`.toLowerCase().includes('noindex')) addAnom('MEDIUM','historical_gsc_feed_indexability',u,`status=${r.finalStatus} robots=${r.robots||''} xrobots=${r.xRobots||''}`);
+    if (r.firstStatus>=300 && r.firstStatus<400) {
+      addInfo('historical_gsc_feed_redirect',u,`first=${r.firstStatus} location=${r.firstLocation||''} final=${r.finalStatus} finalUrl=${r.finalUrl||''}`);
+    } else if (r.firstStatus===200) {
+      if (r.finalStatus!==200 || !`${r.robots||''} ${r.xRobots||''}`.toLowerCase().includes('noindex')) addAnom('MEDIUM','historical_gsc_feed_indexability',u,`first=${r.firstStatus} final=${r.finalStatus} robots=${r.robots||''} xrobots=${r.xRobots||''}`);
+    } else {
+      addInfo('historical_gsc_feed_nonindexable_status',u,`first=${r.firstStatus} final=${r.finalStatus}`);
+    }
     continue;
   }
   if (u===`${BASE}/sitemap` || u===`${BASE}/sitemap_index.xml` || u===`${BASE}/sitemap_index.xml/`) continue;
@@ -375,10 +384,14 @@ for (const [u,target] of [[`${BASE}/product/epipen/?utm_source=deep-seo-audit`,`
   const r=resultMap.get(u); if (!r || r.finalStatus!==200 || r.canonical!==target) addAnom('MEDIUM','utm_canonical_invalid',u,`canonical=${r?.canonical||''} expected=${target}`);
 }
 
-// 9) Hreflang: indexable HTML URLs should not point to redirects/broken/noncanonical pages; return links required.
+// 9) Hreflang reciprocity is a canonical-page contract. Canonicalized duplicate/query URLs are validated by their canonical target and dedicated parameter checks above.
 let hreflangPages=0, xDefaultMissing=0;
 for (const r of results) {
   if (!indexable(r) || !Array.isArray(r.hreflangs) || !r.hreflangs.length || !/html/i.test(r.contentType||'')) continue;
+  if (!selfCanonical(r)) {
+    addInfo('hreflang_noncanonical_source_skipped',r.url,`canonical=${r.canonical||''}`);
+    continue;
+  }
   hreflangPages++;
   const own = r.hreflangs.find(h=>h.href===r.finalUrl);
   if (!own) addAnom('HIGH','hreflang_missing_self',r.url,`final=${r.finalUrl}`);
