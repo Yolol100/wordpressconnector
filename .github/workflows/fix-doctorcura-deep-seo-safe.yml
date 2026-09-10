@@ -1,4 +1,4 @@
-name: Fix DoctorCura Redirect Feed Cleanup V8.4
+name: Fix DoctorCura Legacy Route Cleanup V8.4
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Apply guarded redirect and feed cleanup
+      - name: Apply guarded exact legacy migrations
         shell: bash
         run: |
           set -euo pipefail
@@ -82,51 +82,52 @@ jobs:
           echo '=== PREFLIGHT ==='
           http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
           [[ "$http" == '200' ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura redirect and feed cleanup V8.4")!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=exact_v83\n";' "$tmp/current.json" "$tmp/original.php" "$expected_hash"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura legacy route cleanup V8.4")!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=exact_v83\n";' "$tmp/current.json" "$tmp/original.php" "$expected_hash"
 
-          assert_direct target-weight-de "$base/product-category/gewichtsverlust/"
-          assert_direct target-weight-fr "$base/fr/product-category/gewichtsverlust/"
-          assert_direct target-weight-en "$base/en/product-category/gewichtsverlust/"
-          assert_direct target-malaria-fr "$base/fr/product-category/malaria/"
-          assert_direct target-privacy-de "$base/privacy-policy/"
-          assert_direct target-privacy-fr "$base/fr/privacy-policy/"
-          assert_direct target-privacy-en "$base/en/privacy-policy/"
-          current=$(live pre-comments "$base/comments/feed/"); echo "pre-comments=$current first=$(first_status "$tmp/pre-comments.h")"; [[ "$(first_status "$tmp/pre-comments.h")" == '301' ]]
+          for url in \
+            "$base/product-category/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" \
+            "$base/product-category/malaria/" "$base/fr/product-category/malaria/" "$base/en/product-category/malaria/" \
+            "$base/privacy-policy/" "$base/fr/privacy-policy/" "$base/en/privacy-policy/"; do
+            label=$(printf '%s' "$url" | sha256sum | cut -c1-12); assert_direct "target-$label" "$url"
+          done
 
           cp "$tmp/original.php" "$tmp/new.php"
           cat >> "$tmp/new.php" <<'PHP'
 
-          /* DoctorCura redirect and feed cleanup V8.4 - 2026-09-10 */
-          add_filter( 'redirect_canonical', function ( $redirect_url, $requested_url ) {
-              $path = wp_parse_url( (string) $requested_url, PHP_URL_PATH );
+          /* DoctorCura legacy route cleanup V8.4 - 2026-09-10 */
+          add_action( 'template_redirect', function () {
+              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
               if ( ! is_string( $path ) || $path === '' ) {
-                  return $redirect_url;
+                  return;
               }
 
               $path = '/' . trim( $path, '/' ) . '/';
+              $lang = isset( $_SERVER['HTTP_X_GT_LANG'] ) ? strtolower( (string) $_SERVER['HTTP_X_GT_LANG'] ) : '';
+              $prefix = in_array( $lang, array( 'fr', 'en' ), true ) ? '/' . $lang : '';
 
-              if ( '/comments/feed/' === $path ) {
-                  return false;
+              foreach ( array( '/fr', '/en' ) as $public_prefix ) {
+                  if ( 0 === strpos( $path, $public_prefix . '/' ) ) {
+                      $prefix = $public_prefix;
+                      $path = substr( $path, strlen( $public_prefix ) );
+                      break;
+                  }
               }
 
               $map = array(
-                  '/product-categorie/gewichtsverlust/'    => '/product-category/gewichtsverlust/',
-                  '/fr/product-categorie/gewichtsverlust/' => '/fr/product-category/gewichtsverlust/',
-                  '/en/product-categorie/gewichtsverlust/' => '/en/product-category/gewichtsverlust/',
-                  '/product-categorie/malaria/'            => '/product-category/malaria/',
-                  '/fr/product-categorie/malaria/'         => '/fr/product-category/malaria/',
-                  '/en/product-categorie/malaria/'         => '/en/product-category/malaria/',
-                  '/datenschutz/'                          => '/privacy-policy/',
-                  '/fr/datenschutz/'                       => '/fr/privacy-policy/',
-                  '/en/datenschutz/'                       => '/en/privacy-policy/',
+                  '/product-categorie/gewichtsverlust/' => '/product-category/gewichtsverlust/',
+                  '/product-categorie/malaria/'         => '/product-category/malaria/',
+                  '/datenschutz/'                       => '/privacy-policy/',
               );
 
-              if ( isset( $map[ $path ] ) ) {
-                  return home_url( $map[ $path ] );
+              if ( ! isset( $map[ $path ] ) ) {
+                  return;
               }
 
-              return $redirect_url;
-          }, 0, 2 );
+              $target = home_url( $prefix . $map[ $path ] );
+              wp_safe_redirect( $target, 301, 'DoctorCura SEO cleanup' );
+              exit;
+          }, 0 );
           PHP
           final_hash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
 
@@ -136,25 +137,25 @@ jobs:
           purge_with_code "$tmp/new.php" apply-v84
 
           verify_round(){
-            local round="$1" result first xrobots hash
+            local round="$1" result first hash comments_xr
             echo "=== VERIFY $round ==="
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$api" > "$tmp/$round-snippet.json"
-            hash=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,"DoctorCura redirect and feed cleanup V8.4")===false||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/$round-snippet.json")
+            hash=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,"DoctorCura legacy route cleanup V8.4")===false||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/$round-snippet.json")
             [[ "$hash" == "$final_hash" ]]
-
-            result=$(live "$round-comments" "$base/comments/feed/"); first=$(first_status "$tmp/$round-comments.h"); xrobots=$(sed -n 's/^x-robots-tag:[[:space:]]*//Ip' "$tmp/$round-comments.h" | tr -d '\r' | paste -sd ';' -)
-            echo "$round comments result=$result first=$first xrobots=$xrobots"
-            [[ "$first" == '200' && "$result" == $'200\t'"$base/comments/feed/"$'\t0' ]] || return 1
-            printf '%s' "$xrobots" | grep -Eiq 'noindex' || return 1
 
             assert_redirect "$round-weight-de" "$base/product-categorie/gewichtsverlust/" "$base/product-category/gewichtsverlust/" || return 1
             assert_redirect "$round-weight-fr" "$base/fr/product-categorie/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" || return 1
             assert_redirect "$round-weight-en" "$base/en/product-categorie/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" || return 1
+            assert_redirect "$round-malaria-de" "$base/product-categorie/malaria/" "$base/product-category/malaria/" || return 1
             assert_redirect "$round-malaria-fr" "$base/fr/product-categorie/malaria/" "$base/fr/product-category/malaria/" || return 1
+            assert_redirect "$round-malaria-en" "$base/en/product-categorie/malaria/" "$base/en/product-category/malaria/" || return 1
             assert_redirect "$round-privacy-de" "$base/datenschutz/" "$base/privacy-policy/" || return 1
             assert_redirect "$round-privacy-fr" "$base/fr/datenschutz/" "$base/fr/privacy-policy/" || return 1
             assert_redirect "$round-privacy-en" "$base/en/datenschutz/" "$base/en/privacy-policy/" || return 1
             assert_redirect "$round-sexual-fr" "$base/fr/product-categorie/sexual-problems/" "$base/fr/product-category/sexuelle-probleme/" || return 1
+
+            result=$(live "$round-comments" "$base/comments/feed/"); first=$(first_status "$tmp/$round-comments.h"); comments_xr=$(grep -Ei '^x-redirect-by:' "$tmp/$round-comments.h" | head -1 | tr -d '\r' || true); echo "$round comments=$result first=$first $comments_xr"; [[ "$first" == '301' && "$result" == $'200\t'"$base/"$'\t1' ]] || return 1
+            grep -Eiq '^x-robots-tag:[[:space:]]*noindex' "$tmp/$round-comments.h" || return 1
 
             assert_direct "$round-blog16" "$base/blogs/16/" || return 1
             result=$(live "$round-blog17" "$base/blogs/17/"); first=$(first_status "$tmp/$round-blog17.h"); echo "$round blog17=$result first=$first"; [[ "$first" == '404' && "$result" == $'404\t'"$base/blogs/17/"$'\t0' ]] || return 1
