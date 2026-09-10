@@ -19,21 +19,19 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Read current production state only
+      - name: Read remaining production state only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"
-          [[ "$base" == 'https://doctorcura.com' ]] || { echo 'DoctorCura target mismatch' >&2; exit 1; }
+          [[ "$base" == 'https://doctorcura.com' ]] || exit 1
           test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
           tmp="$RUNNER_TEMP/dc-phase3-readback"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
-          redapi="$base/wp-json/redirection/v1"
-          snipapi="$base/wp-json/code-snippets/v1/snippets/43"
 
           cat > "$tmp/parse_html.py" <<'PY'
-          import json,sys
+          import sys
           from html.parser import HTMLParser
           class P(HTMLParser):
               def __init__(self):
@@ -54,7 +52,8 @@ jobs:
           PY
 
           probe(){
-            local label="$1" url="$2" first_h="$tmp/$label-first.h" html="$tmp/$label.html" first loc result parsed canon robots paramalts alts
+            local label url first_h html first loc result parsed canon robots paramalts alts
+            label="$1"; url="$2"; first_h="$tmp/$label-first.h"; html="$tmp/$label.html"
             curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --max-redirs 0 --dump-header "$first_h" --output /dev/null "$url" || true
             first=$(awk '/^HTTP\//{print $2; exit}' "$first_h")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$first_h")
@@ -68,45 +67,11 @@ jobs:
             [[ -n "$alts" ]] && echo "HREFLANG label=$label $alts"
           }
 
-          echo '=== SNIPPET 43 CURRENT TRUTH ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$snipapi" > "$tmp/snippet.json"
-          python3 - "$tmp/snippet.json" <<'PY'
-          import hashlib,json,re,sys
-          s=json.load(open(sys.argv[1],encoding='utf-8')); c=str(s.get('code') or '')
-          print(f"snippet_id={int(s.get('id') or 0)} name={s.get('name','')} active={'true' if s.get('active') else 'false'} scope={s.get('scope','')} hash={hashlib.sha256(c.encode()).hexdigest()} helper_count={c.count('DoctorCura one-time cache purge helper')}")
-          markers=[]
-          for m in re.finditer(r'DoctorCura[^\r\n*]{0,140}(?:V[0-9]+(?:\.[0-9]+)*)',c,re.I):
-              x=m.group(0).strip()
-              if x not in markers: markers.append(x)
-          for x in markers: print('snippet_marker='+x)
-          PY
+          echo '=== PHASE 2A FRONTEND READBACK ==='
+          probe duplicate "$base/welche-medikamente-beeinflussen-die-erektion-2/"
+          probe keeper "$base/welche-medikamente-beeinflussen-die-erektion/"
 
-          echo '=== PHASE 2A READBACK ==='
-          for id in 900067 900066; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/posts/$id?context=edit&_fields=id,status,slug,link,featured_media" > "$tmp/post-$id.json"
-            python3 - "$tmp/post-$id.json" <<'PY'
-          import json,sys
-          p=json.load(open(sys.argv[1],encoding='utf-8'))
-          print(f"post id={int(p.get('id') or 0)} status={p.get('status','')} slug={p.get('slug','')} link={p.get('link','')} featured_media={int(p.get('featured_media') or 0)}")
-          PY
-          done
-
-          for source in '/welche-medikamente-beeinflussen-die-erektion-2/' '/product-categorie/sexual-problems/' '/product-categorie/menstruation-verschieben/' '/about-us/' '/product-categorie/gewichtsverlust/' '/fr/product-categorie/gewichtsverlust/' '/en/product-categorie/gewichtsverlust/' '/datenschutz/' '/fr/datenschutz/' '/en/datenschutz/'; do
-            key=$(printf '%s' "$source" | tr '/:?' '___')
-            curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=100' "$redapi/redirect" > "$tmp/red-$key.json"
-            echo "REDIRECTION source=$source"
-            python3 - "$tmp/red-$key.json" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); print('total='+str(int(d.get('total') or 0)))
-          for x in d.get('items') or []:
-              ad=x.get('action_data'); target=(ad.get('url','') if isinstance(ad,dict) else (ad or ''))
-              print(f"id={int(x.get('id') or 0)} status={x.get('status','')} code={int(x.get('action_code') or 0)} target={target}")
-          PY
-          done
-          probe dup "$base/welche-medikamente-beeinflussen-die-erektion-2/"
-          probe clean "$base/welche-medikamente-beeinflussen-die-erektion/"
-
-          echo '=== PAGINATION FROZEN-SCOPE READBACK ==='
+          echo '=== PAGINATION FROZEN SCOPE ==='
           for lang in base fr en; do
             [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
             probe "pg16-$lang" "$base$prefix/blogs/16/"
@@ -137,19 +102,19 @@ jobs:
           done
           curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/pages?slug=privacy-policy&context=edit&per_page=10" > "$tmp/privacy-pages.json"
           python3 - "$tmp/privacy-pages.json" <<'PY'
-          import json,sys,re
+          import json,re,sys
           pages=json.load(open(sys.argv[1],encoding='utf-8'))
           for p in pages:
               raw=str(((p.get('content') or {}).get('raw')) or '')
               text=re.sub(r'<[^>]+>',' ',raw); text=re.sub(r'\s+',' ',text).strip()
               title=str(((p.get('title') or {}).get('raw')) or ((p.get('title') or {}).get('rendered')) or '')
-              print(f"privacy_page id={p.get('id')} status={p.get('status')} slug={p.get('slug')} title={title} text_len={len(text)} excerpt={text[:180]}")
+              print(f"privacy_page id={p.get('id')} status={p.get('status')} slug={p.get('slug')} title={title} text_len={len(text)} excerpt={text[:220]}")
           PY
 
-          echo '=== PHASE 3C INTERNAL HTTP LINK SOURCE ==='
+          echo '=== PHASE 3C INTERNAL HTTP LINK ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
           python3 - "$tmp/terms.json" <<'PY'
-          import json,re,sys
+          import json,sys
           p=json.load(open(sys.argv[1],encoding='utf-8')); needle='http://www.doctorcura.com'
           def walk(v,path='$'):
               if isinstance(v,dict):
@@ -157,24 +122,16 @@ jobs:
               elif isinstance(v,list):
                   for i,x in enumerate(v): walk(x,path+'/'+str(i))
               elif isinstance(v,str) and needle in v:
-                  urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'\s<]*',v,re.I)))
-                  print(f"rest_match_path={path} count={v.count(needle)} urls={','.join(urls)}")
+                  print(f"rest_match_path={path} count={v.count(needle)}")
           walk(p)
           PY
           for lang in base fr en; do
             [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
             url="$base$prefix/geschaftsbedingungen/"; html="$tmp/terms-$lang.html"
             curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --output "$html" "$url"
-            python3 - "$html" "$lang" "$tmp/parse_html.py" <<'PY'
-          import re,subprocess,sys
-          html=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); lang=sys.argv[2]
-          parsed=subprocess.check_output(['python3',sys.argv[3],sys.argv[1]],text=True); canon=''
-          for line in parsed.splitlines():
-              if line.startswith('canonical='): canon=line.split('=',1)[1]
-          urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'<>\s]*',html,re.I)))
-          print(f"terms_render lang={lang} old_http_count={html.count('http://www.doctorcura.com')} canonical={canon}")
-          for u in urls: print(f"terms_render_url lang={lang} url={u}")
-          PY
+            oldcount=$(grep -Fco 'http://www.doctorcura.com' "$html" || true)
+            parsed=$(python3 "$tmp/parse_html.py" "$html"); canon=$(printf '%s\n' "$parsed" | sed -n 's/^canonical=//p')
+            echo "terms_render lang=$lang old_http_count=$oldcount canonical=${canon:-none}"
           done
 
           echo '=== PHASE 3D EPIPEN PARAMETER HREFLANG ==='
@@ -186,5 +143,4 @@ jobs:
           done
           curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 "$base/product-sitemap.xml" > "$tmp/product-sitemap.xml"
           echo "epipen_parameter_sitemap_count=$(grep -Fc 'attribute_pa_' "$tmp/product-sitemap.xml" || true)"
-
           echo 'PHASE3_PRODUCTION_READBACK_COMPLETE'
