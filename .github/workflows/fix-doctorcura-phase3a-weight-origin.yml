@@ -39,7 +39,8 @@ jobs:
             php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"
           }
           put_code(){
-            local src="$1" label="$2" payload="$tmp/$label.json" out="$tmp/$label-out.json" http
+            local src label payload out http
+            src="$1"; label="$2"; payload="$tmp/$label.json"; out="$tmp/$label-out.json"
             make_payload "$src" "$payload"
             http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
             echo "PUT label=$label http=$http"
