@@ -1,0 +1,136 @@
+name: DoctorCura Phase 3D Product Hreflang Fix V2
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3d-product-hreflang-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply corrected guarded variation hreflang cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/code-snippets/v1/snippets/43"
+          tmp="$RUNNER_TEMP/p3dv2"; mkdir -p "$tmp"
+          baseline='e6e303d0d24b55a97088f4cde4151130a7a17414037c0a626427a39f1c0aa946'
+          marker='DoctorCura product variation hreflang cleanup V8.4d'
+          var='attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen'
+          changed=0; helper=0
+
+          make_payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          put_code(){ local src="$1" label="$2" http; make_payload "$src" "$tmp/$label.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$label.json" --output "$tmp/$label-out.json" --write-out '%{http_code}' "$api"); echo "PUT label=$label http=$http"; [[ "$http" == 200 ]]; }
+          purge(){
+            local src="$1" label="$2" token helperfile ok=0
+            token=$(openssl rand -hex 24); helperfile="$tmp/$label-helper.php"; cp "$src" "$helperfile"
+            cat >> "$helperfile" <<PHP
+
+          /* DoctorCura one-time cache purge helper */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_p3dv2_purge'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_p3dv2_purge'] ) ) return;
+              if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain();
+              if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
+              header( 'X-DoctorCura-P3DV2-Purge: done' );
+          }, 1 );
+          PHP
+            put_code "$helperfile" "$label-install"; helper=1
+            curl "${c[@]}" --compressed --dump-header "$tmp/$label.h" --output /dev/null "$base/wp-json/?doctorcura_p3dv2_purge=$token" || true
+            grep -Eiq '^x-doctorcura-p3dv2-purge:[[:space:]]*done' "$tmp/$label.h" && ok=1 || true
+            put_code "$src" "$label-remove"; helper=0; [[ "$ok" == 1 ]]
+          }
+          rollback(){
+            local rc=$?; [[ "$rc" == 0 ]] && return
+            echo "ROLLBACK_START rc=$rc" >&2; set +e
+            if [[ "$changed" == 1 || "$helper" == 1 ]]; then put_code "$tmp/original.php" rollback >/dev/null 2>&1 || true; purge "$tmp/original.php" rollback-purge >/dev/null 2>&1 || true; fi
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rb.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_READBACK hash=".hash("sha256",$c)." marker=".(strpos($c,$argv[2])===false?"absent":"present")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;' "$tmp/rb.json" "$marker" || true; fi
+            echo ROLLBACK_ATTEMPTED >&2
+          }
+          trap rollback EXIT
+
+          analyze(){ python3 - "$1" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); can=''; alts=[]
+          for tag in re.findall(r'<link\b[^>]*>',s,re.I):
+              hm=re.search(r'href=["\']([^"\']+)',tag,re.I)
+              if re.search(r'rel=["\'][^"\']*canonical',tag,re.I) and hm and not can: can=html.unescape(hm.group(1))
+              if re.search(r'hreflang=["\'][^"\']+',tag,re.I) and hm: alts.append(html.unescape(hm.group(1)))
+          q=sum(bool(urllib.parse.urlsplit(u).query) for u in alts)
+          attr=sum(any(k.startswith('attribute_pa_') for k in urllib.parse.parse_qs(urllib.parse.urlsplit(u).query,keep_blank_values=True)) for u in alts)
+          print(f"{can}\t{len(alts)}\t{q}\t{attr}",end='')
+          PY
+          }
+
+          echo '=== PREFLIGHT ==='
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" "$api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo "BASELINE hash=".hash("sha256",$c).PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
+          for lang in base fr en; do [[ "$lang" == base ]] && p='' || p="/$lang"; u="$base$p/product/epipen/?$var"; curl "${c[@]}" --compressed --header 'Cache-Control: no-cache' --output "$tmp/pre-$lang.html" "$u"; IFS=$'\t' read -r can ac qc attr <<< "$(analyze "$tmp/pre-$lang.html")"; echo "PRE lang=$lang canonical=$can alts=$ac query=$qc attr=$attr"; [[ "$can" == "$base$p/product/epipen/" && "$ac" == 3 && "$attr" == 3 ]]; done
+
+          cp "$tmp/original.php" "$tmp/new.php"
+          cat >> "$tmp/new.php" <<'PHP'
+
+          /* DoctorCura product variation hreflang cleanup V8.4d - 2026-09-10 */
+          add_action( 'template_redirect', function () {
+              if ( is_admin() || ! function_exists( 'is_product' ) || ! is_product() ) return;
+              $has_variation = false;
+              foreach ( array_keys( $_GET ) as $key ) if ( 0 === strpos( (string) $key, 'attribute_pa_' ) ) { $has_variation = true; break; }
+              if ( ! $has_variation ) return;
+              ob_start( function ( $html ) {
+                  return preg_replace_callback( '/<link\b[^>]*\bhreflang=["\'][^"\']+["\'][^>]*>/i', function ( $tag ) {
+                      return preg_replace_callback( '/\bhref=(["\'])(.*?)\1/i', function ( $href ) {
+                          $url = html_entity_decode( $href[2], ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+                          $parts = wp_parse_url( $url );
+                          if ( empty( $parts['query'] ) ) return $href[0];
+                          parse_str( $parts['query'], $query ); $changed = false;
+                          foreach ( array_keys( $query ) as $key ) if ( 0 === strpos( (string) $key, 'attribute_pa_' ) ) { unset( $query[$key] ); $changed = true; }
+                          if ( ! $changed ) return $href[0];
+                          $qpos = strpos( $url, '?' ); $clean = false === $qpos ? $url : substr( $url, 0, $qpos );
+                          if ( ! empty( $query ) ) $clean = add_query_arg( $query, $clean );
+                          return 'href=' . $href[1] . esc_url( $clean ) . $href[1];
+                      }, $tag[0], 1 );
+                  }, $html );
+              } );
+          }, PHP_INT_MAX );
+          PHP
+          newhash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
+
+          echo '=== APPLY ==='
+          put_code "$tmp/new.php" apply; changed=1; purge "$tmp/new.php" apply-purge
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after.json" "$api"
+          ah=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(strpos($c,$argv[2])===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/after.json" "$marker"); echo "READBACK hash=$ah helper=absent"; [[ "$ah" == "$newhash" ]]
+
+          echo '=== TWO ROUNDS ==='
+          for round in 1 2; do
+            for lang in base fr en; do
+              [[ "$lang" == base ]] && p='' || p="/$lang"; baseurl="$base$p/product/epipen/"
+              for kind in clean variation; do
+                u="$baseurl"; [[ "$kind" == variation ]] && u="${u}?$var"
+                b="$tmp/$round-$lang-$kind.html"; status=$(curl "${c[@]}" --compressed --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}' "$u"); IFS=$'\t' read -r can ac qc attr <<< "$(analyze "$b")"
+                echo "VERIFY round=$round lang=$lang kind=$kind status=$status canonical=$can alts=$ac query=$qc attr=$attr"
+                [[ "$status" == 200 && "$can" == "$baseurl" && "$ac" == 3 && "$attr" == 0 ]]
+                [[ "$kind" == variation || "$qc" == 0 ]]
+              done
+            done
+            w="$base/product-categorie/gewichtsverlust/?doctorcura_p3dv2=$round-$(date +%s%N)"; wh="$tmp/w-$round.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$wh" --output /dev/null "$w" || true; [[ $(awk '/^HTTP\//{print $2;exit}' "$wh") == 301 ]]; [[ $(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$wh") == "$base/product-category/gewichtsverlust/" ]]
+            dh="$tmp/d-$round.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$dh" --output /dev/null "$base/datenschutz/?doctorcura_p3dv2=$round-$(date +%s%N)" || true; [[ $(awk '/^HTTP\//{print $2;exit}' "$dh") == 301 ]]; [[ $(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$dh") == "$base/privacy-policy/" ]]
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]; [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
+            echo "CANARIES_OK round=$round"
+          done
+          trap - EXIT
+          echo "PHASE3D_GREEN snippet_hash=$newhash"
