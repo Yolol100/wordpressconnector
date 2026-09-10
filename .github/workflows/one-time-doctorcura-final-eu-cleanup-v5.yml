@@ -1,0 +1,154 @@
+name: One-time DoctorCura final EU cleanup v5
+
+on:
+  push:
+    branches: [main]
+    paths: ['doctorcura-final-eu-cleanup-v5/*.json']
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply final Europe-only editorial cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-v5"; rm -rf "$root"; mkdir -p "$root/b" "$root/a" "$root/yb" "$root/ya" "$root/p" "$root/y"
+          ids=(900060 900048 900043 6050 6048 6046 6044 6042 6033 6020 6008 5999 5995 5993 5990 5986 5904 5896 5892)
+          call(){
+            s="$1"; a="$2"; dry="$3"; confirm="$4"; p="$5"
+            python3 - "$root/r-$s.json" "$a" "$dry" "$confirm" "$p" <<'PY'
+          import json,sys,uuid
+          o,a,d,c,p=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-v5-'+uuid.uuid4().hex[:18],'action':a,'dry_run':d=='true','confirm':c=='true','payload':json.load(open(p,encoding='utf-8'))},open(o,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            for n in $(seq 1 7); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$s.json" -o "$root/o-$s.json" -w '%{http_code}' "$base/execute" || true)
+              [[ "$code" == 200 ]] && python3 - "$root/o-$s.json" <<'PY' && return 0
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); raise SystemExit(0 if d.get('ok') else 1)
+          PY
+              [[ "$code" == 503 || "$code" == 000 ]] && { sleep 10; continue; }
+              cat "$root/o-$s.json" >&2 || true; return 1
+            done
+            return 1
+          }
+          for id in "${ids[@]}"; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call b$id post.get true false "$root/id.json"; cp "$root/o-b$id.json" "$root/b/$id.json"
+            call yb$id yoast.inspect true false "$root/id.json"; cp "$root/o-yb$id.json" "$root/yb/$id.json"
+          done
+          python3 - "$root" <<'PY'
+          import html,json,re,sys
+          root=sys.argv[1]
+          ids=[900060,900048,900043,6050,6048,6046,6044,6042,6033,6020,6008,5999,5995,5993,5990,5986,5904,5896,5892]
+          ex={900060:'Eine rezeptpflichtige Therapie lässt sich in vielen Fällen online anfragen. Entscheidend sind vollständige Gesundheitsangaben, ärztliche Prüfung und eine sichere Arzneimittelabgabe über eine zugelassene Apotheke.',900048:'Erfahrungsberichte zu Wegovy können Orientierung geben, ersetzen aber keine medizinische Einschätzung. Der Artikel ordnet Wirkung, häufige Nebenwirkungen und ärztliche Kontrollen ein.',900043:'Wie wirkt Viagra mit Sildenafil, wann setzt die Wirkung ein und welche Risiken sind wichtig? Ein medizinischer Überblick für Patienten in Deutschland.',6050:'Mounjaro mit Tirzepatid ist in der EU auch für das Gewichtsmanagement zugelassen, wenn die Voraussetzungen erfüllt sind. Hier geht es um Wirkung, Eignung, Risiken und ärztliche Begleitung.',6048:'So läuft eine digitale Rezeptbehandlung ab: Gesundheitsangaben, ärztliche Prüfung, mögliche Verordnung und Abgabe über eine zugelassene Apotheke.',6046:'Rezeptpflichtige Schlafmittel erfordern eine sorgfältige ärztliche Prüfung. Der Artikel erklärt den digitalen Ablauf, wichtige Risiken und wann eine Untersuchung vor Ort sinnvoller ist.',6044:'Telemedizin oder Praxisbesuch? Welche Option passt, hängt davon ab, ob eine sichere Beurteilung online möglich ist oder eine persönliche Untersuchung nötig ist.',6042:'Ein Online-Rezept setzt eine medizinische Prüfung voraus. So funktionieren Gesundheitsfragebogen, mögliche Verordnung und diskreter Versand über eine zugelassene Apotheke.',6033:'Die Gesamtkosten einer GLP-1-Therapie hängen von Präparat, Dosierung, Apotheke, ärztlicher Betreuung und möglicher Kostenerstattung ab.',6020:'Diskrete Medikamentenbestellung bedeutet nicht unkontrollierte Bestellung. Der Ablauf umfasst medizinische Angaben, ärztliche Prüfung, Rezept und neutralen Versand.',6008:'Ein Rezept online anzufragen kann Wege sparen, ersetzt aber keine ärztliche Prüfung. So laufen Anfrage, mögliche Verordnung und Arzneimittelversand ab.',5999:'Ob Wegovy für Sie infrage kommt, hängt von BMI, Begleiterkrankungen, Medikamenten und weiteren Risiken ab. Die Entscheidung gehört in ärztliche Hände.',5995:'Mounjaro ist in der EU für Typ-2-Diabetes und unter bestimmten Voraussetzungen auch für Gewichtsmanagement zugelassen. Diese Kriterien prüft der behandelnde Arzt.',5993:'Wegovy online anfragen: Welche Gesundheitsangaben relevant sind, wann eine Verordnung möglich ist und was bei Dosierung, Nebenwirkungen und Versand zu beachten ist.',5990:'Erektionsprobleme lassen sich häufig zunächst online ärztlich beurteilen. Der Artikel erklärt Fragebogen, medizinische Prüfung, mögliche Verordnung und diskrete Abgabe.',5986:'Wegovy, Mounjaro und Saxenda unterscheiden sich bei Wirkstoff, Anwendung und Eignung. Ein sachlicher Vergleich der in Europa relevanten Optionen und Risiken.',5904:'Eine Online-Behandlung bei erektiler Dysfunktion kann diskret und praktisch sein, wenn eine sichere Fernbeurteilung möglich ist. So funktionieren Prüfung, Rezept und Apotheke.',5896:'Woran erkennen Sie eine seriöse EU-Apotheke? Entscheidend sind Rezeptpflicht, ärztliche Prüfung, registrierte Abgabe und nachvollziehbarer Versand.',5892:'Online-Rezepte können in Deutschland zulässig sein, wenn die Fernbehandlung im Einzelfall ärztlich vertretbar ist und die erforderliche Sorgfalt gewahrt bleibt.'}
+          focus={5892:'Online-Rezept Deutschland legal'}
+          banned=re.compile(r'\b(?:USA|United States|Vereinigte Staaten|Bundesstaat(?:s|en)?|FDA|DEA|HIPAA|Zepbound|Medicare|Medicaid)\b|ist-ein-online-rezept-legal-usa',re.I)
+          def para(c,needle,new):
+              for m in re.finditer(r'(?is)<p\b[^>]*>.*?</p>',c):
+                  t=re.sub(r'\s+',' ',html.unescape(re.sub(r'<[^>]+>',' ',m.group(0))))
+                  if re.search(needle,t,re.I): return c[:m.start()]+new+c[m.end():]
+              raise SystemExit('MISSING '+needle)
+          def edit(pid,c):
+              if pid==900043:c=para(c,r'Bei Viagra ist die erste Frage','<p>Bei Viagra ist die erste Frage nicht, wie stark die Wirkung ausfällt, sondern ob Sildenafil medizinisch zu Ihnen passt. Viagra ist ein verschreibungspflichtiges Arzneimittel zur Behandlung der erektilen Dysfunktion. Es kann vielen Männern helfen, eine für den Geschlechtsverkehr ausreichende Erektion zu erreichen oder aufrechtzuerhalten. Es wirkt jedoch nicht ohne sexuelle Stimulation und ist weder ein Luststeigerer noch eine spontane Lösung für jede Ursache von Erektionsproblemen.</p>')
+              if pid==6050:c=para(c,r'Mounjaro-Einordnung bei gewichtsmanagement','<p>Wer Mounjaro für das Gewichtsmanagement erwägt, möchte meist mehr wissen als nur die mögliche Veränderung auf der Waage. Wichtig sind die medizinische Eignung, die realistische Wirkung, mögliche Nebenwirkungen und eine Betreuung, die über die erste Verordnung hinausgeht. Mounjaro kann für geeignete Erwachsene Teil einer langfristigen Behandlung sein, sollte aber nur nach individueller ärztlicher Prüfung eingesetzt werden.</p>')
+              if pid==6048:c=para(c,r'Ablauf der digitalen Rezeptbehandlung verständlich erklärt','<p>Wer eine verschreibungspflichtige Behandlung online anfragt, möchte vor allem wissen, was mit den eigenen Gesundheitsdaten geschieht, wer die Therapie prüft und wann das Medikament ankommt. Der Ablauf lässt sich klar in einzelne Schritte gliedern – vom medizinischen Fragebogen über die ärztliche Beurteilung bis zur möglichen Verordnung und Abgabe durch eine Apotheke. Eine digitale Anfrage ersetzt die ärztliche Prüfung nicht, sondern organisiert den Zugang dazu.</p>')
+              if pid==6033:c=para(c,r'Herstellerprogramm','<p>Viele Preisangaben beziehen sich nur auf einen Teil der Versorgung. Ein Betrag kann etwa nur die telemedizinische Leistung abdecken, aber nicht das Arzneimittel. Ein anderer Preis gilt nur für eine bestimmte Dosierungsstufe. Für Patienten in Deutschland ist deshalb entscheidend, welche Leistungen enthalten sind und ob die Krankenkasse im konkreten Fall Kosten übernimmt.</p>')
+              if pid==6020:c=para(c,r'So funktioniert diskrete Medikamentenbestellung','<p>Wer bei einem sensiblen Gesundheitsthema Hilfe sucht, möchte nicht unbedingt im Wartezimmer darüber sprechen oder ein Rezept persönlich in der Apotheke abholen. Eine diskrete Medikamentenbestellung beginnt online mit einer Behandlungsanfrage und medizinischen Angaben. Ein Medikament wird erst dann verschrieben und über eine Apotheke abgegeben, wenn die Behandlung nach ärztlicher Prüfung geeignet ist. Diskret bedeutet dabei nicht anonym oder unkontrolliert, sondern einen geschützten Ablauf mit medizinischer Verantwortung.</p>')
+              if pid==6008:c=para(c,r'Ein\s+Rezept online\s+klingt nach einer einfachen Lösung','<p>Ein Rezept online anzufragen kann praktisch sein, wenn Sie ein sensibles Thema diskret klären möchten oder kurzfristig keinen Praxisbesuch organisieren können. Eine digitale Anfrage bedeutet jedoch nicht, dass automatisch ein Rezept ausgestellt wird. Zuerst prüft ein zugelassener Arzt, ob die gewünschte Behandlung medizinisch zu Ihrer Situation passt.</p>')
+              if pid==5995:c=para(c,r'Bei einer\s+Behandlung von Adipositas\s+prüfen Ärzte üblicherweise','<p>Bei einer <a href="https://doctorcura.com/gewichtstherapie-mit-glp1-medikamenten/">Behandlung von Adipositas</a> berücksichtigt der Arzt neben dem BMI auch Begleiterkrankungen, bisherige Therapien, aktuelle Medikamente und mögliche Gegenanzeigen. Die Zulassungskriterien allein sind deshalb noch keine Zusage für ein Rezept.</p>')
+              if pid==5990:c=para(c,r'Nach dem Absenden wird Ihre Anfrage','<p>Nach dem Absenden wird Ihre Anfrage von einem zugelassenen Arzt oder einer entsprechend berechtigten medizinischen Fachperson geprüft. Ob eine reine Fernbehandlung im konkreten Einzelfall ausreicht, hängt von der medizinischen Situation und den geltenden berufsrechtlichen Anforderungen ab. Die Prüfung berücksichtigt außerdem, ob das gewünschte Medikament zu Ihrem gesundheitlichen Profil und Ihren Begleitmedikamenten passt.</p>')
+              if pid==5892:
+                  c=para(c,r'Für Patientinnen und Patienten in Deutschland ist die kurze Antwort','<p>Wer zum ersten Mal eine Behandlung online anfragt, stellt häufig zuerst die rechtliche Frage: Ist ein Online-Rezept in Deutschland überhaupt zulässig? Grundsätzlich kann eine Verschreibung im Rahmen einer Fernbehandlung möglich sein. Voraussetzung ist, dass die Behandlung im konkreten Einzelfall ärztlich vertretbar ist und die erforderliche medizinische Sorgfalt gewahrt bleibt.</p>')
+                  c=para(c,r'Telemedizin ist kein rechtlicher Graubereich','<p>Entscheidend ist nicht, ob der Kontakt digital stattfindet, sondern ob die medizinische Beurteilung ausreichend und nachvollziehbar ist. Eine ausschließliche Fernbehandlung kann in Deutschland zulässig sein, wenn sie im Einzelfall ärztlich vertretbar ist und die erforderliche Sorgfalt gewahrt bleibt. Das gilt auch für sensible Bereiche wie <a href="https://doctorcura.com/product-category/sexuelle-probleme/">sexuelle Gesundheit</a>, Gewichtsmanagement oder Schlafprobleme: Ob online behandelt werden kann, muss jeweils medizinisch beurteilt werden.</p>')
+                  c=c.replace('Anschließend prüft ein zugelassener Arzt die Angaben.','Danach bewertet ein zugelassener Arzt die Angaben.',1)
+              if pid==5999:c=c.replace('Vollständige und wahrheitsgemäße Antworten sind die Grundlage für eine verantwortungsvolle Entscheidung.','Vollständige und wahrheitsgemäße Angaben geben dem Arzt die nötige Grundlage für eine verantwortungsvolle Entscheidung.',1)
+              if pid==5995:c=c.replace('Nach aktueller EU-Produktinformation ist für orale Verhütungsmittel keine Dosisanpassung erforderlich.','Laut aktueller EU-Produktinformation ist für orale Verhütungsmittel keine Dosisanpassung erforderlich.',1)
+              if pid==5990:c=c.replace('Die Kombination kann zu einem gefährlichen Blutdruckabfall führen.','Dadurch kann der Blutdruck gefährlich stark abfallen.',1)
+              return c.replace('anzupassen statt ein Rezept','anzupassen, statt ein Rezept')
+          for pid in ids:
+              d=json.load(open(f'{root}/b/{pid}.json',encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}; old=p.get('content') or ''; new=edit(pid,old)
+              if re.findall(r'href=["\']([^"\']+)',old,re.I)!=re.findall(r'href=["\']([^"\']+)',new,re.I):raise SystemExit('LINK_CHANGE '+str(pid))
+              if banned.search(' '.join([p.get('title') or '',ex[pid],re.sub(r'<[^>]+>',' ',new)])):raise SystemExit('US_COPY '+str(pid))
+              pay={'id':pid,'title':p.get('title'),'excerpt':ex[pid],'content':new,'status':'publish'}
+              if pid==5892:pay['slug']='ist-ein-online-rezept-legal-deutschland'
+              json.dump(pay,open(f'{root}/p/{pid}.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+              yd=json.load(open(f'{root}/yb/{pid}.json',encoding='utf-8')); f=(yd.get('data') or {}).get('fields') or {}; upd={'description':f.get('description') or ex[pid][:155]}
+              for k in ('canonical','redirect'):
+                  v=str(f.get(k) or '')
+                  if 'ist-ein-online-rezept-legal-usa' in v:upd[k]=v.replace('ist-ein-online-rezept-legal-usa','ist-ein-online-rezept-legal-deutschland')
+              if pid==5892 and banned.search(str(f.get('focus_keyphrase') or '')):upd['focus_keyphrase']=focus[5892]
+              json.dump({'id':pid,'fields':upd},open(f'{root}/y/{pid}.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          print('V5_PREFLIGHT_OK',len(ids))
+          PY
+          for id in "${ids[@]}"; do call wp$id post.update false true "$root/p/$id.json"; call wy$id yoast.update false true "$root/y/$id.json"; done
+          printf '{}' > "$root/e.json"; call cache cache.flush false true "$root/e.json" || true
+          for id in "${ids[@]}"; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call a$id post.get true false "$root/id.json"; cp "$root/o-a$id.json" "$root/a/$id.json"
+            call ya$id yoast.inspect true false "$root/id.json"; cp "$root/o-ya$id.json" "$root/ya/$id.json"
+          done
+          python3 - "$root" "$site" <<'PY'
+          import concurrent.futures,html,json,re,sys,urllib.parse,urllib.request
+          from html.parser import HTMLParser
+          root,site=sys.argv[1:]; ids=[900060,900048,900043,6050,6048,6046,6044,6042,6033,6020,6008,5999,5995,5993,5990,5986,5904,5896,5892]
+          banned=re.compile(r'\b(?:USA|United States|Vereinigte Staaten|Bundesstaat(?:s|en)?|FDA|DEA|HIPAA|Zepbound|Medicare|Medicaid)\b|ist-ein-online-rezept-legal-usa',re.I)
+          badphr=re.compile(r'in den Deutschland|Mounjaro-Einordnung bei gewichtsmanagement|So funktioniert diskrete Medikamentenbestellung|Telemedizin ist kein rechtlicher Graubereich|Herstellerprogramm|geprüft,\s*Dabei',re.I)
+          class H(HTMLParser):
+              def __init__(self):super().__init__();self.x=[]
+              def handle_data(self,d):self.x.append(d)
+              def handle_endtag(self,t):
+                  if t in {'p','li','h1','h2','h3','h4','h5','h6','br'}:self.x.append('\n')
+              def text(self):return re.sub(r'[ \t]+',' ',''.join(self.x)).strip()
+          links=[]; report=[]
+          for pid in ids:
+              b=(json.load(open(f'{root}/b/{pid}.json',encoding='utf-8')).get('data') or {}).get('post') or {}; a=(json.load(open(f'{root}/a/{pid}.json',encoding='utf-8')).get('data') or {}).get('post') or {}; y=(json.load(open(f'{root}/ya/{pid}.json',encoding='utf-8')).get('data') or {}).get('fields') or {}
+              bl=re.findall(r'href=["\']([^"\']+)',b.get('content') or '',re.I); al=re.findall(r'href=["\']([^"\']+)',a.get('content') or '',re.I)
+              if bl!=al or a.get('status')!='publish':raise SystemExit('READBACK '+str(pid))
+              h=H();h.feed(a.get('content') or ''); text=html.unescape(h.text()); meta=' '.join(str(y.get(k) or '') for k in ('title','description','focus_keyphrase','canonical','redirect','breadcrumb_title','opengraph_title','opengraph_description','twitter_title','twitter_description')); alltext=' '.join([a.get('title') or '',a.get('slug') or '',a.get('excerpt') or '',text,meta])
+              m=banned.search(alltext) or badphr.search(alltext)
+              if m:raise SystemExit('RESIDUAL '+str(pid)+' '+m.group(0))
+              if re.search(r'[ \t]+[,.!?;:]',text):raise SystemExit('PUNCT '+str(pid))
+              links.extend((pid,urllib.parse.urljoin(site+'/',u)) for u in al if u.startswith(('http://','https://','/')))
+              report.append({'id':pid,'title':a.get('title'),'slug':a.get('slug'),'excerpt':a.get('excerpt'),'links':len(al)})
+          def chk(x):
+              pid,u=x; last=None
+              for method in ('HEAD','GET'):
+                  try:
+                      q=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 DoctorCuraFinal'},method=method)
+                      with urllib.request.urlopen(q,timeout=15) as r:return pid,u,r.status
+                  except Exception as e:last=e
+              return pid,u,int(getattr(last,'code',0) or 0)
+          broken=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+              for pid,u,code in ex.map(chk,links):
+                  internal=urllib.parse.urlparse(u).netloc.lower().endswith('doctorcura.com'); bad=(not 200<=code<400) if internal else (code==0 or code>=500 or code==404)
+                  if bad:broken.append((pid,code,u))
+          if broken:raise SystemExit('BROKEN '+repr(broken[:10]))
+          json.dump(report,open(root+'/report.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print('FINAL_EU_V5_OK posts=',len(report),'links=',len(links),'broken=0','usa=0')
+          PY
+          final=$(curl -sS -L --connect-timeout 10 --max-time 45 -o /dev/null -w '%{url_effective}|%{http_code}' "$site/ist-ein-online-rezept-legal-usa/")
+          echo "OLD_US_SLUG=$final"; [[ "$final" == "$site/ist-ein-online-rezept-legal-deutschland/|200" ]]
+      - name: Upload final evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-final-eu-cleanup-v5
+          path: |
+            ${{ runner.temp }}/dc-v5/report.json
+            ${{ runner.temp }}/dc-v5/a
+            ${{ runner.temp }}/dc-v5/ya
+          retention-days: 7
+          if-no-files-found: warn
