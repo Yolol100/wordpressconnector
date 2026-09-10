@@ -19,18 +19,27 @@ jobs:
         run: |
           set -euo pipefail
           base='https://doctorcura.com'
-          tmp="$RUNNER_TEMP/dc-final-seo-qa"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-final-seo-qa"
+          mkdir -p "$tmp"
 
           canonical_of(){
-            local body="$1" c
+            local body="$1"
+            local c=''
             c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            if [[ -z "$c" ]]; then
+              c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            fi
             printf '%s' "$c"
           }
 
           verify_200(){
-            local round="$1" path="$2" label="$3" body="$tmp/$round-$label.body" hdr="$tmp/$round-$label.h" code can robots xrobots
-            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraFinalSEOQA/1.0)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
+            local round="$1"
+            local path="$2"
+            local label="$3"
+            local body="$tmp/$round-$label.body"
+            local hdr="$tmp/$round-$label.h"
+            local code can robots xrobots
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraFinalSEOQA/1.1)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
             [[ "$code" == '200' ]] || { echo "$round $label expected 200 got $code" >&2; return 1; }
             can=$(canonical_of "$body")
             [[ "$can" == "$base$path" ]] || { echo "$round $label canonical=$can expected=$base$path" >&2; return 1; }
@@ -41,7 +50,11 @@ jobs:
           }
 
           verify_404(){
-            local round="$1" path="$2" label="$3" hdr="$tmp/$round-$label.h" code loc
+            local round="$1"
+            local path="$2"
+            local label="$3"
+            local hdr="$tmp/$round-$label.h"
+            local code loc
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$hdr" --output /dev/null --write-out '%{http_code}' "$base$path")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
             [[ "$code" == '404' && -z "$loc" ]] || { echo "$round $label expected true 404 got status=$code location=$loc" >&2; return 1; }
@@ -49,11 +62,23 @@ jobs:
           }
 
           verify_redirect(){
-            local round="$1" path="$2" final_expected="$3" redirects_expected="$4" label="$5" first_expected="${6:-}" first_body="$tmp/$round-$label-first.body" first_h="$tmp/$round-$label-first.h" body="$tmp/$round-$label.body" code loc out status final count can
+            local round="$1"
+            local path="$2"
+            local final_expected="$3"
+            local redirects_expected="$4"
+            local label="$5"
+            local first_expected="${6:-}"
+            local first_body="$tmp/$round-$label-first.body"
+            local first_h="$tmp/$round-$label-first.h"
+            local body="$tmp/$round-$label.body"
+            local code loc out status final count can
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --dump-header "$first_h" --output "$first_body" --write-out '%{http_code}' "$base$path")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$first_h" || true)
             [[ "$code" == '301' ]] || { echo "$round $label first status=$code" >&2; return 1; }
-            if [[ -n "$first_expected" && "$loc" != "$first_expected" ]]; then echo "$round $label first location=$loc expected=$first_expected" >&2; return 1; fi
+            if [[ -n "$first_expected" && "$loc" != "$first_expected" ]]; then
+              echo "$round $label first location=$loc expected=$first_expected" >&2
+              return 1
+            fi
             out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 50 --header 'Cache-Control: no-cache' --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
             IFS=$'\t' read -r status final count <<< "$out"
             [[ "$status" == '200' && "$final" == "$final_expected" && "$count" == "$redirects_expected" ]] || { echo "$round $label follow=$out expected_final=$final_expected redirects=$redirects_expected" >&2; return 1; }
@@ -63,7 +88,9 @@ jobs:
           }
 
           verify_param(){
-            local round="$1" body="$tmp/$round-param.body" code can
+            local round="$1"
+            local body="$tmp/$round-param.body"
+            local code can
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --output "$body" --write-out '%{http_code}' "$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen")
             can=$(canonical_of "$body")
             [[ "$code" == '200' && "$can" == "$base/product/epipen/" ]] || { echo "$round param status=$code canonical=$can" >&2; return 1; }
@@ -92,7 +119,7 @@ jobs:
             verify_redirect "$round" '/fr/product-categorie/menstruation-verschieben/' "$base/fr/product-category/menstruation-verschieben/" 1 legacy-menstruation-fr "$base/fr/product-category/menstruation-verschieben/"
             verify_redirect "$round" '/about-us/' "$base/uber-uns/" 1 legacy-about "$base/uber-uns/"
             verify_redirect "$round" '/de/about-us/' "$base/uber-uns/" 2 legacy-about-de '/about-us/'
-            verify_redirect "$round" '/de/' "$base/" 1 default-de "$base/"
+            verify_redirect "$round" '/de/' "$base/" 1 default-de '/'
             verify_redirect "$round" '/category/blogs/' "$base/blogs/" 1 legacy-blog-category "$base/blogs/"
           done
           echo 'FINAL_QA_OK rounds=2 points=2-6'
