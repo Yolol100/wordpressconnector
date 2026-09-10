@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -18,36 +18,203 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect exact DoctorCura hero container settings
+      - name: Apply and verify DoctorCura hero delivery flags
         shell: bash
         run: |
           set -euo pipefail
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || exit 1
-          root="$RUNNER_TEMP/dc"; mkdir -p "$root"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
+
+          root="$RUNNER_TEMP/doctorcura-hero-flags"
+          rm -rf "$root" && mkdir -p "$root"
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-          call_action(){ suffix="$1"; action="$2"; payload="$3"; req="$root/r-$suffix.json"; out="$root/o-$suffix.json"; python3 - "$req" "$suffix" "$action" "$payload" <<'PY'
+
+          call_action() {
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload_file="$5"; fingerprint="${6:-}"
+            req="$root/request-$suffix.json"; out="$root/result-$suffix.json"
+            python3 - "$req" "$suffix" "$action" "$dry" "$confirm" "$payload_file" "$fingerprint" <<'PY'
           import json,sys
-          p,s,a,x=sys.argv[1:]; json.dump({'version':1,'request_id':'dc-hero-settings-'+s,'action':a,'dry_run':True,'confirm':False,'payload':json.loads(x)},open(p,'w'),separators=(',',':'))
+          req,suffix,action,dry,confirm,payload_path,fingerprint=sys.argv[1:]
+          payload=json.load(open(payload_path,encoding='utf-8'))
+          data={
+              'version':1,
+              'request_id':'doctorcura-hero-flags-'+suffix,
+              'action':action,
+              'dry_run':dry.lower()=='true',
+              'confirm':confirm.lower()=='true',
+              'payload':payload,
+          }
+          if fingerprint:
+              data['expected_fingerprint']=fingerprint
+          with open(req,'w',encoding='utf-8') as f:
+              json.dump(data,f,separators=(',',':'),ensure_ascii=False)
           PY
-            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]]; }
-          call_action front option.get '{"name":"page_on_front"}'
-          page_id=$(python3 - "$root/o-front.json" <<'PY'
-          import json,sys; print(int((json.load(open(sys.argv[1])).get('data') or {}).get('value')))
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 180 \
+              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" \
+              --header 'Accept: application/json' \
+              --header 'Content-Type: application/json' \
+              --data-binary "@$req" \
+              --output "$out" \
+              --write-out '%{http_code}' "$base/execute")
+            [[ "$code" == '200' ]] || { echo "$action failed: HTTP $code" >&2; exit 1; }
+            python3 - "$out" "$action" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              raise SystemExit(sys.argv[2] + ' returned ok=false: ' + str(d.get('error','connector error'))[:220])
+          PY
+          }
+
+          # Resolve the actual static homepage.
+          printf '%s' '{"name":"page_on_front"}' > "$root/front-payload.json"
+          call_action front option.get true false "$root/front-payload.json"
+          page_id=$(python3 - "$root/result-front.json" <<'PY'
+          import json,sys
+          value=(json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('value')
+          value=int(value or 0)
+          if value < 1: raise SystemExit('No valid static homepage found')
+          print(value)
           PY
           )
-          call_action el elementor.inspect "{\"id\":$page_id}"
-          python3 - "$root/o-el.json" <<'PY'
+          [[ "$page_id" == '37' ]] || { echo "Unexpected homepage id: $page_id" >&2; exit 1; }
+
+          # Confirm the HTML widget capability before changing Elementor.
+          printf '%s' '{}' > "$root/cap-payload.json"
+          call_action caps elementor.capabilities true false "$root/cap-payload.json"
+          python3 - "$root/result-caps.json" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1])); doc=(d.get('data') or {}).get('document') or {}; nodes=doc.get('data') or []
-          ids={'4a5ba936','7bc7e6ad','198df693','6f15141e'}
-          def walk(a):
-            for e in a if isinstance(a,list) else []:
-              if isinstance(e,dict):
-                if e.get('id') in ids:
-                  print('NODE '+e.get('id')+' '+json.dumps({'elType':e.get('elType'),'widgetType':e.get('widgetType'),'settings':e.get('settings') or {},'child_ids':[x.get('id') for x in e.get('elements') or [] if isinstance(x,dict)]},ensure_ascii=False,separators=(',',':')))
-                walk(e.get('elements') or [])
-          walk(nodes)
-          print('fingerprint='+str((d.get('data') or {}).get('fingerprint','')))
-          print('page_id='+str(doc.get('post_id','')))
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          blob=json.dumps(d.get('data') or {},ensure_ascii=False).lower()
+          if 'html' not in blob:
+              raise SystemExit('Target Elementor runtime did not prove HTML widget capability')
           PY
+
+          # Baseline inspection and stale-state fingerprint.
+          printf '{"id":%s}' "$page_id" > "$root/inspect-payload.json"
+          call_action inspect elementor.inspect true false "$root/inspect-payload.json"
+
+          python3 - "$root/result-inspect.json" "$root/patch-payload.json" "$root/meta.json" <<'PY'
+          import copy,json,sys
+          src,patch_path,meta_path=sys.argv[1:]
+          d=json.load(open(src,encoding='utf-8'))
+          data=d.get('data') or {}
+          doc=data.get('document') or {}
+          nodes=doc.get('data') or []
+          fingerprint=str(data.get('fingerprint') or '')
+          if len(fingerprint)!=64:
+              raise SystemExit('Missing Elementor fingerprint')
+
+          target_id='6f15141e'
+          target=None
+          def walk(items):
+              global target
+              for e in items if isinstance(items,list) else []:
+                  if not isinstance(e,dict): continue
+                  if e.get('id')==target_id:
+                      target=e
+                      return
+                  walk(e.get('elements') or [])
+                  if target is not None: return
+          walk(nodes)
+          if target is None:
+              raise SystemExit('Expected right hero image container not found')
+          st=target.get('settings') or {}
+          img=st.get('background_image') or {}
+          if int(img.get('id') or 0)!=849:
+              raise SystemExit('Hero image identity changed; refusing mutation')
+          if target.get('elements'):
+              marker=json.dumps(target.get('elements'),ensure_ascii=False)
+              if 'dc-delivery-countries' in marker or 'Wir liefern nach:' in marker:
+                  raise SystemExit('Delivery-country label already exists')
+              raise SystemExit('Hero image container unexpectedly has children; refusing mutation')
+
+          updated=copy.deepcopy(target)
+          html='''<div class="dc-delivery-countries" aria-label="Lieferländer" style="position:absolute;right:0;top:-30px;z-index:3;display:flex;align-items:center;justify-content:flex-end;gap:7px;white-space:nowrap;pointer-events:none;font-family:inherit;font-size:14px;font-weight:400;line-height:18px;letter-spacing:0;color:#222222;"><span>Wir liefern nach:</span><svg role="img" aria-label="Deutschland" width="27" height="18" viewBox="0 0 30 18" xmlns="http://www.w3.org/2000/svg" style="display:block;width:27px;height:18px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.06);"><rect width="30" height="6" y="0" fill="#000000"/><rect width="30" height="6" y="6" fill="#DD0000"/><rect width="30" height="6" y="12" fill="#FFCE00"/></svg><svg role="img" aria-label="Schweiz" width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" style="display:block;width:18px;height:18px;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.06);"><rect width="18" height="18" rx="1" fill="#D52B1E"/><rect x="7" y="3" width="4" height="12" fill="#FFFFFF"/><rect x="3" y="7" width="12" height="4" fill="#FFFFFF"/></svg></div>'''
+          updated['elements']=[{
+              'id':'dcf1a002',
+              'elType':'widget',
+              'settings':{'html':html},
+              'elements':[],
+              'widgetType':'html',
+          }]
+          payload={'id':int(doc.get('post_id') or 0),'element_id':target_id,'replace':updated}
+          if payload['id']!=37:
+              raise SystemExit('Unexpected Elementor document id')
+          json.dump(payload,open(patch_path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'fingerprint':fingerprint},open(meta_path,'w',encoding='utf-8'),separators=(',',':'))
+          print('baseline_fingerprint='+fingerprint)
+          print('target_element='+target_id)
+          print('hero_background_attachment=849')
+          PY
+
+          fingerprint=$(python3 - "$root/meta.json" <<'PY'
+          import json,sys; print(json.load(open(sys.argv[1],encoding='utf-8'))['fingerprint'])
+          PY
+          )
+
+          # Dry-run first using exact baseline fingerprint.
+          call_action dry elementor.patch_element true false "$root/patch-payload.json" "$fingerprint"
+          python3 - "$root/result-dry.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          x=(d.get('data') or {}).get('after_element') or {}
+          raw=json.dumps(x,ensure_ascii=False)
+          if 'Wir liefern nach:' not in raw or 'dc-delivery-countries' not in raw:
+              raise SystemExit('Dry-run does not contain requested label')
+          print('dry_run_verified=true')
+          PY
+
+          # Real production mutation, explicitly confirmed by the user, with stale-state guard.
+          call_action apply elementor.patch_element false true "$root/patch-payload.json" "$fingerprint"
+          python3 - "$root/result-apply.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          x=(d.get('data') or {}).get('after_element') or {}
+          raw=json.dumps(x,ensure_ascii=False)
+          if 'Wir liefern nach:' not in raw or 'dc-delivery-countries' not in raw:
+              raise SystemExit('Elementor readback missing requested label')
+          if 'Deutschland' not in raw or 'Schweiz' not in raw or '#DD0000' not in raw or '#D52B1E' not in raw:
+              raise SystemExit('SVG flag readback failed')
+          print('elementor_readback_verified=true')
+          print('rollback_available=true')
+          PY
+
+          # Independent connector readback.
+          call_action verify elementor.inspect true false "$root/inspect-payload.json"
+          python3 - "$root/result-verify.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          data=d.get('data') or {}; doc=data.get('document') or {}; nodes=doc.get('data') or []
+          found=None
+          def walk(items):
+              global found
+              for e in items if isinstance(items,list) else []:
+                  if not isinstance(e,dict): continue
+                  if e.get('id')=='6f15141e': found=e; return
+                  walk(e.get('elements') or [])
+                  if found is not None: return
+          walk(nodes)
+          if found is None: raise SystemExit('Hero container missing after write')
+          raw=json.dumps(found,ensure_ascii=False)
+          if 'Wir liefern nach:' not in raw or 'dcf1a002' not in raw:
+              raise SystemExit('Independent Elementor readback failed')
+          st=found.get('settings') or {}
+          if int((st.get('background_image') or {}).get('id') or 0)!=849:
+              raise SystemExit('Hero background changed unexpectedly')
+          if st.get('hide_tablet')!='hidden-tablet' or st.get('hide_mobile')!='hidden-mobile':
+              raise SystemExit('Responsive visibility changed unexpectedly')
+          print('independent_readback_verified=true')
+          print('after_fingerprint='+str(data.get('fingerprint') or ''))
+          print('responsive_behavior=label_follows_existing_desktop-only_hero_image')
+          PY
+
+          # Public render smoke check. Elementor markup must expose the text and inline SVG.
+          html_code=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 60 \
+            --user-agent 'Mozilla/5.0 (compatible; DoctorCuraHeroVerification/1.0)' \
+            --output "$root/home.html" --write-out '%{http_code}' "${SITE_URL%/}/")
+          [[ "$html_code" == '200' ]] || { echo "Homepage render HTTP $html_code" >&2; exit 1; }
+          grep -Fq 'Wir liefern nach:' "$root/home.html"
+          grep -Fq 'dc-delivery-countries' "$root/home.html"
+          grep -Fq 'aria-label="Deutschland"' "$root/home.html"
+          grep -Fq 'aria-label="Schweiz"' "$root/home.html"
+          echo 'public_render_smoke_verified=true'
