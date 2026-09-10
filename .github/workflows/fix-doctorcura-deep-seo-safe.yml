@@ -120,7 +120,7 @@ jobs:
               canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || return 1
               img=$(widget_img "$html" || true)
               printf '%s' "$img" | grep -Fq "$candidate_name" || { echo "$lang widget_img_wrong=$img" >&2; return 1; }
-              old_img_count=$(( (grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$html" || true) | wc -l ))
+              old_img_count=$( (grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$html" || true) | wc -l | tr -d ' ' )
               old_doc_count=$( (grep -Fo "$broken_name" "$html" || true) | wc -l | tr -d ' ' )
               echo "$lang widget_img=candidate old_visible_img_count=$old_img_count old_document_refs=$old_doc_count"
               [[ "$old_img_count" == '0' ]] || return 1
