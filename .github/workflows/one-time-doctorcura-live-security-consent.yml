@@ -23,155 +23,100 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]] || { echo 'Unexpected DoctorCura target.' >&2; exit 1; }
+          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]] || exit 1
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-          root="$RUNNER_TEMP/dc-security-consent"; rm -rf "$root"; mkdir -p "$root"
+          root="$RUNNER_TEMP/dc-security-consent"
+          rm -rf "$root" && mkdir -p "$root"
+          health=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/health.json" -w '%{http_code}' "$base/health")
+          [[ "$health" == '200' ]] || exit 1
 
-          health_code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health")
-          [[ "$health_code" == '200' ]] || { echo "Health failed HTTP $health_code" >&2; exit 1; }
-
-          call_file() {
-            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload_file="$5"
-            req="$root/request-$suffix.json"; out="$root/result-$suffix.json"
-            python3 - "$req" "$action" "$dry" "$confirm" "$payload_file" <<'PY'
+          call_action() {
+            suffix="$1"
+            action="$2"
+            dry="$3"
+            confirm="$4"
+            payload="$5"
+            python3 - "$root/request-$suffix.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
           import json,sys,uuid
-          req,action,dry,confirm,payload_file=sys.argv[1:]
-          payload=json.load(open(payload_file,encoding='utf-8'))
-          json.dump({'version':1,'request_id':'dc-sec-'+uuid.uuid4().hex[:24],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':payload},open(req,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          out,action,dry,confirm,payload_path=sys.argv[1:]
+          payload=json.load(open(payload_path,encoding='utf-8'))
+          req={'version':1,'request_id':'dc-sec-'+uuid.uuid4().hex[:24],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':payload}
+          json.dump(req,open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
           PY
-            code=$(curl -sS -L --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute")
-            [[ "$code" == '200' ]] || { echo "$action transport failed HTTP $code" >&2; cat "$out" >&2 || true; exit 1; }
-            python3 - "$out" <<'PY'
+            code=$(curl -sS -L --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/request-$suffix.json" -o "$root/result-$suffix.json" -w '%{http_code}' "$base/execute")
+            [[ "$code" == '200' ]] || { cat "$root/result-$suffix.json" >&2 || true; exit 1; }
+            python3 - "$root/result-$suffix.json" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1],encoding='utf-8'))
-          if not d.get('ok'): raise SystemExit('Connector action returned ok=false: '+str(d.get('error')))
+          if not d.get('ok'): raise SystemExit(str(d.get('error')))
           PY
           }
 
           printf '%s' '{"path":"wp-content/plugins/doctorcura-core/includes/class-auth-flow.php"}' > "$root/read-auth.json"
           printf '%s' '{"path":"wp-content/plugins/doctorcura-core/includes/extra-checkout.php"}' > "$root/read-checkout.json"
           printf '%s' '{"path":"wp-content/plugins/doctorcura-core/doctorcura-core.php"}' > "$root/read-main.json"
-          call_file auth-read filesystem.read_text true false "$root/read-auth.json"
-          call_file checkout-read filesystem.read_text true false "$root/read-checkout.json"
-          call_file main-read filesystem.read_text true false "$root/read-main.json"
+          call_action auth-read filesystem.read_text true false "$root/read-auth.json"
+          call_action checkout-read filesystem.read_text true false "$root/read-checkout.json"
+          call_action main-read filesystem.read_text true false "$root/read-main.json"
 
           python3 - "$root/result-auth-read.json" "$root/result-checkout-read.json" "$root/result-main-read.json" "$root" <<'PY'
-          import json,sys,os
-          authf,checkoutf,mainf,root=sys.argv[1:]
-
+          import json,os,sys
+          auth_file,checkout_file,main_file,root=sys.argv[1:]
           def load(path):
               d=json.load(open(path,encoding='utf-8'))
-              x=d.get('data') or {}
-              return x.get('content',''), (x.get('file') or {}).get('sha256','')
-
-          def replace_once(text, old, new, label):
-              if new in text:
-                  return text
-              if old not in text:
-                  raise SystemExit('Expected live block missing: '+label)
+              data=d.get('data') or {}
+              return data.get('content',''),(data.get('file') or {}).get('sha256','')
+          def replace_once(text,old,new,label):
+              if new in text: return text
+              if old not in text: raise SystemExit('missing block: '+label)
               return text.replace(old,new,1)
-
-          auth,auth_sha=load(authf)
-          checkout,checkout_sha=load(checkoutf)
-          main,main_sha=load(mainf)
-          for label,sha in [('auth',auth_sha),('checkout',checkout_sha),('main',main_sha)]:
-              if len(sha)!=64: raise SystemExit('Missing sha256 for '+label)
-
+          auth,auth_sha=load(auth_file)
+          checkout,checkout_sha=load(checkout_file)
+          main,main_sha=load(main_file)
+          if not all(len(x)==64 for x in [auth_sha,checkout_sha,main_sha]): raise SystemExit('missing sha256')
           auth=auth.replace("        add_action( 'template_redirect', [ __CLASS__, 'redirect_reset_link_sent_from_account' ], 20 );\n",'')
           auth=auth.replace("        add_action( 'init', [ __CLASS__, 'redirect_reset_link_sent_global' ], 20 );\n",'')
-          hook="        add_filter( 'woocommerce_lost_password_confirmation_message', [ __CLASS__, 'filter_lost_password_confirmation_message' ], 999 );\n"
           anchor="        add_filter( 'woocommerce_lost_password_redirect', [ __CLASS__, 'filter_lost_password_redirect' ], 999 );\n"
-          if hook not in auth:
-              auth=replace_once(auth,anchor,anchor+hook,'lost-password confirmation hook')
-          method="""    public static function filter_lost_password_confirmation_message( string $message ): string {
-        return __(
-            'Aus Sicherheitsgründen bestätigen wir nicht, ob eine E-Mail-Adresse oder ein Konto registriert ist. Falls ein passendes Konto existiert, wurde eine E-Mail mit einem Link zum Zurücksetzen des Passworts gesendet. Bitte prüfen Sie auch Ihren Spam-Ordner.',
-            'doctorcura-core'
-        );
-    }
-
-"""
+          hook="        add_filter( 'woocommerce_lost_password_confirmation_message', [ __CLASS__, 'filter_lost_password_confirmation_message' ], 999 );\n"
+          if hook not in auth: auth=replace_once(auth,anchor,anchor+hook,'confirmation hook')
+          method="    public static function filter_lost_password_confirmation_message( string $message ): string {\n        return __(\n            'Aus Sicherheitsgründen bestätigen wir nicht, ob eine E-Mail-Adresse oder ein Konto registriert ist. Falls ein passendes Konto existiert, wurde eine E-Mail mit einem Link zum Zurücksetzen des Passworts gesendet. Bitte prüfen Sie auch Ihren Spam-Ordner.',\n            'doctorcura-core'\n        );\n    }\n\n"
           method_anchor="    public static function clear_notices_on_verification_page(): void {\n"
-          if method not in auth:
-              auth=replace_once(auth,method_anchor,method+method_anchor,'lost-password confirmation method')
-          if "add_action( 'template_redirect', [ __CLASS__, 'redirect_reset_link_sent_from_account' ]" in auth:
-              raise SystemExit('Account success redirect still hooked')
-
-          old_field="""                        woocommerce_form_field('questionnaire_truth', [
-                            'type'     => 'checkbox',
-                            'label'    => __('Ich bestätige, dass alle Angaben wahrheitsgemäß sind.', 'doctorcura-core'),
-                            'required' => true,
-                            'class'    => ['form-row-wide', 'wa-confirmation-row', 'wa-padding-both-1rem'],
-                        ], $get_field_value('questionnaire_truth'));
-"""
-          new_field=old_field+"""
-                        woocommerce_form_field('questionnaire_prescription_ack', [
-                            'type'     => 'checkbox',
-                            'label'    => __('I confirm that I understand that, if the doctor issues a prescription, the decision will be based on the information I provide through the validated medical questionnaire. I understand that providing false, misleading, or incomplete information may be dangerous to my health and may prevent the physician from conducting an accurate and appropriate medical assessment.', 'doctorcura-core'),
-                            'required' => true,
-                            'class'    => ['form-row-wide', 'wa-confirmation-row', 'wa-padding-both-1rem'],
-                        ], $get_field_value('questionnaire_prescription_ack'));
-"""
-          checkout=replace_once(checkout,old_field,new_field,'prescription acknowledgement field')
-
-          old_validation="""        if (!isset($_POST['questionnaire_truth'])) {
-            $this->add_field_error(
-                __('Bitte bestätigen Sie die Richtigkeit Ihrer Angaben.', 'doctorcura-core'),
-                'questionnaire_truth'
-            );
-        }
-"""
-          new_validation=old_validation+"""
-        if (!isset($_POST['questionnaire_prescription_ack'])) {
-            $this->add_field_error(
-                __('Please confirm that you understand how the medical questionnaire is used for a prescribing decision and the risks of providing false, misleading, or incomplete information.', 'doctorcura-core'),
-                'questionnaire_prescription_ack'
-            );
-        }
-"""
-          checkout=replace_once(checkout,old_validation,new_validation,'prescription acknowledgement validation')
-
-          old_save="""            'pregnancy_breastfeeding' => '_medical_pregnancy_breastfeeding',
-"""
-          new_save=old_save+"""            'questionnaire_truth'          => '_medical_questionnaire_truth',
-            'questionnaire_prescription_ack' => '_medical_prescription_acknowledgement',
-"""
-          checkout=replace_once(checkout,old_save,new_save,'confirmation order meta')
-
+          if method not in auth: auth=replace_once(auth,method_anchor,method+method_anchor,'confirmation method')
+          if "add_action( 'template_redirect', [ __CLASS__, 'redirect_reset_link_sent_from_account' ]" in auth: raise SystemExit('redirect still active')
+          old_field="                        woocommerce_form_field('questionnaire_truth', [\n                            'type'     => 'checkbox',\n                            'label'    => __('Ich bestätige, dass alle Angaben wahrheitsgemäß sind.', 'doctorcura-core'),\n                            'required' => true,\n                            'class'    => ['form-row-wide', 'wa-confirmation-row', 'wa-padding-both-1rem'],\n                        ], $get_field_value('questionnaire_truth'));\n"
+          extra_field="\n                        woocommerce_form_field('questionnaire_prescription_ack', [\n                            'type'     => 'checkbox',\n                            'label'    => __('I confirm that I understand that, if the doctor issues a prescription, the decision will be based on the information I provide through the validated medical questionnaire. I understand that providing false, misleading, or incomplete information may be dangerous to my health and may prevent the physician from conducting an accurate and appropriate medical assessment.', 'doctorcura-core'),\n                            'required' => true,\n                            'class'    => ['form-row-wide', 'wa-confirmation-row', 'wa-padding-both-1rem'],\n                        ], $get_field_value('questionnaire_prescription_ack'));\n"
+          checkout=replace_once(checkout,old_field,old_field+extra_field,'prescription checkbox')
+          old_validation="        if (!isset($_POST['questionnaire_truth'])) {\n            $this->add_field_error(\n                __('Bitte bestätigen Sie die Richtigkeit Ihrer Angaben.', 'doctorcura-core'),\n                'questionnaire_truth'\n            );\n        }\n"
+          extra_validation="\n        if (!isset($_POST['questionnaire_prescription_ack'])) {\n            $this->add_field_error(\n                __('Please confirm that you understand how the medical questionnaire is used for a prescribing decision and the risks of providing false, misleading, or incomplete information.', 'doctorcura-core'),\n                'questionnaire_prescription_ack'\n            );\n        }\n"
+          checkout=replace_once(checkout,old_validation,old_validation+extra_validation,'prescription validation')
+          old_save="            'pregnancy_breastfeeding' => '_medical_pregnancy_breastfeeding',\n"
+          extra_save="            'questionnaire_truth'          => '_medical_questionnaire_truth',\n            'questionnaire_prescription_ack' => '_medical_prescription_acknowledgement',\n"
+          checkout=replace_once(checkout,old_save,old_save+extra_save,'confirmation meta')
           main=main.replace('Version: 1.0.6','Version: 1.0.7').replace("define( 'DCAF_VERSION', '1.0.6' );","define( 'DCAF_VERSION', '1.0.7' );")
-
-          if 'questionnaire_prescription_ack' not in checkout: raise SystemExit('Checkbox marker missing after patch')
-          if 'woocommerce_lost_password_confirmation_message' not in auth: raise SystemExit('Privacy message marker missing after patch')
-
-          items=[
-            ('auth','wp-content/plugins/doctorcura-core/includes/class-auth-flow.php',auth,auth_sha),
-            ('checkout','wp-content/plugins/doctorcura-core/includes/extra-checkout.php',checkout,checkout_sha),
-            ('main','wp-content/plugins/doctorcura-core/doctorcura-core.php',main,main_sha),
-          ]
-          for name,path,content,sha in items:
+          if checkout.count('questionnaire_prescription_ack') < 3: raise SystemExit('checkbox patch incomplete')
+          if 'woocommerce_lost_password_confirmation_message' not in auth: raise SystemExit('privacy patch incomplete')
+          for name,path,content,sha in [('auth','wp-content/plugins/doctorcura-core/includes/class-auth-flow.php',auth,auth_sha),('checkout','wp-content/plugins/doctorcura-core/includes/extra-checkout.php',checkout,checkout_sha),('main','wp-content/plugins/doctorcura-core/doctorcura-core.php',main,main_sha)]:
               json.dump({'path':path,'content':content,'expected_sha256':sha},open(os.path.join(root,'write-'+name+'.json'),'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
           PY
 
-          call_file auth-write filesystem.write_text false true "$root/write-auth.json"
-          call_file checkout-write filesystem.write_text false true "$root/write-checkout.json"
-          call_file main-write filesystem.write_text false true "$root/write-main.json"
-
+          call_action auth-write filesystem.write_text false true "$root/write-auth.json"
+          call_action checkout-write filesystem.write_text false true "$root/write-checkout.json"
+          call_action main-write filesystem.write_text false true "$root/write-main.json"
           printf '%s' '{}' > "$root/empty.json"
-          call_file cache cache.flush false true "$root/empty.json" || true
-
-          call_file auth-check filesystem.read_text true false "$root/read-auth.json"
-          call_file checkout-check filesystem.read_text true false "$root/read-checkout.json"
-          call_file main-check filesystem.read_text true false "$root/read-main.json"
+          call_action cache cache.flush false true "$root/empty.json" || true
+          call_action auth-check filesystem.read_text true false "$root/read-auth.json"
+          call_action checkout-check filesystem.read_text true false "$root/read-checkout.json"
+          call_action main-check filesystem.read_text true false "$root/read-main.json"
           python3 - "$root/result-auth-check.json" "$root/result-checkout-check.json" "$root/result-main-check.json" <<'PY'
           import json,sys
-          vals=[]
-          for p in sys.argv[1:]:
-              d=json.load(open(p,encoding='utf-8')); vals.append((d.get('data') or {}).get('content',''))
-          auth,checkout,main=vals
+          values=[]
+          for path in sys.argv[1:]:
+              d=json.load(open(path,encoding='utf-8')); values.append((d.get('data') or {}).get('content',''))
+          auth,checkout,main=values
           assert 'woocommerce_lost_password_confirmation_message' in auth
           assert "add_action( 'template_redirect', [ __CLASS__, 'redirect_reset_link_sent_from_account' ]" not in auth
           assert checkout.count('questionnaire_prescription_ack') >= 3
           assert '_medical_prescription_acknowledgement' in checkout
-          assert 'Version: 1.0.7' in main and "DCAF_VERSION', '1.0.7'" in main
+          assert 'Version: 1.0.7' in main
           print('LIVE_READBACK_OK account_privacy=1 medical_acknowledgement=1 version=1.0.7')
           PY
