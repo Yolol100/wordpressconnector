@@ -1,0 +1,92 @@
+name: DoctorCura Phase 3 Owner Diagnostics
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3-owners.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Locate terms-link and hreflang owners read only
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          tmp="$RUNNER_TEMP/dc-owner"; mkdir -p "$tmp"
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$base/wp-json/wp/v2/pages/11?context=edit" > "$tmp/page.json"
+          python3 - "$tmp/page.json" <<'PY'
+          import json,re,sys,hashlib
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          needle='http://www.doctorcura.com'
+          def walk(v,path='$'):
+              if isinstance(v,dict):
+                  for k,x in v.items(): walk(x,path+'/'+str(k))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,path+'/'+str(i))
+              elif isinstance(v,str) and needle in v:
+                  urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'<>\s]*',v,re.I)))
+                  print(f"OWNER_MATCH path={path} count={v.count(needle)} value_sha256={hashlib.sha256(v.encode()).hexdigest()} urls={'|'.join(urls)}")
+          print(f"PAGE id={p.get('id')} status={p.get('status')} slug={p.get('slug')} template={p.get('template','')} meta_keys={','.join(sorted((p.get('meta') or {}).keys()))}")
+          walk(p)
+          PY
+
+          curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 "$base/geschaftsbedingungen/" > "$tmp/front.html"
+          python3 - "$tmp/front.html" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'<>\s]*',s,re.I)))
+          print('FRONT_OLD_URLS count='+str(s.count('http://www.doctorcura.com'))+' urls='+'|'.join(urls))
+          for u in urls:
+              print('FRONT_URL_CONTEXT_HASH url='+u)
+          PY
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$base/wp-json/" > "$tmp/index.json"
+          python3 - "$tmp/index.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          routes=sorted((d.get('routes') or {}).keys())
+          for token in ('elementor','rocket','cache','gtranslate','translate'):
+              hits=[r for r in routes if token in r.lower()]
+              print('REST_ROUTES token='+token+' count='+str(len(hits)))
+              for r in hits[:30]: print('REST_ROUTE '+r)
+          PY
+
+          for url in \
+            "$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen" \
+            "$base/fr/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"; do
+            key=$(printf '%s' "$url" | sha256sum | cut -c1-10)
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --dump-header "$tmp/$key.h" --output "$tmp/$key.html" "$url"
+            echo "EPIPEN_HEADERS key=$key"
+            awk 'BEGIN{IGNORECASE=1}/^(server|x-gt-|x-hcdn-|x-powered-by|cache-control|vary):/{gsub(/\r/,"");print}' "$tmp/$key.h" || true
+            python3 - "$tmp/$key.html" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.a=[]; self.c=[]
+              def handle_starttag(self,tag,attrs):
+                  a={str(k).lower():str(v or '') for k,v in attrs}
+                  if tag.lower()=='link':
+                      rel=a.get('rel','').lower().split()
+                      if 'alternate' in rel and a.get('hreflang'): self.a.append((a.get('hreflang'),a.get('href','')))
+                      if 'canonical' in rel: self.c.append(a.get('href',''))
+          p=P(); p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read())
+          print('EPIPEN_CANONICAL '+('|'.join(p.c)))
+          for l,u in p.a: print(f'EPIPEN_ALT lang={l} href={u}')
+          PY
+          done
+          echo OWNER_DIAGNOSTICS_COMPLETE
