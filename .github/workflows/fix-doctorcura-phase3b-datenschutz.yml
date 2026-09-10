@@ -1,0 +1,159 @@
+name: DoctorCura Phase 3B Datenschutz Exact Migration
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3b-datenschutz.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Create one exact historical privacy redirect with rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          api="$base/wp-json/redirection/v1"
+          tmp="$RUNNER_TEMP/dc-phase3b"; mkdir -p "$tmp"
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          source='/datenschutz/'
+          target="$base/privacy-policy/"
+          created_id=''
+
+          canonical_of(){
+            python3 - "$1" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.c=''
+              def handle_starttag(self,tag,attrs):
+                  if tag.lower()!='link' or self.c: return
+                  a={str(k).lower():str(v or '') for k,v in attrs}
+                  if 'canonical' in a.get('rel','').lower().split() and a.get('href'): self.c=a['href']
+          p=P(); p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read()); print(p.c,end='')
+          PY
+          }
+
+          exact_rules(){
+            local outfile="$1"
+            curl "${c[@]}" --location "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$outfile"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$n=0;foreach(($d["items"]??[])as$r){if(($r["url"]??"")===$argv[2])$n++;}echo$n;' "$outfile" "$source"
+          }
+
+          rollback(){
+            local rc=$?
+            [[ "$rc" == 0 ]] && return
+            echo "PHASE3B_ROLLBACK_START rc=$rc" >&2
+            set +e
+            if [[ "$created_id" =~ ^[1-9][0-9]*$ ]]; then
+              printf '{"items":[%s],"global":false}' "$created_id" > "$tmp/delete.json"
+              curl "${c[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null 2>&1 || true
+            fi
+            remaining=$(exact_rules "$tmp/rollback-rules.json" 2>/dev/null || echo unknown)
+            echo "PHASE3B_ROLLBACK_READBACK exact_rules=$remaining" >&2
+            echo PHASE3B_ROLLBACK_ATTEMPTED >&2
+          }
+          trap rollback EXIT
+
+          echo '=== PREFLIGHT ==='
+          before=$(exact_rules "$tmp/before.json")
+          echo "PRECHECK exact_rules=$before"
+          [[ "$before" == 0 ]] || exit 1
+
+          tstatus=$(curl "${c[@]}" --compressed --output "$tmp/target.html" --write-out '%{http_code}' "$target")
+          tcan=$(canonical_of "$tmp/target.html")
+          echo "TARGET status=$tstatus canonical=$tcan"
+          [[ "$tstatus" == 200 && "$tcan" == "$target" ]] || exit 1
+
+          clean_status=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base$source")
+          echo "SOURCE_CLEAN_BEFORE status=$clean_status"
+          [[ "$clean_status" == 404 ]] || exit 1
+
+          probe_before="$base$source?doctorcura_phase3b_preflight=$(date +%s%N)"
+          curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$tmp/preflight.h" --output /dev/null "$probe_before" || true
+          pstatus=$(awk '/^HTTP\//{print $2;exit}' "$tmp/preflight.h")
+          pcache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/preflight.h")
+          echo "SOURCE_ORIGIN_BEFORE status=$pstatus cache=${pcache:-none}"
+          [[ "$pstatus" == 404 && "${pcache:-}" != HIT ]] || exit 1
+
+          # Guard frozen non-equivalent language variants: these stay real 404s.
+          for lang in fr en; do
+            status=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/$lang/datenschutz/?doctorcura_phase3b_guard=$(date +%s%N)")
+            echo "LANG_GUARD_BEFORE lang=$lang status=$status"
+            [[ "$status" == 404 ]] || exit 1
+          done
+
+          # Guard Phase 3A origin fix before this independent write.
+          wprobe="$base/product-categorie/gewichtsverlust/?doctorcura_phase3b_weight_guard=$(date +%s%N)"
+          curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$tmp/weight.h" --output /dev/null "$wprobe" || true
+          wcode=$(awk '/^HTTP\//{print $2;exit}' "$tmp/weight.h")
+          wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/weight.h")
+          wcache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/weight.h")
+          echo "PHASE3A_GUARD code=$wcode cache=${wcache:-none} location=$wloc"
+          [[ "$wcode" == 301 && "$wloc" == "$base/product-category/gewichtsverlust/" && "${wcache:-}" != HIT ]] || exit 1
+
+          echo '=== WRITE ==='
+          php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>"DoctorCura legacy datenschutz privacy migration","group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];echo json_encode($p,JSON_UNESCAPED_SLASHES);' "$source" "$target" > "$tmp/create.json"
+          http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create.json" --output "$tmp/create-response.json" --write-out '%{http_code}' "$api/redirect")
+          echo "CREATE http=$http"
+          [[ "$http" == 200 ]]
+
+          curl "${c[@]}" --location "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after.json"
+          created_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$hits=[];foreach(($d["items"]??[])as$r){$ad=$r["action_data"]??null;$u=is_array($ad)?($ad["url"]??""):$ad;if(($r["url"]??"")===$argv[2]&&empty($r["regex"])&&(int)($r["action_code"]??0)===301&&$u===$argv[3])$hits[]=(int)$r["id"];}if(count($hits)!==1)exit(2);echo$hits[0];' "$tmp/after.json" "$source" "$target")
+          [[ "$created_id" =~ ^[1-9][0-9]*$ ]] || exit 1
+          echo "READBACK created_id=$created_id exact_rule=present"
+
+          echo '=== TWO ORIGIN RETEST ROUNDS ==='
+          for round in 1 2; do
+            probe="$base$source?doctorcura_phase3b_verify=$round-$(date +%s%N)"
+            h="$tmp/verify-$round.h"; body="$tmp/verify-$round.html"
+            curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$probe" || true
+            code=$(awk '/^HTTP\//{print $2;exit}' "$h")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            [[ "$code" == 301 && "$loc" == "$target"* && "${cache:-}" != HIT ]] || { echo "VERIFY_FIRST_FAIL round=$round code=$code cache=${cache:-none} location=$loc" >&2; exit 1; }
+            result=$(curl "${c[@]}" --location --compressed --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$probe")
+            IFS=$'\t' read -r status final redirects <<< "$result"
+            can=$(canonical_of "$body")
+            [[ "$status" == 200 && "$redirects" == 1 && "$can" == "$target" ]] || { echo "VERIFY_FOLLOW_FAIL round=$round status=$status final=$final redirects=$redirects canonical=$can" >&2; exit 1; }
+
+            for lang in fr en; do
+              lstatus=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/$lang/datenschutz/?doctorcura_phase3b_guard=$round-$(date +%s%N)")
+              [[ "$lstatus" == 404 ]] || { echo "LANG_GUARD_FAIL round=$round lang=$lang status=$lstatus" >&2; exit 1; }
+            done
+
+            d=$(curl "${c[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
+            [[ "$d" == $'200\t'"$base/welche-medikamente-beeinflussen-die-erektion/"$'\t1' ]] || exit 1
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
+            echo "VERIFY_OK round=$round origin_cache=${cache:-none} final=$final canonical=$can guards=green"
+          done
+
+          echo '=== CLEAN EDGE READBACK INFORMATIONAL ==='
+          clean_h="$tmp/clean-after.h"
+          curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$clean_h" --output /dev/null "$base$source" || true
+          ccode=$(awk '/^HTTP\//{print $2;exit}' "$clean_h")
+          cloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$clean_h")
+          ccache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$clean_h")
+          cage=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$clean_h")
+          echo "EDGE_READBACK code=$ccode cache=${ccache:-none} age=${cage:-none} location=${cloc:-none}"
+
+          trap - EXIT
+          if [[ "$ccode" == 301 && "$cloc" == "$target" ]]; then
+            echo "PHASE3B_ORIGIN_AND_EDGE_GREEN redirect_id=$created_id"
+          else
+            echo "PHASE3B_ORIGIN_GREEN_EDGE_CACHE_PENDING redirect_id=$created_id"
+          fi
