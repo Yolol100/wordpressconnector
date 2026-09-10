@@ -1,0 +1,69 @@
+name: DoctorCura Pagination Serial Readback
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-pagination-serial-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Verify clean and cache-busted pagination boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://doctorcura.com'
+          tmp="$RUNNER_TEMP/dc-pagination-serial"; mkdir -p "$tmp"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors --compressed --header 'Cache-Control: no-cache')
+          probe(){
+            local label="$1" url="$2" stem="$3" h="$tmp/$3.h" b="$tmp/$3.html" status
+            status=$(curl "${c[@]}" --dump-header "$h" --output "$b" --write-out '%{http_code}' "$url")
+            python3 - "$label" "$url" "$status" "$h" "$b" <<'PY'
+          import html,re,sys
+          label,url,status,hp,bp=sys.argv[1:]; h=open(hp,encoding='utf-8',errors='ignore').read(); b=open(bp,encoding='utf-8',errors='ignore').read()
+          def a(tag,n):
+              m=re.search(r'\b'+re.escape(n)+r'=["\']([^"\']*)',tag,re.I); return html.unescape(m.group(1)) if m else ''
+          can=''
+          for t in re.findall(r'<link\b[^>]*>',b,re.I):
+              if 'canonical' in a(t,'rel').lower().split(): can=a(t,'href'); break
+          robots=''
+          for t in re.findall(r'<meta\b[^>]*>',b,re.I):
+              if a(t,'name').lower()=='robots': robots=a(t,'content'); break
+          loc=''; m=re.search(r'(?im)^location:\s*(\S.*?)\r?$',h); loc=m.group(1).strip() if m else ''
+          cache=''; m=re.search(r'(?im)^x-hcdn-cache-status:\s*(\S.*?)\r?$',h); cache=m.group(1).strip() if m else ''
+          print(f"PAGINATION\t{label}\turl={url}\tstatus={status}\tlocation={loc}\tbytes={len(b.encode())}\tcanonical={can}\trobots={robots}\tcache={cache}")
+          PY
+          }
+
+          for round in 1 2 3; do
+            echo "=== CLEAN ROUND $round ==="
+            probe de16 "$base/blogs/16/" "de16-$round"
+            probe de17 "$base/blogs/17/" "de17-$round"
+            probe fr16 "$base/fr/blogs/16/" "fr16-$round"
+            probe fr17 "$base/fr/blogs/17/" "fr17-$round"
+            probe en16 "$base/en/blogs/16/" "en16-$round"
+            probe en17 "$base/en/blogs/17/" "en17-$round"
+            sleep 1
+          done
+
+          echo '=== CACHE-BUST EN17 ==='
+          for round in 1 2 3 4 5; do
+            probe en17_bust "$base/en/blogs/17/?doctorcura_pagination_probe=$round-$(date +%s%N)" "en17-bust-$round"
+          done
+
+          echo '=== ALIAS CANARIES ==='
+          for lang in '' 'fr/' 'en/'; do
+            u="$base/${lang}blogs/page/5/"; h="$tmp/alias-${lang//\//_}.h"; b="$tmp/alias-${lang//\//_}.html"
+            status=$(curl "${c[@]}" --dump-header "$h" --output "$b" --write-out '%{http_code}' "$u")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            echo "ALIAS lang=${lang:-de} status=$status location=${loc:-none}"
+            test "$status" = 301
+          done
+          echo PAGINATION_SERIAL_READBACK_COMPLETE
