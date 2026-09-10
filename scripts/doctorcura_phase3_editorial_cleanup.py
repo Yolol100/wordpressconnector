@@ -87,8 +87,9 @@ def transform_content(pid, content):
         content, n = text_nodes_transform(content, fn); total += n
 
     elif pid == 6018:
+        sep = r'(?:\s|<[^>]+>|&(?:nbsp|#160|#x0*A0);)*'
         content, n = re.subn(
-            r'Die beste(?:\s|<[^>]+>)*online(?:\s|<[^>]+>)*Behandlungen',
+            r'Die beste' + sep + r'online' + sep + r'Behandlungen',
             'Die besten Online-Behandlungen',
             content,
             flags=re.I,
