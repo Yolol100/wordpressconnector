@@ -1,4 +1,4 @@
-name: DoctorCura Datenschutz Translation Cache-Key Fix
+name: DoctorCura Final Read-Only Closure Audit
 
 on:
   push:
@@ -11,124 +11,134 @@ permissions:
   contents: read
 
 jobs:
-  fix:
+  closure-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Vary only datenschutz routing by GTranslate language header
+      - name: Verify final stable production state without writes
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          c=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 2 --retry-delay 1 --retry-all-errors)
+          c=(--silent --show-error --connect-timeout 10 --max-time 35 --retry 2 --retry-delay 1 --retry-all-errors)
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/dc-vary"; mkdir -p "$tmp"
-          expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'; changed=0
+          tmp="$RUNNER_TEMP/dc-final-ro"; mkdir -p "$tmp"
+          expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'
 
-          make_payload(){ python3 - "$1" "$2" <<'PY'
-          import json,sys
-          code=open(sys.argv[1],encoding='utf-8').read()
-          open(sys.argv[2],'w',encoding='utf-8').write(json.dumps({'code':code,'active':True},ensure_ascii=False,separators=(',',':')))
-          PY
-          }
-          put(){ local f="$1" l="$2" h; make_payload "$f" "$tmp/$l-payload.json"; h=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$l-payload.json" --output "$tmp/$l-out.json" --write-out '%{http_code}' "$api"); echo "WRITE $l http=$h"; [[ "$h" == 200 ]]; }
-          get(){ curl "${c[@]}" --location "${auth[@]}" --output "$1" --write-out '%{http_code}' "$api"; }
-          hash_json(){ python3 - "$1" <<'PY'
-          import hashlib,json,sys
-          x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code',''))
-          print(hashlib.sha256(c.encode()).hexdigest())
-          PY
-          }
-          rollback(){ local rc=$?; [[ "$rc" == 0 ]] && return; echo "ROLLBACK_START rc=$rc" >&2; set +e; if [[ "$changed" == 1 ]]; then put "$tmp/original.php" rollback >/dev/null 2>&1 || true; fi; get "$tmp/rb.json" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then echo "ROLLBACK_HASH=$(hash_json "$tmp/rb.json")"; fi; echo ROLLBACK_ATTEMPTED >&2; }
-          trap rollback EXIT
-
-          echo '=== PREFLIGHT ==='
-          h=$(get "$tmp/before.json"); [[ "$h" == 200 ]]
-          python3 - "$tmp/before.json" "$tmp/original.php" "$expected" <<'PY'
+          echo '=== SNIPPET STABLE STATE ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/s43.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43"); [[ "$h" == 200 ]]
+          python3 - "$tmp/s43.json" "$expected" <<'PY'
           import hashlib,json,sys
           x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code','')); h=hashlib.sha256(c.encode()).hexdigest()
-          print(f"BEFORE hash={h} active={'yes' if x.get('active') else 'no'}")
-          assert h==sys.argv[3] and bool(x.get('active'))
-          assert c.count('DoctorCura datenschutz root-only migration V8.4c')==1
-          assert 'Vary: X-GT-Lang' not in c
-          open(sys.argv[2],'w',encoding='utf-8',newline='').write(c)
+          markers=['DoctorCura article social image alignment V8.3','DoctorCura gewichtsverlust legacy final redirect V8.4b','DoctorCura datenschutz root-only migration V8.4c','DoctorCura product variation hreflang cleanup V8.4d','DoctorCura GSC-proven legacy category redirects V8.4e','DoctorCura French request-2 migration V8.4f']
+          print(f"SNIPPET hash={h} active={'yes' if x.get('active') else 'no'} helper={'present' if 'DoctorCura one-time cache purge helper' in c else 'absent'}")
+          assert h==sys.argv[2] and bool(x.get('active')) and 'DoctorCura one-time cache purge helper' not in c
+          for m in markers:
+              print('MARKER '+m+' count='+str(c.count(m))); assert c.count(m)==1
           PY
 
-          python3 - "$tmp/original.php" "$tmp/new.php" <<'PY'
-          import hashlib,sys
-          s=open(sys.argv[1],encoding='utf-8').read()
-          old="""/* DoctorCura datenschutz root-only migration V8.4c - 2026-09-10 */
-          add_action( 'template_redirect', function () {
-              if ( isset( $_SERVER['HTTP_X_GT_LANG'] ) && '' !== (string) $_SERVER['HTTP_X_GT_LANG'] ) {
-                  return;
-              }
-              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
-              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
-              if ( '/datenschutz/' !== $path ) {
-                  return;
-              }
-              wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
-              exit;
-          }, 0 );"""
-          new="""/* DoctorCura datenschutz root-only migration V8.4c - 2026-09-10 */
-          add_action( 'template_redirect', function () {
-              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
-              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
-              $translated = isset( $_SERVER['HTTP_X_GT_LANG'] ) && '' !== (string) $_SERVER['HTTP_X_GT_LANG'];
-              if ( '/datenschutz/' === $path || '/fr/datenschutz/' === $path || '/en/datenschutz/' === $path || $translated ) {
-                  header( 'Vary: X-GT-Lang', false );
-              }
-              if ( $translated ) {
-                  return;
-              }
-              if ( '/datenschutz/' !== $path ) {
-                  return;
-              }
-              wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
-              exit;
-          }, 0 );"""
-          assert s.count(old)==1, 'V8.4c identity mismatch'
-          out=s.replace(old,new,1)
-          open(sys.argv[2],'w',encoding='utf-8',newline='').write(out)
-          print('NEW_HASH='+hashlib.sha256(out.encode()).hexdigest())
-          PY
-          newhash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
-
-          echo '=== WRITE + EXACT READBACK ==='
-          put "$tmp/new.php" apply; changed=1
-          h=$(get "$tmp/after.json"); [[ "$h" == 200 ]]
-          python3 - "$tmp/after.json" "$tmp/new.php" "$newhash" <<'PY'
+          echo '=== WORDPRESS CONTENT READBACK ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/page11.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/pages/11?context=edit"); [[ "$h" == 200 ]]
+          python3 - "$tmp/page11.json" <<'PY'
           import hashlib,json,sys
-          x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code','')); want=open(sys.argv[2],encoding='utf-8').read(); h=hashlib.sha256(c.encode()).hexdigest()
-          print(f"AFTER hash={h} active={'yes' if x.get('active') else 'no'}")
-          assert c==want and h==sys.argv[3] and bool(x.get('active')) and c.count('Vary: X-GT-Lang')==1
+          p=json.load(open(sys.argv[1],encoding='utf-8')); raw=str(p.get('content',{}).get('raw',''))
+          print(f"PAGE11 status={p.get('status')} raw_hash={hashlib.sha256(raw.encode()).hexdigest()} old_http_count={raw.count('http://www.doctorcura.com')}")
+          assert p.get('status')=='publish' and raw.count('http://www.doctorcura.com')==0
           PY
 
-          echo '=== SAME-TOKEN CACHE KEY TESTS ==='
-          for n in 1 2 3; do
-            token="dc_vary=$n-$(date +%s%N)"
-            for spec in "root:$base/datenschutz/" "fr:$base/fr/datenschutz/" "en:$base/en/datenschutz/" "fr2:$base/fr/datenschutz/" "root2:$base/datenschutz/"; do
-              label=${spec%%:*}; url=${spec#*:}; hh="$tmp/$label-$n.h"
-              meta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$hh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$url?$token")
-              vary=$(grep -i '^vary:' "$hh" | tr -d '\r' | paste -sd '|' - || true); cache=$(grep -i '^x-hcdn-cache-status:' "$hh" | tr -d '\r' | paste -sd '|' - || true)
-              echo "$label/$n $meta VARY=$vary CACHE=$cache"
-              [[ "$vary" == *X-GT-Lang* ]]
-              status=${meta%%$'\t'*}; location=${meta#*$'\t'}
-              if [[ "$label" == root* ]]; then [[ "$status" == 301 && "$location" == "$base/privacy-policy/" ]]; else [[ "$status" == 404 && -z "$location" ]]; fi
+          echo '=== SITEMAP DISCOVERY AND FULL LIVE CRAWL ==='
+          indexmeta=$(curl "${c[@]}" --location --compressed --output "$tmp/index.xml" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/sitemap_index.xml"); echo "SITEMAP_INDEX $indexmeta"; [[ "$indexmeta" == $'200\t'"$base/sitemap_index.xml"$'\t0' ]]
+          python3 - "$tmp/index.xml" "$tmp/children.txt" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); loc=[html.unescape(x.strip()) for x in re.findall(r'<loc>(.*?)</loc>',s,re.I|re.S)]
+          children=[u for u in loc if urllib.parse.urlsplit(u).netloc=='doctorcura.com' and u.endswith('.xml')]
+          print('SITEMAP_CHILDREN='+str(len(children))); assert children
+          open(sys.argv[2],'w').write('\n'.join(children)+'\n')
+          PY
+          : > "$tmp/urls.txt"
+          while IFS= read -r sm; do curl "${c[@]}" --location --compressed "$sm" -o "$tmp/child.xml"; python3 - "$tmp/child.xml" >> "$tmp/urls.txt" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          for x in re.findall(r'<loc>(.*?)</loc>',s,re.I|re.S):
+              u=html.unescape(x.strip()); p=urllib.parse.urlsplit(u)
+              if p.scheme=='https' and p.netloc=='doctorcura.com': print(u)
+          PY
+          done < "$tmp/children.txt"
+          sort -u "$tmp/urls.txt" -o "$tmp/urls.txt"
+          n=$(wc -l < "$tmp/urls.txt" | tr -d ' '); echo "SITEMAP_URLS=$n"; [[ "$n" == 176 ]]
+          ! grep -qE 'product-categorie|attribute_pa_|welche-medikamente-beeinflussen-die-erektion-2' "$tmp/urls.txt"
+          export DC_TMP="$tmp"
+          python3 - "$tmp/urls.txt" <<'PY'
+          import concurrent.futures,html,os,re,subprocess,sys,urllib.parse
+          urls=[x.strip() for x in open(sys.argv[1]) if x.strip()]; tmp=os.environ['DC_TMP']
+          def check(pair):
+              i,u=pair; f=f'{tmp}/p{i}.html'; p=subprocess.run(['curl','--silent','--show-error','--connect-timeout','10','--max-time','35','--retry','2','--retry-delay','1','--retry-all-errors','--compressed','--output',f,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}',u],capture_output=True,text=True)
+              if p.returncode: return (u,'curl',str(p.returncode))
+              meta=p.stdout.strip().split('\t')
+              if len(meta)!=3 or meta[0]!='200' or meta[2]!='0' or meta[1].rstrip('/')!=u.rstrip('/'): return (u,'http',p.stdout.strip())
+              s=open(f,encoding='utf-8',errors='ignore').read(); can=''
+              for t in re.findall(r'<link\b[^>]*>',s,re.I):
+                  if re.search(r'rel=["\'][^"\']*canonical',t,re.I):
+                      m=re.search(r'href=["\']([^"\']+)',t,re.I)
+                      if m: can=html.unescape(m.group(1)); break
+              if can.rstrip('/')!=u.rstrip('/'): return (u,'canonical',can)
+              if re.search(r'<meta\b[^>]*name=["\']robots["\'][^>]*content=["\'][^"\']*noindex',s,re.I): return (u,'noindex','')
+              for t in re.findall(r'<link\b[^>]*hreflang=[^>]*>',s,re.I):
+                  m=re.search(r'href=["\']([^"\']+)',t,re.I)
+                  if m and 'attribute_pa_' in urllib.parse.urlsplit(html.unescape(m.group(1))).query: return (u,'hreflang-query',html.unescape(m.group(1)))
+              return None
+          bad=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+              for r in ex.map(check,enumerate(urls)):
+                  if r: bad.append(r); print('FAIL\t'+'\t'.join(r))
+          print(f'CRAWL_TOTAL={len(urls)} FAILURES={len(bad)}'); assert not bad
+          PY
+
+          echo '=== EXACT MIGRATION/CANARY MATRIX ==='
+          first(){ curl "${c[@]}" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$1"; }
+          require301(){ local s="$1" d="$2" l="$3" x; x=$(first "$s"); echo "$l $x"; [[ "$x" == $'301\t'"$d" ]]; }
+          require200(){ local u="$1" l="$2" x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}' "$u"); echo "$l $x"; [[ "$x" == 200 ]]; }
+          require404(){ local u="$1" l="$2" x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}' "$u"); echo "$l $x"; [[ "$x" == 404 ]]; }
+          require301 "$base/product-categorie/gewichtsverlust/" "$base/product-category/gewichtsverlust/" WEIGHT_DE
+          require301 "$base/fr/product-categorie/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" WEIGHT_FR
+          require301 "$base/en/product-categorie/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" WEIGHT_EN
+          require301 "$base/product-categorie/hiv-praevention-prep/" "$base/product-category/hiv-praevention-prep/" HIV_LEGACY
+          require301 "$base/product-categorie/quit-smoking/" "$base/product-category/rauchstopp/" QUIT_LEGACY
+          require301 "$base/product-categorie/schlafprobleme/" "$base/product-category/schlafprobleme/" SLEEP_LEGACY
+          require301 "$base/datenschutz/" "$base/privacy-policy/" DATENSCHUTZ_ROOT
+          require301 "$base/fr/request-2/" "$base/fr/anfrage-2/" FR_REQUEST2
+          require301 "$base/welche-medikamente-beeinflussen-die-erektion-2/" "$base/welche-medikamente-beeinflussen-die-erektion/" DUPLICATE_POST
+          require200 "$base/blogs/16/" PAGINATION_REAL_16
+          require301 "$base/blogs/page/16/" "$base/blogs/16/" PAGINATION_ALT_16
+          require404 "$base/blogs/17/" PAGINATION_REAL_17
+          require404 "$base/blogs/page/17/" PAGINATION_ALT_17
+          for u in privacy-policy fr/anfrage-2 product-category/gewichtsverlust product-category/hiv-praevention-prep product-category/rauchstopp product-category/schlafprobleme product/epipen welche-medikamente-beeinflussen-die-erektion geschaftsbedingungen; do require200 "$base/$u/" "TARGET_$u"; done
+
+          echo '=== TERMS + EPIPEN ==='
+          curl "${c[@]}" --location --compressed "$base/geschaftsbedingungen/" -o "$tmp/terms.html"; ! grep -q 'http://www.doctorcura.com' "$tmp/terms.html"
+          meta=$(curl "${c[@]}" --compressed --output "$tmp/epi.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/product/epipen/?attribute_pa_wirkstarke=150mcg"); echo "EPIPEN $meta"; [[ "$meta" == $'200\t'"$base/product/epipen/?attribute_pa_wirkstarke=150mcg"$'\t0' ]]
+          python3 - "$tmp/epi.html" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); can=''; alts={}
+          for t in re.findall(r'<link\b[^>]*>',s,re.I):
+              href=re.search(r'href=["\']([^"\']+)',t,re.I); rel=re.search(r'rel=["\']([^"\']+)',t,re.I); hreflang=re.search(r'hreflang=["\']([^"\']+)',t,re.I)
+              if href and rel and 'canonical' in rel.group(1).lower(): can=html.unescape(href.group(1))
+              if href and hreflang: alts[hreflang.group(1).lower()]=html.unescape(href.group(1))
+          exp={'de':'https://doctorcura.com/product/epipen/','en':'https://doctorcura.com/en/product/epipen/','fr':'https://doctorcura.com/fr/product/epipen/'}
+          print('EPIPEN_CANONICAL='+can); print('EPIPEN_HREFLANGS='+repr(alts)); assert can=='https://doctorcura.com/product/epipen/' and alts==exp and not any(urllib.parse.urlsplit(u).query for u in alts.values())
+          PY
+
+          echo '=== TRANSLATED DATENSCHUTZ EDGE OBSERVATION (KNOWN EXTERNAL BLOCKER; NON-GATING) ==='
+          for lang in fr en; do
+            for kind in clean bust1 bust2 bust3; do
+              u="$base/$lang/datenschutz/"; [[ "$kind" == clean ]] || u="$u?dc_final_ro=$kind-$(date +%s%N)"
+              hh="$tmp/$lang-$kind.h"; x=$(curl "${c[@]}" --dump-header "$hh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$u")
+              age=$(grep -i '^age:' "$hh" | head -n1 | tr -d '\r' || true); cache=$(grep -i '^x-hcdn-cache-status:' "$hh" | tr -d '\r' | paste -sd '|' - || true); by=$(grep -i '^x-redirect-by:' "$hh" | head -n1 | tr -d '\r' || true)
+              echo "DATENSCHUTZ_EDGE lang=$lang kind=$kind result=$x $age $cache $by"
             done
           done
-
-          echo '=== OTHER FIX CANARIES ==='
-          check301(){ local u="$1" d="$2" l="$3" x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$u"); echo "$l $x"; [[ "$x" == $'301\t'"$d" ]]; }
-          check301 "$base/product-categorie/gewichtsverlust/?dc_vary_canary=$(date +%s%N)" "$base/product-category/gewichtsverlust/" WEIGHT
-          check301 "$base/fr/request-2/?dc_vary_canary=$(date +%s%N)" "$base/fr/anfrage-2/" REQUEST2
-          check301 "$base/welche-medikamente-beeinflussen-die-erektion-2/?dc_vary_canary=$(date +%s%N)" "$base/welche-medikamente-beeinflussen-die-erektion/" DUPLICATE
-
-          changed=0
-          echo "NEW_EXPECTED_SNIPPET_HASH=$newhash"
-          echo DATENSCHUTZ_VARY_FIX_GREEN
+          echo FINAL_READ_ONLY_CORE_GREEN
