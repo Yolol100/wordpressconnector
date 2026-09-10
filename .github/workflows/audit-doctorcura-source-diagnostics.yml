@@ -1,4 +1,4 @@
-name: Audit DoctorCura Cache Plugins And Headers
+name: Audit DoctorCura Phase 2A Localized QA
 
 on:
   push:
@@ -11,40 +11,58 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect cache stack read-only
+      - name: Verify duplicate consolidation across language paths
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-cache-stack"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2a-qa"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          wpapi="$base/wp-json/wp/v2"; redapi="$base/wp-json/redirection/v1"; snipapi="$base/wp-json/code-snippets/v1/snippets/43"
+          clean='welche-medikamente-beeinflussen-die-erektion'; dup='welche-medikamente-beeinflussen-die-erektion-2'
 
-          echo '=== ACTIVE PLUGINS REST ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/plugins.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/plugins?status=active&per_page=100")
-          echo "plugins_http=$code"
-          if [[ "$code" == '200' ]]; then
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$p){$plugin=(string)($p["plugin"]??"");$name=(string)($p["name"]??"");if(preg_match("/(cache|rocket|lite|hostinger|cdn|optimi)/i",$plugin." ".$name))echo "plugin=".$plugin." name=".$name." status=".($p["status"]??"").PHP_EOL;}' "$tmp/plugins.json"
-          else
-            head -c 500 "$tmp/plugins.json" || true; echo
-          fi
+          canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
 
-          echo '=== ALL RESPONSE HEADERS ==='
-          for path in '/welche-medikamente-beeinflussen-die-erektion/' '/welche-medikamente-beeinflussen-die-erektion-2/' '/wp-json/'; do
-            echo "-- $path --"
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/h.txt" --output /dev/null "$base$path"
-            tr -d '\r' < "$tmp/h.txt" | grep -Ei '^(HTTP/|server:|cache-control:|age:|x-|cf-|via:|etag:|last-modified:)' || true
+          echo '=== SOURCE ==='
+          for id in 900067 900066; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/p$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0).PHP_EOL;' "$tmp/p$id.json"
           done
 
-          echo '=== REST NAMESPACES CACHE/HOSTINGER ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["namespaces"]??[])as$n){if(preg_match("/(lite|cache|rocket|hostinger|cdn)/i",$n))echo "namespace=$n\n";}' "$tmp/root.json"
+          echo '=== REDIRECTION READBACK ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x)echo "id=".($x["id"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"")." status=".($x["status"]??"").PHP_EOL;' "$tmp/red.json"
 
-          echo 'CACHE_STACK_AUDIT_COMPLETE'
+          echo '=== LANGUAGE PATH MATRIX ==='
+          for lang in base fr en; do
+            if [[ "$lang" == 'base' ]]; then prefix=''; else prefix="/$lang"; fi
+            for kind in clean dup; do
+              if [[ "$kind" == 'clean' ]]; then slug="$clean"; else slug="$dup"; fi
+              url="$base$prefix/$slug/"
+              curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --dump-header "$tmp/$lang-$kind.h" --output "$tmp/$lang-$kind.html" "$url"
+              first=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/$lang-$kind.h")
+              loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$lang-$kind.h" || true)
+              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$lang-$kind-final.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
+              canon=$(canonical_of "$tmp/$lang-$kind-final.html")
+              robots=$(grep -Eio '<meta[^>]+name="robots"[^>]*>' "$tmp/$lang-$kind-final.html" | head -1 || true)
+              echo "$lang $kind first=$first location=$loc follow=$result canonical=$canon robots=$robots"
+            done
+          done
+
+          echo '=== SITEMAP ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml" > "$tmp/map.xml"
+          printf 'clean_count='; grep -Fc "<loc>$base/$clean/</loc>" "$tmp/map.xml" || true
+          printf 'dup_count='; grep -Fc "<loc>$base/$dup/</loc>" "$tmp/map.xml" || true
+
+          echo '=== SNIPPET RESIDUE ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snip.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "active=".json_encode($s["active"]??null)." helper_present=".(strpos($c,"DoctorCura one-time cache purge helper")!==false?"yes":"no").PHP_EOL;' "$tmp/snip.json"
+          echo 'PHASE2A_LOCALIZED_QA_COMPLETE'
