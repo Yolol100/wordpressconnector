@@ -24,19 +24,40 @@ jobs:
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
           c=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 2 --retry-delay 1 --retry-all-errors)
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/dc-vary"; mkdir -p "$tmp"
           expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'; changed=0
-          payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
-          put(){ local f="$1" l="$2" h; payload "$f" "$tmp/$l-payload.json"; h=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$l-payload.json" --output "$tmp/$l-out.json" --write-out '%{http_code}' "$api"); echo "WRITE $l http=$h"; [[ "$h" == 200 ]]; }
+
+          make_payload(){ python3 - "$1" "$2" <<'PY'
+          import json,sys
+          code=open(sys.argv[1],encoding='utf-8').read()
+          open(sys.argv[2],'w',encoding='utf-8').write(json.dumps({'code':code,'active':True},ensure_ascii=False,separators=(',',':')))
+          PY
+          }
+          put(){ local f="$1" l="$2" h; make_payload "$f" "$tmp/$l-payload.json"; h=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$l-payload.json" --output "$tmp/$l-out.json" --write-out '%{http_code}' "$api"); echo "WRITE $l http=$h"; [[ "$h" == 200 ]]; }
           get(){ curl "${c[@]}" --location "${auth[@]}" --output "$1" --write-out '%{http_code}' "$api"; }
-          rollback(){ local rc=$?; [[ "$rc" == 0 ]] && return; echo "ROLLBACK_START rc=$rc" >&2; set +e; if [[ "$changed" == 1 ]]; then put "$tmp/original.php" rollback >/dev/null 2>&1 || true; fi; get "$tmp/rb.json" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_HASH=".hash("sha256",$c).PHP_EOL;' "$tmp/rb.json" || true; fi; echo ROLLBACK_ATTEMPTED >&2; }
+          hash_json(){ python3 - "$1" <<'PY'
+          import hashlib,json,sys
+          x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code',''))
+          print(hashlib.sha256(c.encode()).hexdigest())
+          PY
+          }
+          rollback(){ local rc=$?; [[ "$rc" == 0 ]] && return; echo "ROLLBACK_START rc=$rc" >&2; set +e; if [[ "$changed" == 1 ]]; then put "$tmp/original.php" rollback >/dev/null 2>&1 || true; fi; get "$tmp/rb.json" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then echo "ROLLBACK_HASH=$(hash_json "$tmp/rb.json")"; fi; echo ROLLBACK_ATTEMPTED >&2; }
           trap rollback EXIT
 
           echo '=== PREFLIGHT ==='
           h=$(get "$tmp/before.json"); [[ "$h" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$h=hash("sha256",$c);echo "BEFORE hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($h!==$argv[3]||empty($s["active"])||substr_count($c,"DoctorCura datenschutz root-only migration V8.4c")!==1||strpos($c,"X-GT-Lang', false")!==false)exit(2);file_put_contents($argv[2],$c);' "$tmp/before.json" "$tmp/original.php" "$expected"
+          python3 - "$tmp/before.json" "$tmp/original.php" "$expected" <<'PY'
+          import hashlib,json,sys
+          x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code','')); h=hashlib.sha256(c.encode()).hexdigest()
+          print(f"BEFORE hash={h} active={'yes' if x.get('active') else 'no'}")
+          assert h==sys.argv[3] and bool(x.get('active'))
+          assert c.count('DoctorCura datenschutz root-only migration V8.4c')==1
+          assert 'Vary: X-GT-Lang' not in c
+          open(sys.argv[2],'w',encoding='utf-8',newline='').write(c)
+          PY
 
           python3 - "$tmp/original.php" "$tmp/new.php" <<'PY'
           import hashlib,sys
@@ -71,7 +92,7 @@ jobs:
               wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
               exit;
           }, 0 );"""
-          if s.count(old)!=1: raise SystemExit('V8.4c identity mismatch')
+          assert s.count(old)==1, 'V8.4c identity mismatch'
           out=s.replace(old,new,1)
           open(sys.argv[2],'w',encoding='utf-8',newline='').write(out)
           print('NEW_HASH='+hashlib.sha256(out.encode()).hexdigest())
@@ -81,21 +102,25 @@ jobs:
           echo '=== WRITE + EXACT READBACK ==='
           put "$tmp/new.php" apply; changed=1
           h=$(get "$tmp/after.json"); [[ "$h" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$want=file_get_contents($argv[2]);$h=hash("sha256",$c);echo "AFTER hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($c!==$want||$h!==$argv[3]||empty($s["active"])||substr_count($c,"Vary: X-GT-Lang")!==1)exit(2);' "$tmp/after.json" "$tmp/new.php" "$newhash"
-
-          probe(){ local u="$1" l="$2" h="$tmp/$l.h" m; m=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$h" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$u"); echo "$l $m"; echo -n "$l VARY="; grep -i '^vary:' "$h" | tr -d '\r' | paste -sd '|' - || true; echo -n "$l CACHE="; grep -i '^x-hcdn-cache-status:' "$h" | tr -d '\r' | paste -sd '|' - || true; }
+          python3 - "$tmp/after.json" "$tmp/new.php" "$newhash" <<'PY'
+          import hashlib,json,sys
+          x=json.load(open(sys.argv[1],encoding='utf-8')); c=str(x.get('code','')); want=open(sys.argv[2],encoding='utf-8').read(); h=hashlib.sha256(c.encode()).hexdigest()
+          print(f"AFTER hash={h} active={'yes' if x.get('active') else 'no'}")
+          assert c==want and h==sys.argv[3] and bool(x.get('active')) and c.count('Vary: X-GT-Lang')==1
+          PY
 
           echo '=== SAME-TOKEN CACHE KEY TESTS ==='
           for n in 1 2 3; do
             token="dc_vary=$n-$(date +%s%N)"
-            probe "$base/datenschutz/?$token" "root-prime-$n"
-            probe "$base/fr/datenschutz/?$token" "fr-after-root-$n"
-            probe "$base/en/datenschutz/?$token" "en-after-root-$n"
-            probe "$base/fr/datenschutz/?$token" "fr-repeat-$n"
-            probe "$base/datenschutz/?$token" "root-after-fr-$n"
-            r=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/datenschutz/?$token"); [[ "$r" == $'301\t'"$base/privacy-policy/" ]]
-            f=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/fr/datenschutz/?$token"); [[ "$f" == $'404\t' ]]
-            e=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/en/datenschutz/?$token"); [[ "$e" == $'404\t' ]]
+            for spec in "root:$base/datenschutz/" "fr:$base/fr/datenschutz/" "en:$base/en/datenschutz/" "fr2:$base/fr/datenschutz/" "root2:$base/datenschutz/"; do
+              label=${spec%%:*}; url=${spec#*:}; hh="$tmp/$label-$n.h"
+              meta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$hh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$url?$token")
+              vary=$(grep -i '^vary:' "$hh" | tr -d '\r' | paste -sd '|' - || true); cache=$(grep -i '^x-hcdn-cache-status:' "$hh" | tr -d '\r' | paste -sd '|' - || true)
+              echo "$label/$n $meta VARY=$vary CACHE=$cache"
+              [[ "$vary" == *X-GT-Lang* ]]
+              status=${meta%%$'\t'*}; location=${meta#*$'\t'}
+              if [[ "$label" == root* ]]; then [[ "$status" == 301 && "$location" == "$base/privacy-policy/" ]]; else [[ "$status" == 404 && -z "$location" ]]; fi
+            done
           done
 
           echo '=== OTHER FIX CANARIES ==='
