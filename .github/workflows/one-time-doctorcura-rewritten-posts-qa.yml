@@ -83,7 +83,6 @@ jobs:
           broken=[]
           for id,u in all_links:
               code=status[u]['status']
-              # External 401/403/405/429 may block automated checks; internal links must be 2xx/3xx.
               internal=urllib.parse.urlparse(u).netloc.lower().endswith('doctorcura.com')
               bad=not (200<=code<400) if internal else (code==0 or code>=500 or code==404)
               if bad: broken.append({'id':id,'url':u,'status':code,'internal':internal})
@@ -105,7 +104,7 @@ jobs:
 
       - name: Upload rewritten posts QA evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: doctorcura-rewritten-posts-qa
           path: ${{ runner.temp }}/dc-rewritten-qa/rewritten-posts-qa.json
