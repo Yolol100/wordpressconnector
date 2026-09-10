@@ -1,0 +1,66 @@
+name: Temporary DoctorCura post country audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-post-us-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Scan every published post for US references
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]]
+          base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc-post-us"; mkdir -p "$root"
+          call(){ suf="$1"; action="$2"; payload="$3"; python3 - "$root/r-$suf.json" "$action" "$payload" <<'PY'
+          import json,sys,uuid
+          p,a,payload=sys.argv[1:]; json.dump({'version':1,'request_id':'dc-post-'+uuid.uuid4().hex[:20],'action':a,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(p,'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suf.json" -o "$root/o-$suf.json" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]]; }
+          page=1; : > "$root/posts.tsv"
+          while (( page <= 20 )); do
+            call "list-$page" post.list "{\"post_type\":\"post\",\"status\":\"publish\",\"per_page\":100,\"page\":$page}"
+            python3 - "$root/o-list-$page.json" >> "$root/posts.tsv" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); data=d.get('data') or {}
+          for x in data.get('items',[]):
+              if isinstance(x,dict) and isinstance(x.get('id'),int): print(f"{x['id']}\t{x.get('slug','')}")
+          print('',file=sys.stderr)
+          PY
+            pages=$(python3 - "$root/o-list-$page.json" <<'PY'
+          import json,sys
+          print(int((json.load(open(sys.argv[1])).get('data') or {}).get('pages') or 1))
+          PY
+            ); (( page >= pages )) && break; page=$((page+1))
+          done
+          sort -u "$root/posts.tsv" -o "$root/posts.tsv"; echo "POST_COUNT=$(wc -l < "$root/posts.tsv" | tr -d ' ')"
+          while IFS=$'\t' read -r id slug; do
+            call "p-$id" post.get "{\"id\":$id}" || continue
+            python3 - "$root/o-p-$id.json" "$id" "$slug" <<'PY'
+          import html,json,re,sys
+          d=json.load(open(sys.argv[1])); post=(d.get('data') or {}).get('post') or {}; raw=' '.join(str(post.get(k,'')) for k in ('title','excerpt','content'))
+          text=html.unescape(re.sub(r'<[^>]+>',' ',raw)); text=re.sub(r'\s+',' ',text)
+          pats=[r'United\s+States(?:\s+of\s+America)?',r'\bUSA\b',r'\bU\.S\.A\.?\b',r'\bU\.S\.\b',r'\bAmerican(?:s)?\b',r'\bFDA\b',r'Food\s+and\s+Drug\s+Administration']
+          hits=[]
+          for p in pats:
+              for m in re.finditer(p,text,re.I):
+                  a=max(0,m.start()-240); b=min(len(text),m.end()+500); hits.append((m.group(0),text[a:b]))
+          if hits:
+              links=sorted(set(re.findall(r'href=["\']([^"\']+)',raw,re.I)))
+              print('POST_HIT '+json.dumps({'id':int(sys.argv[2]),'slug':sys.argv[3],'terms':sorted(set(h[0] for h in hits),key=str.lower),'contexts':[h[1] for h in hits[:12]],'links':links},ensure_ascii=False,separators=(',',':')))
+          PY
+          done < "$root/posts.tsv"
+          echo POST_AUDIT_COMPLETE
