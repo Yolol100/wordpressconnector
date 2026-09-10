@@ -19,62 +19,69 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect targeted remaining SEO anomalies
+      - name: Compare duplicate post records and exact editable source
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-targeted"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-duplicate-diag"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-
-          echo '=== REDIRECT SOURCE HEADERS ==='
-          for path in '/product-categorie/gewichtsverlust/' '/de/about-us/' '/comments/feed/' '/category/blogs/'; do
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/h" --output /dev/null "$base$path"
-            echo "-- $path --"
-            awk 'BEGIN{IGNORECASE=1}/^HTTP\//||/^location:|^x-redirect-by:|^x-robots-tag:|^x-gt-/{gsub(/\r/,"");print}' "$tmp/h"
-          done
-
-          echo '=== EPIPEN PARAMETER HREFLANG ==='
-          q='?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen'
-          for path in "/product/epipen/$q" "/fr/product/epipen/$q" "/en/product/epipen/$q"; do
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base$path" > "$tmp/epipen.html"
-            echo "-- $path --"
-            grep -Eio '<link[^>]+rel="(canonical|alternate)"[^>]*>|<link[^>]+hreflang="[^"]+"[^>]*>' "$tmp/epipen.html" | grep -Ei 'canonical|hreflang' | head -20 || true
-          done
-
-          echo '=== BROKEN FEATURED IMAGE PAGE SOURCE ==='
           slug='welche-medikamente-beeinflussen-die-erektion'
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/$slug/" > "$tmp/post.html"
-          grep -Ein 'featured|og:image|twitter:image|wp-post-image|welche-medikamente-beeinflussen-die-erektion-featured' "$tmp/post.html" | head -30 || true
 
-          echo '=== WP REST POST + MEDIA ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts?slug=$slug&context=edit&_fields=id,slug,status,featured_media,link,title,content,meta" > "$tmp/post.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach($d as $p){echo "post_id=".($p["id"]??"")." featured_media=".($p["featured_media"]??"")." link=".($p["link"]??"").PHP_EOL; $c=(string)($p["content"]["raw"]??$p["content"]["rendered"]??""); foreach(preg_split("/\R/",$c) as $i=>$line){if(stripos($line,"welche-medikamente")!==false||stripos($line,"<img")!==false)echo "content:".($i+1).":".substr($line,0,500).PHP_EOL;}}' "$tmp/post.json"
-          media_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo (int)($d[0]["featured_media"]??0);' "$tmp/post.json")
-          if [[ "$media_id" != '0' ]]; then
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/media/$media_id?context=edit&_fields=id,slug,status,source_url,alt_text,media_details,caption,title" > "$tmp/media.json"
-            php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "media_id=".($m["id"]??"")." source_url=".($m["source_url"]??"")." alt=".($m["alt_text"]??"")." title=".($m["title"]["raw"]??$m["title"]["rendered"]??"").PHP_EOL; echo "file=".($m["media_details"]["file"]??"").PHP_EOL;' "$tmp/media.json"
-          fi
+          echo '=== DUPLICATE POST RECORDS ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts?slug=$slug&context=edit&per_page=100" > "$tmp/posts.json"
+          php -r '
+          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+          echo "count=".count($d).PHP_EOL;
+          foreach($d as $p){
+            $raw=(string)($p["content"]["raw"]??"");
+            $excerpt=(string)($p["excerpt"]["raw"]??"");
+            $title=(string)($p["title"]["raw"]??"");
+            echo "id=".($p["id"]??"")." status=".($p["status"]??"")." date=".($p["date_gmt"]??"")." modified=".($p["modified_gmt"]??"")." author=".($p["author"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured=".($p["featured_media"]??"")." parent=".($p["parent"]??0).PHP_EOL;
+            echo "  title_sha=".hash("sha256",$title)." content_sha=".hash("sha256",$raw)." content_len=".strlen($raw)." excerpt_sha=".hash("sha256",$excerpt)." categories=".json_encode($p["categories"]??[])." tags=".json_encode($p["tags"]??[]).PHP_EOL;
+          }' "$tmp/posts.json"
 
-          echo '=== POST SITEMAP DUPLICATE CONTEXT ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
-          grep -n -B3 -A8 '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/</loc>' "$tmp/post-sitemap.xml" || true
+          echo '=== DUPLICATE POST NORMALIZED CONTENT COMPARISON ==='
+          php -r '
+          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+          if(count($d)>=2){
+            $a=(string)($d[0]["content"]["raw"]??""); $b=(string)($d[1]["content"]["raw"]??"");
+            $norm=function($s){$s=preg_replace("/\\s+/u"," ",trim($s));return $s;};
+            echo "identical_raw=".($a===$b?"yes":"no")." identical_normalized=".($norm($a)===$norm($b)?"yes":"no").PHP_EOL;
+            similar_text(strip_tags($a),strip_tags($b),$pct); echo "visible_similarity_percent=".round($pct,4).PHP_EOL;
+          }' "$tmp/posts.json"
 
-          echo '=== SHOP DUPLICATE SITEMAP CONTEXT ==='
-          for sm in page-sitemap.xml product-sitemap.xml; do
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/$sm" > "$tmp/$sm"
-            echo "-- $sm --"
-            grep -n -B2 -A5 '<loc>https://doctorcura.com/shop/</loc>' "$tmp/$sm" || true
+          echo '=== MEDIA RECORDS ==='
+          for id in 900068 900069; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/media-$id.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/media/$id?context=edit")
+            echo "media_rest id=$id status=$code"
+            if [[ "$code" == '200' ]]; then
+              php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "  id=".($m["id"]??"")." status=".($m["status"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." source=".($m["source_url"]??"")." file=".($m["media_details"]["file"]??"")." alt=".($m["alt_text"]??"").PHP_EOL;' "$tmp/media-$id.json"
+              src=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo (string)($m["source_url"]??"");' "$tmp/media-$id.json")
+              if [[ -n "$src" ]]; then curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "  source_http=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$src"; fi
+            fi
           done
 
-          echo '=== LANGUAGE SWITCHER LINKS ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/" > "$tmp/home.html"
-          grep -Eio '<a[^>]+(?:data-gt-lang="(fr|en)"|href="https?://doctorcura\.com/(fr|en)"[^/]?)[^>]*>' "$tmp/home.html" | head -40 || true
-          grep -Eio 'href="https?://doctorcura\.com/(fr|en)"' "$tmp/home.html" | sort | uniq -c || true
-
-          echo '=== PAGE-1 PAGINATION LINKS ==='
-          for path in '/shop/page/2/' '/product-category/alle-medikamente/page/2/' '/blogs/2/'; do
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base$path" > "$tmp/p.html"
-            echo "-- $path --"
-            grep -Eio 'href="[^"]+/page/1/"' "$tmp/p.html" | sort -u | head -20 || true
+          echo '=== LIVE RESOLVED POST ID ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/$slug/" > "$tmp/live.html"
+          grep -Eo '"post":\{"id":[0-9]+' "$tmp/live.html" | head -1 || true
+          for id in 900066 900067; do
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "id=$id status=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$base/?p=$id"
           done
+
+          echo '=== TERMS PAGE SOURCE ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/pages?slug=geschaftsbedingungen&context=edit&per_page=20" > "$tmp/terms.json"
+          php -r '
+          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "count=".count($d).PHP_EOL;
+          foreach($d as $p){$raw=(string)($p["content"]["raw"]??""); echo "id=".($p["id"]??"")." status=".($p["status"]??"")." modified=".($p["modified_gmt"]??"")." link=".($p["link"]??"")." content_sha=".hash("sha256",$raw)." content_len=".strlen($raw).PHP_EOL; preg_match_all("#href=[\\\"\\\x27]http://www\\.doctorcura\\.com/?[\\\"\\\x27]#i",$raw,$m); echo "  http_www_count=".count($m[0]).PHP_EOL;}' "$tmp/terms.json"
+
+          echo '=== CURRENT SEPTEMBER FEATURED IMAGE ==='
+          for img in \
+            '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp' \
+            '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured-1024x683.webp'; do
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "$img status=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$base$img"
+          done
+
+          echo '=== VIAGRA PAGE CURRENT OLD IMAGE REFERENCE ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/viagra-online-mit-arztpruefung/" > "$tmp/viagra.html"
+          grep -F '2026/02/welche-medikamente-beeinflussen-die-erektion-featured.webp' "$tmp/viagra.html" | head -3 || true
