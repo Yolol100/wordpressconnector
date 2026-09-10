@@ -1,0 +1,58 @@
+name: DoctorCura Phase 3C Elementor Source Fix V3
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3c-elementor-source-v3.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute proven dual-source fix with repaired canary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('.github/workflows/fix-doctorcura-phase3c-elementor-source.yml').read_text()
+          marker='        run: |\n'
+          if marker not in src:
+              raise SystemExit('source run block missing')
+          raw=src.split(marker,1)[1]
+          lines=[]
+          for line in raw.splitlines():
+              if line.startswith('          '):
+                  lines.append(line[10:])
+              elif line.strip()=='' and lines:
+                  lines.append('')
+              else:
+                  break
+          out=[]
+          replaced=0
+          for line in lines:
+              if 'ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg' in line and 'grep -Eiq' in line:
+                  prefix=line.split('; curl ',1)[0]
+                  out.append(prefix)
+                  out.append('    curl "${c[@]}" --compressed --header \'Cache-Control: no-cache\' --output "$tmp/ep-$round.html" "$ep"')
+                  out.append('    python3 -c \'import re,sys; s=open(sys.argv[1],encoding="utf-8",errors="ignore").read(); assert not any("attribute_pa_" in t for t in re.findall(r"<link\\\\b[^>]*hreflang=[^>]*>",s,re.I))\' "$tmp/ep-$round.html"')
+                  replaced+=1
+              else:
+                  out.append(line)
+          if replaced!=1:
+              raise SystemExit(f'expected one canary replacement, got {replaced}')
+          Path('/tmp/doctorcura-p3c-v3.sh').write_text('\n'.join(out)+'\n')
+          PY
+          bash -n /tmp/doctorcura-p3c-v3.sh
+          bash /tmp/doctorcura-p3c-v3.sh
