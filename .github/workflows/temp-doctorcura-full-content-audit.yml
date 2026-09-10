@@ -1,0 +1,215 @@
+name: Temporary DoctorCura full content audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-full-content-audit.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-full-content-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Audit contact data, Germany/US references and legal identifiers
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target.' >&2; exit 1; }
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          snippets="$site/wp-json/code-snippets/v1/snippets"
+          root="$RUNNER_TEMP/dc-full-audit"; rm -rf "$root"; mkdir -p "$root"
+
+          call() {
+            suffix="$1"; action="$2"; payload_file="$3"
+            python3 - "$root/r-$suffix.json" "$action" "$payload_file" <<'PY'
+          import json,sys,uuid
+          path,action,payload_file=sys.argv[1:]
+          payload=json.load(open(payload_file,encoding='utf-8'))
+          req={'version':1,'request_id':'dc-audit-'+uuid.uuid4().hex[:24],'action':action,'dry_run':True,'confirm':False,'payload':payload}
+          json.dump(req,open(path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute")
+            [[ "$code" == '200' ]] || { echo "AUDIT_TRANSPORT_FAIL action=$action http=$code" >&2; return 1; }
+            python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'): raise SystemExit('connector action returned ok=false')
+          PY
+          }
+
+          health_code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health")
+          [[ "$health_code" == '200' ]] || { echo "HEALTH_FAIL http=$health_code" >&2; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          print('HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          : > "$root/objects.tsv"
+          for type in page post product elementor_library wp_block; do
+            page=1
+            while (( page <= 50 )); do
+              printf '{"post_type":"%s","status":"any","per_page":100,"page":%d}' "$type" "$page" > "$root/list.json"
+              if ! call "list-${type}-${page}" post.list "$root/list.json"; then break; fi
+              python3 - "$root/o-list-${type}-${page}.json" "$type" >> "$root/objects.tsv" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); typ=sys.argv[2]
+          for x in (d.get('data') or {}).get('items',[]):
+              if isinstance(x,dict) and isinstance(x.get('id'),int):
+                  title=str(x.get('title') or '').replace('\t',' ').replace('\n',' ')
+                  slug=str(x.get('slug') or '').replace('\t',' ').replace('\n',' ')
+                  status=str(x.get('status') or '').replace('\t',' ').replace('\n',' ')
+                  print(f"{x['id']}\t{typ}\t{status}\t{slug}\t{title}")
+          PY
+              pages=$(python3 - "$root/o-list-${type}-${page}.json" <<'PY'
+          import json,sys
+          try: print(int((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('pages') or 1))
+          except Exception: print(1)
+          PY
+              )
+              (( page >= pages )) && break
+              page=$((page+1))
+            done
+          done
+          sort -u "$root/objects.tsv" -o "$root/objects.tsv"
+          echo "OBJECTS_TOTAL=$(wc -l < "$root/objects.tsv" | tr -d ' ')"
+
+          : > "$root/hits.jsonl"
+          while IFS=$'\t' read -r id type status slug title; do
+            [[ "$id" =~ ^[1-9][0-9]*$ ]] || continue
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "get-$id" post.get "$root/id.json" || continue
+            call "el-$id" elementor.inspect "$root/id.json" || true
+            python3 - "$root/o-get-$id.json" "$root/o-el-$id.json" "$root/hits.jsonl" "$id" "$type" "$status" "$slug" "$title" <<'PY'
+          import html,json,os,re,sys
+          postf,elf,outf,id_s,typ,status,slug,title=sys.argv[1:]
+          legacy=[r'Keizersgracht\s*241',r'1016\s*EA',r'0855055433',r'085\s*505\s*5433',r'08\s*550\s*55\s*433',r'\+31\s*\(0\)\s*85\s*505\s*5433',r'\+31\s*85\s*505\s*5433']
+          us=[r'United\s+States(?:\s+of\s+America)?',r'\bUSA\b',r'\bU\.S\.A\.?\b',r'\bU\.S\.\b',r'\bUS\b',r'\bAmerican(?:s)?\b',r'\bUS-based\b',r'\bU\.S\.-based\b',r'\bFDA\b',r'Food\s+and\s+Drug\s+Administration']
+          legal=[r'\bKVK\b',r'KvK',r'Kamer\s+van\s+Koophandel',r'Chamber\s+of\s+Commerce',r'Handelsregister',r'registration\s+(?:number|no\.)',r'company\s+(?:number|no\.)',r'Mediconline']
+          new=[r'Veldbloemlaan\s*93',r'3452\s*CK',r'\+31\s*85\s*505\s*54\s*33']
+          def flat(s):
+              s=re.sub(r'<script\b[^>]*>.*?</script>',' ',s,flags=re.I|re.S)
+              s=re.sub(r'<style\b[^>]*>.*?</style>',' ',s,flags=re.I|re.S)
+              s=re.sub(r'<[^>]+>',' ',s)
+              s=html.unescape(s)
+              return re.sub(r'\s+',' ',s).strip()
+          def contexts(text, patterns, maxn=12):
+              plain=flat(text); found=[]
+              for pat in patterns:
+                  for m in re.finditer(pat,plain,flags=re.I if pat not in (r'\bUS\b',) else 0):
+                      a=max(0,m.start()-260); b=min(len(plain),m.end()+520)
+                      frag=plain[a:b]
+                      if frag not in [x[1] for x in found]: found.append((m.group(0),frag))
+                      if len(found)>=maxn: return found
+              return found
+          pd=json.load(open(postf,encoding='utf-8')); post=(pd.get('data') or {}).get('post') or {}
+          pstrings=[]
+          for k in ('title','excerpt','content'):
+              v=post.get(k,'')
+              if isinstance(v,str) and v: pstrings.append((k,v))
+          if os.path.exists(elf):
+              try:
+                  ed=json.load(open(elf,encoding='utf-8')); doc=(ed.get('data') or {}).get('document') or {}
+                  eraw=json.dumps({'data':doc.get('data',[]),'page_settings':doc.get('page_settings',{})},ensure_ascii=False)
+                  pstrings.append(('elementor',eraw))
+              except Exception: pass
+          for field,text in pstrings:
+              for kind,patterns in [('legacy_contact',legacy),('us_reference',us),('legal_identifier',legal),('new_contact',new)]:
+                  cs=contexts(text,patterns)
+                  if not cs: continue
+                  # Context text is printed only for published posts/pages/products. For templates/drafts only terms are exposed.
+                  public=(status=='publish' and typ in ('post','page','product'))
+                  rec={'id':int(id_s),'type':typ,'status':status,'slug':slug,'title':title,'field':field,'kind':kind,'terms':sorted({x[0] for x in cs},key=str.lower)}
+                  if public and kind in ('us_reference','legal_identifier','legacy_contact'):
+                      rec['contexts']=[x[1] for x in cs[:8]]
+                  with open(outf,'a',encoding='utf-8') as f: f.write(json.dumps(rec,ensure_ascii=False,separators=(',',':'))+'\n')
+          PY
+          done < "$root/objects.tsv"
+
+          python3 - "$root/hits.jsonl" <<'PY'
+          import json,sys,collections
+          rows=[json.loads(x) for x in open(sys.argv[1],encoding='utf-8') if x.strip()]
+          by=collections.Counter(r['kind'] for r in rows)
+          ids={k:sorted({r['id'] for r in rows if r['kind']==k}) for k in by}
+          for k in ('legacy_contact','us_reference','legal_identifier','new_contact'):
+              print(f"SUMMARY {k} records={by.get(k,0)} ids={ids.get(k,[])}")
+          print('---US_REFERENCE_RECORDS---')
+          for r in rows:
+              if r['kind']=='us_reference' and r['type']=='post' and r['status']=='publish': print(json.dumps(r,ensure_ascii=False,separators=(',',':')))
+          print('---LEGAL_IDENTIFIER_RECORDS---')
+          for r in rows:
+              if r['kind']=='legal_identifier': print(json.dumps(r,ensure_ascii=False,separators=(',',':')))
+          print('---LEGACY_CONTACT_RECORDS---')
+          for r in rows:
+              if r['kind']=='legacy_contact': print(json.dumps(r,ensure_ascii=False,separators=(',',':')))
+          PY
+
+          # Verify the five WooCommerce store-address options.
+          for key in woocommerce_store_address woocommerce_store_address_2 woocommerce_store_city woocommerce_store_postcode woocommerce_default_country; do
+            printf '{"name":"%s"}' "$key" > "$root/opt.json"
+            if call "opt-${key//_/-}" option.get "$root/opt.json"; then
+              python3 - "$root/o-opt-${key//_/-}.json" "$key" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}
+          v=data.get('value',data.get('option',data)) if isinstance(data,dict) else data
+          print('WOO_OPTION '+sys.argv[2]+'='+json.dumps(v,ensure_ascii=False,separators=(',',':')))
+          PY
+            fi
+          done
+
+          # Code Snippets: count only; never print snippet code.
+          scode=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/snippets.json" -w '%{http_code}' "$snippets?per_page=100&page=1" || true)
+          if [[ "$scode" == 200 ]]; then
+            python3 - "$root/snippets.json" <<'PY'
+          import json,re,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); items=d if isinstance(d,list) else d.get('items',d.get('snippets',[])) if isinstance(d,dict) else []
+          pats=[r'Keizersgracht\s*241',r'1016\s*EA',r'0855055433',r'085\s*505\s*5433',r'08\s*550\s*55\s*433',r'\+31\s*85\s*505\s*5433']
+          bad=[]
+          for x in items:
+              if not isinstance(x,dict): continue
+              code=x.get('code','') if isinstance(x.get('code',''),str) else ''
+              terms=sorted({m.group(0) for p in pats for m in re.finditer(p,code,re.I)})
+              if terms: bad.append({'id':x.get('id'),'name':x.get('name'),'terms':terms})
+          print('SNIPPET_LEGACY '+json.dumps(bad,ensure_ascii=False,separators=(',',':')))
+          PY
+          else
+            echo "SNIPPET_AUDIT_UNAVAILABLE http=$scode"
+          fi
+
+          # DoctorCura Core contact-bearing file: counts only.
+          printf '%s' '{"path":"wp-content/plugins/doctorcura-core/includes/extra-request-form.php"}' > "$root/fs.json"
+          if call corefile filesystem.read_text "$root/fs.json"; then
+            python3 - "$root/o-corefile.json" <<'PY'
+          import json,re,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; text=data.get('content','') if isinstance(data,dict) else ''
+          legacy=['Keizersgracht 241','1016 EA','0855055433','08 550 55 433','085 505 5433','+31 85 505 5433']
+          print('CORE_FILE legacy_hits='+str(sum(text.lower().count(x.lower()) for x in legacy))+' new_address='+str('Veldbloemlaan 93' in text)+' new_phone='+str('+31 85 505 54 33' in text))
+          PY
+          fi
+
+          # Safe plugin-settings catalog: detect legacy contact strings without printing values.
+          printf '%s' '{}' > "$root/empty.json"
+          if call catalog plugin.settings.catalog "$root/empty.json"; then
+            python3 - "$root/o-catalog.json" <<'PY'
+          import json,re,sys
+          raw=json.dumps(json.load(open(sys.argv[1],encoding='utf-8')),ensure_ascii=False)
+          pats=['Keizersgracht 241','1016 EA','0855055433','08 550 55 433','085 505 5433','+31 85 505 5433']
+          print('PLUGIN_SETTINGS_CATALOG legacy_terms='+json.dumps([p for p in pats if p.lower() in raw.lower()],ensure_ascii=False,separators=(',',':')))
+          PY
+          fi
+
+          echo AUDIT_COMPLETE
