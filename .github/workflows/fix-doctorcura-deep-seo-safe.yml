@@ -1,4 +1,4 @@
-name: Fix DoctorCura Phase 2B Featured Image
+name: Fix DoctorCura Phase 2B Featured Image Scoped
 
 on:
   push:
@@ -19,12 +19,12 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Update featured image, invalidate caches, verify and rollback on failure
+      - name: Update featured image and verify the actual Elementor widget
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2b-final"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2b-scoped"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
           snipapi="$base/wp-json/code-snippets/v1/snippets/43"
@@ -35,7 +35,8 @@ jobs:
           dup_slug='welche-medikamente-beeinflussen-die-erektion-2'
           clean="$base/$clean_slug/"
           candidate="$base/wp-content/uploads/2026/06/beste-optionen-bei-erektionsstoerungen-featured.webp"
-          broken='welche-medikamente-beeinflussen-die-erektion-featured.webp'
+          candidate_name='beste-optionen-bei-erektionsstoerungen-featured'
+          broken_name='welche-medikamente-beeinflussen-die-erektion-featured'
           helper_b64='Ci8qIERvY3RvckN1cmEgb25lLXRpbWUgY2FjaGUgcHVyZ2UgaGVscGVyIC0gcmVtb3ZlZCBhdXRvbWF0aWNhbGx5ICovCmFkZF9hY3Rpb24oJ2luaXQnLCBmdW5jdGlvbiAoKSB7CiAgICBpZiAoIWlzc2V0KCRfR0VUWydkb2N0b3JjdXJhX3Nlb19wdXJnZSddKSB8fCAhaGFzaF9lcXVhbHMoJ19fVE9LRU5fXycsIChzdHJpbmcpICRfR0VUWydkb2N0b3JjdXJhX3Nlb19wdXJnZSddKSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgICRyb2NrZXQgPSBmdW5jdGlvbl9leGlzdHMoJ3JvY2tldF9jbGVhbl9kb21haW4nKTsKICAgIGlmICgkcm9ja2V0KSB7CiAgICAgICAgcm9ja2V0X2NsZWFuX2RvbWFpbigpOwogICAgfQogICAgaWYgKGZ1bmN0aW9uX2V4aXN0cygnd3BfY2FjaGVfZmx1c2gnKSkgewogICAgICAgIHdwX2NhY2hlX2ZsdXNoKCk7CiAgICB9CiAgICBoZWFkZXIoJ1gtRG9jdG9yQ3VyYS1TRU8tUHVyZ2U6ICcgLiAoJHJvY2tldCA/ICdyb2NrZXQnIDogJ29iamVjdC1vbmx5JykpOwp9LCAxKTsK'
           image_changed=0
           helper_written=0
@@ -53,7 +54,7 @@ jobs:
             sed -i "s/__TOKEN__/$token/g" "$tmp/$label-helper.php"
             make_snippet_payload "$tmp/$label-helper.php" "$tmp/$label-helper.json"
             http=$(put_snippet "$tmp/$label-helper.json" "$tmp/$label-helper-response.json")
-            if [[ "$http" != '200' ]]; then return 1; fi
+            [[ "$http" == '200' ]] || return 1
             helper_written=1
             if curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$tmp/$label-purge.h" --output /dev/null "$base/wp-json/?doctorcura_seo_purge=$token" && grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*rocket' "$tmp/$label-purge.h"; then ok=1; fi
             restore_snippet || return 1
@@ -63,9 +64,16 @@ jobs:
             echo "wp_rocket_purge=$label confirmed"
           }
           canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
+          widget_img(){
+            local html="$1" line end
+            line=$(grep -n 'data-id="695868ca"' "$html" | head -1 | cut -d: -f1 || true)
+            [[ -n "$line" ]] || return 1
+            end=$((line+8))
+            sed -n "${line},${end}p" "$html" | grep -Eio '<img[^>]*>' | head -1
+          }
           rollback(){
             rc=$?; [[ "$rc" == '0' ]] && return
-            echo "PHASE2B_ROLLBACK_START exit=$rc" >&2
+            echo "PHASE2B_SCOPED_ROLLBACK_START exit=$rc" >&2
             set +e
             if [[ "$helper_written" == '1' ]]; then restore_snippet >/dev/null 2>&1 || true; fi
             if [[ "$image_changed" == '1' ]]; then
@@ -75,35 +83,32 @@ jobs:
               purge_rocket rollback >/dev/null 2>&1 || true
             fi
             restore_snippet >/dev/null 2>&1 || true
-            echo 'PHASE2B_ROLLBACK_ATTEMPTED' >&2
+            echo 'PHASE2B_SCOPED_ROLLBACK_ATTEMPTED' >&2
           }
           trap rollback EXIT
 
-          echo '=== PREFLIGHT SNIPPET ==='
+          echo '=== PREFLIGHT ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura blog pagination cleanup V8.2")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=ok\n";' "$tmp/snippet.json" "$tmp/snippet-code.php" "$expected_snippet_hash"
-
-          echo '=== PREFLIGHT POSTS, REDIRECT, MEDIA, TEMPLATE ==='
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura blog pagination cleanup V8.2")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet=ok\n";' "$tmp/snippet.json" "$tmp/snippet-code.php" "$expected_snippet_hash"
           for id in 900067 900066; do curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/post-$id.json"; done
-          php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||($k["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion"||(int)($k["featured_media"]??0)!==900069)exit(2);if(($d["status"]??"")!=="draft")exit(3);echo"posts_preflight=ok\n";' "$tmp/post-900067.json" "$tmp/post-900066.json"
+          php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||(int)($k["featured_media"]??0)!==900069||($d["status"]??"")!=="draft")exit(2);echo"posts=ok\n";' "$tmp/post-900067.json" "$tmp/post-900066.json"
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")==="https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/"))$ok=true;}if(!$ok)exit(2);echo"redirect_preflight=ok\n";' "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&(int)($x["action_code"]??0)===301)$ok=true;}if(!$ok)exit(2);echo"redirect14=ok\n";' "$tmp/red.json"
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/media/5925?context=edit" > "$tmp/media.json"
-          php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($m["id"]??0)!==5925||($m["source_url"]??"")!==$argv[2])exit(2);echo"media_preflight=ok\n";' "$tmp/media.json" "$candidate"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($m["id"]??0)!==5925||($m["source_url"]??"")!==$argv[2])exit(2);echo"media=ok\n";' "$tmp/media.json" "$candidate"
           [[ "$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$candidate")" == '200' ]]
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/elementor_library/5841?context=edit" > "$tmp/template.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode((string)($p["meta"]["_elementor_data"]??""),true,512,JSON_THROW_ON_ERROR);$f=[];$w=function($els)use(&$w,&$f){foreach($els as$e){if(($e["id"]??"")==="695868ca")$f[]=$e;if(!empty($e["elements"]))$w($e["elements"]);}};$w($d);if(count($f)!==1||($f[0]["widgetType"]??"")!=="image"||strpos((string)($f[0]["settings"]["__dynamic__"]["image"]??""),"name=\"post-featured-image\"")===false)exit(2);echo"elementor_preflight=dynamic_featured\n";' "$tmp/template.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode((string)($p["meta"]["_elementor_data"]??""),true,512,JSON_THROW_ON_ERROR);$f=[];$w=function($els)use(&$w,&$f){foreach($els as$e){if(($e["id"]??"")==="695868ca")$f[]=$e;if(!empty($e["elements"]))$w($e["elements"]);}};$w($d);if(count($f)!==1||strpos((string)($f[0]["settings"]["__dynamic__"]["image"]??""),"post-featured-image")===false)exit(2);echo"widget=dynamic_featured\n";' "$tmp/template.json"
 
-          echo '=== APPLY IMAGE CHANGE ==='
+          echo '=== APPLY ==='
           printf '{"featured_media":5925}' > "$tmp/update.json"
           [[ "$(post_json "$wpapi/posts/900067" "$tmp/update.json" "$tmp/update-response.json")" == '200' ]]
           image_changed=1
-          [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/update-response.json")" == '5925' ]]
           clear_elementor
           purge_rocket apply
 
           verify_round(){
-            local round="$1" lang prefix url html result canon og
+            local round="$1" lang prefix url html result canon og img old_img_count old_doc_count
             echo "=== VERIFY $round ==="
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-post.json"
             [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/$round-post.json")" == '5925' ]] || return 1
@@ -111,20 +116,26 @@ jobs:
               [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
               url="$base$prefix/$clean_slug/"; html="$tmp/$round-$lang.html"
               result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
-              [[ "$result" == $'200\t'"$url"$'\t0' ]] || { echo "$lang url=$result" >&2; return 1; }
-              canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || { echo "$lang canonical=$canon" >&2; return 1; }
-              grep -Eio '<img[^>]+beste-optionen-bei-erektionsstoerungen-featured[^>]*>' "$html" | grep -q . || { echo "$lang replacement image missing" >&2; return 1; }
-              ! grep -Fq "$broken" "$html" || { echo "$lang broken image remains" >&2; return 1; }
-              og=$(grep -Eio '<meta[^>]+property="og:image"[^>]*>' "$html" | head -1 || true); printf '%s' "$og" | grep -Fq "$candidate" || { echo "$lang og image mismatch" >&2; return 1; }
+              [[ "$result" == $'200\t'"$url"$'\t0' ]] || return 1
+              canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || return 1
+              img=$(widget_img "$html" || true)
+              printf '%s' "$img" | grep -Fq "$candidate_name" || { echo "$lang widget_img_wrong=$img" >&2; return 1; }
+              old_img_count=$(( (grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$html" || true) | wc -l ))
+              old_doc_count=$( (grep -Fo "$broken_name" "$html" || true) | wc -l | tr -d ' ' )
+              echo "$lang widget_img=candidate old_visible_img_count=$old_img_count old_document_refs=$old_doc_count"
+              [[ "$old_img_count" == '0' ]] || return 1
+              og=$(grep -Eio '<meta[^>]+property="og:image"[^>]*>' "$html" | head -1 || true)
+              printf '%s' "$og" | grep -Fq "$candidate" || return 1
             done
             result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/$dup_slug/")
             [[ "$result" == $'200\t'"$clean"$'\t1' ]] || return 1
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/$round-snippet.json"
             php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);' "$tmp/$round-snippet.json" "$expected_snippet_hash"
-            echo "PHASE2B_VERIFY_OK $round"
+            echo "PHASE2B_SCOPED_VERIFY_OK $round"
           }
+
           verify_round one
           sleep 5
           verify_round two
           trap - EXIT
-          echo 'PHASE2B_SUCCESS featured_media=5925 elementor_cache=cleared wp_rocket=cleared'
+          echo 'PHASE2B_SCOPED_SUCCESS featured_media=5925 visible_widget=fixed'
