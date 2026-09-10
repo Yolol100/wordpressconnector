@@ -69,3 +69,5 @@ jobs:
               print(f'REDIR_EXACT path={path} count={len(ms)}')
           PY
           echo PHASE6_3A_CACHE_READBACK_COMPLETE
+
+# Trigger: verify after manual Hostinger cache purge at 2026-09-10T18:46+02:00
