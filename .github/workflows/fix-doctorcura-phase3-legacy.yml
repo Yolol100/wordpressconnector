@@ -107,7 +107,9 @@ jobs:
           done
 
           verify(){
-            local round="$1" label="$2" source="$3" expected="$4" h="$tmp/$round-$label.h" b="$tmp/$round-$label.html" code loc out status final count can
+            local round label source expected h b code loc out status final count can
+            round="$1"; label="$2"; source="$3"; expected="$4"
+            h="$tmp/$round-$label.h"; b="$tmp/$round-$label.html"
             read -r code loc < <(first_probe "$base$source" "$h")
             [[ "$code" == '301' && "$loc" == "$expected" ]] || { echo "$round first-hop fail $label code=$code location=$loc expected=$expected" >&2; return 1; }
             out=$(curl "${curl_common[@]}" --location --compressed --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$source")
