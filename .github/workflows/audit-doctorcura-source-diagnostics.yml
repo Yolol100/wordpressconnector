@@ -1,4 +1,4 @@
-name: Audit DoctorCura SEO Source Diagnostics
+name: Audit DoctorCura Failed Fix Rollback
 
 on:
   push:
@@ -11,55 +11,61 @@ permissions:
   contents: read
 
 jobs:
-  diagnostics:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 6
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Find existing valid related media and source posts
+      - name: Verify every production mutation was rolled back
         shell: bash
         run: |
           set -euo pipefail
-          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-media-search"; mkdir -p "$tmp"
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          tmp="$RUNNER_TEMP/dc-rollback-check"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          wpapi="$base/wp-json/wp/v2"
+          redapi="$base/wp-json/redirection/v1"
 
-          echo '=== RELATED POSTS AND FEATURED MEDIA ==='
-          for slug in \
-            'viagra-online-mit-arztpruefung' \
-            'cialis-wirkung-und-vertraeglichkeit' \
-            'online-arztgespraech-bei-potenzproblemen' \
-            'welche-medikamente-beeinflussen-die-erektion'; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts?slug=$slug&context=edit&per_page=10" > "$tmp/post.json"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach($d as$p){echo "slug=".($p["slug"]??"")." id=".($p["id"]??"")." status=".($p["status"]??"")." featured=".($p["featured_media"]??0)." title=".($p["title"]["raw"]??"").PHP_EOL;}' "$tmp/post.json"
-            ids=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$p){$id=(int)($p["featured_media"]??0);if($id)echo$id."\n";}' "$tmp/post.json")
-            while IFS= read -r id; do
-              [[ -n "$id" ]] || continue
-              code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/media.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/media/$id?context=edit")
-              if [[ "$code" == '200' ]]; then
-                src=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($m["source_url"]??"");' "$tmp/media.json")
-                alt=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo preg_replace("/\s+/"," ",(string)($m["alt_text"]??""));' "$tmp/media.json")
-                title=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??""));' "$tmp/media.json")
-                http=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$src")
-                echo "  media=$id http=$http src=$src alt=$alt title=$title"
-              fi
-            done <<< "$ids"
+          echo '=== REDIRECT ROLLBACK ==='
+          for source in '/datenschutz/' '/product-categorie/gewichtsverlust/'; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
+            total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/red.json")
+            echo "source=$source total=$total"
+            [[ "$total" == '0' ]] || { echo "Rollback failed: redirect remains for $source" >&2; exit 1; }
           done
+          dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
+          echo "datenschutz_status=$dcode"
+          [[ "$dcode" == '404' ]] || { echo 'Rollback failed: Datenschutz is no longer 404' >&2; exit 1; }
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/weight.h" --output /dev/null "$base/product-categorie/gewichtsverlust/"
+          wcode=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/weight.h")
+          wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/weight.h" || true)
+          echo "weight_status=$wcode location=$wloc"
+          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo 'Rollback failed: weight route did not return to original state' >&2; exit 1; }
 
-          echo '=== MEDIA SEARCH ==='
-          for term in 'erektion' 'potenz' 'erectile' 'viagra' 'cialis' 'medikamente'; do
-            echo "-- search=$term --"
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
-              --data-urlencode "search=$term" --data-urlencode 'context=edit' --data-urlencode 'per_page=50' \
-              "$base/wp-json/wp/v2/media" > "$tmp/search.json"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$m){echo "id=".($m["id"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." src=".($m["source_url"]??"")." alt=".preg_replace("/\s+/"," ",(string)($m["alt_text"]??""))." title=".preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??"")).PHP_EOL;}' "$tmp/search.json" | head -50
-          done
+          echo '=== POST ROLLBACK ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/p66.json"
+          f66=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/p66.json")
+          echo "post900066_featured=$f66"
+          [[ "$f66" == '900068' ]] || { echo 'Rollback failed: post 900066 featured media not restored' >&2; exit 1; }
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/p67.json"
+          s67=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/p67.json")
+          echo "post900067_status=$s67"
+          [[ "$s67" == 'publish' ]] || { echo 'Rollback failed: post 900067 not republished' >&2; exit 1; }
 
-          echo '=== NEARBY RECENT MEDIA ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
-            --data-urlencode 'after=2026-09-08T00:00:00' --data-urlencode 'before=2026-09-10T23:59:59' --data-urlencode 'context=edit' --data-urlencode 'per_page=100' \
-            "$base/wp-json/wp/v2/media" > "$tmp/recent.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$m){echo "id=".($m["id"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." src=".($m["source_url"]??"")." alt=".preg_replace("/\s+/"," ",(string)($m["alt_text"]??""))." title=".preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??"")).PHP_EOL;}' "$tmp/recent.json" | head -100
+          echo '=== TERMS ROLLBACK ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
+          http_count=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo substr_count($raw,"href=\"http://www.doctorcura.com\"");' "$tmp/terms.json")
+          echo "terms_http_www_count=$http_count"
+          [[ "$http_count" == '1' ]] || { echo 'Rollback failed: terms source not restored exactly' >&2; exit 1; }
+
+          echo '=== SITEMAP ROLLBACK ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
+          dup_count=$(grep -Fc '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/</loc>' "$tmp/post-sitemap.xml")
+          echo "duplicate_sitemap_count=$dup_count"
+          [[ "$dup_count" == '2' ]] || { echo 'Rollback failed or state changed: expected duplicate sitemap count 2' >&2; exit 1; }
+
+          echo 'ROLLBACK_VERIFIED_EXACT'
