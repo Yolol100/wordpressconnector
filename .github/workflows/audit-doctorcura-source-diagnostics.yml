@@ -1,4 +1,4 @@
-name: QA DoctorCura V8.2 Restore
+name: Diagnose DoctorCura Social Image Source
 
 on:
   push:
@@ -11,62 +11,46 @@ permissions:
   contents: read
 
 jobs:
-  qa:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify V8.2 and Phase 2A read-only
+      - name: Inspect post metadata and public social tags read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-v82-independent-qa"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-social-image-diagnostic"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          slug='welche-medikamente-beeinflussen-die-erektion'
           expected_hash='8122c4a08ebf1c6bc29eda1561e38658a2e41bef239cc65102ba7251af83ed35'
-          clean_slug='welche-medikamente-beeinflussen-die-erektion'
-          dup_slug='welche-medikamente-beeinflussen-die-erektion-2'
-          canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
 
-          echo '=== SNIPPET READBACK ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura blog pagination cleanup V8.2")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo"snippet=active_v82 hash=".hash("sha256",$c).PHP_EOL;' "$tmp/snippet.json" "$expected_hash"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2])exit(2);echo"snippet=active_v82\n";' "$tmp/snippet.json" "$expected_hash"
 
-          echo '=== PHASE 2A SOURCE STATE ==='
-          for id in 900067 900066; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/$id?context=edit" > "$tmp/post-$id.json"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/900067?context=edit" > "$tmp/post.json"
+          php -r '
+            $p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+            echo "featured_media=".(int)($p["featured_media"]??0)." status=".($p["status"]??"")." slug=".($p["slug"]??"")."\n";
+            echo "registered_meta_keys=".implode(",",array_keys($p["meta"]??[]))."\n";
+            foreach(($p["meta"]??[]) as $k=>$v){if(preg_match("/(yoast|opengraph|twitter|image)/i",(string)$k)){echo "meta[$k]=".json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";}}
+            $y=$p["yoast_head_json"]??[];
+            echo "yoast_og_image=".json_encode($y["og_image"]??null,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";
+            echo "yoast_twitter_image=".json_encode($y["twitter_image"]??null,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";
+          ' "$tmp/post.json"
+
+          for lang in base fr en; do
+            [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
+            url="$base$prefix/$slug/"
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$url" > "$tmp/$lang.html"
+            echo "=== $lang ==="
+            grep -Eio '<meta[^>]+property="og:image(:[^\"]*)?"[^>]*>' "$tmp/$lang.html" | head -8 || true
+            grep -Eio '<meta[^>]+name="twitter:image"[^>]*>' "$tmp/$lang.html" | head -4 || true
+            grep -n -F 'welche-medikamente-beeinflussen-die-erektion-featured' "$tmp/$lang.html" | head -3 || true
           done
-          php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||($k["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion"||(int)($k["featured_media"]??0)!==900069)exit(2);if(($d["status"]??"")!=="draft"||($d["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion-2")exit(3);echo"phase2a_posts=ok\n";' "$tmp/post-900067.json" "$tmp/post-900066.json"
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$base/wp-json/redirection/v1/redirect" > "$tmp/red.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&($x["url"]??"")==="/welche-medikamente-beeinflussen-die-erektion-2/"&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")==="https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/"))$ok=true;}if(!$ok)exit(2);echo"redirect14=ok\n";' "$tmp/red.json"
 
-          verify_round(){
-            local round="$1" lang prefix p url html result canon alias target
-            echo "=== LIVE QA $round ==="
-            for lang in base fr en; do
-              [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
-              for p in 4 5; do
-                url="$base$prefix/blogs/$p/"; html="$tmp/$round-$lang-$p.html"
-                result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
-                [[ "$result" == $'200\t'"$url"$'\t0' ]] || return 1
-                canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || return 1
-              done
-              alias="$base$prefix/blogs/page/5/"; target="$base$prefix/blogs/5/"
-              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$round-$lang-alias.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$alias")
-              [[ "$result" == $'200\t'"$target"$'\t1' ]] || return 1
-              [[ "$(canonical_of "$tmp/$round-$lang-alias.html")" == "$target" ]] || return 1
-            done
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/$dup_slug/")
-            [[ "$result" == $'200\t'"$base/$clean_slug/"$'\t1' ]] || return 1
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml" > "$tmp/$round-sitemap.xml"
-            [[ "$(grep -Fc "<loc>$base/$clean_slug/</loc>" "$tmp/$round-sitemap.xml" || true)" == '1' ]]
-            [[ "$(grep -Fc "<loc>$base/$dup_slug/</loc>" "$tmp/$round-sitemap.xml" || true)" == '0' ]]
-            echo "INDEPENDENT_QA_OK $round"
-          }
-          verify_round one
-          sleep 5
-          verify_round two
-          echo 'V82_INDEPENDENT_QA_SUCCESS'
+          echo 'SOCIAL_IMAGE_DIAGNOSTIC_COMPLETE'
