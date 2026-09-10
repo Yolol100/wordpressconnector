@@ -1,4 +1,4 @@
-name: Diagnose DoctorCura Redirect Owners
+name: DoctorCura Phase 3 Production Readback
 
 on:
   push:
@@ -13,51 +13,119 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect exact redirect entries and first-hop headers read-only
+      - name: Read current production state only
         shell: bash
         run: |
           set -euo pipefail
-          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-redirect-owners"; mkdir -p "$tmp"
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || { echo 'DoctorCura target mismatch' >&2; exit 1; }
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          tmp="$RUNNER_TEMP/dc-phase3-readback"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          red="$base/wp-json/redirection/v1/redirect"
-          expected_hash='2fc561ed59d45aebe0e8b8c770c582c8359560316544f34ab228a9d4f8cabaa8'
+          wpapi="$base/wp-json/wp/v2"
+          redapi="$base/wp-json/redirection/v1"
+          snipapi="$base/wp-json/code-snippets/v1/snippets/43"
 
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo"snippet_hash=".hash("sha256",$c)." active=".(!empty($s["active"])?"true":"false").PHP_EOL;if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura redirect and feed cleanup V8.4")!==false)exit(2);' "$tmp/snippet.json" "$expected_hash"
+          canonical_of(){
+            local f="$1" c=''
+            c=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"'][^>]+href=["'"'][^"'"']+' "$f" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/i' || true)
+            if [[ -z "$c" ]]; then
+              c=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"']' "$f" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/i' || true)
+            fi
+            printf '%s' "$c"
+          }
 
-          echo '=== FIRST HOP HEADERS ==='
-          for spec in \
-            'comments:/comments/feed/' \
-            'weight:/product-categorie/gewichtsverlust/' \
-            'frweight:/fr/product-categorie/gewichtsverlust/' \
-            'frmalaria:/fr/product-categorie/malaria/' \
-            'privacy:/datenschutz/'; do
-            label="${spec%%:*}"; path="${spec#*:}"
-            curl --silent --show-error --connect-timeout 10 --max-time 30 --max-redirs 0 --dump-header "$tmp/$label.h" --output /dev/null "$base$path" || true
-            echo "-- $label $path --"
-            grep -Ei '^(HTTP/|location:|x-redirect-by:|x-robots-tag:|server:|x-powered-by:)' "$tmp/$label.h" | tr -d '\r' || true
+          probe(){
+            local label="$1" url="$2" first_h="$tmp/$label-first.h" all_h="$tmp/$label-all.h" html="$tmp/$label.html" first loc result canon robots hreflangs paramalts
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --max-redirs 0 --dump-header "$first_h" --output /dev/null "$url" || true
+            first=$(awk '/^HTTP\//{print $2; exit}' "$first_h")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$first_h")
+            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$all_h" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url" || true)
+            canon=$(canonical_of "$html")
+            robots=$(grep -Eio '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']+["'"']' "$html" | head -1 | sed -E 's/.*content=["'"']([^"'"']+).*/\1/i' || true)
+            hreflangs=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*alternate[^"'"']*["'"'][^>]+hreflang=["'"'][^"'"']+["'"'][^>]+href=["'"'][^"'"']+' "$html" | sed -E 's/.*hreflang=["'"']([^"'"']+)["'"'].*href=["'"']([^"'"']+).*/\1=\2/i' | paste -sd ' | ' - || true)
+            if [[ -z "$hreflangs" ]]; then
+              hreflangs=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+hreflang=["'"'][^"'"']+' "$html" | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*hreflang=["'"']([^"'"']+).*/\2=\1/i' | paste -sd ' | ' - || true)
+            fi
+            paramalts=$(grep -Eio '<link[^>]+hreflang=["'"'][^"'"']+["'"'][^>]+href=["'"'][^"'"']+\?[^"'"']+' "$html" | wc -l | tr -d ' ')
+            echo "PROBE label=$label start=$url first=${first:-none} location=${loc:-none} result=$result canonical=${canon:-none} robots=${robots:-none} hreflang_query_count=${paramalts:-0}"
+            [[ -n "$hreflangs" ]] && echo "HREFLANG label=$label $hreflangs"
+          }
+
+          echo '=== SNIPPET 43 CURRENT TRUTH ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$snipapi" > "$tmp/snippet.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");preg_match_all("/DoctorCura[^\\r\\n*]{0,140}(?:V[0-9]+(?:\\.[0-9]+)*)/i",$c,$m);$markers=array_values(array_unique(array_map("trim",$m[0]??[])));echo "snippet_id=".(int)($s["id"]??0)." name=".($s["name"]??"")." active=".(!empty($s["active"])?"true":"false")." scope=".($s["scope"]??"")." hash=".hash("sha256",$c)." helper_count=".substr_count($c,"DoctorCura one-time cache purge helper").PHP_EOL;foreach($markers as $x)echo "snippet_marker=".$x.PHP_EOL;' "$tmp/snippet.json"
+
+          echo '=== PHASE 2A READBACK ==='
+          for id in 900067 900066; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/posts/$id?context=edit&_fields=id,status,slug,link,featured_media" > "$tmp/post-$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "post id=".(int)($p["id"]??0)." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured_media=".(int)($p["featured_media"]??0).PHP_EOL;' "$tmp/post-$id.json"
+          done
+          for source in '/welche-medikamente-beeinflussen-die-erektion-2/' '/product-categorie/sexual-problems/' '/product-categorie/menstruation-verschieben/' '/about-us/' '/product-categorie/gewichtsverlust/' '/fr/product-categorie/gewichtsverlust/' '/en/product-categorie/gewichtsverlust/' '/datenschutz/' '/fr/datenschutz/' '/en/datenschutz/'; do
+            key=$(printf '%s' "$source" | tr '/:?' '___')
+            curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=100' "$redapi/redirect" > "$tmp/red-$key.json"
+            echo "REDIRECTION source=$source"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x){$target=is_array($x["action_data"]??null)?(string)($x["action_data"]["url"]??""):(string)($x["action_data"]??"");echo "id=".(int)($x["id"]??0)." status=".($x["status"]??"")." code=".(int)($x["action_code"]??0)." target=".$target.PHP_EOL;}' "$tmp/red-$key.json"
+          done
+          probe dup "$base/welche-medikamente-beeinflussen-die-erektion-2/"
+          probe clean "$base/welche-medikamente-beeinflussen-die-erektion/"
+
+          echo '=== PAGINATION FROZEN-SCOPE READBACK ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            probe "pg16-$lang" "$base$prefix/blogs/16/"
+            probe "pg17-$lang" "$base$prefix/blogs/17/"
+            probe "pgalias5-$lang" "$base$prefix/blogs/page/5/"
           done
 
-          echo '=== REDIRECTION EXACT SEARCH ==='
-          for path in \
-            '/comments/feed/' \
-            '/product-categorie/gewichtsverlust/' \
-            '/fr/product-categorie/gewichtsverlust/' \
-            '/en/product-categorie/gewichtsverlust/' \
-            '/product-categorie/malaria/' \
-            '/fr/product-categorie/malaria/' \
-            '/en/product-categorie/malaria/' \
-            '/datenschutz/' '/fr/datenschutz/' '/en/datenschutz/'; do
-            key=$(printf '%s' "$path" | tr '/:' '__')
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$path" --data-urlencode 'per_page=100' "$red" > "$tmp/$key.json"
-            echo "-- $path --"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["items"]??[])as$x){$url="";if(is_array($x["action_data"]??null))$url=(string)($x["action_data"]["url"]??"");elseif(is_string($x["action_data"]??null))$url=(string)$x["action_data"];echo json_encode(["id"=>$x["id"]??null,"url"=>$x["url"]??null,"action_type"=>$x["action_type"]??null,"action_code"=>$x["action_code"]??null,"target"=>$url,"match_type"=>$x["match_type"]??null,"status"=>$x["status"]??null,"group_id"=>$x["group_id"]??null],JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$tmp/$key.json"
+          echo '=== EXISTING LEGACY MIGRATIONS ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            probe "sexual-$lang" "$base$prefix/product-categorie/sexual-problems/"
+            probe "menstruation-$lang" "$base$prefix/product-categorie/menstruation-verschieben/"
           done
-          echo 'REDIRECT_OWNER_DIAGNOSTIC_COMPLETE'
+          probe about "$base/about-us/"
+
+          echo '=== PHASE 3A WEIGHT ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            probe "weight-current-$lang" "$base$prefix/product-category/gewichtsverlust/"
+            probe "weight-legacy-$lang" "$base$prefix/product-categorie/gewichtsverlust/"
+          done
+
+          echo '=== PHASE 3B PRIVACY ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            probe "privacy-current-$lang" "$base$prefix/privacy-policy/"
+            probe "privacy-legacy-$lang" "$base$prefix/datenschutz/"
+          done
+
+          echo '=== PHASE 3C INTERNAL HTTP LINK SOURCE ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$needle="http://www.doctorcura.com";$walk=function($v,$path="$")use(&$walk,$needle){if(is_array($v)){foreach($v as$k=>$x)$walk($x,$path."/".$k);}elseif(is_string($v)&&strpos($v,$needle)!==false){preg_match_all("#http://www\\.doctorcura\\.com[^\\\"\\x27\\s<]*#i",$v,$m);echo "rest_match_path=".$path." count=".substr_count($v,$needle)." urls=".implode(",",array_unique($m[0]??[])).PHP_EOL;}};$walk($p);' "$tmp/terms.json"
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            url="$base$prefix/geschaftsbedingungen/"; html="$tmp/terms-$lang.html"
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --output "$html" "$url"
+            cnt=$(grep -Fco 'http://www.doctorcura.com' "$html" || true)
+            echo "terms_render lang=$lang old_http_count=$cnt canonical=$(canonical_of "$html")"
+            grep -Eo 'http://www\.doctorcura\.com[^"'"'<> ]*' "$html" | sort -u | sed "s#^#terms_render_url lang=$lang url=#" || true
+          done
+
+          echo '=== PHASE 3D EPIPEN PARAMETER HREFLANG ==='
+          q='?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen'
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            probe "epipen-base-$lang" "$base$prefix/product/epipen/"
+            probe "epipen-param-$lang" "$base$prefix/product/epipen/$q"
+          done
+          curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 "$base/product-sitemap.xml" > "$tmp/product-sitemap.xml"
+          echo "epipen_parameter_sitemap_count=$(grep -Fc 'attribute_pa_' "$tmp/product-sitemap.xml" || true)"
+
+          echo 'PHASE3_PRODUCTION_READBACK_COMPLETE'
