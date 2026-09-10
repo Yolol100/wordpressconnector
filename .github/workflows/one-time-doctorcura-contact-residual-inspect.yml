@@ -1,0 +1,51 @@
+name: One-time DoctorCura residual contact inspect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-contact-residual-inspect/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Locate remaining old phone and map values
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc-residual"; mkdir -p "$root"
+          call(){ suffix="$1"; action="$2"; id="$3"; python3 - "$root/r-$suffix.json" "$action" "$id" <<'PY'
+          import json,sys,uuid
+          p,a,i=sys.argv[1:]; json.dump({'version':1,'request_id':'dc-resid-'+uuid.uuid4().hex[:20],'action':a,'dry_run':True,'confirm':False,'payload':{'id':int(i)}},open(p,'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]]; }
+          for id in 9 3285; do call post-$id post.get $id; call el-$id elementor.inspect $id || true; done
+          python3 - "$root" <<'PY'
+          import json,os,re,sys
+          root=sys.argv[1]; rx=re.compile(r'\+31\s*85\s*505\s*5433|085\s*505\s*5433|0855055433|Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam',re.I)
+          def walk(v,path=''):
+              if isinstance(v,str):
+                  if rx.search(v) or re.search(r'google.?maps|maps\.google|google_maps|Veldbloemlaan|Vleuten',v,re.I):
+                      print(path,'=>',repr(v[:2000]))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,f'{path}[{i}]')
+              elif isinstance(v,dict):
+                  for k,x in v.items(): walk(x,f'{path}.{k}' if path else str(k))
+          for id in (9,3285):
+              print('=== ID',id,'===')
+              for kind in ('post','el'):
+                  p=os.path.join(root,f'o-{kind}-{id}.json')
+                  if os.path.exists(p):
+                      try: walk(json.load(open(p,encoding='utf-8')).get('data'),kind)
+                      except Exception as e: print(kind,'parse error',e)
+          PY
