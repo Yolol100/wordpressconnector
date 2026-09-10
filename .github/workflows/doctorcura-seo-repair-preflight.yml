@@ -1,0 +1,115 @@
+name: DoctorCura SEO Repair Preflight
+
+on:
+  push:
+    branches:
+      - runtime/doctorcura-seo-repair-20260911
+    paths:
+      - '.github/workflows/doctorcura-seo-repair-preflight.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-seo-repair-preflight
+  cancel-in-progress: true
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect DoctorCura through authenticated connector
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
+          root="$RUNNER_TEMP/doctorcura-seo-repair-preflight"
+          rm -rf "$root" && mkdir -p "$root"
+          site="${SITE_URL%/}"
+          api="$site/wp-json/webactueel-wordpress-connector/v1"
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
+            --output "$root/health.json" "$api/health"
+
+          call_connector() {
+            suffix="$1"; action="$2"; payload="$3"
+            python3 - "$root/request-$suffix.json" "$action" "$payload" <<'PY'
+          import json,sys,time
+          out,action,payload=sys.argv[1:]
+          req={'version':1,'request_id':('dc-seo-preflight-'+sys.argv[1].split('/')[-1].replace('request-','').replace('.json',''))[:100],'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)}
+          json.dump(req,open(out,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 120 \
+              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' \
+              --data-binary "@$root/request-$suffix.json" --output "$root/result-$suffix.json" --write-out '%{http_code}' "$api/execute")
+            [[ "$code" == '200' ]] || { echo "$action transport HTTP $code" >&2; exit 1; }
+          }
+
+          call_connector terms-elementor elementor.inspect '{"id":11}'
+          call_connector article-search post.list '{"post_type":"post","status":"publish","per_page":50,"page":1,"search":"welche medikamente beeinflussen die erektion"}'
+          call_connector media-search media.list '{"per_page":100,"page":1,"search":"welche-medikamente-beeinflussen-die-erektion-featured"}'
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
+            --output "$root/snippet43.json" "$site/wp-json/code-snippets/v1/snippets/43"
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
+            --output "$root/terms.html" "$site/geschaftsbedingungen/"
+          curl --silent --show-error --connect-timeout 10 --max-time 30 --dump-header "$root/about.headers" --output /dev/null "$site/de/about-us/"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --dump-header "$root/about-chain.headers" --output /dev/null "$site/de/about-us/"
+          curl --silent --show-error --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' \
+            "$site/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp" > "$root/image-code.txt"
+
+          python3 - "$root" <<'PY'
+          import hashlib,json,os,re,sys
+          root=sys.argv[1]
+          def load(name):
+              return json.load(open(os.path.join(root,name),encoding='utf-8'))
+          health=load('health.json')
+          el=load('result-terms-elementor.json')
+          posts=load('result-article-search.json')
+          media=load('result-media-search.json')
+          sn=load('snippet43.json')
+          if not health.get('ok'):
+              raise SystemExit('Connector health is not OK.')
+          print('HEALTH version='+str(health.get('version'))+' gates='+json.dumps(health.get('gates',{}),sort_keys=True))
+          if not el.get('ok'):
+              raise SystemExit('Elementor inspect failed: '+str(el.get('error','unknown')))
+          doc=(el.get('data') or {}).get('document') or {}
+          fp=(el.get('data') or {}).get('fingerprint') or ''
+          matches=[]
+          def walk(value, element_id=None, path='root'):
+              if isinstance(value,dict):
+                  eid=value.get('id',element_id)
+                  for k,v in value.items(): walk(v,eid,path+'.'+str(k))
+              elif isinstance(value,list):
+                  for i,v in enumerate(value): walk(v,element_id,path+f'[{i}]')
+              elif isinstance(value,str) and 'http://doctorcura.com' in value:
+                  matches.append((element_id,path,value))
+          walk(doc.get('data',[]))
+          print('ELEMENTOR fingerprint='+fp+' explicit_http_occurrences='+str(len(matches))+' element_ids='+json.dumps(sorted({m[0] for m in matches if m[0]})))
+          terms=open(os.path.join(root,'terms.html'),encoding='utf-8',errors='ignore').read()
+          hrefs=re.findall(r'href=["\'](http://doctorcura\.com[^"\']*)',terms,re.I)
+          print('TERMS_LIVE explicit_http_hrefs='+json.dumps(hrefs[:10]))
+          pdata=(posts.get('data') or {})
+          items=pdata.get('items') or []
+          print('ARTICLE_SEARCH '+json.dumps([{'id':x.get('id'),'slug':x.get('slug'),'featured_media':x.get('featured_media')} for x in items if isinstance(x,dict)]))
+          mdata=(media.get('data') or {})
+          mitems=mdata.get('media') or []
+          print('MEDIA_SEARCH '+json.dumps([{'id':x.get('id'),'title':x.get('title'),'url':x.get('url')} for x in mitems if isinstance(x,dict)]))
+          item=sn.get('snippet',sn) if isinstance(sn,dict) else {}
+          code=str(item.get('code') or '').replace('\r\n','\n').strip()
+          print('SNIPPET43 id='+str(item.get('id'))+' active='+str(bool(item.get('active'))).lower()+' sha256='+hashlib.sha256(code.encode()).hexdigest())
+          raw=open(os.path.join(root,'about-chain.headers'),encoding='iso-8859-1',errors='replace').read()
+          statuses=[int(x) for x in re.findall(r'^HTTP/\S+\s+(\d{3})',raw,re.M|re.I)]
+          locs=re.findall(r'^Location:\s*(\S+)\s*$',raw,re.M|re.I)
+          print('ABOUT_CHAIN statuses='+json.dumps(statuses)+' locations='+json.dumps(locs))
+          print('BROKEN_IMAGE http='+open(os.path.join(root,'image-code.txt')).read().strip())
+          PY
