@@ -89,7 +89,6 @@ jobs:
             tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/target-$i.body" --write-out '%{http_code}' "$target")
             [[ "$tcode" == '200' && "$(canonical_of "$tmp/target-$i.body")" == "$target" ]] || { echo "Invalid redirect target $target" >&2; exit 1; }
           done
-          # Specific old-state guards.
           dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
           [[ "$dcode" == '404' ]] || { echo "Datenschutz preflight expected 404 got $dcode" >&2; exit 1; }
           curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/weight-old.h" --output /dev/null "$base/product-categorie/gewichtsverlust/"
@@ -154,7 +153,13 @@ jobs:
           php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");if(stripos($raw,"http://www.doctorcura.com")!==false)exit(2);if(substr_count($raw,"href=\"https://doctorcura.com/\"")<1)exit(3);echo"terms_readback=ok\n";' "$tmp/terms-response.json"
 
           verify_redirect(){
-            local path="$1" expected_final="$2" expected_first="$3" expected_count="$4" label="$5" first loc follow status final count body="$tmp/$label.body"
+            local path="$1"
+            local expected_final="$2"
+            local expected_first="$3"
+            local expected_count="$4"
+            local label="$5"
+            local first loc follow status final count
+            local body="$tmp/$label.body"
             first=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' --dump-header "$tmp/$label.h" --output /dev/null --write-out '%{http_code}' "$base$path")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$label.h" || true)
             [[ "$first" == '301' && "$loc" == "$expected_first" ]] || { echo "$label first status=$first location=$loc expected=$expected_first" >&2; return 1; }
@@ -197,7 +202,6 @@ jobs:
               ! grep -Eiq 'href="http://(www\.)?doctorcura\.com/?"' "$tmp/$round-terms-$lang.html" || { echo "HTTP internal link remains in $lang terms" >&2; return 1; }
             done
 
-            # Regression guards.
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/$round-page16.html" --write-out '%{http_code}' "$base/fr/blogs/16/")
             [[ "$code" == '200' && "$(canonical_of "$tmp/$round-page16.html")" == "$base/fr/blogs/16/" ]] || { echo 'pagination regression' >&2; return 1; }
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/fr/blogs/17/")
