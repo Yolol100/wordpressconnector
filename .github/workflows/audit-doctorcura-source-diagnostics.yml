@@ -1,4 +1,4 @@
-name: Audit DoctorCura Phase 2A Localized QA
+name: Audit DoctorCura Phase 2B Featured Image Source
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  qa:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
@@ -19,50 +19,51 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify duplicate consolidation across language paths
+      - name: Trace the rendered featured image source read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2a-qa"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2b-source"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          wpapi="$base/wp-json/wp/v2"; redapi="$base/wp-json/redirection/v1"; snipapi="$base/wp-json/code-snippets/v1/snippets/43"
-          clean='welche-medikamente-beeinflussen-die-erektion'; dup='welche-medikamente-beeinflussen-die-erektion-2'
+          postapi="$base/wp-json/wp/v2/posts/900067?context=edit"
+          page="$base/welche-medikamente-beeinflussen-die-erektion/"
 
-          canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
+          echo '=== ACTIVE THEME ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/themes.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/themes?status=active")
+          echo "themes_http=$code"
+          if [[ "$code" == '200' ]]; then
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$t)echo "stylesheet=".($t["stylesheet"]??"")." template=".($t["template"]??"")." name=".($t["name"]["rendered"]??$t["name"]??"")." version=".($t["version"]??"").PHP_EOL;' "$tmp/themes.json"
+          else head -c 600 "$tmp/themes.json" || true; echo; fi
 
-          echo '=== SOURCE ==='
-          for id in 900067 900066; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/p$id.json"
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0).PHP_EOL;' "$tmp/p$id.json"
+          echo '=== POST REST FEATURED LINK ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$postapi" > "$tmp/post.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured_media=".($p["featured_media"]??0).PHP_EOL;echo "featured_link=".($p["_links"]["wp:featuredmedia"][0]["href"]??"").PHP_EOL;echo "classes=".json_encode($p["class_list"]??[]).PHP_EOL;' "$tmp/post.json"
+
+          echo '=== FEATURED MEDIA RECORDS ==='
+          for id in 900069 5925; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/media/$id?context=edit" > "$tmp/m$id.json"
+            php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($m["id"]??"")." status=".($m["status"]??"")." parent=".($m["post"]??0)." source=".($m["source_url"]??"")." file=".($m["media_details"]["file"]??"")." width=".($m["media_details"]["width"]??"")." height=".($m["media_details"]["height"]??"").PHP_EOL;echo "sizes=".implode(",",array_keys($m["media_details"]["sizes"]??[])).PHP_EOL;' "$tmp/m$id.json"
           done
 
-          echo '=== REDIRECTION READBACK ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x)echo "id=".($x["id"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"")." status=".($x["status"]??"").PHP_EOL;' "$tmp/red.json"
+          echo '=== LIVE BROKEN IMAGE ELEMENT CONTEXT ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$page?dc_trace=featured" > "$tmp/live.html"
+          grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$tmp/live.html" | head -10 || true
+          echo '=== PARENT CONTEXT LINES ==='
+          tr '>' '>\n' < "$tmp/live.html" | grep -n -B3 -A3 'welche-medikamente-beeinflussen-die-erektion-featured' | head -80 || true
+          echo '=== WP POST IMAGE CLASSES ==='
+          grep -Eio '<img[^>]+class="[^"]*(wp-post-image|attachment-[^"]*)[^"]*"[^>]*>' "$tmp/live.html" | head -20 || true
+          echo '=== OG/TWITTER IMAGE ==='
+          grep -Eio '<meta[^>]+(property|name)="(og:image|twitter:image)"[^>]*>' "$tmp/live.html" | head -20 || true
 
-          echo '=== LANGUAGE PATH MATRIX ==='
-          for lang in base fr en; do
-            if [[ "$lang" == 'base' ]]; then prefix=''; else prefix="/$lang"; fi
-            for kind in clean dup; do
-              if [[ "$kind" == 'clean' ]]; then slug="$clean"; else slug="$dup"; fi
-              url="$base$prefix/$slug/"
-              curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --dump-header "$tmp/$lang-$kind.h" --output "$tmp/$lang-$kind.html" "$url"
-              first=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/$lang-$kind.h")
-              loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$lang-$kind.h" || true)
-              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$lang-$kind-final.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
-              canon=$(canonical_of "$tmp/$lang-$kind-final.html")
-              robots=$(grep -Eio '<meta[^>]+name="robots"[^>]*>' "$tmp/$lang-$kind-final.html" | head -1 || true)
-              echo "$lang $kind first=$first location=$loc follow=$result canonical=$canon robots=$robots"
-            done
+          echo '=== ALL REFERENCES TO MEDIA IDS/FILENAMES ==='
+          for needle in '900069' '5925' 'welche-medikamente-beeinflussen-die-erektion-featured' 'beste-optionen-bei-erektionsstoerungen-featured'; do
+            echo "-- $needle --"
+            grep -Eio ".{0,180}$needle.{0,220}" "$tmp/live.html" | head -12 || true
           done
 
-          echo '=== SITEMAP ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml" > "$tmp/map.xml"
-          printf 'clean_count='; grep -Fc "<loc>$base/$clean/</loc>" "$tmp/map.xml" || true
-          printf 'dup_count='; grep -Fc "<loc>$base/$dup/</loc>" "$tmp/map.xml" || true
+          echo '=== WP ROCKET ROUTES ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["routes"]??[])as$r=>$v){if(stripos($r,"wp-rocket")!==false)echo $r.PHP_EOL;}' "$tmp/root.json"
 
-          echo '=== SNIPPET RESIDUE ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snip.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "active=".json_encode($s["active"]??null)." helper_present=".(strpos($c,"DoctorCura one-time cache purge helper")!==false?"yes":"no").PHP_EOL;' "$tmp/snip.json"
-          echo 'PHASE2A_LOCALIZED_QA_COMPLETE'
+          echo 'PHASE2B_SOURCE_TRACE_COMPLETE'
