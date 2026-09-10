@@ -1,0 +1,63 @@
+name: Temporary DoctorCura Core contact fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-core-contact-fix.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Correct live DoctorCura Core contact data and verify
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]]
+          base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc-core-contact"; mkdir -p "$root"
+          call(){ suf="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"; python3 - "$root/r-$suf.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          p,a,d,c,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-core-'+uuid.uuid4().hex[:20],'action':a,'dry_run':d=='true','confirm':c=='true','payload':json.load(open(payload,encoding='utf-8'))},open(p,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suf.json" -o "$root/o-$suf.json" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]] || { echo "HTTP_FAIL $action $code" >&2; exit 1; }; python3 - "$root/o-$suf.json" <<'PY'
+          import json,sys
+          if not json.load(open(sys.argv[1],encoding='utf-8')).get('ok'): raise SystemExit('connector action ok=false')
+          PY
+          }
+          printf '%s' '{"path":"wp-content/plugins/doctorcura-core/includes/extra-request-form.php"}' > "$root/read.json"
+          call before filesystem.read_text true false "$root/read.json"
+          python3 - "$root/o-before.json" "$root/write.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; s=data.get('content',''); f=data.get('file') or {}
+          for old,new in [
+            ('href="tel:0855055433"','href="tel:+31855055433"'),
+            ('085 505 5433','+31 85 505 54 33'),
+            ('Keizersgracht 241, 1016 EA, Amsterdam, Niederlande','Veldbloemlaan 93, 3452CK Vleuten, The Netherlands'),
+            ('Keizersgracht 241, 1016 EA Amsterdam, Niederlande','Veldbloemlaan 93, 3452CK Vleuten, The Netherlands'),
+          ]: s=s.replace(old,new)
+          legacy=['tel:0855055433','085 505 5433','Keizersgracht 241','1016 EA']
+          if any(x in s for x in legacy): raise SystemExit('Legacy contact value remains before write')
+          json.dump({'path':'wp-content/plugins/doctorcura-core/includes/extra-request-form.php','content':s,'expected_sha256':f.get('sha256','')},open(sys.argv[2],'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+          call write filesystem.write_text false true "$root/write.json"
+          call after filesystem.read_text true false "$root/read.json"
+          python3 - "$root/o-after.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; s=data.get('content','')
+          legacy=['tel:0855055433','085 505 5433','Keizersgracht 241','1016 EA']
+          if any(x in s for x in legacy): raise SystemExit('Legacy contact value remains after write')
+          for x in ['tel:+31855055433','+31 85 505 54 33','Veldbloemlaan 93','3452CK Vleuten, The Netherlands']:
+              if x not in s: raise SystemExit('Expected value missing: '+x)
+          print('CORE_CONTACT_READBACK_OK')
+          PY
