@@ -28,29 +28,15 @@ jobs:
           root="$RUNNER_TEMP/dc-cache-purge"
           mkdir -p "$root"
 
-          get_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
-            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
-            --output "$root/snippet.json" --write-out '%{http_code}' "$api")
+          get_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/snippet.json" --write-out '%{http_code}' "$api")
           [[ "$get_code" == '200' ]] || { echo "Snippet read HTTP $get_code" >&2; exit 1; }
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $name=strtolower((string)($d["name"]??$d["display_name"]??"")); if((int)($d["id"]??0)!==43||empty($d["active"])||strpos($name,"doctorcura seo indexation cleanup")===false){exit(1);} $code=(string)($d["code"]??""); if(strpos($code,"DoctorCura dynamic blog pagination cleanup V10")===false){exit(2);} file_put_contents($argv[2],$code);' "$root/snippet.json" "$root/original.txt"
           before_sha=$(sha256sum "$root/original.txt" | awk '{print $1}')
           [[ "$before_sha" == '83a05b5734751d01d93488fcfbcd601ce2e245a7f41e6d2675beaf38af1dec7b' ]] || { echo "Unexpected V10 hash: $before_sha" >&2; exit 1; }
 
           token=$(openssl rand -hex 24)
-          cp "$root/original.txt" "$root/mutated.txt"
-          cat >> "$root/mutated.txt" <<EOF
-
-/* DoctorCura one-time cache purge helper - removed automatically */
-add_action( 'template_redirect', function () {
-    if ( ! isset( \$_GET['doctorcura_cache_purge'] ) || ! hash_equals( '${token}', (string) \$_GET['doctorcura_cache_purge'] ) ) return;
-    if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain();
-    if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
-    header( 'X-LiteSpeed-Purge: *' );
-    nocache_headers();
-    status_header( 204 );
-    exit;
-}, -9999 );
-EOF
+          export PURGE_TOKEN="$token"
+          php -r '$code=file_get_contents($argv[1]); $t=getenv("PURGE_TOKEN"); $helper="\n/* DoctorCura one-time cache purge helper - removed automatically */\nadd_action( \"template_redirect\", function () {\n    if ( ! isset( \\$_GET[\"doctorcura_cache_purge\"] ) || ! hash_equals( \"".$t."\", (string) \\$_GET[\"doctorcura_cache_purge\"] ) ) return;\n    if ( function_exists( \"rocket_clean_domain\" ) ) rocket_clean_domain();\n    if ( function_exists( \"wp_cache_flush\" ) ) wp_cache_flush();\n    header( \"X-LiteSpeed-Purge: *\" );\n    nocache_headers();\n    status_header( 204 );\n    exit;\n}, -9999 );\n"; file_put_contents($argv[2],$code.$helper);' "$root/original.txt" "$root/mutated.txt"
 
           make_payload() {
             php -r '$code=file_get_contents($argv[1]); echo json_encode(array("code"=>$code), JSON_UNESCAPED_SLASHES);' "$1" > "$2"
@@ -58,10 +44,7 @@ EOF
           put_payload() {
             local payload="$1" out="$2"
             local code
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 45 \
-              --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST \
-              --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' \
-              --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
             [[ "$code" == '200' ]] || { echo "Snippet write HTTP $code" >&2; return 1; }
           }
           restore() {
@@ -73,17 +56,12 @@ EOF
           put_payload "$root/mutated.json" "$root/mutated-response.json"
           trap restore EXIT
 
-          purge_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 45 \
-            --header 'Cache-Control: no-cache, no-store, max-age=0' --header 'Pragma: no-cache' \
-            --output "$root/purge-body" --dump-header "$root/purge-headers" --write-out '%{http_code}' \
-            "${SITE_URL%/}/?doctorcura_cache_purge=${token}")
+          purge_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 45 --header 'Cache-Control: no-cache, no-store, max-age=0' --header 'Pragma: no-cache' --output "$root/purge-body" --dump-header "$root/purge-headers" --write-out '%{http_code}' "${SITE_URL%/}/?doctorcura_cache_purge=${token}")
           [[ "$purge_code" == '204' ]] || { echo "Cache purge trigger HTTP $purge_code" >&2; exit 1; }
 
           restore
           trap - EXIT
-          verify_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 \
-            --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' \
-            --output "$root/verify.json" --write-out '%{http_code}' "$api")
+          verify_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/verify.json" --write-out '%{http_code}' "$api")
           [[ "$verify_code" == '200' ]] || exit 1
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); file_put_contents($argv[2],(string)($d["code"]??""));' "$root/verify.json" "$root/verify-code.txt"
           after_sha=$(sha256sum "$root/verify-code.txt" | awk '{print $1}')
@@ -94,7 +72,5 @@ EOF
           echo 'PUBLIC_CHECKS:'
           for path in /blogs/8/ /fr/blogs/6/ /fr/blogs/8/ /en/blogs/6/ /en/blogs/8/; do
             echo "--- $path"
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 \
-              --output /dev/null --dump-header - "${SITE_URL%/}${path}" \
-              | grep -Ei '^(HTTP/|location:|x-hcdn-cache-status:|age:|cache-control:)' || true
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --dump-header - "${SITE_URL%/}${path}" | grep -Ei '^(HTTP/|location:|x-hcdn-cache-status:|age:|cache-control:)' || true
           done
