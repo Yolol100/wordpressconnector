@@ -1,4 +1,4 @@
-name: Audit DoctorCura Elementor Cache Capability
+name: Audit DoctorCura Snippet State After Phase 2B Rollback
 
 on:
   push:
@@ -19,30 +19,28 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect Elementor cache REST contract read-only
+      - name: Inspect snippet and phase state read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-el-cache"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-snippet-state"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
 
-          echo '=== ROUTE CONTRACT FROM ROOT ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(["/elementor/v1/cache","/elementor/v1/post"]as$r){echo "-- $r --\n";echo json_encode($d["routes"][$r]??null,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";}' "$tmp/root.json"
+          echo '=== SNIPPET 43 ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/snippet.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43")
+          echo "http=$code"
+          [[ "$code" == '200' ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "id=".($s["id"]??"")." name=".($s["name"]??"")." active=".json_encode($s["active"]??null)." scope=".($s["scope"]??"").PHP_EOL;echo "hash=".hash("sha256",$c)." len=".strlen($c).PHP_EOL;echo "v82=".(strpos($c,"DoctorCura blog pagination cleanup V8.2")!==false?"yes":"no")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")!==false?"yes":"no").PHP_EOL;echo "prefix=".substr(str_replace(["\r","\n"],[" "," "],$c),0,220).PHP_EOL;' "$tmp/snippet.json"
 
-          echo '=== OPTIONS CACHE ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/cache-options.json" --write-out '%{http_code}' "$base/wp-json/elementor/v1/cache")
-          echo "options_http=$code"
-          cat "$tmp/cache-options.json" | head -c 5000; echo
+          echo '=== POSTS ==='
+          for id in 900067 900066; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/$id?context=edit" > "$tmp/post-$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0).PHP_EOL;' "$tmp/post-$id.json"
+          done
 
-          echo '=== GET CACHE ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/cache-get.json" --write-out '%{http_code}' "$base/wp-json/elementor/v1/cache")
-          echo "get_http=$code"
-          cat "$tmp/cache-get.json" | head -c 3000; echo
+          echo '=== REDIRECT 14 ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/welche-medikamente-beeinflussen-die-erektion-2/' --data-urlencode 'per_page=20' "$base/wp-json/redirection/v1/redirect" > "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["items"]??[])as$x)echo "id=".($x["id"]??"")." url=".($x["url"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"").PHP_EOL;' "$tmp/red.json"
 
-          echo '=== OPTIONS TEMPLATE WRITE ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/template-options.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library/5841")
-          echo "template_options_http=$code"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "methods=".implode(",",$d["methods"]??[]).PHP_EOL;$m=$d["schema"]["properties"]["meta"]["properties"]["_elementor_data"]??[];echo "elementor_data_schema=".json_encode($m,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).PHP_EOL;' "$tmp/template-options.json"
-          echo 'ELEMENTOR_CACHE_CAPABILITY_COMPLETE'
+          echo 'SNIPPET_STATE_AUDIT_COMPLETE'
