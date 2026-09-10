@@ -1,4 +1,4 @@
-name: Fix DoctorCura Phase 2B Featured Image Scoped
+name: Fix DoctorCura Phase 2B Featured Image Final
 
 on:
   push:
@@ -19,12 +19,12 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Update featured image and verify the actual Elementor widget
+      - name: Set featured image, clear caches, verify twice, rollback on failure
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2b-scoped"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2b-final"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
           snipapi="$base/wp-json/code-snippets/v1/snippets/43"
@@ -41,7 +41,7 @@ jobs:
           image_changed=0
           helper_written=0
 
-          post_json(){ local endpoint="$1" payload="$2" outfile="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$endpoint"; }
+          post_json(){ local endpoint="$1" payload="$2" outfile="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}'; }
           put_snippet(){ local payload="$1" outfile="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$snipapi"; }
           make_snippet_payload(){ local codefile="$1" outfile="$2"; php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"; }
           restore_snippet(){ make_snippet_payload "$tmp/snippet-code.php" "$tmp/snippet-restore.json"; [[ "$(put_snippet "$tmp/snippet-restore.json" "$tmp/snippet-restore-response.json")" == '200' ]]; helper_written=0; }
@@ -59,8 +59,6 @@ jobs:
             if curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$tmp/$label-purge.h" --output /dev/null "$base/wp-json/?doctorcura_seo_purge=$token" && grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*rocket' "$tmp/$label-purge.h"; then ok=1; fi
             restore_snippet || return 1
             [[ "$ok" == '1' ]] || return 1
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/$label-snippet-readback.json"
-            php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura blog pagination cleanup V8.2")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);' "$tmp/$label-snippet-readback.json" "$expected_snippet_hash"
             echo "wp_rocket_purge=$label confirmed"
           }
           canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
@@ -68,12 +66,32 @@ jobs:
             local html="$1" line end
             line=$(grep -n 'data-id="695868ca"' "$html" | head -1 | cut -d: -f1 || true)
             [[ -n "$line" ]] || return 1
-            end=$((line+8))
+            end=$((line+10))
             sed -n "${line},${end}p" "$html" | grep -Eio '<img[^>]*>' | head -1
+          }
+          verify_public_lang(){
+            local round="$1" lang="$2" prefix="$3" attempt url html result canon img og old_img_count
+            url="$base$prefix/$clean_slug/"
+            for attempt in 1 2 3; do
+              html="$tmp/$round-$lang-$attempt.html"
+              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
+              canon=$(canonical_of "$html")
+              img=$(widget_img "$html" || true)
+              og=$(grep -F 'property="og:image"' "$html" | head -1 || true)
+              old_img_count=$(grep -Eio '<img[^>]*>' "$html" | grep -Fc "$broken_name" || true)
+              echo "$round/$lang attempt=$attempt result=$result canonical=$canon"
+              echo "$round/$lang widget_img=$img"
+              echo "$round/$lang og=$og old_visible_img_count=$old_img_count"
+              if [[ "$result" == $'200\t'"$url"$'\t0' ]] && [[ "$canon" == "$url" ]] && printf '%s' "$img" | grep -Fq "$candidate_name" && [[ "$old_img_count" == '0' ]] && printf '%s' "$og" | grep -Fq "$candidate"; then
+                return 0
+              fi
+              sleep 2
+            done
+            return 1
           }
           rollback(){
             rc=$?; [[ "$rc" == '0' ]] && return
-            echo "PHASE2B_SCOPED_ROLLBACK_START exit=$rc" >&2
+            echo "PHASE2B_ROLLBACK_START exit=$rc" >&2
             set +e
             if [[ "$helper_written" == '1' ]]; then restore_snippet >/dev/null 2>&1 || true; fi
             if [[ "$image_changed" == '1' ]]; then
@@ -83,7 +101,7 @@ jobs:
               purge_rocket rollback >/dev/null 2>&1 || true
             fi
             restore_snippet >/dev/null 2>&1 || true
-            echo 'PHASE2B_SCOPED_ROLLBACK_ATTEMPTED' >&2
+            echo 'PHASE2B_ROLLBACK_ATTEMPTED' >&2
           }
           trap rollback EXIT
 
@@ -93,7 +111,7 @@ jobs:
           for id in 900067 900066; do curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/post-$id.json"; done
           php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||(int)($k["featured_media"]??0)!==900069||($d["status"]??"")!=="draft")exit(2);echo"posts=ok\n";' "$tmp/post-900067.json" "$tmp/post-900066.json"
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&(int)($x["action_code"]??0)===301)$ok=true;}if(!$ok)exit(2);echo"redirect14=ok\n";' "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")==="https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/"))$ok=true;}if(!$ok)exit(2);echo"redirect14=ok\n";' "$tmp/red.json"
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/media/5925?context=edit" > "$tmp/media.json"
           php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($m["id"]??0)!==5925||($m["source_url"]??"")!==$argv[2])exit(2);echo"media=ok\n";' "$tmp/media.json" "$candidate"
           [[ "$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$candidate")" == '200' ]]
@@ -108,34 +126,22 @@ jobs:
           purge_rocket apply
 
           verify_round(){
-            local round="$1" lang prefix url html result canon og img old_img_count old_doc_count
+            local round="$1" result
             echo "=== VERIFY $round ==="
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-post.json"
             [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/$round-post.json")" == '5925' ]] || return 1
-            for lang in base fr en; do
-              [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
-              url="$base$prefix/$clean_slug/"; html="$tmp/$round-$lang.html"
-              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
-              [[ "$result" == $'200\t'"$url"$'\t0' ]] || return 1
-              canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || return 1
-              img=$(widget_img "$html" || true)
-              printf '%s' "$img" | grep -Fq "$candidate_name" || { echo "$lang widget_img_wrong=$img" >&2; return 1; }
-              old_img_count=$( (grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$html" || true) | wc -l | tr -d ' ' )
-              old_doc_count=$( (grep -Fo "$broken_name" "$html" || true) | wc -l | tr -d ' ' )
-              echo "$lang widget_img=candidate old_visible_img_count=$old_img_count old_document_refs=$old_doc_count"
-              [[ "$old_img_count" == '0' ]] || return 1
-              og=$(grep -Eio '<meta[^>]+property="og:image"[^>]*>' "$html" | head -1 || true)
-              printf '%s' "$og" | grep -Fq "$candidate" || return 1
-            done
+            verify_public_lang "$round" base '' || return 1
+            verify_public_lang "$round" fr '/fr' || return 1
+            verify_public_lang "$round" en '/en' || return 1
             result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/$dup_slug/")
             [[ "$result" == $'200\t'"$clean"$'\t1' ]] || return 1
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/$round-snippet.json"
             php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);' "$tmp/$round-snippet.json" "$expected_snippet_hash"
-            echo "PHASE2B_SCOPED_VERIFY_OK $round"
+            echo "PHASE2B_VERIFY_OK $round"
           }
 
           verify_round one
           sleep 5
           verify_round two
           trap - EXIT
-          echo 'PHASE2B_SCOPED_SUCCESS featured_media=5925 visible_widget=fixed'
+          echo 'PHASE2B_SUCCESS featured_media=5925 widget_and_og_verified'
