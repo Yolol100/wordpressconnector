@@ -1,0 +1,101 @@
+name: DoctorCura Phase 2B Current Read-Only Audit
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase2b-current.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://doctorcura.com
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APP_PASSWORD }}
+    steps:
+      - name: Read-only Phase 2B verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          tmp="$RUNNER_TEMP/dc-p2b"; mkdir -p "$tmp"
+          expected_hash='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'
+          api="$base/wp-json/code-snippets/v1/snippets/43"
+
+          canonical(){ python3 - "$1" <<'PY'
+          import re,sys,html
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          out=''
+          for tag in re.findall(r'<link\b[^>]*>',s,re.I):
+              rel=re.search(r'rel=["\']([^"\']+)',tag,re.I); href=re.search(r'href=["\']([^"\']+)',tag,re.I)
+              if rel and href and 'canonical' in rel.group(1).lower(): out=html.unescape(href.group(1)); break
+          print(out,end='')
+          PY
+          }
+
+          echo '=== SNIPPET IDENTITY ==='
+          http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/s43.json" --write-out '%{http_code}' "$api"); [[ "$http" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$markers=["DoctorCura article social image alignment V8.3","DoctorCura gewichtsverlust legacy final redirect V8.4b","DoctorCura datenschutz root-only migration V8.4c","DoctorCura product variation hreflang cleanup V8.4d","DoctorCura GSC-proven legacy category redirects V8.4e","DoctorCura French request-2 migration V8.4f"];echo "SNIPPET id=".(int)($s["id"]??0)." name=".(string)($s["name"]??"")." active=".(!empty($s["active"])?"yes":"no")." hash=".hash("sha256",$c)." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;foreach($markers as $m)echo "MARKER count=".substr_count($c,$m)." text=$m".PHP_EOL;if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);foreach($markers as $m){if(substr_count($c,$m)!==1)exit(3);}' "$tmp/s43.json" "$expected_hash"
+
+          echo '=== OWNER DATA ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/post.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/posts/900067?context=edit"); [[ "$h" == 200 ]]
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "POST id=".(int)($p["id"]??0)." status=".(string)($p["status"]??"")." slug=".(string)($p["slug"]??"")." featured_media=".(int)($p["featured_media"]??0)." widget695868ca=".substr_count($raw,"data-id=\"695868ca\"").PHP_EOL;' "$tmp/post.json"
+          for id in 5925 900069; do
+            h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/media-$id.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/media/$id?context=edit"); echo "MEDIA_HTTP id=$id http=$h"; [[ "$h" == 200 ]]
+            php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "MEDIA id=".(int)($m["id"]??0)." type=".(string)($m["media_type"]??"")." url=".(string)($m["source_url"]??"").PHP_EOL;' "$tmp/media-$id.json"
+          done
+
+          echo '=== PUBLIC CONTRACT ==='
+          clean="$base/welche-medikamente-beeinflussen-die-erektion/"
+          alias="$base/welche-medikamente-beeinflussen-die-erektion-2/"
+          status=$(curl "${c[@]}" --compressed --output "$tmp/base.html" --write-out '%{http_code}' "$clean"); can=$(canonical "$tmp/base.html")
+          result=$(curl "${c[@]}" --location --compressed --output "$tmp/alias.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$alias")
+          echo "BASE status=$status canonical=$can"
+          echo "ALIAS result=$result"
+          python3 - "$tmp/base.html" <<'PY'
+          import html,re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          imgs=[]
+          for tag in re.findall(r'<img\b[^>]*>',s,re.I):
+              if re.search(r'\bwp-post-image\b',tag,re.I):
+                  m=re.search(r'src=["\']([^"\']+)',tag,re.I)
+                  if m: imgs.append(html.unescape(m.group(1)))
+          og=[]
+          for tag in re.findall(r'<meta\b[^>]*>',s,re.I):
+              if re.search(r'property=["\']og:image["\']',tag,re.I):
+                  m=re.search(r'content=["\']([^"\']+)',tag,re.I)
+                  if m: og.append(html.unescape(m.group(1)))
+          print('WP_POST_IMAGE_COUNT='+str(len(imgs)))
+          for u in imgs: print('WP_POST_IMAGE='+u)
+          print('OG_IMAGE_COUNT='+str(len(og)))
+          for u in og: print('OG_IMAGE='+u)
+          print('DESIRED_FILENAME_COUNT='+str(s.count('beste-optionen-bei-erektionsstoerungen-featured.webp')))
+          print('LEGACY_FILENAME_COUNT='+str(s.count('welche-medikamente-beeinflussen-die-erektion-featured')))
+          print('DUPLICATE_SLUG_COUNT='+str(s.count('welche-medikamente-beeinflussen-die-erektion-2')))
+          PY
+
+          echo '=== FROZEN CANARIES ==='
+          while IFS='|' read -r source target; do
+            h="$tmp/canary.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$base$source" || true
+            code=$(awk '/^HTTP\//{print $2;exit}' "$h"); loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            echo "CANARY source=$source code=$code location=${loc:-none}"
+            [[ "$code" == 301 && "$loc" == "$base$target" ]] || exit 1
+          done <<'MAP'
+          /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
+          /product-categorie/quit-smoking/|/product-category/rauchstopp/
+          /product-categorie/schlafprobleme/|/product-category/schlafprobleme/
+          /product-categorie/gewichtsverlust/|/product-category/gewichtsverlust/
+          /datenschutz/|/privacy-policy/
+          /fr/request-2/|/fr/anfrage-2/
+          MAP
+          [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
+          p17=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/"); [[ "$p17" == 404 ]]
+          echo PHASE2B_READONLY_AUDIT_COMPLETE
