@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  apply:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -18,29 +18,239 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect DoctorCura doctor card styles
+      - name: Apply and verify modern DoctorCura doctor profile
         shell: bash
         run: |
           set -euo pipefail
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
           root="$RUNNER_TEMP/dc-doctors"; rm -rf "$root"; mkdir -p "$root"
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-          python3 - "$root/request.json" <<'PY'
+
+          call_action(){
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload_file="$5"; fingerprint="${6:-}"
+            req="$root/r-$suffix.json"; out="$root/o-$suffix.json"
+            python3 - "$req" "$suffix" "$action" "$dry" "$confirm" "$payload_file" "$fingerprint" <<'PY'
           import json,sys
-          json.dump({'version':1,'request_id':'dc-doctors-style-inspect','action':'elementor.inspect','dry_run':True,'confirm':False,'payload':{'id':900099}},open(sys.argv[1],'w'),separators=(',',':'))
+          req,suffix,action,dry,confirm,payload_path,fingerprint=sys.argv[1:]
+          payload=json.load(open(payload_path,encoding='utf-8'))
+          data={'version':1,'request_id':'dc-doctor-card-'+suffix,'action':action,'dry_run':dry.lower()=='true','confirm':confirm.lower()=='true','payload':payload}
+          if fingerprint: data['expected_fingerprint']=fingerprint
+          json.dump(data,open(req,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
           PY
-          code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/request.json" -o "$root/result.json" -w '%{http_code}' "$base/execute")
-          [[ "$code" == 200 ]]
-          python3 - "$root/result.json" <<'PY'
+            code=$(curl -sS -L --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute")
+            [[ "$code" == 200 ]] || { echo "$action HTTP $code" >&2; exit 1; }
+            python3 - "$out" "$action" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1])); data=d.get('data') or {}; doc=data.get('document') or {}; nodes=doc.get('data') or []
-          ids={'a7fc286','1c098c6','8810bdb','3aa64a3','54f118f','429aa11','b30115e','537985a','0fe317c','908dc83','66f037a','7a7a90f','b2ea7e6','3d19027','4f4f11c'}
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'): raise SystemExit(sys.argv[2]+': '+str(d.get('error','connector error'))[:220])
+          PY
+          }
+
+          printf '%s' '{"id":900099}' > "$root/inspect.json"
+          call_action inspect elementor.inspect true false "$root/inspect.json"
+
+          python3 - "$root/o-inspect.json" "$root/patch.json" "$root/meta.json" <<'PY'
+          import copy,json,sys
+          src,patch_path,meta_path=sys.argv[1:]
+          d=json.load(open(src,encoding='utf-8')); data=d.get('data') or {}; doc=data.get('document') or {}; nodes=doc.get('data') or []
+          fp=str(data.get('fingerprint') or '')
+          if len(fp)!=64: raise SystemExit('Missing Elementor fingerprint')
+
+          target=None
           def walk(items):
+              global target
               for e in items if isinstance(items,list) else []:
                   if not isinstance(e,dict): continue
-                  if e.get('id') in ids:
-                      print('NODE '+str(e.get('id'))+' '+json.dumps({'elType':e.get('elType'),'widgetType':e.get('widgetType'),'settings':e.get('settings') or {},'child_ids':[x.get('id') for x in e.get('elements') or [] if isinstance(x,dict)]},ensure_ascii=False,separators=(',',':')))
+                  if e.get('id')=='54f118f': target=e; return
                   walk(e.get('elements') or [])
+                  if target is not None: return
           walk(nodes)
-          print('fingerprint='+str(data.get('fingerprint') or ''))
+          if target is None: raise SystemExit('Doctor cards container 54f118f not found')
+
+          old_children=target.get('elements') or []
+          if [x.get('id') for x in old_children if isinstance(x,dict)] != ['429aa11','66f037a']:
+              raise SystemExit('Doctor card structure changed; refusing mutation')
+          raw=json.dumps(target,ensure_ascii=False)
+          if raw.count('Lorem Ipsum') != 2 or raw.count('shutterstock_2603324581-scaled.jpg') < 2:
+              raise SystemExit('Expected duplicate placeholder doctor cards were not found')
+
+          card={
+            'id':'54f118f','elType':'container','widgetType':None,
+            'settings':{
+              'flex_direction':'row','flex_direction_tablet':'column','flex_direction_mobile':'column',
+              'flex_gap':{'column':'0','row':'0','isLinked':True,'unit':'px','size':0},
+              'flex_gap_tablet':{'column':'0','row':'0','isLinked':True,'unit':'px','size':0},
+              'flex_gap_mobile':{'column':'0','row':'0','isLinked':True,'unit':'px','size':0},
+              'content_width':'full','background_background':'classic','background_color':'#FFFFFF',
+              'border_border':'solid','border_width':{'unit':'px','top':'1','right':'1','bottom':'1','left':'1','isLinked':True},
+              'border_color':'#E7ECF2','border_radius':{'unit':'px','top':'20','right':'20','bottom':'20','left':'20','isLinked':True},
+              'overflow':'hidden','box_shadow_box_shadow_type':'yes',
+              'box_shadow_box_shadow':{'horizontal':0,'vertical':14,'blur':40,'spread':-20,'color':'rgba(17,24,39,0.22)'},
+              'padding':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True},
+              'padding_tablet':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True},
+              'padding_mobile':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True},
+              'margin':{'unit':'rem','top':'0','right':'0','bottom':'4','left':'0','isLinked':False},
+              'margin_tablet':{'unit':'rem','top':'0','right':'1.5','bottom':'3','left':'1.5','isLinked':False},
+              'margin_mobile':{'unit':'rem','top':'0','right':'1','bottom':'2.5','left':'1','isLinked':False}
+            },
+            'elements':[]
+          }
+
+          image={
+            'id':'429aa11','elType':'container','widgetType':None,
+            'settings':{
+              'flex_direction':'column','content_width':'full','width':{'unit':'%','size':44},
+              'width_tablet':{'unit':'%','size':100,'sizes':[]},'width_mobile':{'unit':'%','size':100,'sizes':[]},
+              'min_height':{'unit':'px','size':460,'sizes':[]},'min_height_tablet':{'unit':'px','size':380,'sizes':[]},'min_height_mobile':{'unit':'px','size':285,'sizes':[]},
+              'background_background':'classic','background_image':{'url':'https://doctorcura.com/wp-content/uploads/2025/12/shutterstock_2603324581-scaled.jpg','id':848,'size':'','alt':'shutterstock 2603324581','source':'library'},
+              'background_position':'center center','background_repeat':'no-repeat','background_size':'cover',
+              'border_radius':{'unit':'px','top':'19','right':'0','bottom':'0','left':'19','isLinked':False},
+              'border_radius_tablet':{'unit':'px','top':'19','right':'19','bottom':'0','left':'0','isLinked':False},
+              'border_radius_mobile':{'unit':'px','top':'19','right':'19','bottom':'0','left':'0','isLinked':False},
+              'padding':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True},
+              'margin':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True}
+            },
+            'elements':[]
+          }
+
+          info={
+            'id':'66f037a','elType':'container','widgetType':None,
+            'settings':{
+              'flex_direction':'column','flex_justify_content':'center','content_width':'full','width':{'unit':'%','size':56},
+              'width_tablet':{'unit':'%','size':100,'sizes':[]},'width_mobile':{'unit':'%','size':100,'sizes':[]},
+              'flex_gap':{'column':'0.75','row':'0.75','isLinked':True,'unit':'rem','size':0.75},
+              'background_background':'classic','background_color':'#FFFFFF',
+              'padding':{'unit':'rem','top':'3.25','right':'3.5','bottom':'3.25','left':'3.5','isLinked':False},
+              'padding_tablet':{'unit':'rem','top':'2.5','right':'2.5','bottom':'2.5','left':'2.5','isLinked':False},
+              'padding_mobile':{'unit':'rem','top':'1.75','right':'1.5','bottom':'1.75','left':'1.5','isLinked':False},
+              'margin':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True}
+            },
+            'elements':[]
+          }
+
+          badge={'id':'dcaa0001','elType':'widget','widgetType':'heading','settings':{
+            'title':'Ärztliche Prüfung','header_size':'span','_flex_align_self':'flex-start',
+            '_padding':{'unit':'px','top':'6','right':'11','bottom':'6','left':'11','isLinked':False},
+            '_background_background':'classic','_background_color':'#EAF2FF','_border_radius':{'unit':'px','top':'30','right':'30','bottom':'30','left':'30','isLinked':True},
+            'title_color':'#0560FF','typography_typography':'custom','typography_font_family':'Karla','typography_font_size':{'unit':'px','size':13,'sizes':[]},
+            'typography_font_weight':'600','typography_line_height':{'unit':'em','size':1.2,'sizes':[]},'typography_letter_spacing':{'unit':'px','size':0.2,'sizes':[]}
+          },'elements':[]}
+
+          name={'id':'3d19027','elType':'widget','widgetType':'heading','settings':{
+            'title':'Dr. Cura','header_size':'h2','title_color':'#111111','typography_typography':'custom','typography_font_family':'Karla',
+            'typography_font_size':{'unit':'px','size':34,'sizes':[]},'typography_font_size_tablet':{'unit':'px','size':30,'sizes':[]},'typography_font_size_mobile':{'unit':'px','size':27,'sizes':[]},
+            'typography_font_weight':'600','typography_line_height':{'unit':'em','size':1.12,'sizes':[]},
+            '_margin':{'unit':'rem','top':'0.35','right':'0','bottom':'0','left':'0','isLinked':False}
+          },'elements':[]}
+
+          role={'id':'dcaa0002','elType':'widget','widgetType':'heading','settings':{
+            'title':'Medizinische Beurteilung von Behandlungsanfragen','header_size':'h3','title_color':'#0560FF','typography_typography':'custom','typography_font_family':'Karla',
+            'typography_font_size':{'unit':'px','size':17,'sizes':[]},'typography_font_size_mobile':{'unit':'px','size':16,'sizes':[]},
+            'typography_font_weight':'500','typography_line_height':{'unit':'em','size':1.35,'sizes':[]},
+            '_margin':{'unit':'px','top':'0','right':'0','bottom':'5','left':'0','isLinked':False}
+          },'elements':[]}
+
+          body={'id':'4f4f11c','elType':'widget','widgetType':'text-editor','settings':{
+            'editor':'Dr. Cura prüft medizinische Angaben sorgfältig und beurteilt, ob die gewünschte Behandlung aus ärztlicher Sicht geeignet ist. Ein Rezept wird nur ausgestellt, wenn dies medizinisch vertretbar ist.',
+            'text_color':'#4B5563','typography_typography':'custom','typography_font_family':'Karla','typography_font_size':{'unit':'px','size':16,'sizes':[]},
+            'typography_font_size_mobile':{'unit':'px','size':15,'sizes':[]},'typography_font_weight':'400','typography_line_height':{'unit':'em','size':1.6,'sizes':[]},
+            'paragraph_spacing':{'unit':'px','size':0,'sizes':[]}
+          },'elements':[]}
+
+          facts={'id':'dcaa0003','elType':'container','widgetType':None,'settings':{
+            'flex_direction':'row','flex_direction_mobile':'column','flex_gap':{'column':'0.75','row':'0.75','isLinked':True,'unit':'rem','size':0.75},
+            'flex_gap_mobile':{'column':'0.6','row':'0.6','isLinked':True,'unit':'rem','size':0.6},
+            'content_width':'full','width':{'unit':'%','size':100},
+            'margin':{'unit':'rem','top':'0.65','right':'0','bottom':'0','left':'0','isLinked':False},
+            'padding':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True}
+          },'elements':[]}
+
+          def fact(cid,tid,title,text):
+              return {'id':cid,'elType':'container','widgetType':None,'settings':{
+                'flex_direction':'column','content_width':'full','width':{'unit':'%','size':50},'width_mobile':{'unit':'%','size':100,'sizes':[]},
+                'background_background':'classic','background_color':'#F7F9FC','border_radius':{'unit':'px','top':'12','right':'12','bottom':'12','left':'12','isLinked':True},
+                'padding':{'unit':'rem','top':'0.9','right':'1','bottom':'0.9','left':'1','isLinked':False},
+                'margin':{'unit':'px','top':'0','right':'0','bottom':'0','left':'0','isLinked':True}
+              },'elements':[{'id':tid,'elType':'widget','widgetType':'text-editor','settings':{
+                'editor':f'<strong>{title}</strong><br>{text}','text_color':'#354052','typography_typography':'custom','typography_font_family':'Karla',
+                'typography_font_size':{'unit':'px','size':14,'sizes':[]},'typography_font_weight':'400','typography_line_height':{'unit':'em','size':1.45,'sizes':[]},'paragraph_spacing':{'unit':'px','size':0,'sizes':[]}
+              },'elements':[]}]}
+
+          facts['elements']=[
+            fact('dcaa0004','dcaa0005','Individuell geprüft','Jede Anfrage wird medizinisch bewertet.'),
+            fact('dcaa0006','dcaa0007','Rezept nach Eignung','Nur wenn die Behandlung ärztlich vertretbar ist.')
+          ]
+          info['elements']=[badge,name,role,body,facts]
+          card['elements']=[image,info]
+
+          payload={'id':900099,'element_id':'54f118f','replace':card}
+          json.dump(payload,open(patch_path,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'fingerprint':fp},open(meta_path,'w',encoding='utf-8'),separators=(',',':'))
+          print('baseline_fingerprint='+fp)
+          print('validated_placeholders=true')
           PY
+
+          fingerprint=$(python3 - "$root/meta.json" <<'PY'
+          import json,sys; print(json.load(open(sys.argv[1],encoding='utf-8'))['fingerprint'])
+          PY
+          )
+
+          call_action dry elementor.patch_element true false "$root/patch.json" "$fingerprint"
+          python3 - "$root/o-dry.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); x=(d.get('data') or {}).get('after_element') or {}; raw=json.dumps(x,ensure_ascii=False)
+          for needle in ('Dr. Cura','Ärztliche Prüfung','Individuell geprüft','Rezept nach Eignung'):
+              if needle not in raw: raise SystemExit('Dry-run missing: '+needle)
+          if 'Lorem Ipsum' in raw: raise SystemExit('Dry-run still contains placeholder content')
+          print('dry_run_verified=true')
+          PY
+
+          call_action apply elementor.patch_element false true "$root/patch.json" "$fingerprint"
+          python3 - "$root/o-apply.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); x=(d.get('data') or {}).get('after_element') or {}; raw=json.dumps(x,ensure_ascii=False)
+          for needle in ('Dr. Cura','Ärztliche Prüfung','Individuell geprüft','Rezept nach Eignung'):
+              if needle not in raw: raise SystemExit('Readback missing: '+needle)
+          if 'Lorem Ipsum' in raw: raise SystemExit('Readback still contains placeholder content')
+          st=x.get('settings') or {}
+          if st.get('flex_direction_tablet')!='column' or st.get('flex_direction_mobile')!='column': raise SystemExit('Responsive card stacking not preserved')
+          children=x.get('elements') or []
+          if len(children)!=2: raise SystemExit('Profile card must have exactly image and info columns')
+          image=children[0]; ist=image.get('settings') or {}
+          if int((ist.get('background_image') or {}).get('id') or 0)!=848: raise SystemExit('Doctor image identity changed')
+          if (ist.get('width_tablet') or {}).get('size')!=100 or (ist.get('width_mobile') or {}).get('size')!=100: raise SystemExit('Responsive image width not preserved')
+          print('elementor_readback_verified=true')
+          print('responsive_verified=true')
+          print('rollback_available=true')
+          PY
+
+          printf '%s' '{}' > "$root/regenerate.json"
+          call_action regenerate elementor.regenerate false true "$root/regenerate.json"
+
+          call_action verify elementor.inspect true false "$root/inspect.json"
+          python3 - "$root/o-verify.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; doc=data.get('document') or {}; found=None
+          def walk(items):
+              global found
+              for e in items if isinstance(items,list) else []:
+                  if not isinstance(e,dict): continue
+                  if e.get('id')=='54f118f': found=e; return
+                  walk(e.get('elements') or [])
+                  if found is not None: return
+          walk(doc.get('data') or [])
+          if found is None: raise SystemExit('Profile card missing after write')
+          raw=json.dumps(found,ensure_ascii=False)
+          if 'Dr. Cura' not in raw or 'Lorem Ipsum' in raw: raise SystemExit('Independent Elementor verification failed')
+          print('after_fingerprint='+str(data.get('fingerprint') or ''))
+          print('independent_elementor_verification=true')
+          PY
+
+          html_code=$(curl -sS -L --compressed --connect-timeout 10 --max-time 60 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraDoctorsVerification/1.0)' -o "$root/page.html" -w '%{http_code}' "${SITE_URL%/}/unsere-aerzte/")
+          [[ "$html_code" == 200 ]] || { echo "Doctors page HTTP $html_code" >&2; exit 1; }
+          grep -Fq 'Dr. Cura' "$root/page.html"
+          grep -Fq 'Ärztliche Prüfung' "$root/page.html"
+          grep -Fq 'Individuell geprüft' "$root/page.html"
+          if grep -Fq 'Lorem Ipsum' "$root/page.html"; then echo 'Public page still contains Lorem Ipsum' >&2; exit 1; fi
+          echo 'public_render_verified=true'
