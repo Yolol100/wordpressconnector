@@ -25,17 +25,16 @@ jobs:
             local path="$1" label="$2" safe
             safe=$(printf '%s' "$label" | tr -cs 'A-Za-z0-9._-' '_')
             local hdr="$tmp/$safe.headers" body="$tmp/$safe.body"
-            local code
+            local code location hcdn age canonical robots
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 \
-              --user-agent 'Mozilla/5.0 (compatible; DoctorCuraPostCDNAudit/1.0)' \
+              --user-agent 'Mozilla/5.0 (compatible; DoctorCuraPostCDNAudit/1.1)' \
               --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
-            local location hcdn age canonical robots
             location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
             hcdn=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
             age=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            canonical=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"'][^>]+href=["'"'][^"'"']+' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/I' || true)
-            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/I' || true); fi
-            robots=$(grep -Eio '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']+' "$body" | head -1 | sed -E 's/.*content=["'"']([^"'"']+).*/\1/I' || true)
+            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
             printf 'CHECK\t%s\t%s\tstatus=%s\tlocation=%s\thcdn=%s\tage=%s\tcanonical=%s\trobots=%s\n' "$label" "$path" "$code" "${location:-}" "${hcdn:-}" "${age:-}" "${canonical:-}" "${robots:-}"
           }
 
