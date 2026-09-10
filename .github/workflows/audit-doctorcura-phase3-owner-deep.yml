@@ -1,0 +1,89 @@
+name: DoctorCura Phase 3 Deep Owner Diagnostics
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3-owner-deep.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect snippet and cache/output owners read only
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          tmp="$RUNNER_TEMP/dc-owner-deep"; mkdir -p "$tmp"
+          c=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 2 --retry-delay 2 --retry-all-errors)
+
+          echo '=== SNIPPET 43 TOKENS ==='
+          curl "${c[@]}" --location "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/s43.json"
+          python3 - "$tmp/s43.json" <<'PY'
+          import hashlib,json,re,sys
+          s=json.load(open(sys.argv[1],encoding='utf-8')); code=str(s.get('code') or '')
+          print(f"SNIPPET id={s.get('id')} active={bool(s.get('active'))} hash={hashlib.sha256(code.encode()).hexdigest()} chars={len(code)}")
+          tokens=['hreflang','gtranslate','attribute_pa','wpseo','redirect_canonical','template_redirect','wp_head','ob_start','rocket_clean','pagination','product-categorie']
+          lines=code.splitlines()
+          for token in tokens:
+              hits=[(i+1,l.strip()) for i,l in enumerate(lines) if token.lower() in l.lower()]
+              print(f"TOKEN {token} count={len(hits)}")
+              for n,l in hits[:8]:
+                  print(f"TOKEN_LINE {token} line={n} text={l[:260]}")
+          PY
+
+          echo '=== REST CACHE ROUTE SCHEMAS ==='
+          curl "${c[@]}" --location "${auth[@]}" "$base/wp-json/" > "$tmp/index.json"
+          python3 - "$tmp/index.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); routes=d.get('routes') or {}
+          for name in ['/elementor/v1/cache','/wp-rocket/v1']:
+              r=routes.get(name)
+              print('ROUTE '+name+' present='+str(bool(r)))
+              if not r: continue
+              for i,e in enumerate(r.get('endpoints') or []):
+                  methods=e.get('methods') or []
+                  if isinstance(methods,dict): methods=[k for k,v in methods.items() if v]
+                  args=sorted((e.get('args') or {}).keys())
+                  print(f"ROUTE_ENDPOINT name={name} idx={i} methods={','.join(methods)} args={','.join(args)}")
+          PY
+
+          echo '=== TERMS CACHE BEHAVIOR ==='
+          for suffix in '' '?doctorcura_phase3_probe=1'; do
+            key=$(printf '%s' "$suffix" | sha256sum | cut -c1-8)
+            curl "${c[@]}" --location --compressed --dump-header "$tmp/terms-$key.h" --output "$tmp/terms-$key.html" "$base/geschaftsbedingungen/$suffix"
+            old=$(grep -Fco 'http://www.doctorcura.com' "$tmp/terms-$key.html" || true)
+            echo "TERMS suffix=${suffix:-none} old_http_count=$old"
+            awk 'BEGIN{IGNORECASE=1}/^(server|age|cache-control|x-hcdn-|x-cache|x-litespeed|cf-cache|vary):/{gsub(/\r/,"");print "TERMS_HEADER " $0}' "$tmp/terms-$key.h" || true
+          done
+
+          echo '=== EPIPEN ALTERNATE TAG CONTEXT ==='
+          url="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"
+          curl "${c[@]}" --location --compressed --output "$tmp/epipen.html" "$url"
+          python3 - "$tmp/epipen.html" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          tags=re.findall(r'<link\b[^>]*hreflang=[^>]*>',s,re.I)
+          print('ALT_TAG_COUNT='+str(len(tags)))
+          for t in tags[:10]: print('ALT_TAG '+re.sub(r'\s+',' ',t)[:700])
+          lower=s.lower()
+          for token in ['gtranslate','yoast','hreflang','translate.google','gt_switcher']:
+              print(f"HTML_TOKEN {token} count={lower.count(token.lower())}")
+          first=re.search(r'<link\b[^>]*hreflang=[^>]*>',s,re.I)
+          if first:
+              a=max(0,first.start()-700); b=min(len(s),first.end()+700)
+              ctx=re.sub(r'\s+',' ',s[a:b])
+              print('ALT_CONTEXT '+ctx[:1600])
+          PY
+          echo PHASE3_DEEP_OWNER_DIAGNOSTICS_COMPLETE
