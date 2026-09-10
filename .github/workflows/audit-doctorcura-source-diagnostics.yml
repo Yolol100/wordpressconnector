@@ -1,4 +1,4 @@
-name: Audit DoctorCura Failed Fix Rollback
+name: Audit DoctorCura Duplicate State After Rollback
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
@@ -19,53 +19,55 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify every production mutation was rolled back
+      - name: Inspect exact duplicate post and live route state
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"
           [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-rollback-check"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-duplicate-state"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
           redapi="$base/wp-json/redirection/v1"
+          slug='welche-medikamente-beeinflussen-die-erektion'
 
-          echo '=== REDIRECT ROLLBACK ==='
+          echo '=== EXACT POSTS BY ID ==='
+          for id in 900066 900067; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/p$id.json" --write-out '%{http_code}' "$wpapi/posts/$id?context=edit")
+            echo "id=$id rest_status=$code"
+            [[ "$code" == '200' ]] || continue
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "  status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured=".($p["featured_media"]??0)." date=".($p["date_gmt"]??"")." modified=".($p["modified_gmt"]??"").PHP_EOL;echo "  title_sha=".hash("sha256",(string)($p["title"]["raw"]??""))." content_sha=".hash("sha256",(string)($p["content"]["raw"]??""))." excerpt_sha=".hash("sha256",(string)($p["excerpt"]["raw"]??"")).PHP_EOL;' "$tmp/p$id.json"
+          done
+
+          echo '=== QUERY BY ORIGINAL SLUG ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts?slug=$slug&context=edit&per_page=100" > "$tmp/by-slug.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p)echo "  id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"").PHP_EOL;' "$tmp/by-slug.json"
+
+          echo '=== QUERY BOTH IDS ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts?include=900066,900067&context=edit&per_page=100" > "$tmp/by-ids.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p)echo "  id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"").PHP_EOL;' "$tmp/by-ids.json"
+
+          echo '=== LIVE URLS ==='
+          for path in "/$slug/" "/$slug-2/"; do
+            out="$tmp/live$(echo "$path" | tr '/?' '__').html"
+            r=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output "$out" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
+            canon=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$out" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            postid=$(grep -Eo '"post":\{"id":[0-9]+' "$out" | head -1 || true)
+            echo "path=$path result=$r canonical=$canon resolver=$postid"
+          done
+
+          echo '=== POST SITEMAP ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
+          for u in "$base/$slug/" "$base/$slug-2/"; do
+            count=$(grep -Fc "<loc>$u</loc>" "$tmp/post-sitemap.xml" || true)
+            echo "sitemap_url=$u count=$count"
+          done
+
+          echo '=== REDIRECT/TEXT STATE ==='
           for source in '/datenschutz/' '/product-categorie/gewichtsverlust/'; do
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
             total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/red.json")
-            echo "source=$source total=$total"
-            [[ "$total" == '0' ]] || { echo "Rollback failed: redirect remains for $source" >&2; exit 1; }
+            echo "redirect_source=$source total=$total"
           done
-          dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
-          echo "datenschutz_status=$dcode"
-          [[ "$dcode" == '404' ]] || { echo 'Rollback failed: Datenschutz is no longer 404' >&2; exit 1; }
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/weight.h" --output /dev/null "$base/product-categorie/gewichtsverlust/"
-          wcode=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/weight.h")
-          wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/weight.h" || true)
-          echo "weight_status=$wcode location=$wloc"
-          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo 'Rollback failed: weight route did not return to original state' >&2; exit 1; }
-
-          echo '=== POST ROLLBACK ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/p66.json"
-          f66=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/p66.json")
-          echo "post900066_featured=$f66"
-          [[ "$f66" == '900068' ]] || { echo 'Rollback failed: post 900066 featured media not restored' >&2; exit 1; }
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/p67.json"
-          s67=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/p67.json")
-          echo "post900067_status=$s67"
-          [[ "$s67" == 'publish' ]] || { echo 'Rollback failed: post 900067 not republished' >&2; exit 1; }
-
-          echo '=== TERMS ROLLBACK ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
-          http_count=$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo substr_count($raw,"href=\"http://www.doctorcura.com\"");' "$tmp/terms.json")
-          echo "terms_http_www_count=$http_count"
-          [[ "$http_count" == '1' ]] || { echo 'Rollback failed: terms source not restored exactly' >&2; exit 1; }
-
-          echo '=== SITEMAP ROLLBACK ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
-          dup_count=$(grep -Fc '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/</loc>' "$tmp/post-sitemap.xml")
-          echo "duplicate_sitemap_count=$dup_count"
-          [[ "$dup_count" == '2' ]] || { echo 'Rollback failed or state changed: expected duplicate sitemap count 2' >&2; exit 1; }
-
-          echo 'ROLLBACK_VERIFIED_EXACT'
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "terms_http_www_count=".substr_count($raw,"href=\"http://www.doctorcura.com\"").PHP_EOL;' "$tmp/terms.json"
