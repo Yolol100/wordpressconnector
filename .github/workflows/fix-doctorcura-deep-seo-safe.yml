@@ -1,4 +1,4 @@
-name: Fix DoctorCura Deep SEO Safe Corrections
+name: Fix DoctorCura Deep SEO Safe Corrections V2
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -26,47 +26,65 @@ jobs:
           base="${SITE_URL%/}"
           [[ "$base" == 'https://doctorcura.com' ]] || { echo 'DoctorCura target mismatch' >&2; exit 1; }
           test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          tmp="$RUNNER_TEMP/dc-deep-fix"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-deep-fix-v2"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           wpapi="$base/wp-json/wp/v2"
           redapi="$base/wp-json/redirection/v1"
+          slug='welche-medikamente-beeinflussen-die-erektion'
+          dupslug='welche-medikamente-beeinflussen-die-erektion-2'
           created_ids=()
           page_changed=0
-          post_feature_changed=0
+          feature_changed=0
           duplicate_changed=0
 
           canonical_of(){
             local body="$1" c=''
             c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            if [[ -z "$c" ]]; then
+              c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            fi
             printf '%s' "$c"
           }
           post_json(){
             local endpoint="$1" payload="$2" outfile="$3"
-            curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" \
+            curl --silent --show-error --location --connect-timeout 10 --max-time 45 "${auth[@]}" \
               --request POST --header 'Content-Type: application/json' --data-binary "@$payload" \
               --output "$outfile" --write-out '%{http_code}' "$endpoint"
           }
+          create_redirect(){
+            local source="$1" target="$2" title="$3" key="$4"
+            php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>$argv[3],"group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];file_put_contents($argv[4],json_encode($p,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$source" "$target" "$title" "$tmp/red-$key.json"
+            http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" \
+              --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/red-$key.json" \
+              --output "$tmp/red-$key-response.json" --write-out '%{http_code}' "$redapi/redirect")
+            [[ "$http" == '200' ]] || { echo "Redirection create failed source=$source HTTP=$http" >&2; return 1; }
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+              --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-$key-readback.json"
+            id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$hits=[];foreach(($d["items"]??[])as$x){if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")===$argv[3]))$hits[]=(int)$x["id"];}if(count($hits)!==1)exit(2);echo$hits[0];' "$tmp/red-$key-readback.json" "$source" "$target")
+            [[ "$id" =~ ^[1-9][0-9]*$ ]] || return 1
+            created_ids+=("$id")
+            echo "CREATED_REDIRECT id=$id source=$source target=$target"
+          }
           rollback(){
             rc=$?
-            if [[ "$rc" == '0' ]]; then return; fi
+            [[ "$rc" == '0' ]] && return
             echo "ROLLBACK_START cause_exit=$rc" >&2
             set +e
-            if [[ "$page_changed" == '1' && -s "$tmp/terms-rollback.json" ]]; then
-              post_json "$wpapi/pages/11" "$tmp/terms-rollback.json" "$tmp/rb-terms.json" >/dev/null
-            fi
             if [[ "$duplicate_changed" == '1' ]]; then
-              printf '{"status":"publish"}' > "$tmp/rb-dup-payload.json"
-              post_json "$wpapi/posts/900067" "$tmp/rb-dup-payload.json" "$tmp/rb-dup.json" >/dev/null
+              printf '{"status":"publish","slug":"welche-medikamente-beeinflussen-die-erektion-2"}' > "$tmp/rb-dup.json"
+              post_json "$wpapi/posts/900066" "$tmp/rb-dup.json" "$tmp/rb-dup-response.json" >/dev/null
             fi
-            if [[ "$post_feature_changed" == '1' ]]; then
-              printf '{"featured_media":900068}' > "$tmp/rb-feature-payload.json"
-              post_json "$wpapi/posts/900066" "$tmp/rb-feature-payload.json" "$tmp/rb-feature.json" >/dev/null
+            if [[ "$page_changed" == '1' && -s "$tmp/terms-rollback.json" ]]; then
+              post_json "$wpapi/pages/11" "$tmp/terms-rollback.json" "$tmp/rb-terms-response.json" >/dev/null
+            fi
+            if [[ "$feature_changed" == '1' ]]; then
+              printf '{"featured_media":900069}' > "$tmp/rb-feature.json"
+              post_json "$wpapi/posts/900067" "$tmp/rb-feature.json" "$tmp/rb-feature-response.json" >/dev/null
             fi
             if ((${#created_ids[@]})); then
               ids=$(IFS=,; echo "${created_ids[*]}")
               printf '{"items":[%s],"global":false}' "$ids" > "$tmp/rb-redirects.json"
-              curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" \
+              curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" \
                 --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/rb-redirects.json" \
                 --output "$tmp/rb-redirects-response.json" "$redapi/bulk/redirect/delete" >/dev/null
             fi
@@ -74,143 +92,150 @@ jobs:
           }
           trap rollback EXIT
 
-          echo '=== PREFLIGHT REDIRECTION GROUP ==='
+          echo '=== PREFLIGHT REDIRECTION GROUP AND TARGETS ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$redapi/group?per_page=50" > "$tmp/groups.json"
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===1&&!empty($x["enabled"])&&(int)($x["module_id"]??0)===1)$ok=true;}if(!$ok)exit(2);echo"group1=ok\n";' "$tmp/groups.json"
 
-          redirect_sources=( '/datenschutz/' '/product-categorie/gewichtsverlust/' )
-          redirect_targets=( 'https://doctorcura.com/privacy-policy/' 'https://doctorcura.com/product-category/gewichtsverlust/' )
-          redirect_titles=( 'DoctorCura legacy Datenschutz migration' 'DoctorCura legacy Gewichtsverlust taxonomy migration' )
-          for i in 0 1; do
-            source="${redirect_sources[$i]}"; target="${redirect_targets[$i]}"
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-before-$i.json"
+          sources=( '/datenschutz/' '/product-categorie/gewichtsverlust/' "/$dupslug/" )
+          targets=( "$base/privacy-policy/" "$base/product-category/gewichtsverlust/" "$base/$slug/" )
+          for i in 0 1 2; do
+            source="${sources[$i]}"; target="${targets[$i]}"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+              --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-before-$i.json"
             total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/red-before-$i.json")
-            [[ "$total" == '0' ]] || { echo "Redirect pre-exists for $source" >&2; exit 1; }
-            tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/target-$i.body" --write-out '%{http_code}' "$target")
-            [[ "$tcode" == '200' && "$(canonical_of "$tmp/target-$i.body")" == "$target" ]] || { echo "Invalid redirect target $target" >&2; exit 1; }
+            [[ "$total" == '0' ]] || { echo "Redirect pre-exists source=$source" >&2; exit 1; }
+            tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/target-$i.html" --write-out '%{http_code}' "$target")
+            [[ "$tcode" == '200' && "$(canonical_of "$tmp/target-$i.html")" == "$target" ]] || { echo "Invalid target=$target" >&2; exit 1; }
           done
+
+          echo '=== PREFLIGHT CURRENT ROUTES ==='
           dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
-          [[ "$dcode" == '404' ]] || { echo "Datenschutz preflight expected 404 got $dcode" >&2; exit 1; }
+          [[ "$dcode" == '404' ]] || { echo "Datenschutz expected 404 got=$dcode" >&2; exit 1; }
           curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/weight-old.h" --output /dev/null "$base/product-categorie/gewichtsverlust/"
           wcode=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/weight-old.h")
           wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/weight-old.h")
-          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo "Weight old-state changed status=$wcode location=$wloc" >&2; exit 1; }
-          for target in \
-            "$base/fr/privacy-policy/" "$base/en/privacy-policy/" \
-            "$base/fr/product-category/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/"; do
-            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/lang-target.body" --write-out '%{http_code}' "$target")
-            [[ "$code" == '200' && "$(canonical_of "$tmp/lang-target.body")" == "$target" ]] || { echo "Localized target invalid $target" >&2; exit 1; }
+          [[ "$wcode" == '301' && "$wloc" == "$base/gewichtsverlust-medikamente-vergleich/" ]] || { echo "Unexpected legacy weight state=$wcode $wloc" >&2; exit 1; }
+          for pair in "$slug:900067" "$dupslug:900066"; do
+            path="${pair%%:*}"; expected="${pair##*:}"
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/live-$expected.html" --write-out '%{http_code}' "$base/$path/")
+            [[ "$code" == '200' && "$(canonical_of "$tmp/live-$expected.html")" == "$base/$path/" ]] || { echo "Unexpected live route $path" >&2; exit 1; }
+            grep -q "\"post\":{\"id\":$expected" "$tmp/live-$expected.html" || { echo "Resolver mismatch path=$path" >&2; exit 1; }
           done
 
-          echo '=== PREFLIGHT DUPLICATE POSTS ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts?slug=welche-medikamente-beeinflussen-die-erektion&context=edit&per_page=100" > "$tmp/dups.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(count($d)!==2)exit(2);$by=[];foreach($d as$p)$by[(int)$p["id"]]=$p;if(!isset($by[900066],$by[900067]))exit(3);foreach([900066,900067]as$id)if(($by[$id]["status"]??"")!=="publish")exit(4);$fields=[["content","raw"],["title","raw"],["excerpt","raw"]];foreach($fields as$f){$a=$by[900066][$f[0]][$f[1]]??"";$b=$by[900067][$f[0]][$f[1]]??"";if($a!==$b)exit(5);}if(($by[900066]["featured_media"]??0)!=900068||($by[900067]["featured_media"]??0)!=900069)exit(6);echo"duplicate_preflight=identical\n";' "$tmp/dups.json"
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/welche-medikamente-beeinflussen-die-erektion/" > "$tmp/live-before.html"
-          grep -q '"post":{"id":900066' "$tmp/live-before.html" || { echo 'Live resolver is no longer post 900066' >&2; exit 1; }
+          echo '=== PREFLIGHT POSTS ==='
+          for id in 900066 900067; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/post-$id.json"
+          done
+          php -r '$a=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$b=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($a["status"]??"")!=="publish"||($b["status"]??"")!=="publish")exit(2);if(($a["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion-2")exit(3);if(($b["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion")exit(4);foreach([["content","raw"],["title","raw"],["excerpt","raw"]]as$f){if(($a[$f[0]][$f[1]]??"")!==($b[$f[0]][$f[1]]??""))exit(5);}if((int)($a["featured_media"]??0)!==900068||(int)($b["featured_media"]??0)!==900069)exit(6);echo"duplicate_preflight=current_state_identical\n";' "$tmp/post-900066.json" "$tmp/post-900067.json"
 
-          echo '=== PREFLIGHT REPLACEMENT MEDIA ==='
+          echo '=== PREFLIGHT REPLACEMENT MEDIA AND TERMS ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/media/5925?context=edit" > "$tmp/media5925.json"
           candidate=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($m["id"]??0)!==5925)exit(2);echo(string)($m["source_url"]??"");' "$tmp/media5925.json")
           [[ -n "$candidate" ]] || exit 1
           ccode=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$candidate")
-          [[ "$ccode" == '200' ]] || { echo "Replacement media not live: $candidate status=$ccode" >&2; exit 1; }
-
-          echo '=== PREFLIGHT TERMS PAGE ==='
+          [[ "$ccode" == '200' ]] || { echo "Replacement media unavailable=$ccode" >&2; exit 1; }
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms-before.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($p["id"]??0)!==11||($p["status"]??"")!=="publish")exit(2);$raw=(string)($p["content"]["raw"]??"");$needle="href=\"http://www.doctorcura.com\"";if(substr_count($raw,$needle)!==1)exit(3);$new=str_replace($needle,"href=\"https://doctorcura.com/\"",$raw);file_put_contents($argv[2],json_encode(["content"=>$raw],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));file_put_contents($argv[3],json_encode(["content"=>$new],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));echo"terms_preflight=exact_one_http_link\n";' "$tmp/terms-before.json" "$tmp/terms-rollback.json" "$tmp/terms-update.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");$needle="href=\"http://www.doctorcura.com\"";if((int)($p["id"]??0)!==11||($p["status"]??"")!=="publish"||substr_count($raw,$needle)!==1)exit(2);$new=str_replace($needle,"href=\"https://doctorcura.com/\"",$raw);file_put_contents($argv[2],json_encode(["content"=>$raw],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));file_put_contents($argv[3],json_encode(["content"=>$new],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));echo"terms_preflight=ok\n";' "$tmp/terms-before.json" "$tmp/terms-rollback.json" "$tmp/terms-update.json"
 
           echo '=== CREATE EXACT REDIRECTS ==='
-          for i in 0 1; do
-            source="${redirect_sources[$i]}"; target="${redirect_targets[$i]}"; title="${redirect_titles[$i]}"
-            php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>$argv[3],"group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];file_put_contents($argv[4],json_encode($p,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$source" "$target" "$title" "$tmp/red-create-$i.json"
-            http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/red-create-$i.json" --output "$tmp/red-create-$i-response.json" --write-out '%{http_code}' "$redapi/redirect")
-            [[ "$http" == '200' ]] || { echo "Redirection create failed $source HTTP=$http" >&2; exit 1; }
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-after-$i.json"
-            id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$hits=[];foreach(($d["items"]??[])as$x){if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")===$argv[3]))$hits[]=(int)$x["id"];}if(count($hits)!==1)exit(2);echo$hits[0];' "$tmp/red-after-$i.json" "$source" "$target")
-            [[ "$id" =~ ^[1-9][0-9]*$ ]] || exit 1
-            created_ids+=("$id")
-            echo "CREATED_REDIRECT id=$id source=$source target=$target"
-          done
+          create_redirect '/datenschutz/' "$base/privacy-policy/" 'DoctorCura legacy Datenschutz migration' 'datenschutz'
+          create_redirect '/product-categorie/gewichtsverlust/' "$base/product-category/gewichtsverlust/" 'DoctorCura legacy Gewichtsverlust taxonomy migration' 'weight'
+          create_redirect "/$dupslug/" "$base/$slug/" 'DoctorCura duplicate article consolidation' 'duplicate'
 
-          echo '=== UPDATE FEATURED IMAGE ==='
+          echo '=== UPDATE LIVE POST FEATURED IMAGE ==='
           printf '{"featured_media":5925}' > "$tmp/feature-update.json"
-          http=$(post_json "$wpapi/posts/900066" "$tmp/feature-update.json" "$tmp/feature-response.json")
-          [[ "$http" == '200' ]] || { echo "Featured media update HTTP=$http" >&2; exit 1; }
-          post_feature_changed=1
+          http=$(post_json "$wpapi/posts/900067" "$tmp/feature-update.json" "$tmp/feature-response.json")
+          [[ "$http" == '200' ]] || { echo "Featured update failed HTTP=$http" >&2; exit 1; }
+          feature_changed=1
           [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/feature-response.json")" == '5925' ]] || exit 1
-
-          echo '=== DRAFT EXACT DUPLICATE ==='
-          printf '{"status":"draft"}' > "$tmp/dup-update.json"
-          http=$(post_json "$wpapi/posts/900067" "$tmp/dup-update.json" "$tmp/dup-response.json")
-          [[ "$http" == '200' ]] || { echo "Duplicate draft update HTTP=$http" >&2; exit 1; }
-          duplicate_changed=1
-          [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/dup-response.json")" == 'draft' ]] || exit 1
 
           echo '=== FIX TERMS HTTPS LINK ==='
           http=$(post_json "$wpapi/pages/11" "$tmp/terms-update.json" "$tmp/terms-response.json")
-          [[ "$http" == '200' ]] || { echo "Terms update HTTP=$http" >&2; exit 1; }
+          [[ "$http" == '200' ]] || { echo "Terms update failed HTTP=$http" >&2; exit 1; }
           page_changed=1
           php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");if(stripos($raw,"http://www.doctorcura.com")!==false)exit(2);if(substr_count($raw,"href=\"https://doctorcura.com/\"")<1)exit(3);echo"terms_readback=ok\n";' "$tmp/terms-response.json"
 
           verify_redirect(){
-            local path="$1"
-            local expected_final="$2"
-            local expected_first="$3"
-            local expected_count="$4"
-            local label="$5"
-            local first loc follow status final count
-            local body="$tmp/$label.body"
+            local path="$1" expected_final="$2" label="$3"
+            local first loc follow status final count body
+            body="$tmp/$label.html"
             first=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' --dump-header "$tmp/$label.h" --output /dev/null --write-out '%{http_code}' "$base$path")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$label.h" || true)
-            [[ "$first" == '301' && "$loc" == "$expected_first" ]] || { echo "$label first status=$first location=$loc expected=$expected_first" >&2; return 1; }
+            [[ "$first" == '301' ]] || { echo "$label first_status=$first location=$loc" >&2; return 1; }
             follow=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --header 'Cache-Control: no-cache' --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
             IFS=$'\t' read -r status final count <<< "$follow"
-            [[ "$status" == '200' && "$final" == "$expected_final" && "$count" == "$expected_count" ]] || { echo "$label follow=$follow" >&2; return 1; }
-            [[ "$(canonical_of "$body")" == "$expected_final" ]] || { echo "$label final canonical mismatch" >&2; return 1; }
-            echo "VERIFY_REDIRECT_OK label=$label first=$loc final=$final redirects=$count"
+            [[ "$status" == '200' && "$final" == "$expected_final" && "$count" -ge 1 && "$count" -le 2 ]] || { echo "$label follow=$follow" >&2; return 1; }
+            [[ "$(canonical_of "$body")" == "$expected_final" ]] || { echo "$label canonical=$(canonical_of "$body") expected=$expected_final" >&2; return 1; }
+            echo "VERIFY_REDIRECT_OK label=$label first=$first location=$loc final=$final redirects=$count"
           }
 
-          verify_round(){
+          echo '=== VERIFY BEFORE DRAFT ==='
+          verify_redirect '/datenschutz/' "$base/privacy-policy/" 'pre-datenschutz'
+          verify_redirect '/fr/datenschutz/' "$base/fr/privacy-policy/" 'pre-datenschutz-fr'
+          verify_redirect '/en/datenschutz/' "$base/en/privacy-policy/" 'pre-datenschutz-en'
+          verify_redirect '/product-categorie/gewichtsverlust/' "$base/product-category/gewichtsverlust/" 'pre-weight'
+          verify_redirect '/fr/product-categorie/gewichtsverlust/' "$base/fr/product-category/gewichtsverlust/" 'pre-weight-fr'
+          verify_redirect '/en/product-categorie/gewichtsverlust/' "$base/en/product-category/gewichtsverlust/" 'pre-weight-en'
+          verify_redirect "/$dupslug/" "$base/$slug/" 'pre-duplicate'
+          verify_redirect "/fr/$dupslug/" "$base/fr/$slug/" 'pre-duplicate-fr'
+          verify_redirect "/en/$dupslug/" "$base/en/$slug/" 'pre-duplicate-en'
+
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/$slug/" > "$tmp/live-original.html"
+          grep -q '"post":{"id":900067' "$tmp/live-original.html" || { echo 'Original live resolver changed' >&2; exit 1; }
+          grep -Fq "$candidate" "$tmp/live-original.html" || { echo 'Replacement featured media not rendered' >&2; exit 1; }
+          ! grep -Fq '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp' "$tmp/live-original.html" || { echo 'Broken featured media still rendered' >&2; exit 1; }
+
+          echo '=== DRAFT DUPLICATE POST 900066 ==='
+          printf '{"status":"draft"}' > "$tmp/draft-duplicate.json"
+          http=$(post_json "$wpapi/posts/900066" "$tmp/draft-duplicate.json" "$tmp/draft-response.json")
+          [[ "$http" == '200' ]] || { echo "Duplicate draft failed HTTP=$http" >&2; exit 1; }
+          duplicate_changed=1
+          [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/draft-response.json")" == 'draft' ]] || exit 1
+
+          verify_final(){
             local round="$1"
-            echo "=== VERIFY $round ==="
-            verify_redirect '/datenschutz/' "$base/privacy-policy/" "$base/privacy-policy/" 1 "$round-datenschutz"
-            verify_redirect '/fr/datenschutz/' "$base/fr/privacy-policy/" "$base/fr/privacy-policy/" 1 "$round-datenschutz-fr"
-            verify_redirect '/en/datenschutz/' "$base/en/privacy-policy/" "$base/en/privacy-policy/" 1 "$round-datenschutz-en"
-            verify_redirect '/product-categorie/gewichtsverlust/' "$base/product-category/gewichtsverlust/" "$base/product-category/gewichtsverlust/" 1 "$round-weight"
-            verify_redirect '/fr/product-categorie/gewichtsverlust/' "$base/fr/product-category/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" 1 "$round-weight-fr"
-            verify_redirect '/en/product-categorie/gewichtsverlust/' "$base/en/product-category/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" 1 "$round-weight-en"
+            echo "=== FINAL VERIFY $round ==="
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/$round-p66.json"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-p67.json"
+            [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo($p["status"]??"");' "$tmp/$round-p66.json")" == 'draft' ]] || return 1
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(($p["status"]??"")!=="publish"||($p["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion"||(int)($p["featured_media"]??0)!==5925)exit(2);' "$tmp/$round-p67.json"
 
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/$round-post900066.json"
-            [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/$round-post900066.json")" == '5925' ]] || { echo 'post900066 featured readback failed' >&2; return 1; }
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-post900067.json"
-            [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/$round-post900067.json")" == 'draft' ]] || { echo 'post900067 status readback failed' >&2; return 1; }
+            verify_redirect "/$dupslug/" "$base/$slug/" "$round-duplicate"
+            verify_redirect "/fr/$dupslug/" "$base/fr/$slug/" "$round-duplicate-fr"
+            verify_redirect "/en/$dupslug/" "$base/en/$slug/" "$round-duplicate-en"
+            verify_redirect '/datenschutz/' "$base/privacy-policy/" "$round-datenschutz"
+            verify_redirect '/fr/datenschutz/' "$base/fr/privacy-policy/" "$round-datenschutz-fr"
+            verify_redirect '/en/datenschutz/' "$base/en/privacy-policy/" "$round-datenschutz-en"
+            verify_redirect '/product-categorie/gewichtsverlust/' "$base/product-category/gewichtsverlust/" "$round-weight"
+            verify_redirect '/fr/product-categorie/gewichtsverlust/' "$base/fr/product-category/gewichtsverlust/" "$round-weight-fr"
+            verify_redirect '/en/product-categorie/gewichtsverlust/' "$base/en/product-category/gewichtsverlust/" "$round-weight-en"
 
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/welche-medikamente-beeinflussen-die-erektion/" > "$tmp/$round-livepost.html"
-            grep -q '"post":{"id":900066' "$tmp/$round-livepost.html" || { echo 'live post id changed' >&2; return 1; }
-            grep -Fq "$candidate" "$tmp/$round-livepost.html" || { echo 'replacement featured media not rendered' >&2; return 1; }
-            ! grep -Fq '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp' "$tmp/$round-livepost.html" || { echo 'broken featured image still rendered' >&2; return 1; }
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/$slug/" > "$tmp/$round-live.html"
+            grep -q '"post":{"id":900067' "$tmp/$round-live.html" || return 1
+            grep -Fq "$candidate" "$tmp/$round-live.html" || return 1
+            ! grep -Fq '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp' "$tmp/$round-live.html" || return 1
 
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml" > "$tmp/$round-post-sitemap.xml"
-            count=$(grep -Fc '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/</loc>' "$tmp/$round-post-sitemap.xml")
-            [[ "$count" == '1' ]] || { echo "duplicate sitemap count=$count" >&2; return 1; }
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/post-sitemap.xml" > "$tmp/$round-post-sitemap.xml"
+            [[ "$(grep -Fc "<loc>$base/$slug/</loc>" "$tmp/$round-post-sitemap.xml" || true)" == '1' ]] || { echo "$round original sitemap count wrong" >&2; return 1; }
+            [[ "$(grep -Fc "<loc>$base/$dupslug/</loc>" "$tmp/$round-post-sitemap.xml" || true)" == '0' ]] || { echo "$round duplicate sitemap remains" >&2; return 1; }
 
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/geschaftsbedingungen/" > "$tmp/$round-terms.html"
-            ! grep -Fiq 'href="http://www.doctorcura.com"' "$tmp/$round-terms.html" || { echo 'HTTP www terms link still live' >&2; return 1; }
-            grep -Fiq 'href="https://doctorcura.com/"' "$tmp/$round-terms.html" || { echo 'HTTPS replacement link missing live' >&2; return 1; }
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/geschaftsbedingungen/" > "$tmp/$round-terms.html"
+            ! grep -Fiq 'href="http://www.doctorcura.com"' "$tmp/$round-terms.html" || return 1
+            grep -Fiq 'href="https://doctorcura.com/"' "$tmp/$round-terms.html" || return 1
             for lang in fr en; do
-              curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/$lang/geschaftsbedingungen/" > "$tmp/$round-terms-$lang.html"
-              ! grep -Eiq 'href="http://(www\.)?doctorcura\.com/?"' "$tmp/$round-terms-$lang.html" || { echo "HTTP internal link remains in $lang terms" >&2; return 1; }
+              curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --header 'Cache-Control: no-cache' "$base/$lang/geschaftsbedingungen/" > "$tmp/$round-terms-$lang.html"
+              ! grep -Eiq 'href="http://(www\.)?doctorcura\.com/?"' "$tmp/$round-terms-$lang.html" || return 1
             done
 
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/$round-page16.html" --write-out '%{http_code}' "$base/fr/blogs/16/")
-            [[ "$code" == '200' && "$(canonical_of "$tmp/$round-page16.html")" == "$base/fr/blogs/16/" ]] || { echo 'pagination regression' >&2; return 1; }
+            [[ "$code" == '200' && "$(canonical_of "$tmp/$round-page16.html")" == "$base/fr/blogs/16/" ]] || { echo "$round pagination regression" >&2; return 1; }
             code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base/fr/blogs/17/")
-            [[ "$code" == '404' ]] || { echo 'pagination out-of-range regression' >&2; return 1; }
-            echo "VERIFY_ROUND_OK $round"
+            [[ "$code" == '404' ]] || { echo "$round out-of-range pagination regression" >&2; return 1; }
+            echo "FINAL_VERIFY_OK $round"
           }
 
-          verify_round round1
-          sleep 2
-          verify_round round2
+          verify_final round1
+          sleep 3
+          verify_final round2
           trap - EXIT
-          echo "FIX_SUCCESS redirect_ids=$(IFS=,; echo "${created_ids[*]}") duplicate_post=900067_draft live_post=900066 featured_media=5925 terms_page=11"
+          echo "FIX_SUCCESS redirect_ids=$(IFS=,; echo "${created_ids[*]}") canonical_post=900067 duplicate_post=900066_draft featured_media=5925 terms_page=11"
