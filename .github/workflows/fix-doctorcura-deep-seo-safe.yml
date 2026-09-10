@@ -1,4 +1,4 @@
-name: Fix DoctorCura Phase 2A Duplicate Content
+name: Fix DoctorCura Phase 2B Featured Image
 
 on:
   push:
@@ -13,31 +13,41 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Consolidate exact duplicate only
+      - name: Apply featured image fix with Elementor and WP Rocket cache clear
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2a"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2b"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          wpapi="$base/wp-json/wp/v2"; redapi="$base/wp-json/redirection/v1"; snipapi="$base/wp-json/code-snippets/v1/snippets/43"
+          wpapi="$base/wp-json/wp/v2"
+          redapi="$base/wp-json/redirection/v1"
+          snipapi="$base/wp-json/code-snippets/v1/snippets/43"
+          elementor_cache="$base/wp-json/elementor/v1/cache"
           clean_slug='welche-medikamente-beeinflussen-die-erektion'
           dup_slug='welche-medikamente-beeinflussen-die-erektion-2'
           clean="$base/$clean_slug/"; dup="$base/$dup_slug/"
-          changed=0; redirect_id=''; snippet_ready=0
+          candidate="$base/wp-content/uploads/2026/06/beste-optionen-bei-erektionsstoerungen-featured.webp"
+          broken_name='welche-medikamente-beeinflussen-die-erektion-featured.webp'
+          changed=0; snippet_ready=0
 
           post_json(){ local endpoint="$1" payload="$2" outfile="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$endpoint"; }
           put_snippet(){ local payload="$1" outfile="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$snipapi"; }
-          canonical_of(){ local f="$1"; grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true; }
-          delete_redirect(){ [[ "$redirect_id" =~ ^[1-9][0-9]*$ ]] || return 0; printf '{"items":[%s],"global":false}' "$redirect_id" > "$tmp/del.json"; curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/del.json" --output "$tmp/del-response.json" "$redapi/bulk/redirect/delete" >/dev/null || true; }
-
+          canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi; printf '%s' "$c"; }
+          clear_elementor(){
+            local code
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request DELETE --output "$tmp/elementor-cache.json" --write-out '%{http_code}' "$elementor_cache")
+            echo "elementor_cache_http=$code response=$(tr -d '\n\r' < "$tmp/elementor-cache.json" | head -c 500)"
+            [[ "$code" == '200' ]]
+          }
           prepare_snippet(){
+            local code
             code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/snip-original.json" --write-out '%{http_code}' "$snipapi")
             [[ "$code" == '200' ]] || return 1
             php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"]))exit(2);$c=(string)($s["code"]??"");if(strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(3);file_put_contents($argv[2],json_encode(["code"=>$c],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));file_put_contents($argv[3],hash("sha256",$c));' "$tmp/snip-original.json" "$tmp/snip-restore.json" "$tmp/snip.sha"
@@ -45,73 +55,72 @@ jobs:
           }
           purge_wp_rocket(){
             [[ "$snippet_ready" == '1' ]] || return 1
+            local token code current
             token=$(openssl rand -hex 24)
-            php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$t=$argv[3];$h="\n/* DoctorCura one-time cache purge helper - removed automatically */\nadd_action(\"init\",function(){if(!isset(\$_GET[\"doctorcura_seo_purge\"])||!hash_equals(\"".$t."\",(string)\$_GET[\"doctorcura_seo_purge\"]))return;if(function_exists(\"rocket_clean_domain\"))rocket_clean_domain();if(function_exists(\"wp_cache_flush\"))wp_cache_flush();header(\"X-DoctorCura-SEO-Purge: done\");},1);\n";file_put_contents($argv[2],json_encode(["code"=>rtrim($c).$h],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$tmp/snip-original.json" "$tmp/snip-temp.json" "$token"
+            php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$t=$argv[3];$h="\n/* DoctorCura one-time cache purge helper - removed automatically */\nadd_action(\"init\",function(){if(!isset(\$_GET[\"doctorcura_seo_purge\"])||!hash_equals(\"".$t."\",(string)\$_GET[\"doctorcura_seo_purge\"]))return;$r=function_exists(\"rocket_clean_domain\");if($r)rocket_clean_domain();if(function_exists(\"wp_cache_flush\"))wp_cache_flush();header(\"X-DoctorCura-SEO-Purge: \".($r?\"rocket\":\"object-only\"));},1);\n";file_put_contents($argv[2],json_encode(["code"=>rtrim($c).$h],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$tmp/snip-original.json" "$tmp/snip-temp.json" "$token"
             [[ "$(put_snippet "$tmp/snip-temp.json" "$tmp/snip-temp-response.json")" == '200' ]] || return 1
             curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --dump-header "$tmp/purge.h" --output /dev/null "$base/wp-json/?doctorcura_seo_purge=$token"
-            grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*done' "$tmp/purge.h" || { echo 'Purge helper did not execute' >&2; put_snippet "$tmp/snip-restore.json" "$tmp/snip-restore-fallback.json" >/dev/null || true; return 1; }
+            grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*rocket' "$tmp/purge.h" || { put_snippet "$tmp/snip-restore.json" "$tmp/snip-restore-fallback.json" >/dev/null || true; echo 'WP Rocket helper did not confirm rocket_clean_domain' >&2; return 1; }
             [[ "$(put_snippet "$tmp/snip-restore.json" "$tmp/snip-restore-response.json")" == '200' ]] || return 1
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snip-after.json"
             current=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo hash("sha256",(string)($s["code"]??""));' "$tmp/snip-after.json")
             [[ "$current" == "$(cat "$tmp/snip.sha")" ]] || { echo 'Snippet restore mismatch' >&2; return 1; }
-            echo 'wp_rocket_purge=executed snippet_restore=exact'
+            echo 'wp_rocket_purge=confirmed snippet_restore=exact'
           }
           rollback(){
             rc=$?; [[ "$rc" == '0' ]] && return
-            echo "PHASE2A_ROLLBACK_START exit=$rc" >&2; set +e
-            delete_redirect
-            if [[ "$changed" == '1' ]]; then printf '{"status":"publish","slug":"%s"}' "$dup_slug" > "$tmp/rb.json"; post_json "$wpapi/posts/900066" "$tmp/rb.json" "$tmp/rb-response.json" >/dev/null; fi
+            echo "PHASE2B_ROLLBACK_START exit=$rc" >&2; set +e
+            if [[ "$changed" == '1' ]]; then printf '{"featured_media":900069}' > "$tmp/rb.json"; post_json "$wpapi/posts/900067" "$tmp/rb.json" "$tmp/rb-response.json" >/dev/null; fi
+            clear_elementor >/dev/null 2>&1 || true
             [[ "$snippet_ready" == '1' ]] && purge_wp_rocket >/dev/null 2>&1 || true
-            echo 'PHASE2A_ROLLBACK_ATTEMPTED' >&2
+            echo 'PHASE2B_ROLLBACK_ATTEMPTED' >&2
           }
           trap rollback EXIT
 
-          echo '=== PREFLIGHT ==='
+          echo '=== PREFLIGHT PHASE2A STATE ==='
           prepare_snippet
-          for id in 900067 900066; do curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/p$id.json"; done
-          php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||($k["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion")exit(2);if(($d["status"]??"")!=="publish"||($d["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion-2")exit(3);foreach([["content","raw"],["title","raw"],["excerpt","raw"]]as$f)if(($k[$f[0]][$f[1]]??"")!==($d[$f[0]][$f[1]]??""))exit(4);echo"exact_duplicate=yes\n";' "$tmp/p900067.json" "$tmp/p900066.json"
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-before.json"
-          [[ "$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/red-before.json")" == '0' ]] || { echo 'Redirect already exists' >&2; exit 1; }
-          for pair in "$clean|900067" "$dup|900066"; do url="${pair%%|*}"; id="${pair##*|}"; result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output "$tmp/pre.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url"); [[ "$result" == $'200\t'"$url"$'\t0' ]] || exit 1; [[ "$(canonical_of "$tmp/pre.html")" == "$url" ]] || exit 1; grep -q "\"post\":{\"id\":$id" "$tmp/pre.html" || exit 1; done
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/keep.json"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/dup.json"
+          php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||($k["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion"||(int)($k["featured_media"]??0)!==900069)exit(2);if(($d["status"]??"")!=="draft")exit(3);echo"phase2a_state=ok\n";' "$tmp/keep.json" "$tmp/dup.json"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$ok=false;foreach(($d["items"]??[])as$x){if((int)($x["id"]??0)===14&&($x["url"]??"")==="/welche-medikamente-beeinflussen-die-erektion-2/"&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")==="https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/"))$ok=true;}if(!$ok)exit(2);echo"redirect14=ok\n";' "$tmp/red.json"
+          [[ "$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$candidate")" == '200' ]] || { echo 'Candidate image unavailable' >&2; exit 1; }
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/elementor_library/5841?context=edit" > "$tmp/template.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["meta"]["_elementor_data"]??"");$d=json_decode($raw,true,512,JSON_THROW_ON_ERROR);$found=[];$walk=function($els)use(&$walk,&$found){foreach($els as$e){if(($e["id"]??"")==="695868ca")$found[]=$e;if(!empty($e["elements"]))$walk($e["elements"]);}};$walk($d);if(count($found)!==1)exit(2);$w=$found[0];$dyn=$w["settings"]["__dynamic__"]["image"]??"";if(($w["widgetType"]??"")!=="image"||strpos($dyn,"name=\"post-featured-image\"")===false)exit(3);echo"elementor_dynamic_featured=ok\n";' "$tmp/template.json"
 
-          echo '=== DRAFT DUPLICATE ==='
-          printf '{"status":"draft"}' > "$tmp/draft.json"
-          [[ "$(post_json "$wpapi/posts/900066" "$tmp/draft.json" "$tmp/draft-response.json")" == '200' ]] || exit 1
+          echo '=== UPDATE FEATURED MEDIA ==='
+          printf '{"featured_media":5925}' > "$tmp/update.json"
+          [[ "$(post_json "$wpapi/posts/900067" "$tmp/update.json" "$tmp/update-response.json")" == '200' ]] || exit 1
           changed=1
-          [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($p["status"]??"");' "$tmp/draft-response.json")" == 'draft' ]] || exit 1
+          [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/update-response.json")" == '5925' ]] || exit 1
 
-          echo '=== CREATE EXACT 301 ==='
-          php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>"DoctorCura exact duplicate consolidation 2026-09-10","group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];file_put_contents($argv[3],json_encode($p,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "/$dup_slug/" "$clean" "$tmp/create.json"
-          [[ "$(curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create.json" --output "$tmp/create-response.json" --write-out '%{http_code}' "$redapi/redirect")" == '200' ]] || exit 1
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=/$dup_slug/" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red-after.json"
-          redirect_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$h=[];foreach(($d["items"]??[])as$x){if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")===$argv[3]))$h[]=(int)$x["id"];}if(count($h)!==1)exit(2);echo$h[0];' "$tmp/red-after.json" "/$dup_slug/" "$clean")
-          [[ "$redirect_id" =~ ^[1-9][0-9]*$ ]] || exit 1
-
-          echo '=== VERIFIED WP ROCKET PURGE ==='
+          echo '=== CLEAR ELEMENTOR CACHE ==='
+          clear_elementor
+          echo '=== CLEAR WP ROCKET CACHE ==='
           purge_wp_rocket
 
-          verify(){
-            round="$1"; echo "=== VERIFY $round ==="
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-k.json"
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900066?context=edit" > "$tmp/$round-d.json"
-            php -r '$k=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$d=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);if(($k["status"]??"")!=="publish"||($k["slug"]??"")!=="welche-medikamente-beeinflussen-die-erektion")exit(2);if(($d["status"]??"")!=="draft")exit(3);' "$tmp/$round-k.json" "$tmp/$round-d.json"
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$round-clean.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$clean?dc_verify=$round")
-            [[ "${result%%$'\t'*}" == '200' ]] || { echo "Clean failed $result" >&2; return 1; }
-            grep -q '"post":{"id":900067' "$tmp/$round-clean.html" || return 1
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --dump-header "$tmp/$round-dup.h" --output /dev/null "$dup"
-            first=$(awk '/^HTTP\//{code=$2}END{print code}' "$tmp/$round-dup.h")
-            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$round-dup.h")
-            [[ "$first" == '301' && "$loc" == "$clean" ]] || { echo "Dup hop status=$first loc=$loc" >&2; return 1; }
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$round-final.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$dup")
-            [[ "$result" == $'200\t'"$clean"$'\t1' ]] || { echo "Dup follow $result" >&2; return 1; }
-            [[ "$(canonical_of "$tmp/$round-final.html")" == "$clean" ]] || return 1
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml?dc_verify=$round" > "$tmp/$round-map.xml"
-            c=$(grep -Fc "<loc>$clean</loc>" "$tmp/$round-map.xml" || true); d=$(grep -Fc "<loc>$dup</loc>" "$tmp/$round-map.xml" || true)
-            [[ "$c" == '1' && "$d" == '0' ]] || { echo "Sitemap clean=$c dup=$d" >&2; return 1; }
-            echo "PHASE2A_VERIFY_OK $round"
+          verify_round(){
+            local round="$1" lang prefix url html result canon
+            echo "=== VERIFY $round ==="
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/900067?context=edit" > "$tmp/$round-post.json"
+            [[ "$(php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($p["featured_media"]??0);' "$tmp/$round-post.json")" == '5925' ]] || { echo 'Featured readback failed' >&2; return 1; }
+            for lang in base fr en; do
+              [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
+              url="$base$prefix/$clean_slug/"; html="$tmp/$round-$lang.html"
+              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
+              [[ "$result" == $'200\t'"$url"$'\t0' ]] || { echo "$lang URL failed $result" >&2; return 1; }
+              canon=$(canonical_of "$html"); [[ "$canon" == "$url" ]] || { echo "$lang canonical=$canon" >&2; return 1; }
+              grep -Eio '<img[^>]+beste-optionen-bei-erektionsstoerungen-featured[^>]*>' "$html" | grep -q . || { echo "$lang replacement image not rendered" >&2; return 1; }
+              ! grep -Fq "$broken_name" "$html" || { echo "$lang broken image still rendered" >&2; return 1; }
+              grep -Eio '<meta[^>]+property="og:image"[^>]*>' "$html" | grep -Fq "$candidate" || { echo "$lang og:image not candidate" >&2; return 1; }
+            done
+            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$dup")
+            [[ "$result" == $'200\t'"$clean"$'\t1' ]] || { echo "Phase2A regression $result" >&2; return 1; }
+            echo "PHASE2B_VERIFY_OK $round"
           }
-          verify one
+
+          verify_round one
           sleep 3
-          verify two
+          verify_round two
           trap - EXIT
-          echo "PHASE2A_SUCCESS keeper=900067 duplicate=900066 redirect_id=$redirect_id"
+          echo 'PHASE2B_SUCCESS featured_media=5925 elementor_cache=cleared wp_rocket=cleared'
