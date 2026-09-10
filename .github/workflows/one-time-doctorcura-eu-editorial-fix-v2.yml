@@ -1,0 +1,214 @@
+name: One-time DoctorCura EU-only editorial fix v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-eu-editorial-fix-v2/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-eu-editorial-fix-v2
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply EU-only German editorial corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-eu-v2"; rm -rf "$root"; mkdir -p "$root/before" "$root/after" "$root/yb" "$root/ya" "$root/payload" "$root/ypayload"
+          ids=(900060 900048 900043 6050 6048 6046 6044 6042 6033 6020 6008 5999 5995 5993 5990 5986 5904 5896 5892)
+
+          call(){
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"
+            python3 - "$root/r-$suffix.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          out,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-eu-v2-'+uuid.uuid4().hex[:18],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.load(open(payload,encoding='utf-8'))},open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            for attempt in $(seq 1 8); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 150 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+              if [[ "$code" == 200 ]] && python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          try:d=json.load(open(sys.argv[1],encoding='utf-8'))
+          except:raise SystemExit(1)
+          raise SystemExit(0 if d.get('ok') else 1)
+          PY
+              then return 0; fi
+              [[ "$code" == 503 || "$code" == 000 ]] && { sleep 12; continue; }
+              echo "$action failed HTTP=$code" >&2; cat "$root/o-$suffix.json" >&2 || true; return 1
+            done
+            return 1
+          }
+
+          for id in "${ids[@]}"; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "b-$id" post.get true false "$root/id.json"; cp "$root/o-b-$id.json" "$root/before/$id.json"
+            call "yb-$id" yoast.inspect true false "$root/id.json"; cp "$root/o-yb-$id.json" "$root/yb/$id.json"
+          done
+
+          python3 - "$root" <<'PY'
+          import html,json,os,re,sys
+          root=sys.argv[1]
+          ids=[900060,900048,900043,6050,6048,6046,6044,6042,6033,6020,6008,5999,5995,5993,5990,5986,5904,5896,5892]
+          titles={900060:'Rezeptpflichtige Therapie digital anfragen',900048:'Wegovy-Erfahrungen medizinisch eingeordnet',900043:'Viagra-Wirkung: medizinisch erklärt',6050:'Mounjaro beim Gewichtsmanagement: medizinisch eingeordnet',6048:'Digitale Rezeptbehandlung: Ablauf verständlich erklärt',6046:'Rezeptpflichtige Schlafhilfe online anfragen',6044:'Digitales Rezept oder Praxisbesuch: Was passt?',6042:'Rezept online erhalten: sicher und diskret',6033:'Was kostet eine GLP-1-Therapie?',6020:'Diskrete Medikamentenbestellung: So läuft sie ab',6008:'Rezept online anfragen: Ablauf und ärztliche Prüfung',5999:'Ist Wegovy für mich geeignet? Medizinische Kriterien',5995:'Wer bekommt Mounjaro verschrieben? Medizinische Kriterien',5993:'Online-Rezept für Wegovy: sicher anfragen',5990:'Potenzbehandlung online anfragen: Ablauf und Sicherheit',5986:'Medikamente zur Gewichtsabnahme im Vergleich',5904:'Behandlung erektiler Dysfunktion online erklärt',5896:'Medikamente sicher über eine EU-Apotheke bestellen',5892:'Ist ein Online-Rezept in Deutschland legal?'}
+          desc={900060:'So läuft eine digitale Anfrage für eine rezeptpflichtige Therapie ab – von den Gesundheitsangaben und der ärztlichen Prüfung bis zu Rezept und Versand.',900048:'Wegovy-Erfahrungen richtig einordnen: Was Semaglutid bewirken kann, welche Nebenwirkungen häufig sind und warum ärztliche Kontrollen wichtig sind.',900043:'Wie Sildenafil wirkt, wann Viagra typischerweise einsetzt, welche Neben- und Wechselwirkungen wichtig sind und wann ärztlicher Rat nötig ist.',6050:'Mounjaro mit Tirzepatid kann bei Typ-2-Diabetes und beim Gewichtsmanagement eingesetzt werden. Entscheidend sind Eignung, Risiken und ärztliche Begleitung.',6048:'Vom Gesundheitsfragebogen bis zur Apotheke: So läuft eine digitale Rezeptbehandlung ab und an welchen Stellen die ärztliche Prüfung entscheidet.',6046:'Wie eine digitale Anfrage für rezeptpflichtige Schlafmittel abläuft, welche Risiken geprüft werden und wann eine Untersuchung vor Ort sinnvoller ist.',6044:'Telemedizin oder Termin in der Praxis? Welche Beschwerden sich online beurteilen lassen und wann eine persönliche Untersuchung die bessere Wahl ist.',6042:'Online-Rezept Schritt für Schritt: medizinischer Fragebogen, ärztliche Prüfung, mögliche Verordnung und diskreter Versand über eine zugelassene Apotheke.',6033:'Die Kosten einer GLP-1-Therapie hängen von Präparat, Dosis, ärztlicher Betreuung, Apotheke und möglicher Kostenerstattung ab. Darauf sollten Sie achten.',6020:'So läuft eine diskrete Medikamentenbestellung ab: medizinische Angaben, ärztliche Entscheidung, Rezept, Apotheke und neutral verpackter Versand.',6008:'Ein Online-Rezept beginnt nicht mit der Bestellung, sondern mit einer medizinischen Prüfung. So funktionieren Anfrage, Verordnung und Versand.',5999:'Ob Wegovy passt, hängt nicht nur vom BMI ab. Entscheidend sind Vorerkrankungen, Medikamente, Risiken und die langfristigen Behandlungsziele.',5995:'Mounjaro ist in der EU für Typ-2-Diabetes und unter bestimmten Voraussetzungen für Gewichtsmanagement zugelassen. Welche Kriterien Ärzte prüfen.',5993:'Wegovy online anfragen: Welche Angaben der Arzt braucht, wann eine Verordnung möglich ist und was nach der Genehmigung bei Dosierung und Versand folgt.',5990:'Erektionsprobleme diskret online ansprechen: So laufen Gesundheitsfragebogen, ärztliche Beurteilung, mögliche Verordnung und Apothekenversand ab.',5986:'Wegovy, Mounjaro und Saxenda im Vergleich: Unterschiede bei Wirkstoff, Anwendung, Eignung und Risiken – ohne pauschale Empfehlung.',5904:'Erektile Dysfunktion online behandeln lassen: Wie die ärztliche Prüfung funktioniert, welche Medikamente infrage kommen und wann ein Praxisbesuch sinnvoller ist.',5896:'Woran Sie einen seriösen Bezug über eine EU-Apotheke erkennen: Rezeptpflicht, ärztliche Prüfung, registrierte Apotheke und nachvollziehbarer Versand.',5892:'Online-Rezepte können in Deutschland zulässig sein, wenn die Fernbehandlung im Einzelfall ärztlich vertretbar ist und die erforderliche Sorgfalt gewahrt bleibt.'}
+
+          def para(c,needle,replacement):
+              ms=[m for m in re.finditer(r'(?is)<p\b[^>]*>.*?</p>',c) if re.search(needle,m.group(0),re.I|re.S)]
+              if not ms:return c
+              m=ms[0]; return c[:m.start()]+'<p>'+replacement+'</p>'+c[m.end():]
+
+          def transform(pid,c):
+              c=c.replace('https://doctorcura.com/ist-ein-online-rezept-legal-usa/','https://doctorcura.com/ist-ein-online-rezept-legal-deutschland/')
+              c=c.replace('in den Deutschland','in Deutschland').replace('In den Deutschland','In Deutschland')
+              c=c.replace('geltenden Vorschriften Ihres Bundesstaats','geltenden berufsrechtlichen Anforderungen')
+              c=c.replace('eines ärztlichen Rückfragens','einer ärztlichen Rückfrage')
+              c=c.replace('von ein entsprechend zugelassener Arzt in Deutschland oder einem zugelassenen Arzt','von einem entsprechend zugelassenen Arzt oder einer zugelassenen Ärztin')
+              c=c.replace('je nach Stärke, Apotheke und Verfügbarkeit je nach Präparat und Bezugsweg deutlich variieren kosten','je nach Stärke, Apotheke, Verfügbarkeit und Bezugsweg deutlich variieren')
+              for a,b in [('Gewichtsverlust Medikamente Vergleich','Vergleich von Medikamenten zur Gewichtsabnahme'),('Behandlung erektile Dysfunktion online','Online-Behandlung bei erektiler Dysfunktion'),('Potenzbehandlung digital beantragen leicht','Potenzbehandlung online anfragen'),('sofort Rezept online','Rezept online'),('medikamente aus EU apotheke sicher','Medikamente sicher über eine EU-Apotheke'),('Viagra Wirkung Review','Viagra-Wirkung'),('Mounjaro Bewertung','Mounjaro-Einordnung')]: c=re.sub(re.escape(a),b,c,flags=re.I)
+              if pid==900060:c=c.replace('Entscheidend ist dabei nicht nur die Bequemlichkeit: Eine seriöse telemedizinische Versorgung stellt sicher, dass die gewünschte Behandlung zu Ihrer gesundheitlichen Situation passt.','Der digitale Zugang ist nur dann sinnvoll, wenn die medizinische Entscheidung genauso sorgfältig getroffen wird wie bei einer Behandlung vor Ort.')
+              if pid==900048:
+                  c=c.replace('Die Suche nach „Wegovy Erfahrungen medizinisch eingeordnet“ beginnt oft mit sehr persönlichen Fragen:','Wer sich für Wegovy interessiert, hat oft sehr konkrete Fragen:')
+                  c=para(c,r'Wegovy.*zur langfristigen Gewichtsbehandlung.*zugelassen','In der Europäischen Union ist Wegovy zur Gewichtsregulierung bei Erwachsenen mit einem BMI von mindestens 30 kg/m² oder mit einem BMI ab 27 bis unter 30 kg/m² und mindestens einer gewichtsbedingten Begleiterkrankung zugelassen. Dazu können etwa Bluthochdruck, Fettstoffwechselstörungen, Typ-2-Diabetes, Schlafapnoe oder Herz-Kreislauf-Erkrankungen gehören. Ob die Behandlung im Einzelfall passt, hängt zusätzlich von Vorerkrankungen, aktuellen Medikamenten und weiteren Risikofaktoren ab.')
+                  c=para(c,r'medullären Schilddrüsenkarzinom','Wegovy darf nicht angewendet werden, wenn eine Überempfindlichkeit gegen Semaglutid oder einen der sonstigen Bestandteile besteht. Weitere Vorerkrankungen und mögliche Risiken sollten vor Beginn der Behandlung vollständig ärztlich eingeordnet werden.')
+              if pid==900043:
+                  c=c.replace('Eine seriöse <strong>Viagra-Wirkung</strong> beginnt nicht mit Versprechen über Leistung, sondern mit einer medizinischen Frage:','Bei Viagra ist die erste Frage nicht, wie stark die Wirkung ausfällt, sondern ob Sildenafil medizinisch zu Ihnen passt:')
+                  c=c.replace('<h2>Viagra-Wirkung: Was Sildenafil im Körper macht</h2>','<h2>Wie Sildenafil im Körper wirkt</h2>').replace('<h2>Viagra-Wirkung: Für wen die Behandlung sinnvoll sein kann</h2>','<h2>Für wen Sildenafil infrage kommen kann</h2>').replace('<h2>Was eine faire Bewertung der Viagra-Wirkung ausmacht</h2>','<h2>Wie sich die Wirkung realistisch beurteilen lässt</h2>')
+              if pid==6050:
+                  c=c.replace('Wer nach „mounjaro bewertung bei gewichtsmanagement“ sucht, möchte meist mehr wissen als die mögliche Zahl auf der Waage.','Wer Mounjaro für das Gewichtsmanagement erwägt, möchte meist mehr wissen als nur die mögliche Veränderung auf der Waage.').replace('<h2>Mounjaro-Einordnung beim Gewichtsmanagement</h2>','<h2>Mounjaro beim Gewichtsmanagement einordnen</h2>')
+                  c=para(c,r'Mounjaro.*zur Verbesserung der Blutzuckerkontrolle.*anderen Markenbezeichnung','In der Europäischen Union ist Mounjaro für die Behandlung von Typ-2-Diabetes zugelassen. Zusätzlich ist es bei Erwachsenen zum Gewichtsmanagement zugelassen, wenn ein BMI von mindestens 30 kg/m² vorliegt oder bei einem BMI ab 27 bis unter 30 kg/m² mindestens eine gewichtsbedingte Begleiterkrankung besteht. Ob Mounjaro im Einzelfall geeignet ist, hängt von Diagnose, Vorerkrankungen, bisherigen Therapien und möglichen Risiken ab.')
+                  c=para(c,r'medullären Schilddrüsenkarzinom','Mounjaro darf nicht angewendet werden, wenn eine Überempfindlichkeit gegen Tirzepatid oder einen der sonstigen Bestandteile besteht. Bei Schwangerschaft wird die Anwendung nicht empfohlen. Weitere Vorerkrankungen, aktuelle Medikamente und frühere Unverträglichkeiten sollten vollständig angegeben werden, damit der Arzt Nutzen und Risiken im Einzelfall beurteilen kann.')
+                  c=para(c,r'hormonellen Verhütungsmitteln.*zusätzliche oder nicht orale','Tirzepatid verzögert die Magenentleerung und kann dadurch die Aufnahme oral eingenommener Arzneimittel beeinflussen. Nach aktueller EU-Produktinformation ist für orale Verhütungsmittel keine Dosisanpassung erforderlich. Informieren Sie den behandelnden Arzt dennoch über alle regelmäßig eingenommenen Medikamente, insbesondere wenn ein schneller Wirkungseintritt wichtig ist.')
+              if pid==6048:c=c.replace('Hier wird der Ablauf der digitalen Rezeptbehandlung verständlich erklärt : klar, medizinisch verantwortungsvoll und auf den deutschen Markt bezogen.','Der Ablauf lässt sich klar in einzelne Schritte gliedern – vom Gesundheitsfragebogen bis zur Abgabe durch die Apotheke.').replace('Nicht jede Anfrage führt zu einem Rezept. Das ist kein Nachteil des Systems, sondern ein Zeichen medizinischer Verantwortung.','Nicht jede Anfrage endet mit einem Rezept – und genau das gehört zu einem verantwortungsvollen medizinischen Prozess.')
+              if pid==6046:
+                  c=c.replace('Je nach Deutschland, medizinischer Situation und gewünschter Therapie','Je nach medizinischer Situation und gewünschter Therapie')
+                  c=para(c,r'Suicide\s*&amp;\s*Crisis\s*Lifeline','Nicht jede Situation ist für eine ausschließliche Online-Behandlung geeignet. Bei starken Atemproblemen in der Nacht, Verwirrtheit, auffälligem Schlafverhalten mit Verletzungsgefahr, akuten psychischen Krisen oder Gedanken an Selbstverletzung ist sofortige persönliche Hilfe notwendig. Bei akuter Selbstgefährdung oder unmittelbarer Gefahr wählen Sie 112. Wenn Sie in einer psychischen Krise Unterstützung brauchen, erreichen Sie die TelefonSeelsorge rund um die Uhr unter 0800 1110111, 0800 1110222 oder 116 123. Für dringende, aber nicht lebensbedrohliche medizinische Beschwerden außerhalb der Sprechzeiten ist der ärztliche Bereitschaftsdienst unter 116117 erreichbar.')
+              if pid==6044:c=c.replace('Ein digitales Rezept oder Praxisbesuch ist für viele Erwachsene keine Grundsatzfrage, sondern eine praktische medizinische Entscheidung:','Die Wahl zwischen einem digitalen Rezept und einem Praxisbesuch ist für viele Erwachsene keine Grundsatzfrage, sondern eine praktische medizinische Entscheidung:')
+              if pid==6033:
+                  c=c.replace('Die Frage „was kostet glp1 therapie komplett“ lässt sich nicht mit einem einzigen Betrag beantworten.','Wie viel eine GLP-1-Therapie insgesamt kostet, lässt sich nicht mit einem einzigen Betrag beantworten.').replace('Krankenversicherungsschutz','möglicher Kostenübernahme durch die Krankenversicherung').replace('Herstellerprogramme oder Barzahlungsangebote können den Preis in bestimmten Fällen senken. Sie gelten jedoch nicht automatisch für jede Person, jede Indikation oder jede Versicherungsform.','Preis und mögliche Erstattung unterscheiden sich je nach Präparat, Apotheke, Indikation und Versicherung. Prüfen Sie deshalb vorab, welche Kosten tatsächlich übernommen werden und welche Sie selbst tragen müssen.')
+              if pid==6020:c=c.replace('So funktioniert diskrete Medikamentenbestellung :','So läuft eine diskrete Medikamentenbestellung ab:')
+              if pid==6008:
+                  c=c.replace('Ein Rezept online klingt nach einer einfachen Lösung, besonders wenn Beschwerden diskret behandelt werden sollen oder ein Praxisbesuch gerade nicht realistisch ist. Medizinisch verantwortungsvoll bedeutet „sofort“ jedoch nicht, dass jede Anfrage automatisch zu einem Rezept führt. Es bedeutet, dass Sie ohne Wartezimmer eine digitale Behandlungsanfrage starten können und ein zugelassener Arzt Ihre Angaben zeitnah prüft.','Ein Rezept online anzufragen kann praktisch sein, wenn Sie ein sensibles Thema diskret klären möchten oder kurzfristig keinen Praxisbesuch organisieren können. Eine digitale Anfrage bedeutet jedoch nicht, dass automatisch ein Rezept ausgestellt wird. Zuerst prüft ein zugelassener Arzt, ob die gewünschte Behandlung medizinisch zu Ihrer Situation passt.').replace('<h2>Was ein Rezept online tatsächlich bedeutet</h2>','<h2>Was ein Online-Rezept tatsächlich bedeutet</h2>').replace('<h2>Wann Sie nicht auf ein Rezept online warten sollten</h2>','<h2>Wann Sie nicht auf eine Online-Anfrage warten sollten</h2>')
+              if pid==5999:
+                  c=para(c,r'medullärem Schilddrüsenkarzinom','Wegovy darf nicht angewendet werden, wenn eine Überempfindlichkeit gegen Semaglutid oder einen der sonstigen Bestandteile besteht. Vorerkrankungen und mögliche Risiken sollten dennoch vollständig angegeben werden, damit der Arzt beurteilen kann, ob besondere Vorsicht oder eine andere Behandlung erforderlich ist.')
+                  c=c.replace('Bei Erwachsenen mit Übergewicht oder Adipositas und bestehender Herz-Kreislauf-Erkrankung kann Wegovy unter bestimmten Voraussetzungen außerdem zur Senkung schwerwiegender kardiovaskulärer Ereignisse eingesetzt werden. Ob diese Indikation auf Sie zutrifft, muss ärztlich beurteilt werden.','Bestehende Herz-Kreislauf-Erkrankungen können als gewichtsbedingte Begleiterkrankung für die Beurteilung der Gewichtsbehandlung relevant sein. Ob Wegovy im Einzelfall geeignet ist, muss ärztlich beurteilt werden.')
+              if pid==5995:
+                  c=c.replace('<h2>Für wen wird Mounjaro in Deutschland verschrieben?</h2>','<h2>Für wen kann Mounjaro verschrieben werden?</h2>')
+                  c=para(c,r'Mounjaro ist in Deutschland zur Verbesserung der Blutzuckerkontrolle','Mounjaro ist in der Europäischen Union sowohl zur Behandlung von Typ-2-Diabetes als auch – unter festgelegten Voraussetzungen – zum Gewichtsmanagement bei Erwachsenen zugelassen. Der Wirkstoff Tirzepatid aktiviert die Rezeptoren GIP und GLP-1. Das kann die Insulinfreisetzung abhängig vom Blutzucker unterstützen, die Magenentleerung verlangsamen und das Hunger- und Sättigungsgefühl beeinflussen.')
+                  c=para(c,r'Viele Menschen interessieren sich für Tirzepatid.*unter dem Markennamen Mounjaro zugelassen','Mounjaro ist in der Europäischen Union auch für das Gewichtsmanagement bei Erwachsenen zugelassen. Dafür gilt ein BMI von mindestens 30 kg/m² oder ein BMI ab 27 bis unter 30 kg/m² zusammen mit mindestens einer gewichtsbedingten Begleiterkrankung.')
+                  c=para(c,r'Off-Label-Verordnung','Wenn die Zulassungskriterien für das Gewichtsmanagement erfüllt sind, handelt es sich bei dieser Anwendung von Mounjaro nicht um eine Off-Label-Behandlung. Ob die Kriterien erfüllt sind und die Therapie medizinisch passt, entscheidet der behandelnde Arzt.')
+                  c=para(c,r'medullären Schilddrüsenkarzinoms','Mounjaro darf nicht angewendet werden, wenn eine Überempfindlichkeit gegen Tirzepatid oder einen der sonstigen Bestandteile besteht. Andere Vorerkrankungen können die Nutzen-Risiko-Abwägung beeinflussen und sollten deshalb vollständig mit dem behandelnden Arzt besprochen werden.')
+                  c=para(c,r'oraler hormoneller Verhütungsmittel','Tirzepatid verzögert die Magenentleerung und kann die Aufnahme oral eingenommener Arzneimittel beeinflussen. Nach aktueller EU-Produktinformation ist für orale Verhütungsmittel keine Dosisanpassung erforderlich. Familienplanung und Schwangerschaft sollten trotzdem vor und während der Behandlung ärztlich besprochen werden.').replace('gewichtsbegleitenden Erkrankungen','gewichtsbedingten Erkrankungen')
+              if pid==5993:
+                  c=para(c,r'Wegovy enthält den Wirkstoff Semaglutid.*in Deutschland zur langfristigen Gewichtskontrolle','Wegovy enthält den Wirkstoff Semaglutid, einen GLP-1-Rezeptoragonisten. In der Europäischen Union ist es zur Gewichtsregulierung bei Erwachsenen mit Adipositas oder mit Übergewicht und mindestens einer gewichtsbedingten Begleiterkrankung zugelassen. Es wird einmal wöchentlich unter die Haut injiziert.')
+                  c=para(c,r'medullärem Schilddrüsenkarzinom','Wegovy ist nicht für alle Menschen geeignet. Es darf nicht angewendet werden, wenn eine Überempfindlichkeit gegen Semaglutid oder einen der sonstigen Bestandteile besteht. Weitere Vorerkrankungen und mögliche Risiken müssen vor einer Verordnung ärztlich eingeordnet werden.')
+              if pid==5990:c=c.replace('Wer eine <strong>Potenzbehandlung online anfragen</strong> möchte, kann den Weg zur ärztlichen Einschätzung heute häufig online beginnen - diskret, strukturiert und ohne Wartezimmer.','Wer Erektionsprobleme diskret medizinisch abklären lassen möchte, kann die ärztliche Einschätzung häufig online beginnen – strukturiert und ohne Wartezimmer.').replace('soweit dies nach den geltenden berufsrechtlichen Anforderungen zulässig ist.','Dabei ist entscheidend, ob eine reine Fernbehandlung im konkreten Einzelfall medizinisch vertretbar ist und die erforderliche ärztliche Sorgfalt gewahrt bleibt.')
+              if pid==5986:
+                  c=c.replace('Ein <strong>Vergleich von Medikamenten zur Gewichtsabnahme</strong> kann dabei Orientierung geben - vorausgesetzt, er berücksichtigt nicht nur die erwartete Gewichtsabnahme, sondern auch Vorerkrankungen, Nebenwirkungen, Alltagstauglichkeit und die zugelassene Anwendung in Deutschland.','Ein <strong>Vergleich von Medikamenten zur Gewichtsabnahme</strong> kann Orientierung geben – vorausgesetzt, er berücksichtigt nicht nur die mögliche Gewichtsabnahme, sondern auch Vorerkrankungen, Nebenwirkungen, Alltagstauglichkeit und die jeweilige Zulassung.').replace('<h2>Vergleich von Medikamenten zur Gewichtsabnahme: Die wichtigsten Optionen</h2>','<h2>Die wichtigsten Medikamente im Vergleich</h2>')
+                  c=para(c,r'Mounjaro enthält wie Mounjaro','<a href="https://doctorcura.com/mounjaro-oder-wegovy-unterschied/">Mounjaro</a> enthält Tirzepatid und ist in der Europäischen Union sowohl für Typ-2-Diabetes als auch für das Gewichtsmanagement bei Erwachsenen mit Adipositas beziehungsweise Übergewicht plus mindestens einer gewichtsbedingten Begleiterkrankung zugelassen. Ozempic enthält ebenfalls Semaglutid, ist jedoch ein Diabetesmedikament und nicht mit Wegovy gleichzusetzen.')
+                  c=para(c,r'medulläres Schilddrüsenkarzinom','Gegenanzeigen und Warnhinweise unterscheiden sich je nach Wirkstoff. Deshalb <a href="https://doctorcura.com/welcher-arzt-verschreibt-wegovy-online/">muss ein zugelassener Arzt</a> die jeweilige Produktinformation, Ihre Vorerkrankungen und die aktuelle Medikation gemeinsam prüfen. Auch frühere Bauchspeicheldrüsenentzündungen, ausgeprägte Magen-Darm-Beschwerden, Gallenprobleme oder diabetesbedingte Augenerkrankungen können für die Auswahl und Überwachung relevant sein.')
+              if pid==5904:c=c.replace('Genau hier kann die Online-Behandlung bei erektiler Dysfunktion eine sinnvolle Lösung sein:','Genau hier kann eine Online-Behandlung bei erektiler Dysfunktion eine sinnvolle Möglichkeit sein:').replace('<h2>Was eine Online-Behandlung bei erektiler Dysfunktion leisten sollte</h2>','<h2>Was eine Online-Behandlung leisten sollte</h2>').replace('<h2>So läuft die Online-Behandlung bei erektiler Dysfunktion ab</h2>','<h2>So läuft die Online-Behandlung ab</h2>').replace('Eine medizinisch verantwortungsvolle Plattform priorisiert nicht den schnellen Verkauf, sondern die passende Entscheidung.','Bei einer medizinisch verantwortungsvollen Plattform steht die passende Entscheidung vor dem schnellen Abschluss.')
+              if pid==5896:c=c.replace('Genau deshalb ist das Thema Medikamente sicher über eine EU-Apotheke für viele Patienten in Deutschland zentral - vor allem bei Behandlungen wie Gewichtsmanagement, sexueller Gesundheit oder Schlafproblemen, bei denen Diskretion und Verlässlichkeit zusammengehören.','Deshalb ist für viele Patienten in Deutschland entscheidend, ob ein Medikament tatsächlich über eine regulierte EU-Apotheke abgegeben wird – besonders bei sensiblen Behandlungen, bei denen Diskretion und Verlässlichkeit zusammengehören.').replace('<h2>Wann sind Medikamente aus EU-Apotheke sicher?</h2>','<h2>Wann ist der Bezug über eine EU-Apotheke sicher?</h2>').replace('Medikamente aus EU-Apotheke sicher zu beziehen bedeutet, dass','Ein sicherer Bezug über eine EU-Apotheke setzt voraus, dass')
+              if pid==5892:c=c.replace('Diese Beurteilung kann je nach Behandlung, Deutschland und Medikament unterschiedlich ablaufen.','Wie diese Beurteilung abläuft, hängt von der Behandlung, dem Medikament und der konkreten medizinischen Situation ab.').replace('Telemedizin ist kein rechtlicher Graubereich mehr, sondern ein regulierter Teil der Gesundheitsversorgung. Für viele Standardbehandlungen - etwa in den Bereichen sexuelle Gesundheit , Gewichtsmanagement oder Schlafprobleme - ist die digitale ärztliche Prüfung heute ein etablierter Weg.','Telemedizin ist Teil der regulierten Gesundheitsversorgung. Eine ausschließliche Fernbehandlung ist nach den berufsrechtlichen Vorgaben möglich, wenn sie im konkreten Einzelfall ärztlich vertretbar ist und die erforderliche Sorgfalt gewahrt bleibt.').replace('Hinzu kommt, dass bestimmte Medikamente, Diagnosefelder oder telemedizinische Abläufe je nach Medikament, Diagnose und Behandlungsablauf unterschiedlich geregelt sein können. Deshalb gibt es keine pauschale Aussage, die für jede Behandlung pauschal gelten würde. Legalität hängt immer auch davon ab, ob der konkrete Anbieter die zuständigen Regeln tatsächlich einhält.','Zusätzliche Anforderungen können sich je nach Medikament, Diagnose und Behandlungsablauf unterscheiden. Deshalb muss der konkrete Anbieter prüfen, welche medizinischen und rechtlichen Vorgaben für die jeweilige Behandlung gelten.')
+              c=re.sub(r'\s+([,.;:!?])',r'\1',c).replace(' - ',' – ')
+              return c
+
+          banned=re.compile(r'\b(?:USA|United States|Vereinigte Staaten|Bundesstaat(?:s|en)?|FDA|DEA|HIPAA|Zepbound|988)\b|Suicide\s*&\s*Crisis\s*Lifeline|\bmedullär\w*\s+Schilddrüsenkarzinom\w*\b|\bMEN\s*[- ]?2\b',re.I)
+          awkward=re.compile(r'Gewichtsverlust Medikamente Vergleich|Behandlung erektile Dysfunktion online|Potenzbehandlung digital beantragen leicht|\bsofort Rezept online\b|medikamente aus EU apotheke sicher|Viagra Wirkung Review|Mounjaro Bewertung|in den Deutschland|von ein entsprechend zugelassener|eines ärztlichen Rückfragens|variieren kosten|Mounjaro enthält wie Mounjaro',re.I)
+          for pid in ids:
+              d=json.load(open(f'{root}/before/{pid}.json',encoding='utf-8')); post=(d.get('data') or {}).get('post') or {}; c0=post.get('content') or ''; c=transform(pid,c0)
+              before_links=re.findall(r'href=["\']([^"\']+)',c0,re.I); expected=[u.replace('https://doctorcura.com/ist-ein-online-rezept-legal-usa/','https://doctorcura.com/ist-ein-online-rezept-legal-deutschland/') for u in before_links]; after_links=re.findall(r'href=["\']([^"\']+)',c,re.I)
+              if after_links!=expected: raise SystemExit(f'LINK_PREFLIGHT_FAIL {pid}')
+              text=html.unescape(re.sub(r'<[^>]+>',' ',c)); m=banned.search(text) or awkward.search(text)
+              if m: raise SystemExit(f'CONTENT_PREFLIGHT_FAIL {pid}: {m.group(0)}')
+              payload={'id':pid,'title':titles[pid],'content':c,'status':post.get('status','publish')}
+              if pid==5892: payload['slug']='ist-ein-online-rezept-legal-deutschland'
+              json.dump(payload,open(f'{root}/payload/{pid}.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+              y=json.load(open(f'{root}/yb/{pid}.json',encoding='utf-8')); yf=(y.get('data') or {}).get('fields') or {}; updates={'description':desc[pid]}; old_title=str(post.get('title') or '')
+              for k in ('title','opengraph_title','twitter_title'):
+                  v=yf.get(k)
+                  if isinstance(v,str) and v: updates[k]=v.replace(old_title,titles[pid]) if old_title in v else titles[pid]
+              for k in ('opengraph_description','twitter_description'):
+                  if yf.get(k): updates[k]=desc[pid]
+              json.dump({'id':pid,'fields':updates},open(f'{root}/ypayload/{pid}.json','w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          print('EU_V2_PREFLIGHT_OK',len(ids))
+          PY
+
+          for id in "${ids[@]}"; do
+            call "wp-$id" post.update false true "$root/payload/$id.json"
+            call "wy-$id" yoast.update false true "$root/ypayload/$id.json"
+          done
+          printf '{}' > "$root/empty.json"; call cache cache.flush false true "$root/empty.json" || true
+
+          for id in "${ids[@]}"; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "a-$id" post.get true false "$root/id.json"; cp "$root/o-a-$id.json" "$root/after/$id.json"
+            call "ya-$id" yoast.inspect true false "$root/id.json"; cp "$root/o-ya-$id.json" "$root/ya/$id.json"
+          done
+
+          python3 - "$root" <<'PY'
+          import concurrent.futures,html,json,os,re,sys,urllib.parse,urllib.request
+          root=sys.argv[1]; ids=[900060,900048,900043,6050,6048,6046,6044,6042,6033,6020,6008,5999,5995,5993,5990,5986,5904,5896,5892]
+          banned=re.compile(r'\b(?:USA|United States|Vereinigte Staaten|Bundesstaat(?:s|en)?|FDA|DEA|HIPAA|Zepbound|988)\b|Suicide\s*&\s*Crisis\s*Lifeline|\bmedullär\w*\s+Schilddrüsenkarzinom\w*\b|\bMEN\s*[- ]?2\b',re.I)
+          awkward=re.compile(r'Gewichtsverlust Medikamente Vergleich|Behandlung erektile Dysfunktion online|Potenzbehandlung digital beantragen leicht|\bsofort Rezept online\b|medikamente aus EU apotheke sicher|Viagra Wirkung Review|Mounjaro Bewertung|in den Deutschland|von ein entsprechend zugelassener|eines ärztlichen Rückfragens|variieren kosten|Mounjaro enthält wie Mounjaro',re.I)
+          links=[]; report=[]
+          for pid in ids:
+              b=(json.load(open(f'{root}/before/{pid}.json',encoding='utf-8')).get('data') or {}).get('post') or {}; a=(json.load(open(f'{root}/after/{pid}.json',encoding='utf-8')).get('data') or {}).get('post') or {}; y=(json.load(open(f'{root}/ya/{pid}.json',encoding='utf-8')).get('data') or {}).get('fields') or {}
+              bl=re.findall(r'href=["\']([^"\']+)',b.get('content') or '',re.I); exp=[u.replace('https://doctorcura.com/ist-ein-online-rezept-legal-usa/','https://doctorcura.com/ist-ein-online-rezept-legal-deutschland/') for u in bl]; al=re.findall(r'href=["\']([^"\']+)',a.get('content') or '',re.I)
+              if al!=exp: raise SystemExit(f'LINK_READBACK_FAIL {pid}')
+              if a.get('status')!='publish': raise SystemExit(f'NOT_PUBLISHED {pid}')
+              joined=html.unescape(re.sub(r'<[^>]+>',' ',' '.join([str(a.get('title') or ''),str(a.get('content') or ''),str(y.get('title') or ''),str(y.get('description') or ''),str(y.get('opengraph_description') or '')])))
+              m=banned.search(joined) or awkward.search(joined)
+              if m: raise SystemExit(f'RESIDUAL_FAIL {pid}: {m.group(0)}')
+              if re.search(r'\s+[,.!?;:](?!//)',a.get('content') or ''): raise SystemExit(f'PUNCTUATION_FAIL {pid}')
+              if pid==5892 and a.get('slug')!='ist-ein-online-rezept-legal-deutschland': raise SystemExit('SLUG_FAIL 5892')
+              links.extend((pid,urllib.parse.urljoin('https://doctorcura.com/',u)) for u in al if u.startswith(('http://','https://','/')))
+              report.append({'id':pid,'title':a.get('title'),'slug':a.get('slug'),'link_count':len(al),'links_preserved':True,'description':y.get('description')})
+          def check(item):
+              pid,u=item
+              try:
+                  req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 (compatible; DoctorCuraEUQA/1.0)'},method='HEAD')
+                  with urllib.request.urlopen(req,timeout=15) as r:return pid,u,r.status,r.geturl()
+              except Exception:
+                  try:
+                      req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 (compatible; DoctorCuraEUQA/1.0)'})
+                      with urllib.request.urlopen(req,timeout=18) as r:return pid,u,r.status,r.geturl()
+                  except Exception as e:return pid,u,int(getattr(e,'code',0) or 0),u
+          broken=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+              for pid,u,code,final in ex.map(check,links):
+                  internal=urllib.parse.urlparse(u).netloc.lower().endswith('doctorcura.com'); bad=(not 200<=code<400) if internal else (code==0 or code>=500 or code==404)
+                  if bad:broken.append((pid,code,u))
+          if broken: raise SystemExit('BROKEN_LINKS '+repr(broken[:20]))
+          json.dump(report,open(root+'/eu-v2-report.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print('EU_V2_READBACK_OK posts=',len(report),'links=',len(links),'broken=0')
+          PY
+
+          final=$(curl -sS -L --connect-timeout 10 --max-time 45 -o /dev/null -w '%{url_effective}|%{http_code}' "$site/ist-ein-online-rezept-legal-usa/")
+          echo "OLD_US_SLUG=$final"
+          [[ "$final" == "$site/ist-ein-online-rezept-legal-deutschland/|200" ]] || exit 1
+
+      - name: Upload EU editorial evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-eu-editorial-fix-v2
+          path: |
+            ${{ runner.temp }}/dc-eu-v2/eu-v2-report.json
+            ${{ runner.temp }}/dc-eu-v2/before
+            ${{ runner.temp }}/dc-eu-v2/after
+          retention-days: 7
+          if-no-files-found: warn
