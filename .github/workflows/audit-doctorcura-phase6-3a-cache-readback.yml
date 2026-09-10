@@ -38,7 +38,9 @@ jobs:
           PY
 
           probe(){
-            local lang="$1" mode="$2" url="$3" stem="$4" h="$tmp/$stem.h" b="$tmp/$stem.body" status
+            local lang mode url stem h b status
+            lang="$1"; mode="$2"; url="$3"; stem="$4"
+            h="$tmp/$stem.h"; b="$tmp/$stem.body"
             status=$(curl "${c[@]}" --max-redirs 0 --header 'Cache-Control: no-cache' --dump-header "$h" --output "$b" --write-out '%{http_code}' "$url" || true)
             python3 - "$lang" "$mode" "$url" "$status" "$h" "$b" <<'PY'
           import re,sys
