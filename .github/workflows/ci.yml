@@ -156,6 +156,8 @@ jobs:
             plugin_review_phpcs
             plugin_updater
             trademarks
+            late_escaping
+            performant_wp_query_params
 
   dependency-review:
     if: github.event_name == 'pull_request'
