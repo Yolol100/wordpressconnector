@@ -1,0 +1,72 @@
+name: DoctorCura SEO Repair Final Prewrite Check
+
+on:
+  push:
+    branches:
+      - runtime/doctorcura-seo-repair-20260911
+    paths:
+      - '.github/workflows/doctorcura-seo-repair-final-prewrite-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify image references and redirect owner
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || exit 1
+          site="${SITE_URL%/}"; root="$RUNNER_TEMP/dc-final-check"; mkdir -p "$root"
+          missing='welche-medikamente-beeinflussen-die-erektion-featured.webp'
+          urls=(
+            "$site/blogs/"
+            "$site/en/blogs/"
+            "$site/fr/blogs/"
+            "$site/welche-medikamente-beeinflussen-die-erektion/"
+            "$site/en/welche-medikamente-beeinflussen-die-erektion/"
+            "$site/fr/welche-medikamente-beeinflussen-die-erektion/"
+          )
+          for i in "${!urls[@]}"; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/p$i.html" --write-out '%{http_code}' "${urls[$i]}")
+            count=$(grep -o "$missing" "$root/p$i.html" | wc -l | tr -d ' ')
+            echo "PAGE url=${urls[$i]} http=$code missing_refs=$count"
+          done
+
+          cat > "$root/media-request.json" <<'JSON'
+          {"version":1,"request_id":"dc-final-media-5925","action":"media.get","dry_run":true,"confirm":false,"payload":{"id":5925}}
+          JSON
+          curl --silent --show-error --location --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$root/media-request.json" --output "$root/media.json" "$site/wp-json/webactueel-wordpress-connector/v1/execute"
+          media_url=$(python3 - "$root/media.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print((((d.get('data') or {}).get('media') or {}).get('url') or ''))
+          PY
+          )
+          test -n "$media_url"
+          media_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$media_url")
+          echo "FEATURED_MEDIA url=$media_url http=$media_code"
+
+          probe() {
+            name="$1"; url="$2"; shift 2
+            curl --silent --show-error --connect-timeout 10 --max-time 30 "$@" --dump-header "$root/$name.headers" --output /dev/null "$url"
+            python3 - "$root/$name.headers" "$name" <<'PY'
+          import json,sys
+          raw=open(sys.argv[1],encoding='iso-8859-1',errors='replace').read(); out=[]
+          for line in raw.splitlines():
+              low=line.lower()
+              if line.startswith('HTTP/') or low.startswith('location:') or low.startswith('x-redirect-by:') or low.startswith('x-hcdn-') or low.startswith('x-gt-') or low.startswith('server:') or low.startswith('cache-control:'):
+                  out.append(line.strip())
+          print(sys.argv[2]+' '+json.dumps(out))
+          PY
+          }
+          probe ABOUT_NORMAL "$site/de/about-us/"
+          probe ABOUT_NOCACHE "$site/de/about-us/?wa-seo-probe=20260911" --header 'Cache-Control: no-cache, no-store' --header 'Pragma: no-cache'
+          probe ABOUT_ROOT "$site/about-us/" --header 'Cache-Control: no-cache, no-store'
