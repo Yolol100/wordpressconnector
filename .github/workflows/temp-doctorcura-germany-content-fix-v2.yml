@@ -1,0 +1,149 @@
+name: Temporary DoctorCura Germany content fix v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-germany-content-fix-v2.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Localize all remaining US-market wording to Germany and verify links
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]]
+          base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc-de-v2"; rm -rf "$root"; mkdir -p "$root"
+          call(){ suf="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"; python3 - "$root/r-$suf.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          p,a,d,c,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-dev2-'+uuid.uuid4().hex[:20],'action':a,'dry_run':d=='true','confirm':c=='true','payload':json.load(open(payload,encoding='utf-8'))},open(p,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suf.json" -o "$root/o-$suf.json" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]] || { echo "HTTP_FAIL $action $code" >&2; exit 1; }; python3 - "$root/o-$suf.json" <<'PY'
+          import json,sys
+          if not json.load(open(sys.argv[1],encoding='utf-8')).get('ok'): raise SystemExit('connector action ok=false')
+          PY
+          }
+
+          # Inventory every published post.
+          : > "$root/posts.tsv"; page=1
+          while (( page <= 20 )); do
+            printf '{"post_type":"post","status":"publish","per_page":100,"page":%d}' "$page" > "$root/list.json"; call "list-$page" post.list true false "$root/list.json"
+            python3 - "$root/o-list-$page.json" >> "$root/posts.tsv" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}
+          for p in data.get('items',[]):
+              if isinstance(p,dict) and isinstance(p.get('id'),int): print(f"{p['id']}\t{p.get('slug','')}")
+          PY
+            pages=$(python3 - "$root/o-list-$page.json" <<'PY'
+          import json,sys
+          print(int((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('pages') or 1))
+          PY
+            ); (( page >= pages )) && break; page=$((page+1))
+          done
+          sort -u "$root/posts.tsv" -o "$root/posts.tsv"
+
+          changed=0
+          while IFS=$'\t' read -r id slug; do
+            printf '{"id":%s}' "$id" > "$root/id.json"; call "get-$id" post.get true false "$root/id.json"
+            python3 - "$root/o-get-$id.json" "$root/write-$id.json" "$root/meta-$id.json" <<'PY'
+          import html,json,re,sys
+          src,out,meta=sys.argv[1:]; d=json.load(open(src,encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}
+          def tx(t):
+              # Exact/common US-market language -> Germany. URLs/tags are never passed here.
+              reps=[
+                (r'Food\s+and\s+Drug\s+Administration\s*\(FDA\)', 'European Medicines Agency (EMA)'),
+                (r'Food\s+and\s+Drug\s+Administration', 'European Medicines Agency (EMA)'),
+                (r'\bFDA\b', 'EMA'),
+                (r'\bU\.S\.A\.?\b', 'Deutschland'),
+                (r'\bU\.S\.\b', 'Deutschland'),
+                (r'\bUSA\b', 'Deutschland'),
+                (r'\bUS-Markt\b', 'deutschen Markt'),
+                (r'\bUS-Patientinnen und Patienten\b', 'Patientinnen und Patienten in Deutschland'),
+                (r'\bUS-Patienten\b', 'Patienten in Deutschland'),
+                (r'\bUS-Adresse\b', 'Adresse in Deutschland'),
+                (r'\bUS-Bundesstaaten\b', 'Deutschland'),
+                (r'\bUS-Bundesstaat\b', 'Deutschland'),
+                (r'\bUS-Apotheken\b', 'Apotheken in Deutschland'),
+                (r'\bUS-Online-Apotheke\b', 'Online-Apotheke in Deutschland'),
+                (r'\bUS-Gesundheitssystem\b', 'deutschen Gesundheitssystem'),
+                (r'\bUS-Krankenversicherung\b', 'Krankenversicherung in Deutschland'),
+                (r'\bUS-amerikanische[nmrs]?\b', 'deutsche'),
+              ]
+              for a,b in reps: t=re.sub(a,b,t,flags=re.I)
+              t=re.sub(r'\bin Deutschland und international\b','in Deutschland und Europa',t,flags=re.I)
+              t=re.sub(r'\bim deutschen Markt\b','auf dem deutschen Markt',t,flags=re.I)
+              # US state-law wording -> Germany professional-law standard for remote treatment.
+              t=re.sub(r'Telemedizin in Deutschland unterliegt Regeln, die sich je nach Deutschland unterscheiden können\.?','In Deutschland gelten für Telemedizin das ärztliche Berufsrecht und die allgemeinen medizinischen Sorgfaltspflichten.',t,flags=re.I)
+              t=re.sub(r'Online-Behandlungen in Deutschland unterliegen bundesstaatlichen Regeln\.?','Online-Behandlungen in Deutschland richten sich nach dem ärztlichen Berufsrecht und den allgemeinen medizinischen Sorgfaltspflichten.',t,flags=re.I)
+              t=re.sub(r'Ärzte müssen in der Regel dort zugelassen sein, wo der Patient sich zum Zeitpunkt der Behandlung befindet\.?','Eine ausschließliche Fernbehandlung ist möglich, wenn sie im Einzelfall ärztlich vertretbar ist und die erforderliche ärztliche Sorgfalt gewahrt bleibt.',t,flags=re.I)
+              t=re.sub(r'[Ee]in(?:e|em|er)?\s+(?:für\s+)?(?:Ihren|dem|jeweiligen)\s+Deutschland\s+zugelassene[nr]?\s+(Ärztin|Arzt)','ein entsprechend zugelassener Arzt in Deutschland',t)
+              t=re.sub(r'für Ihren Wohnsitzstaat zugelassen','entsprechend für die Behandlung in Deutschland zugelassen',t,flags=re.I)
+              t=re.sub(r'die rechtlichen Vorgaben Ihres Deutschland','die in Deutschland geltenden rechtlichen Vorgaben',t,flags=re.I)
+              t=re.sub(r'im jeweiligen Deutschland','nach den in Deutschland geltenden Vorgaben',t,flags=re.I)
+              t=re.sub(r'im jeweiligen US-Bundesstaat','nach den in Deutschland geltenden Vorgaben',t,flags=re.I)
+              t=re.sub(r'bundesstaatlichen und föderalen Anforderungen','besonderen arzneimittel- und berufsrechtlichen Anforderungen',t,flags=re.I)
+              # Germany emergency wording.
+              t=re.sub(r'(?:rufen|wählen) Sie in Deutschland (?:den Notruf )?911','wählen Sie in Deutschland bei Lebensgefahr den Notruf 112',t,flags=re.I)
+              t=re.sub(r'(?:rufen|wählen) Sie in Deutschland sofort 988 oder 911 an','wählen Sie in Deutschland bei akuter Gefahr sofort den Notruf 112',t,flags=re.I)
+              t=re.sub(r'988 Suicide\s*&\s*Crisis Lifeline(?: per Anruf oder Text unter 988)?','ärztlichen Bereitschaftsdienst 116117 für dringende, nicht lebensbedrohliche medizinische Hilfe',t,flags=re.I)
+              t=re.sub(r'Poison Help Service unter 1-800-222-1222','zuständigen Giftnotruf; bei lebensbedrohlichen Symptomen den Notruf 112',t,flags=re.I)
+              t=t.replace('911','112').replace('988','116117')
+              # EU authorization correction: Mounjaro has an EU weight-management indication; avoid US-only Zepbound framing.
+              t=re.sub(r'Für die langfristige Gewichtskontrolle gibt es in Deutschland mit Zepbound ein Tirzepatid-Präparat mit eigener Zulassung\.?','In der Europäischen Union ist Mounjaro mit Tirzepatid auch für das Gewichtsmanagement bei bestimmten Erwachsenen zugelassen.',t,flags=re.I)
+              t=re.sub(r'Für die Gewichtsabnahme wird derselbe Wirkstoff unter dem Markennamen Zepbound eingesetzt, sofern die jeweiligen Zulassungskriterien erfüllt sind\.?','In der Europäischen Union umfasst die Zulassung von Mounjaro unter bestimmten Voraussetzungen auch das Gewichtsmanagement.',t,flags=re.I)
+              t=re.sub(r'Für reines Gewichtsmanagement wird in der Regel die dafür zugelassene Tirzepatid-Option Zepbound beurteilt\.?','Für das Gewichtsmanagement wird in Deutschland eine in der EU zugelassene Tirzepatid-Therapie anhand der geltenden Indikationskriterien ärztlich beurteilt.',t,flags=re.I)
+              t=re.sub(r'\bZepbound\b','Mounjaro',t,flags=re.I)
+              # Remove US-dollar-specific pricing assertions; retain useful SEO intent without inventing German prices.
+              t=re.sub(r'Bei Selbstzahlung liegen die Gesamtkosten häufig zwischen etwa 200 und über 1\.300 US-Dollar pro Monat\.', 'Bei Selbstzahlung hängen die Gesamtkosten in Deutschland vom Präparat, der Dosierung, der Apotheke und den enthaltenen medizinischen Leistungen ab.', t, flags=re.I)
+              t=re.sub(r'mehrere hundert bis deutlich über tausend US-Dollar monatlich', 'je nach Präparat und Bezugsweg deutlich variieren', t, flags=re.I)
+              t=re.sub(r'deductible, copay oder coinsurance', 'Selbstbeteiligungen oder Erstattungsgrenzen', t, flags=re.I)
+              # Remaining standalone US adjective in visible German prose.
+              t=re.sub(r'\bUS-(?=[A-Za-zÄÖÜäöüß])','Deutschland-',t)
+              return t
+          def tx_html(s):
+              parts=re.split(r'(<[^>]+>)',s)
+              for i in range(0,len(parts),2): parts[i]=tx(parts[i])
+              return ''.join(parts)
+          before={k:(p.get(k,'') if isinstance(p.get(k,''),str) else '') for k in ('title','excerpt','content')}
+          after={'title':tx(before['title']),'excerpt':tx_html(before['excerpt']),'content':tx_html(before['content'])}
+          links_before=re.findall(r'href=["\']([^"\']+)',before['content'],re.I); links_after=re.findall(r'href=["\']([^"\']+)',after['content'],re.I)
+          if links_before!=links_after: raise SystemExit('LINK_CHANGE id='+str(p.get('id')))
+          changed=any(after[k]!=before[k] for k in after)
+          json.dump({'id':int(p['id']),'title':after['title'],'excerpt':after['excerpt'],'content':after['content'],'status':p.get('status','publish')},open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'changed':changed,'links':len(links_before)},open(meta,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            if python3 - "$root/meta-$id.json" <<'PY'
+          import json,sys
+          raise SystemExit(0 if json.load(open(sys.argv[1])).get('changed') else 1)
+          PY
+            then call "write-$id" post.update false true "$root/write-$id.json"; changed=$((changed+1)); fi
+          done < "$root/posts.tsv"
+          printf '%s' '{}' > "$root/empty.json"; call cache cache.flush false true "$root/empty.json" || true
+
+          # Full readback of every published post. Check visible text only; links remain untouched.
+          checked=0
+          while IFS=$'\t' read -r id slug; do
+            printf '{"id":%s}' "$id" > "$root/id.json"; call "verify-$id" post.get true false "$root/id.json"
+            python3 - "$root/o-verify-$id.json" "$id" "$slug" <<'PY'
+          import html,json,re,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}; raw=' '.join(str(p.get(k,'')) for k in ('title','excerpt','content'))
+          raw=re.sub(r'<script\b[^>]*>.*?</script>',' ',raw,flags=re.I|re.S); raw=re.sub(r'<style\b[^>]*>.*?</style>',' ',raw,flags=re.I|re.S); text=html.unescape(re.sub(r'<[^>]+>',' ',raw)); text=re.sub(r'\s+',' ',text)
+          markers=r'United\s+States(?:\s+of\s+America)?|\bUSA\b|\bU\.S\.A\.?\b|\bU\.S\.\b|\bUS-(?:Markt|Patient|Adresse|Bundesstaat|Apothek|Gesundheit|Krankenversicherung|amerikan)|\bFDA\b|Food\s+and\s+Drug\s+Administration|\bZepbound\b|\b911\b|\b988\b|1-800-222-1222'
+          m=re.search(markers,text,re.I)
+          if m: raise SystemExit('REMAINING_US_REFERENCE id='+sys.argv[2]+' slug='+sys.argv[3]+' term='+m.group(0))
+          PY
+            checked=$((checked+1))
+          done < "$root/posts.tsv"
+          echo "GERMANY_ONLY_READBACK_OK changed=$changed checked=$checked links_preserved=yes"
