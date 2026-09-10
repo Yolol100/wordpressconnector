@@ -35,8 +35,17 @@ jobs:
           [[ "$before_sha" == '83a05b5734751d01d93488fcfbcd601ce2e245a7f41e6d2675beaf38af1dec7b' ]] || { echo "Unexpected V10 hash: $before_sha" >&2; exit 1; }
 
           token=$(openssl rand -hex 24)
-          export PURGE_TOKEN="$token"
-          php -r '$code=file_get_contents($argv[1]); $t=getenv("PURGE_TOKEN"); $helper="\n/* DoctorCura one-time cache purge helper - removed automatically */\nadd_action( \"template_redirect\", function () {\n    if ( ! isset( \\$_GET[\"doctorcura_cache_purge\"] ) || ! hash_equals( \"".$t."\", (string) \\$_GET[\"doctorcura_cache_purge\"] ) ) return;\n    if ( function_exists( \"rocket_clean_domain\" ) ) rocket_clean_domain();\n    if ( function_exists( \"wp_cache_flush\" ) ) wp_cache_flush();\n    header( \"X-LiteSpeed-Purge: *\" );\n    nocache_headers();\n    status_header( 204 );\n    exit;\n}, -9999 );\n"; file_put_contents($argv[2],$code.$helper);' "$root/original.txt" "$root/mutated.txt"
+          cp "$root/original.txt" "$root/mutated.txt"
+          printf '\n%s\n' '/* DoctorCura one-time cache purge helper - removed automatically */' >> "$root/mutated.txt"
+          printf "%s\n" "add_action( 'template_redirect', function () {" >> "$root/mutated.txt"
+          printf "    if ( ! isset( \$_GET['doctorcura_cache_purge'] ) || ! hash_equals( '%s', (string) \$_GET['doctorcura_cache_purge'] ) ) return;\n" "$token" >> "$root/mutated.txt"
+          printf "%s\n" "    if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain();" >> "$root/mutated.txt"
+          printf "%s\n" "    if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();" >> "$root/mutated.txt"
+          printf "%s\n" "    header( 'X-LiteSpeed-Purge: *' );" >> "$root/mutated.txt"
+          printf "%s\n" "    nocache_headers();" >> "$root/mutated.txt"
+          printf "%s\n" "    status_header( 204 );" >> "$root/mutated.txt"
+          printf "%s\n" "    exit;" >> "$root/mutated.txt"
+          printf "%s\n" "}, -9999 );" >> "$root/mutated.txt"
 
           make_payload() {
             php -r '$code=file_get_contents($argv[1]); echo json_encode(array("code"=>$code), JSON_UNESCAPED_SLASHES);' "$1" > "$2"
