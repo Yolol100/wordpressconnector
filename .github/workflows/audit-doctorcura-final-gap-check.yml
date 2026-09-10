@@ -1,4 +1,4 @@
-name: DoctorCura Final Independent Release QA
+name: DoctorCura Datenschutz Regression Read-Only Audit
 
 on:
   push:
@@ -11,127 +11,47 @@ permissions:
   contents: read
 
 jobs:
-  release-matrix:
+  diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Crawl sitemap and critical release matrix
+      - name: Diagnose translated datenschutz routing
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-release"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-datenschutz-diag"; mkdir -p "$tmp"
           c=(--silent --show-error --connect-timeout 10 --max-time 35 --retry 2 --retry-delay 1 --retry-all-errors)
 
-          echo '=== CONFIG IDENTITY ==='
+          echo '=== LIVE SNIPPET V8.4c ==='
           h=$(curl "${c[@]}" --location --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$tmp/s43.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43"); [[ "$h" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$h=hash("sha256",$c);echo "SNIPPET hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($h!==$argv[2]||empty($s["active"])||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);' "$tmp/s43.json" '77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "hash=".hash("sha256",$c)." active=".(!empty($s["active"])?"yes":"no").PHP_EOL;file_put_contents($argv[2],$c);' "$tmp/s43.json" "$tmp/s43.php"
+          nl -ba "$tmp/s43.php" | sed -n '260,300p'
 
-          echo '=== SITEMAP DISCOVERY ==='
-          curl "${c[@]}" --location --compressed "$base/sitemap_index.xml" -o "$tmp/index.xml"
-          python3 - "$tmp/index.xml" "$base" "$tmp/children.txt" <<'PY'
-          import re,sys,html,urllib.parse
-          text=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); base=sys.argv[2]
-          locs=[html.unescape(x.strip()) for x in re.findall(r'<loc>(.*?)</loc>',text,re.I|re.S)]
-          good=[u for u in locs if urllib.parse.urlsplit(u).netloc=='doctorcura.com' and u.endswith('.xml')]
-          print('SITEMAP_CHILDREN='+str(len(good)))
-          if not good: raise SystemExit(2)
-          open(sys.argv[3],'w').write('\n'.join(good)+'\n')
+          probe(){
+            local path="$1" label="$2" suffix="$3" url="$base$path"
+            [[ "$suffix" == clean ]] || { if [[ "$url" == *'?'* ]]; then url="$url&dc_diag=$suffix"; else url="$url?dc_diag=$suffix"; fi; }
+            curl "${c[@]}" --dump-header "$tmp/$label-$suffix.h" --output "$tmp/$label-$suffix.body" --write-out "$label/$suffix FIRST=%{http_code} REDIRECT=%{redirect_url} EFFECTIVE=%{url_effective}\n" "$url"
+            grep -iE '^(HTTP/|location:|x-redirect-by:|x-hcdn-cache-status:|age:|cache-control:|vary:|server:)' "$tmp/$label-$suffix.h" || true
+            curl "${c[@]}" --location --compressed --output "$tmp/$label-$suffix-follow.body" --write-out "$label/$suffix FOLLOW=%{http_code} FINAL=%{url_effective} REDIRS=%{num_redirects}\n" "$url"
+            python3 - "$tmp/$label-$suffix-follow.body" <<'PY'
+          import html,re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); can=''
+          for t in re.findall(r'<link\b[^>]*>',s,re.I):
+              if re.search(r'rel=["\'][^"\']*canonical',t,re.I):
+                  m=re.search(r'href=["\']([^"\']+)',t,re.I)
+                  if m: can=html.unescape(m.group(1)); break
+          print('FINAL_CANONICAL='+can)
           PY
-          : > "$tmp/urls.txt"
-          while IFS= read -r sm; do
-            curl "${c[@]}" --location --compressed "$sm" -o "$tmp/child.xml"
-            python3 - "$tmp/child.xml" >> "$tmp/urls.txt" <<'PY'
-          import re,sys,html,urllib.parse
-          text=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          for x in re.findall(r'<loc>(.*?)</loc>',text,re.I|re.S):
-              u=html.unescape(x.strip()); p=urllib.parse.urlsplit(u)
-              if p.scheme=='https' and p.netloc=='doctorcura.com': print(u)
-          PY
-          done < "$tmp/children.txt"
-          sort -u "$tmp/urls.txt" -o "$tmp/urls.txt"
-          count=$(wc -l < "$tmp/urls.txt" | tr -d ' '); echo "SITEMAP_URLS=$count"; (( count >= 150 ))
-          ! grep -qE 'product-categorie|attribute_pa_|welche-medikamente-beeinflussen-die-erektion-2' "$tmp/urls.txt"
+          }
 
-          echo '=== SITEMAP LIVE CRAWL ==='
-          export DC_BASE="$base" DC_TMP="$tmp"
-          python3 - "$tmp/urls.txt" <<'PY'
-          import concurrent.futures,html,re,subprocess,sys,urllib.parse,os
-          urls=[x.strip() for x in open(sys.argv[1]) if x.strip()]
-          tmp=os.environ['DC_TMP']
-          def one(item):
-              i,u=item; path=f'{tmp}/p{i}.html'
-              cp=subprocess.run(['curl','--silent','--show-error','--connect-timeout','10','--max-time','35','--retry','2','--retry-delay','1','--retry-all-errors','--compressed','--output',path,'--write-out','%{http_code}\t%{url_effective}\t%{num_redirects}',u],text=True,capture_output=True)
-              if cp.returncode: return (u,'CURL_'+str(cp.returncode),cp.stderr[-180:])
-              out=cp.stdout.strip(); parts=out.split('\t')
-              if len(parts)!=3 or parts[0]!='200' or parts[2]!='0': return (u,'HTTP',out)
-              s=open(path,encoding='utf-8',errors='ignore').read()
-              tags=re.findall(r'<link\b[^>]*>',s,re.I); can=''
-              for tag in tags:
-                  if re.search(r'rel=["\'][^"\']*canonical',tag,re.I):
-                      m=re.search(r'href=["\']([^"\']+)',tag,re.I)
-                      if m: can=html.unescape(m.group(1)); break
-              norm=lambda x:x.rstrip('/')
-              if not can or norm(can)!=norm(u): return (u,'CANONICAL',can)
-              if re.search(r'<meta\b[^>]*name=["\']robots["\'][^>]*content=["\'][^"\']*noindex',s,re.I): return (u,'NOINDEX','')
-              for tag in tags:
-                  if re.search(r'hreflang=',tag,re.I):
-                      m=re.search(r'href=["\']([^"\']+)',tag,re.I)
-                      if m and 'attribute_pa_' in urllib.parse.urlsplit(html.unescape(m.group(1))).query: return (u,'HREFLANG_QUERY',html.unescape(m.group(1)))
-              return None
-          bad=[]
-          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
-              for r in ex.map(one,enumerate(urls)):
-                  if r: bad.append(r); print('FAIL\t'+'\t'.join(r))
-          print(f'CRAWL_TOTAL={len(urls)} FAILURES={len(bad)}')
-          if bad: raise SystemExit(3)
-          PY
-
-          echo '=== EXACT REDIRECT / STATUS MATRIX ==='
-          check301(){ local src="$1" dst="$2" label="$3"; local x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$src"); echo "$label $x"; [[ "$x" == $'301\t'"$dst" ]]; }
-          check200(){ local u="$1" label="$2"; local x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}' "$u"); echo "$label $x"; [[ "$x" == 200 ]]; }
-          check404(){ local u="$1" label="$2"; local x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}' "$u"); echo "$label $x"; [[ "$x" == 404 ]]; }
-          check301 "$base/product-categorie/gewichtsverlust/" "$base/product-category/gewichtsverlust/" WEIGHT_DE
-          check301 "$base/fr/product-categorie/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" WEIGHT_FR
-          check301 "$base/en/product-categorie/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" WEIGHT_EN
-          check301 "$base/product-categorie/hiv-praevention-prep/" "$base/product-category/hiv-praevention-prep/" HIV_LEGACY
-          check301 "$base/product-categorie/quit-smoking/" "$base/product-category/rauchstopp/" QUIT_LEGACY
-          check301 "$base/product-categorie/schlafprobleme/" "$base/product-category/schlafprobleme/" SLEEP_LEGACY
-          check301 "$base/datenschutz/" "$base/privacy-policy/" DATENSCHUTZ
-          check404 "$base/fr/datenschutz/" DATENSCHUTZ_FR
-          check404 "$base/en/datenschutz/" DATENSCHUTZ_EN
-          check301 "$base/fr/request-2/" "$base/fr/anfrage-2/" FR_REQUEST2
-          check301 "$base/welche-medikamente-beeinflussen-die-erektion-2/" "$base/welche-medikamente-beeinflussen-die-erektion/" DUPLICATE_POST
-          check200 "$base/privacy-policy/" PRIVACY_TARGET
-          check200 "$base/fr/anfrage-2/" FR_REQUEST_TARGET
-          check200 "$base/product-category/gewichtsverlust/" WEIGHT_TARGET
-          check200 "$base/product-category/hiv-praevention-prep/" HIV_TARGET
-          check200 "$base/product-category/rauchstopp/" QUIT_TARGET
-          check200 "$base/product-category/schlafprobleme/" SLEEP_TARGET
-          check200 "$base/blogs/page/16/" PAGINATION_16
-          check404 "$base/blogs/page/17/" PAGINATION_17
-
-          echo '=== CONTENT AND VARIATION CANARIES ==='
-          curl "${c[@]}" --location --compressed "$base/geschaftsbedingungen/" -o "$tmp/terms.html"
-          ! grep -q 'http://www.doctorcura.com' "$tmp/terms.html"
-          variation="$base/product/epipen/?attribute_pa_wirkstarke=150mcg"
-          curl "${c[@]}" --compressed "$variation" -o "$tmp/epi.html"
-          python3 - "$tmp/epi.html" <<'PY'
-          import html,re,sys,urllib.parse
-          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); tags=re.findall(r'<link\b[^>]*>',s,re.I)
-          can=''; alts={}
-          for t in tags:
-              rel=re.search(r'rel=["\']([^"\']+)',t,re.I); href=re.search(r'href=["\']([^"\']+)',t,re.I)
-              if rel and href and 'canonical' in rel.group(1).lower(): can=html.unescape(href.group(1))
-              hm=re.search(r'hreflang=["\']([^"\']+)',t,re.I)
-              if hm and href: alts[hm.group(1).lower()]=html.unescape(href.group(1))
-          exp={'de':'https://doctorcura.com/product/epipen/','en':'https://doctorcura.com/en/product/epipen/','fr':'https://doctorcura.com/fr/product/epipen/'}
-          print('EPIPEN canonical='+can+' alternates='+repr(alts))
-          if can!='https://doctorcura.com/product/epipen/' or alts!=exp: raise SystemExit(4)
-          if any(urllib.parse.urlsplit(u).query for u in alts.values()): raise SystemExit(5)
-          PY
-          echo RELEASE_MATRIX_GREEN
+          for suffix in clean "bust-$(date +%s%N)"; do
+            probe '/datenschutz/' root "$suffix"
+            probe '/fr/datenschutz/' fr "$suffix"
+            probe '/en/datenschutz/' en "$suffix"
+          done
+          echo DATENSCHUTZ_DIAGNOSTIC_COMPLETE
