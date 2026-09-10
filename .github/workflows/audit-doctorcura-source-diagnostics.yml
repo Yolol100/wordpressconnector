@@ -1,4 +1,4 @@
-name: Audit DoctorCura Elementor Image Owner
+name: Audit DoctorCura Elementor Widget Semantics
 
 on:
   push:
@@ -19,47 +19,38 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Find the Elementor document that owns widget 695868ca
+      - name: Inspect template 5841 widget data and write schema read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-elementor-owner"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-el-widget"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          page="$base/welche-medikamente-beeinflussen-die-erektion/?dc_owner=1"
+          endpoint="$base/wp-json/wp/v2/elementor_library/5841?context=edit"
 
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$page" > "$tmp/live.html"
-          echo '=== ELEMENTOR DOCUMENT IDS NEAR WIDGET ==='
-          widget_line=$(grep -n 'data-id="695868ca"' "$tmp/live.html" | head -1 | cut -d: -f1 || true)
-          echo "widget_line=$widget_line"
-          if [[ -n "$widget_line" ]]; then
-            start=$(( widget_line > 250 ? widget_line-250 : 1 ))
-            sed -n "${start},${widget_line}p" "$tmp/live.html" | grep -E 'data-elementor-id=|elementor-location-|data-elementor-type=' | tail -30 || true
+          echo '=== TEMPLATE RECORD ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/template.json" --write-out '%{http_code}' "$endpoint")
+          echo "template_http=$code"
+          [[ "$code" == '200' ]] || { head -c 1000 "$tmp/template.json"; exit 1; }
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"")." modified=".($p["modified_gmt"]??"").PHP_EOL;echo "keys=".implode(",",array_keys($p)).PHP_EOL;echo "meta_keys=".implode(",",array_keys($p["meta"]??[])).PHP_EOL;foreach(($p["meta"]??[])as$k=>$v){$raw=is_string($v)?$v:json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);if(strpos($raw,"695868ca")!==false||strpos($raw,"900069")!==false||strpos($raw,"welche-medikamente-beeinflussen-die-erektion-featured")!==false)echo "MATCH_META key=$k len=".strlen($raw)." sha=".hash("sha256",$raw).PHP_EOL;}' "$tmp/template.json"
+
+          echo '=== EXACT MATCH CONTEXT IN TEMPLATE JSON ==='
+          php -r '$raw=file_get_contents($argv[1]);foreach(["695868ca","900069","welche-medikamente-beeinflussen-die-erektion-featured","__dynamic__"]as$n){echo "-- $n --\n";$pos=0;$found=0;while(($p=strpos($raw,$n,$pos))!==false&&$found<8){echo substr($raw,max(0,$p-450),1100)."\n";$pos=$p+strlen($n);$found++;}}' "$tmp/template.json"
+
+          echo '=== META STRUCTURE FOR ELEMENTOR DATA ==='
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($p["meta"]??[])as$k=>$v){if(stripos($k,"elementor")!==false){$raw=is_string($v)?$v:json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);echo "key=$k type=".gettype($v)." len=".strlen($raw)." prefix=".substr($raw,0,500).PHP_EOL;}}' "$tmp/template.json"
+
+          echo '=== OPTIONS / WRITE SCHEMA ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/options.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library/5841")
+          echo "options_http=$code"
+          if [[ "$code" == '200' ]]; then
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "methods=".implode(",",$d["methods"]??[]).PHP_EOL;$schema=$d["schema"]??[];echo "schema_properties=".implode(",",array_keys($schema["properties"]??[])).PHP_EOL;$meta=$schema["properties"]["meta"]["properties"]??[];echo "meta_schema_keys=".implode(",",array_keys($meta)).PHP_EOL;foreach($meta as$k=>$v)if(stripos($k,"elementor")!==false)echo "meta_schema=$k readonly=".json_encode($v["readonly"]??null)." type=".json_encode($v["type"]??null).PHP_EOL;' "$tmp/options.json"
           fi
-          echo '=== ALL ELEMENTOR ROOTS ==='
-          grep -Eio '<div[^>]+data-elementor-(id|type)=[^>]*>' "$tmp/live.html" | head -80 || true
 
-          echo '=== REST TYPES MATCHING ELEMENTOR ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/types?context=edit" > "$tmp/types.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$k=>$v){$r=(string)($v["rest_base"]??"");$n=(string)($v["name"]??"");if(stripos($k,"elementor")!==false||stripos($r,"elementor")!==false||stripos($n,"elementor")!==false)echo "type=$k rest_base=$r name=$n\n";}' "$tmp/types.json"
-
-          echo '=== TRY ELEMENTOR LIBRARY REST ==='
-          for endpoint in elementor_library e-landing-page; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/$endpoint.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/$endpoint?context=edit&per_page=100")
-            echo "$endpoint http=$code"
-            if [[ "$code" == '200' ]]; then
-              php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p){$raw=json_encode($p,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);if(strpos($raw,"695868ca")!==false||strpos($raw,"900069")!==false||strpos($raw,"welche-medikamente-beeinflussen-die-erektion-featured")!==false)echo "MATCH id=".($p["id"]??"")." slug=".($p["slug"]??"")." status=".($p["status"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"")." link=".($p["link"]??"").PHP_EOL;}' "$tmp/$endpoint.json"
-            else head -c 300 "$tmp/$endpoint.json" || true; echo; fi
+          echo '=== ELEMENTOR DOCUMENT ENDPOINT GET ==='
+          for u in "$base/wp-json/elementor/v1/site-editor/templates/5841" "$base/wp-json/elementor/v1/documents"; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/elementor.json" --write-out '%{http_code}' "$u")
+            echo "$u http=$code"
+            head -c 1200 "$tmp/elementor.json" || true; echo
           done
-
-          echo '=== WP REST SEARCH BY TEMPLATE TITLES ==='
-          for q in single post blog; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "search=$q" --data-urlencode 'context=edit' --data-urlencode 'per_page=100' --output "$tmp/search-$q.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library")
-            echo "search=$q http=$code"
-            if [[ "$code" == '200' ]]; then php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$p)echo " id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"").PHP_EOL;' "$tmp/search-$q.json"; fi
-          done
-
-          echo '=== REST ROUTES CONTAINING ELEMENTOR ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["routes"]??[])as$r=>$v){if(stripos($r,"elementor")!==false)echo $r.PHP_EOL;}' "$tmp/root.json" | head -120
-          echo 'ELEMENTOR_OWNER_AUDIT_COMPLETE'
+          echo 'ELEMENTOR_WIDGET_SEMANTICS_COMPLETE'
