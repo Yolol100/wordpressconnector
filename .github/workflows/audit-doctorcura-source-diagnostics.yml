@@ -1,4 +1,4 @@
-name: Audit DoctorCura Snippet State After Phase 2B Rollback
+name: Audit DoctorCura Code Snippets Update Contract
 
 on:
   push:
@@ -19,28 +19,20 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect snippet and phase state read-only
+      - name: Inspect Code Snippets update schema read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-snippet-state"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-snippet-options"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          endpoint="$base/wp-json/code-snippets/v1/snippets/43"
 
-          echo '=== SNIPPET 43 ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/snippet.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43")
-          echo "http=$code"
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/options.json" --write-out '%{http_code}' "$endpoint")
+          echo "options_http=$code"
           [[ "$code" == '200' ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "id=".($s["id"]??"")." name=".($s["name"]??"")." active=".json_encode($s["active"]??null)." scope=".($s["scope"]??"").PHP_EOL;echo "hash=".hash("sha256",$c)." len=".strlen($c).PHP_EOL;echo "v82=".(strpos($c,"DoctorCura blog pagination cleanup V8.2")!==false?"yes":"no")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")!==false?"yes":"no").PHP_EOL;echo "prefix=".substr(str_replace(["\r","\n"],[" "," "],$c),0,220).PHP_EOL;' "$tmp/snippet.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "methods=".implode(",",$d["methods"]??[]).PHP_EOL;foreach(($d["endpoints"]??[])as$e){echo "endpoint_methods=".implode(",",$e["methods"]??[]).PHP_EOL;foreach(($e["args"]??[])as$k=>$v){if(in_array($k,["id","name","code","scope","active","priority"],true))echo "arg=$k required=".json_encode($v["required"]??null)." type=".json_encode($v["type"]??null)." default=".json_encode($v["default"]??null).PHP_EOL;}}' "$tmp/options.json"
 
-          echo '=== POSTS ==='
-          for id in 900067 900066; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/$id?context=edit" > "$tmp/post-$id.json"
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0).PHP_EOL;' "$tmp/post-$id.json"
-          done
-
-          echo '=== REDIRECT 14 ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/welche-medikamente-beeinflussen-die-erektion-2/' --data-urlencode 'per_page=20' "$base/wp-json/redirection/v1/redirect" > "$tmp/red.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["items"]??[])as$x)echo "id=".($x["id"]??"")." url=".($x["url"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"").PHP_EOL;' "$tmp/red.json"
-
-          echo 'SNIPPET_STATE_AUDIT_COMPLETE'
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$endpoint" > "$tmp/snippet.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "current_id=".($s["id"]??"")." active=".json_encode($s["active"]??null)." name=".($s["name"]??"").PHP_EOL;echo "top_keys=".implode(",",array_keys($s)).PHP_EOL;' "$tmp/snippet.json"
+          echo 'SNIPPET_OPTIONS_AUDIT_COMPLETE'
