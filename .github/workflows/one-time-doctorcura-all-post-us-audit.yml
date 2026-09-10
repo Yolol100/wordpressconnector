@@ -39,9 +39,10 @@ jobs:
           regs=[
             ('usa',re.compile(r'\bUSA\b|\bin den USA\b',re.I)),
             ('united_states',re.compile(r'\bUnited States(?: of America)?\b',re.I)),
-            ('us_reference',re.compile(r'\bU\.\s*S\.\s*A?\.?\b|\bUS[- ](?:based|market|healthcare|doctor|patient|patients|prescription|pharmacy|law|regulation|system|provider|resident|citizen)\b',re.I)),
+            ('us_reference',re.compile(r'\bU\.\s*S\.\s*A?\.?\b|\bUS[- ][A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß-]*\b',re.I)),
             ('america',re.compile(r'\bAmerica\b|\bAmerican(?:s)?\b',re.I)),
             ('german_us',re.compile(r'\bVereinigte Staaten\b|\bUS-amerikan\w*\b|\bamerikan(?:isch|ische|ischen|ischer|isches|ischem)\b',re.I)),
+            ('french_us',re.compile(r'\bÉtats-Unis\b|\bEtats-Unis\b|\baméricain(?:e|es|s)?\b|\bamericain(?:e|es|s)?\b',re.I)),
             ('us_regulator',re.compile(r'\bFDA\b|Food and Drug Administration|\bDEA\b|Drug Enforcement Administration|\bHIPAA\b',re.I)),
             ('us_geo',re.compile(r'\bNew York\b|\bCalifornia\b|\bTexas\b|\bFlorida\b|\bWashington,? D\.?C\.?\b|\bLos Angeles\b|\bChicago\b|\bBoston\b|\bMiami\b|\bSan Francisco\b',re.I)),
             ('usd',re.compile(r'\bUSD\b|US\$|\$\s?\d',re.I)),
@@ -49,12 +50,15 @@ jobs:
           def strip(s): return re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',s or ''))).strip()
           hits=[]
           for p in posts:
+              yh=p.get('yoast_head_json') or {}
               fields={
                 'title':(p.get('title') or {}).get('raw') or '',
                 'excerpt':(p.get('excerpt') or {}).get('raw') or '',
                 'content':(p.get('content') or {}).get('raw') or '',
-                'yoast_description':(p.get('yoast_head_json') or {}).get('description') or '',
-                'yoast_og_description':(p.get('yoast_head_json') or {}).get('og_description') or '',
+                'yoast_title':yh.get('title') or '',
+                'yoast_description':yh.get('description') or '',
+                'yoast_og_title':yh.get('og_title') or '',
+                'yoast_og_description':yh.get('og_description') or '',
                 'slug':p.get('slug') or '',
               }
               found=[]
