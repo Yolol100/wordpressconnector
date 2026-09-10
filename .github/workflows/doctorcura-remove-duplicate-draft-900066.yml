@@ -1,0 +1,108 @@
+name: DoctorCura remove duplicate draft 900066
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-final-recheck-20260910-1742
+    paths:
+      - 'doctorcura-remove-duplicate-draft/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-remove-duplicate-draft-900066
+  cancel-in-progress: false
+
+jobs:
+  remove:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Preflight remove to trash and verify canonical survives
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target' >&2; exit 1; }
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-remove-draft"; rm -rf "$root"; mkdir -p "$root"
+
+          hc=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health" || true)
+          [[ "$hc" == 200 ]] || { echo "HEALTH_HTTP=$hc" >&2; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert d.get('ok') and d.get('transport')=='rest',d
+          print('REMOVE_DRAFT_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          for id in 900066 900067; do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/before-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || { echo "PREFLIGHT_FETCH_FAIL id=$id HTTP=$code" >&2; exit 1; }
+          done
+
+          python3 - "$root/before-900066.json" "$root/before-900067.json" <<'PY'
+          import hashlib,json,sys
+          a=json.load(open(sys.argv[1],encoding='utf-8')); b=json.load(open(sys.argv[2],encoding='utf-8'))
+          ar=(a.get('content') or {}).get('raw') or ''; br=(b.get('content') or {}).get('raw') or ''
+          assert a.get('id')==900066 and a.get('status')=='draft',('draft preflight',a.get('id'),a.get('status'))
+          assert b.get('id')==900067 and b.get('status')=='publish',('canonical preflight',b.get('id'),b.get('status'))
+          assert ar==br,('content mismatch',hashlib.sha256(ar.encode()).hexdigest(),hashlib.sha256(br.encode()).hexdigest())
+          print('REMOVE_DRAFT_PREFLIGHT_OK content_sha256='+hashlib.sha256(ar.encode()).hexdigest())
+          PY
+
+          rollback_needed=0
+          rollback(){
+            trap - ERR
+            if [[ "$rollback_needed" == 1 ]]; then
+              echo 'REMOVE_DRAFT_ROLLBACK_START' >&2
+              curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --request POST --data '{"status":"draft"}' -o "$root/rollback.json" -w 'ROLLBACK_HTTP=%{http_code}\n' "$site/wp-json/wp/v2/posts/900066" >&2 || true
+              echo 'REMOVE_DRAFT_ROLLBACK_ATTEMPTED' >&2
+            fi
+          }
+          trap rollback ERR
+
+          rollback_needed=1
+          dcode=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' --request DELETE -o "$root/delete.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/900066?force=false" || true)
+          [[ "$dcode" == 200 ]] || { echo "DELETE_HTTP=$dcode" >&2; cat "$root/delete.json" >&2 || true; exit 1; }
+
+          python3 - "$root/delete.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert d.get('id')==900066 and d.get('status')=='trash',('delete response',d.get('id'),d.get('status'))
+          print('REMOVE_DRAFT_TRASH_OK')
+          PY
+
+          for id in 900066 900067; do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/after-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || { echo "POST_DELETE_FETCH_FAIL id=$id HTTP=$code" >&2; exit 1; }
+          done
+
+          python3 - "$root/after-900066.json" "$root/after-900067.json" "$root/before-900067.json" <<'PY'
+          import hashlib,json,sys
+          a=json.load(open(sys.argv[1],encoding='utf-8')); b=json.load(open(sys.argv[2],encoding='utf-8')); before=json.load(open(sys.argv[3],encoding='utf-8'))
+          assert a.get('id')==900066 and a.get('status')=='trash',('trash readback',a.get('id'),a.get('status'))
+          assert b.get('id')==900067 and b.get('status')=='publish',('canonical readback',b.get('id'),b.get('status'))
+          br=(b.get('content') or {}).get('raw') or ''; pre=(before.get('content') or {}).get('raw') or ''
+          assert br==pre,('canonical content drift',hashlib.sha256(pre.encode()).hexdigest(),hashlib.sha256(br.encode()).hexdigest())
+          print('REMOVE_DRAFT_READBACK_OK canonical=900067 published trash=900066')
+          PY
+
+          pub=$(curl -sS -L --connect-timeout 10 --max-time 45 -A 'Mozilla/5.0 DoctorCuraDraftRemovalQA' -o "$root/public.html" -w '%{http_code}' "$site/?p=900066" || true)
+          [[ "$pub" == 404 || "$pub" == 200 ]] || { echo "UNEXPECTED_PUBLIC_STATUS=$pub" >&2; exit 1; }
+          python3 - "$root/public.html" "$pub" <<'PY'
+          import re,sys
+          body=open(sys.argv[1],encoding='utf-8',errors='replace').read(); code=sys.argv[2]
+          if code=='200' and re.search(r'<body[^>]*class=["\'][^"\']*\bsingle-post\b',body,re.I):
+              raise SystemExit('TRASHED_DRAFT_STILL_PUBLIC_AS_SINGLE_POST')
+          print('REMOVE_DRAFT_PUBLIC_OK HTTP='+code)
+          PY
+
+          rollback_needed=0
+          trap - ERR
+          echo 'REMOVE_DRAFT_COMPLETE'
