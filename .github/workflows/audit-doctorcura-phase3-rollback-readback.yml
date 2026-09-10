@@ -41,4 +41,4 @@ jobs:
           dcode=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
           echo "ROLLBACK_FRONT weight_code=$wcode weight_location=$wloc privacy_code=$dcode"
           [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' && "$dcode" == '404' ]] || exit 1
-          echo PHASE3_ROLLBACK_READBACK_OK
+          echo PHASE3_ROLLBACK_READBACK_OK_2
