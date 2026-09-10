@@ -1,0 +1,118 @@
+name: DoctorCura Phase 4 Gap Validation
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase4-gap-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Validate legacy 200s feed and parser artifacts read only
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://doctorcura.com'
+          tmp="$RUNNER_TEMP/dc-phase4-gap"; mkdir -p "$tmp"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors --compressed --header 'Cache-Control: no-cache')
+
+          probe(){
+            local label="$1" url="$2" stem="$3"
+            local h="$tmp/$stem.h" b="$tmp/$stem.html"
+            local status
+            status=$(curl "${c[@]}" --dump-header "$h" --output "$b" --write-out '%{http_code}' "$url")
+            python3 - "$label" "$url" "$status" "$h" "$b" <<'PY'
+          import hashlib,html,re,sys
+          label,url,status,hp,bp=sys.argv[1:]
+          h=open(hp,encoding='utf-8',errors='ignore').read(); b=open(bp,encoding='utf-8',errors='ignore').read()
+          def attr(tag,name):
+              m=re.search(r'\b'+re.escape(name)+r'=["\']([^"\']*)',tag,re.I)
+              return html.unescape(m.group(1)) if m else ''
+          can=''
+          for t in re.findall(r'<link\b[^>]*>',b,re.I):
+              if 'canonical' in attr(t,'rel').lower().split(): can=attr(t,'href'); break
+          robots=''
+          for t in re.findall(r'<meta\b[^>]*>',b,re.I):
+              if attr(t,'name').lower()=='robots': robots=attr(t,'content'); break
+          title=''; m=re.search(r'<title\b[^>]*>([\s\S]*?)</title>',b,re.I)
+          if m: title=re.sub(r'<[^>]+>',' ',m.group(1)).strip()
+          text=re.sub(r'<script\b[^>]*>[\s\S]*?</script>',' ',b,flags=re.I)
+          text=re.sub(r'<style\b[^>]*>[\s\S]*?</style>',' ',text,flags=re.I)
+          text=re.sub(r'<[^>]+>',' ',text); text=html.unescape(re.sub(r'\s+',' ',text)).strip()
+          loc=''; m=re.search(r'(?im)^location:\s*(\S.*?)\r?$',h); loc=m.group(1).strip() if m else ''
+          ct=''; m=re.search(r'(?im)^content-type:\s*(\S.*?)\r?$',h); ct=m.group(1).strip() if m else ''
+          xrob=''; m=re.search(r'(?im)^x-robots-tag:\s*(\S.*?)\r?$',h); xrob=m.group(1).strip() if m else ''
+          cache=''; m=re.search(r'(?im)^x-hcdn-cache-status:\s*(\S.*?)\r?$',h); cache=m.group(1).strip() if m else ''
+          print(f"PROBE\t{label}\tstatus={status}\tlocation={loc}\tbytes={len(b.encode())}\ttext_bytes={len(text.encode())}\tsha={hashlib.sha256(b.encode()).hexdigest()}\tcontent_type={ct}\tcanonical={can}\trobots={robots}\txrobots={xrob}\tcache={cache}\ttitle={title[:100]}")
+          PY
+          }
+
+          legacy=(
+            'en/product-categorie/alle-medikamente/'
+            'en/product-categorie/feigwarzen/'
+            'fr/product-categorie/haarausfall/'
+            'en/product-categorie/haarausfall/'
+            'fr/product-categorie/herpes-simplex/'
+            'en/product-categorie/hiv-praevention-prep/'
+            'en/product-categorie/malaria/'
+            'fr/product-categorie/migraene/'
+            'en/product-categorie/nagelpilz/'
+            'en/product-categorie/schlafprobleme/'
+          )
+          echo '=== LEGACY 200 VALIDATION ==='
+          i=0
+          for p in "${legacy[@]}"; do
+            i=$((i+1))
+            slug=${p##*/product-categorie/}; slug=${slug%/}
+            prefix=${p%%product-categorie/*}
+            probe legacy "$base/$p" "legacy-$i"
+            probe current "$base/${prefix}product-category/$slug/" "current-$i"
+          done
+
+          echo '=== CACHE-BUST LEGACY CHECK ==='
+          i=0
+          for p in "${legacy[@]}"; do
+            i=$((i+1))
+            probe legacy_bust "$base/$p?doctorcura_gap_probe=$i" "legacy-bust-$i"
+          done
+
+          echo '=== FEED REALITY ==='
+          probe comments_feed "$base/comments/feed/" comments-feed
+          probe feed_root "$base/feed/" feed-root
+
+          echo '=== EPIPEN HREFLANG CONTRACT ==='
+          ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"
+          probe epipen_variation "$ep" epipen-var
+          python3 - "$tmp/epipen-var.html" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); out=[]
+          for t in re.findall(r'<link\b[^>]*hreflang=[^>]*>',s,re.I):
+              hm=re.search(r'href=["\']([^"\']+)',t,re.I); lm=re.search(r'hreflang=["\']([^"\']+)',t,re.I)
+              if hm: out.append((lm.group(1) if lm else '',html.unescape(hm.group(1))))
+          print('EPIPEN_ALT_COUNT='+str(len(out)))
+          for l,u in out: print(f'EPIPEN_ALT\t{l}\t{u}\tquery={urllib.parse.urlsplit(u).query}')
+          if any(k.startswith('attribute_pa_') for _,u in out for k in urllib.parse.parse_qs(urllib.parse.urlsplit(u).query,keep_blank_values=True)):
+              raise SystemExit('attribute_pa query leaked into hreflang')
+          PY
+
+          echo '=== MALFORMED LINK PARSER VALIDATION ==='
+          probe epipen_clean "$base/product/epipen/" epipen-clean
+          python3 - "$tmp/epipen-clean.html" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          full=[m.group(0) for m in re.finditer(r'<a\b[^>]*>',s,re.I) if '%22https' in m.group(0).lower() or '&quot;https' in m.group(0).lower() or '\\"https' in m.group(0).lower()]
+          stripped=re.sub(r'<script\b[^>]*>[\s\S]*?</script>',' ',s,flags=re.I)
+          stripped=re.sub(r'<style\b[^>]*>[\s\S]*?</style>',' ',stripped,flags=re.I)
+          visible=[m.group(0) for m in re.finditer(r'<a\b[^>]*>',stripped,re.I) if '%22https' in m.group(0).lower() or '&quot;https' in m.group(0).lower() or '\\"https' in m.group(0).lower()]
+          print(f'MALFORMED_ANCHOR_FULL={len(full)} MALFORMED_ANCHOR_VISIBLE={len(visible)}')
+          for x in full[:5]: print('MALFORMED_RAW '+x[:240].replace('\n',' '))
+          PY
+
+          echo PHASE4_GAP_VALIDATION_COMPLETE
