@@ -18,8 +18,25 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare conservative-concurrency audit copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          src=Path('doctorcura-audits/deep-seo-20260910-audit.mjs').read_text()
+          pairs=[
+            ('mapLimit([...universe], 12, auditUrl)','mapLimit([...universe], 4, auditUrl)'),
+            ('mapLimit(discoveredList, 12, auditUrl)','mapLimit(discoveredList, 4, auditUrl)'),
+          ]
+          for old,new in pairs:
+              if src.count(old)!=1: raise SystemExit(f'expected one concurrency token: {old}')
+              src=src.replace(old,new,1)
+          Path('/tmp/doctorcura-final-audit.mjs').write_text(src)
+          print('FINAL_AUDIT_CONCURRENCY=4')
+          PY
       - name: Run exhaustive public SEO and migration audit
-        run: node doctorcura-audits/deep-seo-20260910-audit.mjs
+        run: node /tmp/doctorcura-final-audit.mjs
       - name: Publish concise summary
         if: always()
         run: |
@@ -44,4 +61,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# Read-only audit rerun marker: 2026-09-10T17:35:00+02:00
+# Phase 6 final read-only crawl; conservative concurrency=4
