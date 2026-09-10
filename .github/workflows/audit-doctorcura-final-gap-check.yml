@@ -1,4 +1,4 @@
-name: DoctorCura Datenschutz Cache Isolation Fix
+name: DoctorCura Datenschutz Translation Cache-Key Fix
 
 on:
   push:
@@ -19,72 +19,91 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Harden root-only redirect cache semantics with rollback
+      - name: Vary only datenschutz routing by GTranslate language header
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
           c=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 2 --retry-delay 1 --retry-all-errors)
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/dc-v84c-cache"; mkdir -p "$tmp"
-          expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'
-          changed=0
-
+          api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/dc-vary"; mkdir -p "$tmp"
+          expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'; changed=0
           payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
-          put(){ local src="$1" label="$2" h; payload "$src" "$tmp/$label.json"; h=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$label.json" --output "$tmp/$label.out" --write-out '%{http_code}' "$api"); echo "SNIPPET_WRITE $label http=$h"; [[ "$h" == 200 ]]; }
-          readcode(){ curl "${c[@]}" --location "${auth[@]}" --output "$1" --write-out '%{http_code}' "$api"; }
-          rollback(){ local rc=$?; [[ "$rc" == 0 ]] && return; echo "ROLLBACK_START rc=$rc" >&2; set +e; if [[ "$changed" == 1 ]]; then put "$tmp/original.php" rollback >/dev/null 2>&1 || true; fi; readcode "$tmp/rollback.json" >/dev/null 2>&1 || true; if [[ -s "$tmp/rollback.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_HASH=".hash("sha256",$c).PHP_EOL;' "$tmp/rollback.json" || true; fi; echo ROLLBACK_ATTEMPTED >&2; }
+          put(){ local f="$1" l="$2" h; payload "$f" "$tmp/$l-payload.json"; h=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$l-payload.json" --output "$tmp/$l-out.json" --write-out '%{http_code}' "$api"); echo "WRITE $l http=$h"; [[ "$h" == 200 ]]; }
+          get(){ curl "${c[@]}" --location "${auth[@]}" --output "$1" --write-out '%{http_code}' "$api"; }
+          rollback(){ local rc=$?; [[ "$rc" == 0 ]] && return; echo "ROLLBACK_START rc=$rc" >&2; set +e; if [[ "$changed" == 1 ]]; then put "$tmp/original.php" rollback >/dev/null 2>&1 || true; fi; get "$tmp/rb.json" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_HASH=".hash("sha256",$c).PHP_EOL;' "$tmp/rb.json" || true; fi; echo ROLLBACK_ATTEMPTED >&2; }
           trap rollback EXIT
 
           echo '=== PREFLIGHT ==='
-          h=$(readcode "$tmp/before.json"); [[ "$h" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$h=hash("sha256",$c);echo "BEFORE hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($h!==$argv[3]||empty($s["active"])||substr_count($c,"DoctorCura datenschutz root-only migration V8.4c")!==1||strpos($c,"Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private")!==false)exit(2);file_put_contents($argv[2],$c);' "$tmp/before.json" "$tmp/original.php" "$expected"
+          h=$(get "$tmp/before.json"); [[ "$h" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$h=hash("sha256",$c);echo "BEFORE hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($h!==$argv[3]||empty($s["active"])||substr_count($c,"DoctorCura datenschutz root-only migration V8.4c")!==1||strpos($c,"X-GT-Lang', false")!==false)exit(2);file_put_contents($argv[2],$c);' "$tmp/before.json" "$tmp/original.php" "$expected"
 
           python3 - "$tmp/original.php" "$tmp/new.php" <<'PY'
           import hashlib,sys
-          src=open(sys.argv[1],encoding='utf-8').read()
-          needle="    wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );"
-          repl="    if ( function_exists( 'nocache_headers' ) ) {\n        nocache_headers();\n    }\n    header( 'Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private', true );\n"+needle
-          if src.count(needle)!=1: raise SystemExit('redirect target identity mismatch')
-          out=src.replace(needle,repl,1)
-          if out.count('DoctorCura datenschutz root-only migration V8.4c')!=1: raise SystemExit('marker mismatch')
+          s=open(sys.argv[1],encoding='utf-8').read()
+          old="""/* DoctorCura datenschutz root-only migration V8.4c - 2026-09-10 */
+          add_action( 'template_redirect', function () {
+              if ( isset( $_SERVER['HTTP_X_GT_LANG'] ) && '' !== (string) $_SERVER['HTTP_X_GT_LANG'] ) {
+                  return;
+              }
+              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
+              if ( '/datenschutz/' !== $path ) {
+                  return;
+              }
+              wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
+              exit;
+          }, 0 );"""
+          new="""/* DoctorCura datenschutz root-only migration V8.4c - 2026-09-10 */
+          add_action( 'template_redirect', function () {
+              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
+              $translated = isset( $_SERVER['HTTP_X_GT_LANG'] ) && '' !== (string) $_SERVER['HTTP_X_GT_LANG'];
+              if ( '/datenschutz/' === $path || '/fr/datenschutz/' === $path || '/en/datenschutz/' === $path || $translated ) {
+                  header( 'Vary: X-GT-Lang', false );
+              }
+              if ( $translated ) {
+                  return;
+              }
+              if ( '/datenschutz/' !== $path ) {
+                  return;
+              }
+              wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
+              exit;
+          }, 0 );"""
+          if s.count(old)!=1: raise SystemExit('V8.4c identity mismatch')
+          out=s.replace(old,new,1)
           open(sys.argv[2],'w',encoding='utf-8',newline='').write(out)
           print('NEW_HASH='+hashlib.sha256(out.encode()).hexdigest())
           PY
           newhash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
 
-          echo '=== WRITE + READBACK ==='
+          echo '=== WRITE + EXACT READBACK ==='
           put "$tmp/new.php" apply; changed=1
-          h=$(readcode "$tmp/after.json"); [[ "$h" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$want=file_get_contents($argv[2]);$h=hash("sha256",$c);echo "AFTER hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($c!==$want||$h!==$argv[3]||empty($s["active"])||substr_count($c,"Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private")!==1)exit(2);' "$tmp/after.json" "$tmp/new.php" "$newhash"
+          h=$(get "$tmp/after.json"); [[ "$h" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$want=file_get_contents($argv[2]);$h=hash("sha256",$c);echo "AFTER hash=$h active=".(!empty($s["active"])?"yes":"no").PHP_EOL;if($c!==$want||$h!==$argv[3]||empty($s["active"])||substr_count($c,"Vary: X-GT-Lang")!==1)exit(2);' "$tmp/after.json" "$tmp/new.php" "$newhash"
 
-          echo '=== TARGETED ORIGIN/CACHE-BUST VERIFY ==='
+          probe(){ local u="$1" l="$2" h="$tmp/$l.h" m; m=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$h" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$u"); echo "$l $m"; echo -n "$l VARY="; grep -i '^vary:' "$h" | tr -d '\r' | paste -sd '|' - || true; echo -n "$l CACHE="; grep -i '^x-hcdn-cache-status:' "$h" | tr -d '\r' | paste -sd '|' - || true; }
+
+          echo '=== SAME-TOKEN CACHE KEY TESTS ==='
           for n in 1 2 3; do
-            q="dc_v84c_cache=$n-$(date +%s%N)"
-            rh="$tmp/root-$n.h"
-            rmeta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$rh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/datenschutz/?$q")
-            rs=${rmeta%%$'\t'*}; rl=${rmeta#*$'\t'}; rc=$(grep -i '^cache-control:' "$rh" | head -n1 | cut -d: -f2- | tr -d '\r' | sed 's/^[[:space:]]*//')
-            echo "ROOT round=$n status=$rs location=$rl cache_control=$rc"; [[ "$rs" == 301 && "$rl" == "$base/privacy-policy/" && "$rc" == *no-store* ]]
-            for lang in fr en; do
-              hh="$tmp/$lang-$n.h"
-              meta=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --dump-header "$hh" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/$lang/datenschutz/?$q")
-              ss=${meta%%$'\t'*}; ll=${meta#*$'\t'}
-              echo "TRANSLATED lang=$lang round=$n status=$ss location=$ll"; [[ "$ss" == 404 && -z "$ll" ]]
-            done
+            token="dc_vary=$n-$(date +%s%N)"
+            probe "$base/datenschutz/?$token" "root-prime-$n"
+            probe "$base/fr/datenschutz/?$token" "fr-after-root-$n"
+            probe "$base/en/datenschutz/?$token" "en-after-root-$n"
+            probe "$base/fr/datenschutz/?$token" "fr-repeat-$n"
+            probe "$base/datenschutz/?$token" "root-after-fr-$n"
+            r=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/datenschutz/?$token"); [[ "$r" == $'301\t'"$base/privacy-policy/" ]]
+            f=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/fr/datenschutz/?$token"); [[ "$f" == $'404\t' ]]
+            e=$(curl "${c[@]}" --header 'Cache-Control: no-cache' --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$base/en/datenschutz/?$token"); [[ "$e" == $'404\t' ]]
           done
 
-          echo '=== REGRESSION CANARIES ==='
+          echo '=== OTHER FIX CANARIES ==='
           check301(){ local u="$1" d="$2" l="$3" x; x=$(curl "${c[@]}" --output /dev/null --write-out '%{http_code}\t%{redirect_url}' "$u"); echo "$l $x"; [[ "$x" == $'301\t'"$d" ]]; }
-          check301 "$base/product-categorie/gewichtsverlust/?dc_v84c_canary=$(date +%s%N)" "$base/product-category/gewichtsverlust/" WEIGHT
-          check301 "$base/product-categorie/hiv-praevention-prep/?dc_v84c_canary=$(date +%s%N)" "$base/product-category/hiv-praevention-prep/" HIV
-          check301 "$base/product-categorie/quit-smoking/?dc_v84c_canary=$(date +%s%N)" "$base/product-category/rauchstopp/" QUIT
-          check301 "$base/product-categorie/schlafprobleme/?dc_v84c_canary=$(date +%s%N)" "$base/product-category/schlafprobleme/" SLEEP
-          check301 "$base/fr/request-2/?dc_v84c_canary=$(date +%s%N)" "$base/fr/anfrage-2/" REQUEST2
-          check301 "$base/welche-medikamente-beeinflussen-die-erektion-2/?dc_v84c_canary=$(date +%s%N)" "$base/welche-medikamente-beeinflussen-die-erektion/" DUPLICATE
+          check301 "$base/product-categorie/gewichtsverlust/?dc_vary_canary=$(date +%s%N)" "$base/product-category/gewichtsverlust/" WEIGHT
+          check301 "$base/fr/request-2/?dc_vary_canary=$(date +%s%N)" "$base/fr/anfrage-2/" REQUEST2
+          check301 "$base/welche-medikamente-beeinflussen-die-erektion-2/?dc_vary_canary=$(date +%s%N)" "$base/welche-medikamente-beeinflussen-die-erektion/" DUPLICATE
 
-          echo '=== CLEAN EDGE OBSERVATION (NON-GATING) ==='
-          for lang in fr en; do curl "${c[@]}" --dump-header "$tmp/clean-$lang.h" --output /dev/null --write-out "CLEAN_$lang=%{http_code} REDIRECT=%{redirect_url}\n" "$base/$lang/datenschutz/"; grep -iE '^(location:|x-hcdn-cache-status:|age:|cache-control:)' "$tmp/clean-$lang.h" || true; done
           changed=0
           echo "NEW_EXPECTED_SNIPPET_HASH=$newhash"
-          echo V84C_CACHE_ISOLATION_GREEN
+          echo DATENSCHUTZ_VARY_FIX_GREEN
