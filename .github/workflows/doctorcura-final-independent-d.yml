@@ -1,0 +1,152 @@
+name: DoctorCura final independent verification D
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-final-recheck-20260910-1742
+    paths:
+      - 'doctorcura-final-independent-d/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Independent REST and rendered-surface verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target' >&2; exit 1; }
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-final-d"; rm -rf "$root"; mkdir -p "$root/pages" "$root/rendered" "$root/options"
+
+          hc=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health" || true)
+          [[ "$hc" == 200 ]] || { echo "HEALTH_HTTP=$hc" >&2; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('FINAL_D_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          call(){
+            suffix="$1"; action="$2"; payload="$3"
+            req="$root/r-$suffix.json"; out="$root/o-$suffix.json"
+            python3 - "$req" "$action" "$payload" <<'PY'
+          import json,sys,uuid
+          out,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-final-d-'+uuid.uuid4().hex[:18],'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute" || true)
+            [[ "$code" == 200 ]] || { echo "ACTION_HTTP action=$action HTTP=$code" >&2; return 1; }
+            python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); raise SystemExit(0 if d.get('ok') else 1)
+          PY
+          }
+
+          for key in woocommerce_store_address woocommerce_store_address_2 woocommerce_store_city woocommerce_store_postcode woocommerce_default_country woocommerce_allowed_countries woocommerce_specific_allowed_countries woocommerce_all_except_countries woocommerce_ship_to_countries woocommerce_specific_ship_to_countries; do
+            call "opt-${key//_/-}" option.get "{\"name\":\"$key\"}"
+            cp "$root/o-opt-${key//_/-}.json" "$root/options/$key.json"
+          done
+          call core filesystem.read_text '{"path":"wp-content/plugins/doctorcura-core/includes/extra-request-form.php"}'
+          scode=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/snippets.json" -w '%{http_code}' "$site/wp-json/code-snippets/v1/snippets?per_page=100&page=1" || true)
+          [[ "$scode" == 200 ]] || { echo "SNIPPETS_HTTP=$scode" >&2; exit 1; }
+
+          pcode=$(curl -sS -L --connect-timeout 10 --max-time 75 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/pages.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages?context=edit&status=publish&per_page=100" || true)
+          [[ "$pcode" == 200 ]] || { echo "PAGES_HTTP=$pcode" >&2; exit 1; }
+          for id in 3 9 11; do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/page-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || { echo "PAGE_HTTP id=$id HTTP=$code" >&2; exit 1; }
+          done
+
+          python3 - "$root" "$site" <<'PY'
+          import concurrent.futures,html,json,os,re,sys,urllib.parse,urllib.request
+          root,site=sys.argv[1:]
+          pages=json.load(open(root+'/pages.json',encoding='utf-8'))
+          urls=[]
+          for p in pages:
+              u=p.get('link')
+              if u:urls.append(('wp-page-'+str(p.get('id')),u))
+          extras=['/','/en/','/kontakt/','/en/kontakt/','/privacy-policy/','/en/privacy-policy/','/geschaftsbedingungen/','/en/geschaftsbedingungen/','/datenschutz/','/en/uber-uns/','/en/faq/','/fr/','/fr/privacy-policy/']
+          for rel in extras:urls.append(('extra-'+rel,urllib.parse.urljoin(site+'/',rel.lstrip('/'))))
+          ded=[]; seen=set()
+          for label,u in urls:
+              if u not in seen:seen.add(u);ded.append((label,u))
+          def fetch(item):
+              label,u=item
+              try:
+                  req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 DoctorCuraIndependentD'})
+                  with urllib.request.urlopen(req,timeout=30) as r:return label,u,r.status,r.geturl(),r.read().decode('utf-8','replace')
+              except Exception as e:return label,u,int(getattr(e,'code',0) or 0),u,''
+          rows=[]
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+              for row in ex.map(fetch,ded):rows.append(row)
+          for i,(label,u,code,final,body) in enumerate(rows):
+              open(f'{root}/rendered/{i}.html','w',encoding='utf-8').write(body)
+          json.dump([{'label':a,'url':b,'status':c,'final':d,'file':f'rendered/{i}.html'} for i,(a,b,c,d,e) in enumerate(rows)],open(root+'/render-index.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          PY
+
+          python3 - "$root" <<'PY'
+          import html,json,os,re,sys
+          root=sys.argv[1]
+          phone='+31 85 505 54 33'; tel='tel:+31855055433'; address='Veldbloemlaan 93'; postcode='3452CK Vleuten'
+          old_visible=re.compile(r'Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam|\b08\s*550\s*55\s*433\b|\b085\s*505\s*5433\b|\b0855055433\b|\+31\s*\(0\)\s*85\s*505\s*5433\b|\+31\s+85\s+505\s+5433\b',re.I)
+          old_tel=re.compile(r'tel:\s*\+318550554\s*(?=["\'])',re.I)
+          kvk_rx=re.compile(r'\bKvK\b|\bKVK\b|Kamer van Koophandel',re.I)
+          def oval(k):
+              d=json.load(open(f'{root}/options/{k}.json',encoding='utf-8')); return (d.get('data') or {}).get('value')
+          expected={'woocommerce_store_address':'Veldbloemlaan 93','woocommerce_store_address_2':'','woocommerce_store_city':'Vleuten','woocommerce_store_postcode':'3452CK','woocommerce_default_country':'NL','woocommerce_allowed_countries':'specific','woocommerce_specific_allowed_countries':['DE','FR','GB'],'woocommerce_all_except_countries':[],'woocommerce_ship_to_countries':'','woocommerce_specific_ship_to_countries':[]}
+          for k,v in expected.items():assert oval(k)==v,(k,oval(k),v)
+
+          legacy=[]; kvk=[]; rendered=json.load(open(root+'/render-index.json',encoding='utf-8'))
+          required={'https://doctorcura.com/','https://doctorcura.com/en/','https://doctorcura.com/kontakt/','https://doctorcura.com/en/kontakt/','https://doctorcura.com/privacy-policy/','https://doctorcura.com/en/privacy-policy/','https://doctorcura.com/geschaftsbedingungen/','https://doctorcura.com/en/geschaftsbedingungen/'}
+          got={}
+          for r in rendered:
+              body=open(root+'/'+r['file'],encoding='utf-8',errors='replace').read(); got[r['url']]=(r,body)
+              if r['url'] in required and r['status']!=200:raise SystemExit('REQUIRED_RENDER_HTTP '+repr(r))
+              m=old_visible.search(body) or old_tel.search(body)
+              if m:legacy.append(('rendered',r['url'],m.group(0)))
+              if kvk_rx.search(body):kvk.append(('rendered',r['url']))
+          for u in required:
+              if u not in got:raise SystemExit('REQUIRED_RENDER_MISSING '+u)
+              body=got[u][1]
+              if address not in body or phone not in body:raise SystemExit('NEW_CONTACT_MISSING '+u)
+          contact=got['https://doctorcura.com/kontakt/'][1]
+          hrefs=re.findall(r'href=["\']\s*(tel:[^"\']+)["\']',contact,re.I)
+          norm=[re.sub(r'\s+','',x).lower() for x in hrefs]
+          if 'tel:+31855055433' not in norm:raise SystemExit('CONTACT_TEL_MISSING '+repr(hrefs))
+          bad=[x for x in norm if x.startswith('tel:+318550554') and x!='tel:+31855055433']
+          if bad:raise SystemExit('CONTACT_BAD_TEL '+repr(bad))
+          if postcode not in contact:raise SystemExit('CONTACT_POSTCODE_MISSING')
+          if 'Veldbloemlaan%2093%2C%203452CK%20Vleuten%2C%20The%20Netherlands' not in contact:raise SystemExit('CONTACT_MAP_MISMATCH')
+
+          for id in (3,9,11):
+              p=json.load(open(f'{root}/page-{id}.json',encoding='utf-8'))
+              blob=' '.join([(p.get('content') or {}).get('raw') or '',(p.get('excerpt') or {}).get('raw') or '',(p.get('title') or {}).get('raw') or ''])
+              m=old_visible.search(blob) or old_tel.search(blob)
+              if m:legacy.append(('wp-rest-page',id,m.group(0)))
+              if kvk_rx.search(blob):kvk.append(('wp-rest-page',id))
+          p3=json.load(open(root+'/page-3.json',encoding='utf-8')); b3=(p3.get('content') or {}).get('raw') or ''
+          if address not in b3 or postcode not in b3:raise SystemExit('PRIVACY_SOURCE_NEW_ADDRESS_MISSING')
+
+          s=json.load(open(root+'/snippets.json',encoding='utf-8')); items=s if isinstance(s,list) else (s.get('items') or s.get('snippets') or []) if isinstance(s,dict) else []
+          for x in items:
+              if isinstance(x,dict) and isinstance(x.get('code'),str):
+                  m=old_visible.search(x['code']) or old_tel.search(x['code'])
+                  if m:legacy.append(('snippet',x.get('id'),m.group(0)))
+                  if kvk_rx.search(x['code']):kvk.append(('snippet',x.get('id')))
+          core=json.load(open(root+'/o-core.json',encoding='utf-8')); ctxt=str((core.get('data') or {}).get('content') or '')
+          m=old_visible.search(ctxt) or old_tel.search(ctxt)
+          if m:legacy.append(('core',0,m.group(0)))
+          if kvk_rx.search(ctxt):kvk.append(('core',0))
+          if legacy:raise SystemExit('INDEPENDENT_LEGACY_HITS '+repr(legacy[:30]))
+          print('FINAL_D_OK '+json.dumps({'published_wp_pages':len(json.load(open(root+'/pages.json',encoding='utf-8'))),'rendered_urls_checked':len(rendered),'legacy_contact_hits':0,'contact_tel_hrefs':norm,'google_maps':'ok','privacy_source':'ok','terms_rendered':'ok','woocommerce':'ok','snippets':'ok','core':'ok','kvk_locations':kvk},ensure_ascii=False,separators=(',',':')))
+          PY
