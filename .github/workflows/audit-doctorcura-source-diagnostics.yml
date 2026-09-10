@@ -1,0 +1,88 @@
+name: Audit DoctorCura SEO Source Diagnostics
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-source-diagnostics.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect live HTML, redirects, snippet and sitemap source
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          tmp="$RUNNER_TEMP/dc-source-diag"; mkdir -p "$tmp"
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+
+          echo '=== REDIRECTION ITEMS ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/redirection/v1/redirect?per_page=200" > "$tmp/redirects.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach(($d["items"]??[]) as $x){echo "id=".(int)($x["id"]??0)." status=".(string)($x["status"]??"")." source=".(string)($x["url"]??"")." code=".(int)($x["action_code"]??0)." target=".(string)($x["action_data"]["url"]??"").PHP_EOL;}' "$tmp/redirects.json"
+
+          echo '=== SEO SNIPPET 43 RELEVANT LINES ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/snippet.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $s=$d["snippet"]??$d; echo "id=".($s["id"]??"")." name=".($s["name"]??"")." active=".(!empty($s["active"])?"yes":"no").PHP_EOL; $code=(string)($s["code"]??""); foreach(preg_split("/\R/",$code) as $i=>$line){if(preg_match("/(feed|robots|canonical|hreflang|attribute_|product-categorie|pagination|DoctorCura)/i",$line)) echo ($i+1).":".$line.PHP_EOL;}' "$tmp/snippet.json"
+
+          echo '=== COMMENTS FEED ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/comments.h" --output "$tmp/comments.b" "$base/comments/feed/"
+          awk 'BEGIN{IGNORECASE=1}/^HTTP\//||/^location:|^x-robots-tag:|^content-type:|^x-redirect-by:/{gsub(/\r/,"");print}' "$tmp/comments.h"
+
+          echo '=== RAW PRODUCT IMAGE ANCHORS ==='
+          for slug in malarone epipen cialis wegovy; do
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/product/$slug/" > "$tmp/$slug.html"
+            echo "-- $slug --"
+            grep -Eio '<a[^>]+href="[^"]+"[^>]*>' "$tmp/$slug.html" | grep -Ei 'wp-content|%22|https:' | head -30 || true
+          done
+
+          echo '=== FEATURED IMAGE STATUS ==='
+          for img in \
+            '/wp-content/uploads/2026/02/welche-medikamente-beeinflussen-die-erektion-featured.webp' \
+            '/wp-content/uploads/2026/01/MALARONE-scaled.png' \
+            '/wp-content/uploads/2025/12/CIALIS-20MG-scaled.png'; do
+            out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$img")
+            echo "$img $out"
+          done
+
+          echo '=== SITEMAP DUPLICATE LOC CHECK ==='
+          for sm in post-sitemap.xml page-sitemap.xml product-sitemap.xml; do
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/$sm" > "$tmp/$sm"
+            echo "-- $sm --"
+            grep -Eo '<loc>[^<]+' "$tmp/$sm" | sed 's#<loc>##' | sort | uniq -d || true
+            grep -F 'https://doctorcura.com/shop/' "$tmp/$sm" || true
+          done
+
+          echo '=== PRIVACY ROUTES ==='
+          for path in '/datenschutz/' '/privacy-policy/' '/fr/datenschutz/' '/fr/privacy-policy/' '/en/datenschutz/' '/en/privacy-policy/'; do
+            hdr="$tmp/privacy.h"; body="$tmp/privacy.b"
+            out=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$hdr" --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            title=$(grep -Eio '<title[^>]*>[^<]+' "$body" | head -1 | sed -E 's/<title[^>]*>//I' || true)
+            can=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            echo "$path out=$out location=$loc canonical=$can title=$title"
+          done
+
+          echo '=== WEIGHT LEGACY ROUTES ==='
+          for path in '/product-categorie/gewichtsverlust/' '/product-category/gewichtsverlust/' '/gewichtsverlust-medikamente-vergleich/' '/fr/product-categorie/gewichtsverlust/' '/fr/product-category/gewichtsverlust/' '/fr/gewichtsverlust-medikamente-vergleich/'; do
+            hdr="$tmp/weight.h"; body="$tmp/weight.b"
+            first=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            title=$(grep -Eio '<title[^>]*>[^<]+' "$body" | head -1 | sed -E 's/<title[^>]*>//I' || true)
+            echo "$path status=$first location=$loc title=$title"
+          done
+
+          echo '=== TERMS HTTP LINK SOURCE ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/geschaftsbedingungen/" > "$tmp/terms.html"
+          grep -n -Eo '<a[^>]+href="http://www\.doctorcura\.com/?"[^>]*>[^<]*' "$tmp/terms.html" | head -20 || true
