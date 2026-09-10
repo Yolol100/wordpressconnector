@@ -1,0 +1,151 @@
+name: One-time DoctorCura residual contact fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-contact-residual-fix/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-contact-residual-fix
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Fix residual Contact phone formatting and Google Maps address
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-residual-fix"; rm -rf "$root"; mkdir -p "$root"
+
+          call(){
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"
+            python3 - "$root/r-$suffix.json" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          out,action,dry,confirm,payload=sys.argv[1:]
+          req={'version':1,'request_id':'dc-resfix-'+uuid.uuid4().hex[:20],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.load(open(payload,encoding='utf-8'))}
+          json.dump(req,open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            for attempt in $(seq 1 8); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+              if [[ "$code" == 200 ]] && python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          try:d=json.load(open(sys.argv[1],encoding='utf-8'))
+          except:raise SystemExit(1)
+          raise SystemExit(0 if d.get('ok') else 1)
+          PY
+              then return 0; fi
+              [[ "$code" == 503 || "$code" == 000 ]] && sleep 10 && continue
+              echo "$action failed HTTP $code" >&2; cat "$root/o-$suffix.json" >&2 || true; return 1
+            done
+            return 1
+          }
+
+          for id in 9 3285; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "before-post-$id" post.get true false "$root/id.json"
+            call "before-el-$id" elementor.inspect true false "$root/id.json" || true
+
+            python3 - "$root/o-before-post-$id.json" "$root/o-before-el-$id.json" "$root/post-$id.json" "$root/el-$id.json" "$id" <<'PY'
+          import json,os,re,sys
+          postf,elf,postout,elout,idv=sys.argv[1:]; pid=int(idv)
+          def rep(s):
+              # Visible phone: normalize only known legacy/broken DoctorCura forms.
+              s=re.sub(r'\+31\s*\(0\)\s*85\s*505\s*5433\b','+31 85 505 54 33',s)
+              s=re.sub(r'\+31\s+85\s+505\s+5433\b','+31 85 505 54 33',s)
+              s=re.sub(r'\b085\s*505\s*5433\b','+31 85 505 54 33',s)
+              s=re.sub(r'\b08\s*550\s*55\s*433\b','+31 85 505 54 33',s)
+              # A prior partial edit left this visible number truncated after 54.
+              s=re.sub(r'\+31\s+85\s+505\s+54(?!\s*33)(?=\s|<|$)','+31 85 505 54 33',s)
+              # Telephone link equivalent, including the truncated href observed on Contact.
+              s=re.sub(r'tel:\+318550554(?!33)(?=["\'\s<]|$)','tel:+31855055433',s)
+              s=s.replace('tel:0855055433','tel:+31855055433')
+              return s
+          def walk(v):
+              if isinstance(v,str): return rep(v)
+              if isinstance(v,list): return [walk(x) for x in v]
+              if isinstance(v,dict):
+                  out={k:walk(x) for k,x in v.items()}
+                  # Contact page Google Maps widget: exact current map target.
+                  if pid==9 and out.get('widgetType')=='google_maps' and isinstance(out.get('settings'),dict):
+                      out['settings']['address']='Veldbloemlaan 93, 3452CK Vleuten, The Netherlands'
+                  return out
+              return v
+
+          pd=json.load(open(postf,encoding='utf-8')); post=(pd.get('data') or {}).get('post') or {}
+          content=post.get('content','') if isinstance(post,dict) else ''
+          ncontent=rep(content)
+          json.dump({'id':int(post.get('id',pid)),'content':ncontent,'status':post.get('status','publish')},open(postout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          open(postout+'.changed','w').write('1' if ncontent!=content else '0')
+
+          changed=False
+          if os.path.exists(elf):
+              try:
+                  ed=json.load(open(elf,encoding='utf-8')); doc=(ed.get('data') or {}).get('document') or {}
+                  data=doc.get('data',[]); settings=doc.get('page_settings',{})
+                  nd=walk(data); ns=walk(settings)
+                  json.dump({'id':pid,'data':nd,'page_settings':ns},open(elout,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+                  changed=(nd!=data or ns!=settings)
+              except Exception: changed=False
+          open(elout+'.changed','w').write('1' if changed else '0')
+          PY
+
+            if [[ "$(cat "$root/post-$id.json.changed")" == 1 ]]; then call "write-post-$id" post.update false true "$root/post-$id.json"; fi
+            if [[ "$(cat "$root/el-$id.json.changed")" == 1 ]]; then call "write-el-$id" elementor.replace_document false true "$root/el-$id.json"; fi
+          done
+
+          printf '{}' > "$root/empty.json"
+          call regen elementor.regenerate false true "$root/empty.json" || true
+          call cache cache.flush false true "$root/empty.json" || true
+
+          # Connector readback for the exact two objects.
+          for id in 9 3285; do
+            printf '{"id":%s}' "$id" > "$root/id.json"
+            call "after-post-$id" post.get true false "$root/id.json"
+            call "after-el-$id" elementor.inspect true false "$root/id.json" || true
+          done
+
+          python3 - "$root" <<'PY'
+          import json,os,re,sys
+          root=sys.argv[1]
+          residual=re.compile(r'Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam|\b08\s*550\s*55\s*433\b|\b085\s*505\s*5433\b|\b0855055433\b|\+31\s*\(0\)\s*85\s*505\s*5433\b|\+31\s+85\s+505\s+5433\b|\+31\s+85\s+505\s+54(?!\s*33)(?=\s|<|$)|tel:\+318550554(?!33)',re.I)
+          map_values=[]; phone_values=[]
+          def walk(v,path='',pid=None):
+              if isinstance(v,str):
+                  if residual.search(v): raise SystemExit(f'residual contact value id={pid} path={path}: {v[:300]}')
+                  if '+31 85 505 54 33' in v or 'tel:+31855055433' in v: phone_values.append((pid,path,v[:300]))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,f'{path}[{i}]',pid)
+              elif isinstance(v,dict):
+                  if pid==9 and v.get('widgetType')=='google_maps':
+                      addr=(v.get('settings') or {}).get('address'); map_values.append(addr)
+                  for k,x in v.items(): walk(x,f'{path}.{k}' if path else str(k),pid)
+          for id in (9,3285):
+              for kind in ('post','el'):
+                  p=os.path.join(root,f'o-after-{kind}-{id}.json')
+                  if os.path.exists(p): walk(json.load(open(p,encoding='utf-8')).get('data'),kind,id)
+          if map_values!=['Veldbloemlaan 93, 3452CK Vleuten, The Netherlands']:
+              raise SystemExit('Google Maps readback mismatch: '+repr(map_values))
+          if not any(pid==9 and '+31 85 505 54 33' in v for pid,path,v in phone_values):
+              raise SystemExit('Contact visible phone readback missing')
+          print('RESIDUAL_CONTACT_FIX_OK map='+map_values[0]+' phone=+31 85 505 54 33 tel=+31855055433')
+          PY
+
+          # Public rendered Contact page must show correct visible contact details and no old address/phone.
+          html=$(curl -sS -L --connect-timeout 10 --max-time 45 "$site/contact/")
+          printf '%s' "$html" | grep -Fq 'Veldbloemlaan 93' || { echo 'Rendered Contact missing new address' >&2; exit 1; }
+          printf '%s' "$html" | grep -Fq '+31 85 505 54 33' || { echo 'Rendered Contact missing formatted phone' >&2; exit 1; }
+          ! printf '%s' "$html" | grep -Eq 'Keizersgracht[[:space:]]*241|0855055433|085[[:space:]]*505[[:space:]]*5433|\+31[[:space:]]+85[[:space:]]+505[[:space:]]+5433' || { echo 'Rendered Contact still has legacy value' >&2; exit 1; }
+          echo 'RENDERED_CONTACT_OK'
