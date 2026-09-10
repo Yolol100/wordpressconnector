@@ -41,7 +41,7 @@ jobs:
           image_changed=0
           helper_written=0
 
-          post_json(){ local endpoint="$1" payload="$2" outfile="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}'; }
+          post_json(){ local endpoint="$1" payload="$2" outfile="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$endpoint"; }
           put_snippet(){ local payload="$1" outfile="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$outfile" --write-out '%{http_code}' "$snipapi"; }
           make_snippet_payload(){ local codefile="$1" outfile="$2"; php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"; }
           restore_snippet(){ make_snippet_payload "$tmp/snippet-code.php" "$tmp/snippet-restore.json"; [[ "$(put_snippet "$tmp/snippet-restore.json" "$tmp/snippet-restore-response.json")" == '200' ]]; helper_written=0; }
