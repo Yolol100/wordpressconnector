@@ -18,8 +18,11 @@ jobs:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+      HOSTINGER_API_TOKEN_A: ${{ secrets.HOSTINGER_API_TOKEN }}
+      HOSTINGER_API_TOKEN_B: ${{ secrets.HOSTINGER_TOKEN }}
+      HOSTINGER_API_TOKEN_C: ${{ secrets.HOSTINGER_API_KEY }}
     steps:
-      - name: Inspect cache plugins and REST routes read only
+      - name: Inspect cache plugins routes and reusable credentials read only
         shell: bash
         run: |
           set -euo pipefail
@@ -48,8 +51,7 @@ jobs:
           for name,r in routes.items():
               low=name.lower()
               if any(t in low for t in ['hostinger','litespeed','cache','rocket','cdn','hcdn']):
-                  methods=[]
-                  args=[]
+                  methods=[]; args=[]
                   for ep in r.get('endpoints') or []:
                       m=ep.get('methods') or []
                       if isinstance(m,dict): m=[k for k,v in m.items() if v]
@@ -58,7 +60,29 @@ jobs:
                   print(f"CACHE_ROUTE name={name} methods={','.join(sorted(set(methods)))} args={','.join(sorted(set(args)))}")
           PY
 
-          for url in "$base/product-categorie/gewichtsverlust/" "$base/product-categorie/gewichtsverlust/?doctorcura_cache_probe=1"; do
+          token=''
+          for candidate in "${HOSTINGER_API_TOKEN_A:-}" "${HOSTINGER_API_TOKEN_B:-}" "${HOSTINGER_API_TOKEN_C:-}"; do
+            if [[ -n "$candidate" ]]; then token="$candidate"; break; fi
+          done
+          if [[ -z "$token" ]]; then
+            echo HOSTINGER_API_REUSABLE_TOKEN=absent
+          else
+            echo HOSTINGER_API_REUSABLE_TOKEN=present
+            api_http=$(curl "${c[@]}" --header "Authorization: Bearer $token" --header 'Accept: application/json' --get --data-urlencode 'domain=doctorcura.com' --data-urlencode 'ownership=all' --output "$tmp/hostinger-installations.json" --write-out '%{http_code}' 'https://developers.hostinger.com/api/hosting/v1/wordpress/installations' || true)
+            echo "HOSTINGER_API_INSTALLATIONS_HTTP=$api_http"
+            if [[ "$api_http" == '200' ]]; then
+              python3 - "$tmp/hostinger-installations.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          rows=d if isinstance(d,list) else []
+          matches=[r for r in rows if str(r.get('domain','')).lower()=='doctorcura.com']
+          usable=[r for r in matches if r.get('username') and r.get('id')]
+          print(f"HOSTINGER_API_MATCHES={len(matches)} USABLE={len(usable)}")
+          PY
+            fi
+          fi
+
+          for url in "$base/product-categorie/gewichtsverlust/" "$base/product-categorie/gewichtsverlust/?doctorcura_cache_probe=2"; do
             h="$tmp/$(printf '%s' "$url" | sha256sum | cut -c1-10).h"
             curl "${c[@]}" --compressed --max-redirs 0 --header 'Cache-Control: no-cache' --dump-header "$h" --output /dev/null "$url" || true
             code=$(awk '/^HTTP\//{print $2; exit}' "$h")
@@ -66,4 +90,4 @@ jobs:
             echo "CACHE_PROBE url=$url code=${code:-} location=${loc:-}"
             awk 'BEGIN{IGNORECASE=1}/^(age|server|cache-control|x-hcdn-cache-status|x-redirect-by):/{gsub(/\r/,"");print "CACHE_HEADER " $0}' "$h" || true
           done
-          echo DOCTORCURA_CACHE_OWNER_DIAGNOSTICS_COMPLETE
+          echo DOCTORCURA_CACHE_OWNER_DIAGNOSTICS_V2_COMPLETE
