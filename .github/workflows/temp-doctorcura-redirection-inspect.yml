@@ -1,4 +1,4 @@
-name: Temporary DoctorCura Redirection Inspect
+name: Temporary DoctorCura French Category Migration
 
 on:
   push:
@@ -10,23 +10,111 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  migrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect Redirection groups and known redirect
+      - name: Create exact 301 with rollback and verify twice
         shell: bash
         run: |
           set -euo pipefail
-          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]] || exit 1
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || { echo 'DoctorCura target mismatch' >&2; exit 1; }
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          old='/fr/product-categorie/sexual-problems/'
+          target='https://doctorcura.com/product-category/sexuelle-probleme/'
+          api="$base/wp-json/redirection/v1"
+          tmp="$RUNNER_TEMP/dc-fr-category-migration"
+          mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "${SITE_URL%/}/wp-json/redirection/v1/group?per_page=50" > "$RUNNER_TEMP/groups.json"
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/category/blogs/' --data-urlencode 'per_page=20' "${SITE_URL%/}/wp-json/redirection/v1/redirect" > "$RUNNER_TEMP/known.json"
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/fr/product-categorie/sexual-problems/' --data-urlencode 'per_page=20' "${SITE_URL%/}/wp-json/redirection/v1/redirect" > "$RUNNER_TEMP/old.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach(($d["items"]??[]) as $x){echo "GROUP id=".(int)($x["id"]??0)." name=".(string)($x["name"]??"")." enabled=".(!empty($x["enabled"])?"yes":"no")." module=".(int)($x["module_id"]??0).PHP_EOL;}' "$RUNNER_TEMP/groups.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach(($d["items"]??[]) as $x){echo "KNOWN id=".(int)($x["id"]??0)." url=".(string)($x["url"]??"")." regex=".(!empty($x["regex"])?"yes":"no")." match_type=".(string)($x["match_type"]??"")." action_type=".(string)($x["action_type"]??"")." code=".(int)($x["action_code"]??0)." group=".(int)($x["group_id"]??0)." action_data=".json_encode($x["action_data"]??null,JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$RUNNER_TEMP/known.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "OLD_TOTAL=".(int)($d["total"]??0).PHP_EOL; foreach(($d["items"]??[]) as $x){echo "OLD id=".(int)($x["id"]??0)." url=".(string)($x["url"]??"")." action_data=".json_encode($x["action_data"]??null,JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$RUNNER_TEMP/old.json"
+
+          # Fail closed unless the exact pre-migration state is still present.
+          old_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 \
+            --output "$tmp/old-before.body" --dump-header "$tmp/old-before.h" --write-out '%{http_code}' "$base$old")
+          [[ "$old_code" == '404' ]] || { echo "Old URL preflight expected 404, got $old_code" >&2; exit 1; }
+
+          target_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 \
+            --output "$tmp/target.body" --write-out '%{http_code}' "$target")
+          [[ "$target_code" == '200' ]] || { echo "Target URL preflight expected 200, got $target_code" >&2; exit 1; }
+          target_canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$tmp/target.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+          if [[ -z "$target_canonical" ]]; then target_canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$tmp/target.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+          [[ "$target_canonical" == "$target" ]] || { echo "Target canonical mismatch: $target_canonical" >&2; exit 1; }
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+            --data-urlencode "filterBy[url]=$old" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before.json"
+          before_total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo (int)($d["total"]??0);' "$tmp/before.json")
+          [[ "$before_total" == '0' ]] || { echo 'Redirect already exists; refusing duplicate' >&2; exit 1; }
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$api/group?per_page=50" > "$tmp/groups.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $ok=false; foreach(($d["items"]??[]) as $x){if((int)($x["id"]??0)===1&&!empty($x["enabled"])&&(int)($x["module_id"]??0)===1){$ok=true;}} if(!$ok) exit(1);' "$tmp/groups.json"
+
+          cat > "$tmp/create.json" <<'JSON'
+          {
+            "status":"enabled",
+            "position":0,
+            "url":"/fr/product-categorie/sexual-problems/",
+            "regex":false,
+            "match_type":"url",
+            "match_data":{"source":{"flag_query":"ignore","flag_case":false,"flag_trailing":false,"flag_regex":false}},
+            "title":"DoctorCura old French sexual-problems category migration",
+            "group_id":1,
+            "action_type":"url",
+            "action_code":301,
+            "action_data":{"url":"https://doctorcura.com/product-category/sexuelle-probleme/"}
+          }
+          JSON
+
+          create_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" \
+            --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create.json" \
+            --output "$tmp/create-response.json" --write-out '%{http_code}' "$api/redirect")
+          [[ "$create_code" == '200' ]] || { echo "Redirection create HTTP $create_code" >&2; cat "$tmp/create-response.json" >&2; exit 1; }
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+            --data-urlencode "filterBy[url]=$old" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after.json"
+          created_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); $items=$d["items"]??[]; $hits=[]; foreach($items as $x){if(($x["url"]??"")===$argv[2] && (int)($x["action_code"]??0)===301 && ($x["action_type"]??"")==="url" && (($x["action_data"]["url"]??"")===$argv[3])){$hits[]=(int)$x["id"];}} if(count($hits)!==1) exit(2); echo $hits[0];' "$tmp/after.json" "$old" "$target")
+          [[ "$created_id" =~ ^[1-9][0-9]*$ ]] || { echo 'Created redirect ID missing' >&2; exit 1; }
+
+          rollback() {
+            printf '{"items":[%s],"global":false}' "$created_id" > "$tmp/delete.json"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" \
+              --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" \
+              --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null || true
+          }
+          trap rollback EXIT
+
+          verify_round() {
+            local round="$1" first_code location follow_out status final redirects canonical
+            first_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 \
+              --header 'Cache-Control: no-cache' --output "$tmp/$round-first.body" --dump-header "$tmp/$round-first.h" \
+              --write-out '%{http_code}' "$base$old")
+            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$round-first.h" || true)
+            [[ "$first_code" == '301' && "$location" == "$target" ]] || {
+              echo "$round first-hop failed: status=$first_code location=$location" >&2; return 1; }
+
+            follow_out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 \
+              --header 'Cache-Control: no-cache' --output "$tmp/$round-follow.body" \
+              --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$old")
+            IFS=$'\t' read -r status final redirects <<< "$follow_out"
+            [[ "$status" == '200' && "$final" == "$target" && "$redirects" == '1' ]] || {
+              echo "$round follow failed: status=$status final=$final redirects=$redirects" >&2; return 1; }
+            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$tmp/$round-follow.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$tmp/$round-follow.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            [[ "$canonical" == "$target" ]] || { echo "$round final canonical mismatch: $canonical" >&2; return 1; }
+            echo "ROUND_OK $round status=301 location=$location final_status=200 final=$final canonical=$canonical"
+          }
+
+          verify_round round1
+          verify_round round2
+
+          # Regression check: existing blog redirect must remain intact.
+          blog_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 \
+            --output /dev/null --dump-header "$tmp/blog.h" --write-out '%{http_code}' "$base/category/blogs/")
+          blog_location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/blog.h" || true)
+          [[ "$blog_code" == '301' && "$blog_location" == 'https://doctorcura.com/blogs/' ]] || { echo 'Existing blog redirect regression' >&2; exit 1; }
+
+          trap - EXIT
+          echo "MIGRATION_OK redirect_id=$created_id old=$old target=$target"
