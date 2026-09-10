@@ -1,0 +1,36 @@
+name: One-time DoctorCura 6018 structure inspect
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-6018-structure-inspect/*.json'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Print bounded raw context only
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          for n in $(seq 1 6); do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$RUNNER_TEMP/p.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/6018?context=edit" || true)
+            [[ "$code" == 200 ]] && break
+            sleep 10
+          done
+          [[ "$code" == 200 ]]
+          python3 - "$RUNNER_TEMP/p.json" <<'PY'
+          import json,re,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); raw=(p.get('content') or {}).get('raw') or ''
+          for needle in ['Die beste','online','Behandlungen']:
+              for m in list(re.finditer(re.escape(needle),raw,re.I))[:5]:
+                  a=max(0,m.start()-220); b=min(len(raw),m.end()+420)
+                  print('RAW_CONTEXT '+needle+' '+repr(raw[a:b]))
+          PY
