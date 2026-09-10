@@ -1,0 +1,44 @@
+name: DoctorCura Phase 3 Rollback Readback
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3-rollback-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Verify rollback only
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/redirection/v1"
+          tmp="$RUNNER_TEMP/dc-rollback"; mkdir -p "$tmp"
+          c=(--silent --show-error --connect-timeout 10 --max-time 35 --retry 2 --retry-delay 2 --retry-all-errors)
+          for source in '/product-categorie/gewichtsverlust/' '/datenschutz/'; do
+            key=$(printf '%s' "$source" | sha256sum | cut -c1-10)
+            curl "${c[@]}" --location "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/$key.json"
+            total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/$key.json")
+            echo "ROLLBACK_RULE source=$source exact_rules=$total"
+            [[ "$total" == '0' ]] || exit 1
+          done
+          curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$tmp/w.h" --output /dev/null "$base/product-categorie/gewichtsverlust/" || true
+          wcode=$(awk '/^HTTP\//{print $2; exit}' "$tmp/w.h")
+          wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/w.h")
+          dcode=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
+          echo "ROLLBACK_FRONT weight_code=$wcode weight_location=$wloc privacy_code=$dcode"
+          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' && "$dcode" == '404' ]] || exit 1
+          echo PHASE3_ROLLBACK_READBACK_OK
