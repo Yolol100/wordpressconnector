@@ -12,61 +12,46 @@ permissions:
 jobs:
   audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     steps:
-      - name: Verify public DoctorCura URL state
+      - name: Crawl all canonical DoctorCura sitemap URLs
         shell: bash
         run: |
           set -euo pipefail
           base='https://doctorcura.com'
-          tmp="$RUNNER_TEMP/doctorcura-post-cdn"
+          tmp="$RUNNER_TEMP/doctorcura-sitemap-audit"
           mkdir -p "$tmp"
-          check() {
-            local path="$1" label="$2" safe
-            safe=$(printf '%s' "$label" | tr -cs 'A-Za-z0-9._-' '_')
-            local hdr="$tmp/$safe.headers" body="$tmp/$safe.body"
-            local code location hcdn age canonical robots
-            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 \
-              --user-agent 'Mozilla/5.0 (compatible; DoctorCuraPostCDNAudit/1.1)' \
-              --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
+          sitemaps=(post-sitemap.xml page-sitemap.xml product-sitemap.xml category-sitemap.xml product_cat-sitemap.xml)
+          : > "$tmp/urls.txt"
+          for sm in "${sitemaps[@]}"; do
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$sm" --write-out '%{http_code}' "$base/$sm")
+            printf 'SITEMAP\t%s\tstatus=%s\n' "$sm" "$code"
+            [[ "$code" == '200' ]] || exit 1
+            grep -Eo '<loc>[^<]+' "$tmp/$sm" | sed 's#<loc>##' >> "$tmp/urls.txt" || true
+          done
+          sort -u "$tmp/urls.txt" -o "$tmp/urls.txt"
+          total=$(wc -l < "$tmp/urls.txt" | tr -d ' ')
+          echo "URL_TOTAL=$total"
+          : > "$tmp/results.tsv"
+          while IFS= read -r url; do
+            [[ -n "$url" ]] || continue
+            key=$(printf '%s' "$url" | sha256sum | cut -c1-16)
+            hdr="$tmp/$key.h"; body="$tmp/$key.b"
+            code=$(curl --silent --show-error --compressed --connect-timeout 8 --max-time 30 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraSitemapAudit/1.0)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$url" || echo CURLERR)
+            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" 2>/dev/null || true)
+            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" 2>/dev/null | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" 2>/dev/null | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" 2>/dev/null | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
+            xrobots=$(awk 'BEGIN{IGNORECASE=1}/^x-robots-tag:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" 2>/dev/null || true)
+            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$code" "$url" "${location:-}" "${canonical:-}" "${robots:-}" "${xrobots:-}" >> "$tmp/results.tsv"
+          done < "$tmp/urls.txt"
+
+          awk -F '\t' 'BEGIN{bad=0;noindex=0;canon=0;redir=0} {if($1!="200"){bad++; print "ANOMALY status=" $1 " url=" $2 " location=" $3} if($3!=""){redir++; print "ANOMALY redirect url=" $2 " location=" $3} r=tolower($5 " " $6); if(r ~ /noindex/){noindex++; print "ANOMALY noindex url=" $2 " robots=" $5 " xrobots=" $6} if($1=="200" && $4!="" && $4!=$2){canon++; print "ANOMALY canonical url=" $2 " canonical=" $4}} END{print "SUMMARY bad_status="bad" redirects="redir" noindex="noindex" canonical_mismatch="canon}' "$tmp/results.tsv"
+
+          for u in "$base/sitemap" "$base/sitemap/" "$base/sitemap_index.xml" "$base/sitemap_index.xml/" "$base/fr/product-categorie/sexual-problems/" "$base/product-category/sexuelle-probleme/"; do
+            hdr="$tmp/special.h"; body="$tmp/special.b"
+            code=$(curl --silent --show-error --compressed --connect-timeout 8 --max-time 30 --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$u")
             location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
             hcdn=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            age=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
-            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
-            printf 'CHECK\t%s\t%s\tstatus=%s\tlocation=%s\thcdn=%s\tage=%s\tcanonical=%s\trobots=%s\n' "$label" "$path" "$code" "${location:-}" "${hcdn:-}" "${age:-}" "${canonical:-}" "${robots:-}"
-          }
-
-          check '/blogs/8/' 'blog-root-8'
-          check '/fr/blogs/6/' 'blog-fr-6'
-          check '/fr/blogs/8/' 'blog-fr-8'
-          check '/en/blogs/6/' 'blog-en-6'
-          check '/en/blogs/8/' 'blog-en-8'
-          check '/blogs/16/' 'blog-root-16'
-          check '/fr/blogs/16/' 'blog-fr-16'
-          check '/en/blogs/16/' 'blog-en-16'
-          check '/blogs/17/' 'blog-root-17'
-          check '/fr/blogs/17/' 'blog-fr-17'
-          check '/en/blogs/17/' 'blog-en-17'
-          check '/blogs/page/8/' 'blog-root-alias-8'
-          check '/fr/blogs/page/8/' 'blog-fr-alias-8'
-          check '/en/blogs/page/8/' 'blog-en-alias-8'
-
-          check '/sitemap_index.xml' 'sitemap-index'
-          check '/sitemap_index.xml/' 'sitemap-index-slash'
-          check '/sitemap' 'sitemap-old'
-          check '/robots.txt' 'robots'
-
-          check '/product/epipen/' 'epipen-base'
-          check '/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen' 'epipen-variation'
-          check '/fr/product/mounjaro/' 'fr-mounjaro'
-          check '/en/product/elvanse/' 'en-elvanse'
-
-          check '/fr/product-categorie/sexual-problems/' 'old-fr-sexual-category'
-          check '/product-category/sexuelle-probleme/' 'target-sexual-category'
-
-          echo 'SITEMAP_LOCS_BEGIN'
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 "$base/sitemap_index.xml" \
-            | grep -Eo '<loc>[^<]+' | sed 's#<loc>##' | head -50 || true
-          echo 'SITEMAP_LOCS_END'
+            printf 'SPECIAL\t%s\tstatus=%s\tlocation=%s\thcdn=%s\n' "$u" "$code" "${location:-}" "${hcdn:-}"
+          done
