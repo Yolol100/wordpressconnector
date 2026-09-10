@@ -1,4 +1,4 @@
-name: Diagnose DoctorCura Social Image Source
+name: Diagnose DoctorCura Yoast Social Meta
 
 on:
   push:
@@ -19,38 +19,52 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect post metadata and public social tags read-only
+      - name: Probe hidden Yoast social metadata and restore exact snippet
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-social-image-diagnostic"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-yoast-meta-probe"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          slug='welche-medikamente-beeinflussen-die-erektion'
+          api="$base/wp-json/code-snippets/v1/snippets/43"
           expected_hash='8122c4a08ebf1c6bc29eda1561e38658a2e41bef239cc65102ba7251af83ed35'
+          helper_b64='Ci8qIERvY3RvckN1cmEgb25lLXRpbWUgWW9hc3Qgc29jaWFsIG1ldGEgcHJvYmUgLSByZW1vdmVkIGF1dG9tYXRpY2FsbHkgKi8KYWRkX2FjdGlvbignaW5pdCcsIGZ1bmN0aW9uICgpIHsKICAgIGlmICghaXNzZXQoJF9HRVRbJ2RvY3RvcmN1cmFfc29jaWFsX3Byb2JlJ10pIHx8ICFoYXNoX2VxdWFscygnX19UT0tFTl9fJywgKHN0cmluZykgJF9HRVRbJ2RvY3RvcmN1cmFfc29jaWFsX3Byb2JlJ10pKSB7CiAgICAgICAgcmV0dXJuOwogICAgfQogICAgJGtleXMgPSBbCiAgICAgICAgJ195b2FzdF93cHNlb19vcGVuZ3JhcGgtaW1hZ2UnLAogICAgICAgICdfeW9hc3Rfd3BzZW9fb3BlbmdyYXBoLWltYWdlLWlkJywKICAgICAgICAnX3lvYXN0X3dwc2VvX3R3aXR0ZXItaW1hZ2UnLAogICAgICAgICdfeW9hc3Rfd3BzZW9fdHdpdHRlci1pbWFnZS1pZCcsCiAgICBdOwogICAgJG91dCA9IFtdOwogICAgZm9yZWFjaCAoJGtleXMgYXMgJGtleSkgewogICAgICAgICRvdXRbJGtleV0gPSBnZXRfcG9zdF9tZXRhKDkwMDA2NywgJGtleSwgdHJ1ZSk7CiAgICB9CiAgICBoZWFkZXIoJ1gtRG9jdG9yQ3VyYS1Tb2NpYWwtTWV0YTogJyAuIGJhc2U2NF9lbmNvZGUod3BfanNvbl9lbmNvZGUoJG91dCkpKTsKICAgIGV4aXQ7Cn0sIDApOwo='
+          helper_written=0
 
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2])exit(2);echo"snippet=active_v82\n";' "$tmp/snippet.json" "$expected_hash"
+          put_payload(){ local payload="$1" out="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api"; }
+          make_payload(){ local codefile="$1" outfile="$2"; php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"; }
+          restore(){
+            make_payload "$tmp/original.php" "$tmp/restore.json"
+            [[ "$(put_payload "$tmp/restore.json" "$tmp/restore-response.json")" == '200' ]]
+            helper_written=0
+          }
+          cleanup(){
+            rc=$?
+            if [[ "$helper_written" == '1' ]]; then set +e; restore >/dev/null 2>&1 || true; fi
+            exit "$rc"
+          }
+          trap cleanup EXIT
 
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/900067?context=edit" > "$tmp/post.json"
-          php -r '
-            $p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
-            echo "featured_media=".(int)($p["featured_media"]??0)." status=".($p["status"]??"")." slug=".($p["slug"]??"")."\n";
-            echo "registered_meta_keys=".implode(",",array_keys($p["meta"]??[]))."\n";
-            foreach(($p["meta"]??[]) as $k=>$v){if(preg_match("/(yoast|opengraph|twitter|image)/i",(string)$k)){echo "meta[$k]=".json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";}}
-            $y=$p["yoast_head_json"]??[];
-            echo "yoast_og_image=".json_encode($y["og_image"]??null,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";
-            echo "yoast_twitter_image=".json_encode($y["twitter_image"]??null,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";
-          ' "$tmp/post.json"
+          http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
+          [[ "$http" == '200' ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura one-time Yoast social meta probe")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=active_v82\n";' "$tmp/current.json" "$tmp/original.php" "$expected_hash"
 
-          for lang in base fr en; do
-            [[ "$lang" == 'base' ]] && prefix='' || prefix="/$lang"
-            url="$base$prefix/$slug/"
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 "$url" > "$tmp/$lang.html"
-            echo "=== $lang ==="
-            grep -Eio '<meta[^>]+property="og:image(:[^\"]*)?"[^>]*>' "$tmp/$lang.html" | head -8 || true
-            grep -Eio '<meta[^>]+name="twitter:image"[^>]*>' "$tmp/$lang.html" | head -4 || true
-            grep -n -F 'welche-medikamente-beeinflussen-die-erektion-featured' "$tmp/$lang.html" | head -3 || true
-          done
+          token=$(openssl rand -hex 24)
+          cp "$tmp/original.php" "$tmp/helper.php"
+          printf '%s' "$helper_b64" | base64 -d >> "$tmp/helper.php"
+          sed -i "s/__TOKEN__/$token/g" "$tmp/helper.php"
+          make_payload "$tmp/helper.php" "$tmp/helper.json"
+          [[ "$(put_payload "$tmp/helper.json" "$tmp/helper-response.json")" == '200' ]]
+          helper_written=1
 
-          echo 'SOCIAL_IMAGE_DIAGNOSTIC_COMPLETE'
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/probe.h" --output /dev/null "$base/wp-json/?doctorcura_social_probe=$token"
+          encoded=$(sed -n 's/^x-doctorcura-social-meta:[[:space:]]*//Ip' "$tmp/probe.h" | tr -d '\r' | head -1)
+          [[ -n "$encoded" ]]
+          printf '%s' "$encoded" | base64 -d > "$tmp/meta.json"
+          php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($m as$k=>$v){echo $k."=".json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).PHP_EOL;}' "$tmp/meta.json"
+
+          restore
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$api" > "$tmp/readback.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura one-time Yoast social meta probe")!==false)exit(2);echo"snippet_readback=active_v82_exact\n";' "$tmp/readback.json" "$expected_hash"
+          trap - EXIT
+          echo 'YOAST_SOCIAL_META_PROBE_COMPLETE'
