@@ -1,0 +1,167 @@
+name: DoctorCura post-cleanup independent verification F
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-final-recheck-20260910-1742
+    paths:
+      - 'doctorcura-post-cleanup-verification-f/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Independent production readback after draft cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-full-f"; rm -rf "$root"; mkdir -p "$root/options" "$root/rendered" "$root/posts"
+
+          hc=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health" || true)
+          [[ "$hc" == 200 ]] || exit 1
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('FULL_F_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          call(){
+            suffix="$1"; action="$2"; payload="$3"
+            python3 - "$root/r-$suffix.json" "$action" "$payload" <<'PY'
+          import json,sys,uuid
+          out,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-full-f-'+uuid.uuid4().hex[:18],'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+            [[ "$code" == 200 ]] || return 1
+            python3 - "$root/o-$suffix.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); raise SystemExit(0 if d.get('ok') else 1)
+          PY
+          }
+
+          for key in woocommerce_store_address woocommerce_store_address_2 woocommerce_store_city woocommerce_store_postcode woocommerce_default_country woocommerce_allowed_countries woocommerce_specific_allowed_countries woocommerce_all_except_countries woocommerce_ship_to_countries woocommerce_specific_ship_to_countries; do
+            call "opt-${key//_/-}" option.get "{\"name\":\"$key\"}"
+            cp "$root/o-opt-${key//_/-}.json" "$root/options/$key.json"
+          done
+          call core filesystem.read_text '{"path":"wp-content/plugins/doctorcura-core/includes/extra-request-form.php"}'
+
+          scode=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/snippets.json" -w '%{http_code}' "$site/wp-json/code-snippets/v1/snippets?per_page=100&page=1" || true)
+          [[ "$scode" == 200 ]] || exit 1
+
+          for id in 900066 900067; do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/post-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || exit 1
+          done
+
+          page=1
+          while (( page <= 20 )); do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 75 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/posts/$page.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts?context=edit&status=publish&per_page=100&page=$page" || true)
+            [[ "$code" == 200 ]] || exit 1
+            count=$(jq 'length' "$root/posts/$page.json")
+            (( count < 100 )) && break
+            page=$((page+1))
+          done
+          jq -s 'add' "$root"/posts/*.json > "$root/published-posts.json"
+
+          pcode=$(curl -sS -L --connect-timeout 10 --max-time 75 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/pages.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages?context=edit&status=publish&per_page=100" || true)
+          [[ "$pcode" == 200 ]] || exit 1
+
+          python3 - "$root" "$site" <<'PY'
+          import concurrent.futures,json,os,sys,urllib.parse,urllib.request
+          root,site=sys.argv[1:]; pages=json.load(open(root+'/pages.json',encoding='utf-8'))
+          urls=[('page-'+str(p.get('id')),p.get('link')) for p in pages if p.get('link')]
+          extras=['/','/en/','/kontakt/','/en/kontakt/','/privacy-policy/','/en/privacy-policy/','/geschaftsbedingungen/','/en/geschaftsbedingungen/','/datenschutz/','/en/uber-uns/','/en/faq/','/fr/','/fr/privacy-policy/']
+          urls += [('extra-'+x,urllib.parse.urljoin(site+'/',x.lstrip('/'))) for x in extras]
+          seen=set(); urls=[x for x in urls if not (x[1] in seen or seen.add(x[1]))]
+          def f(x):
+              label,u=x
+              try:
+                  q=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0 DoctorCuraIndependentF'})
+                  with urllib.request.urlopen(q,timeout=30) as r:return label,u,r.status,r.geturl(),r.read().decode('utf-8','replace')
+              except Exception as e:return label,u,int(getattr(e,'code',0) or 0),u,''
+          with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex: rows=list(ex.map(f,urls))
+          for i,row in enumerate(rows):open(f'{root}/rendered/{i}.html','w',encoding='utf-8').write(row[4])
+          json.dump([{'label':a,'url':b,'status':c,'final':d,'file':f'rendered/{i}.html'} for i,(a,b,c,d,e) in enumerate(rows)],open(root+'/render-index.json','w',encoding='utf-8'),indent=2)
+          PY
+
+          trash_code=$(curl -sS -L --connect-timeout 10 --max-time 45 -A 'Mozilla/5.0 DoctorCuraIndependentF' -o "$root/trash-public.html" -w '%{http_code}' "$site/?p=900066" || true)
+          echo "$trash_code" > "$root/trash-public-code"
+          sitemap_code=$(curl -sS -L --connect-timeout 10 --max-time 45 -A 'Mozilla/5.0 DoctorCuraIndependentF' -o "$root/sitemap.xml" -w '%{http_code}' "$site/sitemap_index.xml" || true)
+          echo "$sitemap_code" > "$root/sitemap-code"
+
+          python3 - "$root" "$site" <<'PY'
+          import hashlib,html,json,os,re,sys,urllib.request
+          root,site=sys.argv[1:]
+          phone='+31 85 505 54 33'; tel='tel:+31855055433'; addr='Veldbloemlaan 93'; postcode='3452CK Vleuten'; mapq='Veldbloemlaan%2093%2C%203452CK%20Vleuten%2C%20The%20Netherlands'
+          old=re.compile(r'Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam|\b08\s*550\s*55\s*433\b|\b085\s*505\s*5433\b|\b0855055433\b|\+31\s*\(0\)\s*85\s*505\s*5433\b|\+31\s+85\s+505\s+5433\b|tel:\s*\+318550554\s*(?=["\'])',re.I)
+          editorial=re.compile(r'\b(?:USA|United States|Vereinigte Staaten|FDA|DEA|HIPAA|Zepbound|Medicare|Medicaid|USD)\b|Suicide\s*&\s*Crisis\s*Lifeline|\bUS-amerikan\w*\b|in den Deutschland|von ein entsprechend zugelassener|eines ärztlichen Rückfragens|variieren kosten|Mounjaro enthält wie Mounjaro|Gewichtsverlust Medikamente Vergleich|Behandlung erektile Dysfunktion online|Potenzbehandlung digital beantragen leicht|\bsofort Rezept online\b|medikamente aus EU apotheke sicher|Viagra Wirkung Review|Mounjaro Bewertung|\bWegovy Rezept\b|\bMounjaro Rezept\b|\bDie beste online Behandlungen\b',re.I)
+          kvk_rx=re.compile(r'\bKvK\b|\bKVK\b|Kamer van Koophandel',re.I)
+          def oval(k):
+              d=json.load(open(f'{root}/options/{k}.json',encoding='utf-8'));return (d.get('data') or {}).get('value')
+          expected={'woocommerce_store_address':'Veldbloemlaan 93','woocommerce_store_address_2':'','woocommerce_store_city':'Vleuten','woocommerce_store_postcode':'3452CK','woocommerce_default_country':'NL','woocommerce_allowed_countries':'specific','woocommerce_specific_allowed_countries':['DE','FR','GB'],'woocommerce_all_except_countries':[],'woocommerce_ship_to_countries':'','woocommerce_specific_ship_to_countries':[]}
+          for k,v in expected.items():assert oval(k)==v,(k,oval(k),v)
+
+          a=json.load(open(root+'/post-900066.json',encoding='utf-8')); b=json.load(open(root+'/post-900067.json',encoding='utf-8'))
+          assert a.get('status')=='trash',a.get('status'); assert b.get('status')=='publish',b.get('status')
+          assert open(root+'/trash-public-code').read().strip()=='404'
+          assert open(root+'/sitemap-code').read().strip()=='200'
+          try:
+              q=urllib.request.Request(b.get('link'),headers={'User-Agent':'Mozilla/5.0 DoctorCuraIndependentF'})
+              with urllib.request.urlopen(q,timeout=25) as r:canonical_public=r.status
+          except Exception as e:canonical_public=int(getattr(e,'code',0) or 0)
+          assert canonical_public==200,canonical_public
+
+          legacy=[]; edit_hits=[]; kvk=[]
+          posts=json.load(open(root+'/published-posts.json',encoding='utf-8'))
+          for q in posts:
+              content=(q.get('content') or {}).get('raw') or ''; title=html.unescape((q.get('title') or {}).get('raw') or ''); excerpt=html.unescape((q.get('excerpt') or {}).get('raw') or ''); yh=q.get('yoast_head_json') or {}
+              blob=' '.join([title,excerpt,content,json.dumps(yh,ensure_ascii=False)])
+              m=old.search(blob)
+              if m:legacy.append(('post',q.get('id'),m.group(0)))
+              visible=re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',content)))
+              m=editorial.search(' '.join([title,excerpt,visible,str(yh.get('title') or ''),str(yh.get('description') or '')]))
+              if m:edit_hits.append((q.get('id'),m.group(0)))
+              if kvk_rx.search(blob):kvk.append(('post',q.get('id')))
+          if legacy:raise SystemExit('F_LEGACY_POST '+repr(legacy[:20]))
+          if edit_hits:raise SystemExit('F_EDITORIAL '+repr(edit_hits[:20]))
+
+          s=json.load(open(root+'/snippets.json',encoding='utf-8'));items=s if isinstance(s,list) else (s.get('items') or s.get('snippets') or []) if isinstance(s,dict) else []
+          for x in items:
+              if isinstance(x,dict) and isinstance(x.get('code'),str):
+                  m=old.search(x['code'])
+                  if m:raise SystemExit('F_LEGACY_SNIPPET '+repr((x.get('id'),m.group(0))))
+                  if kvk_rx.search(x['code']):kvk.append(('snippet',x.get('id')))
+          core=json.load(open(root+'/o-core.json',encoding='utf-8'));ctxt=str((core.get('data') or {}).get('content') or '')
+          m=old.search(ctxt)
+          if m:raise SystemExit('F_LEGACY_CORE '+repr(m.group(0)))
+          if kvk_rx.search(ctxt):kvk.append(('core',0))
+
+          rendered=json.load(open(root+'/render-index.json',encoding='utf-8'));got={}; hits=[]
+          for r in rendered:
+              body=open(root+'/'+r['file'],encoding='utf-8',errors='replace').read();got[r['url']]=(r,body)
+              if r['label'].startswith('page-') and r['status']!=200:raise SystemExit('F_PAGE_HTTP '+repr(r))
+              m=old.search(body)
+              if m:hits.append((r['url'],m.group(0)))
+              if kvk_rx.search(body):kvk.append(('rendered',r['url']))
+          if hits:raise SystemExit('F_LEGACY_RENDER '+repr(hits[:20]))
+          required=[site+'/',site+'/en/',site+'/kontakt/',site+'/en/kontakt/',site+'/privacy-policy/',site+'/en/privacy-policy/',site+'/geschaftsbedingungen/',site+'/en/geschaftsbedingungen/']
+          for u in required:
+              assert u in got and got[u][0]['status']==200,u
+              assert addr in got[u][1] and phone in got[u][1],('F_NEW_CONTACT',u)
+          contact=got[site+'/kontakt/'][1]
+          hrefs=re.findall(r'href=["\']\s*(tel:[^"\']+)["\']',contact,re.I);norm=[re.sub(r'\s+','',x).lower() for x in hrefs]
+          assert 'tel:+31855055433' in norm and not [x for x in norm if x.startswith('tel:+318550554') and x!='tel:+31855055433'],norm
+          assert postcode in contact and mapq in contact
+          print('FULL_F_OK '+json.dumps({'published_posts_checked':len(posts),'published_pages_checked':len(json.load(open(root+'/pages.json',encoding='utf-8'))),'rendered_urls_checked':len(rendered),'draft_900066':'trash_and_public_404','canonical_900067':'published_and_public_200','sitemap_index':'200','legacy_contact_hits':0,'editorial_residue_hits':0,'woocommerce':'ok','contact':'ok','google_maps':'ok','privacy':'ok','terms':'ok','snippets':'ok','core':'ok','kvk_locations':kvk},ensure_ascii=False,separators=(',',':')))
+          PY
