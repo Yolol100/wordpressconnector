@@ -1,0 +1,212 @@
+name: DoctorCura Phase 3A Weight Canonical Fix
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3-weight-canonical.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply guarded exact canonical migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || { echo 'Target mismatch' >&2; exit 1; }
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          tmp="$RUNNER_TEMP/dc-phase3a-weight"; mkdir -p "$tmp"
+          api="$base/wp-json/code-snippets/v1/snippets/43"
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          curl_common=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          expected_hash='2fc561ed59d45aebe0e8b8c770c582c8359560316544f34ab228a9d4f8cabaa8'
+          marker='DoctorCura gewichtsverlust legacy canonical migration V8.4a'
+          snippet_changed=0
+          helper_active=0
+
+          canonical_of(){
+            python3 - "$1" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.c=''
+              def handle_starttag(self,tag,attrs):
+                  if tag.lower()!='link' or self.c: return
+                  a={str(k).lower():str(v or '') for k,v in attrs}
+                  if 'canonical' in a.get('rel','').lower().split() and a.get('href'): self.c=a['href']
+          p=P(); p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read()); print(p.c,end='')
+          PY
+          }
+
+          make_payload(){
+            local codefile outfile
+            codefile="$1"; outfile="$2"
+            php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"
+          }
+
+          put_code(){
+            local codefile label payload response http
+            codefile="$1"; label="$2"; payload="$tmp/$label-payload.json"; response="$tmp/$label-response.json"
+            make_payload "$codefile" "$payload"
+            http=$(curl "${curl_common[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$response" --write-out '%{http_code}' "$api")
+            echo "PUT_CODE label=$label http=$http"
+            [[ "$http" == '200' ]]
+          }
+
+          first_probe(){
+            local url h code loc
+            url="$1"; h="$2"; : > "$h"
+            curl "${curl_common[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$url" || true
+            code=$(awk '/^HTTP\//{print $2; exit}' "$h")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            printf '%s\t%s\n' "${code:-}" "${loc:-}"
+          }
+
+          purge_with_code(){
+            local codefile label token helper_code ok
+            codefile="$1"; label="$2"; token=$(openssl rand -hex 24); helper_code="$tmp/$label-helper.php"; ok=0
+            cp "$codefile" "$helper_code"
+            cat >> "$helper_code" <<PHP
+
+          /* DoctorCura one-time cache purge helper */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_phase3a_purge'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_phase3a_purge'] ) ) {
+                  return;
+              }
+              if ( function_exists( 'rocket_clean_domain' ) ) {
+                  rocket_clean_domain();
+              }
+              if ( function_exists( 'wp_cache_flush' ) ) {
+                  wp_cache_flush();
+              }
+              header( 'X-DoctorCura-Phase3A-Purge: done' );
+          }, 1 );
+          PHP
+            put_code "$helper_code" "$label-install-helper"
+            helper_active=1
+            if curl "${curl_common[@]}" --compressed --dump-header "$tmp/$label-purge.h" --output /dev/null "$base/wp-json/?doctorcura_phase3a_purge=$token"; then
+              if grep -Eiq '^x-doctorcura-phase3a-purge:[[:space:]]*done' "$tmp/$label-purge.h"; then ok=1; fi
+            fi
+            put_code "$codefile" "$label-remove-helper"
+            helper_active=0
+            [[ "$ok" == '1' ]]
+          }
+
+          rollback(){
+            local rc=$?
+            [[ "$rc" == '0' ]] && return
+            echo "PHASE3A_ROLLBACK_START exit=$rc" >&2
+            set +e
+            if [[ "$snippet_changed" == '1' || "$helper_active" == '1' ]]; then
+              put_code "$tmp/original.php" rollback-original >/dev/null 2>&1 || true
+              purge_with_code "$tmp/original.php" rollback-purge >/dev/null 2>&1 || true
+            fi
+            curl "${curl_common[@]}" --location "${auth[@]}" --output "$tmp/rollback-readback.json" "$api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rollback-readback.json" ]]; then
+              php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_READBACK hash=".hash("sha256",$c)." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;' "$tmp/rollback-readback.json" || true
+            fi
+            echo 'PHASE3A_ROLLBACK_ATTEMPTED' >&2
+          }
+          trap rollback EXIT
+
+          echo '=== PREFLIGHT SNIPPET ==='
+          http=$(curl "${curl_common[@]}" --location "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
+          [[ "$http" == '200' ]] || { echo "Snippet GET failed http=$http" >&2; exit 1; }
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo "snippet_preflight_hash=".hash("sha256",$c).PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$expected_hash" "$marker"
+
+          echo '=== PREFLIGHT TARGETS AND FAILURE ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            target="$base$prefix/product-category/gewichtsverlust/"
+            code=$(curl "${curl_common[@]}" --compressed --output "$tmp/target-$lang.html" --write-out '%{http_code}' "$target")
+            can=$(canonical_of "$tmp/target-$lang.html")
+            echo "TARGET lang=$lang status=$code canonical=$can"
+            [[ "$code" == '200' && "$can" == "$target" ]] || exit 1
+            read -r lcode lloc < <(first_probe "$base$prefix/product-categorie/gewichtsverlust/" "$tmp/legacy-$lang.h")
+            echo "LEGACY_BEFORE lang=$lang code=$lcode location=$lloc"
+            [[ "$lcode" == '301' && "$lloc" == "$base$prefix/gewichtsverlust-medikamente-vergleich/" ]] || { echo "Live failure changed for $lang" >&2; exit 1; }
+          done
+
+          cp "$tmp/original.php" "$tmp/new.php"
+          cat >> "$tmp/new.php" <<'PHP'
+
+          /* DoctorCura gewichtsverlust legacy canonical migration V8.4a - 2026-09-10 */
+          add_filter( 'redirect_canonical', function ( $redirect_url, $requested_url ) {
+              $path = wp_parse_url( (string) $requested_url, PHP_URL_PATH );
+              if ( ! is_string( $path ) || '' === $path ) {
+                  return $redirect_url;
+              }
+              $path = '/' . trim( $path, '/' ) . '/';
+              $map = array(
+                  '/product-categorie/gewichtsverlust/'    => '/product-category/gewichtsverlust/',
+                  '/fr/product-categorie/gewichtsverlust/' => '/fr/product-category/gewichtsverlust/',
+                  '/en/product-categorie/gewichtsverlust/' => '/en/product-category/gewichtsverlust/',
+              );
+              if ( isset( $map[ $path ] ) ) {
+                  return home_url( $map[ $path ] );
+              }
+              return $redirect_url;
+          }, 0, 2 );
+          PHP
+          new_hash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
+
+          echo '=== APPLY ==='
+          put_code "$tmp/new.php" apply
+          snippet_changed=1
+          purge_with_code "$tmp/new.php" apply-purge
+
+          echo '=== READBACK ==='
+          curl "${curl_common[@]}" --location "${auth[@]}" --output "$tmp/after.json" "$api"
+          after_hash=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,$argv[2])===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/after.json" "$marker")
+          echo "READBACK hash=$after_hash helper=absent"
+          [[ "$after_hash" == "$new_hash" ]]
+
+          verify_weight(){
+            local round lang prefix source expected h body code loc result status final redirects can
+            round="$1"; lang="$2"
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            source="$base$prefix/product-categorie/gewichtsverlust/"
+            expected="$base$prefix/product-category/gewichtsverlust/"
+            h="$tmp/$round-$lang-first.h"; body="$tmp/$round-$lang.html"
+            read -r code loc < <(first_probe "$source" "$h")
+            [[ "$code" == '301' && "$loc" == "$expected" ]] || { echo "VERIFY_FAIL round=$round lang=$lang first=$code location=$loc expected=$expected" >&2; return 1; }
+            result=$(curl "${curl_common[@]}" --location --compressed --header 'Cache-Control: no-cache' --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$source")
+            IFS=$'\t' read -r status final redirects <<< "$result"
+            can=$(canonical_of "$body")
+            [[ "$status" == '200' && "$final" == "$expected" && "$redirects" == '1' && "$can" == "$expected" ]] || { echo "VERIFY_FAIL round=$round lang=$lang result=$result canonical=$can" >&2; return 1; }
+            echo "VERIFY_OK round=$round lang=$lang first=$code final=$final redirects=$redirects canonical=$can"
+          }
+
+          canaries(){
+            local round="$1" result p16 p17
+            result=$(curl "${curl_common[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
+            [[ "$result" == $'200\t'"$base/welche-medikamente-beeinflussen-die-erektion/"$'\t1' ]] || { echo "$round Phase2A regression $result" >&2; return 1; }
+            p16=$(curl "${curl_common[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/")
+            p17=$(curl "${curl_common[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/")
+            [[ "$p16" == '200' && "$p17" == '404' ]] || { echo "$round pagination regression 16=$p16 17=$p17" >&2; return 1; }
+            result=$(curl "${curl_common[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/product-categorie/sexual-problems/")
+            [[ "$result" == $'200\t'"$base/product-category/sexuelle-probleme/"$'\t1' ]] || { echo "$round sexual legacy regression $result" >&2; return 1; }
+            result=$(curl "${curl_common[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/about-us/")
+            [[ "$result" == $'200\t'"$base/uber-uns/"$'\t1' ]] || { echo "$round about regression $result" >&2; return 1; }
+            echo "CANARIES_OK round=$round"
+          }
+
+          echo '=== TWO TARGETED RETEST ROUNDS ==='
+          for round in round1 round2; do
+            for lang in base fr en; do verify_weight "$round" "$lang"; done
+            canaries "$round"
+          done
+
+          trap - EXIT
+          echo "PHASE3A_WEIGHT_FIX_OK snippet_hash=$new_hash"
