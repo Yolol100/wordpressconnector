@@ -1,0 +1,158 @@
+name: DoctorCura contact tel surgical fix
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-final-recheck-20260910-1742
+    paths:
+      - 'doctorcura-contact-tel-fix/*.json'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-contact-tel-surgical-fix
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Preflight dry-run write readback and rendered verification
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'Unexpected target' >&2; exit 1; }
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-contact-tel-fix"; rm -rf "$root"; mkdir -p "$root"
+
+          call(){
+            suffix="$1"; action="$2"; dry="$3"; confirm="$4"; payload="$5"
+            req="$root/r-$suffix.json"; out="$root/o-$suffix.json"
+            python3 - "$req" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys,uuid
+          out,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-tel-'+uuid.uuid4().hex[:20],'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.load(open(payload,encoding='utf-8'))},open(out,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+            for n in $(seq 1 8); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute" || true)
+              if [[ "$code" == 200 ]] && python3 - "$out" <<'PY'
+          import json,sys
+          try:d=json.load(open(sys.argv[1],encoding='utf-8'))
+          except Exception:raise SystemExit(1)
+          raise SystemExit(0 if d.get('ok') else 1)
+          PY
+              then return 0; fi
+              [[ "$code" == 000 || "$code" == 429 || "$code" == 503 ]] && { sleep 10; continue; }
+              echo "ACTION_FAIL action=$action HTTP=$code" >&2; cat "$out" >&2 || true; return 1
+            done
+            return 1
+          }
+
+          hc=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$base/health" || true)
+          [[ "$hc" == 200 ]] || { echo "HEALTH_HTTP=$hc" >&2; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('TEL_FIX_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          printf '%s' '{"id":9}' > "$root/id.json"
+          call before elementor.inspect true false "$root/id.json"
+
+          python3 - "$root/o-before.json" "$root/write.json" "$root/rollback.json" <<'PY'
+          import json,sys
+          src,writef,rollbackf=sys.argv[1:]
+          d=json.load(open(src,encoding='utf-8')); doc=(d.get('data') or {}).get('document') or {}
+          data=doc.get('data',[]); settings=doc.get('page_settings',{})
+          old_variants=['tel: +318550554 ','tel:+318550554','tel: +318550554','tel:+318550554 ']
+          new='tel:+31855055433'
+          counts={x:0 for x in old_variants}
+          def walk(v):
+              if isinstance(v,str):
+                  s=v
+                  for old in old_variants:
+                      if old in s:
+                          counts[old]+=s.count(old); s=s.replace(old,new)
+                  return s
+              if isinstance(v,list):return [walk(x) for x in v]
+              if isinstance(v,dict):return {k:walk(x) for k,x in v.items()}
+              return v
+          changed=walk(data)
+          total=sum(counts.values())
+          if total != 1: raise SystemExit('TEL_FIX_EXPECTED_ONE_MATCH '+repr(counts))
+          payload={'id':9,'data':changed,'page_settings':settings}
+          rollback={'id':9,'data':data,'page_settings':settings}
+          json.dump(payload,open(writef,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump(rollback,open(rollbackf,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          print('TEL_FIX_PREFLIGHT_MATCH '+repr(counts))
+          PY
+
+          call dry elementor.replace_document true false "$root/write.json"
+          echo 'TEL_FIX_DRYRUN_OK'
+
+          call write elementor.replace_document false true "$root/write.json"
+          echo 'TEL_FIX_WRITE_APPLIED'
+
+          rollback_needed=1
+          rollback(){
+            if [[ "$rollback_needed" == 1 ]]; then
+              echo 'TEL_FIX_ROLLBACK_START' >&2
+              call rollback elementor.replace_document false true "$root/rollback.json" || true
+              printf '%s' '{}' > "$root/empty.json"
+              call rollback-regen elementor.regenerate false true "$root/empty.json" || true
+              call rollback-cache cache.flush false true "$root/empty.json" || true
+              echo 'TEL_FIX_ROLLBACK_ATTEMPTED' >&2
+            fi
+          }
+          trap rollback ERR
+
+          printf '%s' '{}' > "$root/empty.json"
+          call regen elementor.regenerate false true "$root/empty.json" || true
+          call cache cache.flush false true "$root/empty.json" || true
+          call after elementor.inspect true false "$root/id.json"
+
+          python3 - "$root/o-after.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); doc=(d.get('data') or {}).get('document') or {}
+          def walk(v):
+              if isinstance(v,str):yield v
+              elif isinstance(v,list):
+                  for x in v:yield from walk(x)
+              elif isinstance(v,dict):
+                  for x in v.values():yield from walk(x)
+          s='\n'.join(walk(doc.get('data',[])))
+          for old in ('tel: +318550554 ','tel:+318550554','tel: +318550554','tel:+318550554 '):
+              if old in s and 'tel:+31855055433' not in old: raise SystemExit('TEL_FIX_READBACK_OLD_REMAINS '+repr(old))
+          if 'tel:+31855055433' not in s: raise SystemExit('TEL_FIX_READBACK_NEW_MISSING')
+          if '+31 85 505 54 33' not in s: raise SystemExit('TEL_FIX_VISIBLE_PHONE_DRIFT')
+          if 'Veldbloemlaan 93' not in s or '3452CK Vleuten' not in s: raise SystemExit('TEL_FIX_ADDRESS_DRIFT')
+          print('TEL_FIX_ELEMENTOR_READBACK_OK')
+          PY
+
+          for rel in /kontakt/ /en/kontakt/; do
+            out="$root/render-$(echo "$rel" | tr -cd 'A-Za-z0-9').html"
+            code=$(curl -sS -L --compressed --connect-timeout 10 --max-time 45 -A 'Mozilla/5.0 DoctorCuraTelFixQA' -o "$out" -w '%{http_code}' "$site$rel" || true)
+            [[ "$code" == 200 ]] || { echo "TEL_FIX_RENDER_HTTP rel=$rel HTTP=$code" >&2; exit 1; }
+            python3 - "$out" "$rel" <<'PY'
+          import re,sys
+          body=open(sys.argv[1],encoding='utf-8',errors='replace').read(); rel=sys.argv[2]
+          hrefs=re.findall(r'href=["\']\s*(tel:[^"\']+)["\']',body,re.I)
+          normalized=[re.sub(r'\s+','',x) for x in hrefs]
+          if 'tel:+31855055433' not in normalized: raise SystemExit('TEL_FIX_RENDER_NEW_MISSING '+rel+' '+repr(hrefs))
+          bad=[x for x in normalized if x.startswith('tel:+318550554') and x!='tel:+31855055433']
+          if bad: raise SystemExit('TEL_FIX_RENDER_OLD_REMAINS '+rel+' '+repr(bad))
+          if '+31 85 505 54 33' not in body: raise SystemExit('TEL_FIX_RENDER_VISIBLE_PHONE_MISSING '+rel)
+          print('TEL_FIX_RENDER_OK '+rel+' '+repr(normalized))
+          PY
+          done
+
+          rollback_needed=0
+          trap - ERR
+          echo 'TEL_FIX_COMPLETE'
