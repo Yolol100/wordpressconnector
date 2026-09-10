@@ -13,64 +13,115 @@ permissions:
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect snippet and cache/output owners read only
+      - name: Inspect redirect content and hreflang owners read only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           tmp="$RUNNER_TEMP/dc-owner-deep"; mkdir -p "$tmp"
           c=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 2 --retry-delay 2 --retry-all-errors)
 
-          echo '=== SNIPPET 43 TOKENS ==='
+          echo '=== SNIPPET 43 STATE ==='
           curl "${c[@]}" --location "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/s43.json"
           python3 - "$tmp/s43.json" <<'PY'
-          import hashlib,json,re,sys
+          import hashlib,json,sys
           s=json.load(open(sys.argv[1],encoding='utf-8')); code=str(s.get('code') or '')
           print(f"SNIPPET id={s.get('id')} active={bool(s.get('active'))} hash={hashlib.sha256(code.encode()).hexdigest()} chars={len(code)}")
-          tokens=['hreflang','gtranslate','attribute_pa','wpseo','redirect_canonical','template_redirect','wp_head','ob_start','rocket_clean','pagination','product-categorie']
-          lines=code.splitlines()
-          for token in tokens:
-              hits=[(i+1,l.strip()) for i,l in enumerate(lines) if token.lower() in l.lower()]
-              print(f"TOKEN {token} count={len(hits)}")
-              for n,l in hits[:8]:
-                  print(f"TOKEN_LINE {token} line={n} text={l[:260]}")
+          for token in ['DoctorCura gewichtsverlust legacy canonical migration V8.4a','DoctorCura one-time cache purge helper','hreflang','gtranslate','attribute_pa','redirect_canonical','product-categorie']:
+              print(f"SNIPPET_TOKEN token={token} count={code.lower().count(token.lower())}")
           PY
 
-          echo '=== REST CACHE ROUTE SCHEMAS ==='
-          curl "${c[@]}" --location "${auth[@]}" "$base/wp-json/" > "$tmp/index.json"
-          python3 - "$tmp/index.json" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); routes=d.get('routes') or {}
-          for name in ['/elementor/v1/cache','/wp-rocket/v1']:
-              r=routes.get(name)
-              print('ROUTE '+name+' present='+str(bool(r)))
-              if not r: continue
-              for i,e in enumerate(r.get('endpoints') or []):
-                  methods=e.get('methods') or []
-                  if isinstance(methods,dict): methods=[k for k,v in methods.items() if v]
-                  args=sorted((e.get('args') or {}).keys())
-                  print(f"ROUTE_ENDPOINT name={name} idx={i} methods={','.join(methods)} args={','.join(args)}")
-          PY
-
-          echo '=== TERMS CACHE BEHAVIOR ==='
-          for suffix in '' '?doctorcura_phase3_probe=1'; do
-            key=$(printf '%s' "$suffix" | sha256sum | cut -c1-8)
-            curl "${c[@]}" --location --compressed --dump-header "$tmp/terms-$key.h" --output "$tmp/terms-$key.html" "$base/geschaftsbedingungen/$suffix"
-            old=$(grep -Fco 'http://www.doctorcura.com' "$tmp/terms-$key.html" || true)
-            echo "TERMS suffix=${suffix:-none} old_http_count=$old"
-            awk 'BEGIN{IGNORECASE=1}/^(server|age|cache-control|x-hcdn-|x-cache|x-litespeed|cf-cache|vary):/{gsub(/\r/,"");print "TERMS_HEADER " $0}' "$tmp/terms-$key.h" || true
+          echo '=== WEIGHT REDIRECT OWNER HEADERS ==='
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
+            for variant in normal bust; do
+              source="$base$prefix/product-categorie/gewichtsverlust/"
+              [[ "$variant" == bust ]] && source="$source?doctorcura_owner_probe=20260910"
+              h="$tmp/weight-$lang-$variant.h"
+              curl "${c[@]}" --compressed --max-redirs 0 --header 'Cache-Control: no-cache' --dump-header "$h" --output /dev/null "$source" || true
+              code=$(awk '/^HTTP\//{print $2; exit}' "$h")
+              loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+              xrb=$(awk 'BEGIN{IGNORECASE=1}/^x-redirect-by:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+              echo "WEIGHT_HEADER lang=$lang variant=$variant code=${code:-} location=${loc:-} x_redirect_by=${xrb:-none}"
+              awk 'BEGIN{IGNORECASE=1}/^(server|age|cache-control|x-hcdn-|x-cache|x-litespeed|cf-cache-status|vary):/{gsub(/\r/,"");print "WEIGHT_META " $0}' "$h" || true
+            done
           done
 
-          echo '=== EPIPEN ALTERNATE TAG CONTEXT ==='
+          echo '=== REDIRECTION RULES RELEVANT TO WEIGHT ==='
+          curl "${c[@]}" --location "${auth[@]}" --get --data-urlencode 'per_page=200' "$base/wp-json/redirection/v1/redirect" > "$tmp/redirs.json"
+          python3 - "$tmp/redirs.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          items=d.get('items') if isinstance(d,dict) else d
+          if not isinstance(items,list): items=[]
+          hits=[]
+          for r in items:
+              blob=' '.join(str(r.get(k,'') or '') for k in ['url','action_data','match_url','title']).lower()
+              if any(t in blob for t in ['gewichtsverlust','product-categorie','product-category']):
+                  hits.append(r)
+          print(f"REDIR_TOTAL_PAGE={len(items)} REDIR_RELEVANT={len(hits)}")
+          for r in hits[:40]:
+              print('REDIR id={id} url={url} target={target} regex={regex} status={status} match_type={match_type} action_type={action_type}'.format(
+                  id=r.get('id'),url=r.get('url'),target=r.get('action_data'),regex=r.get('regex'),status=r.get('status'),match_type=r.get('match_type'),action_type=r.get('action_type')))
+          PY
+
+          echo '=== ACTIVE PLUGINS RELEVANT TO OWNERSHIP ==='
+          plugin_http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/plugins.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/plugins?status=active&per_page=100" || true)
+          echo "PLUGINS_HTTP=$plugin_http"
+          if [[ "$plugin_http" == '200' ]]; then
+            python3 - "$tmp/plugins.json" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1],encoding='utf-8'))
+          for p in data if isinstance(data,list) else []:
+              slug=str(p.get('plugin') or '')
+              if any(t in slug.lower() for t in ['gtranslate','woocommerce','wordpress-seo','yoast','redirection','wp-rocket','code-snippets']):
+                  print(f"PLUGIN plugin={slug} status={p.get('status')} version={p.get('version','unknown')}")
+          PY
+          fi
+
+          echo '=== ALL SNIPPETS RELEVANT TO WEIGHT ==='
+          snippets_http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/snippets.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets?per_page=100" || true)
+          echo "SNIPPETS_HTTP=$snippets_http"
+          if [[ "$snippets_http" == '200' ]]; then
+            python3 - "$tmp/snippets.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          items=d.get('data') if isinstance(d,dict) else d
+          if not isinstance(items,list): items=d.get('snippets',[]) if isinstance(d,dict) else []
+          if not isinstance(items,list): items=[]
+          for s in items:
+              code=str(s.get('code') or '')
+              name=str(s.get('name') or '')
+              if any(t in (name+' '+code).lower() for t in ['gewichtsverlust','product-categorie']):
+                  print(f"SNIPPET_HIT id={s.get('id')} active={bool(s.get('active'))} name={name[:120]}")
+          PY
+          fi
+
+          echo '=== TERMS EXACT OLD HTTP URL ==='
+          page_http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/page11.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/pages/11?context=edit" || true)
+          echo "PAGE11_HTTP=$page_http"
+          [[ "$page_http" == '200' ]] || exit 1
+          python3 - "$tmp/page11.json" <<'PY'
+          import hashlib,json,re,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          raw=str((p.get('content') or {}).get('raw') or '')
+          hits=re.findall(r'https?://www\.doctorcura\.com[^\s"\'<>)]*',raw,re.I)
+          old=[u for u in hits if u.lower().startswith('http://www.doctorcura.com')]
+          print(f"PAGE11_RAW_HASH={hashlib.sha256(raw.encode()).hexdigest()} OLD_HTTP_COUNT={len(old)}")
+          for u in old: print('OLD_HTTP_URL='+u)
+          PY
+
+          echo '=== EPIPEN ALTERNATE TAGS AND OWNER TOKENS ==='
           url="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"
-          curl "${c[@]}" --location --compressed --output "$tmp/epipen.html" "$url"
+          curl "${c[@]}" --location --compressed --header 'Cache-Control: no-cache' --output "$tmp/epipen.html" "$url"
           python3 - "$tmp/epipen.html" <<'PY'
           import re,sys
           s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
@@ -78,12 +129,7 @@ jobs:
           print('ALT_TAG_COUNT='+str(len(tags)))
           for t in tags[:10]: print('ALT_TAG '+re.sub(r'\s+',' ',t)[:700])
           lower=s.lower()
-          for token in ['gtranslate','yoast','hreflang','translate.google','gt_switcher']:
+          for token in ['gtranslate','yoast','hreflang','translate.google','gt_switcher','attribute_pa_']:
               print(f"HTML_TOKEN {token} count={lower.count(token.lower())}")
-          first=re.search(r'<link\b[^>]*hreflang=[^>]*>',s,re.I)
-          if first:
-              a=max(0,first.start()-700); b=min(len(s),first.end()+700)
-              ctx=re.sub(r'\s+',' ',s[a:b])
-              print('ALT_CONTEXT '+ctx[:1600])
           PY
-          echo PHASE3_DEEP_OWNER_DIAGNOSTICS_COMPLETE
+          echo PHASE3_DEEP_OWNER_DIAGNOSTICS_V2_COMPLETE
