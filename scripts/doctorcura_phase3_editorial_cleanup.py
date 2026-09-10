@@ -11,7 +11,7 @@ IDS = [int(x) for x in sys.argv[2:]]
 TITLE = {
     900050: 'GLP-1-Therapie für Einsteiger: Was vor dem Start zählt',
     6037: 'Wegovy-Behandlung richtig anfragen in 5 Schritten',
-    6001: 'Schlafmittel online auf Rezept sicher anfragen',
+    6001: 'Schlafmittel online auf Rezept anfragen',
     5988: 'Mounjaro-Rezept online ärztlich anfragen',
     5984: 'Wann wird ein Online-Rezept abgelehnt – und warum?',
     5926: 'Wie schnell kommen rezeptpflichtige Medikamente nach Hause?',
@@ -31,13 +31,28 @@ EXCERPT = {
     5866: 'Wegovy-Rezept online beantragen: So läuft die ärztliche Prüfung ab, welche Angaben wichtig sind und wann eine Behandlung infrage kommen kann.',
 }
 
+OLD_VISIBLE = {
+    900050: r'\bGLP1\b',
+    6037: r'\bWegovy Behandlung\b',
+    6035: r'\bin meinem Deutschland\b',
+    6018: r'\bDie beste\s+online\s+Behandlungen\b',
+    6001: r'\bSchlafmittel online Rezept\b',
+    5997: r'\bpotenzmittel online rezept\b',
+    5988: r'\bMounjaro Rezept\b',
+    5984: r'\bonline rezept\b',
+    5926: r'\bRezeptmedizin\b',
+    5920: r'\bgewichtstherapie mit glp1 medikamenten\b',
+    5902: r'\bmounjaro oder wegovy unterschied\b',
+    5900: r'consultation included|doctor review|shipping included',
+    5866: r'\bWegovy Rezept\b',
+}
+
 
 def text_nodes_transform(content, fn):
     parts = re.split(r'(<[^>]+>)', content)
     changed = 0
     for i in range(0, len(parts), 2):
-        before = parts[i]
-        after, n = fn(before)
+        after, n = fn(parts[i])
         parts[i] = after
         changed += n
     return ''.join(parts), changed
@@ -45,6 +60,10 @@ def text_nodes_transform(content, fn):
 
 def regex_replace(s, pattern, replacement, flags=re.I):
     return re.subn(pattern, replacement, s, flags=flags)
+
+
+def visible_text(content):
+    return re.sub(r'\s+', ' ', html.unescape(re.sub(r'(?s)<[^>]+>', ' ', content or ''))).strip()
 
 
 def transform_content(pid, content):
@@ -68,10 +87,13 @@ def transform_content(pid, content):
         content, n = text_nodes_transform(content, fn); total += n
 
     elif pid == 6018:
-        old = 'Die beste online Behandlungen'
-        new = 'Die besten Online-Behandlungen'
-        def fn(s): return (s.replace(old, new), s.count(old))
-        content, n = text_nodes_transform(content, fn); total += n
+        content, n = re.subn(
+            r'Die beste(?:\s|<[^>]+>)*online(?:\s|<[^>]+>)*Behandlungen',
+            'Die besten Online-Behandlungen',
+            content,
+            flags=re.I,
+        )
+        total += n
 
     elif pid == 6001:
         def fn(s): return regex_replace(s, r'\bSchlafmittel online Rezept\b', 'Schlafmittel online auf Rezept')
@@ -118,8 +140,9 @@ def transform_content(pid, content):
     else:
         raise SystemExit(f'UNSUPPORTED_ID {pid}')
 
-    if total < 1:
-        raise SystemExit(f'EXPECTED_CONTENT_ANCHOR_MISSING {pid}')
+    residue = re.search(OLD_VISIBLE[pid], visible_text(content), re.I)
+    if residue:
+        raise SystemExit(f'CONTENT_RESIDUAL {pid}: {residue.group(0)}')
     return content, total
 
 
