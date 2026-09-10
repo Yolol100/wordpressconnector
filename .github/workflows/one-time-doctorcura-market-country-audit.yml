@@ -1,0 +1,61 @@
+name: One-time DoctorCura market country audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-market-country-audit/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Read WooCommerce selling and shipping country configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          base="$site/wp-json/webactueel-wordpress-connector/v1"
+          root="$RUNNER_TEMP/dc-market-country"; rm -rf "$root"; mkdir -p "$root"
+          call(){
+            suffix="$1"; key="$2"
+            python3 - "$root/r-$suffix.json" "$key" <<'PY'
+          import json,sys,uuid
+          out,key=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-market-'+uuid.uuid4().hex[:22],'action':'option.get','dry_run':True,'confirm':False,'payload':{'name':key}},open(out,'w',encoding='utf-8'),separators=(',',':'))
+          PY
+            for attempt in $(seq 1 6); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+              [[ "$code" == 200 ]] && return 0
+              [[ "$code" == 503 ]] && sleep 10 && continue
+              return 1
+            done
+            return 1
+          }
+          keys=(woocommerce_allowed_countries woocommerce_specific_allowed_countries woocommerce_all_except_countries woocommerce_ship_to_countries woocommerce_specific_ship_to_countries woocommerce_default_country woocommerce_store_address woocommerce_store_city woocommerce_store_postcode)
+          for key in "${keys[@]}"; do call "${key//_/-}" "$key" || true; done
+          python3 - "$root" <<'PY'
+          import glob,json,os,sys
+          root=sys.argv[1]; out={}
+          for p in glob.glob(root+'/o-*.json'):
+              key=os.path.basename(p)[2:-5].replace('-','_')
+              try: d=json.load(open(p,encoding='utf-8')); out[key]=d.get('data')
+              except Exception as e: out[key]={'error':str(e)}
+          print(json.dumps(out,ensure_ascii=False,indent=2))
+          json.dump(out,open(root+'/market-country-report.json','w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          PY
+
+      - name: Upload market country evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-market-country-audit
+          path: ${{ runner.temp }}/dc-market-country/market-country-report.json
+          retention-days: 7
