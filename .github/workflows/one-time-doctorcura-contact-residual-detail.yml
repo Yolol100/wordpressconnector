@@ -1,0 +1,67 @@
+name: One-time DoctorCura residual contact detail
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-contact-residual-detail/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect exact residual contact values
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc-contact-residual-detail"; mkdir -p "$root"
+          call(){
+            suffix="$1"; action="$2"; id="$3"
+            python3 - "$root/r-$suffix.json" "$action" "$id" <<'PY'
+          import json,sys,uuid
+          p,a,i=sys.argv[1:]
+          json.dump({'version':1,'request_id':'dc-detail-'+uuid.uuid4().hex[:20],'action':a,'dry_run':True,'confirm':False,'payload':{'id':int(i)}},open(p,'w'),separators=(',',':'))
+          PY
+            for attempt in $(seq 1 6); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r-$suffix.json" -o "$root/o-$suffix.json" -w '%{http_code}' "$base/execute" || true)
+              [[ "$code" == 200 ]] && return 0
+              sleep 8
+            done
+            return 1
+          }
+          for id in 9 3285; do call post-$id post.get $id; call el-$id elementor.inspect $id || true; done
+          python3 - "$root" <<'PY'
+          import json,os,re,sys
+          root=sys.argv[1]
+          pats=[
+            ('old_address',re.compile(r'Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam',re.I)),
+            ('old_phone',re.compile(r'\b08\s*550\s*55\s*433\b|\b085\s*505\s*5433\b|\b0855055433\b|\+31\s*\(0\)\s*85\s*505\s*5433\b|\+31\s+85\s+505\s+5433\b',re.I)),
+            ('truncated_phone',re.compile(r'\+31\s+85\s+505\s+54(?!\s*33)(?=\s|<|$)|tel:\+318550554(?!33)',re.I)),
+          ]
+          def walk(v,path=''):
+              if isinstance(v,str):
+                  for label,rx in pats:
+                      for m in rx.finditer(v):
+                          a=max(0,m.start()-180); b=min(len(v),m.end()+240)
+                          print('MATCH',label,path,'=>',repr(v[a:b]))
+                  if path.endswith('.settings.address') or path.endswith('.description_text'):
+                      if 'Veldbloemlaan' in v or 'Keizersgracht' in v: print('ADDRESS',path,'=>',repr(v))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,f'{path}[{i}]')
+              elif isinstance(v,dict):
+                  for k,x in v.items(): walk(x,f'{path}.{k}' if path else str(k))
+          for id in (9,3285):
+              print('===',id,'===')
+              for kind in ('post','el'):
+                  p=os.path.join(root,f'o-{kind}-{id}.json')
+                  if os.path.exists(p):
+                      d=json.load(open(p,encoding='utf-8')); walk(d.get('data'),kind)
+          PY
