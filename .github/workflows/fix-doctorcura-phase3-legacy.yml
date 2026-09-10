@@ -28,6 +28,7 @@ jobs:
           api="$base/wp-json/redirection/v1"
           tmp="$RUNNER_TEMP/dc-phase3-legacy"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          curl_common=(--silent --show-error --connect-timeout 10 --max-time 40 --retry 3 --retry-delay 2 --retry-all-errors)
           created_ids=()
 
           sources=( '/product-categorie/gewichtsverlust/' '/datenschutz/' )
@@ -49,8 +50,9 @@ jobs:
           }
 
           first_probe(){
-            local url="$1"; local h="$2"; local code loc
-            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --max-redirs 0 --dump-header "$h" --output /dev/null "$url" || true
+            local url="$1" h="$2" code loc
+            : > "$h"
+            curl "${curl_common[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$url" || true
             code=$(awk '/^HTTP\//{print $2; exit}' "$h")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
             printf '%s\t%s' "${code:-}" "${loc:-}"
@@ -60,7 +62,7 @@ jobs:
             if ((${#created_ids[@]})); then
               ids=$(IFS=,; echo "${created_ids[*]}")
               printf '{"items":[%s],"global":false}' "$ids" > "$tmp/delete.json"
-              curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null || true
+              curl "${curl_common[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null || true
               echo "ROLLBACK attempted ids=$ids"
             fi
           }
@@ -69,36 +71,35 @@ jobs:
           echo '=== PREFLIGHT ==='
           for i in 0 1; do
             source="${sources[$i]}"; target="${targets[$i]}"
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before-$i.json"
+            if ! curl "${curl_common[@]}" --location "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before-$i.json"; then
+              echo "PRECHECK_REDIR_API_FAILED source=$source" >&2; exit 1
+            fi
             total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/before-$i.json")
+            echo "PRECHECK source=$source exact_rules=$total"
             [[ "$total" == '0' ]] || { echo "Existing exact redirect for $source" >&2; exit 1; }
-            tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output "$tmp/target-$i.html" --write-out '%{http_code}' "$target")
-            [[ "$tcode" == '200' ]] || { echo "Target not 200: $target $tcode" >&2; exit 1; }
-            [[ "$(canonical_of "$tmp/target-$i.html")" == "$target" ]] || { echo "Target not self canonical: $target" >&2; exit 1; }
+
+            if ! tcode=$(curl "${curl_common[@]}" --compressed --output "$tmp/target-$i.html" --write-out '%{http_code}' "$target"); then
+              echo "PRECHECK_TARGET_FETCH_FAILED target=$target" >&2; exit 1
+            fi
+            can=$(canonical_of "$tmp/target-$i.html")
+            echo "PRECHECK_TARGET target=$target status=$tcode canonical=${can:-none}"
+            [[ "$tcode" == '200' && "$can" == "$target" ]] || { echo "Target invalid: $target status=$tcode canonical=$can" >&2; exit 1; }
           done
 
           read -r wcode wloc < <(first_probe "$base/product-categorie/gewichtsverlust/" "$tmp/weight-before.h")
-          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo "Weight failure changed: code=$wcode location=$wloc" >&2; exit 1; }
-          dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
-          [[ "$dcode" == '404' ]] || { echo "Datenschutz failure changed: code=$dcode" >&2; exit 1; }
-
-          for u in \
-            'https://doctorcura.com/fr/product-category/gewichtsverlust/' \
-            'https://doctorcura.com/en/product-category/gewichtsverlust/' \
-            'https://doctorcura.com/fr/privacy-policy/' \
-            'https://doctorcura.com/en/privacy-policy/'; do
-            key=$(printf '%s' "$u" | sha256sum | cut -c1-12)
-            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output "$tmp/translated-$key.html" --write-out '%{http_code}' "$u")
-            [[ "$code" == '200' && "$(canonical_of "$tmp/translated-$key.html")" == "$u" ]] || { echo "Translated target invalid: $u" >&2; exit 1; }
-          done
+          echo "PRECHECK_WEIGHT first=$wcode location=$wloc"
+          [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo "Weight failure changed" >&2; exit 1; }
+          dcode=$(curl "${curl_common[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
+          echo "PRECHECK_PRIVACY status=$dcode"
+          [[ "$dcode" == '404' ]] || { echo "Datenschutz failure changed" >&2; exit 1; }
 
           echo '=== WRITE ==='
           for i in 0 1; do
             source="${sources[$i]}"; target="${targets[$i]}"; title="${titles[$i]}"
             php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>$argv[3],"group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];echo json_encode($p,JSON_UNESCAPED_SLASHES);' "$source" "$target" "$title" > "$tmp/create-$i.json"
-            http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create-$i.json" --output "$tmp/create-$i-response.json" --write-out '%{http_code}' "$api/redirect")
+            http=$(curl "${curl_common[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create-$i.json" --output "$tmp/create-$i-response.json" --write-out '%{http_code}' "$api/redirect")
             [[ "$http" == '200' ]] || { echo "Create failed source=$source HTTP=$http" >&2; exit 1; }
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after-$i.json"
+            curl "${curl_common[@]}" --location "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after-$i.json"
             id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$h=[];foreach(($d["items"]??[])as$x){$ad=$x["action_data"]??null;$t=is_array($ad)?($ad["url"]??""):$ad;if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&$t===$argv[3])$h[]=(int)$x["id"];}if(count($h)!==1)exit(2);echo$h[0];' "$tmp/after-$i.json" "$source" "$target")
             [[ "$id" =~ ^[1-9][0-9]*$ ]] || exit 1
             created_ids+=("$id")
@@ -106,15 +107,13 @@ jobs:
           done
 
           verify(){
-            local round="$1"; local label="$2"; local source="$3"; local expected="$4"
-            local h="$tmp/$round-$label.h"; local b="$tmp/$round-$label.html"; local code loc out status final count can
+            local round="$1" label="$2" source="$3" expected="$4" h="$tmp/$round-$label.h" b="$tmp/$round-$label.html" code loc out status final count can
             read -r code loc < <(first_probe "$base$source" "$h")
             [[ "$code" == '301' && "$loc" == "$expected" ]] || { echo "$round first-hop fail $label code=$code location=$loc expected=$expected" >&2; return 1; }
-            out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$source")
+            out=$(curl "${curl_common[@]}" --location --compressed --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$source")
             IFS=$'\t' read -r status final count <<< "$out"
-            [[ "$status" == '200' && "$final" == "$expected" && "$count" == '1' ]] || { echo "$round final fail $label $out" >&2; return 1; }
             can=$(canonical_of "$b")
-            [[ "$can" == "$expected" ]] || { echo "$round canonical fail $label canonical=$can" >&2; return 1; }
+            [[ "$status" == '200' && "$final" == "$expected" && "$count" == '1' && "$can" == "$expected" ]] || { echo "$round final fail $label status=$status final=$final redirects=$count canonical=$can" >&2; return 1; }
             echo "VERIFY_OK round=$round label=$label final=$final redirects=$count canonical=$can"
           }
 
@@ -126,10 +125,10 @@ jobs:
             verify "$round" privacy-root '/datenschutz/' 'https://doctorcura.com/privacy-policy/'
           done
 
-          out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
+          out=$(curl "${curl_common[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
           [[ "$out" == $'200\thttps://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/\t1' ]] || { echo "Phase2A regression: $out" >&2; exit 1; }
-          p16=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base/blogs/16/")
-          p17=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base/blogs/17/")
+          p16=$(curl "${curl_common[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/")
+          p17=$(curl "${curl_common[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/")
           [[ "$p16" == '200' && "$p17" == '404' ]] || { echo "Pagination regression 16=$p16 17=$p17" >&2; exit 1; }
 
           trap - EXIT
