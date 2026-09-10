@@ -1,0 +1,99 @@
+name: One-time DoctorCura phase 1 expanded localization audit v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-phase1-expanded-audit-v2/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Fresh expanded localization audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-phase1-v2"; rm -rf "$root"; mkdir -p "$root/pages"
+          get200(){
+            url="$1"; out="$2"
+            for n in $(seq 1 8); do
+              code=$(curl -sS -L --connect-timeout 10 --max-time 75 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$url" || true)
+              [[ "$code" == 200 ]] && return 0
+              [[ "$code" == 000 || "$code" == 429 || "$code" == 503 ]] && { echo "RETRY $n HTTP=$code $url"; sleep 12; continue; }
+              echo "HTTP_FAIL=$code $url" >&2; cat "$out" >&2 || true; return 1
+            done
+            return 1
+          }
+          get200 "$site/wp-json/webactueel-wordpress-connector/v1/health" "$root/health.json"
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('PHASE1_HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+          page=1
+          while (( page <= 20 )); do
+            get200 "$site/wp-json/wp/v2/posts?context=edit&per_page=100&page=$page&status=any" "$root/pages/$page.json"
+            count=$(python3 - "$root/pages/$page.json" <<'PY'
+          import json,sys
+          print(len(json.load(open(sys.argv[1],encoding='utf-8'))))
+          PY
+          )
+            (( count < 100 )) && break
+            page=$((page+1))
+          done
+          jq -s 'add' "$root"/pages/*.json > "$root/all-posts.json"
+          python3 - "$root/all-posts.json" "$root/hits.json" "$root/summary.json" <<'PY'
+          import html,json,re,sys,urllib.parse
+          posts=json.load(open(sys.argv[1],encoding='utf-8'))
+          fam={
+           'explicit_us':[r'\bUSA\b',r'United\s+States(?:\s+of\s+America)?',r'\bU\.\s*S\.\s*A?\.?\b',r'\bVereinigte\s+Staaten\b',r'\bUS-amerikan\w*\b',r'\bAmerika(?:nisch\w*)?\b',r'\bAmerican(?:s|er|e|en|em|es)?\b'],
+           'us_regulatory_health_system':[r'\bFDA\b',r'Food\s+and\s+Drug\s+Administration',r'\bDEA\b',r'\bHIPAA\b',r'\bMedicare\b',r'\bMedicaid\b',r'Pharmacy\s+Benefit(?:\s+Plan|\s+Manager)?',r'Primary[- ]Care(?:\s+Provider|-Anbieter)?',r'\bZepbound\b'],
+           'us_emergency_geo_currency':[r'\b911\b',r'\b988\b',r'1-800-222-1222',r'Suicide\s*&\s*Crisis\s*Lifeline',r'\bCalifornia\b',r'\bTexas\b',r'\bFlorida\b',r'\bNew\s+York\b',r'Washington,?\s+D\.?C\.?',r'\bUSD\b',r'US\$',r'\bUS[- ]Dollar\w*\b'],
+           'state_federal_context':[r'\bBundesstaat\w*\b',r'\bbundesstaatlich\w*\b',r'\bföderal\w*\b',r'\bfederal(?:e|en|er|es|em)?\b',r'\bstate\s+(?:law|laws|regulation|regulations|requirements)\b'],
+           'broken_german_localization':[r'\bin\s+den\s+Deutschland\b',r'\baus\s+den\s+Deutschland\b',r'\bvon\s+den\s+Deutschland\b',r'\bfür\s+den\s+Deutschland\b',r'\bje\s+nach\s+Deutschland\b',r'\bEbene\s+der\s+Deutschland\b',r'\beinem?\s+Deutschland\b',r'\beiner\s+Deutschland\b',r'Deutschland\s+zugelassene[nr]?\s+(?:Arzt|Ärztin)']}
+          def clean(s):
+            s=re.sub(r'(?is)<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>',' ',s or '')
+            return re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',s))).strip()
+          hits=[]; href_rx=re.compile(r'href=["\']([^"\']+)',re.I); us_hosts=('fda.gov','dea.gov','hhs.gov','cms.gov','medicare.gov','medicaid.gov','988lifeline.org')
+          for p in posts:
+            yh=p.get('yoast_head_json') or {}; fields={'title':(p.get('title') or {}).get('raw') or '','excerpt':(p.get('excerpt') or {}).get('raw') or '','content':(p.get('content') or {}).get('raw') or '','slug':p.get('slug') or '','yoast_title':yh.get('title') or '','yoast_description':yh.get('description') or '','yoast_og_title':yh.get('og_title') or '','yoast_og_description':yh.get('og_description') or ''}
+            for field,raw in fields.items():
+              text=clean(raw) if field in ('content','excerpt') else str(raw)
+              for family,regs in fam.items():
+                for pat in regs:
+                  for m in re.finditer(pat,text,re.I):
+                    hits.append({'id':p.get('id'),'status':p.get('status'),'slug':p.get('slug'),'field':field,'family':family,'term':m.group(0),'context':text[max(0,m.start()-180):min(len(text),m.end()+320)]})
+            for u in href_rx.findall(fields['content']):
+              host=urllib.parse.urlparse(html.unescape(u)).netloc.lower()
+              if any(host==x or host.endswith('.'+x) for x in us_hosts): hits.append({'id':p.get('id'),'status':p.get('status'),'slug':p.get('slug'),'field':'href','family':'us_href','term':u,'context':u})
+          ded=[]; seen=set()
+          for h in hits:
+            k=(h['id'],h['field'],h['family'],h['term'],h['context'])
+            if k not in seen: seen.add(k); ded.append(h)
+          hits=ded; by={}
+          for h in hits: by[h['family']]=by.get(h['family'],0)+1
+          summary={'posts_checked':len(posts),'hit_records':len(hits),'hit_post_ids':sorted({int(h['id']) for h in hits}),'by_family':by}
+          json.dump(hits,open(sys.argv[2],'w',encoding='utf-8'),ensure_ascii=False,indent=2); json.dump(summary,open(sys.argv[3],'w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          print('PHASE1_COMPLETE '+json.dumps(summary,ensure_ascii=False,separators=(',',':')))
+          for h in hits: print('HIT '+json.dumps(h,ensure_ascii=False,separators=(',',':')))
+          PY
+      - name: Upload phase 1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-phase1-expanded-audit-v2
+          path: |
+            ${{ runner.temp }}/dc-phase1-v2/hits.json
+            ${{ runner.temp }}/dc-phase1-v2/summary.json
+          retention-days: 7
+          if-no-files-found: warn
