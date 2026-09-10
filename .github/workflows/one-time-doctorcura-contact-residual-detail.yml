@@ -38,8 +38,9 @@ jobs:
             return 1
           }
           for id in 9 3285; do call post-$id post.get $id; call el-$id elementor.inspect $id || true; done
+          curl -sS -L --connect-timeout 10 --max-time 60 "$site/contact/" -o "$root/contact.html"
           python3 - "$root" <<'PY'
-          import json,os,re,sys
+          import html,json,os,re,sys
           root=sys.argv[1]
           pats=[
             ('old_address',re.compile(r'Keizersgracht\s*241|1016\s*EA\s*,?\s*Amsterdam',re.I)),
@@ -64,4 +65,12 @@ jobs:
                   p=os.path.join(root,f'o-{kind}-{id}.json')
                   if os.path.exists(p):
                       d=json.load(open(p,encoding='utf-8')); walk(d.get('data'),kind)
+          raw=open(root+'/contact.html',encoding='utf-8',errors='replace').read()
+          print('=== RENDERED CONTACT ===')
+          for label,rx in pats:
+              for m in rx.finditer(raw):
+                  a=max(0,m.start()-180); b=min(len(raw),m.end()+240)
+                  print('RENDERED_MATCH',label,'=>',repr(raw[a:b]))
+          for rx in [re.compile(r'href=["\']tel:[^"\']+["\']',re.I),re.compile(r'Veldbloemlaan.{0,180}',re.I|re.S)]:
+              for m in rx.finditer(raw): print('RENDERED_VALUE',repr(html.unescape(m.group(0))))
           PY
