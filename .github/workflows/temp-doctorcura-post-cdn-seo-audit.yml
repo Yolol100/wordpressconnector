@@ -1,0 +1,73 @@
+name: Temporary DoctorCura Post-CDN SEO Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-post-cdn-seo-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify public DoctorCura URL state
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://doctorcura.com'
+          tmp="$RUNNER_TEMP/doctorcura-post-cdn"
+          mkdir -p "$tmp"
+          check() {
+            local path="$1" label="$2" safe
+            safe=$(printf '%s' "$label" | tr -cs 'A-Za-z0-9._-' '_')
+            local hdr="$tmp/$safe.headers" body="$tmp/$safe.body"
+            local code
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 \
+              --user-agent 'Mozilla/5.0 (compatible; DoctorCuraPostCDNAudit/1.0)' \
+              --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
+            local location hcdn age canonical robots
+            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            hcdn=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            age=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            canonical=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"'][^>]+href=["'"'][^"'"']+' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/I' || true)
+            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/I' || true); fi
+            robots=$(grep -Eio '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']+' "$body" | head -1 | sed -E 's/.*content=["'"']([^"'"']+).*/\1/I' || true)
+            printf 'CHECK\t%s\t%s\tstatus=%s\tlocation=%s\thcdn=%s\tage=%s\tcanonical=%s\trobots=%s\n' "$label" "$path" "$code" "${location:-}" "${hcdn:-}" "${age:-}" "${canonical:-}" "${robots:-}"
+          }
+
+          check '/blogs/8/' 'blog-root-8'
+          check '/fr/blogs/6/' 'blog-fr-6'
+          check '/fr/blogs/8/' 'blog-fr-8'
+          check '/en/blogs/6/' 'blog-en-6'
+          check '/en/blogs/8/' 'blog-en-8'
+          check '/blogs/16/' 'blog-root-16'
+          check '/fr/blogs/16/' 'blog-fr-16'
+          check '/en/blogs/16/' 'blog-en-16'
+          check '/blogs/17/' 'blog-root-17'
+          check '/fr/blogs/17/' 'blog-fr-17'
+          check '/en/blogs/17/' 'blog-en-17'
+          check '/blogs/page/8/' 'blog-root-alias-8'
+          check '/fr/blogs/page/8/' 'blog-fr-alias-8'
+          check '/en/blogs/page/8/' 'blog-en-alias-8'
+
+          check '/sitemap_index.xml' 'sitemap-index'
+          check '/sitemap_index.xml/' 'sitemap-index-slash'
+          check '/sitemap' 'sitemap-old'
+          check '/robots.txt' 'robots'
+
+          check '/product/epipen/' 'epipen-base'
+          check '/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen' 'epipen-variation'
+          check '/fr/product/mounjaro/' 'fr-mounjaro'
+          check '/en/product/elvanse/' 'en-elvanse'
+
+          check '/fr/product-categorie/sexual-problems/' 'old-fr-sexual-category'
+          check '/product-category/sexuelle-probleme/' 'target-sexual-category'
+
+          echo 'SITEMAP_LOCS_BEGIN'
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 "$base/sitemap_index.xml" \
+            | grep -Eo '<loc>[^<]+' | sed 's#<loc>##' | head -50 || true
+          echo 'SITEMAP_LOCS_END'
