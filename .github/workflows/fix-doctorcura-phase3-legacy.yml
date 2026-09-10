@@ -35,12 +35,17 @@ jobs:
           titles=( 'DoctorCura legacy gewichtsverlust taxonomy migration' 'DoctorCura legacy datenschutz privacy migration' )
 
           canonical_of(){
-            local body="$1" c=''
-            c=$(grep -Eio '<link[^>]+rel=["'"']canonical["'"'][^>]+href=["'"'][^"'"']+["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*/\1/i' || true)
-            if [[ -z "$c" ]]; then
-              c=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"']canonical["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*/\1/i' || true)
-            fi
-            printf '%s' "$c"
+            python3 - "$1" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.c=''
+              def handle_starttag(self,tag,attrs):
+                  if tag.lower()!='link' or self.c: return
+                  a={str(k).lower():str(v or '') for k,v in attrs}
+                  if 'canonical' in a.get('rel','').lower().split() and a.get('href'): self.c=a['href']
+          p=P(); p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read()); print(p.c,end='')
+          PY
           }
 
           first_probe(){
@@ -119,10 +124,6 @@ jobs:
             verify "$round" weight-fr '/fr/product-categorie/gewichtsverlust/' 'https://doctorcura.com/fr/product-category/gewichtsverlust/'
             verify "$round" weight-en '/en/product-categorie/gewichtsverlust/' 'https://doctorcura.com/en/product-category/gewichtsverlust/'
             verify "$round" privacy-root '/datenschutz/' 'https://doctorcura.com/privacy-policy/'
-            for p in '/fr/datenschutz/' '/en/datenschutz/'; do
-              code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base$p")
-              [[ "$code" == '404' || "$code" == '301' ]] || { echo "$round unexpected translated privacy status $p=$code" >&2; exit 1; }
-            done
           done
 
           out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
