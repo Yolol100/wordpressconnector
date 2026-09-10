@@ -1,0 +1,114 @@
+name: DoctorCura Phase 4 Evidence Classifier
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/analyze-doctorcura-phase4-evidence.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download completed Phase 4 artifact
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'Accept: application/vnd.github+json' \
+            'https://api.github.com/repos/Yolol100/wordpressconnector/actions/artifacts/10160108172/zip' \
+            --output /tmp/phase4.zip
+          mkdir -p /tmp/phase4
+          unzip -q /tmp/phase4.zip -d /tmp/phase4
+          test -s /tmp/phase4/doctorcura-exhaustive-results.json
+          sha256sum /tmp/phase4.zip
+      - name: Classify category matrix GSC URLs and suspicious families
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,urllib.parse
+          from pathlib import Path
+          d=json.load(open('/tmp/phase4/doctorcura-exhaustive-results.json',encoding='utf-8'))
+          results=d.get('results',[]); anoms=d.get('anomalies',[])
+          by={r.get('url'):r for r in results}
+          gsc=[x.strip() for x in Path('doctorcura-audits/deep-seo-20260910-gsc-urls.txt').read_text().splitlines() if x.strip()]
+          print('SCHEMA summary_keys='+','.join(sorted(d.get('summary',{}).keys()))+f' results={len(results)} anomalies={len(anoms)} gsc={len(gsc)}')
+
+          print('=== CATEGORY LEGACY ANOMALIES ===')
+          legacy=[a for a in anoms if a.get('kind')=='unexpected_indexable_product_categorie']
+          print('LEGACY_ANOMALY_COUNT='+str(len(legacy)))
+          for a in legacy:
+              r=by.get(a.get('url'),{}); u=urllib.parse.urlsplit(a.get('url','')); p=u.path.replace('/product-categorie/','/product-category/'); target=urllib.parse.urlunsplit((u.scheme,u.netloc,p,'','')); t=by.get(target,{})
+              print('LEGACY\turl={u}\tfirst={fs}\tloc={loc}\tfinal={fin}\tstatus={st}\trobots={rob}\tcanonical={can}\ttext={th}\ttarget={tar}\ttarget_status={ts}\ttarget_can={tc}\ttarget_text={tth}\ttext_equal={eq}'.format(
+                  u=a.get('url'),fs=r.get('firstStatus'),loc=r.get('firstLocation',''),fin=r.get('finalUrl',''),st=r.get('finalStatus'),rob=r.get('robots',''),can=r.get('canonical',''),th=r.get('textHash',''),tar=target,ts=t.get('finalStatus'),tc=t.get('canonical',''),tth=t.get('textHash',''),eq=bool(r.get('textHash') and r.get('textHash')==t.get('textHash'))))
+
+          print('=== ALL CATEGORY OLD/NEW MATRIX COUNTS ===')
+          cats=[r for r in results if re.search(r'/(?:fr/|en/)?product-(?:category|categorie)/[^/]+/$', urllib.parse.urlsplit(r.get('url','')).path)]
+          buckets={}
+          for r in cats:
+              p=urllib.parse.urlsplit(r.get('url','')).path
+              kind='legacy' if '/product-categorie/' in p else 'current'
+              key=(kind,r.get('firstStatus'),r.get('finalStatus'),bool(r.get('canonical')),('noindex' in ((r.get('robots','')+' '+r.get('xRobots','')).lower())))
+              buckets[key]=buckets.get(key,0)+1
+          for k,n in sorted(buckets.items(),key=lambda x:str(x[0])): print('CAT_BUCKET\t'+str(k)+'\tcount='+str(n))
+
+          print('=== HISTORICAL GSC CLASSIFICATION ===')
+          groups={}
+          bad=[]
+          for u in gsc:
+              r=by.get(u)
+              if not r:
+                  cls='missing_from_audit'; bad.append((u,cls,'')); groups[cls]=groups.get(cls,0)+1; continue
+              path=urllib.parse.urlsplit(u).path
+              tech=path.endswith('.xml') or '/sitemap' in path or '/feed/' in path or path.endswith('/feed')
+              robots=((r.get('robots','')+' '+r.get('xRobots','')).lower())
+              if r.get('error'): cls='transport_error'
+              elif tech and 'feed' in path and r.get('finalStatus')==200 and 'noindex' not in robots: cls='feed_200_indexable'
+              elif tech: cls='technical'
+              elif r.get('firstStatus') in (301,302,307,308): cls='redirect_'+str(r.get('redirects'))+'_hop'
+              elif r.get('finalStatus') in (404,410): cls='gone_'+str(r.get('finalStatus'))
+              elif r.get('finalStatus')==200:
+                  can=r.get('canonical',''); fin=r.get('finalUrl','')
+                  cls='200_selfcanonical' if can and can==fin else ('200_canonical_other' if can else '200_no_canonical')
+              else: cls='status_'+str(r.get('finalStatus'))
+              groups[cls]=groups.get(cls,0)+1
+              if cls in {'transport_error','feed_200_indexable','200_no_canonical'} or cls.startswith('status_') or cls=='missing_from_audit': bad.append((u,cls,r.get('canonical','')))
+          for k,n in sorted(groups.items()): print(f'GSC_GROUP\t{k}\t{n}')
+          for u,c,x in bad: print(f'GSC_REVIEW\t{c}\t{u}\t{x}')
+
+          print('=== HISTORICAL SPECIALS ===')
+          for u in gsc:
+              p=urllib.parse.urlsplit(u).path
+              if p in ['/sitemap','/sitemap/','/sitemap_index.xml','/sitemap_index.xml/','/comments/feed/','/datenschutz/'] or 'product-categorie' in p or 'attribute_pa_' in urllib.parse.urlsplit(u).query:
+                  r=by.get(u,{})
+                  print(f"GSC_SPECIAL\t{u}\tfirst={r.get('firstStatus')}\tloc={r.get('firstLocation','')}\tfinal={r.get('finalStatus')}\tfinalUrl={r.get('finalUrl','')}\tredirects={r.get('redirects')}\trobots={r.get('robots','')}\txrobots={r.get('xRobots','')}\tcanonical={r.get('canonical','')}")
+
+          print('=== REDIRECT CHAINS ===')
+          for a in anoms:
+              if a.get('kind')=='redirect_chain':
+                  r=by.get(a.get('url'),{}); print(f"CHAIN\t{a.get('url')}\tredirects={r.get('redirects')}\tchain={r.get('chain')}")
+
+          print('=== MALFORMED IMAGE-LIKE INTERNAL SIGNALS ===')
+          malformed=[a for a in anoms if a.get('kind') in ('internal_link_to_redirect','internal_link_to_broken_page') and ('%22https' in a.get('detail','') or '/wp-content/' in a.get('detail',''))]
+          print('MALFORMED_SIGNAL_COUNT='+str(len(malformed)))
+          srcs={a.get('url') for a in malformed}
+          print('MALFORMED_SOURCE_PAGES='+str(len(srcs)))
+          for a in malformed[:12]: print(f"MALFORMED_SAMPLE\t{a.get('kind')}\t{a.get('url')}\t{a.get('detail')}")
+
+          print('=== OTHER HIGH FAMILIES ===')
+          kinds={}
+          for a in anoms:
+              if a.get('severity')=='HIGH': kinds[a.get('kind')]=kinds.get(a.get('kind'),0)+1
+          for k,n in sorted(kinds.items()): print(f'HIGH_KIND\t{k}\t{n}')
+          PY
