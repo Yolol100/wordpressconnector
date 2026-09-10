@@ -1,0 +1,174 @@
+name: DoctorCura Direct About Redirect Fix
+
+on:
+  push:
+    branches:
+      - runtime/doctorcura-seo-repair-20260911
+    paths:
+      - '.github/workflows/doctorcura-about-direct-fix.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctorcura-about-direct-fix
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Apply guarded direct redirect or rollback
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura target mismatch.' >&2; exit 1; }
+          site="${SITE_URL%/}"; root="$RUNNER_TEMP/dc-about-fix"; rm -rf "$root"; mkdir -p "$root"
+          connector="$site/wp-json/webactueel-wordpress-connector/v1"
+          snippets="$site/wp-json/code-snippets/v1/snippets"
+          expected_sha='1b52b70c2d24cad5dd8b4895d2760353feccefcf9a1bcf041e49438782457774'
+
+          health_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/health.json" --write-out '%{http_code}' "$connector/health")
+          [[ "$health_code" == '200' ]] || { echo "Connector health HTTP $health_code" >&2; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          gates=d.get('gates') or {}
+          if not d.get('ok') or not gates.get('writes') or not gates.get('privileged'):
+              raise SystemExit('DoctorCura connector write/privileged gates are not open.')
+          print('Connector health/write gates PASS; version='+str(d.get('version') or 'unknown'))
+          PY
+
+          before_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/before.json" --write-out '%{http_code}' "$snippets/43")
+          [[ "$before_code" == '200' ]] || { echo "Snippet 43 preflight HTTP $before_code" >&2; exit 1; }
+
+          python3 - "$root/before.json" "$expected_sha" "$root/update.json" <<'PY'
+          import hashlib,json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); item=d.get('snippet',d) if isinstance(d,dict) else {}
+          code=str(item.get('code') or '').replace('\r\n','\n').strip()
+          digest=hashlib.sha256(code.encode()).hexdigest()
+          if int(item.get('id',0)) != 43 or item.get('name') != 'DoctorCura SEO indexation cleanup':
+              raise SystemExit('Snippet 43 identity mismatch.')
+          if not bool(item.get('active')):
+              raise SystemExit('Snippet 43 is not active; refusing mutation.')
+          if digest != sys.argv[2]:
+              raise SystemExit('Snippet 43 changed since preflight; refusing stale write. current='+digest)
+          marker='DoctorCura direct legacy /de/about-us/ redirect V8.4g'
+          if marker in code:
+              raise SystemExit('Direct about redirect marker already exists; refusing duplicate append.')
+          block=r'''
+
+          /** DoctorCura direct legacy /de/about-us/ redirect V8.4g. */
+          add_action(
+              'parse_request',
+              static function (): void {
+                  if ( is_admin() ) {
+                      return;
+                  }
+
+                  $request_uri = isset( $_SERVER['REQUEST_URI'] )
+                      ? wp_unslash( (string) $_SERVER['REQUEST_URI'] )
+                      : '';
+                  $path = (string) wp_parse_url( $request_uri, PHP_URL_PATH );
+
+                  if ( '/de/about-us' !== untrailingslashit( $path ) ) {
+                      return;
+                  }
+
+                  wp_safe_redirect(
+                      home_url( '/uber-uns/' ),
+                      301,
+                      'DoctorCura SEO'
+                  );
+                  exit;
+              },
+              -200
+          );
+          '''.strip('\n')
+          new_code=code+'\n\n'+block+'\n'
+          payload={}
+          for key in ('name','desc','tags','scope','priority'):
+              if key in item: payload[key]=item[key]
+          payload['name']=item.get('name') or 'DoctorCura SEO indexation cleanup'
+          payload['code']=new_code
+          payload['active']=True
+          json.dump(payload,open(sys.argv[3],'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          print('Snippet 43 preflight PASS; before_sha='+digest+' proposed_sha='+hashlib.sha256(new_code.strip().encode()).hexdigest())
+          PY
+
+          mutated=false
+          rollback() {
+            rc=$?
+            if [[ "$rc" -ne 0 && "$mutated" == 'true' ]]; then
+              echo 'Verification failed; restoring exact pre-write snippet 43 state.' >&2
+              python3 - "$root/before.json" "$root/restore.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); item=d.get('snippet',d) if isinstance(d,dict) else {}
+          payload={}
+          for key in ('name','desc','code','tags','scope','active','priority'):
+              if key in item: payload[key]=item[key]
+          json.dump(payload,open(sys.argv[2],'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          PY
+              curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$root/restore.json" --output "$root/rollback.json" "$snippets/43" >/dev/null || true
+              curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/rollback-readback.json" "$snippets/43" >/dev/null || true
+              python3 - "$root/rollback-readback.json" "$expected_sha" <<'PY' || true
+          import hashlib,json,sys
+          try:
+              d=json.load(open(sys.argv[1],encoding='utf-8')); item=d.get('snippet',d); code=str(item.get('code') or '').replace('\r\n','\n').strip(); digest=hashlib.sha256(code.encode()).hexdigest()
+              print('ROLLBACK readback_sha='+digest+' expected='+sys.argv[2]+' restored='+str(digest==sys.argv[2]).lower())
+          except Exception as e: print('ROLLBACK readback unavailable: '+str(e))
+          PY
+            fi
+            exit "$rc"
+          }
+          trap rollback EXIT
+
+          update_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --request POST --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$root/update.json" --output "$root/update-result.json" --write-out '%{http_code}' "$snippets/43")
+          [[ "$update_code" == '200' ]] || { echo "Snippet 43 update HTTP $update_code" >&2; exit 1; }
+          mutated=true
+
+          read_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$root/after.json" --write-out '%{http_code}' "$snippets/43")
+          [[ "$read_code" == '200' ]] || exit 1
+          python3 - "$root/after.json" "$root/update.json" <<'PY'
+          import hashlib,json,sys
+          a=json.load(open(sys.argv[1],encoding='utf-8')); a=a.get('snippet',a)
+          u=json.load(open(sys.argv[2],encoding='utf-8'))
+          actual=str(a.get('code') or '').replace('\r\n','\n').strip(); expected=str(u.get('code') or '').replace('\r\n','\n').strip()
+          if actual != expected or not bool(a.get('active')):
+              raise SystemExit('Snippet 43 exact post-write readback failed.')
+          print('Snippet 43 exact readback PASS; after_sha='+hashlib.sha256(actual.encode()).hexdigest())
+          PY
+
+          curl --silent --show-error --connect-timeout 10 --max-time 30 --header 'Cache-Control: no-cache, no-store' --header 'Pragma: no-cache' --dump-header "$root/direct.headers" --output /dev/null "$site/de/about-us/?wa-fix-check=20260911"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 --header 'Cache-Control: no-cache, no-store' --header 'Pragma: no-cache' --dump-header "$root/chain.headers" --output /dev/null "$site/de/about-us/?wa-fix-check=20260911"
+          home_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$site/")
+          en_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$site/en/")
+          fr_code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$site/fr/")
+
+          python3 - "$root/direct.headers" "$root/chain.headers" "$home_code" "$en_code" "$fr_code" <<'PY'
+          import re,sys,json
+          direct=open(sys.argv[1],encoding='iso-8859-1',errors='replace').read()
+          chain=open(sys.argv[2],encoding='iso-8859-1',errors='replace').read()
+          statuses=lambda raw:[int(x) for x in re.findall(r'^HTTP/\S+\s+(\d{3})',raw,re.M|re.I)]
+          locs=lambda raw:re.findall(r'^Location:\s*(\S+)\s*$',raw,re.M|re.I)
+          ds=statuses(direct); dl=locs(direct); cs=statuses(chain); cl=locs(chain)
+          print('DIRECT statuses='+json.dumps(ds)+' locations='+json.dumps(dl))
+          print('CHAIN statuses='+json.dumps(cs)+' locations='+json.dumps(cl))
+          if not ds or ds[-1] != 301 or not dl or dl[-1].split('?',1)[0].rstrip('/') != 'https://doctorcura.com/uber-uns':
+              raise SystemExit('Direct /de/about-us/ redirect did not take ownership; rollback required.')
+          if cs != [301,200]:
+              raise SystemExit('Expected exactly one redirect hop then 200; got '+repr(cs))
+          if any(x != '200' for x in sys.argv[3:6]):
+              raise SystemExit('Homepage/language regression detected: '+repr(sys.argv[3:6]))
+          print('DIRECT ABOUT FIX live verification PASS; unrelated roots 200.')
+          PY
+
+          mutated=false
+          trap - EXIT
+          echo 'DOCTORCURA_ABOUT_FIX_RESULT status=kept rollback=armed-and-not-needed'
