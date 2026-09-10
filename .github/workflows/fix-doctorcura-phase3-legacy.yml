@@ -19,7 +19,7 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Create two exact legacy redirects with atomic rollback
+      - name: Create exact legacy redirects with atomic rollback
         shell: bash
         run: |
           set -euo pipefail
@@ -30,38 +30,21 @@ jobs:
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           created_ids=()
 
-          sources=(
-            '/product-categorie/gewichtsverlust/'
-            '/datenschutz/'
-          )
-          targets=(
-            'https://doctorcura.com/product-category/gewichtsverlust/'
-            'https://doctorcura.com/privacy-policy/'
-          )
-          titles=(
-            'DoctorCura legacy gewichtsverlust taxonomy migration'
-            'DoctorCura legacy datenschutz privacy migration'
-          )
+          sources=( '/product-categorie/gewichtsverlust/' '/datenschutz/' )
+          targets=( 'https://doctorcura.com/product-category/gewichtsverlust/' 'https://doctorcura.com/privacy-policy/' )
+          titles=( 'DoctorCura legacy gewichtsverlust taxonomy migration' 'DoctorCura legacy datenschutz privacy migration' )
 
-          cat > "$tmp/html.py" <<'PY'
-          import sys
-          from html.parser import HTMLParser
-          class P(HTMLParser):
-              def __init__(self): super().__init__(); self.c=''; self.a=[]
-              def handle_starttag(self,tag,attrs):
-                  a={str(k).lower():str(v or '') for k,v in attrs}
-                  if tag.lower()=='link':
-                      rel=a.get('rel','').lower().split()
-                      if 'canonical' in rel and a.get('href') and not self.c: self.c=a['href']
-                      if 'alternate' in rel and a.get('hreflang') and a.get('href'): self.a.append((a['hreflang'].lower(),a['href']))
-          p=P(); p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read())
-          print('canonical='+p.c)
-          print('hreflangs='+'|'.join(f'{x}={u}' for x,u in p.a))
-          PY
-          canonical_of(){ python3 "$tmp/html.py" "$1" | sed -n 's/^canonical=//p'; }
+          canonical_of(){
+            local body="$1" c=''
+            c=$(grep -Eio '<link[^>]+rel=["'"']canonical["'"'][^>]+href=["'"'][^"'"']+["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*/\1/i' || true)
+            if [[ -z "$c" ]]; then
+              c=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"']canonical["'"']' "$body" | head -1 | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*/\1/i' || true)
+            fi
+            printf '%s' "$c"
+          }
 
           first_probe(){
-            local url="$1" h="$2" code loc
+            local url="$1"; local h="$2"; local code loc
             curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --max-redirs 0 --dump-header "$h" --output /dev/null "$url" || true
             code=$(awk '/^HTTP\//{print $2; exit}' "$h")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
@@ -79,25 +62,21 @@ jobs:
           trap rollback EXIT
 
           echo '=== PREFLIGHT ==='
-          # Exact rules must not already exist.
           for i in 0 1; do
             source="${sources[$i]}"; target="${targets[$i]}"
             curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before-$i.json"
             total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/before-$i.json")
             [[ "$total" == '0' ]] || { echo "Existing exact redirect for $source" >&2; exit 1; }
-
             tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output "$tmp/target-$i.html" --write-out '%{http_code}' "$target")
             [[ "$tcode" == '200' ]] || { echo "Target not 200: $target $tcode" >&2; exit 1; }
             [[ "$(canonical_of "$tmp/target-$i.html")" == "$target" ]] || { echo "Target not self canonical: $target" >&2; exit 1; }
           done
 
-          # Prove the exact live failures are still present immediately before write.
           read -r wcode wloc < <(first_probe "$base/product-categorie/gewichtsverlust/" "$tmp/weight-before.h")
           [[ "$wcode" == '301' && "$wloc" == 'https://doctorcura.com/gewichtsverlust-medikamente-vergleich/' ]] || { echo "Weight failure changed: code=$wcode location=$wloc" >&2; exit 1; }
           dcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base/datenschutz/")
           [[ "$dcode" == '404' ]] || { echo "Datenschutz failure changed: code=$dcode" >&2; exit 1; }
 
-          # Current translated targets must be direct 200/self-canonical before relying on GTranslate mirroring.
           for u in \
             'https://doctorcura.com/fr/product-category/gewichtsverlust/' \
             'https://doctorcura.com/en/product-category/gewichtsverlust/' \
@@ -122,7 +101,8 @@ jobs:
           done
 
           verify(){
-            local round="$1" label="$2" source="$3" expected="$4" h="$tmp/$round-$label.h" b="$tmp/$round-$label.html" code loc out status final count can
+            local round="$1"; local label="$2"; local source="$3"; local expected="$4"
+            local h="$tmp/$round-$label.h"; local b="$tmp/$round-$label.html"; local code loc out status final count can
             read -r code loc < <(first_probe "$base$source" "$h")
             [[ "$code" == '301' && "$loc" == "$expected" ]] || { echo "$round first-hop fail $label code=$code location=$loc expected=$expected" >&2; return 1; }
             out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$source")
@@ -139,14 +119,12 @@ jobs:
             verify "$round" weight-fr '/fr/product-categorie/gewichtsverlust/' 'https://doctorcura.com/fr/product-category/gewichtsverlust/'
             verify "$round" weight-en '/en/product-categorie/gewichtsverlust/' 'https://doctorcura.com/en/product-category/gewichtsverlust/'
             verify "$round" privacy-root '/datenschutz/' 'https://doctorcura.com/privacy-policy/'
-            # Do not create translated privacy rules without historical evidence; verify only that root migration did not create a bad translated redirect.
             for p in '/fr/datenschutz/' '/en/datenschutz/'; do
               code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base$p")
               [[ "$code" == '404' || "$code" == '301' ]] || { echo "$round unexpected translated privacy status $p=$code" >&2; exit 1; }
             done
           done
 
-          # Frozen-scope canaries.
           out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
           [[ "$out" == $'200\thttps://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/\t1' ]] || { echo "Phase2A regression: $out" >&2; exit 1; }
           p16=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out '%{http_code}' "$base/blogs/16/")
