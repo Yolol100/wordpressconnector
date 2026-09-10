@@ -1,0 +1,164 @@
+name: DoctorCura Phase 3B Datenschutz Root-Only Fix
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3b-datenschutz-snippet.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply guarded root-only privacy migration
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/code-snippets/v1/snippets/43"
+          tmp="$RUNNER_TEMP/dc-phase3b-snippet"; mkdir -p "$tmp"
+          baseline='80b2532bbe0664abcdaa6121dde03a6345c8c4cbc8dbd96a218a17052822f970'
+          phase3a='DoctorCura gewichtsverlust legacy final redirect V8.4b'
+          marker='DoctorCura datenschutz root-only migration V8.4c'
+          changed=0; helper=0
+
+          make_payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          put_code(){
+            local src label payload out http
+            src="$1"; label="$2"; payload="$tmp/$label-payload.json"; out="$tmp/$label-response.json"
+            make_payload "$src" "$payload"
+            http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
+            echo "PUT label=$label http=$http"; [[ "$http" == 200 ]]
+          }
+          purge_wp(){
+            local src="$1" label="$2" token helperfile ok=0
+            token=$(openssl rand -hex 24); helperfile="$tmp/$label-helper.php"; cp "$src" "$helperfile"
+            cat >> "$helperfile" <<PHP
+
+          /* DoctorCura one-time cache purge helper */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_phase3b_purge'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_phase3b_purge'] ) ) return;
+              if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain();
+              if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
+              header( 'X-DoctorCura-Phase3B-Purge: done' );
+          }, 1 );
+          PHP
+            put_code "$helperfile" "$label-install"; helper=1
+            if curl "${c[@]}" --compressed --dump-header "$tmp/$label.h" --output /dev/null "$base/wp-json/?doctorcura_phase3b_purge=$token"; then
+              grep -Eiq '^x-doctorcura-phase3b-purge:[[:space:]]*done' "$tmp/$label.h" && ok=1 || true
+            fi
+            put_code "$src" "$label-remove"; helper=0; [[ "$ok" == 1 ]]
+          }
+          rollback(){
+            local rc=$?; [[ "$rc" == 0 ]] && return
+            echo "PHASE3B_SNIPPET_ROLLBACK_START rc=$rc" >&2; set +e
+            if [[ "$changed" == 1 || "$helper" == 1 ]]; then
+              put_code "$tmp/original.php" rollback-original >/dev/null 2>&1 || true
+              purge_wp "$tmp/original.php" rollback-purge >/dev/null 2>&1 || true
+            fi
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rb.json" ]]; then
+              php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_READBACK hash=".hash("sha256",$c)." p3a=".(strpos($c,$argv[2])!==false?"present":"absent")." p3b=".(strpos($c,$argv[3])===false?"absent":"present")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;' "$tmp/rb.json" "$phase3a" "$marker" || true
+            fi
+            echo PHASE3B_SNIPPET_ROLLBACK_ATTEMPTED >&2
+          }
+          trap rollback EXIT
+
+          canonical(){ python3 - "$1" <<'PY'
+          import sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self): super().__init__(); self.c=''
+              def handle_starttag(self,t,a):
+                  if t.lower()!='link' or self.c:return
+                  d={str(k).lower():str(v or '') for k,v in a}
+                  if 'canonical' in d.get('rel','').lower().split() and d.get('href'): self.c=d['href']
+          p=P();p.feed(open(sys.argv[1],encoding='utf-8',errors='ignore').read());print(p.c,end='')
+          PY
+          }
+
+          echo '=== PREFLIGHT ==='
+          http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api"); [[ "$http" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])===false||strpos($c,$argv[5])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo "BASELINE hash=".hash("sha256",$c).PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$baseline" "$phase3a" "$marker"
+
+          tstatus=$(curl "${c[@]}" --compressed --output "$tmp/privacy.html" --write-out '%{http_code}' "$base/privacy-policy/"); tcan=$(canonical "$tmp/privacy.html")
+          [[ "$tstatus" == 200 && "$tcan" == "$base/privacy-policy/" ]] || exit 1
+          for u in "/datenschutz/" "/fr/datenschutz/" "/en/datenschutz/"; do
+            s=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base$u?doctorcura_phase3b_preflight=$(date +%s%N)")
+            echo "SOURCE_BEFORE path=$u status=$s"; [[ "$s" == 404 ]] || exit 1
+          done
+
+          cp "$tmp/original.php" "$tmp/new.php"
+          cat >> "$tmp/new.php" <<'PHP'
+
+          /* DoctorCura datenschutz root-only migration V8.4c - 2026-09-10 */
+          add_action( 'template_redirect', function () {
+              if ( isset( $_SERVER['HTTP_X_GT_LANG'] ) && '' !== (string) $_SERVER['HTTP_X_GT_LANG'] ) {
+                  return;
+              }
+              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
+              if ( '/datenschutz/' !== $path ) {
+                  return;
+              }
+              wp_safe_redirect( home_url( '/privacy-policy/' ), 301, 'DoctorCura migration' );
+              exit;
+          }, 0 );
+          PHP
+          newhash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
+
+          echo '=== APPLY + READBACK ==='
+          put_code "$tmp/new.php" apply; changed=1; purge_wp "$tmp/new.php" apply-purge
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after.json" "$api"
+          after=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,$argv[2])===false||strpos($c,$argv[3])===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/after.json" "$phase3a" "$marker")
+          echo "READBACK hash=$after helper=absent"; [[ "$after" == "$newhash" ]]
+
+          echo '=== TWO TARGETED ORIGIN ROUNDS ==='
+          for round in 1 2; do
+            probe="$base/datenschutz/?doctorcura_phase3b_verify=$round-$(date +%s%N)"
+            h="$tmp/root-$round.h"; body="$tmp/root-$round.html"
+            curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$probe" || true
+            code=$(awk '/^HTTP\//{print $2;exit}' "$h"); loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h"); cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            [[ "$code" == 301 && "$loc" == "$base/privacy-policy/" && "${cache:-}" != HIT ]] || { echo "ROOT_FAIL round=$round code=$code cache=${cache:-none} location=$loc" >&2; exit 1; }
+            out=$(curl "${c[@]}" --location --compressed --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$probe"); IFS=$'\t' read -r status final redirects <<< "$out"; can=$(canonical "$body")
+            [[ "$status" == 200 && "$final" == "$base/privacy-policy/" && "$redirects" == 1 && "$can" == "$base/privacy-policy/" ]] || { echo "ROOT_FOLLOW_FAIL round=$round out=$out canonical=$can" >&2; exit 1; }
+
+            for lang in fr en; do
+              lstatus=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/$lang/datenschutz/?doctorcura_phase3b_verify=$round-$lang-$(date +%s%N)")
+              echo "LANG_GUARD round=$round lang=$lang status=$lstatus"; [[ "$lstatus" == 404 ]] || { echo "LANG_GUARD_FAIL round=$round lang=$lang status=$lstatus" >&2; exit 1; }
+            done
+
+            w="$base/product-categorie/gewichtsverlust/?doctorcura_phase3b_weight=$round-$(date +%s%N)"; wh="$tmp/w-$round.h"
+            curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$wh" --output /dev/null "$w" || true
+            wcode=$(awk '/^HTTP\//{print $2;exit}' "$wh"); wloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$wh")
+            [[ "$wcode" == 301 && "$wloc" == "$base/product-category/gewichtsverlust/" ]] || { echo "PHASE3A_REGRESSION round=$round" >&2; exit 1; }
+            d=$(curl "${c[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
+            [[ "$d" == $'200\t'"$base/welche-medikamente-beeinflussen-die-erektion/"$'\t1' ]] || exit 1
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
+            echo "ROUND_OK round=$round root=green translations=404 phase3a=green canaries=green"
+          done
+
+          echo '=== CLEAN EDGE READBACK INFORMATIONAL ==='
+          eh="$tmp/edge.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$eh" --output /dev/null "$base/datenschutz/" || true
+          ecode=$(awk '/^HTTP\//{print $2;exit}' "$eh"); eloc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$eh"); ecache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$eh"); eage=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$eh")
+          echo "EDGE_READBACK code=$ecode cache=${ecache:-none} age=${eage:-none} location=${eloc:-none}"
+
+          trap - EXIT
+          if [[ "$ecode" == 301 && "$eloc" == "$base/privacy-policy/" ]]; then
+            echo "PHASE3B_ORIGIN_AND_EDGE_GREEN snippet_hash=$newhash"
+          else
+            echo "PHASE3B_ORIGIN_GREEN_EDGE_CACHE_PENDING snippet_hash=$newhash"
+          fi
