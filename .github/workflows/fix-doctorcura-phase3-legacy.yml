@@ -55,7 +55,7 @@ jobs:
             curl "${curl_common[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$url" || true
             code=$(awk '/^HTTP\//{print $2; exit}' "$h")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
-            printf '%s\t%s' "${code:-}" "${loc:-}"
+            printf '%s\t%s\n' "${code:-}" "${loc:-}"
           }
 
           rollback(){
