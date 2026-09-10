@@ -1,0 +1,120 @@
+name: DoctorCura Final Residual Gap Read-Only Audit
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-final-gap-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Verify Phase 3C and 3D current production state
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          tmp="$RUNNER_TEMP/dc-final-gap"; mkdir -p "$tmp"
+          expected='77f76f8dce012e8122d25243b9e60a020253c85236165f2bf7c5d237ed6d9270'
+
+          echo '=== SNIPPET IDENTITY ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/s43.json" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43"); [[ "$h" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "SNIPPET hash=".hash("sha256",$c)." active=".(!empty($s["active"])?"yes":"no")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;if(hash("sha256",$c)!==$argv[2]||empty($s["active"])||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);foreach(["DoctorCura article social image alignment V8.3","DoctorCura gewichtsverlust legacy final redirect V8.4b","DoctorCura datenschutz root-only migration V8.4c","DoctorCura product variation hreflang cleanup V8.4d","DoctorCura GSC-proven legacy category redirects V8.4e","DoctorCura French request-2 migration V8.4f"] as $m){echo "MARKER count=".substr_count($c,$m)." text=$m".PHP_EOL;if(substr_count($c,$m)!==1)exit(3);}file_put_contents($argv[3],$c);' "$tmp/s43.json" "$expected" "$tmp/s43.php"
+          echo '--- V8.4d relevant lines ---'
+          grep -inE 'V8\.4d|attribute_pa_|hreflang|epipen' "$tmp/s43.php" | tail -n 40 || true
+
+          echo '=== PHASE 3C TERMS HTTP LINK ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/page11.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/pages/11?context=edit"); [[ "$h" == 200 ]]
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$r=(string)($p["content"]["raw"]??"");echo "PAGE11 status=".($p["status"]??"")." raw_hash=".hash("sha256",$r)." old_http_count=".substr_count($r,"http://www.doctorcura.com")." https_count=".substr_count($r,"https://doctorcura.com/").PHP_EOL;' "$tmp/page11.json"
+          for suffix in clean "probe-$(date +%s%N)"; do
+            url="$base/geschaftsbedingungen/"; [[ "$suffix" == clean ]] || url="$url?doctorcura_final_gap=$suffix"
+            result=$(curl "${c[@]}" --location --compressed --output "$tmp/terms-$suffix.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
+            old=$(python3 - "$tmp/terms-$suffix.html" <<'PY'
+          import sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          print(s.count('http://www.doctorcura.com'))
+          PY
+          )
+            echo "TERMS variant=$suffix result=$result old_http_count=$old"
+          done
+
+          echo '=== PHASE 3D PRODUCT DISCOVERY ==='
+          h=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/products.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/product?search=EpiPen&per_page=20&context=edit&_fields=id,slug,link,status"); echo "PRODUCT_SEARCH_HTTP=$h"
+          if [[ "$h" == 200 ]]; then cat "$tmp/products.json" | php -r '$a=json_decode(stream_get_contents(STDIN),true);foreach((array)$a as $p)echo "PRODUCT id=".($p["id"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." status=".($p["status"]??"").PHP_EOL;'; fi
+
+          product_url=$(php -r '$a=json_decode(file_get_contents($argv[1]),true);foreach((array)$a as $p){if(!empty($p["link"]) && stripos(($p["slug"]??"").($p["link"]??""),"epipen")!==false){echo $p["link"];exit;}}' "$tmp/products.json" 2>/dev/null || true)
+          if [[ -z "$product_url" ]]; then
+            echo 'EPIPEN_PRODUCT_NOT_DISCOVERED'
+            exit 4
+          fi
+          curl "${c[@]}" --location --compressed --output "$tmp/epipen.html" "$product_url"
+          python3 - "$tmp/epipen.html" "$product_url" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); base=sys.argv[2]
+          qs=[]
+          for m in re.finditer(r'(?:href|action)=["\']([^"\']*attribute_pa_[^"\']*)',s,re.I):
+              u=html.unescape(m.group(1)); qs.append(u)
+          for m in re.finditer(r'attribute_pa_([a-z0-9_-]+)',s,re.I):
+              pass
+          print('EPIPEN_BASE='+base)
+          print('ATTRIBUTE_URL_COUNT='+str(len(qs)))
+          for u in qs[:20]: print('ATTRIBUTE_URL='+u)
+          attrs=sorted(set(re.findall(r'attribute_pa_([a-z0-9_-]+)',s,re.I)))
+          print('ATTRIBUTE_KEYS='+','.join(attrs))
+          PY
+
+          attr_url=$(python3 - "$tmp/epipen.html" "$product_url" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); base=sys.argv[2]
+          for m in re.finditer(r'(?:href|action)=["\']([^"\']*attribute_pa_[^"\']*)',s,re.I):
+              u=html.unescape(m.group(1))
+              if u.startswith('http'): print(u); raise SystemExit
+              if u.startswith('?'): print(base.rstrip('/')+'/'+u); raise SystemExit
+          # fallback: derive first attribute key and option value from select/options
+          sm=re.search(r'<select[^>]+name=["\'](attribute_pa_[^"\']+)["\'][^>]*>(.*?)</select>',s,re.I|re.S)
+          if sm:
+              vm=re.search(r'<option[^>]+value=["\']([^"\']+)["\']',sm.group(2),re.I)
+              if vm and vm.group(1): print(base.rstrip('/')+'/?'+urllib.parse.quote(sm.group(1))+'='+urllib.parse.quote(html.unescape(vm.group(1))))
+          PY
+          )
+          echo "EPIPEN_VARIATION_URL=${attr_url:-none}"
+          [[ -n "$attr_url" ]] || exit 5
+
+          for round in 1 2; do
+            u="$attr_url"; sep='?'; [[ "$u" == *'?'* ]] && sep='&'; u="${u}${sep}doctorcura_final_gap_round=$round"
+            result=$(curl "${c[@]}" --location --compressed --output "$tmp/var-$round.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$u")
+            python3 - "$tmp/var-$round.html" "$product_url" "$result" <<'PY'
+          import html,re,sys,urllib.parse
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); product=sys.argv[2]; result=sys.argv[3]
+          canonical=''
+          for tag in re.findall(r'<link\b[^>]*>',s,re.I):
+              rel=re.search(r'rel=["\']([^"\']+)',tag,re.I); href=re.search(r'href=["\']([^"\']+)',tag,re.I)
+              if rel and href and 'canonical' in rel.group(1).lower(): canonical=html.unescape(href.group(1)); break
+          alts=[]
+          for tag in re.findall(r'<link\b[^>]*>',s,re.I):
+              if not re.search(r'rel=["\'][^"\']*alternate',tag,re.I): continue
+              hm=re.search(r'hreflang=["\']([^"\']+)',tag,re.I); um=re.search(r'href=["\']([^"\']+)',tag,re.I)
+              if hm and um: alts.append((hm.group(1),html.unescape(um.group(1))))
+          bad=[(l,u) for l,u in alts if 'attribute_pa_' in urllib.parse.urlsplit(u).query]
+          print('VAR_RESULT='+result)
+          print('VAR_CANONICAL='+canonical)
+          print('VAR_HREFLANG_COUNT='+str(len(alts)))
+          print('VAR_HREFLANG_ATTRIBUTE_QUERY_COUNT='+str(len(bad)))
+          for l,u in alts: print('VAR_HREFLANG '+l+'='+u)
+          if not (result.startswith('200\t') and canonical.rstrip('/')==product.rstrip('/') and len(alts)>=3 and len(bad)==0): raise SystemExit(6)
+          PY
+          done
+          echo FINAL_RESIDUAL_GAP_AUDIT_GREEN
