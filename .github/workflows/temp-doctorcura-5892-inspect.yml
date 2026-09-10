@@ -1,0 +1,36 @@
+name: Temporary DoctorCura 5892 inspect
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/temp-doctorcura-5892-inspect.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public context around remaining anomaly
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; base="$site/wp-json/webactueel-wordpress-connector/v1"; root="$RUNNER_TEMP/dc5892"; mkdir -p "$root"
+          cat > "$root/r.json" <<'JSON'
+          {"version":1,"request_id":"dc-5892-inspect-20260910","action":"post.get","dry_run":true,"confirm":false,"payload":{"id":5892}}
+          JSON
+          code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Content-Type: application/json' --data-binary "@$root/r.json" -o "$root/o.json" -w '%{http_code}' "$base/execute"); [[ "$code" == 200 ]]
+          python3 - "$root/o.json" <<'PY'
+          import html,json,re,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}; raw=' '.join(str(p.get(k,'')) for k in ('title','excerpt','content')); text=re.sub(r'<[^>]+>',' ',raw); text=re.sub(r'\s+',' ',html.unescape(text))
+          print('TITLE='+str(p.get('title','')))
+          print('SLUG='+str(p.get('slug','')))
+          pats=[r'einzelnen\s+Deutschland',r'je\s+nach\s+Deutschland',r'jeweiligen\s+Deutschland',r'Ihrem\s+Deutschland',r'Ihren\s+Deutschland',r'Deutschland\s+zugelassene[nr]?\s+(?:Arzt|Ärztin)']
+          for pat in pats:
+              for m in re.finditer(pat,text,re.I):
+                  print('CONTEXT='+text[max(0,m.start()-500):min(len(text),m.end()+900)])
+          PY
