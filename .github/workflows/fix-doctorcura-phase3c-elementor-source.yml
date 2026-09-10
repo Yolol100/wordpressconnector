@@ -1,0 +1,166 @@
+name: DoctorCura Phase 3C Elementor Source Fix
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3c-elementor-source.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply exact dual-source link correction with atomic rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          snippet_api="$base/wp-json/code-snippets/v1/snippets/43"
+          page_api="$base/wp-json/wp/v2/pages/11?context=edit"; page_write="$base/wp-json/wp/v2/pages/11"
+          elementor_cache="$base/wp-json/elementor/v1/cache"
+          tmp="$RUNNER_TEMP/p3c-source"; mkdir -p "$tmp"
+          snippet_baseline='939d9bc10b33e053c1c668b58f13491b2ac6a87c9673bd9ae76ade739bc77c40'
+          page_baseline='890f2cca24c5e0de3ab501cb83fb2fe0e54a4fff076b0520ab4de9144e0933c6'
+          meta_baseline='5b186eb662da8e69e8404e447e00e67cd3c866cdce2b0165c653326d73dd7997'
+          old='http://www.doctorcura.com'; replacement='https://doctorcura.com/'
+          helper_marker='DoctorCura one-time Elementor source repair helper'; token=$(openssl rand -hex 24)
+          helper=0; page_changed=0; meta_changed=0
+
+          canonical(){ python3 - "$1" <<'PY'
+          import html,re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); out=''
+          for tag in re.findall(r'<link\b[^>]*>',s,re.I):
+              if re.search(r'rel=["\'][^"\']*canonical',tag,re.I):
+                  m=re.search(r'href=["\']([^"\']+)',tag,re.I); out=html.unescape(m.group(1)) if m else ''; break
+          print(out,end='')
+          PY
+          }
+          count_old(){ python3 - "$1" "$old" <<'PY'
+          import sys
+          print(open(sys.argv[1],encoding='utf-8',errors='ignore').read().count(sys.argv[2]),end='')
+          PY
+          }
+          make_snippet_payload(){ php -r '$code=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$code,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          put_snippet(){ local src="$1" label="$2" http; make_snippet_payload "$src" "$tmp/$label-snippet.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$label-snippet.json" --output "$tmp/$label-snippet-out.json" --write-out '%{http_code}' "$snippet_api"); echo "SNIPPET_WRITE label=$label http=$http"; [[ "$http" == 200 ]]; }
+          make_page_payload(){ php -r '$raw=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["content"=>$raw],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          write_page(){ local src="$1" label="$2" http; make_page_payload "$src" "$tmp/$label-page.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/$label-page.json" --output "$tmp/$label-page-out.json" --write-out '%{http_code}' "$page_write"); echo "PAGE_WRITE label=$label http=$http"; [[ "$http" == 200 ]]; }
+          call_helper(){ local mode="$1" outfile="$2"; curl "${c[@]}" --compressed --output "$outfile" --write-out '%{http_code}' "$base/?doctorcura_elementor_source=$token&mode=$mode"; }
+          rollback(){
+            local rc=$?; [[ "$rc" == 0 ]] && return
+            echo "P3C_SOURCE_ROLLBACK_START rc=$rc" >&2; set +e
+            if [[ "$helper" == 1 && "$meta_changed" == 1 ]]; then call_helper rollback "$tmp/rb-meta.json" >/dev/null 2>&1 || true; meta_changed=0; fi
+            if [[ "$page_changed" == 1 ]]; then write_page "$tmp/original.raw" rollback-page >/dev/null 2>&1 || true; page_changed=0; fi
+            if [[ "$helper" == 1 ]]; then call_helper purge "$tmp/rb-purge.json" >/dev/null 2>&1 || true; put_snippet "$tmp/snippet-original.php" rollback-helper-remove >/dev/null 2>&1 || true; helper=0; fi
+            curl "${c[@]}" --location "${auth[@]}" --request DELETE --output /dev/null "$elementor_cache" >/dev/null 2>&1 || true
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb-page-state.json" "$page_api" >/dev/null 2>&1 || true
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb-snip-state.json" "$snippet_api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rb-page-state.json" ]]; then php -r '$p=json_decode(file_get_contents($argv[1]),true);$r=(string)(($p["content"]??[])["raw"]??"");echo "ROLLBACK_PAGE hash=".hash("sha256",$r)." old_count=".substr_count($r,$argv[2]).PHP_EOL;' "$tmp/rb-page-state.json" "$old" || true; fi
+            if [[ -s "$tmp/rb-snip-state.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$code=(string)($s["code"]??"");echo "ROLLBACK_SNIPPET hash=".hash("sha256",$code)." helper=".(strpos($code,$argv[2])===false?"absent":"present").PHP_EOL;' "$tmp/rb-snip-state.json" "$helper_marker" || true; fi
+            echo P3C_SOURCE_ROLLBACK_ATTEMPTED >&2
+          }
+          trap rollback EXIT
+
+          echo '=== PREFLIGHT CORE SOURCES ==='
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/snippet.json" "$snippet_api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$code=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||empty($s["active"])||hash("sha256",$code)!==$argv[3]||strpos($code,$argv[4])!==false||strpos($code,"DoctorCura product variation hreflang cleanup V8.4d")===false)exit(2);file_put_contents($argv[2],$code);echo "SNIPPET_BASELINE hash=".hash("sha256",$code).PHP_EOL;' "$tmp/snippet.json" "$tmp/snippet-original.php" "$snippet_baseline" "$helper_marker"
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/page.json" "$page_api"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$r=(string)(($p["content"]??[])["raw"]??"");if((int)($p["id"]??0)!==11||($p["status"]??"")!=="publish"||hash("sha256",$r)!==$argv[3]||substr_count($r,$argv[4])!==1)exit(2);file_put_contents($argv[2],$r);echo "PAGE_BASELINE hash=".hash("sha256",$r)." old_count=1 link=".($p["link"]??"").PHP_EOL;' "$tmp/page.json" "$tmp/original.raw" "$page_baseline" "$old"
+          terms=$(php -r '$p=json_decode(file_get_contents($argv[1]),true);echo(string)($p["link"]??"");' "$tmp/page.json"); [[ "$terms" == "$base/geschaftsbedingungen/" ]]
+          curl "${c[@]}" --compressed --output "$tmp/before.html" "${terms}?doctorcura_p3c_source_pre=$(date +%s%N)"; [[ $(count_old "$tmp/before.html") == 1 ]]; [[ $(canonical "$tmp/before.html") == "$terms" ]]
+
+          echo '=== INSTALL GUARDED ELEMENTOR OWNER HELPER ==='
+          cp "$tmp/snippet-original.php" "$tmp/helper.php"
+          cat >> "$tmp/helper.php" <<PHP
+
+          /* DoctorCura one-time Elementor source repair helper */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_elementor_source'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_elementor_source'] ) ) return;
+              \$mode = isset( \$_GET['mode'] ) ? sanitize_key( (string) \$_GET['mode'] ) : '';
+              \$old = 'http://www.doctorcura.com'; \$new = 'https://doctorcura.com/';
+              \$old_escaped = 'http:\\/\\/www.doctorcura.com'; \$new_escaped = 'https:\\/\\/doctorcura.com\\/';
+              \$data = (string) get_post_meta( 11, '_elementor_data', true );
+              if ( 'apply' === \$mode ) {
+                  if ( hash( 'sha256', \$data ) !== '$meta_baseline' || 1 !== substr_count( \$data, \$old_escaped ) || 0 !== substr_count( \$data, \$new_escaped ) ) wp_send_json( array( 'ok' => false, 'stage' => 'preflight', 'hash' => hash( 'sha256', \$data ) ), 409 );
+                  \$next = str_replace( \$old_escaped, \$new_escaped, \$data, \$count );
+                  \$json = json_decode( \$next, true );
+                  \$editor = is_array( \$json ) && isset( \$json[1]['elements'][0]['settings']['editor'] ) ? (string) \$json[1]['elements'][0]['settings']['editor'] : '';
+                  if ( 1 !== \$count || 0 !== substr_count( \$editor, \$old ) || 1 !== substr_count( \$editor, \$new ) ) wp_send_json( array( 'ok' => false, 'stage' => 'semantic-guard' ), 409 );
+                  update_post_meta( 11, '_elementor_data', wp_slash( \$next ) );
+                  delete_post_meta( 11, '_elementor_element_cache' );
+                  clean_post_cache( 11 );
+                  \$after = (string) get_post_meta( 11, '_elementor_data', true );
+                  wp_send_json( array( 'ok' => true, 'mode' => 'apply', 'hash' => hash( 'sha256', \$after ), 'old' => substr_count( \$after, \$old_escaped ), 'new' => substr_count( \$after, \$new_escaped ) ) );
+              }
+              if ( 'rollback' === \$mode ) {
+                  if ( 0 !== substr_count( \$data, \$old_escaped ) || 1 !== substr_count( \$data, \$new_escaped ) ) wp_send_json( array( 'ok' => false, 'stage' => 'rollback-preflight', 'hash' => hash( 'sha256', \$data ) ), 409 );
+                  \$prev = str_replace( \$new_escaped, \$old_escaped, \$data, \$count );
+                  if ( 1 !== \$count || hash( 'sha256', \$prev ) !== '$meta_baseline' ) wp_send_json( array( 'ok' => false, 'stage' => 'rollback-guard' ), 409 );
+                  update_post_meta( 11, '_elementor_data', wp_slash( \$prev ) ); delete_post_meta( 11, '_elementor_element_cache' ); clean_post_cache( 11 );
+                  \$after = (string) get_post_meta( 11, '_elementor_data', true ); wp_send_json( array( 'ok' => true, 'mode' => 'rollback', 'hash' => hash( 'sha256', \$after ) ) );
+              }
+              if ( 'purge' === \$mode ) {
+                  clean_post_cache( 11 ); if ( function_exists( 'rocket_clean_post' ) ) rocket_clean_post( 11 ); if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain(); if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
+                  if ( class_exists( '\\Elementor\\Plugin' ) && isset( \Elementor\Plugin::instance()->files_manager ) ) \Elementor\Plugin::instance()->files_manager->clear_cache();
+                  wp_send_json( array( 'ok' => true, 'mode' => 'purge' ) );
+              }
+              wp_send_json( array( 'ok' => false, 'stage' => 'bad-mode' ), 400 );
+          }, 1 );
+          PHP
+          put_snippet "$tmp/helper.php" install-helper; helper=1
+
+          echo '=== APPLY BOTH SOURCES ==='
+          python3 - "$tmp/original.raw" "$tmp/new.raw" "$old" "$replacement" <<'PY'
+          import hashlib,sys
+          src,dst,old,new=sys.argv[1:]; raw=open(src,encoding='utf-8').read()
+          if raw.count(old)!=1: raise SystemExit(2)
+          changed=raw.replace(old,new,1)
+          if changed.replace(new,old,1)!=raw: raise SystemExit(3)
+          open(dst,'w',encoding='utf-8',newline='').write(changed)
+          print('NEW_PAGE_HASH='+hashlib.sha256(changed.encode()).hexdigest())
+          PY
+          new_page_hash=$(sha256sum "$tmp/new.raw" | awk '{print $1}')
+          write_page "$tmp/new.raw" apply-page; page_changed=1
+          hcode=$(call_helper apply "$tmp/apply-meta.json"); [[ "$hcode" == 200 ]]; meta_changed=1
+          python3 - "$tmp/apply-meta.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print(f"META_APPLY ok={d.get('ok')} hash={d.get('hash')} old={d.get('old')} new={d.get('new')}"); assert d.get('ok') and d.get('old')==0 and d.get('new')==1
+          PY
+          pcode=$(call_helper purge "$tmp/purge.json"); [[ "$pcode" == 200 ]]
+          ehttp=$(curl "${c[@]}" --location "${auth[@]}" --request DELETE --output "$tmp/elementor-cache.json" --write-out '%{http_code}' "$elementor_cache" || true); echo "ELEMENTOR_CACHE http=$ehttp"; [[ "$ehttp" == 200 ]]
+
+          echo '=== READBACK SOURCES AND RENDER ==='
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after-page.json" "$page_api"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$r=(string)(($p["content"]??[])["raw"]??"");$rd=(string)(($p["content"]??[])["rendered"]??"");$want=file_get_contents($argv[2]);echo "PAGE_READBACK hash=".hash("sha256",$r)." raw_old=".substr_count($r,$argv[4])." rendered_old=".substr_count($rd,$argv[4]).PHP_EOL;if($r!==$want||hash("sha256",$r)!==$argv[3]||substr_count($r,$argv[4])!==0||substr_count($rd,$argv[4])!==0)exit(2);' "$tmp/after-page.json" "$tmp/new.raw" "$new_page_hash" "$old"
+
+          echo '=== TWO PUBLIC RETEST ROUNDS ==='
+          for round in 1 2; do
+            for lang in base fr en; do
+              [[ "$lang" == base ]] && url="$terms" || url="$base/$lang/geschaftsbedingungen/"
+              b="$tmp/$round-$lang.html"; status=$(curl "${c[@]}" --compressed --header 'Cache-Control: no-cache' --output "$b" --write-out '%{http_code}' "${url}?doctorcura_p3c_source=$round-$lang-$(date +%s%N)"); cnt=$(count_old "$b")
+              echo "TERMS round=$round lang=$lang status=$status old_count=$cnt"; [[ "$status" == 200 && "$cnt" == 0 ]]; [[ "$lang" != base || $(canonical "$b") == "$terms" ]]
+            done
+            w="$base/product-categorie/gewichtsverlust/?doctorcura_p3c_source_guard=$round-$(date +%s%N)"; wh="$tmp/w-$round.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$wh" --output /dev/null "$w" || true; [[ $(awk '/^HTTP\//{print $2;exit}' "$wh") == 301 ]]; [[ $(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$wh") == "$base/product-category/gewichtsverlust/" ]]
+            d="$base/datenschutz/?doctorcura_p3c_source_guard=$round-$(date +%s%N)"; dh="$tmp/d-$round.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$dh" --output /dev/null "$d" || true; [[ $(awk '/^HTTP\//{print $2;exit}' "$dh") == 301 ]]; [[ $(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$dh") == "$base/privacy-policy/" ]]
+            ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"; curl "${c[@]}" --compressed --header 'Cache-Control: no-cache' --output "$tmp/ep-$round.html" "$ep"; ! grep -Eiq 'hreflang=[^>]+href=["\'][^"\']*attribute_pa_' "$tmp/ep-$round.html"
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]; [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
+            echo "CANARIES_OK round=$round"
+          done
+
+          echo '=== REMOVE HELPER + FINAL READBACK ==='
+          put_snippet "$tmp/snippet-original.php" remove-helper; helper=0
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/final-snip.json" "$snippet_api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$code=(string)($s["code"]??"");echo "FINAL_SNIPPET hash=".hash("sha256",$code)." helper=".(strpos($code,$argv[2])===false?"absent":"present").PHP_EOL;if(hash("sha256",$code)!==$argv[3]||strpos($code,$argv[2])!==false)exit(2);' "$tmp/final-snip.json" "$helper_marker" "$snippet_baseline"
+          trap - EXIT
+          echo "PHASE3C_GREEN page_hash=$new_page_hash snippet_hash=$snippet_baseline"
