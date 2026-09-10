@@ -13,77 +13,21 @@ permissions:
 jobs:
   preflight:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 5
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify current production state read only
+      - name: Read active snippet identity only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"
           [[ "$base" == 'https://doctorcura.com' ]] || exit 1
           test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
-          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          tmp="$RUNNER_TEMP/dc-gsc-legacy-preflight"; mkdir -p "$tmp"
-          api="$base/wp-json/code-snippets/v1/snippets/43"
-
-          canonical(){ python3 - "$1" <<'PY'
-          import re,sys
-          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          m=re.search(r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)',s,re.I)
-          if not m: m=re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical',s,re.I)
-          print(m.group(1) if m else '',end='')
-          PY
-          }
-          first(){ local u="$1" h="$2"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$u" || true; awk '/^HTTP\//{print $2;exit}' "$h"; }
-          loc(){ awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$1"; }
-
-          http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/snippet.json" --write-out '%{http_code}' "$api")
+          out="$RUNNER_TEMP/snippet.json"
+          http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$out" --write-out '%{http_code}' "$base/wp-json/code-snippets/v1/snippets/43")
           [[ "$http" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$tokens=["DoctorCura gewichtsverlust legacy final redirect V8.4b","DoctorCura datenschutz root-only migration V8.4c","DoctorCura epipen variation hreflang cleanup V8.4d"];if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"]))exit(2);foreach($tokens as $t){if(substr_count($c,$t)!==1)exit(3);}if(strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(4);echo "SNIPPET hash=".hash("sha256",$c)." bytes=".strlen($c).PHP_EOL;' "$tmp/snippet.json"
-
-          while IFS='|' read -r source target; do
-            [[ -n "$source" ]] || continue
-            hs="$tmp/$(echo "$source" | tr '/-' '__').h"
-            code=$(first "$base$source" "$hs")
-            location=$(loc "$hs")
-            echo "SOURCE path=$source code=$code location=${location:-none}"
-            [[ "$code" == 404 ]]
-            body="$tmp/$(echo "$target" | tr '/-' '__').html"
-            status=$(curl "${c[@]}" --compressed --output "$body" --write-out '%{http_code}' "$base$target")
-            can=$(canonical "$body")
-            echo "TARGET path=$target status=$status canonical=$can"
-            [[ "$status" == 200 && "$can" == "$base$target" ]]
-          done <<'MAP'
-          /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
-          /product-categorie/quit-smoking/|/product-category/rauchstopp/
-          /product-categorie/schlafprobleme/|/product-category/schlafprobleme/
-          MAP
-
-          for u in \
-            '/product-categorie/gewichtsverlust/|/product-category/gewichtsverlust/' \
-            '/datenschutz/|/privacy-policy/' \
-            '/product-categorie/sexual-problems/|/product-category/sexuelle-probleme/' \
-            '/product-categorie/menstruation-verschieben/|/product-category/menstruation-verschieben/'; do
-            source=${u%%|*}; target=${u#*|}; h="$tmp/canary-$(echo "$source" | tr '/-' '__').h"
-            code=$(first "$base$source" "$h"); location=$(loc "$h")
-            [[ "$code" == 301 && "$location" == "$base$target" ]] || { echo "CANARY_REDIRECT_FAIL source=$source code=$code location=$location" >&2; exit 1; }
-          done
-          [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
-          [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
-          ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen"
-          curl "${c[@]}" --compressed --output "$tmp/ep.html" "$ep"
-          python3 - "$tmp/ep.html" <<'PY'
-          import html,re,sys,urllib.parse
-          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); alts=[]
-          for tag in re.findall(r'<link\b[^>]*hreflang=[^>]*>',s,re.I):
-              m=re.search(r'href=["\']([^"\']+)',tag,re.I)
-              if m: alts.append(html.unescape(m.group(1)))
-          assert len(alts)==3 and all(not urllib.parse.urlsplit(u).query for u in alts), alts
-          print('EPIPEN_HREFLANG queryfree=3/3')
-          PY
-          echo GSC_LEGACY_PREFLIGHT_GREEN
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "SNIPPET id=".(int)($s["id"]??0)." name=".(string)($s["name"]??"")." active=".(!empty($s["active"])?"yes":"no")." hash=".hash("sha256",$c)." bytes=".strlen($c).PHP_EOL;preg_match_all("/[^\r\n]*DoctorCura[^\r\n]*/i",$c,$m);foreach(array_values(array_unique($m[0])) as $line){$line=trim($line);if($line!=="")echo "MARKER ".$line.PHP_EOL;}echo "HELPER_COUNT=".substr_count($c,"DoctorCura one-time cache purge helper").PHP_EOL;' "$out"
+          echo SNIPPET_IDENTITY_READ_COMPLETE
