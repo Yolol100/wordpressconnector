@@ -1,4 +1,4 @@
-name: Audit DoctorCura Phase 2B Featured Image Source
+name: Audit DoctorCura Elementor Image Owner
 
 on:
   push:
@@ -19,51 +19,47 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Trace the rendered featured image source read-only
+      - name: Find the Elementor document that owns widget 695868ca
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2b-source"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-elementor-owner"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          postapi="$base/wp-json/wp/v2/posts/900067?context=edit"
-          page="$base/welche-medikamente-beeinflussen-die-erektion/"
+          page="$base/welche-medikamente-beeinflussen-die-erektion/?dc_owner=1"
 
-          echo '=== ACTIVE THEME ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/themes.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/themes?status=active")
-          echo "themes_http=$code"
-          if [[ "$code" == '200' ]]; then
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$t)echo "stylesheet=".($t["stylesheet"]??"")." template=".($t["template"]??"")." name=".($t["name"]["rendered"]??$t["name"]??"")." version=".($t["version"]??"").PHP_EOL;' "$tmp/themes.json"
-          else head -c 600 "$tmp/themes.json" || true; echo; fi
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$page" > "$tmp/live.html"
+          echo '=== ELEMENTOR DOCUMENT IDS NEAR WIDGET ==='
+          widget_line=$(grep -n 'data-id="695868ca"' "$tmp/live.html" | head -1 | cut -d: -f1 || true)
+          echo "widget_line=$widget_line"
+          if [[ -n "$widget_line" ]]; then
+            start=$(( widget_line > 250 ? widget_line-250 : 1 ))
+            sed -n "${start},${widget_line}p" "$tmp/live.html" | grep -E 'data-elementor-id=|elementor-location-|data-elementor-type=' | tail -30 || true
+          fi
+          echo '=== ALL ELEMENTOR ROOTS ==='
+          grep -Eio '<div[^>]+data-elementor-(id|type)=[^>]*>' "$tmp/live.html" | head -80 || true
 
-          echo '=== POST REST FEATURED LINK ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$postapi" > "$tmp/post.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured_media=".($p["featured_media"]??0).PHP_EOL;echo "featured_link=".($p["_links"]["wp:featuredmedia"][0]["href"]??"").PHP_EOL;echo "classes=".json_encode($p["class_list"]??[]).PHP_EOL;' "$tmp/post.json"
+          echo '=== REST TYPES MATCHING ELEMENTOR ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/types?context=edit" > "$tmp/types.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$k=>$v){$r=(string)($v["rest_base"]??"");$n=(string)($v["name"]??"");if(stripos($k,"elementor")!==false||stripos($r,"elementor")!==false||stripos($n,"elementor")!==false)echo "type=$k rest_base=$r name=$n\n";}' "$tmp/types.json"
 
-          echo '=== FEATURED MEDIA RECORDS ==='
-          for id in 900069 5925; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/media/$id?context=edit" > "$tmp/m$id.json"
-            php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($m["id"]??"")." status=".($m["status"]??"")." parent=".($m["post"]??0)." source=".($m["source_url"]??"")." file=".($m["media_details"]["file"]??"")." width=".($m["media_details"]["width"]??"")." height=".($m["media_details"]["height"]??"").PHP_EOL;echo "sizes=".implode(",",array_keys($m["media_details"]["sizes"]??[])).PHP_EOL;' "$tmp/m$id.json"
+          echo '=== TRY ELEMENTOR LIBRARY REST ==='
+          for endpoint in elementor_library e-landing-page; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/$endpoint.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/$endpoint?context=edit&per_page=100")
+            echo "$endpoint http=$code"
+            if [[ "$code" == '200' ]]; then
+              php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "count=".count($d).PHP_EOL;foreach($d as$p){$raw=json_encode($p,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);if(strpos($raw,"695868ca")!==false||strpos($raw,"900069")!==false||strpos($raw,"welche-medikamente-beeinflussen-die-erektion-featured")!==false)echo "MATCH id=".($p["id"]??"")." slug=".($p["slug"]??"")." status=".($p["status"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"")." link=".($p["link"]??"").PHP_EOL;}' "$tmp/$endpoint.json"
+            else head -c 300 "$tmp/$endpoint.json" || true; echo; fi
           done
 
-          echo '=== LIVE BROKEN IMAGE ELEMENT CONTEXT ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$page?dc_trace=featured" > "$tmp/live.html"
-          grep -Eio '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$tmp/live.html" | head -10 || true
-          echo '=== PARENT CONTEXT LINES ==='
-          tr '>' '>\n' < "$tmp/live.html" | grep -n -B3 -A3 'welche-medikamente-beeinflussen-die-erektion-featured' | head -80 || true
-          echo '=== WP POST IMAGE CLASSES ==='
-          grep -Eio '<img[^>]+class="[^"]*(wp-post-image|attachment-[^"]*)[^"]*"[^>]*>' "$tmp/live.html" | head -20 || true
-          echo '=== OG/TWITTER IMAGE ==='
-          grep -Eio '<meta[^>]+(property|name)="(og:image|twitter:image)"[^>]*>' "$tmp/live.html" | head -20 || true
-
-          echo '=== ALL REFERENCES TO MEDIA IDS/FILENAMES ==='
-          for needle in '900069' '5925' 'welche-medikamente-beeinflussen-die-erektion-featured' 'beste-optionen-bei-erektionsstoerungen-featured'; do
-            echo "-- $needle --"
-            grep -Eio ".{0,180}$needle.{0,220}" "$tmp/live.html" | head -12 || true
+          echo '=== WP REST SEARCH BY TEMPLATE TITLES ==='
+          for q in single post blog; do
+            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "search=$q" --data-urlencode 'context=edit' --data-urlencode 'per_page=100' --output "$tmp/search-$q.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library")
+            echo "search=$q http=$code"
+            if [[ "$code" == '200' ]]; then php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$p)echo " id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"").PHP_EOL;' "$tmp/search-$q.json"; fi
           done
 
-          echo '=== WP ROCKET ROUTES ==='
+          echo '=== REST ROUTES CONTAINING ELEMENTOR ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["routes"]??[])as$r=>$v){if(stripos($r,"wp-rocket")!==false)echo $r.PHP_EOL;}' "$tmp/root.json"
-
-          echo 'PHASE2B_SOURCE_TRACE_COMPLETE'
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($d["routes"]??[])as$r=>$v){if(stripos($r,"elementor")!==false)echo $r.PHP_EOL;}' "$tmp/root.json" | head -120
+          echo 'ELEMENTOR_OWNER_AUDIT_COMPLETE'
