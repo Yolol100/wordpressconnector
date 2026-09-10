@@ -1,0 +1,86 @@
+name: One-time DoctorCura all-post US reference audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'doctorcura-all-post-us-audit/*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Audit all posts including Yoast metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]]
+          root="$RUNNER_TEMP/dc-all-post-us"; rm -rf "$root"; mkdir -p "$root/pages"
+          total=$(curl -sSI -L --connect-timeout 10 --max-time 40 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" "$site/wp-json/wp/v2/posts?context=edit&per_page=1&status=any" | tr -d '\r' | awk -F': ' 'tolower($1)=="x-wp-total"{print $2}' | tail -1)
+          [[ "$total" =~ ^[0-9]+$ ]] || total=100
+          pages=$(( (total + 99) / 100 )); (( pages < 1 )) && pages=1
+          for p in $(seq 1 "$pages"); do
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/pages/$p.json" -w '%{http_code}' "$site/wp-json/wp/v2/posts?context=edit&per_page=100&page=$p&status=any")
+            [[ "$code" == 200 ]] || { echo "posts page $p HTTP $code" >&2; exit 1; }
+          done
+          jq -s 'add' "$root"/pages/*.json > "$root/all-posts.json"
+          python3 - "$root/all-posts.json" "$root/hits.json" "$root/summary.tsv" <<'PY'
+          import html,json,re,sys
+          inp,out,tsv=sys.argv[1:]
+          posts=json.load(open(inp,encoding='utf-8'))
+          regs=[
+            ('usa',re.compile(r'\bUSA\b|\bin den USA\b',re.I)),
+            ('united_states',re.compile(r'\bUnited States(?: of America)?\b',re.I)),
+            ('us_reference',re.compile(r'\bU\.\s*S\.\s*A?\.?\b|\bUS[- ](?:based|market|healthcare|doctor|patient|patients|prescription|pharmacy|law|regulation|system|provider|resident|citizen)\b',re.I)),
+            ('america',re.compile(r'\bAmerica\b|\bAmerican(?:s)?\b',re.I)),
+            ('german_us',re.compile(r'\bVereinigte Staaten\b|\bUS-amerikan\w*\b|\bamerikan(?:isch|ische|ischen|ischer|isches|ischem)\b',re.I)),
+            ('us_regulator',re.compile(r'\bFDA\b|Food and Drug Administration|\bDEA\b|Drug Enforcement Administration|\bHIPAA\b',re.I)),
+            ('us_geo',re.compile(r'\bNew York\b|\bCalifornia\b|\bTexas\b|\bFlorida\b|\bWashington,? D\.?C\.?\b|\bLos Angeles\b|\bChicago\b|\bBoston\b|\bMiami\b|\bSan Francisco\b',re.I)),
+            ('usd',re.compile(r'\bUSD\b|US\$|\$\s?\d',re.I)),
+          ]
+          def strip(s): return re.sub(r'\s+',' ',html.unescape(re.sub(r'(?s)<[^>]+>',' ',s or ''))).strip()
+          hits=[]
+          for p in posts:
+              fields={
+                'title':(p.get('title') or {}).get('raw') or '',
+                'excerpt':(p.get('excerpt') or {}).get('raw') or '',
+                'content':(p.get('content') or {}).get('raw') or '',
+                'yoast_description':(p.get('yoast_head_json') or {}).get('description') or '',
+                'yoast_og_description':(p.get('yoast_head_json') or {}).get('og_description') or '',
+                'slug':p.get('slug') or '',
+              }
+              found=[]
+              for field,raw in fields.items():
+                  text=strip(raw) if field in ('content','excerpt') else raw
+                  for label,rx in regs:
+                      for m in rx.finditer(text):
+                          a=max(0,m.start()-220); b=min(len(text),m.end()+320)
+                          found.append({'field':field,'kind':label,'match':m.group(0),'context':text[a:b]})
+              if found:
+                  hits.append({'id':p.get('id'),'status':p.get('status'),'slug':p.get('slug'),'title':(p.get('title') or {}).get('raw'),'link':p.get('link'),'yoast_description':fields['yoast_description'],'yoast_og_description':fields['yoast_og_description'],'content_raw':fields['content'],'excerpt_raw':fields['excerpt'],'matches':found})
+          json.dump(hits,open(out,'w',encoding='utf-8'),ensure_ascii=False,indent=2)
+          with open(tsv,'w',encoding='utf-8') as f:
+              f.write('id\tstatus\tslug\ttitle\tfields\tmatch_kinds\n')
+              for h in hits:
+                  f.write(f"{h['id']}\t{h['status']}\t{h['slug']}\t{h['title']}\t{','.join(sorted(set(x['field'] for x in h['matches'])))}\t{','.join(sorted(set(x['kind'] for x in h['matches'])))}\n")
+          print('total_posts=',len(posts),'matching_posts=',len(hits))
+          for h in hits:
+              print('HIT',h['id'],h['status'],h['slug'],'fields=',','.join(sorted(set(x['field'] for x in h['matches']))),'kinds=',','.join(sorted(set(x['kind'] for x in h['matches']))))
+          PY
+
+      - name: Upload all-post US evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-all-post-us-audit
+          path: |
+            ${{ runner.temp }}/dc-all-post-us/hits.json
+            ${{ runner.temp }}/dc-all-post-us/summary.tsv
+          retention-days: 7
