@@ -37,7 +37,12 @@ jobs:
           )
           for i in "${!urls[@]}"; do
             code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --output "$root/p$i.html" --write-out '%{http_code}' "${urls[$i]}")
-            count=$(grep -o "$missing" "$root/p$i.html" | wc -l | tr -d ' ')
+            count=$(python3 - "$root/p$i.html" "$missing" <<'PY'
+          import sys
+          text=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          print(text.count(sys.argv[2]))
+          PY
+          )
             echo "PAGE url=${urls[$i]} http=$code missing_refs=$count"
           done
 
