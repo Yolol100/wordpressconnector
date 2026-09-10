@@ -1,0 +1,189 @@
+name: DoctorCura Phase 3A Weight Origin Fix
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/fix-doctorcura-phase3a-weight-origin.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Apply guarded exact origin redirect fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"
+          [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/code-snippets/v1/snippets/43"
+          tmp="$RUNNER_TEMP/dc-phase3a-origin"; mkdir -p "$tmp"
+          baseline='2fc561ed59d45aebe0e8b8c770c582c8359560316544f34ab228a9d4f8cabaa8'
+          marker='DoctorCura gewichtsverlust legacy final redirect V8.4b'
+          changed=0
+          helper=0
+
+          make_payload(){
+            php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"
+          }
+          put_code(){
+            local src="$1" label="$2" payload="$tmp/$label.json" out="$tmp/$label-out.json" http
+            make_payload "$src" "$payload"
+            http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
+            echo "PUT label=$label http=$http"
+            [[ "$http" == 200 ]]
+          }
+          purge_wp(){
+            local src="$1" label="$2" token helperfile ok=0
+            token=$(openssl rand -hex 24); helperfile="$tmp/$label-helper.php"
+            cp "$src" "$helperfile"
+            cat >> "$helperfile" <<PHP
+
+          /* DoctorCura one-time cache purge helper */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_phase3a_purge'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_phase3a_purge'] ) ) return;
+              if ( function_exists( 'rocket_clean_domain' ) ) rocket_clean_domain();
+              if ( function_exists( 'wp_cache_flush' ) ) wp_cache_flush();
+              header( 'X-DoctorCura-Phase3A-Purge: done' );
+          }, 1 );
+          PHP
+            put_code "$helperfile" "$label-install"; helper=1
+            if curl "${c[@]}" --compressed --dump-header "$tmp/$label.h" --output /dev/null "$base/wp-json/?doctorcura_phase3a_purge=$token"; then
+              grep -Eiq '^x-doctorcura-phase3a-purge:[[:space:]]*done' "$tmp/$label.h" && ok=1 || true
+            fi
+            put_code "$src" "$label-remove"; helper=0
+            [[ "$ok" == 1 ]]
+          }
+          rollback(){
+            local rc=$?
+            [[ "$rc" == 0 ]] && return
+            echo "ROLLBACK_START rc=$rc" >&2
+            set +e
+            if [[ "$changed" == 1 || "$helper" == 1 ]]; then
+              put_code "$tmp/original.php" rollback-original >/dev/null 2>&1 || true
+              purge_wp "$tmp/original.php" rollback-purge >/dev/null 2>&1 || true
+            fi
+            curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$api" >/dev/null 2>&1 || true
+            if [[ -s "$tmp/rb.json" ]]; then
+              php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "ROLLBACK_READBACK hash=".hash("sha256",$c)." marker=".(strpos($c,$argv[2])===false?"absent":"present")." helper=".(strpos($c,"DoctorCura one-time cache purge helper")===false?"absent":"present").PHP_EOL;' "$tmp/rb.json" "$marker" || true
+            fi
+            echo ROLLBACK_ATTEMPTED >&2
+          }
+          trap rollback EXIT
+
+          echo '=== PREFLIGHT ==='
+          http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
+          [[ "$http" == 200 ]]
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo "BASELINE hash=".hash("sha256",$c).PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
+
+          canonical(){ python3 - "$1" <<'PY'
+          import re,sys
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          m=re.search(r'<link[^>]+rel=["\'][^"\']*canonical[^"\']*["\'][^>]+href=["\']([^"\']+)',s,re.I)
+          if not m: m=re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\'][^"\']*canonical',s,re.I)
+          print(m.group(1) if m else '',end='')
+          PY
+          }
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && p='' || p="/$lang"
+            target="$base$p/product-category/gewichtsverlust/"
+            status=$(curl "${c[@]}" --compressed --output "$tmp/target-$lang.html" --write-out '%{http_code}' "$target")
+            can=$(canonical "$tmp/target-$lang.html")
+            [[ "$status" == 200 && "$can" == "$target" ]] || { echo "TARGET_PREFLIGHT_FAIL lang=$lang status=$status canonical=$can" >&2; exit 1; }
+            probe="$base$p/product-categorie/gewichtsverlust/?doctorcura_origin_preflight=$lang-$(date +%s%N)"
+            curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$tmp/pre-$lang.h" --output /dev/null "$probe" || true
+            code=$(awk '/^HTTP\//{print $2;exit}' "$tmp/pre-$lang.h")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/pre-$lang.h")
+            cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/pre-$lang.h")
+            echo "ORIGIN_BEFORE lang=$lang code=$code cache=${cache:-none} location=$loc"
+            [[ "$code" == 301 && "$loc" == "$base$p/gewichtsverlust-medikamente-vergleich/?doctorcura_origin_preflight=$lang-"* && "${cache:-}" != HIT ]] || exit 1
+          done
+
+          cp "$tmp/original.php" "$tmp/new.php"
+          cat >> "$tmp/new.php" <<'PHP'
+
+          /* DoctorCura gewichtsverlust legacy final redirect V8.4b - 2026-09-10 */
+          add_filter( 'wp_redirect', function ( $location, $status ) {
+              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
+              if ( ! is_string( $path ) || '' === $path ) return $location;
+              $path = '/' . trim( $path, '/' ) . '/';
+              $map = array(
+                  '/product-categorie/gewichtsverlust/'    => '/product-category/gewichtsverlust/',
+                  '/fr/product-categorie/gewichtsverlust/' => '/fr/product-category/gewichtsverlust/',
+                  '/en/product-categorie/gewichtsverlust/' => '/en/product-category/gewichtsverlust/',
+              );
+              if ( 301 === (int) $status && isset( $map[ $path ] ) ) return home_url( $map[ $path ] );
+              return $location;
+          }, PHP_INT_MAX, 2 );
+          PHP
+          newhash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
+
+          echo '=== APPLY + READBACK ==='
+          put_code "$tmp/new.php" apply; changed=1
+          purge_wp "$tmp/new.php" apply-purge
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after.json" "$api"
+          after=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,$argv[2])===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/after.json" "$marker")
+          [[ "$after" == "$newhash" ]]; echo "READBACK hash=$after helper=absent"
+
+          echo '=== TWO ORIGIN MISS ROUNDS ==='
+          for round in 1 2; do
+            for lang in base fr en; do
+              [[ "$lang" == base ]] && p='' || p="/$lang"
+              source="$base$p/product-categorie/gewichtsverlust/"
+              target="$base$p/product-category/gewichtsverlust/"
+              probe="$source?doctorcura_origin_verify=$round-$lang-$(date +%s%N)"
+              h="$tmp/v-$round-$lang.h"; body="$tmp/v-$round-$lang.html"
+              curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$probe" || true
+              code=$(awk '/^HTTP\//{print $2;exit}' "$h")
+              loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+              cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+              [[ "$code" == 301 && "$loc" == "$target" && "${cache:-}" != HIT ]] || { echo "ORIGIN_VERIFY_FAIL round=$round lang=$lang code=$code cache=${cache:-none} location=$loc" >&2; exit 1; }
+              result=$(curl "${c[@]}" --location --compressed --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$probe")
+              IFS=$'\t' read -r status final redirects <<< "$result"
+              can=$(canonical "$body")
+              [[ "$status" == 200 && "$final" == "$target" && "$redirects" == 1 && "$can" == "$target" ]] || { echo "ORIGIN_FOLLOW_FAIL round=$round lang=$lang result=$result canonical=$can" >&2; exit 1; }
+              echo "ORIGIN_OK round=$round lang=$lang cache=${cache:-none} final=$final redirects=$redirects canonical=$can"
+            done
+            d=$(curl "${c[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/welche-medikamente-beeinflussen-die-erektion-2/")
+            [[ "$d" == $'200\t'"$base/welche-medikamente-beeinflussen-die-erektion/"$'\t1' ]]
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
+            [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/") == 404 ]]
+            s=$(curl "${c[@]}" --location --compressed --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/product-categorie/sexual-problems/")
+            [[ "$s" == $'200\t'"$base/product-category/sexuelle-probleme/"$'\t1' ]]
+            echo "CANARIES_OK round=$round"
+          done
+
+          echo '=== CLEAN EDGE READBACK INFORMATIONAL ==='
+          edge_pending=0
+          for lang in base fr en; do
+            [[ "$lang" == base ]] && p='' || p="/$lang"
+            source="$base$p/product-categorie/gewichtsverlust/"; target="$base$p/product-category/gewichtsverlust/"
+            h="$tmp/edge-$lang.h"
+            curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$source" || true
+            code=$(awk '/^HTTP\//{print $2;exit}' "$h")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            age=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            echo "EDGE_READBACK lang=$lang code=$code cache=${cache:-none} age=${age:-none} location=$loc"
+            [[ "$code" == 301 && "$loc" == "$target" ]] || edge_pending=1
+          done
+
+          trap - EXIT
+          if [[ "$edge_pending" == 0 ]]; then
+            echo "PHASE3A_ORIGIN_AND_EDGE_GREEN snippet_hash=$newhash"
+          else
+            echo "PHASE3A_ORIGIN_GREEN_EDGE_CACHE_PENDING snippet_hash=$newhash"
+          fi
