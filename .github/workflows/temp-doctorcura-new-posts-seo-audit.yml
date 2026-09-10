@@ -1,0 +1,56 @@
+name: Temporary DoctorCura New Posts SEO Audit
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-new-posts-seo-audit.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Audit 11 published medical articles
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://doctorcura.com'
+          tmp="$RUNNER_TEMP/dc-new-posts"
+          mkdir -p "$tmp"
+          slugs=(
+            malarone-nebenwirkungen-warnzeichen
+            sumatriptan-nebenwirkungen-brustenge-warnzeichen
+            terbinafin-nebenwirkungen-leber-warnzeichen
+            zopiclon-nebenwirkungen-risiken
+            doxycyclin-nebenwirkungen-warnzeichen
+            fluconazol-nebenwirkungen-warnzeichen
+            wegovy-nebenwirkungen-risiken
+            mounjaro-nebenwirkungen-risiken
+            zolpidem-nebenwirkungen-schlafwandeln-abhaengigkeit
+            salbutamol-nebenwirkungen-herzklopfen-zittern
+            finasterid-nebenwirkungen-stimmung-sexualfunktion
+          )
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 "$base/post-sitemap.xml" > "$tmp/post-sitemap.xml"
+          for slug in "${slugs[@]}"; do
+            url="$base/$slug/"; hdr="$tmp/$slug.h"; body="$tmp/$slug.b"
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraNewPostsAudit/1.0)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$url")
+            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
+            h1=$(grep -Eio '<h1[^>]*>.*</h1>' "$body" | head -1 | sed -E 's/<[^>]+>/ /g;s/[[:space:]]+/ /g' || true)
+            text=$(sed -E 's/<script[^>]*>.*<\/script>//Ig;s/<style[^>]*>.*<\/style>//Ig;s/<[^>]+>/ /g;s/&[A-Za-z0-9#]+;/ /g' "$body" | tr '\n' ' ')
+            words=$(printf '%s' "$text" | awk '{print NF}')
+            cluster=0
+            for other in "${slugs[@]}"; do
+              [[ "$other" == "$slug" ]] && continue
+              if grep -Fq "/$other/" "$body"; then cluster=$((cluster+1)); fi
+            done
+            product_links=$(grep -Eo 'href="https://doctorcura.com/(product|product-category)/[^"?#]+' "$body" | sort -u | wc -l | tr -d ' ')
+            in_sitemap=no; grep -Fq "<loc>$url</loc>" "$tmp/post-sitemap.xml" && in_sitemap=yes
+            schema=$(grep -Eo '"@type"[[:space:]]*:[[:space:]]*"(Article|BlogPosting|MedicalWebPage|WebPage)"' "$body" | head -3 | tr '\n' ',' || true)
+            printf 'POST\t%s\tstatus=%s\tcanonical=%s\trobots=%s\tsitemap=%s\twords=%s\tcluster_links=%s\tproduct_links=%s\tschema=%s\th1=%s\n' "$slug" "$code" "${canonical:-}" "${robots:-}" "$in_sitemap" "$words" "$cluster" "$product_links" "${schema:-}" "${h1:-}"
+          done
