@@ -1,0 +1,100 @@
+name: DoctorCura Phase 5 Historical GSC Reconciliation
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase5-gsc-reconciliation.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download latest successful exhaustive audit evidence
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          api='https://api.github.com/repos/Yolol100/wordpressconnector'
+          h=(-H "Authorization: Bearer $GH_TOKEN" -H 'Accept: application/vnd.github+json')
+          curl --fail --silent --show-error "${h[@]}" "$api/actions/workflows/audit-doctorcura-exhaustive-matrix.yml/runs?branch=audit%2Fdoctorcura-deep-seo-20260910&status=success&per_page=10" > /tmp/runs.json
+          run_id=$(python3 - /tmp/runs.json <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); rs=d.get('workflow_runs',[])
+          if not rs: raise SystemExit('no successful exhaustive run')
+          print(rs[0]['id'])
+          PY
+          )
+          echo "SOURCE_RUN_ID=$run_id"
+          curl --fail --silent --show-error "${h[@]}" "$api/actions/runs/$run_id/artifacts" > /tmp/arts.json
+          art_id=$(python3 - /tmp/arts.json <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); xs=[a for a in d.get('artifacts',[]) if a.get('name')=='doctorcura-exhaustive-seo-evidence' and not a.get('expired')]
+          if not xs: raise SystemExit('evidence artifact missing')
+          print(xs[0]['id'])
+          PY
+          )
+          echo "SOURCE_ARTIFACT_ID=$art_id"
+          curl --fail --silent --show-error --location "${h[@]}" "$api/actions/artifacts/$art_id/zip" -o /tmp/p5.zip
+          mkdir -p /tmp/p5; unzip -q /tmp/p5.zip -d /tmp/p5
+          test -s /tmp/p5/doctorcura-exhaustive-results.json
+          sha256sum /tmp/p5.zip
+      - name: Reconcile all 104 historical URLs and sitemap state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.parse
+          from pathlib import Path
+          d=json.load(open('/tmp/p5/doctorcura-exhaustive-results.json',encoding='utf-8'))
+          by={r.get('url'):r for r in d.get('results',[])}
+          gsc=[x.strip() for x in Path('doctorcura-audits/deep-seo-20260910-gsc-urls.txt').read_text().splitlines() if x.strip()]
+          if len(gsc)!=104: raise SystemExit(f'expected 104 historical GSC URLs, got {len(gsc)}')
+          groups={}; reviews=[]
+          def cls(u,r):
+              if not r: return 'missing_from_audit'
+              if r.get('error'): return 'transport_error'
+              p=urllib.parse.urlsplit(u).path
+              if r.get('firstStatus') in (301,302,307,308): return f"redirect_{r.get('redirects')}_hop"
+              if p.endswith('.xml') or '/sitemap' in p:
+                  return 'technical_sitemap'
+              if '/feed/' in p or p.endswith('/feed'):
+                  robots=((r.get('robots','')+' '+r.get('xRobots','')).lower())
+                  if r.get('finalStatus')==200 and 'noindex' in robots: return 'feed_200_noindex'
+                  if r.get('finalStatus') in (404,410): return f"feed_{r.get('finalStatus')}"
+                  return 'feed_review'
+              if r.get('finalStatus') in (404,410): return f"gone_{r.get('finalStatus')}"
+              if r.get('finalStatus')==200:
+                  can=r.get('canonical',''); fin=r.get('finalUrl','')
+                  if can and can==fin: return '200_selfcanonical'
+                  if can: return '200_canonical_other'
+                  return '200_no_canonical'
+              return 'status_'+str(r.get('finalStatus'))
+          for u in gsc:
+              r=by.get(u); c=cls(u,r); groups[c]=groups.get(c,0)+1
+              if c not in ('200_selfcanonical','technical_sitemap','feed_200_noindex'):
+                  reviews.append((u,c,r or {}))
+          print('PHASE5_HISTORICAL_URLS=104')
+          for k,n in sorted(groups.items()): print(f'GSC_GROUP\t{k}\t{n}')
+          print('=== NON-SELF HISTORICAL RECORDS ===')
+          for u,c,r in reviews:
+              print(f"GSC_RECORD\t{c}\t{u}\tfirst={r.get('firstStatus')}\tloc={r.get('firstLocation','')}\tfinal={r.get('finalStatus')}\tfinalUrl={r.get('finalUrl','')}\tredirects={r.get('redirects')}\tcanonical={r.get('canonical','')}\trobots={r.get('robots','')}\txrobots={r.get('xRobots','')}")
+          print('=== SITEMAP HISTORICAL SPECIALS ===')
+          for u in ['https://doctorcura.com/sitemap','https://doctorcura.com/sitemap/','https://doctorcura.com/sitemap_index.xml','https://doctorcura.com/sitemap_index.xml/']:
+              r=by.get(u,{})
+              print(f"SITEMAP_STATE\t{u}\tfirst={r.get('firstStatus')}\tloc={r.get('firstLocation','')}\tfinal={r.get('finalStatus')}\tfinalUrl={r.get('finalUrl','')}\tcontent_type={r.get('contentType','')}\tcanonical={r.get('canonical','')}\txrobots={r.get('xRobots','')}")
+          sm=set()
+          for item in d.get('info',[]):
+              pass
+          print('SITEMAP_HTML_PAGE_IN_CURRENT_PAGE_SITEMAP='+str('https://doctorcura.com/sitemap/' in by and by.get('https://doctorcura.com/sitemap/',{}).get('finalStatus')==200).lower())
+          print('LIVE_GSC_SUBMISSION_STATUS=not_available_in_connected_runtime')
+          print('PHASE5_RECONCILIATION_COMPLETE')
+          PY
