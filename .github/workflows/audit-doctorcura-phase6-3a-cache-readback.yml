@@ -1,0 +1,69 @@
+name: DoctorCura Phase 6 3A Cache Readback
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase6-3a-cache-readback.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Read snippet marker and edge/origin behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 2
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors --compressed)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          tmp="$RUNNER_TEMP/p6-3a-readback"; mkdir -p "$tmp"
+          curl "${c[@]}" --location "${auth[@]}" "$base/wp-json/code-snippets/v1/snippets/43" > "$tmp/s43.json"
+          python3 - "$tmp/s43.json" <<'PY'
+          import hashlib,json,sys
+          s=json.load(open(sys.argv[1])); code=str(s.get('code') or '')
+          print('SNIPPET_HASH='+hashlib.sha256(code.encode()).hexdigest())
+          for token in ['DoctorCura gewichtsverlust legacy final redirect V8.4b','DoctorCura datenschutz root-only migration V8.4c','DoctorCura product variation hreflang cleanup V8.4d','DoctorCura one-time cache purge helper']:
+              print(f'MARKER\t{token}\tcount={code.count(token)}')
+          PY
+
+          probe(){
+            local lang="$1" mode="$2" url="$3" stem="$4" h="$tmp/$stem.h" b="$tmp/$stem.body" status
+            status=$(curl "${c[@]}" --max-redirs 0 --header 'Cache-Control: no-cache' --dump-header "$h" --output "$b" --write-out '%{http_code}' "$url" || true)
+            python3 - "$lang" "$mode" "$url" "$status" "$h" "$b" <<'PY'
+          import re,sys
+          lang,mode,url,status,hp,bp=sys.argv[1:]; h=open(hp,encoding='utf-8',errors='ignore').read(); b=open(bp,'rb').read()
+          def hv(name):
+              m=re.search(r'(?im)^'+re.escape(name)+r':\s*(.*?)\r?$',h); return m.group(1).strip() if m else ''
+          print(f'WEIGHT\tlang={lang}\tmode={mode}\tstatus={status}\tlocation={hv("location")}\thcdn={hv("x-hcdn-cache-status")}\tage={hv("age")}\txredirect={hv("x-redirect-by")}\tcache_control={hv("cache-control")}\tbytes={len(b)}\turl={url}')
+          PY
+          }
+
+          for lang in de fr en; do
+            case "$lang" in de) p='';; fr) p='/fr';; en) p='/en';; esac
+            src="$base$p/product-categorie/gewichtsverlust/"
+            probe "$lang" clean "$src" "$lang-clean"
+            probe "$lang" bust "${src}?doctorcura_p6_3a=$(date +%s%N)" "$lang-bust"
+            probe "$lang" nocache "${src}?doctorcura_p6_3a_nc=$(date +%s%N)" "$lang-nocache"
+          done
+
+          echo '=== REDIRECTION EXACT RULES ==='
+          curl "${c[@]}" --location "${auth[@]}" --get --data-urlencode 'filterBy[url]=/product-categorie/gewichtsverlust/' --data-urlencode 'per_page=100' "$base/wp-json/redirection/v1/redirect" > "$tmp/redirection.json"
+          python3 - "$tmp/redirection.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); xs=d.get('items',[]) if isinstance(d,dict) else []
+          for path in ['/product-categorie/gewichtsverlust/','/fr/product-categorie/gewichtsverlust/','/en/product-categorie/gewichtsverlust/']:
+              ms=[x for x in xs if x.get('url')==path]
+              print(f'REDIR_EXACT path={path} count={len(ms)}')
+          PY
+          echo PHASE6_3A_CACHE_READBACK_COMPLETE
