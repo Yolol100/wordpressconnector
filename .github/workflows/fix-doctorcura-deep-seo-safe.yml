@@ -50,7 +50,8 @@ jobs:
           }
           canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); printf '%s' "$c"; }
           live(){
-            local label="$1" url="$2" html="$tmp/$label.html" headers="$tmp/$label.h"
+            local label="$1" url="$2"
+            local html="$tmp/$label.html" headers="$tmp/$label.h"
             curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$headers" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url"
           }
           first_status(){ awk '/^HTTP\//{print $2; exit}' "$1"; }
@@ -83,13 +84,13 @@ jobs:
           [[ "$http" == '200' ]]
           php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura redirect and feed cleanup V8.4")!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=exact_v83\n";' "$tmp/current.json" "$tmp/original.php" "$expected_hash"
 
-          assert_direct target-weight-de "$base/product-category/gewichtsverlust/" "$base/product-category/gewichtsverlust/"
-          assert_direct target-weight-fr "$base/fr/product-category/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/"
-          assert_direct target-weight-en "$base/en/product-category/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/"
-          assert_direct target-malaria-fr "$base/fr/product-category/malaria/" "$base/fr/product-category/malaria/"
-          assert_direct target-privacy-de "$base/privacy-policy/" "$base/privacy-policy/"
-          assert_direct target-privacy-fr "$base/fr/privacy-policy/" "$base/fr/privacy-policy/"
-          assert_direct target-privacy-en "$base/en/privacy-policy/" "$base/en/privacy-policy/"
+          assert_direct target-weight-de "$base/product-category/gewichtsverlust/"
+          assert_direct target-weight-fr "$base/fr/product-category/gewichtsverlust/"
+          assert_direct target-weight-en "$base/en/product-category/gewichtsverlust/"
+          assert_direct target-malaria-fr "$base/fr/product-category/malaria/"
+          assert_direct target-privacy-de "$base/privacy-policy/"
+          assert_direct target-privacy-fr "$base/fr/privacy-policy/"
+          assert_direct target-privacy-en "$base/en/privacy-policy/"
           current=$(live pre-comments "$base/comments/feed/"); echo "pre-comments=$current first=$(first_status "$tmp/pre-comments.h")"; [[ "$(first_status "$tmp/pre-comments.h")" == '301' ]]
 
           cp "$tmp/original.php" "$tmp/new.php"
