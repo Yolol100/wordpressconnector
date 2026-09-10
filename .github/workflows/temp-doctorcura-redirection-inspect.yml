@@ -1,4 +1,4 @@
-name: Temporary DoctorCura Redirect Layer Audit
+name: Temporary DoctorCura French Category Origin Migration
 
 on:
   push:
@@ -10,31 +10,73 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  migrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify rollback and identify origin path
+      - name: Create origin redirect with rollback and verify translated URL twice
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"
           [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          source='/product-categorie/sexual-problems/'
+          translated='/fr/product-categorie/sexual-problems/'
+          target='https://doctorcura.com/product-category/sexuelle-probleme/'
+          api="$base/wp-json/redirection/v1"
+          tmp="$RUNNER_TEMP/dc-origin-migration"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          api="$base/wp-json/redirection/v1/redirect"
-          for source in '/fr/product-categorie/sexual-problems/' '/product-categorie/sexual-problems/'; do
-            enc=$(printf '%s' "$source" | tr '/' '_')
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api" > "$RUNNER_TEMP/$enc.json"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "RULE source=".$argv[2]." total=".(int)($d["total"]??0).PHP_EOL; foreach(($d["items"]??[]) as $x){echo "  id=".(int)($x["id"]??0)." url=".(string)($x["url"]??"")." code=".(int)($x["action_code"]??0)." target=".(string)($x["action_data"]["url"]??"").PHP_EOL;}' "$RUNNER_TEMP/$enc.json" "$source"
+
+          for path in "$source" "$translated"; do
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base$path")
+            [[ "$code" == '404' ]] || { echo "Preflight expected 404 for $path, got $code" >&2; exit 1; }
           done
-          for path in '/fr/product-categorie/sexual-problems/' '/product-categorie/sexual-problems/' '/product-category/sexuelle-probleme/'; do
-            hdr="$RUNNER_TEMP/h"; body="$RUNNER_TEMP/b"
-            out=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$body" --dump-header "$hdr" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
-            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            gt=$(awk 'BEGIN{IGNORECASE=1}/^x-gt-/{gsub(/\r/,"");printf "%s;",$0}' "$hdr" || true)
-            printf 'URL path=%s out=%s location=%s gt=%s\n' "$path" "$out" "${location:-}" "${gt:-}"
+          target_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/target.body" --write-out '%{http_code}' "$target")
+          [[ "$target_code" == '200' ]] || exit 1
+          canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$tmp/target.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+          if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$tmp/target.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+          [[ "$canonical" == "$target" ]] || exit 1
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before.json"
+          [[ "$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/before.json")" == '0' ]] || exit 1
+
+          cat > "$tmp/create.json" <<'JSON'
+          {"status":"enabled","position":0,"url":"/product-categorie/sexual-problems/","regex":false,"match_type":"url","match_data":{"source":{"flag_query":"ignore","flag_case":false,"flag_trailing":false,"flag_regex":false}},"title":"DoctorCura legacy sexual-problems category migration","group_id":1,"action_type":"url","action_code":301,"action_data":{"url":"https://doctorcura.com/product-category/sexuelle-probleme/"}}
+          JSON
+          http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create.json" --output "$tmp/create-response.json" --write-out '%{http_code}' "$api/redirect")
+          [[ "$http" == '200' ]] || { echo "Create HTTP $http" >&2; cat "$tmp/create-response.json" >&2; exit 1; }
+
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after.json"
+          created_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$h=[];foreach(($d["items"]??[])as$x){if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")===$argv[3]))$h[]=(int)$x["id"];}if(count($h)!==1)exit(2);echo$h[0];' "$tmp/after.json" "$source" "$target")
+          [[ "$created_id" =~ ^[1-9][0-9]*$ ]] || exit 1
+          rollback(){ printf '{"items":[%s],"global":false}' "$created_id" > "$tmp/delete.json"; curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null || true; }
+          trap rollback EXIT
+
+          verify_one(){
+            local round="$1" path="$2" label="$3" first location follow status final redirects can
+            first=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --header 'Cache-Control: no-cache' --output /dev/null --dump-header "$tmp/$round-$label.h" --write-out '%{http_code}' "$base$path")
+            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/$round-$label.h" || true)
+            [[ "$first" == '301' && "$location" == "$target" ]] || { echo "$round $label first-hop status=$first location=$location" >&2; return 1; }
+            follow=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --output "$tmp/$round-$label.body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
+            IFS=$'\t' read -r status final redirects <<< "$follow"
+            [[ "$status" == '200' && "$final" == "$target" && "$redirects" == '1' ]] || { echo "$round $label follow=$follow" >&2; return 1; }
+            can=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$tmp/$round-$label.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$can" ]]; then can=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$tmp/$round-$label.body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            [[ "$can" == "$target" ]] || { echo "$round $label canonical=$can" >&2; return 1; }
+            echo "VERIFY_OK round=$round label=$label source=$path location=$location final=$final canonical=$can"
+          }
+          for round in round1 round2; do
+            verify_one "$round" "$source" origin
+            verify_one "$round" "$translated" fr
           done
+
+          blog_code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --dump-header "$tmp/blog.h" --write-out '%{http_code}' "$base/category/blogs/")
+          blog_location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$tmp/blog.h" || true)
+          [[ "$blog_code" == '301' && "$blog_location" == 'https://doctorcura.com/blogs/' ]] || exit 1
+          trap - EXIT
+          echo "MIGRATION_OK redirect_id=$created_id source=$source translated=$translated target=$target"
