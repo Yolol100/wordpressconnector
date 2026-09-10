@@ -1,4 +1,4 @@
-name: Audit DoctorCura Elementor Widget Semantics
+name: Audit DoctorCura Elementor Cache Capability
 
 on:
   push:
@@ -13,44 +13,36 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 6
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect template 5841 widget data and write schema read-only
+      - name: Inspect Elementor cache REST contract read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-el-widget"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-el-cache"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          endpoint="$base/wp-json/wp/v2/elementor_library/5841?context=edit"
 
-          echo '=== TEMPLATE RECORD ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/template.json" --write-out '%{http_code}' "$endpoint")
-          echo "template_http=$code"
-          [[ "$code" == '200' ]] || { head -c 1000 "$tmp/template.json"; exit 1; }
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." title=".($p["title"]["raw"]??$p["title"]["rendered"]??"")." modified=".($p["modified_gmt"]??"").PHP_EOL;echo "keys=".implode(",",array_keys($p)).PHP_EOL;echo "meta_keys=".implode(",",array_keys($p["meta"]??[])).PHP_EOL;foreach(($p["meta"]??[])as$k=>$v){$raw=is_string($v)?$v:json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);if(strpos($raw,"695868ca")!==false||strpos($raw,"900069")!==false||strpos($raw,"welche-medikamente-beeinflussen-die-erektion-featured")!==false)echo "MATCH_META key=$k len=".strlen($raw)." sha=".hash("sha256",$raw).PHP_EOL;}' "$tmp/template.json"
+          echo '=== ROUTE CONTRACT FROM ROOT ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/" > "$tmp/root.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(["/elementor/v1/cache","/elementor/v1/post"]as$r){echo "-- $r --\n";echo json_encode($d["routes"][$r]??null,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)."\n";}' "$tmp/root.json"
 
-          echo '=== EXACT MATCH CONTEXT IN TEMPLATE JSON ==='
-          php -r '$raw=file_get_contents($argv[1]);foreach(["695868ca","900069","welche-medikamente-beeinflussen-die-erektion-featured","__dynamic__"]as$n){echo "-- $n --\n";$pos=0;$found=0;while(($p=strpos($raw,$n,$pos))!==false&&$found<8){echo substr($raw,max(0,$p-450),1100)."\n";$pos=$p+strlen($n);$found++;}}' "$tmp/template.json"
-
-          echo '=== META STRUCTURE FOR ELEMENTOR DATA ==='
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach(($p["meta"]??[])as$k=>$v){if(stripos($k,"elementor")!==false){$raw=is_string($v)?$v:json_encode($v,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);echo "key=$k type=".gettype($v)." len=".strlen($raw)." prefix=".substr($raw,0,500).PHP_EOL;}}' "$tmp/template.json"
-
-          echo '=== OPTIONS / WRITE SCHEMA ==='
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/options.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library/5841")
+          echo '=== OPTIONS CACHE ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/cache-options.json" --write-out '%{http_code}' "$base/wp-json/elementor/v1/cache")
           echo "options_http=$code"
-          if [[ "$code" == '200' ]]; then
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "methods=".implode(",",$d["methods"]??[]).PHP_EOL;$schema=$d["schema"]??[];echo "schema_properties=".implode(",",array_keys($schema["properties"]??[])).PHP_EOL;$meta=$schema["properties"]["meta"]["properties"]??[];echo "meta_schema_keys=".implode(",",array_keys($meta)).PHP_EOL;foreach($meta as$k=>$v)if(stripos($k,"elementor")!==false)echo "meta_schema=$k readonly=".json_encode($v["readonly"]??null)." type=".json_encode($v["type"]??null).PHP_EOL;' "$tmp/options.json"
-          fi
+          cat "$tmp/cache-options.json" | head -c 5000; echo
 
-          echo '=== ELEMENTOR DOCUMENT ENDPOINT GET ==='
-          for u in "$base/wp-json/elementor/v1/site-editor/templates/5841" "$base/wp-json/elementor/v1/documents"; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/elementor.json" --write-out '%{http_code}' "$u")
-            echo "$u http=$code"
-            head -c 1200 "$tmp/elementor.json" || true; echo
-          done
-          echo 'ELEMENTOR_WIDGET_SEMANTICS_COMPLETE'
+          echo '=== GET CACHE ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/cache-get.json" --write-out '%{http_code}' "$base/wp-json/elementor/v1/cache")
+          echo "get_http=$code"
+          cat "$tmp/cache-get.json" | head -c 3000; echo
+
+          echo '=== OPTIONS TEMPLATE WRITE ==='
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request OPTIONS --output "$tmp/template-options.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/elementor_library/5841")
+          echo "template_options_http=$code"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "methods=".implode(",",$d["methods"]??[]).PHP_EOL;$m=$d["schema"]["properties"]["meta"]["properties"]["_elementor_data"]??[];echo "elementor_data_schema=".json_encode($m,JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).PHP_EOL;' "$tmp/template-options.json"
+          echo 'ELEMENTOR_CACHE_CAPABILITY_COMPLETE'
