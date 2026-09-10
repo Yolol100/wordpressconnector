@@ -28,7 +28,8 @@ jobs:
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
           canonical_of(){ local f="$1"; grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true; }
           probe(){
-            local label="$1" path="$2" html="$tmp/$label.html" result canon first
+            local label="$1" path="$2"
+            local html="$tmp/$label.html" result canon first
             result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$tmp/$label.h" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
             first=$(awk '/^HTTP\//{print $2; exit}' "$tmp/$label.h" || true)
             canon=$(canonical_of "$html")
