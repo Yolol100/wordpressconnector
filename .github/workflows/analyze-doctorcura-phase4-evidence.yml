@@ -64,8 +64,7 @@ jobs:
           for k,n in sorted(buckets.items(),key=lambda x:str(x[0])): print('CAT_BUCKET\t'+str(k)+'\tcount='+str(n))
 
           print('=== HISTORICAL GSC CLASSIFICATION ===')
-          groups={}
-          bad=[]
+          groups={}; bad=[]
           for u in gsc:
               r=by.get(u)
               if not r:
@@ -102,8 +101,7 @@ jobs:
           print('=== MALFORMED IMAGE-LIKE INTERNAL SIGNALS ===')
           malformed=[a for a in anoms if a.get('kind') in ('internal_link_to_redirect','internal_link_to_broken_page') and ('%22https' in a.get('detail','') or '/wp-content/' in a.get('detail',''))]
           print('MALFORMED_SIGNAL_COUNT='+str(len(malformed)))
-          srcs={a.get('url') for a in malformed}
-          print('MALFORMED_SOURCE_PAGES='+str(len(srcs)))
+          srcs={a.get('url') for a in malformed}; print('MALFORMED_SOURCE_PAGES='+str(len(srcs)))
           for a in malformed[:12]: print(f"MALFORMED_SAMPLE\t{a.get('kind')}\t{a.get('url')}\t{a.get('detail')}")
 
           print('=== OTHER HIGH FAMILIES ===')
@@ -112,3 +110,5 @@ jobs:
               if a.get('severity')=='HIGH': kinds[a.get('kind')]=kinds.get(a.get('kind'),0)+1
           for k,n in sorted(kinds.items()): print(f'HIGH_KIND\t{k}\t{n}')
           PY
+
+# classifier trigger: 2026-09-10T17:41:00+02:00
