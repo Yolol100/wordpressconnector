@@ -14,9 +14,9 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     env:
-      SITE_URL: https://doctorcura.com
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
-      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APP_PASSWORD }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
       - name: Read-only Phase 2B verification
         shell: bash
@@ -32,8 +32,7 @@ jobs:
 
           canonical(){ python3 - "$1" <<'PY'
           import re,sys,html
-          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          out=''
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); out=''
           for tag in re.findall(r'<link\b[^>]*>',s,re.I):
               rel=re.search(r'rel=["\']([^"\']+)',tag,re.I); href=re.search(r'href=["\']([^"\']+)',tag,re.I)
               if rel and href and 'canonical' in rel.group(1).lower(): out=html.unescape(href.group(1)); break
@@ -54,21 +53,17 @@ jobs:
           done
 
           echo '=== PUBLIC CONTRACT ==='
-          clean="$base/welche-medikamente-beeinflussen-die-erektion/"
-          alias="$base/welche-medikamente-beeinflussen-die-erektion-2/"
+          clean="$base/welche-medikamente-beeinflussen-die-erektion/"; alias="$base/welche-medikamente-beeinflussen-die-erektion-2/"
           status=$(curl "${c[@]}" --compressed --output "$tmp/base.html" --write-out '%{http_code}' "$clean"); can=$(canonical "$tmp/base.html")
           result=$(curl "${c[@]}" --location --compressed --output "$tmp/alias.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$alias")
-          echo "BASE status=$status canonical=$can"
-          echo "ALIAS result=$result"
+          echo "BASE status=$status canonical=$can"; echo "ALIAS result=$result"
           python3 - "$tmp/base.html" <<'PY'
           import html,re,sys
-          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          imgs=[]
+          s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); imgs=[]; og=[]
           for tag in re.findall(r'<img\b[^>]*>',s,re.I):
               if re.search(r'\bwp-post-image\b',tag,re.I):
                   m=re.search(r'src=["\']([^"\']+)',tag,re.I)
                   if m: imgs.append(html.unescape(m.group(1)))
-          og=[]
           for tag in re.findall(r'<meta\b[^>]*>',s,re.I):
               if re.search(r'property=["\']og:image["\']',tag,re.I):
                   m=re.search(r'content=["\']([^"\']+)',tag,re.I)
@@ -86,8 +81,7 @@ jobs:
           while IFS='|' read -r source target; do
             h="$tmp/canary.h"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$base$source" || true
             code=$(awk '/^HTTP\//{print $2;exit}' "$h"); loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
-            echo "CANARY source=$source code=$code location=${loc:-none}"
-            [[ "$code" == 301 && "$loc" == "$base$target" ]] || exit 1
+            echo "CANARY source=$source code=$code location=${loc:-none}"; [[ "$code" == 301 && "$loc" == "$base$target" ]] || exit 1
           done <<'MAP'
           /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
           /product-categorie/quit-smoking/|/product-category/rauchstopp/
