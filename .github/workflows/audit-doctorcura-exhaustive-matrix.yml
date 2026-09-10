@@ -61,4 +61,4 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-# Phase 6 final read-only crawl; conservative concurrency=4
+# Phase 6 final read-only crawl; conservative concurrency=4; post-cache-purge verification
