@@ -82,7 +82,7 @@ jobs:
             fi
           fi
 
-          for url in "$base/product-categorie/gewichtsverlust/" "$base/product-categorie/gewichtsverlust/?doctorcura_cache_probe=2"; do
+          for url in "$base/product-categorie/gewichtsverlust/" "$base/product-categorie/gewichtsverlust/?doctorcura_cache_probe=3"; do
             h="$tmp/$(printf '%s' "$url" | sha256sum | cut -c1-10).h"
             curl "${c[@]}" --compressed --max-redirs 0 --header 'Cache-Control: no-cache' --dump-header "$h" --output /dev/null "$url" || true
             code=$(awk '/^HTTP\//{print $2; exit}' "$h")
@@ -90,4 +90,4 @@ jobs:
             echo "CACHE_PROBE url=$url code=${code:-} location=${loc:-}"
             awk 'BEGIN{IGNORECASE=1}/^(age|server|cache-control|x-hcdn-cache-status|x-redirect-by):/{gsub(/\r/,"");print "CACHE_HEADER " $0}' "$h" || true
           done
-          echo DOCTORCURA_CACHE_OWNER_DIAGNOSTICS_V2_COMPLETE
+          echo DOCTORCURA_CACHE_OWNER_DIAGNOSTICS_V3_COMPLETE
