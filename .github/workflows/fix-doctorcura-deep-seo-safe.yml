@@ -1,4 +1,4 @@
-name: Fix DoctorCura Legacy Route Cleanup V8.4
+name: Fix DoctorCura Terms Legacy Link
 
 on:
   push:
@@ -13,158 +13,91 @@ permissions:
 jobs:
   fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 15
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Apply guarded exact legacy migrations
+      - name: Replace one legacy HTTP www link with guarded rollback
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-v84"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-terms-link"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          api="$base/wp-json/code-snippets/v1/snippets/43"
+          pageapi="$base/wp-json/wp/v2/pages/11"
+          snipapi="$base/wp-json/code-snippets/v1/snippets/43"
           expected_hash='2fc561ed59d45aebe0e8b8c770c582c8359560316544f34ab228a9d4f8cabaa8'
           purge_b64='Ci8qIERvY3RvckN1cmEgb25lLXRpbWUgY2FjaGUgcHVyZ2UgaGVscGVyIC0gcmVtb3ZlZCBhdXRvbWF0aWNhbGx5ICovCmFkZF9hY3Rpb24oJ2luaXQnLCBmdW5jdGlvbiAoKSB7CiAgICBpZiAoIWlzc2V0KCRfR0VUWydkb2N0b3JjdXJhX3Nlb19wdXJnZSddKSB8fCAhaGFzaF9lcXVhbHMoJ19fVE9LRU5fXycsIChzdHJpbmcpICRfR0VUWydkb2N0b3JjdXJhX3Nlb19wdXJnZSddKSkgewogICAgICAgIHJldHVybjsKICAgIH0KICAgICRyb2NrZXQgPSBmdW5jdGlvbl9leGlzdHMoJ3JvY2tldF9jbGVhbl9kb21haW4nKTsKICAgIGlmICgkcm9ja2V0KSB7CiAgICAgICAgcm9ja2V0X2NsZWFuX2RvbWFpbigpOwogICAgfQogICAgaWYgKGZ1bmN0aW9uX2V4aXN0cygnd3BfY2FjaGVfZmx1c2gnKSkgewogICAgICAgIHdwX2NhY2hlX2ZsdXNoKCk7CiAgICB9CiAgICBoZWFkZXIoJ1gtRG9jdG9yQ3VyYS1TRU8tUHVyZ2U6ICcgLiAoJHJvY2tldCA/ICdyb2NrZXQnIDogJ29iamVjdC1vbmx5JykpOwp9LCAxKTsK'
-          snippet_changed=0
+          page_changed=0
           helper_written=0
 
-          put_snippet(){ local payload="$1" out="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api"; }
-          make_payload(){ local codefile="$1" outfile="$2"; php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"; }
-          install_code(){ local codefile="$1" label="$2"; make_payload "$codefile" "$tmp/$label.json"; [[ "$(put_snippet "$tmp/$label.json" "$tmp/$label-response.json")" == '200' ]]; }
-          purge_with_code(){
-            local codefile="$1" label="$2" token ok=0
+          post_json(){ local endpoint="$1" payload="$2" out="$3"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$endpoint"; }
+          put_snippet(){ local payload="$1" out="$2"; curl --silent --show-error --location --connect-timeout 10 --max-time 40 "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$snipapi"; }
+          make_snippet_payload(){ local codefile="$1" outfile="$2"; php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$codefile" "$outfile"; }
+          restore_snippet(){ make_snippet_payload "$tmp/snippet.php" "$tmp/snippet-restore.json"; [[ "$(put_snippet "$tmp/snippet-restore.json" "$tmp/snippet-restore-response.json")" == '200' ]]; helper_written=0; }
+          purge(){
+            local label="$1" token ok=0
             token=$(openssl rand -hex 24)
-            cp "$codefile" "$tmp/$label-helper.php"
+            cp "$tmp/snippet.php" "$tmp/$label-helper.php"
             printf '%s' "$purge_b64" | base64 -d >> "$tmp/$label-helper.php"
             sed -i "s/__TOKEN__/$token/g" "$tmp/$label-helper.php"
-            install_code "$tmp/$label-helper.php" "$label-helper"
+            make_snippet_payload "$tmp/$label-helper.php" "$tmp/$label-helper.json"
+            [[ "$(put_snippet "$tmp/$label-helper.json" "$tmp/$label-helper-response.json")" == '200' ]]
             helper_written=1
-            if curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$tmp/$label-purge.h" --output /dev/null "$base/wp-json/?doctorcura_seo_purge=$token" && grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*rocket' "$tmp/$label-purge.h"; then ok=1; fi
-            install_code "$codefile" "$label-restore"
-            helper_written=0
+            if curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$tmp/$label.h" --output /dev/null "$base/wp-json/?doctorcura_seo_purge=$token" && grep -Eiq '^x-doctorcura-seo-purge:[[:space:]]*rocket' "$tmp/$label.h"; then ok=1; fi
+            restore_snippet
             [[ "$ok" == '1' ]]
           }
-          canonical_of(){ local f="$1" c=''; c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); printf '%s' "$c"; }
-          live(){
-            local label="$1" url="$2"
-            local html="$tmp/$label.html" headers="$tmp/$label.h"
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$headers" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url"
-          }
-          first_status(){ awk '/^HTTP\//{print $2; exit}' "$1"; }
-          assert_redirect(){
-            local label="$1" source="$2" target="$3" result first canon
-            result=$(live "$label" "$source"); first=$(first_status "$tmp/$label.h"); canon=$(canonical_of "$tmp/$label.html")
-            echo "$label result=$result first=$first canonical=$canon"
-            [[ "$first" == '301' && "$result" == $'200\t'"$target"$'\t1' && "$canon" == "$target" ]]
-          }
-          assert_direct(){
-            local label="$1" url="$2" result first canon
-            result=$(live "$label" "$url"); first=$(first_status "$tmp/$label.h"); canon=$(canonical_of "$tmp/$label.html")
-            echo "$label result=$result first=$first canonical=$canon"
-            [[ "$first" == '200' && "$result" == $'200\t'"$url"$'\t0' && "$canon" == "$url" ]]
-          }
+          canonical_of(){ local f="$1"; grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$f" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true; }
           rollback(){
             rc=$?; [[ "$rc" == '0' ]] && return
-            echo "V84_ROLLBACK_START exit=$rc" >&2
+            echo "TERMS_ROLLBACK_START exit=$rc" >&2
             set +e
-            if [[ "$snippet_changed" == '1' || "$helper_written" == '1' ]]; then
-              install_code "$tmp/original.php" rollback >/dev/null 2>&1 || true
-              purge_with_code "$tmp/original.php" rollback-purge >/dev/null 2>&1 || true
+            if [[ "$helper_written" == '1' ]]; then restore_snippet >/dev/null 2>&1 || true; fi
+            if [[ "$page_changed" == '1' ]]; then
+              php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["content"=>$c],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$tmp/original-content.html" "$tmp/rollback-page.json"
+              post_json "$pageapi" "$tmp/rollback-page.json" "$tmp/rollback-page-response.json" >/dev/null || true
+              purge rollback >/dev/null 2>&1 || true
             fi
-            echo 'V84_ROLLBACK_ATTEMPTED' >&2
+            restore_snippet >/dev/null 2>&1 || true
+            echo 'TERMS_ROLLBACK_ATTEMPTED' >&2
           }
           trap rollback EXIT
 
           echo '=== PREFLIGHT ==='
-          http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
-          [[ "$http" == '200' ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura legacy route cleanup V8.4")!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet_preflight=exact_v83\n";' "$tmp/current.json" "$tmp/original.php" "$expected_hash"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snippet.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);echo"snippet=exact_v83\n";' "$tmp/snippet.json" "$tmp/snippet.php" "$expected_hash"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$pageapi?context=edit" > "$tmp/page.json"
+          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($p["content"]["raw"]??"");if((int)($p["id"]??0)!==11||($p["status"]??"")!=="publish"||substr_count($c,"http://www.doctorcura.com")!==1)exit(2);file_put_contents($argv[2],$c);echo"page_preflight=one_legacy_url\n";' "$tmp/page.json" "$tmp/original-content.html"
 
-          for url in \
-            "$base/product-category/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" \
-            "$base/product-category/malaria/" "$base/fr/product-category/malaria/" "$base/en/product-category/malaria/" \
-            "$base/privacy-policy/" "$base/fr/privacy-policy/" "$base/en/privacy-policy/"; do
-            label=$(printf '%s' "$url" | sha256sum | cut -c1-12); assert_direct "target-$label" "$url"
-          done
-
-          cp "$tmp/original.php" "$tmp/new.php"
-          cat >> "$tmp/new.php" <<'PHP'
-
-          /* DoctorCura legacy route cleanup V8.4 - 2026-09-10 */
-          add_action( 'template_redirect', function () {
-              $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
-              $path = wp_parse_url( $request_uri, PHP_URL_PATH );
-              if ( ! is_string( $path ) || $path === '' ) {
-                  return;
-              }
-
-              $path = '/' . trim( $path, '/' ) . '/';
-              $lang = isset( $_SERVER['HTTP_X_GT_LANG'] ) ? strtolower( (string) $_SERVER['HTTP_X_GT_LANG'] ) : '';
-              $prefix = in_array( $lang, array( 'fr', 'en' ), true ) ? '/' . $lang : '';
-
-              foreach ( array( '/fr', '/en' ) as $public_prefix ) {
-                  if ( 0 === strpos( $path, $public_prefix . '/' ) ) {
-                      $prefix = $public_prefix;
-                      $path = substr( $path, strlen( $public_prefix ) );
-                      break;
-                  }
-              }
-
-              $map = array(
-                  '/product-categorie/gewichtsverlust/' => '/product-category/gewichtsverlust/',
-                  '/product-categorie/malaria/'         => '/product-category/malaria/',
-                  '/datenschutz/'                       => '/privacy-policy/',
-              );
-
-              if ( ! isset( $map[ $path ] ) ) {
-                  return;
-              }
-
-              $target = home_url( $prefix . $map[ $path ] );
-              wp_safe_redirect( $target, 301, 'DoctorCura SEO cleanup' );
-              exit;
-          }, 0 );
-          PHP
-          final_hash=$(sha256sum "$tmp/new.php" | awk '{print $1}')
-
+          php -r '$c=file_get_contents($argv[1]);$n=str_replace("http://www.doctorcura.com","https://doctorcura.com",$c,$count);if($count!==1)exit(2);file_put_contents($argv[2],json_encode(["content"=>$n],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$tmp/original-content.html" "$tmp/update-page.json"
           echo '=== APPLY ==='
-          install_code "$tmp/new.php" apply-v84
-          snippet_changed=1
-          purge_with_code "$tmp/new.php" apply-v84
+          [[ "$(post_json "$pageapi" "$tmp/update-page.json" "$tmp/update-page-response.json")" == '200' ]]
+          page_changed=1
+          purge apply
 
           verify_round(){
-            local round="$1" result first hash comments_xr
+            local round="$1" lang url html result canon old
             echo "=== VERIFY $round ==="
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$api" > "$tmp/$round-snippet.json"
-            hash=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||strpos($c,"DoctorCura legacy route cleanup V8.4")===false||strpos($c,"DoctorCura article social image alignment V8.3")===false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/$round-snippet.json")
-            [[ "$hash" == "$final_hash" ]]
-
-            assert_redirect "$round-weight-de" "$base/product-categorie/gewichtsverlust/" "$base/product-category/gewichtsverlust/" || return 1
-            assert_redirect "$round-weight-fr" "$base/fr/product-categorie/gewichtsverlust/" "$base/fr/product-category/gewichtsverlust/" || return 1
-            assert_redirect "$round-weight-en" "$base/en/product-categorie/gewichtsverlust/" "$base/en/product-category/gewichtsverlust/" || return 1
-            assert_redirect "$round-malaria-de" "$base/product-categorie/malaria/" "$base/product-category/malaria/" || return 1
-            assert_redirect "$round-malaria-fr" "$base/fr/product-categorie/malaria/" "$base/fr/product-category/malaria/" || return 1
-            assert_redirect "$round-malaria-en" "$base/en/product-categorie/malaria/" "$base/en/product-category/malaria/" || return 1
-            assert_redirect "$round-privacy-de" "$base/datenschutz/" "$base/privacy-policy/" || return 1
-            assert_redirect "$round-privacy-fr" "$base/fr/datenschutz/" "$base/fr/privacy-policy/" || return 1
-            assert_redirect "$round-privacy-en" "$base/en/datenschutz/" "$base/en/privacy-policy/" || return 1
-            assert_redirect "$round-sexual-fr" "$base/fr/product-categorie/sexual-problems/" "$base/fr/product-category/sexuelle-probleme/" || return 1
-
-            result=$(live "$round-comments" "$base/comments/feed/"); first=$(first_status "$tmp/$round-comments.h"); comments_xr=$(grep -Ei '^x-redirect-by:' "$tmp/$round-comments.h" | head -1 | tr -d '\r' || true); echo "$round comments=$result first=$first $comments_xr"; [[ "$first" == '301' && "$result" == $'200\t'"$base/"$'\t1' ]] || return 1
-            grep -Eiq '^x-robots-tag:[[:space:]]*noindex' "$tmp/$round-comments.h" || return 1
-
-            assert_direct "$round-blog16" "$base/blogs/16/" || return 1
-            result=$(live "$round-blog17" "$base/blogs/17/"); first=$(first_status "$tmp/$round-blog17.h"); echo "$round blog17=$result first=$first"; [[ "$first" == '404' && "$result" == $'404\t'"$base/blogs/17/"$'\t0' ]] || return 1
-            result=$(live "$round-alias" "$base/blogs/page/5/"); first=$(first_status "$tmp/$round-alias.h"); echo "$round alias=$result first=$first"; [[ "$first" == '301' && "$result" == $'200\t'"$base/blogs/5/"$'\t1' ]] || return 1
-            echo "V84_VERIFY_OK $round hash=$hash"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$pageapi?context=edit" > "$tmp/$round-page.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($p["content"]["raw"]??"");if(substr_count($c,"http://www.doctorcura.com")!==0||substr_count($c,"https://doctorcura.com")<1)exit(2);echo"raw=clean\n";' "$tmp/$round-page.json"
+            for lang in base fr en; do
+              if [[ "$lang" == base ]]; then url="$base/geschaftsbedingungen/"; else url="$base/$lang/geschaftsbedingungen/"; fi
+              html="$tmp/$round-$lang.html"
+              result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url")
+              canon=$(canonical_of "$html"); old=$(grep -Fco 'http://www.doctorcura.com' "$html" || true)
+              echo "$lang result=$result canonical=$canon legacy_count=$old"
+              [[ "$result" == $'200\t'"$url"$'\t0' && "$canon" == "$url" && "$old" == '0' ]] || return 1
+            done
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/$round-snippet.json"
+            php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||hash("sha256",$c)!==$argv[2]||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);' "$tmp/$round-snippet.json" "$expected_hash"
+            echo "TERMS_VERIFY_OK $round"
           }
 
           verify_round one
           sleep 5
           verify_round two
           trap - EXIT
-          echo "V84_SUCCESS snippet_hash=$final_hash"
+          echo 'TERMS_FIX_SUCCESS page_id=11'
