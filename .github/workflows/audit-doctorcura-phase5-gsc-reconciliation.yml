@@ -34,6 +34,7 @@ jobs:
           PY
           )
           echo "SOURCE_RUN_ID=$run_id"
+          test "$run_id" = '34498155156'
           curl --fail --silent --show-error "${h[@]}" "$api/actions/runs/$run_id/artifacts" > /tmp/arts.json
           art_id=$(python3 - /tmp/arts.json <<'PY'
           import json,sys
@@ -43,6 +44,7 @@ jobs:
           PY
           )
           echo "SOURCE_ARTIFACT_ID=$art_id"
+          test "$art_id" = '10160734791'
           curl --fail --silent --show-error --location "${h[@]}" "$api/actions/artifacts/$art_id/zip" -o /tmp/p5.zip
           mkdir -p /tmp/p5; unzip -q /tmp/p5.zip -d /tmp/p5
           test -s /tmp/p5/doctorcura-exhaustive-results.json
@@ -64,8 +66,7 @@ jobs:
               if r.get('error'): return 'transport_error'
               p=urllib.parse.urlsplit(u).path
               if r.get('firstStatus') in (301,302,307,308): return f"redirect_{r.get('redirects')}_hop"
-              if p.endswith('.xml') or '/sitemap' in p:
-                  return 'technical_sitemap'
+              if p.endswith('.xml') or '/sitemap' in p: return 'technical_sitemap'
               if '/feed/' in p or p.endswith('/feed'):
                   robots=((r.get('robots','')+' '+r.get('xRobots','')).lower())
                   if r.get('finalStatus')==200 and 'noindex' in robots: return 'feed_200_noindex'
@@ -91,10 +92,8 @@ jobs:
           for u in ['https://doctorcura.com/sitemap','https://doctorcura.com/sitemap/','https://doctorcura.com/sitemap_index.xml','https://doctorcura.com/sitemap_index.xml/']:
               r=by.get(u,{})
               print(f"SITEMAP_STATE\t{u}\tfirst={r.get('firstStatus')}\tloc={r.get('firstLocation','')}\tfinal={r.get('finalStatus')}\tfinalUrl={r.get('finalUrl','')}\tcontent_type={r.get('contentType','')}\tcanonical={r.get('canonical','')}\txrobots={r.get('xRobots','')}")
-          sm=set()
-          for item in d.get('info',[]):
-              pass
-          print('SITEMAP_HTML_PAGE_IN_CURRENT_PAGE_SITEMAP='+str('https://doctorcura.com/sitemap/' in by and by.get('https://doctorcura.com/sitemap/',{}).get('finalStatus')==200).lower())
           print('LIVE_GSC_SUBMISSION_STATUS=not_available_in_connected_runtime')
           print('PHASE5_RECONCILIATION_COMPLETE')
           PY
+
+# Corrected matrix pin: run 34498155156 / artifact 10160734791
