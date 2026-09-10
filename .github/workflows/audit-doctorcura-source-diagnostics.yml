@@ -32,46 +32,76 @@ jobs:
           redapi="$base/wp-json/redirection/v1"
           snipapi="$base/wp-json/code-snippets/v1/snippets/43"
 
-          canonical_of(){
-            local f="$1" c=''
-            c=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"'][^>]+href=["'"'][^"'"']+' "$f" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/i' || true)
-            if [[ -z "$c" ]]; then
-              c=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+rel=["'"'][^"'"']*canonical[^"'"']*["'"']' "$f" | head -1 | sed -E 's/.*href=["'"']([^"'"']+).*/\1/i' || true)
-            fi
-            printf '%s' "$c"
-          }
+          cat > "$tmp/parse_html.py" <<'PY'
+          import json,sys
+          from html.parser import HTMLParser
+          class P(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.canonical=''; self.robots=''; self.alts=[]
+              def handle_starttag(self,tag,attrs):
+                  a={str(k).lower():str(v or '') for k,v in attrs}
+                  if tag.lower()=='link':
+                      rel=a.get('rel','').lower().split()
+                      if 'canonical' in rel and a.get('href') and not self.canonical: self.canonical=a['href']
+                      if 'alternate' in rel and a.get('hreflang') and a.get('href'): self.alts.append((a['hreflang'].lower(),a['href']))
+                  elif tag.lower()=='meta' and a.get('name','').lower()=='robots' and not self.robots:
+                      self.robots=a.get('content','')
+          data=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); p=P(); p.feed(data)
+          print('canonical='+p.canonical)
+          print('robots='+p.robots)
+          print('hreflang_query_count='+str(sum(1 for _,u in p.alts if '?' in u)))
+          print('hreflangs='+' | '.join(f'{l}={u}' for l,u in p.alts))
+          PY
 
           probe(){
-            local label="$1" url="$2" first_h="$tmp/$label-first.h" all_h="$tmp/$label-all.h" html="$tmp/$label.html" first loc result canon robots hreflangs paramalts
+            local label="$1" url="$2" first_h="$tmp/$label-first.h" html="$tmp/$label.html" first loc result parsed canon robots paramalts alts
             curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --max-redirs 0 --dump-header "$first_h" --output /dev/null "$url" || true
             first=$(awk '/^HTTP\//{print $2; exit}' "$first_h")
             loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$first_h")
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --dump-header "$all_h" --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url" || true)
-            canon=$(canonical_of "$html")
-            robots=$(grep -Eio '<meta[^>]+name=["'"']robots["'"'][^>]+content=["'"'][^"'"']+["'"']' "$html" | head -1 | sed -E 's/.*content=["'"']([^"'"']+).*/\1/i' || true)
-            hreflangs=$(grep -Eio '<link[^>]+rel=["'"'][^"'"']*alternate[^"'"']*["'"'][^>]+hreflang=["'"'][^"'"']+["'"'][^>]+href=["'"'][^"'"']+' "$html" | sed -E 's/.*hreflang=["'"']([^"'"']+)["'"'].*href=["'"']([^"'"']+).*/\1=\2/i' | paste -sd ' | ' - || true)
-            if [[ -z "$hreflangs" ]]; then
-              hreflangs=$(grep -Eio '<link[^>]+href=["'"'][^"'"']+["'"'][^>]+hreflang=["'"'][^"'"']+' "$html" | sed -E 's/.*href=["'"']([^"'"']+)["'"'].*hreflang=["'"']([^"'"']+).*/\2=\1/i' | paste -sd ' | ' - || true)
-            fi
-            paramalts=$(grep -Eio '<link[^>]+hreflang=["'"'][^"'"']+["'"'][^>]+href=["'"'][^"'"']+\?[^"'"']+' "$html" | wc -l | tr -d ' ')
+            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --output "$html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$url" || true)
+            parsed=$(python3 "$tmp/parse_html.py" "$html")
+            canon=$(printf '%s\n' "$parsed" | sed -n 's/^canonical=//p')
+            robots=$(printf '%s\n' "$parsed" | sed -n 's/^robots=//p')
+            paramalts=$(printf '%s\n' "$parsed" | sed -n 's/^hreflang_query_count=//p')
+            alts=$(printf '%s\n' "$parsed" | sed -n 's/^hreflangs=//p')
             echo "PROBE label=$label start=$url first=${first:-none} location=${loc:-none} result=$result canonical=${canon:-none} robots=${robots:-none} hreflang_query_count=${paramalts:-0}"
-            [[ -n "$hreflangs" ]] && echo "HREFLANG label=$label $hreflangs"
+            [[ -n "$alts" ]] && echo "HREFLANG label=$label $alts"
           }
 
           echo '=== SNIPPET 43 CURRENT TRUTH ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$snipapi" > "$tmp/snippet.json"
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");preg_match_all("/DoctorCura[^\\r\\n*]{0,140}(?:V[0-9]+(?:\\.[0-9]+)*)/i",$c,$m);$markers=array_values(array_unique(array_map("trim",$m[0]??[])));echo "snippet_id=".(int)($s["id"]??0)." name=".($s["name"]??"")." active=".(!empty($s["active"])?"true":"false")." scope=".($s["scope"]??"")." hash=".hash("sha256",$c)." helper_count=".substr_count($c,"DoctorCura one-time cache purge helper").PHP_EOL;foreach($markers as $x)echo "snippet_marker=".$x.PHP_EOL;' "$tmp/snippet.json"
+          python3 - "$tmp/snippet.json" <<'PY'
+          import hashlib,json,re,sys
+          s=json.load(open(sys.argv[1],encoding='utf-8')); c=str(s.get('code') or '')
+          print(f"snippet_id={int(s.get('id') or 0)} name={s.get('name','')} active={'true' if s.get('active') else 'false'} scope={s.get('scope','')} hash={hashlib.sha256(c.encode()).hexdigest()} helper_count={c.count('DoctorCura one-time cache purge helper')}")
+          markers=[]
+          for m in re.finditer(r'DoctorCura[^\r\n*]{0,140}(?:V[0-9]+(?:\.[0-9]+)*)',c,re.I):
+              x=m.group(0).strip()
+              if x not in markers: markers.append(x)
+          for x in markers: print('snippet_marker='+x)
+          PY
 
           echo '=== PHASE 2A READBACK ==='
           for id in 900067 900066; do
             curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/posts/$id?context=edit&_fields=id,status,slug,link,featured_media" > "$tmp/post-$id.json"
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "post id=".(int)($p["id"]??0)." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured_media=".(int)($p["featured_media"]??0).PHP_EOL;' "$tmp/post-$id.json"
+            python3 - "$tmp/post-$id.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          print(f"post id={int(p.get('id') or 0)} status={p.get('status','')} slug={p.get('slug','')} link={p.get('link','')} featured_media={int(p.get('featured_media') or 0)}")
+          PY
           done
+
           for source in '/welche-medikamente-beeinflussen-die-erektion-2/' '/product-categorie/sexual-problems/' '/product-categorie/menstruation-verschieben/' '/about-us/' '/product-categorie/gewichtsverlust/' '/fr/product-categorie/gewichtsverlust/' '/en/product-categorie/gewichtsverlust/' '/datenschutz/' '/fr/datenschutz/' '/en/datenschutz/'; do
             key=$(printf '%s' "$source" | tr '/:?' '___')
             curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=100' "$redapi/redirect" > "$tmp/red-$key.json"
             echo "REDIRECTION source=$source"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x){$target=is_array($x["action_data"]??null)?(string)($x["action_data"]["url"]??""):(string)($x["action_data"]??"");echo "id=".(int)($x["id"]??0)." status=".($x["status"]??"")." code=".(int)($x["action_code"]??0)." target=".$target.PHP_EOL;}' "$tmp/red-$key.json"
+            python3 - "$tmp/red-$key.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print('total='+str(int(d.get('total') or 0)))
+          for x in d.get('items') or []:
+              ad=x.get('action_data'); target=(ad.get('url','') if isinstance(ad,dict) else (ad or ''))
+              print(f"id={int(x.get('id') or 0)} status={x.get('status','')} code={int(x.get('action_code') or 0)} target={target}")
+          PY
           done
           probe dup "$base/welche-medikamente-beeinflussen-die-erektion-2/"
           probe clean "$base/welche-medikamente-beeinflussen-die-erektion/"
@@ -105,17 +135,46 @@ jobs:
             probe "privacy-current-$lang" "$base$prefix/privacy-policy/"
             probe "privacy-legacy-$lang" "$base$prefix/datenschutz/"
           done
+          curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/pages?slug=privacy-policy&context=edit&per_page=10" > "$tmp/privacy-pages.json"
+          python3 - "$tmp/privacy-pages.json" <<'PY'
+          import json,sys,re
+          pages=json.load(open(sys.argv[1],encoding='utf-8'))
+          for p in pages:
+              raw=str(((p.get('content') or {}).get('raw')) or '')
+              text=re.sub(r'<[^>]+>',' ',raw); text=re.sub(r'\s+',' ',text).strip()
+              title=str(((p.get('title') or {}).get('raw')) or ((p.get('title') or {}).get('rendered')) or '')
+              print(f"privacy_page id={p.get('id')} status={p.get('status')} slug={p.get('slug')} title={title} text_len={len(text)} excerpt={text[:180]}")
+          PY
 
           echo '=== PHASE 3C INTERNAL HTTP LINK SOURCE ==='
           curl --silent --show-error --location --connect-timeout 10 --max-time 35 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$needle="http://www.doctorcura.com";$walk=function($v,$path="$")use(&$walk,$needle){if(is_array($v)){foreach($v as$k=>$x)$walk($x,$path."/".$k);}elseif(is_string($v)&&strpos($v,$needle)!==false){preg_match_all("#http://www\\.doctorcura\\.com[^\\\"\\x27\\s<]*#i",$v,$m);echo "rest_match_path=".$path." count=".substr_count($v,$needle)." urls=".implode(",",array_unique($m[0]??[])).PHP_EOL;}};$walk($p);' "$tmp/terms.json"
+          python3 - "$tmp/terms.json" <<'PY'
+          import json,re,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); needle='http://www.doctorcura.com'
+          def walk(v,path='$'):
+              if isinstance(v,dict):
+                  for k,x in v.items(): walk(x,path+'/'+str(k))
+              elif isinstance(v,list):
+                  for i,x in enumerate(v): walk(x,path+'/'+str(i))
+              elif isinstance(v,str) and needle in v:
+                  urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'\s<]*',v,re.I)))
+                  print(f"rest_match_path={path} count={v.count(needle)} urls={','.join(urls)}")
+          walk(p)
+          PY
           for lang in base fr en; do
             [[ "$lang" == base ]] && prefix='' || prefix="/$lang"
             url="$base$prefix/geschaftsbedingungen/"; html="$tmp/terms-$lang.html"
             curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 45 --output "$html" "$url"
-            cnt=$(grep -Fco 'http://www.doctorcura.com' "$html" || true)
-            echo "terms_render lang=$lang old_http_count=$cnt canonical=$(canonical_of "$html")"
-            grep -Eo 'http://www\.doctorcura\.com[^"'"'<> ]*' "$html" | sort -u | sed "s#^#terms_render_url lang=$lang url=#" || true
+            python3 - "$html" "$lang" "$tmp/parse_html.py" <<'PY'
+          import re,subprocess,sys
+          html=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); lang=sys.argv[2]
+          parsed=subprocess.check_output(['python3',sys.argv[3],sys.argv[1]],text=True); canon=''
+          for line in parsed.splitlines():
+              if line.startswith('canonical='): canon=line.split('=',1)[1]
+          urls=sorted(set(re.findall(r'http://www\.doctorcura\.com[^\"\'<>\s]*',html,re.I)))
+          print(f"terms_render lang={lang} old_http_count={html.count('http://www.doctorcura.com')} canonical={canon}")
+          for u in urls: print(f"terms_render_url lang={lang} url={u}")
+          PY
           done
 
           echo '=== PHASE 3D EPIPEN PARAMETER HREFLANG ==='
