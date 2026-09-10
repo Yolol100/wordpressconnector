@@ -152,14 +152,10 @@ jobs:
         uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
         with:
           build-dir: plugin/wordpressconnector
-          checks: |
-            php_error_reporting
-            code_obfuscation
-            minified_files
-            direct_file_access
-            safe_redirect
-            setting_sanitization
-            no_unfiltered_uploads
+          exclude-checks: |
+            plugin_review_phpcs
+            plugin_updater
+            trademarks
 
   dependency-review:
     if: github.event_name == 'pull_request'
