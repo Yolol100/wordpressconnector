@@ -1,4 +1,4 @@
-name: Audit DoctorCura Current Phase 1 State
+name: Audit DoctorCura Phase 2 Image Context
 
 on:
   push:
@@ -11,60 +11,44 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 6
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect exact live source state read-only
+      - name: Inspect broken image usage read-only
         shell: bash
         run: |
           set -euo pipefail
-          base="${SITE_URL%/}"
-          [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase1"; mkdir -p "$tmp"
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          tmp="$RUNNER_TEMP/dc-phase2-img"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          wpapi="$base/wp-json/wp/v2"
-          redapi="$base/wp-json/redirection/v1"
+          url="$base/welche-medikamente-beeinflussen-die-erektion/"
+          broken="$base/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp"
+          candidate="$base/wp-content/uploads/2026/06/beste-optionen-bei-erektionsstoerungen-featured.webp"
 
-          echo '=== POSTS BY EXACT ID ==='
-          for id in 900066 900067; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/p$id.json" --write-out '%{http_code}' "$wpapi/posts/$id?context=edit")
-            echo "post_rest id=$id http=$code"
-            [[ "$code" == '200' ]] || continue
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "  id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured=".($p["featured_media"]??0)." date=".($p["date_gmt"]??"")." modified=".($p["modified_gmt"]??"").PHP_EOL; echo "  content_sha=".hash("sha256",(string)($p["content"]["raw"]??""))." title_sha=".hash("sha256",(string)($p["title"]["raw"]??""))." excerpt_sha=".hash("sha256",(string)($p["excerpt"]["raw"]??"")).PHP_EOL;' "$tmp/p$id.json"
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$url" > "$tmp/live.html"
+          echo '=== META IMAGE TAGS ==='
+          grep -Eio '<meta[^>]+(og:image|twitter:image)[^>]*>' "$tmp/live.html" || true
+          echo '=== TAGS CONTAINING BROKEN URL ==='
+          grep -Eio '<[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$tmp/live.html" | head -30 || true
+          echo '=== TAGS CONTAINING CANDIDATE URL ==='
+          grep -Eio '<[^>]+beste-optionen-bei-erektionsstoerungen-featured[^>]*>' "$tmp/live.html" | head -30 || true
+          echo '=== SOURCE COUNTS ==='
+          printf 'broken_count='; grep -Foc "$broken" "$tmp/live.html" || true
+          printf 'candidate_count='; grep -Foc "$candidate" "$tmp/live.html" || true
+
+          echo '=== MEDIA HTTP ==='
+          for u in "$broken" "$candidate"; do
+            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}\n' "$u"
           done
 
-          echo '=== CONTENT EQUALITY BY ID ==='
-          php -r '$a=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$b=json_decode(file_get_contents($argv[2]),true,512,JSON_THROW_ON_ERROR);foreach([["content","raw"],["title","raw"],["excerpt","raw"]] as $f){$x=(string)($a[$f[0]][$f[1]]??"");$y=(string)($b[$f[0]][$f[1]]??"");echo $f[0]."_equal=".($x===$y?"yes":"no").PHP_EOL;}' "$tmp/p900066.json" "$tmp/p900067.json"
-
-          echo '=== SITEMAP MATCHES ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/post-sitemap.xml" > "$tmp/sitemap.xml"
-          grep -o '<loc>[^<]*welche-medikamente-beeinflussen-die-erektion[^<]*</loc>' "$tmp/sitemap.xml" || true
-
-          echo '=== LIVE URLS ==='
-          for path in '/welche-medikamente-beeinflussen-die-erektion/' '/welche-medikamente-beeinflussen-die-erektion-2/'; do
-            result=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output "$tmp/live.html" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
-            echo "$path $result"
-            grep -Eo '"post":\{"id":[0-9]+' "$tmp/live.html" | head -1 || true
-            grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$tmp/live.html" | head -1 || true
-            grep -Eo '/wp-content/uploads/[^" ]+featured[^" ]*' "$tmp/live.html" | head -3 || true
+          echo '=== POST CONTENT RAW IMAGE REFERENCES ==='
+          for id in 900067 900066; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/$id?context=edit" > "$tmp/p$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "post=".($p["id"]??"")." broken_in_content=".substr_count($raw,"welche-medikamente-beeinflussen-die-erektion-featured")." candidate_in_content=".substr_count($raw,"beste-optionen-bei-erektionsstoerungen-featured").PHP_EOL;' "$tmp/p$id.json"
           done
-
-          echo '=== REDIRECTS ==='
-          for source in '/datenschutz/' '/product-categorie/gewichtsverlust/'; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
-            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "source=".$argv[2]." total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x)echo "  id=".($x["id"]??"")." status=".($x["status"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"").PHP_EOL;' "$tmp/red.json" "$source"
-          done
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --dump-header "$tmp/w.h" --output /dev/null "$base/product-categorie/gewichtsverlust/"
-          awk 'BEGIN{IGNORECASE=1}/^HTTP\//||/^location:/{gsub(/\r/,"");print}' "$tmp/w.h"
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out 'datenschutz=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n' "$base/datenschutz/"
-
-          echo '=== TERMS ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/pages/11?context=edit" > "$tmp/terms.json"
-          php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "http_www_count=".substr_count($raw,"href=\"http://www.doctorcura.com\"")." https_home_count=".substr_count($raw,"href=\"https://doctorcura.com/\"").PHP_EOL;' "$tmp/terms.json"
-
-          echo 'PHASE1_READONLY_COMPLETE'
+          echo 'PHASE2_IMAGE_CONTEXT_COMPLETE'
