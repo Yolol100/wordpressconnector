@@ -1,0 +1,82 @@
+name: DoctorCura Phase 3C Filter Owners
+
+on:
+  push:
+    branches:
+      - audit/doctorcura-deep-seo-20260910
+    paths:
+      - '.github/workflows/audit-doctorcura-phase3c-filter-owners.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect render filter callback owners with temporary self-removing helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          c=(--silent --show-error --connect-timeout 10 --max-time 45 --retry 3 --retry-delay 2 --retry-all-errors)
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          api="$base/wp-json/code-snippets/v1/snippets/43"; tmp="$RUNNER_TEMP/p3c-filters"; mkdir -p "$tmp"
+          baseline='939d9bc10b33e053c1c668b58f13491b2ac6a87c9673bd9ae76ade739bc77c40'
+          marker='DoctorCura one-time filter owner diagnostic'
+          token=$(openssl rand -hex 24); helper=0
+          make_payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
+          put(){ local src="$1" label="$2" http; make_payload "$src" "$tmp/$label.json"; http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$tmp/$label.json" --output "$tmp/$label-out.json" --write-out '%{http_code}' "$api"); echo "PUT $label http=$http"; [[ "$http" == 200 ]]; }
+          cleanup(){ local rc=$?; set +e; if [[ "$helper" == 1 ]]; then put "$tmp/original.php" cleanup >/dev/null 2>&1 || true; fi; curl "${c[@]}" --location "${auth[@]}" --output "$tmp/rb.json" "$api" >/dev/null 2>&1 || true; if [[ -s "$tmp/rb.json" ]]; then php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "READBACK hash=".hash("sha256",$c)." marker=".(strpos($c,$argv[2])===false?"absent":"present").PHP_EOL;' "$tmp/rb.json" "$marker"; fi; exit "$rc"; }
+          trap cleanup EXIT
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" "$api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);file_put_contents($argv[2],$c);' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
+          cp "$tmp/original.php" "$tmp/helper.php"
+          cat >> "$tmp/helper.php" <<PHP
+
+          /* DoctorCura one-time filter owner diagnostic */
+          add_action( 'init', function () {
+              if ( ! isset( \$_GET['doctorcura_filter_owners'] ) || ! hash_equals( '$token', (string) \$_GET['doctorcura_filter_owners'] ) ) return;
+              global \$wp_filter;
+              \$hooks = array( 'the_content', 'rest_prepare_page', 'rest_pre_echo_response', 'rest_post_dispatch' );
+              \$out = array();
+              foreach ( \$hooks as \$hook ) {
+                  \$rows = array();
+                  \$obj = isset( \$wp_filter[\$hook] ) ? \$wp_filter[\$hook] : null;
+                  if ( is_object( \$obj ) && isset( \$obj->callbacks ) ) {
+                      foreach ( \$obj->callbacks as \$priority => \$callbacks ) {
+                          foreach ( \$callbacks as \$cb ) {
+                              \$fn = \$cb['function'] ?? null; \$name = '';
+                              if ( is_string( \$fn ) ) \$name = \$fn;
+                              elseif ( is_array( \$fn ) && count( \$fn ) >= 2 ) \$name = ( is_object( \$fn[0] ) ? get_class( \$fn[0] ) : (string) \$fn[0] ) . '::' . (string) \$fn[1];
+                              elseif ( \$fn instanceof Closure ) \$name = 'Closure';
+                              elseif ( is_object( \$fn ) ) \$name = get_class( \$fn );
+                              \$rows[] = array( 'priority' => (int) \$priority, 'callback' => \$name );
+                          }
+                      }
+                  }
+                  \$out[\$hook] = \$rows;
+              }
+              wp_send_json( \$out );
+          }, 1 );
+          PHP
+          put "$tmp/helper.php" install; helper=1
+          curl "${c[@]}" --compressed --output "$tmp/owners.json" "$base/?doctorcura_filter_owners=$token"
+          python3 - "$tmp/owners.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          for hook,rows in d.items():
+              print(f'HOOK {hook} callbacks={len(rows)}')
+              for r in rows: print(f"CALLBACK hook={hook} priority={r.get('priority')} name={r.get('callback')}")
+          PY
+          put "$tmp/original.php" remove; helper=0
+          curl "${c[@]}" --location "${auth[@]}" --output "$tmp/final.json" "$api"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true);$c=(string)($s["code"]??"");echo "FINAL hash=".hash("sha256",$c)." marker=".(strpos($c,$argv[2])===false?"absent":"present").PHP_EOL;if(hash("sha256",$c)!==$argv[3]||strpos($c,$argv[2])!==false)exit(2);' "$tmp/final.json" "$marker" "$baseline"
+          trap - EXIT
+          echo PHASE3C_FILTER_OWNER_DIAGNOSTIC_COMPLETE
