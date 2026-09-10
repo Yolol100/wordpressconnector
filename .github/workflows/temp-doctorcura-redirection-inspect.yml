@@ -1,0 +1,32 @@
+name: Temporary DoctorCura Redirection Inspect
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temp-doctorcura-redirection-inspect.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+      REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+      REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+    steps:
+      - name: Inspect Redirection groups and known redirect
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "${SITE_URL%/}" == 'https://doctorcura.com' ]] || exit 1
+          auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "${SITE_URL%/}/wp-json/redirection/v1/group?per_page=50" > "$RUNNER_TEMP/groups.json"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/category/blogs/' --data-urlencode 'per_page=20' "${SITE_URL%/}/wp-json/redirection/v1/redirect" > "$RUNNER_TEMP/known.json"
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/fr/product-categorie/sexual-problems/' --data-urlencode 'per_page=20' "${SITE_URL%/}/wp-json/redirection/v1/redirect" > "$RUNNER_TEMP/old.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach(($d["items"]??[]) as $x){echo "GROUP id=".(int)($x["id"]??0)." name=".(string)($x["name"]??"")." enabled=".(!empty($x["enabled"])?"yes":"no")." module=".(int)($x["module_id"]??0).PHP_EOL;}' "$RUNNER_TEMP/groups.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach(($d["items"]??[]) as $x){echo "KNOWN id=".(int)($x["id"]??0)." url=".(string)($x["url"]??"")." regex=".(!empty($x["regex"])?"yes":"no")." match_type=".(string)($x["match_type"]??"")." action_type=".(string)($x["action_type"]??"")." code=".(int)($x["action_code"]??0)." group=".(int)($x["group_id"]??0)." action_data=".json_encode($x["action_data"]??null,JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$RUNNER_TEMP/known.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "OLD_TOTAL=".(int)($d["total"]??0).PHP_EOL; foreach(($d["items"]??[]) as $x){echo "OLD id=".(int)($x["id"]??0)." url=".(string)($x["url"]??"")." action_data=".json_encode($x["action_data"]??null,JSON_UNESCAPED_SLASHES).PHP_EOL;}' "$RUNNER_TEMP/old.json"
