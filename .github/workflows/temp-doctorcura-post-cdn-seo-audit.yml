@@ -1,4 +1,4 @@
-name: Temporary DoctorCura Post-CDN SEO Audit
+name: Temporary DoctorCura Final SEO QA
 
 on:
   push:
@@ -10,48 +10,89 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  qa:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 8
     steps:
-      - name: Crawl all canonical DoctorCura sitemap URLs
+      - name: Run two stable public QA rounds
         shell: bash
         run: |
           set -euo pipefail
           base='https://doctorcura.com'
-          tmp="$RUNNER_TEMP/doctorcura-sitemap-audit"
-          mkdir -p "$tmp"
-          sitemaps=(post-sitemap.xml page-sitemap.xml product-sitemap.xml category-sitemap.xml product_cat-sitemap.xml)
-          : > "$tmp/urls.txt"
-          for sm in "${sitemaps[@]}"; do
-            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --output "$tmp/$sm" --write-out '%{http_code}' "$base/$sm")
-            printf 'SITEMAP\t%s\tstatus=%s\n' "$sm" "$code"
-            [[ "$code" == '200' ]] || exit 1
-            grep -Eo '<loc>[^<]+' "$tmp/$sm" | sed 's#<loc>##' >> "$tmp/urls.txt" || true
-          done
-          sort -u "$tmp/urls.txt" -o "$tmp/urls.txt"
-          total=$(wc -l < "$tmp/urls.txt" | tr -d ' ')
-          echo "URL_TOTAL=$total"
-          : > "$tmp/results.tsv"
-          while IFS= read -r url; do
-            [[ -n "$url" ]] || continue
-            key=$(printf '%s' "$url" | sha256sum | cut -c1-16)
-            hdr="$tmp/$key.h"; body="$tmp/$key.b"
-            code=$(curl --silent --show-error --compressed --connect-timeout 8 --max-time 30 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraSitemapAudit/1.0)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$url" || echo CURLERR)
-            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" 2>/dev/null || true)
-            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" 2>/dev/null | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" 2>/dev/null | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
-            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" 2>/dev/null | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
-            xrobots=$(awk 'BEGIN{IGNORECASE=1}/^x-robots-tag:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" 2>/dev/null || true)
-            printf '%s\t%s\t%s\t%s\t%s\t%s\n' "$code" "$url" "${location:-}" "${canonical:-}" "${robots:-}" "${xrobots:-}" >> "$tmp/results.tsv"
-          done < "$tmp/urls.txt"
+          tmp="$RUNNER_TEMP/dc-final-seo-qa"; mkdir -p "$tmp"
 
-          awk -F '\t' 'BEGIN{bad=0;noindex=0;canon=0;redir=0} {if($1!="200"){bad++; print "ANOMALY status=" $1 " url=" $2 " location=" $3} if($3!=""){redir++; print "ANOMALY redirect url=" $2 " location=" $3} r=tolower($5 " " $6); if(r ~ /noindex/){noindex++; print "ANOMALY noindex url=" $2 " robots=" $5 " xrobots=" $6} if($1=="200" && $4!="" && $4!=$2){canon++; print "ANOMALY canonical url=" $2 " canonical=" $4}} END{print "SUMMARY bad_status="bad" redirects="redir" noindex="noindex" canonical_mismatch="canon}' "$tmp/results.tsv"
+          canonical_of(){
+            local body="$1" c
+            c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            printf '%s' "$c"
+          }
 
-          for u in "$base/sitemap" "$base/sitemap/" "$base/sitemap_index.xml" "$base/sitemap_index.xml/" "$base/fr/product-categorie/sexual-problems/" "$base/product-category/sexuelle-probleme/"; do
-            hdr="$tmp/special.h"; body="$tmp/special.b"
-            code=$(curl --silent --show-error --compressed --connect-timeout 8 --max-time 30 --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$u")
-            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            hcdn=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            printf 'SPECIAL\t%s\tstatus=%s\tlocation=%s\thcdn=%s\n' "$u" "$code" "${location:-}" "${hcdn:-}"
+          verify_200(){
+            local round="$1" path="$2" label="$3" body="$tmp/$round-$label.body" hdr="$tmp/$round-$label.h" code can robots xrobots
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --user-agent 'Mozilla/5.0 (compatible; DoctorCuraFinalSEOQA/1.0)' --dump-header "$hdr" --output "$body" --write-out '%{http_code}' "$base$path")
+            [[ "$code" == '200' ]] || { echo "$round $label expected 200 got $code" >&2; return 1; }
+            can=$(canonical_of "$body")
+            [[ "$can" == "$base$path" ]] || { echo "$round $label canonical=$can expected=$base$path" >&2; return 1; }
+            robots=$(grep -Eio '<meta[^>]+name="robots"[^>]+content="[^"]+"' "$body" | head -1 | sed -n 's/.*content="\([^"]*\)".*/\1/p' || true)
+            xrobots=$(awk 'BEGIN{IGNORECASE=1}/^x-robots-tag:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            [[ "${robots,,} ${xrobots,,}" != *noindex* ]] || { echo "$round $label noindex" >&2; return 1; }
+            echo "PASS $round $label status=200 canonical=$can"
+          }
+
+          verify_404(){
+            local round="$1" path="$2" label="$3" hdr="$tmp/$round-$label.h" code loc
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --dump-header "$hdr" --output /dev/null --write-out '%{http_code}' "$base$path")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
+            [[ "$code" == '404' && -z "$loc" ]] || { echo "$round $label expected true 404 got status=$code location=$loc" >&2; return 1; }
+            echo "PASS $round $label status=404"
+          }
+
+          verify_redirect(){
+            local round="$1" path="$2" final_expected="$3" redirects_expected="$4" label="$5" first_expected="${6:-}" first_body="$tmp/$round-$label-first.body" first_h="$tmp/$round-$label-first.h" body="$tmp/$round-$label.body" code loc out status final count can
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --dump-header "$first_h" --output "$first_body" --write-out '%{http_code}' "$base$path")
+            loc=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$first_h" || true)
+            [[ "$code" == '301' ]] || { echo "$round $label first status=$code" >&2; return 1; }
+            if [[ -n "$first_expected" && "$loc" != "$first_expected" ]]; then echo "$round $label first location=$loc expected=$first_expected" >&2; return 1; fi
+            out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 50 --header 'Cache-Control: no-cache' --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
+            IFS=$'\t' read -r status final count <<< "$out"
+            [[ "$status" == '200' && "$final" == "$final_expected" && "$count" == "$redirects_expected" ]] || { echo "$round $label follow=$out expected_final=$final_expected redirects=$redirects_expected" >&2; return 1; }
+            can=$(canonical_of "$body")
+            [[ "$can" == "$final_expected" ]] || { echo "$round $label final canonical=$can expected=$final_expected" >&2; return 1; }
+            echo "PASS $round $label first=$loc final=$final redirects=$count canonical=$can"
+          }
+
+          verify_param(){
+            local round="$1" body="$tmp/$round-param.body" code can
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --output "$body" --write-out '%{http_code}' "$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen")
+            can=$(canonical_of "$body")
+            [[ "$code" == '200' && "$can" == "$base/product/epipen/" ]] || { echo "$round param status=$code canonical=$can" >&2; return 1; }
+            echo "PASS $round epipen-param status=200 canonical=$can"
+          }
+
+          for round in round1 round2; do
+            verify_200 "$round" '/fr/blogs/6/' pagination-fr-6
+            verify_200 "$round" '/en/blogs/8/' pagination-en-8
+            verify_200 "$round" '/blogs/16/' pagination-root-16
+            verify_404 "$round" '/fr/blogs/17/' pagination-fr-17
+            verify_redirect "$round" '/fr/blogs/page/8/' "$base/fr/blogs/8/" 1 pagination-fr-alias-8 "$base/fr/blogs/8/"
+
+            verify_200 "$round" '/malarone-nebenwirkungen-warnzeichen/' article-malarone
+            verify_200 "$round" '/mounjaro-nebenwirkungen-risiken/' article-mounjaro
+            verify_200 "$round" '/zolpidem-nebenwirkungen-schlafwandeln-abhaengigkeit/' article-zolpidem
+
+            for sm in sitemap_index.xml post-sitemap.xml page-sitemap.xml product-sitemap.xml category-sitemap.xml product_cat-sitemap.xml; do
+              code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 40 --output /dev/null --write-out '%{http_code}' "$base/$sm")
+              [[ "$code" == '200' ]] || { echo "$round sitemap $sm status=$code" >&2; exit 1; }
+              echo "PASS $round sitemap-$sm status=200"
+            done
+
+            verify_param "$round"
+            verify_redirect "$round" '/fr/product-categorie/sexual-problems/' "$base/fr/product-category/sexuelle-probleme/" 1 legacy-sexual-fr "$base/fr/product-category/sexuelle-probleme/"
+            verify_redirect "$round" '/fr/product-categorie/menstruation-verschieben/' "$base/fr/product-category/menstruation-verschieben/" 1 legacy-menstruation-fr "$base/fr/product-category/menstruation-verschieben/"
+            verify_redirect "$round" '/about-us/' "$base/uber-uns/" 1 legacy-about "$base/uber-uns/"
+            verify_redirect "$round" '/de/about-us/' "$base/uber-uns/" 2 legacy-about-de '/about-us/'
+            verify_redirect "$round" '/de/' "$base/" 1 default-de "$base/"
+            verify_redirect "$round" '/category/blogs/' "$base/blogs/" 1 legacy-blog-category "$base/blogs/"
           done
+          echo 'FINAL_QA_OK rounds=2 points=2-6'
