@@ -18,73 +18,29 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect live DoctorCura doctors page
+      - name: Inspect DoctorCura doctor card styles
         shell: bash
         run: |
           set -euo pipefail
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
-          [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || exit 1
           root="$RUNNER_TEMP/dc-doctors"; rm -rf "$root"; mkdir -p "$root"
           base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-
-          call_action(){
-            suffix="$1"; action="$2"; payload="$3"; req="$root/r-$suffix.json"; out="$root/o-$suffix.json"
-            python3 - "$req" "$suffix" "$action" "$payload" <<'PY'
+          python3 - "$root/request.json" <<'PY'
           import json,sys
-          p,s,a,x=sys.argv[1:]
-          json.dump({'version':1,'request_id':'dc-doctors-inspect-'+s,'action':a,'dry_run':True,'confirm':False,'payload':json.loads(x)},open(p,'w',encoding='utf-8'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'version':1,'request_id':'dc-doctors-style-inspect','action':'elementor.inspect','dry_run':True,'confirm':False,'payload':{'id':900099}},open(sys.argv[1],'w'),separators=(',',':'))
           PY
-            code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$base/execute")
-            [[ "$code" == 200 ]] || { echo "$action HTTP $code" >&2; exit 1; }
-            python3 - "$out" "$action" <<'PY'
+          code=$(curl -sS -L --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/request.json" -o "$root/result.json" -w '%{http_code}' "$base/execute")
+          [[ "$code" == 200 ]]
+          python3 - "$root/result.json" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          if not d.get('ok'): raise SystemExit(sys.argv[2]+': '+str(d.get('error','connector error'))[:200])
-          PY
-          }
-
-          call_action pages post.list '{"post_type":"page","status":"publish","per_page":100,"page":1}'
-          page_id=$(python3 - "$root/o-pages.json" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          items=(d.get('data') or {}).get('items') or []
-          matches=[p for p in items if isinstance(p,dict) and p.get('slug')=='unsere-aerzte']
-          if len(matches)!=1: raise SystemExit('Expected exactly one published page with slug unsere-aerzte')
-          p=matches[0]
-          print(int(p['id']))
-          print('PAGE '+json.dumps({k:p.get(k) for k in ('id','title','slug','permalink')},ensure_ascii=False,separators=(',',':')),file=sys.stderr)
-          PY
-          )
-          echo "page_id=$page_id"
-          call_action el elementor.inspect "{\"id\":$page_id}"
-
-          python3 - "$root/o-el.json" <<'PY'
-          import json,re,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          data=d.get('data') or {}; doc=data.get('document') or {}; nodes=doc.get('data') or []
-          print('fingerprint='+str(data.get('fingerprint','')))
-          print('document_type='+str(doc.get('document_type','')))
-          print('elementor_version='+str(doc.get('elementor_version','')))
-          print('top_level_count='+str(len(nodes)))
-
-          def compact(v,n=220):
-              if isinstance(v,dict):
-                  return {k:v.get(k) for k in ('id','url','alt','size','unit','top','right','bottom','left') if k in v}
-              s=re.sub(r'\s+',' ',str(v)).strip()
-              return s[:n]
-          keys=('title','editor','text','html','image','background_image','css_classes','_css_classes','flex_direction','flex_direction_mobile','flex_gap','flex_gap_tablet','flex_gap_mobile','content_width','width','width_tablet','width_mobile','min_height','min_height_tablet','min_height_mobile','padding','padding_tablet','padding_mobile','margin','margin_tablet','margin_mobile','border_radius','background_color','box_shadow_box_shadow_type','typography_typography','typography_font_size','typography_font_weight','text_color','align','align_tablet','align_mobile','object-fit','object-position')
-          count=0
-          def walk(items,path='',top=None,depth=0):
-              global count
-              for i,e in enumerate(items if isinstance(items,list) else []):
+          d=json.load(open(sys.argv[1])); data=d.get('data') or {}; doc=data.get('document') or {}; nodes=doc.get('data') or []
+          ids={'a7fc286','1c098c6','8810bdb','3aa64a3','54f118f','429aa11','b30115e','537985a','0fe317c','908dc83','66f037a','7a7a90f','b2ea7e6','3d19027','4f4f11c'}
+          def walk(items):
+              for e in items if isinstance(items,list) else []:
                   if not isinstance(e,dict): continue
-                  p=f'{path}/{i}' if path else str(i); ti=i if top is None else top
-                  st=e.get('settings') if isinstance(e.get('settings'),dict) else {}
-                  row={'path':p,'top':ti,'depth':depth,'id':e.get('id'),'elType':e.get('elType'),'widgetType':e.get('widgetType'),'children':len(e.get('elements') or [])}
-                  for k in keys:
-                      if k in st and st.get(k) not in ('',None,[],{}): row[k]=compact(st.get(k))
-                  if depth<=6 and count<180:
-                      print('TREE '+json.dumps(row,ensure_ascii=False,separators=(',',':'))); count+=1
-                  walk(e.get('elements') or [],p,ti,depth+1)
+                  if e.get('id') in ids:
+                      print('NODE '+str(e.get('id'))+' '+json.dumps({'elType':e.get('elType'),'widgetType':e.get('widgetType'),'settings':e.get('settings') or {},'child_ids':[x.get('id') for x in e.get('elements') or [] if isinstance(x,dict)]},ensure_ascii=False,separators=(',',':')))
+                  walk(e.get('elements') or [])
           walk(nodes)
+          print('fingerprint='+str(data.get('fingerprint') or ''))
           PY
