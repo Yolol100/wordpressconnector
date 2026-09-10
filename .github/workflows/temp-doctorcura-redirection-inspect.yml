@@ -1,4 +1,4 @@
-name: Temporary DoctorCura Legacy URL Audit
+name: Temporary DoctorCura Legacy URL Migration
 
 on:
   push:
@@ -10,53 +10,112 @@ permissions:
   contents: read
 
 jobs:
-  audit:
+  migrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Verify rollback and historical URL state
+      - name: Create three exact legacy redirects with atomic rollback
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          api="$base/wp-json/redirection/v1"
+          tmp="$RUNNER_TEMP/dc-legacy-migration"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          api="$base/wp-json/redirection/v1/redirect"
-          for source in '/fr/product-categorie/sexual-problems/' '/product-categorie/sexual-problems/'; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api" > "$RUNNER_TEMP/rule.json"
-            total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$RUNNER_TEMP/rule.json")
-            echo "RULE source=$source total=$total"
-            [[ "$total" == '0' ]] || exit 1
+          created_ids=()
+
+          sources=(
+            '/product-categorie/sexual-problems/'
+            '/product-categorie/menstruation-verschieben/'
+            '/about-us/'
+          )
+          targets=(
+            'https://doctorcura.com/product-category/sexuelle-probleme/'
+            'https://doctorcura.com/product-category/menstruation-verschieben/'
+            'https://doctorcura.com/uber-uns/'
+          )
+          titles=(
+            'DoctorCura legacy sexual-problems taxonomy migration'
+            'DoctorCura legacy menstruation taxonomy migration'
+            'DoctorCura legacy about-us migration'
+          )
+
+          canonical_of(){
+            local body="$1" c
+            c=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
+            if [[ -z "$c" ]]; then c=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
+            printf '%s' "$c"
+          }
+          rollback(){
+            if ((${#created_ids[@]})); then
+              ids=$(IFS=,; echo "${created_ids[*]}")
+              printf '{"items":[%s],"global":false}' "$ids" > "$tmp/delete.json"
+              curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/delete.json" --output "$tmp/delete-response.json" "$api/bulk/redirect/delete" >/dev/null || true
+            fi
+          }
+          trap rollback EXIT
+
+          # Preflight all three sources and their canonical destinations.
+          for i in 0 1 2; do
+            source="${sources[$i]}"; target="${targets[$i]}"
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$base$source")
+            [[ "$code" == '404' ]] || { echo "Expected source 404 before migration: $source got $code" >&2; exit 1; }
+            tcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/target-$i.body" --write-out '%{http_code}' "$target")
+            [[ "$tcode" == '200' ]] || { echo "Target not 200: $target got $tcode" >&2; exit 1; }
+            [[ "$(canonical_of "$tmp/target-$i.body")" == "$target" ]] || { echo "Target not self-canonical: $target" >&2; exit 1; }
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/before-$i.json"
+            total=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(int)($d["total"]??0);' "$tmp/before-$i.json")
+            [[ "$total" == '0' ]] || { echo "Redirect already exists for $source" >&2; exit 1; }
           done
 
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/product_cat-sitemap.xml" > "$RUNNER_TEMP/product-cat.xml"
-          echo 'MENSTRUATION_SITEMAP_MATCHES:'
-          grep -Eo '<loc>[^<]*[Mm]enstru[^<]*' "$RUNNER_TEMP/product-cat.xml" | sed 's#<loc>##' || true
-          echo 'SEXUAL_SITEMAP_MATCHES:'
-          grep -Eo '<loc>[^<]*(sex|Sex|sexuell)[^<]*' "$RUNNER_TEMP/product-cat.xml" | sed 's#<loc>##' || true
+          # Also prove localized destinations are valid before migration.
+          for u in 'https://doctorcura.com/fr/product-category/sexuelle-probleme/' 'https://doctorcura.com/fr/product-category/menstruation-verschieben/'; do
+            key=$(printf '%s' "$u" | sha256sum | cut -c1-12)
+            code=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/local-$key.body" --write-out '%{http_code}' "$u")
+            [[ "$code" == '200' && "$(canonical_of "$tmp/local-$key.body")" == "$u" ]] || { echo "Localized target invalid: $u" >&2; exit 1; }
+          done
 
-          check(){
-            local path="$1" label="$2" hdr="$RUNNER_TEMP/$2.h" body="$RUNNER_TEMP/$2.b" out location canonical hcdn gt
-            out=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$body" --dump-header "$hdr" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
-            location=$(awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            canonical=$(grep -Eio '<link[^>]+rel="canonical"[^>]+href="[^"]+"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true)
-            if [[ -z "$canonical" ]]; then canonical=$(grep -Eio '<link[^>]+href="[^"]+"[^>]+rel="canonical"' "$body" | head -1 | sed -n 's/.*href="\([^"]*\)".*/\1/p' || true); fi
-            hcdn=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$hdr" || true)
-            gt=$(awk 'BEGIN{IGNORECASE=1}/^x-gt-/{gsub(/\r/,"");printf "%s;",$0}' "$hdr" || true)
-            printf 'URL\t%s\t%s\t%s\tlocation=%s\tcanonical=%s\thcdn=%s\tgt=%s\n' "$label" "$path" "$out" "${location:-}" "${canonical:-}" "${hcdn:-}" "${gt:-}"
+          for i in 0 1 2; do
+            source="${sources[$i]}"; target="${targets[$i]}"; title="${titles[$i]}"
+            php -r '$p=["status"=>"enabled","position"=>0,"url"=>$argv[1],"regex"=>false,"match_type"=>"url","match_data"=>["source"=>["flag_query"=>"ignore","flag_case"=>false,"flag_trailing"=>false,"flag_regex"=>false]],"title"=>$argv[3],"group_id"=>1,"action_type"=>"url","action_code"=>301,"action_data"=>["url"=>$argv[2]]];echo json_encode($p,JSON_UNESCAPED_SLASHES);' "$source" "$target" "$title" > "$tmp/create-$i.json"
+            http=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --request POST --header 'Content-Type: application/json' --data-binary "@$tmp/create-$i.json" --output "$tmp/create-$i-response.json" --write-out '%{http_code}' "$api/redirect")
+            [[ "$http" == '200' ]] || { echo "Create failed source=$source HTTP=$http" >&2; exit 1; }
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode "filterBy[url]=$source" --data-urlencode 'per_page=20' "$api/redirect" > "$tmp/after-$i.json"
+            id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$h=[];foreach(($d["items"]??[])as$x){if(($x["url"]??"")===$argv[2]&&(int)($x["action_code"]??0)===301&&(($x["action_data"]["url"]??"")===$argv[3]))$h[]=(int)$x["id"];}if(count($h)!==1)exit(2);echo$h[0];' "$tmp/after-$i.json" "$source" "$target")
+            [[ "$id" =~ ^[1-9][0-9]*$ ]] || exit 1
+            created_ids+=("$id")
+            echo "CREATED id=$id source=$source target=$target"
+          done
+
+          verify_redirect(){
+            local round="$1" path="$2" expected_final="$3" expected_redirects="$4" label="$5" out status final count can
+            out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 40 --header 'Cache-Control: no-cache' --output "$tmp/$round-$label.body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base$path")
+            IFS=$'\t' read -r status final count <<< "$out"
+            [[ "$status" == '200' && "$final" == "$expected_final" && "$count" == "$expected_redirects" ]] || { echo "$round $label failed: $out" >&2; return 1; }
+            can=$(canonical_of "$tmp/$round-$label.body")
+            [[ "$can" == "$expected_final" ]] || { echo "$round $label canonical=$can expected=$expected_final" >&2; return 1; }
+            echo "VERIFY_OK round=$round label=$label final=$final redirects=$count canonical=$can"
           }
-          check '/de/' de-root
-          check '/de/about-us/' de-about
-          check '/about-us/' base-about
-          check '/fr/product-categorie/menstruation-verschieben/' fr-old-menstruation
-          check '/product-categorie/menstruation-verschieben/' base-old-menstruation
-          check '/product-category/menstruation-verschieben/' base-new-menstruation
-          check '/fr/product-category/menstruation-verschieben/' fr-new-menstruation
-          check '/fr/product-categorie/sexual-problems/' fr-old-sexual
-          check '/product-categorie/sexual-problems/' base-old-sexual
-          check '/product-category/sexuelle-probleme/' base-new-sexual
-          check '/fr/product-category/sexuelle-probleme/' fr-new-sexual
-          check '/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen' epipen-param
+
+          for round in round1 round2; do
+            verify_redirect "$round" '/product-categorie/sexual-problems/' 'https://doctorcura.com/product-category/sexuelle-probleme/' 1 sexual-origin
+            verify_redirect "$round" '/fr/product-categorie/sexual-problems/' 'https://doctorcura.com/fr/product-category/sexuelle-probleme/' 1 sexual-fr
+            verify_redirect "$round" '/product-categorie/menstruation-verschieben/' 'https://doctorcura.com/product-category/menstruation-verschieben/' 1 menstruation-origin
+            verify_redirect "$round" '/fr/product-categorie/menstruation-verschieben/' 'https://doctorcura.com/fr/product-category/menstruation-verschieben/' 1 menstruation-fr
+            verify_redirect "$round" '/about-us/' 'https://doctorcura.com/uber-uns/' 1 about-origin
+            verify_redirect "$round" '/de/about-us/' 'https://doctorcura.com/uber-uns/' 2 about-de
+          done
+
+          # Existing known redirect and pagination must not regress.
+          out=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$base/category/blogs/")
+          [[ "$out" == $'200\thttps://doctorcura.com/blogs/\t1' ]] || { echo "Blog redirect regression: $out" >&2; exit 1; }
+          pcode=$(curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 --output "$tmp/pagination.body" --write-out '%{http_code}' "$base/fr/blogs/8/")
+          [[ "$pcode" == '200' && "$(canonical_of "$tmp/pagination.body")" == 'https://doctorcura.com/fr/blogs/8/' ]] || { echo 'Pagination regression' >&2; exit 1; }
+
+          trap - EXIT
+          echo "MIGRATION_OK ids=$(IFS=,; echo "${created_ids[*]}")"
