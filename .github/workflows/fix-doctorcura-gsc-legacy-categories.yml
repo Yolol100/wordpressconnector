@@ -32,8 +32,7 @@ jobs:
           tmp="$RUNNER_TEMP/dc-gsc-legacy-fix"; mkdir -p "$tmp"
           baseline='939d9bc10b33e053c1c668b58f13491b2ac6a87c9673bd9ae76ade739bc77c40'
           marker='DoctorCura GSC-proven legacy category redirects V8.4e'
-          changed=0
-          helper=0
+          changed=0; helper=0
 
           canonical(){ python3 - "$1" <<'PY'
           import re,sys
@@ -43,17 +42,20 @@ jobs:
           print(m.group(1) if m else '',end='')
           PY
           }
+          first(){ local u h; u="$1"; h="$2"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$u" || true; awk '/^HTTP\//{print $2;exit}' "$h"; }
+          loc(){ awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$1"; }
           make_payload(){ php -r '$c=file_get_contents($argv[1]);file_put_contents($argv[2],json_encode(["code"=>$c,"active"=>true],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE));' "$1" "$2"; }
           put_code(){
-            local src="$1" label="$2" payload="$tmp/$label.json" out="$tmp/$label-out.json" http
+            local src label payload out http
+            src="$1"; label="$2"; payload="$tmp/$label.json"; out="$tmp/$label-out.json"
             make_payload "$src" "$payload"
             http=$(curl "${c[@]}" --location "${auth[@]}" --request POST --header 'X-HTTP-Method-Override: PUT' --header 'Content-Type: application/json' --data-binary "@$payload" --output "$out" --write-out '%{http_code}' "$api")
             echo "PUT label=$label http=$http"
             [[ "$http" == 200 ]]
           }
           purge_wp(){
-            local src="$1" label="$2" token helperfile ok=0
-            token=$(openssl rand -hex 24); helperfile="$tmp/$label-helper.php"
+            local src label token helperfile ok
+            src="$1"; label="$2"; ok=0; token=$(openssl rand -hex 24); helperfile="$tmp/$label-helper.php"
             cp "$src" "$helperfile"
             cat >> "$helperfile" <<PHP
 
@@ -72,8 +74,6 @@ jobs:
             put_code "$src" "$label-remove"; helper=0
             [[ "$ok" == 1 ]]
           }
-          first(){ local u="$1" h="$2"; curl "${c[@]}" --compressed --max-redirs 0 --dump-header "$h" --output /dev/null "$u" || true; awk '/^HTTP\//{print $2;exit}' "$h"; }
-          loc(){ awk 'BEGIN{IGNORECASE=1}/^location:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$1"; }
           rollback(){
             local rc=$?
             [[ "$rc" == 0 ]] && return
@@ -94,25 +94,19 @@ jobs:
           echo '=== STRICT PREFLIGHT ==='
           http=$(curl "${c[@]}" --location "${auth[@]}" --output "$tmp/current.json" --write-out '%{http_code}' "$api")
           [[ "$http" == 200 ]]
-          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$tokens=["DoctorCura gewichtsverlust legacy final redirect V8.4b","DoctorCura datenschutz root-only migration V8.4c","DoctorCura product variation hreflang cleanup V8.4d"];if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);foreach($tokens as $t){if(substr_count($c,$t)!==1)exit(3);}file_put_contents($argv[2],$c);echo "BASELINE hash=".hash("sha256",$c)." helper=absent".PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");$tokens=["DoctorCura gewichtsverlust legacy final redirect V8.4b","DoctorCura datenschutz root-only migration V8.4c","DoctorCura product variation hreflang cleanup V8.4d"];if((int)($s["id"]??0)!==43||($s["name"]??"")!=="DoctorCura SEO indexation cleanup"||empty($s["active"])||hash("sha256",$c)!==$argv[3]||strpos($c,$argv[4])!==false||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);foreach($tokens as $t){if(substr_count($c,$t)!==1)exit(3);}file_put_contents($argv[2],$c);echo "BASELINE hash=".hash("sha256",$c).PHP_EOL;' "$tmp/current.json" "$tmp/original.php" "$baseline" "$marker"
 
           while IFS='|' read -r source target; do
             [[ -n "$source" ]] || continue
-            h="$tmp/pre-$(echo "$source" | tr '/-' '__').h"
-            code=$(first "$base$source" "$h"); location=$(loc "$h")
-            echo "SOURCE_BEFORE path=$source code=$code location=${location:-none}"
-            [[ "$code" == 404 ]]
-            body="$tmp/target-$(echo "$target" | tr '/-' '__').html"
-            status=$(curl "${c[@]}" --compressed --output "$body" --write-out '%{http_code}' "$base$target")
-            can=$(canonical "$body")
-            echo "TARGET_BEFORE path=$target status=$status canonical=$can"
-            [[ "$status" == 200 && "$can" == "$base$target" ]]
+            h="$tmp/pre-$(echo "$source" | tr '/-' '__').h"; code=$(first "$base$source" "$h")
+            [[ "$code" == 404 ]] || { echo "SOURCE_PREFLIGHT_FAIL source=$source code=$code" >&2; exit 1; }
+            body="$tmp/target-$(echo "$target" | tr '/-' '__').html"; status=$(curl "${c[@]}" --compressed --output "$body" --write-out '%{http_code}' "$base$target"); can=$(canonical "$body")
+            [[ "$status" == 200 && "$can" == "$base$target" ]] || { echo "TARGET_PREFLIGHT_FAIL target=$target status=$status canonical=$can" >&2; exit 1; }
             for lang in fr en; do
-              hs="$tmp/pre-$lang-$(echo "$source" | tr '/-' '__').h"
-              code_l=$(first "$base/$lang${source}" "$hs")
-              echo "TRANSLATED_BEFORE lang=$lang path=$source code=$code_l"
-              [[ "$code_l" == 404 ]]
+              code_l=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/$lang${source}")
+              [[ "$code_l" == 404 ]] || { echo "TRANSLATED_PREFLIGHT_FAIL lang=$lang source=$source code=$code_l" >&2; exit 1; }
             done
+            echo "PREFLIGHT_PAIR_OK source=$source target=$target"
           done <<'MAP'
           /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
           /product-categorie/quit-smoking/|/product-category/rauchstopp/
@@ -124,8 +118,7 @@ jobs:
             '/datenschutz/|/privacy-policy/' \
             '/product-categorie/sexual-problems/|/product-category/sexuelle-probleme/' \
             '/product-categorie/menstruation-verschieben/|/product-category/menstruation-verschieben/'; do
-            source=${pair%%|*}; target=${pair#*|}; h="$tmp/canary-pre-$(echo "$source" | tr '/-' '__').h"
-            code=$(first "$base$source" "$h"); location=$(loc "$h")
+            source=${pair%%|*}; target=${pair#*|}; h="$tmp/pre-canary-$(echo "$source" | tr '/-' '__').h"; code=$(first "$base$source" "$h"); location=$(loc "$h")
             [[ "$code" == 301 && "$location" == "$base$target" ]] || { echo "PRE_CANARY_FAIL source=$source code=$code location=$location" >&2; exit 1; }
           done
           [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
@@ -159,27 +152,22 @@ jobs:
           purge_wp "$tmp/new.php" apply-purge
           curl "${c[@]}" --location "${auth[@]}" --output "$tmp/after.json" "$api"
           after=$(php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");if(empty($s["active"])||substr_count($c,$argv[2])!==1||strpos($c,"DoctorCura one-time cache purge helper")!==false)exit(2);echo hash("sha256",$c);' "$tmp/after.json" "$marker")
-          [[ "$after" == "$newhash" ]]; echo "READBACK hash=$after helper=absent"
+          [[ "$after" == "$newhash" ]] || exit 1
+          echo "READBACK hash=$after helper=absent"
 
-          echo '=== TWO ORIGIN ROUNDS ==='
           for round in 1 2; do
             while IFS='|' read -r source target; do
               [[ -n "$source" ]] || continue
-              probe="$base$source?doctorcura_gsc_legacy_verify=$round-$(date +%s%N)"
-              h="$tmp/v-$round-$(echo "$source" | tr '/-' '__').h"; body="$tmp/v-$round-$(echo "$target" | tr '/-' '__').html"
-              code=$(first "$probe" "$h"); location=$(loc "$h")
+              probe="$base$source?doctorcura_gsc_legacy_verify=$round-$(date +%s%N)"; h="$tmp/v-$round-$(echo "$source" | tr '/-' '__').h"; code=$(first "$probe" "$h"); location=$(loc "$h")
               cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
               [[ "$code" == 301 && "$location" == "$base$target" && "${cache:-}" != HIT ]] || { echo "ORIGIN_FAIL round=$round source=$source code=$code cache=${cache:-none} location=$location" >&2; exit 1; }
-              result=$(curl "${c[@]}" --location --compressed --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$probe")
-              IFS=$'\t' read -r status final redirects <<< "$result"
-              can=$(canonical "$body")
+              body="$tmp/follow-$round-$(echo "$target" | tr '/-' '__').html"; result=$(curl "${c[@]}" --location --compressed --output "$body" --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}' "$probe"); IFS=$'\t' read -r status final redirects <<< "$result"; can=$(canonical "$body")
               [[ "$status" == 200 && "$final" == "$base$target" && "$redirects" == 1 && "$can" == "$base$target" ]] || { echo "FOLLOW_FAIL round=$round source=$source result=$result canonical=$can" >&2; exit 1; }
-              echo "ORIGIN_OK round=$round source=$source final=$final redirects=$redirects canonical=$can"
               for lang in fr en; do
-                translated="$base/$lang${source}?doctorcura_gsc_legacy_verify=$round-$lang-$(date +%s%N)"
-                translated_code=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$translated")
+                translated_code=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/$lang${source}?doctorcura_gsc_legacy_verify=$round-$lang-$(date +%s%N)")
                 [[ "$translated_code" == 404 ]] || { echo "TRANSLATED_REGRESSION round=$round lang=$lang source=$source code=$translated_code" >&2; exit 1; }
               done
+              echo "ORIGIN_OK round=$round source=$source final=$final"
             done <<'MAP'
           /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
           /product-categorie/quit-smoking/|/product-category/rauchstopp/
@@ -191,16 +179,12 @@ jobs:
               '/datenschutz/|/privacy-policy/' \
               '/product-categorie/sexual-problems/|/product-category/sexuelle-probleme/' \
               '/product-categorie/menstruation-verschieben/|/product-category/menstruation-verschieben/'; do
-              source=${pair%%|*}; target=${pair#*|}; h="$tmp/canary-$round-$(echo "$source" | tr '/-' '__').h"
-              code=$(first "$base$source" "$h"); location=$(loc "$h")
+              source=${pair%%|*}; target=${pair#*|}; h="$tmp/canary-$round-$(echo "$source" | tr '/-' '__').h"; code=$(first "$base$source" "$h"); location=$(loc "$h")
               [[ "$code" == 301 && "$location" == "$base$target" ]] || { echo "CANARY_FAIL round=$round source=$source code=$code location=$location" >&2; exit 1; }
             done
             [[ $(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/16/") == 200 ]]
-            p17=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/")
-            if [[ "$p17" != 404 ]]; then sleep 2; p17=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/"); fi
-            [[ "$p17" == 404 ]]
-            ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen&doctorcura_gsc_legacy_verify=$round"
-            curl "${c[@]}" --compressed --output "$tmp/ep-$round.html" "$ep"
+            p17=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/"); if [[ "$p17" != 404 ]]; then sleep 2; p17=$(curl "${c[@]}" --compressed --output /dev/null --write-out '%{http_code}' "$base/blogs/17/"); fi; [[ "$p17" == 404 ]]
+            ep="$base/product/epipen/?attribute_pa_medication-strength=300mcg&attribute_pa_amount=3&attribute_pa_medication=epipen&doctorcura_gsc_legacy_verify=$round"; curl "${c[@]}" --compressed --output "$tmp/ep-$round.html" "$ep"
             python3 - "$tmp/ep-$round.html" <<'PY'
           import html,re,sys,urllib.parse
           s=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); alts=[]
@@ -214,15 +198,11 @@ jobs:
             echo "ROUND_OK=$round"
           done
 
-          echo '=== CLEAN EDGE READBACK ==='
           edge_pending=0
           while IFS='|' read -r source target; do
             [[ -n "$source" ]] || continue
-            h="$tmp/edge-$(echo "$source" | tr '/-' '__').h"
-            code=$(first "$base$source" "$h"); location=$(loc "$h")
-            cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
-            age=$(awk 'BEGIN{IGNORECASE=1}/^age:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
-            echo "EDGE source=$source code=$code cache=${cache:-none} age=${age:-none} location=${location:-none}"
+            h="$tmp/edge-$(echo "$source" | tr '/-' '__').h"; code=$(first "$base$source" "$h"); location=$(loc "$h"); cache=$(awk 'BEGIN{IGNORECASE=1}/^x-hcdn-cache-status:/{sub(/^[^:]+:[[:space:]]*/,"");gsub(/\r/,"");print;exit}' "$h")
+            echo "EDGE source=$source code=$code cache=${cache:-none} location=${location:-none}"
             [[ "$code" == 301 && "$location" == "$base$target" ]] || edge_pending=1
           done <<'MAP'
           /product-categorie/hiv-praevention-prep/|/product-category/hiv-praevention-prep/
@@ -231,8 +211,4 @@ jobs:
           MAP
 
           trap - EXIT
-          if [[ "$edge_pending" == 0 ]]; then
-            echo "GSC_LEGACY_CATEGORY_FIX_GREEN snippet_hash=$newhash"
-          else
-            echo "GSC_LEGACY_CATEGORY_ORIGIN_GREEN_EDGE_PENDING snippet_hash=$newhash"
-          fi
+          if [[ "$edge_pending" == 0 ]]; then echo "GSC_LEGACY_CATEGORY_FIX_GREEN snippet_hash=$newhash"; else echo "GSC_LEGACY_CATEGORY_ORIGIN_GREEN_EDGE_PENDING snippet_hash=$newhash"; fi
