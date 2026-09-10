@@ -19,69 +19,47 @@ jobs:
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Compare duplicate post records and exact editable source
+      - name: Find existing valid related media and source posts
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-duplicate-diag"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-media-search"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          slug='welche-medikamente-beeinflussen-die-erektion'
 
-          echo '=== DUPLICATE POST RECORDS ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts?slug=$slug&context=edit&per_page=100" > "$tmp/posts.json"
-          php -r '
-          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
-          echo "count=".count($d).PHP_EOL;
-          foreach($d as $p){
-            $raw=(string)($p["content"]["raw"]??"");
-            $excerpt=(string)($p["excerpt"]["raw"]??"");
-            $title=(string)($p["title"]["raw"]??"");
-            echo "id=".($p["id"]??"")." status=".($p["status"]??"")." date=".($p["date_gmt"]??"")." modified=".($p["modified_gmt"]??"")." author=".($p["author"]??"")." slug=".($p["slug"]??"")." link=".($p["link"]??"")." featured=".($p["featured_media"]??"")." parent=".($p["parent"]??0).PHP_EOL;
-            echo "  title_sha=".hash("sha256",$title)." content_sha=".hash("sha256",$raw)." content_len=".strlen($raw)." excerpt_sha=".hash("sha256",$excerpt)." categories=".json_encode($p["categories"]??[])." tags=".json_encode($p["tags"]??[]).PHP_EOL;
-          }' "$tmp/posts.json"
-
-          echo '=== DUPLICATE POST NORMALIZED CONTENT COMPARISON ==='
-          php -r '
-          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
-          if(count($d)>=2){
-            $a=(string)($d[0]["content"]["raw"]??""); $b=(string)($d[1]["content"]["raw"]??"");
-            $norm=function($s){$s=preg_replace("/\\s+/u"," ",trim($s));return $s;};
-            echo "identical_raw=".($a===$b?"yes":"no")." identical_normalized=".($norm($a)===$norm($b)?"yes":"no").PHP_EOL;
-            similar_text(strip_tags($a),strip_tags($b),$pct); echo "visible_similarity_percent=".round($pct,4).PHP_EOL;
-          }' "$tmp/posts.json"
-
-          echo '=== MEDIA RECORDS ==='
-          for id in 900068 900069; do
-            code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/media-$id.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/media/$id?context=edit")
-            echo "media_rest id=$id status=$code"
-            if [[ "$code" == '200' ]]; then
-              php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "  id=".($m["id"]??"")." status=".($m["status"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." source=".($m["source_url"]??"")." file=".($m["media_details"]["file"]??"")." alt=".($m["alt_text"]??"").PHP_EOL;' "$tmp/media-$id.json"
-              src=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo (string)($m["source_url"]??"");' "$tmp/media-$id.json")
-              if [[ -n "$src" ]]; then curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "  source_http=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$src"; fi
-            fi
+          echo '=== RELATED POSTS AND FEATURED MEDIA ==='
+          for slug in \
+            'viagra-online-mit-arztpruefung' \
+            'cialis-wirkung-und-vertraeglichkeit' \
+            'online-arztgespraech-bei-potenzproblemen' \
+            'welche-medikamente-beeinflussen-die-erektion'; do
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts?slug=$slug&context=edit&per_page=10" > "$tmp/post.json"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); foreach($d as$p){echo "slug=".($p["slug"]??"")." id=".($p["id"]??"")." status=".($p["status"]??"")." featured=".($p["featured_media"]??0)." title=".($p["title"]["raw"]??"").PHP_EOL;}' "$tmp/post.json"
+            ids=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$p){$id=(int)($p["featured_media"]??0);if($id)echo$id."\n";}' "$tmp/post.json")
+            while IFS= read -r id; do
+              [[ -n "$id" ]] || continue
+              code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --output "$tmp/media.json" --write-out '%{http_code}' "$base/wp-json/wp/v2/media/$id?context=edit")
+              if [[ "$code" == '200' ]]; then
+                src=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo(string)($m["source_url"]??"");' "$tmp/media.json")
+                alt=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo preg_replace("/\s+/"," ",(string)($m["alt_text"]??""));' "$tmp/media.json")
+                title=$(php -r '$m=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??""));' "$tmp/media.json")
+                http=$(curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}' "$src")
+                echo "  media=$id http=$http src=$src alt=$alt title=$title"
+              fi
+            done <<< "$ids"
           done
 
-          echo '=== LIVE RESOLVED POST ID ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/$slug/" > "$tmp/live.html"
-          grep -Eo '"post":\{"id":[0-9]+' "$tmp/live.html" | head -1 || true
-          for id in 900066 900067; do
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "id=$id status=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$base/?p=$id"
+          echo '=== MEDIA SEARCH ==='
+          for term in 'erektion' 'potenz' 'erectile' 'viagra' 'cialis' 'medikamente'; do
+            echo "-- search=$term --"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+              --data-urlencode "search=$term" --data-urlencode 'context=edit' --data-urlencode 'per_page=50' \
+              "$base/wp-json/wp/v2/media" > "$tmp/search.json"
+            php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$m){echo "id=".($m["id"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." src=".($m["source_url"]??"")." alt=".preg_replace("/\s+/"," ",(string)($m["alt_text"]??""))." title=".preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??"")).PHP_EOL;}' "$tmp/search.json" | head -50
           done
 
-          echo '=== TERMS PAGE SOURCE ==='
-          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/pages?slug=geschaftsbedingungen&context=edit&per_page=20" > "$tmp/terms.json"
-          php -r '
-          $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); echo "count=".count($d).PHP_EOL;
-          foreach($d as $p){$raw=(string)($p["content"]["raw"]??""); echo "id=".($p["id"]??"")." status=".($p["status"]??"")." modified=".($p["modified_gmt"]??"")." link=".($p["link"]??"")." content_sha=".hash("sha256",$raw)." content_len=".strlen($raw).PHP_EOL; preg_match_all("#href=[\\\"\\\x27]http://www\\.doctorcura\\.com/?[\\\"\\\x27]#i",$raw,$m); echo "  http_www_count=".count($m[0]).PHP_EOL;}' "$tmp/terms.json"
-
-          echo '=== CURRENT SEPTEMBER FEATURED IMAGE ==='
-          for img in \
-            '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp' \
-            '/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured-1024x683.webp'; do
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out "$img status=%{http_code} final=%{url_effective} redirects=%{num_redirects}\n" "$base$img"
-          done
-
-          echo '=== VIAGRA PAGE CURRENT OLD IMAGE REFERENCE ==='
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 30 "$base/viagra-online-mit-arztpruefung/" > "$tmp/viagra.html"
-          grep -F '2026/02/welche-medikamente-beeinflussen-die-erektion-featured.webp' "$tmp/viagra.html" | head -3 || true
+          echo '=== NEARBY RECENT MEDIA ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get \
+            --data-urlencode 'after=2026-09-08T00:00:00' --data-urlencode 'before=2026-09-10T23:59:59' --data-urlencode 'context=edit' --data-urlencode 'per_page=100' \
+            "$base/wp-json/wp/v2/media" > "$tmp/recent.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);foreach($d as$m){echo "id=".($m["id"]??"")." parent=".($m["post"]??0)." date=".($m["date_gmt"]??"")." src=".($m["source_url"]??"")." alt=".preg_replace("/\s+/"," ",(string)($m["alt_text"]??""))." title=".preg_replace("/\s+/"," ",(string)($m["title"]["raw"]??$m["title"]["rendered"]??"")).PHP_EOL;}' "$tmp/recent.json" | head -100
