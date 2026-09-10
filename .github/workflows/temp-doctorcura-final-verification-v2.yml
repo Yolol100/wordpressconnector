@@ -1,3 +1,4 @@
+# rerun after post 5892 polish
 name: Temporary DoctorCura final verification v2
 
 on:
@@ -65,7 +66,6 @@ jobs:
           if os.path.exists(elf):
               try: raw+=' '+json.dumps((json.load(open(elf,encoding='utf-8')).get('data') or {}).get('document') or {},ensure_ascii=False)
               except Exception: pass
-          # Correct normalized tel:+31855055433 is explicitly allowed.
           legacy=[r'Keizersgracht\s*241',r'1016\s*EA',r'tel:0855055433',r'(?<!\d)085\s*505\s*5433(?!\d)',r'(?<!\d)08\s*550\s*55\s*433(?!\d)',r'\+31\s*\(0\)\s*85\s*505\s*5433']
           for pat in legacy:
               m=re.search(pat,raw,re.I)
@@ -77,7 +77,7 @@ jobs:
               for pat in us:
                   m=re.search(pat,text,re.I)
                   if m: raise SystemExit(f'US_REFERENCE id={id_s} slug={slug} term={m.group(0)}')
-              awkward=[r'\bDeutschland-(?:Markt|Patient|Adresse|Bundesstaat|Apothek|Gesundheit|Krankenversicherung)',r'je\s+nach\s+Deutschland',r'einzelnen\s+Deutschland',r'Ihrem\s+Deutschland',r'Ihren\s+Deutschland',r'jeweiligen\s+Deutschland',r'Deutschland\s+zugelassene[nr]?\s+(?:Arzt|Ärztin)']
+              awkward=[r'\bDeutschland-(?:Markt|Patient|Adresse|Bundesstaat|Apothek|Gesundheit|Krankenversicherung)',r'je\s+nach\s+Deutschland',r'einzelnen\s+Deutschland',r'Ihrem\s+Deutschland',r'Ihren\s+Deutschland',r'jeweiligen\s+Deutschland',r'Deutschland\s+zugelassene[nr]?\s+(?:Arzt|Ärztin)',r'\bden Deutschland\b',r'\bder Deutschland\b']
               for pat in awkward:
                   m=re.search(pat,text,re.I)
                   if m: raise SystemExit(f'LOCALIZATION_ANOMALY id={id_s} slug={slug} term={m.group(0)}')
