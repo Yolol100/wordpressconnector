@@ -118,6 +118,7 @@ if (in_array($action, $leafActions, true)) {
 
 if ('connector.batch' === $action) {
     $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
+    $confirmedBatch = isset($data['dry_run']) && false === $data['dry_run'];
     if (! $operations || count($operations) > 25) {
         $errors[] = 'connector.batch requires 1-25 public-safe operations.';
     }
@@ -139,8 +140,13 @@ if ('connector.batch' === $action) {
         }
         $nestedPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
         $validateLeaf($nestedAction, $nestedPayload, $context . '.payload');
-        if (array_key_exists('expected_fingerprint', $operation) && null !== $operation['expected_fingerprint']) {
-            if (! is_string($operation['expected_fingerprint']) || ! preg_match('/^[a-f0-9]{64}$/D', $operation['expected_fingerprint'])) {
+
+        $fingerprint = $operation['expected_fingerprint'] ?? null;
+        if ($confirmedBatch && null === $fingerprint) {
+            $errors[] = $context . '.expected_fingerprint is required for confirmed public connector.batch operations.';
+        }
+        if (null !== $fingerprint) {
+            if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
                 $errors[] = $context . '.expected_fingerprint must be a SHA-256 hex string.';
             }
         }
