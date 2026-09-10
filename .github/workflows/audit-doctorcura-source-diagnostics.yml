@@ -1,4 +1,4 @@
-name: Audit DoctorCura Phase 2 Image Context
+name: Audit DoctorCura Phase 2 Rollback And Cache Layer
 
 on:
   push:
@@ -13,42 +13,52 @@ permissions:
 jobs:
   inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     env:
       SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
       REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
       REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
     steps:
-      - name: Inspect broken image usage read-only
+      - name: Verify rollback and inspect cache evidence read-only
         shell: bash
         run: |
           set -euo pipefail
           base="${SITE_URL%/}"; [[ "$base" == 'https://doctorcura.com' ]] || exit 1
-          tmp="$RUNNER_TEMP/dc-phase2-img"; mkdir -p "$tmp"
+          tmp="$RUNNER_TEMP/dc-phase2-rb"; mkdir -p "$tmp"
           auth=(--user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json')
-          url="$base/welche-medikamente-beeinflussen-die-erektion/"
-          broken="$base/wp-content/uploads/2026/09/welche-medikamente-beeinflussen-die-erektion-featured.webp"
-          candidate="$base/wp-content/uploads/2026/06/beste-optionen-bei-erektionsstoerungen-featured.webp"
+          wpapi="$base/wp-json/wp/v2"; redapi="$base/wp-json/redirection/v1"; snipapi="$base/wp-json/code-snippets/v1/snippets/43"
+          clean="$base/welche-medikamente-beeinflussen-die-erektion/"
+          dup="$base/welche-medikamente-beeinflussen-die-erektion-2/"
 
-          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$url" > "$tmp/live.html"
-          echo '=== META IMAGE TAGS ==='
-          grep -Eio '<meta[^>]+(og:image|twitter:image)[^>]*>' "$tmp/live.html" || true
-          echo '=== TAGS CONTAINING BROKEN URL ==='
-          grep -Eio '<[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$tmp/live.html" | head -30 || true
-          echo '=== TAGS CONTAINING CANDIDATE URL ==='
-          grep -Eio '<[^>]+beste-optionen-bei-erektionsstoerungen-featured[^>]*>' "$tmp/live.html" | head -30 || true
-          echo '=== SOURCE COUNTS ==='
-          printf 'broken_count='; grep -Foc "$broken" "$tmp/live.html" || true
-          printf 'candidate_count='; grep -Foc "$candidate" "$tmp/live.html" || true
-
-          echo '=== MEDIA HTTP ==='
-          for u in "$broken" "$candidate"; do
-            curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 30 --output /dev/null --write-out '%{http_code}\t%{url_effective}\t%{num_redirects}\n' "$u"
-          done
-
-          echo '=== POST CONTENT RAW IMAGE REFERENCES ==='
+          echo '=== SOURCE STATE ==='
           for id in 900067 900066; do
-            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$base/wp-json/wp/v2/posts/$id?context=edit" > "$tmp/p$id.json"
-            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$raw=(string)($p["content"]["raw"]??"");echo "post=".($p["id"]??"")." broken_in_content=".substr_count($raw,"welche-medikamente-beeinflussen-die-erektion-featured")." candidate_in_content=".substr_count($raw,"beste-optionen-bei-erektionsstoerungen-featured").PHP_EOL;' "$tmp/p$id.json"
+            curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$wpapi/posts/$id?context=edit" > "$tmp/p$id.json"
+            php -r '$p=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "id=".($p["id"]??"")." status=".($p["status"]??"")." slug=".($p["slug"]??"")." featured=".($p["featured_media"]??0)." modified=".($p["modified_gmt"]??"").PHP_EOL;echo "meta=".json_encode($p["meta"]??[],JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE).PHP_EOL;' "$tmp/p$id.json"
           done
-          echo 'PHASE2_IMAGE_CONTEXT_COMPLETE'
+
+          echo '=== REDIRECT STATE ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" --get --data-urlencode 'filterBy[url]=/welche-medikamente-beeinflussen-die-erektion-2/' --data-urlencode 'per_page=20' "$redapi/redirect" > "$tmp/red.json"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo "dup_redirect_total=".(int)($d["total"]??0).PHP_EOL;foreach(($d["items"]??[])as$x)echo " id=".($x["id"]??"")." code=".($x["action_code"]??"")." target=".($x["action_data"]["url"]??"").PHP_EOL;' "$tmp/red.json"
+
+          echo '=== SNIPPET HELPER RESIDUE ==='
+          curl --silent --show-error --location --connect-timeout 10 --max-time 30 "${auth[@]}" "$snipapi" > "$tmp/snip.json"
+          php -r '$s=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);$c=(string)($s["code"]??"");echo "snippet_id=".($s["id"]??"")." active=".json_encode($s["active"]??null)." helper_present=".(strpos($c,"DoctorCura one-time cache purge helper")!==false?"yes":"no")." sha=".hash("sha256",$c).PHP_EOL;' "$tmp/snip.json"
+
+          echo '=== PUBLIC CACHE HEADERS CLEAN ==='
+          for suffix in '' '?dc_audit=phase2a' '?dc_audit=phase2b'; do
+            curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 --dump-header "$tmp/h.txt" --output "$tmp/b.html" "$clean$suffix"
+            echo "-- $clean$suffix --"
+            awk 'BEGIN{IGNORECASE=1}/^HTTP\//||/^(age|cache-control|cf-cache-status|x-cache|x-litespeed-cache|x-rocket-cache|x-hostinger-cache|server|via|etag|last-modified):/{gsub(/\r/,"");print}' "$tmp/h.txt"
+            printf 'post_id='; grep -Eo '"post":\{"id":[0-9]+' "$tmp/b.html" | head -1 || true
+            printf 'broken_img_tags='; grep -Eioc '<img[^>]+welche-medikamente-beeinflussen-die-erektion-featured[^>]*>' "$tmp/b.html" || true
+            printf 'candidate_img_tags='; grep -Eioc '<img[^>]+beste-optionen-bei-erektionsstoerungen-featured[^>]*>' "$tmp/b.html" || true
+          done
+
+          echo '=== DUP PUBLIC ==='
+          curl --silent --show-error --location --compressed --connect-timeout 10 --max-time 35 --output /dev/null --write-out 'dup=%{http_code}\t%{url_effective}\t%{num_redirects}\n' "$dup"
+
+          echo '=== SITEMAP ==='
+          curl --silent --show-error --compressed --connect-timeout 10 --max-time 35 "$base/post-sitemap.xml" > "$tmp/sitemap.xml"
+          printf 'clean_count='; grep -Fc '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion/</loc>' "$tmp/sitemap.xml" || true
+          printf 'dup_count='; grep -Fc '<loc>https://doctorcura.com/welche-medikamente-beeinflussen-die-erektion-2/</loc>' "$tmp/sitemap.xml" || true
+          echo 'ROLLBACK_CACHE_AUDIT_COMPLETE'
