@@ -1,4 +1,4 @@
-name: One-time DoctorCura source vs CH content inspect 20260911
+name: One-time DoctorCura CH content and images repair 20260911
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  repair:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
-      - name: Compare source and CH pages
+      - name: Copy source content excerpts and featured images to all CH pages
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
           REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -24,41 +24,126 @@ jobs:
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
-          root="$RUNNER_TEMP/dc-content-inspect"; rm -rf "$root"; mkdir -p "$root"
+          root="$RUNNER_TEMP/dc-ch-content-repair"; rm -rf "$root"; mkdir -p "$root"
           src=(900448 900449 900450 900451 900452 900453)
           ch=(900512 900514 900516 900518 900520 900522)
           slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
-          req(){ python3 - "$1" "$2" "$3" "$4" <<'PY'
+          live_ids=()
+
+          make_req(){ python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
           import json,sys
-          out,rid,action,payload=sys.argv[1:]
-          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),ensure_ascii=False,separators=(',',':'))
           PY
           }
           call(){
             code=$(curl -sS -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
-            [[ "$code" == 200 ]] || { echo HTTP_$code; cat "$2"; exit 1; }
+            [[ "$code" == 200 ]] || { echo "HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print(d); raise SystemExit(1)
+          PY
           }
+          rollback_all(){
+            rc=$?
+            if (( rc != 0 )); then
+              echo "ROLLBACK_START count=${#live_ids[@]}"
+              for ((j=${#live_ids[@]}-1; j>=0; j--)); do
+                rid="${live_ids[$j]}"
+                make_req "$root/rb.req" "rb-${rid}" connector.rollback false true "{\"request_id\":\"$rid\"}"
+                call "$root/rb.req" "$root/rb.res" || true
+              done
+              make_req "$root/cache.req" "rb-cache-${GITHUB_RUN_ID}" cache.flush false true '{}'; call "$root/cache.req" "$root/cache.res" || true
+            fi
+            exit "$rc"
+          }
+          trap rollback_all EXIT
+
           for i in "${!src[@]}"; do
             s="${src[$i]}"; c="${ch[$i]}"; slug="${slugs[$i]}"
-            for pair in "src:$s" "ch:$c"; do
-              kind="${pair%%:*}"; id="${pair#*:}"
-              req "$root/p.req" "cmp-post-$id-${GITHUB_RUN_ID}" post.get "{\"id\":$id}"
-              call "$root/p.req" "$root/p.res"
-              req "$root/e.req" "cmp-el-$id-${GITHUB_RUN_ID}" elementor.inspect "{\"id\":$id}"
-              call "$root/e.req" "$root/e.res"
-              req "$root/a.req" "cmp-acf-$id-${GITHUB_RUN_ID}" acf.get "{\"object_type\":\"post\",\"object_id\":$id}"
-              call "$root/a.req" "$root/a.res" || true
-              python3 - "$root/p.res" "$root/e.res" "$root/a.res" "$kind" "$slug" "$id" <<'PY'
-          import json,sys,os
-          p=json.load(open(sys.argv[1],encoding='utf-8')); e=json.load(open(sys.argv[2],encoding='utf-8'))
-          a={}
-          try: a=json.load(open(sys.argv[3],encoding='utf-8'))
-          except: pass
-          post=((p.get('data') or {}).get('post') or {})
-          doc=((e.get('data') or {}).get('document') or {})
-          av=(a.get('data') or {}) if isinstance(a,dict) else {}
-          print('CMP kind=%s slug=%s id=%s status=%s parent=%s featured=%s content_len=%s excerpt_len=%s elem_count=%s edit_mode=%r template_type=%r acf=%s'%(
-            sys.argv[4],sys.argv[5],sys.argv[6],post.get('status'),post.get('parent'),post.get('featured_media'),len(post.get('content') or ''),len(post.get('excerpt') or ''),len(doc.get('data') or []),doc.get('edit_mode'),doc.get('template_type'),json.dumps(av,separators=(',',':'))[:5000]))
+
+            make_req "$root/src.req" "src-$s-${GITHUB_RUN_ID}" post.get true false "{\"id\":$s}"
+            call "$root/src.req" "$root/src.res"
+            make_req "$root/ch.req" "ch-$c-${GITHUB_RUN_ID}" post.get true false "{\"id\":$c}"
+            call "$root/ch.req" "$root/ch.res"
+
+            python3 - "$root/src.res" "$root/ch.res" "$root/post-payload.json" "$root/media-payload.json" "$c" "$slug" <<'PY'
+          import json,sys
+          s=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('post') or {})
+          c=((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('post') or {})
+          cid=int(sys.argv[5]); slug=sys.argv[6]
+          assert s.get('status')=='publish' and c.get('status')=='publish'
+          assert int(c.get('parent') or 0)==900510,(cid,c.get('parent'))
+          assert s.get('slug')==slug and c.get('slug')==slug
+          featured=int(s.get('featured_media') or 0); assert featured>0,(slug,'source has no featured image')
+          content=s.get('content') or ''; excerpt=s.get('excerpt') or ''
+          assert content and excerpt,(slug,len(content),len(excerpt))
+          json.dump({'id':cid,'content':content,'excerpt':excerpt},open(sys.argv[3],'w'),ensure_ascii=False,separators=(',',':'))
+          json.dump({'id':featured,'target_type':'featured_image','target_id':cid},open(sys.argv[4],'w'),separators=(',',':'))
+          print('SOURCE_OK slug=%s content=%d excerpt=%d featured=%d'%(slug,len(content),len(excerpt),featured))
           PY
+
+            pp=$(cat "$root/post-payload.json")
+            mp=$(cat "$root/media-payload.json")
+            make_req "$root/pdry.req" "copy-post-dry-$c-${GITHUB_RUN_ID}" post.update true false "$pp"
+            call "$root/pdry.req" "$root/pdry.res"
+            prid="copy-post-live-$c-${GITHUB_RUN_ID}"
+            make_req "$root/plive.req" "$prid" post.update false true "$pp"
+            call "$root/plive.req" "$root/plive.res"
+            live_ids+=("$prid")
+
+            make_req "$root/mdry.req" "copy-media-dry-$c-${GITHUB_RUN_ID}" media.assign true false "$mp"
+            call "$root/mdry.req" "$root/mdry.res"
+            mrid="copy-media-live-$c-${GITHUB_RUN_ID}"
+            make_req "$root/mlive.req" "$mrid" media.assign false true "$mp"
+            call "$root/mlive.req" "$root/mlive.res"
+            live_ids+=("$mrid")
+
+            make_req "$root/verify.req" "verify-$c-${GITHUB_RUN_ID}" post.get true false "{\"id\":$c}"
+            call "$root/verify.req" "$root/verify.res"
+            python3 - "$root/src.res" "$root/verify.res" "$slug" <<'PY'
+          import json,sys
+          s=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('post') or {})
+          c=((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('post') or {})
+          assert c.get('content')==s.get('content'),sys.argv[3]+' content mismatch'
+          assert c.get('excerpt')==s.get('excerpt'),sys.argv[3]+' excerpt mismatch'
+          assert int(c.get('featured_media') or 0)==int(s.get('featured_media') or 0),sys.argv[3]+' featured mismatch'
+          print('READBACK_OK slug=%s featured=%s'%(sys.argv[3],c.get('featured_media')))
+          PY
+          done
+
+          for action in elementor.regenerate cache.flush; do
+            make_req "$root/a.req" "copy-${action//./-}-${GITHUB_RUN_ID}" "$action" false true '{}'
+            call "$root/a.req" "$root/a.res"
+          done
+
+          failures=0
+          for slug in "${slugs[@]}"; do
+            for kind in base ch; do
+              if [[ "$kind" == base ]]; then path="/$slug/"; else path="/ch/$slug/"; fi
+              out="$root/$kind-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path?contentfix=${GITHUB_RUN_ID}")
+              code="${meta%%|*}"; final="${meta#*|}"
+              metrics=$(python3 - "$out" <<'PY'
+          import re,sys
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
+          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S); text=' '.join(text.split())
+          print('%d|%d|%d|%d'%(len(t.encode()),len(text),t.lower().count('elementor-element'),len(re.findall(r'<img\b',t,re.I))))
+          PY
+          )
+              echo "RENDER kind=$kind slug=$slug http=$code final=$final metrics=$metrics"
+              [[ "$code" == 200 && "$final" == *"$path"* ]] || failures=$((failures+1))
+              if [[ "$kind" == base ]]; then echo "$metrics" > "$root/base-$slug.metrics"; else
+                base=$(cat "$root/base-$slug.metrics")
+                btxt=$(echo "$base"|cut -d'|' -f2); belems=$(echo "$base"|cut -d'|' -f3); bimgs=$(echo "$base"|cut -d'|' -f4)
+                ctxt=$(echo "$metrics"|cut -d'|' -f2); celems=$(echo "$metrics"|cut -d'|' -f3); cimgs=$(echo "$metrics"|cut -d'|' -f4)
+                (( ctxt + 500 >= btxt && celems + 5 >= belems && cimgs + 1 >= bimgs )) || failures=$((failures+1))
+              fi
             done
           done
+          echo "FINAL failures=$failures"
+          (( failures == 0 ))
+          trap - EXIT
+          echo 'FINAL_SUCCESS ch_pages=6 content=matched excerpts=matched featured_images=matched'
