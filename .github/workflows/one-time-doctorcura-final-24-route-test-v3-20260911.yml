@@ -1,0 +1,46 @@
+name: DoctorCura final 24 route test v3
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - .github/workflows/one-time-doctorcura-final-24-route-test-v3-20260911.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Test all 24 public routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          test "$site" = "https://doctorcura.com"
+          slugs="gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt"
+          failures=0
+          total=0
+          for slug in $slugs; do
+            for item in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
+              label=$(printf '%s' "$item" | cut -d'|' -f1)
+              path=$(printf '%s' "$item" | cut -d'|' -f2)
+              expected_lang=$(printf '%s' "$item" | cut -d'|' -f3)
+              out="$RUNNER_TEMP/${label}-${slug}.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 2 --connect-timeout 12 --max-time 60 -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code=$(printf '%s' "$meta" | cut -d'|' -f1)
+              final=$(printf '%s' "$meta" | cut -d'|' -f2-)
+              lang=$(sed -n 's/.*<html[^>]*lang="\([^"]*\)".*/\1/p' "$out" | head -1 || true)
+              total=$((total+1))
+              echo "RESULT label=$label path=$path http=$code final=$final html_lang=$lang"
+              if [ "$code" != "200" ] || [ "$final" != "$site$path" ]; then
+                failures=$((failures+1))
+              elif ! printf '%s' "$lang" | grep -q "^$expected_lang"; then
+                failures=$((failures+1))
+              fi
+            done
+          done
+          echo "SUMMARY total=$total failures=$failures"
+          test "$total" -eq 24
+          test "$failures" -eq 0
