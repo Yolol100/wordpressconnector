@@ -1,0 +1,46 @@
+name: One-time DoctorCura image SEO inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-seo-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect landing page media metadata
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/image-seo-inspect"; mkdir -p "$root"
+          ids=(900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495)
+          for id in "${ids[@]}"; do
+            python3 - "$root/$id.req" "$id" <<'PY'
+          import json,sys
+          out,id=sys.argv[1:]
+          json.dump({'version':1,'request_id':'image-seo-inspect-'+id+'-${{ github.run_id }}','action':'media.get','dry_run':True,'confirm':False,'payload':{'id':int(id)}},open(out,'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/$id.req" -o "$root/$id.res" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]]
+            python3 - "$root/$id.res" <<'PY'
+          import json,sys,os
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          m=((d.get('data') or {}).get('media') or {})
+          md=m.get('metadata') or {}
+          row={k:m.get(k) for k in ('id','title','alt','caption','description','parent','mime_type','url','file')}
+          row['width']=md.get('width'); row['height']=md.get('height'); row['filename']=os.path.basename(str(m.get('file') or ''))
+          print('MEDIA='+json.dumps(row,ensure_ascii=False,separators=(',',':')))
+          PY
+          done
