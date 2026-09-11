@@ -1,4 +1,4 @@
-name: One-time DoctorCura nested redirect cache-bust verify 20260911
+name: One-time DoctorCura GTranslate runtime inspect 20260911
 
 on:
   push:
@@ -11,27 +11,46 @@ permissions:
   contents: read
 
 jobs:
-  verify:
+  inspect:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Verify existing canary bypassing page cache
+      - name: Inspect live GTranslate URL addon and filesystem write gate
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
-          source_path='/en/ch/gewichtsmanagement/'
-          target_url='https://doctorcura.com/en/gewichtsmanagement/'
-          test_url="$site${source_path}?redirectcheck=${GITHUB_RUN_ID}"
-          headers="$RUNNER_TEMP/headers.txt"
-          code=$(curl -sS --connect-timeout 10 --max-time 30 -D "$headers" -o /dev/null --max-redirs 0 -H 'Cache-Control: no-cache, no-store' -w '%{http_code}' "$test_url" || true)
-          loc=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$headers")
-          echo "VERIFY_BUST_INITIAL http=$code location=$loc"
-          grep -Ei '^(server|cache-control|x-redirect-by|x-cache|cf-cache-status|location):' "$headers" || true
-          [[ "$code" == 301 && "$loc" == "$target_url" ]]
-          final=$(curl -sS --connect-timeout 10 --max-time 45 -L --max-redirs 5 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{url_effective}' "$test_url" || true)
-          echo "VERIFY_BUST_FINAL=$final"
-          [[ "$final" == "200|$target_url" ]]
-          echo 'CACHE_BUST_CANARY_SUCCESS'
+          root="$RUNNER_TEMP/gt-inspect"; rm -rf "$root"; mkdir -p "$root"
+          req(){ python3 - "$1" "$2" "$3" <<'PY'
+          import json,sys
+          out,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'gtinspect-'+action.replace('.','-'),'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+          call(){
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            echo "HTTP=$code"
+            [[ "$code" == 200 ]] || { cat "$2"; exit 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+          req "$root/i.req" filesystem.inspect '{}'; call "$root/i.req" "$root/i.res"
+          python3 - "$root/i.res" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print('FILESYSTEM='+json.dumps(d.get('data') or {},separators=(',',':')))
+          PY
+          req "$root/r.req" filesystem.read_text '{"path":"wp-content/plugins/gtranslate/url_addon/gtranslate.php"}'; call "$root/r.req" "$root/r.res"
+          python3 - "$root/r.res" <<'PY'
+          import json,sys,re
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; f=data.get('file') or {}; c=data.get('content') or ''
+          print('GT_FILE path=%s bytes=%s sha256=%s writable=%s'%(f.get('path'),f.get('bytes'),f.get('sha256'),f.get('writable_text_scope')))
+          for pat in ['include \'config.php\';','$_GET[\'glang\']','$_GET[\'gurl\']','header(\'Location: \' . $page_url']:
+              print('MARKER %s count=%d'%(pat,c.count(pat)))
+          print('HEAD='+repr(c[:1200]))
+          PY
