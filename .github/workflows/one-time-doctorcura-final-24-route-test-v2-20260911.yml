@@ -1,0 +1,51 @@
+name: DoctorCura final 24 route test v2
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - .github/workflows/one-time-doctorcura-final-24-route-test-v2-20260911.yml
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Test 24 public routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          test "$site" = "https://doctorcura.com"
+          slugs="gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt"
+          failures=0
+          total=0
+          for slug in $slugs; do
+            for item in "de:/$slug/:de" "en:/en/$slug/:en" "fr:/fr/$slug/:fr" "ch:/ch/$slug/:de"; do
+              label="${item%%:*}"
+              rest="${item#*:}"
+              path="${rest%:*}"
+              expected_lang="${rest##*:}"
+              out="$RUNNER_TEMP/${label}-${slug}.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 2 --connect-timeout 12 --max-time 60 -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"
+              final="${meta#*|}"
+              lang=$(grep -oiE '<html[^>]+lang=["'"'][^"'"']+' "$out" 2>/dev/null | head -1 | sed -E 's/.*lang=["'"']([^"'"']+).*/\1/I' || true)
+              total=$((total+1))
+              echo "RESULT label=$label path=$path http=$code final=$final html_lang=$lang"
+              if [ "$code" != "200" ] || [ "$final" != "$site$path" ]; then
+                failures=$((failures+1))
+              elif [ "$expected_lang" = "de" ] && [ "${lang#de}" = "$lang" ]; then
+                failures=$((failures+1))
+              elif [ "$expected_lang" = "en" ] && [ "${lang#en}" = "$lang" ]; then
+                failures=$((failures+1))
+              elif [ "$expected_lang" = "fr" ] && [ "${lang#fr}" = "$lang" ]; then
+                failures=$((failures+1))
+              fi
+            done
+          done
+          echo "SUMMARY total=$total failures=$failures"
+          test "$total" -eq 24
+          test "$failures" -eq 0
