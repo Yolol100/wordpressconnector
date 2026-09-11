@@ -1,0 +1,215 @@
+name: One-time DoctorCura GTranslate flat route fix 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-gtranslate-flat-routes-fix-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Patch GTranslate CH nesting safely and run regression checks
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-gt-flat"; rm -rf "$root"; mkdir -p "$root"
+          file='wp-content/plugins/gtranslate/url_addon/gtranslate.php'
+          marker='DOCTORCURA_FLAT_CH_LANGUAGE_ROUTES'
+          write_request_id="gt-flat-live-${GITHUB_RUN_ID}"
+          wrote=0
+
+          call_connector(){
+            code=$(curl -sS --connect-timeout 10 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print(d); raise SystemExit(1)
+          PY
+          }
+
+          python3 - "$root/read.req" "$file" <<'PY'
+          import json,sys,uuid
+          json.dump({'version':1,'request_id':'gt-flat-read-'+str(uuid.uuid4()),'action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          call_connector "$root/read.req" "$root/read.res"
+
+          python3 - "$root/read.res" "$root/dry.req" "$root/live.req" "$file" "$marker" "$write_request_id" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; state=data.get('file') or {}; content=data.get('content') or ''
+          path,marker,live_id=sys.argv[4:7]
+          sha=state.get('sha256') or ''
+          assert state.get('path')==path,(state,path)
+          assert state.get('writable_text_scope') is True,state
+          assert len(sha)==64,sha
+          anchor="$glang = $_GET['glang'];\n"
+          if marker in content:
+              patched=content
+              print('PATCH_STATE=already_present sha256='+sha)
+          else:
+              assert content.count(anchor)==1,'unexpected glang anchor count'
+              snippet=r'''
+
+          // DOCTORCURA_FLAT_CH_LANGUAGE_ROUTES
+          // Keep country-market CH pages separate from GTranslate language prefixes.
+          // /en/ch/<landing>/ -> /en/<landing>/ and /fr/ch/<landing>/ -> /fr/<landing>/.
+          $doctorcura_flat_ch_slugs = array(
+              'gewichtsmanagement',
+              'akne-behandlung',
+              'schlafberatung',
+              'erektionsprobleme',
+              'haarausfall',
+              'online-arzt',
+          );
+          $doctorcura_gurl = trim((string) $_GET['gurl'], '/');
+          $doctorcura_parts = explode('/', $doctorcura_gurl);
+          if (
+              in_array($glang, array('en', 'fr'), true)
+              && 2 === count($doctorcura_parts)
+              && 'ch' === $doctorcura_parts[0]
+              && in_array($doctorcura_parts[1], $doctorcura_flat_ch_slugs, true)
+          ) {
+              $doctorcura_target = 'https://doctorcura.com/' . $glang . '/' . $doctorcura_parts[1] . '/';
+              $doctorcura_query = $_GET;
+              unset($doctorcura_query['glang'], $doctorcura_query['gurl']);
+              if (! empty($doctorcura_query)) {
+                  $doctorcura_target .= '?' . http_build_query($doctorcura_query, '', '&', PHP_QUERY_RFC3986);
+              }
+              header('Location: ' . $doctorcura_target, true, 301);
+              exit;
+          }
+          // DOCTORCURA_FLAT_CH_LANGUAGE_ROUTES_END
+          '''
+              patched=content.replace(anchor,anchor+snippet,1)
+              print('PATCH_STATE=prepared before_sha256='+sha+' bytes_before='+str(len(content.encode()))+' bytes_after='+str(len(patched.encode())))
+          for out,dry,confirm,rid in [(sys.argv[2],True,False,'gt-flat-dry'),(sys.argv[3],False,True,live_id)]:
+              req={'version':1,'request_id':rid,'action':'filesystem.write_text','dry_run':dry,'confirm':confirm,'payload':{'path':path,'content':patched,'expected_sha256':sha}}
+              json.dump(req,open(out,'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+
+          if python3 - "$root/read.res" "$marker" <<'PY'
+          import json,sys
+          c=(json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('content') or ''
+          raise SystemExit(0 if sys.argv[2] in c else 1)
+          PY
+          then
+            echo 'PATCH_ALREADY_PRESENT'
+          else
+            call_connector "$root/dry.req" "$root/dry.res"
+            echo 'DRY_RUN_OK'
+            call_connector "$root/live.req" "$root/live.res"
+            wrote=1
+            echo 'LIVE_PATCH_OK'
+          fi
+
+          rollback_on_failure(){
+            rc=$?
+            if (( rc != 0 && wrote == 1 )); then
+              echo 'ROLLBACK_GTRANSLATE_START'
+              python3 - "$root/rb.req" "$write_request_id" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'rb-'+sys.argv[2],'action':'connector.rollback','dry_run':False,'confirm':True,'payload':{'request_id':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+              call_connector "$root/rb.req" "$root/rb.res" || true
+            fi
+            exit "$rc"
+          }
+          trap rollback_on_failure EXIT
+
+          python3 - "$root/read2.req" "$file" <<'PY'
+          import json,sys,uuid
+          json.dump({'version':1,'request_id':'gt-flat-readback-'+str(uuid.uuid4()),'action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          call_connector "$root/read2.req" "$root/read2.res"
+          python3 - "$root/read2.res" "$marker" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}; c=data.get('content') or ''; f=data.get('file') or {}
+          assert c.count(sys.argv[2])==2,'patch marker pair missing/duplicated'
+          for slug in ['gewichtsmanagement','akne-behandlung','schlafberatung','erektionsprobleme','haarausfall','online-arzt']:
+              assert "'%s'"%slug in c,slug
+          print('READBACK_OK sha256=%s bytes=%s'%(f.get('sha256'),f.get('bytes')))
+          PY
+
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          echo '=== NESTED ROUTE REDIRECT CHECK ==='
+          nested_fail=0
+          clean_stale=0
+          for lang in en fr; do
+            for slug in "${slugs[@]}"; do
+              src="/$lang/ch/$slug/"
+              target="$site/$lang/$slug/"
+              h="$root/h-$lang-$slug.txt"
+              bust="gtflatcheck=${GITHUB_RUN_ID}"
+              code=$(curl -sS --connect-timeout 10 --max-time 45 --max-redirs 0 -D "$h" -o /dev/null -H 'Cache-Control: no-cache, no-store' -w '%{http_code}' "$site$src?$bust" || true)
+              loc=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$h")
+              echo "NESTED_BUST lang=$lang slug=$slug http=$code location=$loc"
+              [[ "$code" == 301 && "$loc" == "$target?$bust" ]] || nested_fail=$((nested_fail+1))
+
+              h2="$root/hclean-$lang-$slug.txt"
+              c2=$(curl -sS --connect-timeout 10 --max-time 45 --max-redirs 0 -D "$h2" -o /dev/null -H 'Cache-Control: no-cache' -w '%{http_code}' "$site$src" || true)
+              l2=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$h2")
+              echo "NESTED_CLEAN lang=$lang slug=$slug http=$c2 location=$l2"
+              [[ "$c2" == 301 && "$l2" == "$target" ]] || clean_stale=$((clean_stale+1))
+            done
+          done
+          echo "NESTED_SUMMARY cache_bust_failures=$nested_fail clean_failures=$clean_stale"
+          (( nested_fail == 0 ))
+
+          echo '=== INTENDED 24 ROUTE REGRESSION ==='
+          route_fail=0
+          for slug in "${slugs[@]}"; do
+            for spec in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
+              IFS='|' read -r label path expected <<< "$spec"
+              out="$root/live-$label-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -H 'Cache-Control: no-cache' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              lang=$(python3 - "$out" <<'PY'
+          import re,sys,os
+          if not os.path.exists(sys.argv[1]): print('missing'); raise SystemExit
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I)
+          print(m.group(1) if m else 'unknown')
+          PY
+          )
+              echo "ROUTE label=$label slug=$slug http=$code final=$final lang=$lang"
+              [[ "$code" == 200 && "$final" == "$site$path" && "$lang" == "$expected"* ]] || route_fail=$((route_fail+1))
+            done
+          done
+          echo "ROUTE_SUMMARY failures=$route_fail"
+          (( route_fail == 0 ))
+
+          echo '=== REMOVE INEFFECTIVE REDIRECTION CANARY ==='
+          list="$root/redir-list.json"
+          code=$(curl -sS --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --get --data-urlencode 'per_page=200' -H 'Accept: application/json' -o "$list" -w '%{http_code}' "$site/wp-json/redirection/v1/redirect" || true)
+          [[ "$code" == 200 ]]
+          canary=$(python3 - "$list" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); ids=[]
+          for i in d.get('items') or []:
+              if int(i.get('id') or 0)==20 and str(i.get('url') or '').rstrip('/')=='/en/ch/gewichtsmanagement' and ((i.get('action_data') or {}).get('url')=='https://doctorcura.com/en/gewichtsmanagement/'):
+                  ids.append(20)
+          print(','.join(map(str,ids)))
+          PY
+          )
+          if [[ "$canary" == 20 ]]; then
+            code=$(curl -sS --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary '{"items":[20],"global":false}' -o "$root/delete.json" -w '%{http_code}' "$site/wp-json/redirection/v1/bulk/redirect/delete" || true)
+            echo "CANARY_DELETE_HTTP=$code"
+            [[ "$code" == 200 ]]
+          else
+            echo 'CANARY_ALREADY_ABSENT_OR_NOT_OURS'
+          fi
+
+          trap - EXIT
+          echo "FINAL_SUCCESS gtranslate_flat_nested_redirects=12 intended_routes=24 clean_nested_failures=$clean_stale"
