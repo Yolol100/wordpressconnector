@@ -1,0 +1,56 @@
+name: One-time DoctorCura GTranslate runtime inspect 2 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-gtranslate-runtime-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect live GTranslate URL addon and filesystem write gate
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/gt-inspect"; mkdir -p "$root"
+          req(){ python3 - "$1" "$2" "$3" <<'PY'
+          import json,sys,uuid
+          out,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':'gtinspect-'+str(uuid.uuid4()),'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+          call(){
+            code=$(curl -sS --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "HTTP=$code"; cat "$2"; exit 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+          req "$root/i.req" filesystem.inspect '{}'; call "$root/i.req" "$root/i.res"
+          python3 - "$root/i.res" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); print('FILESYSTEM='+json.dumps(d.get('data') or {},separators=(',',':')))
+          PY
+          req "$root/r.req" filesystem.read_text '{"path":"wp-content/plugins/gtranslate/url_addon/gtranslate.php"}'; call "$root/r.req" "$root/r.res"
+          python3 - "$root/r.res" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; f=data.get('file') or {}; c=data.get('content') or ''
+          print('GT_FILE path=%s bytes=%s sha256=%s writable=%s'%(f.get('path'),f.get('bytes'),f.get('sha256'),f.get('writable_text_scope')))
+          print('HAS_CONFIG='+str("include 'config.php';" in c))
+          print('HAS_GLANG='+str("$_GET['glang']" in c))
+          print('HAS_GURL='+str("$_GET['gurl']" in c))
+          print('HEAD='+repr(c[:1000]))
+          PY
