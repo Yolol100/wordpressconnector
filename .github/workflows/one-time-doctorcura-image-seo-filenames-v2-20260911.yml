@@ -1,0 +1,194 @@
+name: One-time DoctorCura image SEO filenames v2 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-seo-filenames-v2-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Rename landing-page image files and verify
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-imgfn-v2"; rm -rf "$root"; mkdir -p "$root"
+          plugin='wp-content/plugins/redirection/redirection.php'
+          patched=0
+
+          conn(){
+            code=$(curl -sS --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          python3 - "$root/read.req" "$plugin" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'imgfn2-read','action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          conn "$root/read.req" "$root/read.res"
+
+          python3 - "$root/read.res" "$root" "$plugin" <<'PY'
+          import json,sys,os
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; st=data.get('file') or {}; c=data.get('content') or ''
+          root,path=sys.argv[2:4]; sha=st.get('sha256') or ''
+          assert st.get('path')==path and st.get('writable_text_scope') is True and len(sha)==64,st
+          assert 'DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_V2' not in c
+          open(os.path.join(root,'original.php'),'w',encoding='utf-8').write(c)
+          snippet=r'''
+
+          // DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_V2
+          add_action('rest_api_init', function () {
+              register_rest_route('doctorcura-maint/v1', '/image-filename-seo-v2', array(
+                  'methods' => 'POST',
+                  'permission_callback' => function () { return current_user_can('manage_options'); },
+                  'callback' => function (WP_REST_Request $r) {
+                      $map = array(
+                          900478=>'gewichtsmanagement-ernaehrungsberatung',900479=>'gewichtsmanagement-aerztliche-begleitung',
+                          900480=>'akne-behandlung-hautbild',900483=>'akne-behandlung-hautunreinheiten',
+                          900486=>'schlafberatung-schlafprobleme',900488=>'schlafprobleme-naechtliche-unruhe',
+                          900487=>'erektionsprobleme-arztgespraech',900490=>'erektionsprobleme-medizinische-beratung',
+                          900491=>'haarausfall-haare-kaemmen',900492=>'haarausfall-haaransatz',
+                          900493=>'online-arztberatung-laptop',900495=>'online-sprechstunde-aerztin'
+                      );
+                      $id=(int)$r->get_param('id'); $confirm=filter_var($r->get_param('confirm'),FILTER_VALIDATE_BOOLEAN);
+                      if(!isset($map[$id]) || 'attachment'!==get_post_type($id) || !wp_attachment_is_image($id)) return new WP_Error('bad_image','Not approved.',array('status'=>400));
+                      $old=get_attached_file($id); $oldmeta=wp_get_attachment_metadata($id);
+                      if(!$old || !is_file($old) || !is_array($oldmeta)) return new WP_Error('missing_image','Image file or metadata missing.',array('status'=>500));
+                      $up=wp_get_upload_dir(); $base=realpath($up['basedir']); $dir=realpath(dirname($old));
+                      if(!$base || !$dir || ($dir!==$base && 0!==strpos($dir,rtrim($base,DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR))) return new WP_Error('unsafe_path','Outside uploads.',array('status'=>500));
+                      $ext=strtolower((string)pathinfo($old,PATHINFO_EXTENSION));
+                      if(!in_array($ext,array('jpg','jpeg','png','webp'),true)) return new WP_Error('bad_ext','Unsupported image type.',array('status'=>400));
+                      $new=$dir.DIRECTORY_SEPARATOR.$map[$id].'.'.$ext;
+                      if(basename($old)===basename($new)) return rest_ensure_response(array('ok'=>true,'status'=>'already_done','id'=>$id,'filename'=>basename($new),'url'=>wp_get_attachment_url($id)));
+                      if(!$confirm) return rest_ensure_response(array('ok'=>true,'status'=>'dry_run','id'=>$id,'from'=>basename($old),'to'=>basename($new)));
+                      require_once ABSPATH.'wp-admin/includes/image.php';
+                      $neworiginal=null;
+                      try {
+                          if(file_exists($new)){ if(hash_file('sha256',$new)!==hash_file('sha256',$old)) throw new RuntimeException('Target filename conflict.'); }
+                          elseif(!copy($old,$new)) throw new RuntimeException('Primary image copy failed.');
+                          if(!empty($oldmeta['original_image'])){
+                              $oo=$dir.DIRECTORY_SEPARATOR.basename((string)$oldmeta['original_image']);
+                              if(is_file($oo)){
+                                  $oe=strtolower((string)pathinfo($oo,PATHINFO_EXTENSION)); $neworiginal=$dir.DIRECTORY_SEPARATOR.$map[$id].'-original.'.$oe;
+                                  if(file_exists($neworiginal)){ if(hash_file('sha256',$neworiginal)!==hash_file('sha256',$oo)) throw new RuntimeException('Original filename conflict.'); }
+                                  elseif(!copy($oo,$neworiginal)) throw new RuntimeException('Original image copy failed.');
+                              }
+                          }
+                          update_attached_file($id,$new);
+                          if(basename((string)get_attached_file($id))!==basename($new)) throw new RuntimeException('Attached-file readback failed.');
+                          $meta=wp_generate_attachment_metadata($id,$new);
+                          if(!is_array($meta)||empty($meta['file'])) throw new RuntimeException('Metadata regeneration failed.');
+                          if($neworiginal&&is_file($neworiginal)) $meta['original_image']=basename($neworiginal);
+                          wp_update_attachment_metadata($id,$meta);
+                          $check=wp_get_attachment_metadata($id);
+                          if(!is_array($check)||basename((string)get_attached_file($id))!==basename($new)||basename((string)($check['file']??''))!==basename($new)) throw new RuntimeException('Final readback failed.');
+                          foreach((array)($check['sizes']??array()) as $s){ if(!empty($s['file'])&&0!==strpos((string)$s['file'],$map[$id].'-')) throw new RuntimeException('A generated size kept an old filename.'); }
+                          return rest_ensure_response(array('ok'=>true,'status'=>'renamed','id'=>$id,'filename'=>basename($new),'url'=>wp_get_attachment_url($id),'sizes'=>count((array)($check['sizes']??array()))));
+                      } catch(Throwable $e){ update_attached_file($id,$old); wp_update_attachment_metadata($id,$oldmeta); return new WP_Error('rename_failed',$e->getMessage(),array('status'=>500)); }
+                  }
+              ));
+          });
+          // DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_V2_END
+          '''
+          if c.rstrip().endswith('?>'):
+              p=c.rfind('?>'); patched=c[:p]+snippet+'\n'+c[p:]
+          else: patched=c+snippet+'\n'
+          for fn,dry,confirm,rid in [('dry.req',True,False,'imgfn2-patch-dry'),('live.req',False,True,'imgfn2-patch-live')]:
+              q={'version':1,'request_id':rid,'action':'filesystem.write_text','dry_run':dry,'confirm':confirm,'payload':{'path':path,'content':patched,'expected_sha256':sha}}
+              json.dump(q,open(os.path.join(root,fn),'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+          conn "$root/dry.req" "$root/dry.res"
+          conn "$root/live.req" "$root/live.res"
+          patched=1
+
+          restore(){
+            rc=$?
+            if (( patched == 1 )); then
+              python3 - "$root/cr.req" "$plugin" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'imgfn2-current','action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+              if conn "$root/cr.req" "$root/cr.res"; then
+                python3 - "$root/cr.res" "$root/original.php" "$root/restore.req" "$plugin" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); sha=((d.get('data') or {}).get('file') or {}).get('sha256'); orig=open(sys.argv[2],encoding='utf-8').read()
+          q={'version':1,'request_id':'imgfn2-restore','action':'filesystem.write_text','dry_run':False,'confirm':True,'payload':{'path':sys.argv[4],'content':orig,'expected_sha256':sha}}
+          json.dump(q,open(sys.argv[3],'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+                conn "$root/restore.req" "$root/restore.res" || true
+              fi
+            fi
+            exit "$rc"
+          }
+          trap restore EXIT
+
+          declare -A names
+          names[900478]='gewichtsmanagement-ernaehrungsberatung'; names[900479]='gewichtsmanagement-aerztliche-begleitung'
+          names[900480]='akne-behandlung-hautbild'; names[900483]='akne-behandlung-hautunreinheiten'
+          names[900486]='schlafberatung-schlafprobleme'; names[900488]='schlafprobleme-naechtliche-unruhe'
+          names[900487]='erektionsprobleme-arztgespraech'; names[900490]='erektionsprobleme-medizinische-beratung'
+          names[900491]='haarausfall-haare-kaemmen'; names[900492]='haarausfall-haaransatz'
+          names[900493]='online-arztberatung-laptop'; names[900495]='online-sprechstunde-aerztin'
+
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            for confirm in false true; do
+              printf '{"id":%s,"confirm":%s}' "$id" "$confirm" > "$root/body.json"
+              code=$(curl -sS --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/body.json" -o "$root/route.json" -w '%{http_code}' "$site/wp-json/doctorcura-maint/v1/image-filename-seo-v2")
+              [[ "$code" == 200 ]] || { echo "RENAME_FAIL id=$id confirm=$confirm http=$code"; cat "$root/route.json"; exit 1; }
+              python3 - "$root/route.json" "$id" "$confirm" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); assert d.get('ok') is True,d
+          assert d.get('status') in (('dry_run','already_done') if sys.argv[3]=='false' else ('renamed','already_done')),d
+          print('RENAME_OK id=%s status=%s filename=%s'%(sys.argv[2],d.get('status'),d.get('filename') or d.get('to')))
+          PY
+            done
+          done
+
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            python3 - "$root/get.req" "$id" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'imgfn2-get-'+sys.argv[2],'action':'media.get','dry_run':True,'confirm':False,'payload':{'id':int(sys.argv[2])}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+            conn "$root/get.req" "$root/get.res"
+            python3 - "$root/get.res" "$id" "${names[$id]}" <<'PY'
+          import json,sys,os
+          d=json.load(open(sys.argv[1])); m=((d.get('data') or {}).get('media') or {}); md=m.get('metadata') or {}; base=sys.argv[3]
+          fn=os.path.basename(str(m.get('file') or '')); assert fn.startswith(base+'.'),(fn,base)
+          assert '/'+base+'.' in str(m.get('url') or ''),(m.get('url'),base)
+          assert os.path.basename(str(md.get('file') or '')).startswith(base+'.'),md.get('file')
+          assert md.get('sizes') and all(str(v.get('file') or '').startswith(base+'-') for v in md['sizes'].values())
+          print('READBACK_OK id=%s filename=%s sizes=%d url=%s'%(sys.argv[2],fn,len(md['sizes']),m.get('url')))
+          PY
+            url=$(python3 - "$root/get.res" <<'PY'
+          import json,sys
+          print((((json.load(open(sys.argv[1])).get('data') or {}).get('media') or {}).get('url') or ''))
+          PY
+          )
+            [[ "$(curl -sS -L --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}' "$url")" == 200 ]]
+          done
+
+          route_fail=0
+          for slug in gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt; do
+            for p in "/$slug/" "/en/$slug/" "/fr/$slug/" "/ch/$slug/"; do
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$p" || true)
+              [[ "${meta%%|*}" == 200 && "${meta#*|}" == "$site$p" ]] || route_fail=$((route_fail+1))
+            done
+          done
+          echo "ROUTE_SUMMARY total=24 failures=$route_fail"; (( route_fail == 0 ))
+          echo 'FINAL_IMAGE_FILENAME_SEO_SUCCESS images=12 canonical_routes=24'
