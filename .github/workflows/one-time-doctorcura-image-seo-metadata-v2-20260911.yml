@@ -1,0 +1,100 @@
+name: One-time DoctorCura image SEO metadata v2 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-seo-metadata-v2-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Refine image metadata and verify
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/image-seo-v2"; rm -rf "$root"; mkdir -p "$root"
+
+          python3 - "$root/plan.json" <<'PY'
+          import json,sys
+          plan=[
+          [900478,'Ernährungsberatung beim Gewichtsmanagement','Ernährungsberaterin misst den Taillenumfang einer Frau neben frischem Obst und Gemüse','Individuelle Ernährungsberatung als Teil eines medizinisch begleiteten Gewichtsmanagements.','Eine Ernährungsberaterin misst den Taillenumfang einer Frau neben frischem Obst und Gemüse. Das Bild veranschaulicht die persönliche Begleitung beim Gewichtsmanagement.'],
+          [900479,'Ärztliche Gewichtskontrolle','Ärztin misst mit einem Maßband den Taillenumfang einer Patientin','Ärztliche Kontrolle und individuelle Begleitung beim Gewichtsmanagement.','Eine Ärztin misst mit einem Maßband den Taillenumfang einer Patientin. Die Aufnahme steht für die medizinische Beurteilung und Verlaufskontrolle beim Gewichtsmanagement.'],
+          [900480,'Hautbeurteilung bei Akne','Junge Frau betrachtet ihre Gesichtshaut im Spiegel','Beobachtung des Hautbilds als Grundlage für die ärztliche Beurteilung von Akne.','Eine junge Frau betrachtet ihre Gesichtshaut im Spiegel. Das Bild veranschaulicht die Beurteilung von Hautveränderungen im Zusammenhang mit Akne.'],
+          [900483,'Hautunreinheiten bei Akne','Frau berührt ihr Gesicht mit sichtbaren Hautunreinheiten','Hautunreinheiten können im Rahmen einer ärztlichen Akne-Behandlung beurteilt werden.','Eine Frau berührt ihr Gesicht mit sichtbaren Hautunreinheiten. Die Aufnahme illustriert typische Hautprobleme, die bei einer medizinischen Akne-Beurteilung berücksichtigt werden können.'],
+          [900486,'Schlafprobleme und Einschlafstörungen','Frau liegt nachts wach im Bett und hält sich den Kopf','Anhaltende Schlafprobleme können ärztlich abgeklärt werden.','Eine Frau liegt nachts wach im Bett und hält sich den Kopf. Das Bild steht für Schlafprobleme und Beschwerden, die im Rahmen einer medizinischen Schlafberatung beurteilt werden können.'],
+          [900488,'Nächtliche Unruhe und Schlafprobleme','Besorgter Mann liegt nachts wach im Bett','Nächtliche Unruhe und Schlafprobleme können die Schlafqualität deutlich beeinträchtigen.','Ein besorgter Mann liegt nachts wach im Bett. Die Aufnahme veranschaulicht nächtliche Unruhe und anhaltende Schlafprobleme.'],
+          [900487,'Ärztliches Gespräch bei Erektionsproblemen','Mann bespricht Gesundheitsdaten mit einem Arzt','Vertrauliche ärztliche Beratung bei Erektionsproblemen und anderen gesundheitlichen Beschwerden.','Ein Mann bespricht Gesundheitsdaten mit einem Arzt. Das Bild steht für eine diskrete medizinische Beratung, bei der mögliche Ursachen von Erektionsproblemen besprochen werden.'],
+          [900490,'Diskrete Beratung bei Erektionsproblemen','Junger Mann im vertraulichen Beratungsgespräch mit einer Fachperson','Diskrete medizinische Beratung bei Erektionsproblemen.','Ein junger Mann führt ein vertrauliches Gespräch mit einer Fachperson. Die Aufnahme veranschaulicht eine persönliche Beratungssituation bei Erektionsproblemen.'],
+          [900491,'Haarausfall beim Kämmen','Person kämmt ihr Haar und prüft es auf Anzeichen von Haarausfall','Veränderungen beim Kämmen können auf Haarausfall aufmerksam machen.','Eine Person kämmt ihr Haar und prüft es auf Anzeichen von Haarausfall. Das Bild veranschaulicht eine typische Situation, in der Veränderungen der Haardichte auffallen können.'],
+          [900492,'Haaransatz bei Haarausfall','Mann betrachtet seinen Haaransatz im Spiegel','Veränderungen des Haaransatzes können bei einer ärztlichen Beurteilung von Haarausfall berücksichtigt werden.','Ein Mann betrachtet seinen Haaransatz im Spiegel. Die Aufnahme veranschaulicht sichtbare Veränderungen, die im Zusammenhang mit Haarausfall auftreten können.'],
+          [900493,'Online-Arztberatung am Laptop','Frau nimmt über einen Laptop an einer Online-Arztberatung teil','Ärztliche Beratung online und bequem von zu Hause.','Eine Frau nimmt über einen Laptop an einer digitalen Sprechstunde teil. Das Bild veranschaulicht den Ablauf einer Online-Arztberatung von zu Hause.'],
+          [900495,'Online-Sprechstunde mit Ärztin','Mann spricht per Laptop mit einer Ärztin in einer Videosprechstunde','Digitale ärztliche Beratung per Videosprechstunde.','Ein Mann spricht per Laptop mit einer Ärztin. Die Aufnahme steht für eine digitale Sprechstunde und medizinische Beratung über eine Online-Verbindung.']]
+          json.dump(plan,open(sys.argv[1],'w'),ensure_ascii=False)
+          PY
+
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan=json.load(open(sys.argv[1],encoding='utf-8')); root=sys.argv[2]
+          for row in plan:
+              i,title,alt,caption,description=row
+              payload={'id':i,'title':title,'alt':alt,'caption':caption,'description':description}
+              dry={'version':1,'request_id':f'image-seo-v2-dry-{i}','action':'media.update','dry_run':True,'confirm':False,'payload':payload}
+              live={'version':1,'request_id':f'image-seo-v2-live-{i}','action':'media.update','dry_run':False,'confirm':True,'payload':payload}
+              get={'version':1,'request_id':f'image-seo-v2-read-{i}','action':'media.get','dry_run':True,'confirm':False,'payload':{'id':i}}
+              for name,obj in [('dry',dry),('live',live),('get',get)]:
+                  json.dump(obj,open(os.path.join(root,f'{i}.{name}.json'),'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+
+          call_connector(){
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          ids=(900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495)
+          for id in "${ids[@]}"; do
+            call_connector "$root/$id.dry.json" "$root/$id.dry.res"
+            call_connector "$root/$id.live.json" "$root/$id.live.res"
+            call_connector "$root/$id.get.json" "$root/$id.get.res"
+          done
+
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan={int(r[0]):r[1:] for r in json.load(open(sys.argv[1],encoding='utf-8'))}
+          root=sys.argv[2]
+          for i,want in plan.items():
+              d=json.load(open(os.path.join(root,f'{i}.get.res'),encoding='utf-8')); m=((d.get('data') or {}).get('media') or {})
+              got=[m.get('title'),m.get('alt'),m.get('caption'),m.get('description')]
+              assert got==want,(i,got,want)
+              assert m.get('alt') and len(m.get('alt')) <= 125,(i,m.get('alt'))
+              fn=os.path.basename(str(m.get('file') or ''))
+              assert fn and '2026-' not in fn,(i,fn)
+              print('IMAGE_SEO_OK id=%d filename=%s alt_chars=%d'%(i,fn,len(m.get('alt'))))
+          print('IMAGE_METADATA_READBACK_SUCCESS images=12 fields=48')
+          PY
+
+          route_fail=0
+          for slug in gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt; do
+            for p in "/$slug/" "/en/$slug/" "/fr/$slug/" "/ch/$slug/"; do
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$p" || true)
+              [[ "${meta%%|*}" == 200 && "${meta#*|}" == "$site$p" ]] || route_fail=$((route_fail+1))
+            done
+          done
+          echo "ROUTE_SUMMARY total=24 failures=$route_fail"
+          (( route_fail == 0 ))
+          echo 'FINAL_IMAGE_METADATA_SEO_V2_SUCCESS images=12 fields=48 canonical_routes=24'
