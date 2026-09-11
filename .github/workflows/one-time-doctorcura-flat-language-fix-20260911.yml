@@ -1,4 +1,4 @@
-name: One-time DoctorCura CH resolved page inspect 20260911
+name: One-time DoctorCura CH Theme Builder mode fix 20260911
 
 on:
   push:
@@ -6,35 +6,120 @@ on:
       - chat/doctorcura-ch-sixpage-inspect-20260911
     paths:
       - '.github/workflows/one-time-doctorcura-flat-language-fix-20260911.yml'
+
 permissions:
   contents: read
+
 jobs:
-  inspect:
+  fix:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Inspect body page ids and canonical URLs
+      - name: Remove accidental Elementor page mode from CH clones and verify SEO template
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
-          site="${SITE_URL%/}"
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-ch-theme-fix"; rm -rf "$root"; mkdir -p "$root"
+          clones=(900512 900514 900516 900518 900520 900522)
           slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
-          for slug in "${slugs[@]}"; do
-            for path in "/$slug/" "/ch/$slug/"; do
-              f="$RUNNER_TEMP/x.html"
-              curl -sS -L -H 'Cache-Control: no-cache, no-store' -o "$f" "$site$path?pidcheck=${GITHUB_RUN_ID}"
-              python3 - "$f" "$path" <<'PY'
-          import re,sys,html
-          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          body=re.search(r'<body\b([^>]*)>',t,re.I|re.S)
-          attrs=body.group(1) if body else ''
-          ids=sorted(set(re.findall(r'(?:page-id-|postid-)(\d+)',attrs,re.I)))
-          can=re.search(r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']+)',t,re.I)
-          if not can: can=re.search(r'<link[^>]+href=["\']([^"\']+)["\'][^>]+rel=["\']canonical["\']',t,re.I)
-          cls=re.search(r'class=["\']([^"\']+)',attrs,re.I)
-          print('RESOLVE path=%s pageids=%s canonical=%s bodyclass=%s'%(sys.argv[2],','.join(ids) or 'none',html.unescape(can.group(1)) if can else 'none',(cls.group(1)[:400] if cls else 'none')))
+          live_ids=()
+
+          make_req() {
+            python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
+          import json,sys
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
           PY
-            done
+          }
+          call() {
+            code=$(curl -sS -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print(d.get('error') or d.get('message') or d); raise SystemExit(1)
+          PY
+          }
+          rollback_all() {
+            rc=$?
+            if (( rc != 0 )); then
+              echo "ROLLBACK_START count=${#live_ids[@]}"
+              for rid in "${live_ids[@]}"; do
+                make_req "$root/rb.req" "rb-${rid}" connector.rollback false true "{\"request_id\":\"$rid\"}"
+                call "$root/rb.req" "$root/rb.res" || true
+              done
+              make_req "$root/cache.req" "rb-cache-${GITHUB_RUN_ID}" cache.flush false true '{}'; call "$root/cache.req" "$root/cache.res" || true
+            fi
+            exit "$rc"
+          }
+          trap rollback_all EXIT
+
+          # Confirm SEO template already targets all six CH page IDs.
+          make_req "$root/t.req" "ch-theme-template-${GITHUB_RUN_ID}" elementor.inspect true false '{"id":900460}'
+          call "$root/t.req" "$root/t.res"
+          python3 - "$root/t.res" "${clones[*]}" <<'PY'
+          import json,re,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); doc=((d.get('data') or {}).get('document') or {})
+          text=json.dumps(doc.get('conditions') or [])
+          assert doc.get('template_type')=='single-page',doc.get('template_type')
+          for n in map(int,sys.argv[2].split()): assert re.search(r'(?<!\d)%d(?!\d)'%n,text),n
+          print('SEO_TEMPLATE_CONDITIONS_OK')
+          PY
+
+          # The clones were created with edit_mode=builder although their source pages had blank edit_mode.
+          # Restore the source behavior so Elementor Pro Theme Builder can own page rendering.
+          for i in "${!clones[@]}"; do
+            id="${clones[$i]}"; slug="${slugs[$i]}"
+            make_req "$root/i.req" "ch-mode-inspect-$id-${GITHUB_RUN_ID}" elementor.inspect true false "{\"id\":$id}"
+            call "$root/i.req" "$root/i.res"
+            python3 - "$root/i.res" "$id" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); doc=((d.get('data') or {}).get('document') or {})
+          assert int(doc.get('post_id') or 0)==int(sys.argv[2])
+          assert len(doc.get('data') or [])==0
+          print('BEFORE id=%s edit_mode=%r type=%r'%(doc.get('post_id'),doc.get('edit_mode'),doc.get('template_type')))
+          PY
+            payload="{\"id\":$id,\"edit_mode\":\"\"}"
+            make_req "$root/dry.req" "ch-mode-dry-$id-${GITHUB_RUN_ID}" elementor.replace_document true false "$payload"
+            call "$root/dry.req" "$root/dry.res"
+            rid="ch-mode-live-$id-${GITHUB_RUN_ID}"
+            make_req "$root/live.req" "$rid" elementor.replace_document false true "$payload"
+            call "$root/live.req" "$root/live.res"
+            live_ids+=("$rid")
+            echo "MODE_CLEARED id=$id slug=$slug"
           done
+
+          for action in elementor.regenerate rewrite.flush cache.flush; do
+            make_req "$root/a.req" "ch-mode-${action//./-}-${GITHUB_RUN_ID}" "$action" false true '{}'
+            call "$root/a.req" "$root/a.res"
+          done
+
+          failures=0
+          for i in "${!clones[@]}"; do
+            id="${clones[$i]}"; slug="${slugs[$i]}"; path="/ch/$slug/"
+            out="$root/$slug.html"
+            meta=$(curl -sS -L --max-redirs 8 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path?themefix=${GITHUB_RUN_ID}")
+            code="${meta%%|*}"; final="${meta#*|}"
+            metrics=$(python3 - "$out" "$id" <<'PY'
+          import re,sys
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); cid=sys.argv[2]
+          body=re.search(r'<body\b([^>]*)>',t,re.I|re.S); attrs=body.group(1) if body else ''
+          cls=re.search(r'class=["\']([^"\']+)',attrs,re.I); classes=cls.group(1) if cls else ''
+          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S); text=' '.join(text.split())
+          print('%d|%d|%d|%s|%s'%(len(t.encode()),len(text),t.lower().count('elementor-element'),'elementor-page-900460' in classes,('elementor-page-'+cid) in classes))
+          PY
+          )
+            echo "VERIFY slug=$slug http=$code final=$final metrics=$metrics"
+            bytes=$(echo "$metrics"|cut -d'|' -f1); txt=$(echo "$metrics"|cut -d'|' -f2); elems=$(echo "$metrics"|cut -d'|' -f3); seo=$(echo "$metrics"|cut -d'|' -f4); self=$(echo "$metrics"|cut -d'|' -f5)
+            [[ "$code" == 200 && "$final" == *"$path"* && "$bytes" -gt 220000 && "$txt" -gt 10000 && "$elems" -ge 200 && "$seo" == True && "$self" == False ]] || failures=$((failures+1))
+          done
+          echo "FINAL failures=$failures"
+          (( failures == 0 ))
+          trap - EXIT
+          echo 'FINAL_SUCCESS seo_template=900460 ch_pages=6'
