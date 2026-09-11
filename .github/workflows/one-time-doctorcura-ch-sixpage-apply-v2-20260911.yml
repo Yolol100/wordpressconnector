@@ -1,0 +1,171 @@
+name: One-time DoctorCura CH six-page apply v2 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-sixpage-apply-v2-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Apply CH hierarchy and verify German English French
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-ch-v2"; rm -rf "$root"; mkdir -p "$root"
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          ids=(900448 900449 900450 900451 900452 900453)
+          parent_id=0; parent_change_request=''; children_request="dc-ch-v2-children-${GITHUB_RUN_ID}"; children_applied=0
+
+          call_connector() {
+            local req="$1" out="$2" code
+            code=$(curl -sS -L --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; return 1; }
+            python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print('CONNECTOR_ERROR='+str(d.get('error') or d.get('message') or d))
+              raise SystemExit(1)
+          PY
+          }
+
+          make_request() {
+            local out="$1" rid="$2" action="$3" dry="$4" confirm="$5" payload="$6"
+            python3 - "$out" "$rid" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+
+          rollback_request() {
+            local target="$1" tag="$2"
+            [[ -n "$target" ]] || return 0
+            make_request "$root/rb-$tag.json" "dc-ch-v2-rb-$tag-${GITHUB_RUN_ID}" connector.rollback false true "{\"request_id\":\"$target\"}"
+            call_connector "$root/rb-$tag.json" "$root/rb-$tag-result.json" || true
+          }
+
+          on_fail() {
+            local rc=$?
+            if (( rc != 0 )); then
+              echo "APPLY_V2_FAILED code=$rc"
+              if (( children_applied == 1 )); then rollback_request "$children_request" children; fi
+              if [[ -n "$parent_change_request" ]]; then rollback_request "$parent_change_request" parent; fi
+            fi
+            exit "$rc"
+          }
+          trap on_fail EXIT
+
+          hcode=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/health")
+          [[ "$hcode" == 200 ]] || exit 1
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/page-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit")
+            [[ "$code" == 200 ]] || { echo "MISSING_PAGE id=$id http=$code"; exit 1; }
+            python3 - "$root/page-$id.json" "$id" "$slug" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); pid=int(sys.argv[2]); slug=sys.argv[3]
+          assert int(p.get('id') or 0)==pid and p.get('slug')==slug and p.get('status')=='publish' and int(p.get('parent') or 0)==0,(pid,p.get('slug'),p.get('status'),p.get('parent'))
+          PY
+          done
+          echo 'CHILD_PREFLIGHT_OK count=6'
+
+          old_parent_code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/old-parent.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/900510?context=edit" || true)
+          if [[ "$old_parent_code" == 200 ]]; then
+            read -r old_status old_slug <<< "$(python3 - "$root/old-parent.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); print(str(p.get('status') or ''),str(p.get('slug') or ''))
+          PY
+          )"
+            if [[ "$old_slug" == ch && "$old_status" == trash ]]; then
+              parent_change_request="dc-ch-v2-parent-restore-${GITHUB_RUN_ID}"
+              make_request "$root/parent-restore-preview.json" "dc-ch-v2-parent-restore-preview-${GITHUB_RUN_ID}" post.restore true false '{"id":900510}'
+              call_connector "$root/parent-restore-preview.json" "$root/parent-restore-preview-result.json"
+              make_request "$root/parent-restore.json" "$parent_change_request" post.restore false true '{"id":900510}'
+              call_connector "$root/parent-restore.json" "$root/parent-restore-result.json"
+              parent_id=900510
+              echo 'PARENT_RESTORED id=900510'
+            elif [[ "$old_slug" == ch && "$old_status" == draft ]]; then
+              parent_id=900510
+              echo 'PARENT_REUSED id=900510 status=draft'
+            else
+              echo "UNEXPECTED_PARENT_900510 status=$old_status slug=$old_slug"; exit 1
+            fi
+          else
+            parent_change_request="dc-ch-v2-parent-create-${GITHUB_RUN_ID}"
+            make_request "$root/parent-create-preview.json" "dc-ch-v2-parent-create-preview-${GITHUB_RUN_ID}" post.create true false '{"title":"CH","slug":"ch","type":"page","status":"draft","content":""}'
+            call_connector "$root/parent-create-preview.json" "$root/parent-create-preview-result.json"
+            make_request "$root/parent-create.json" "$parent_change_request" post.create false true '{"title":"CH","slug":"ch","type":"page","status":"draft","content":""}'
+            call_connector "$root/parent-create.json" "$root/parent-create-result.json"
+            parent_id=$(python3 - "$root/parent-create-result.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}
+          assert p.get('slug')=='ch' and p.get('status')=='draft',p
+          print(int(p['id']))
+          PY
+          )
+            echo "PARENT_CREATED id=$parent_id status=draft"
+          fi
+
+          python3 - "$root/children.json" "$parent_id" "$children_request" <<'PY'
+          import json,sys
+          out,parent,rid=sys.argv[1:]; parent=int(parent)
+          ids=[900448,900449,900450,900451,900452,900453]
+          ops=[{'action':'post.update','payload':{'id':pid,'parent':parent}} for pid in ids]
+          json.dump({'version':1,'request_id':rid,'action':'connector.batch','dry_run':False,'confirm':True,'payload':{'operations':ops}},open(out,'w'),separators=(',',':'))
+          PY
+          call_connector "$root/children.json" "$root/children-result.json"
+          children_applied=1
+          echo "CHILD_APPLY_OK count=6 parent_id=$parent_id"
+
+          source_fail=0
+          for slug in "${slugs[@]}"; do
+            path="/ch/$slug/"
+            meta=$(curl -sS --connect-timeout 10 --max-time 35 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{redirect_url}' "$site$path" || true)
+            code="${meta%%|*}"; redirect="${meta#*|}"
+            echo "SOURCE_ROUTE path=$path http=$code redirect=$redirect"
+            [[ "$code" == 200 ]] || source_fail=1
+          done
+          (( source_fail == 0 )) || { echo 'SOURCE_VERIFICATION_FAILED'; exit 1; }
+          echo 'SOURCE_ROUTES_OK count=6'
+
+          sleep 10
+          translated_ok=0; translated_fail=0
+          for lang in en fr; do
+            for slug in "${slugs[@]}"; do
+              path="/$lang/ch/$slug/"; route_ok=0
+              for attempt in 1 2 3; do
+                meta=$(curl -sS -L --connect-timeout 10 --max-time 40 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{url_effective}' "$site$path" || true)
+                code="${meta%%|*}"; final="${meta#*|}"
+                echo "TRANSLATED_ROUTE lang=$lang path=$path attempt=$attempt http=$code final=$final"
+                if [[ "$code" == 200 && "$final" == *"/$lang/ch/$slug"* ]]; then route_ok=1; translated_ok=$((translated_ok+1)); break; fi
+                sleep 8
+              done
+              if (( route_ok == 0 )); then translated_fail=$((translated_fail+1)); fi
+              sleep 2
+            done
+          done
+          echo "TRANSLATED_SUMMARY ok=$translated_ok fail=$translated_fail"
+
+          trap - EXIT
+          echo "APPLY_V2_COMPLETE parent_id=$parent_id german=6 english_french_ok=$translated_ok english_french_fail=$translated_fail"
