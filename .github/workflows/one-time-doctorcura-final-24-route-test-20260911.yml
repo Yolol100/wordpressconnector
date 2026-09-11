@@ -1,0 +1,50 @@
+name: One-time DoctorCura final 24 route test 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-final-24-route-test-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Test all 24 routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          fail=0
+          for slug in "${slugs[@]}"; do
+            for spec in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
+              IFS='|' read -r label path expected_lang <<< "$spec"
+              out="$RUNNER_TEMP/$label-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 2 --retry-all-errors --connect-timeout 12 --max-time 60 -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              hlang=$(python3 - "$out" <<'PY'
+import re,sys,os
+p=sys.argv[1]
+if not os.path.exists(p): print('missing'); raise SystemExit
+text=open(p,encoding='utf-8',errors='ignore').read(150000)
+m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',text,re.I)
+print(m.group(1) if m else 'unknown')
+PY
+)
+              echo "RESULT label=$label path=$path http=$code final=$final html_lang=$hlang"
+              if [[ "$code" != 200 || "$final" != "$site$path" || "$hlang" != "$expected_lang"* ]]; then
+                fail=$((fail+1))
+              fi
+            done
+          done
+          echo "SUMMARY total=24 failures=$fail"
+          (( fail == 0 ))
