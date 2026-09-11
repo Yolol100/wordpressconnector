@@ -1,4 +1,4 @@
-name: One-time DoctorCura final 24 route test 20260911
+name: One-time DoctorCura full integrity audit 20260911
 
 on:
   push:
@@ -11,40 +11,159 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Test all 24 routes
+      - name: Audit WordPress data, ACF, Elementor and all language routes
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
         shell: bash
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"
-          [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo "Unexpected site: $site"; exit 1; }
+          root="$RUNNER_TEMP/dc-full-audit"; rm -rf "$root"; mkdir -p "$root"
+          src=(900448 900449 900450 900451 900452 900453)
+          ch=(900512 900514 900516 900518 900520 900522)
           slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
-          fail=0
+          expected_fields='["titel_1","tekst_1","afbeelding_1","titel_2","tekst_2","afbeelding_2"]'
+
+          req(){ python3 - "$1" "$2" "$3" "$4" <<'PY'
+          import json,sys
+          out,rid,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+          }
+          call(){
+            code=$(curl -sS -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; exit 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          echo '=== WORDPRESS + ACF PAIR AUDIT ==='
+          for i in "${!src[@]}"; do
+            s="${src[$i]}"; c="${ch[$i]}"; slug="${slugs[$i]}"
+            req "$root/sp.req" "audit-sp-$s-${GITHUB_RUN_ID}" post.get "{\"id\":$s}"; call "$root/sp.req" "$root/sp.res"
+            req "$root/cp.req" "audit-cp-$c-${GITHUB_RUN_ID}" post.get "{\"id\":$c}"; call "$root/cp.req" "$root/cp.res"
+            req "$root/sa.req" "audit-sa-$s-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$s}"; call "$root/sa.req" "$root/sa.res"
+            req "$root/ca.req" "audit-ca-$c-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$c}"; call "$root/ca.req" "$root/ca.res"
+            python3 - "$root/sp.res" "$root/cp.res" "$root/sa.res" "$root/ca.res" "$slug" "$expected_fields" "$root/media_ids" <<'PY'
+          import json,sys
+          sp=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('post') or {})
+          cp=((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('post') or {})
+          sa=((json.load(open(sys.argv[3],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          ca=((json.load(open(sys.argv[4],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          slug=sys.argv[5]; expected=json.loads(sys.argv[6])
+          assert sp.get('status')=='publish' and cp.get('status')=='publish',(slug,'status')
+          assert sp.get('slug')==slug and cp.get('slug')==slug,(slug,'slug')
+          assert int(cp.get('parent') or 0)==900510,(slug,'parent',cp.get('parent'))
+          for k in ('title','content','excerpt'):
+              assert cp.get(k)==sp.get(k),(slug,k,'mismatch')
+              assert bool(cp.get(k)),(slug,k,'empty')
+          assert int(cp.get('featured_media') or 0)==int(sp.get('featured_media') or 0)>0,(slug,'featured')
+          assert set(sa)==set(expected),(slug,'source_acf_keys',list(sa))
+          assert set(ca)==set(expected),(slug,'ch_acf_keys',list(ca))
+          assert ca==sa,(slug,'acf_values_mismatch')
+          for k in ('titel_1','tekst_1','titel_2','tekst_2'):
+              assert isinstance(sa.get(k),str) and sa[k].strip(),(slug,k,'empty_text')
+          mids=[]
+          for k in ('afbeelding_1','afbeelding_2'):
+              try: mid=int(sa.get(k) or 0)
+              except: mid=0
+              assert mid>0,(slug,k,'invalid_image_id',sa.get(k))
+              mids.append(mid)
+          open(sys.argv[7],'w').write('\n'.join(str(x) for x in sorted(set(mids))))
+          print('PAIR_OK slug=%s featured=%s acf_fields=%d acf_images=%s'%(slug,cp.get('featured_media'),len(sa),','.join(map(str,mids))))
+          PY
+            while read -r mid; do
+              [[ -n "$mid" ]] || continue
+              req "$root/m.req" "audit-media-$mid-$c-${GITHUB_RUN_ID}" media.get "{\"id\":$mid}"; call "$root/m.req" "$root/m.res"
+              python3 - "$root/m.res" "$slug" "$mid" <<'PY'
+          import json,sys
+          m=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('media') or {})
+          assert int(m.get('id') or 0)==int(sys.argv[3]),(sys.argv[2],sys.argv[3],'media_missing')
+          assert (m.get('url') or '').startswith('http'),(sys.argv[2],sys.argv[3],'media_url')
+          print('ACF_MEDIA_OK slug=%s id=%s'%(sys.argv[2],sys.argv[3]))
+          PY
+            done < "$root/media_ids"
+          done
+
+          echo '=== ELEMENTOR DISPLAY CONDITIONS AUDIT ==='
+          req "$root/cond.req" "audit-cond-${GITHUB_RUN_ID}" option.get '{"name":"elementor_pro_theme_builder_conditions"}'; call "$root/cond.req" "$root/cond.res"
+          req "$root/tpl.req" "audit-template-${GITHUB_RUN_ID}" elementor.inspect '{"id":900460}'; call "$root/tpl.req" "$root/tpl.res"
+          python3 - "$root/cond.res" "$root/tpl.res" <<'PY'
+          import json,sys
+          od=json.load(open(sys.argv[1],encoding='utf-8')); td=json.load(open(sys.argv[2],encoding='utf-8'))
+          ov=(od.get('data') or {}).get('value') or {}
+          active=((ov.get('single') or {}).get('900460') or [])
+          doc=((td.get('data') or {}).get('document') or {})
+          stored=doc.get('conditions') or []
+          ids=[900448,900449,900450,900451,900452,900453,900512,900514,900516,900518,900520,900522]
+          need={'include/singular/page/%d'%x for x in ids}
+          assert need.issubset(set(active)),('active_conditions_missing',sorted(need-set(active)))
+          assert need.issubset(set(stored)),('stored_conditions_missing',sorted(need-set(stored)))
+          assert len(active)==len(set(active)),('duplicate_active_conditions',active)
+          assert len(stored)==len(set(stored)),('duplicate_stored_conditions',stored)
+          print('ELEMENTOR_OK active=%d stored=%d template=900460'%(len(active),len(stored)))
+          PY
+
+          echo '=== LIVE CLEAN ROUTE AUDIT ==='
+          route_fail=0
           for slug in "${slugs[@]}"; do
             for spec in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
               IFS='|' read -r label path expected_lang <<< "$spec"
-              out="$RUNNER_TEMP/$label-$slug.html"
-              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 2 --retry-all-errors --connect-timeout 12 --max-time 60 -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              out="$root/live-$label-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 1 --retry-all-errors --connect-timeout 12 --max-time 90 -H 'Cache-Control: no-cache' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
               code="${meta%%|*}"; final="${meta#*|}"
-              hlang=$(python3 - "$out" <<'PY'
-import re,sys,os
-p=sys.argv[1]
-if not os.path.exists(p): print('missing'); raise SystemExit
-text=open(p,encoding='utf-8',errors='ignore').read(150000)
-m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',text,re.I)
-print(m.group(1) if m else 'unknown')
-PY
-)
-              echo "RESULT label=$label path=$path http=$code final=$final html_lang=$hlang"
-              if [[ "$code" != 200 || "$final" != "$site$path" || "$hlang" != "$expected_lang"* ]]; then
-                fail=$((fail+1))
+              metrics=$(python3 - "$out" <<'PY'
+          import re,sys,os
+          p=sys.argv[1]
+          if not os.path.exists(p): print('missing|0|0|0'); raise SystemExit
+          t=open(p,encoding='utf-8',errors='ignore').read()
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I); lang=m.group(1) if m else 'unknown'
+          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S); text=' '.join(text.split())
+          print('%s|%d|%d|%d'%(lang,len(text),len(re.findall(r'<img\b',t,re.I)),t.lower().count('elementor-element')))
+          PY
+          )
+              IFS='|' read -r hlang txt imgs elems <<< "$metrics"
+              echo "ROUTE label=$label slug=$slug http=$code final=$final lang=$hlang text=$txt imgs=$imgs elems=$elems"
+              if [[ "$code" != 200 || "$final" != "$site$path" || "$hlang" != "$expected_lang"* || "$txt" -lt 10000 || "$imgs" -lt 10 || "$elems" -lt 230 ]]; then
+                route_fail=$((route_fail+1))
               fi
+              if [[ "$label" == de || "$label" == ch ]]; then echo "$txt|$imgs|$elems" > "$root/$label-$slug.metrics"; fi
+            done
+            python3 - "$root/de-$slug.metrics" "$root/ch-$slug.metrics" "$slug" <<'PY'
+          import sys
+          d=[int(x) for x in open(sys.argv[1]).read().strip().split('|')]
+          c=[int(x) for x in open(sys.argv[2]).read().strip().split('|')]
+          assert abs(d[0]-c[0])<=100,(sys.argv[3],'visible_text_delta',d[0],c[0])
+          assert d[1]==c[1],(sys.argv[3],'image_count',d[1],c[1])
+          assert abs(d[2]-c[2])<=5,(sys.argv[3],'element_count',d[2],c[2])
+          print('DE_CH_RENDER_MATCH slug=%s de=%s ch=%s'%(sys.argv[3],d,c))
+          PY
+          done
+          echo "ROUTE_SUMMARY total=24 failures=$route_fail"
+          (( route_fail == 0 ))
+
+          echo '=== UNWANTED NESTED ROUTE AUDIT ==='
+          nested_live=0
+          for slug in "${slugs[@]}"; do
+            for path in "/en/ch/$slug/" "/fr/ch/$slug/" "/ch/en/$slug/" "/ch/fr/$slug/"; do
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 12 --max-time 60 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              if [[ "$code" == 200 && "$final" == "$site$path" ]]; then
+                nested_live=$((nested_live+1)); status='DUPLICATE_LIVE'
+              else
+                status='OK_NOT_CANONICAL'
+              fi
+              echo "NESTED path=$path http=$code final=$final status=$status"
             done
           done
-          echo "SUMMARY total=24 failures=$fail"
-          (( fail == 0 ))
+          echo "NESTED_SUMMARY checked=24 duplicate_live=$nested_live"
+          echo 'FINAL_AUDIT_SUCCESS core_data=6 acf=6 elementor=900460 intended_routes=24'
