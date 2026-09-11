@@ -1,4 +1,4 @@
-name: One-time DoctorCura CH condition cache repair 20260911
+name: One-time DoctorCura source vs CH content inspect 20260911
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  repair:
+  inspect:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Repair SEO template display conditions and verify CH rendering
+      - name: Compare source and CH pages
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
           REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -24,83 +24,41 @@ jobs:
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
-          root="$RUNNER_TEMP/dc-cond-repair"; rm -rf "$root"; mkdir -p "$root"
+          root="$RUNNER_TEMP/dc-content-inspect"; rm -rf "$root"; mkdir -p "$root"
+          src=(900448 900449 900450 900451 900452 900453)
+          ch=(900512 900514 900516 900518 900520 900522)
           slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
-          ids=(900512 900514 900516 900518 900520 900522)
-
-          req(){ python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
+          req(){ python3 - "$1" "$2" "$3" "$4" <<'PY'
           import json,sys
-          out,rid,action,dry,confirm,payload=sys.argv[1:]
-          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          out,rid,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
           PY
           }
           call(){
             code=$(curl -sS -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
-            [[ "$code" == 200 ]] || { echo "HTTP=$code"; cat "$2"; exit 1; }
-            python3 - "$2" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
-          PY
+            [[ "$code" == 200 ]] || { echo HTTP_$code; cat "$2"; exit 1; }
           }
-
-          req "$root/get.req" "cond-get-${GITHUB_RUN_ID}" option.get true false '{"name":"elementor_pro_theme_builder_conditions"}'
-          call "$root/get.req" "$root/get.res"
-          python3 - "$root/get.res" "$root/payload.json" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); v=(d.get('data') or {}).get('value')
-          assert isinstance(v,dict) and isinstance(v.get('single'),dict),v
-          cur=v['single'].get('900460') or []
-          originals=['include/singular/page/900448','include/singular/page/900449','include/singular/page/900450','include/singular/page/900451','include/singular/page/900452','include/singular/page/900453']
-          clones=['include/singular/page/900512','include/singular/page/900514','include/singular/page/900516','include/singular/page/900518','include/singular/page/900520','include/singular/page/900522']
-          assert all(x in cur for x in originals),cur
-          merged=cur+[x for x in clones if x not in cur]
-          v['single']['900460']=merged
-          json.dump({'name':'elementor_pro_theme_builder_conditions','value':v},open(sys.argv[2],'w'),separators=(',',':'))
-          print('CACHE_BEFORE_COUNT='+str(len(cur))+' CACHE_AFTER_COUNT='+str(len(merged)))
+          for i in "${!src[@]}"; do
+            s="${src[$i]}"; c="${ch[$i]}"; slug="${slugs[$i]}"
+            for pair in "src:$s" "ch:$c"; do
+              kind="${pair%%:*}"; id="${pair#*:}"
+              req "$root/p.req" "cmp-post-$id-${GITHUB_RUN_ID}" post.get "{\"id\":$id}"
+              call "$root/p.req" "$root/p.res"
+              req "$root/e.req" "cmp-el-$id-${GITHUB_RUN_ID}" elementor.inspect "{\"id\":$id}"
+              call "$root/e.req" "$root/e.res"
+              req "$root/a.req" "cmp-acf-$id-${GITHUB_RUN_ID}" acf.get "{\"object_type\":\"post\",\"object_id\":$id}"
+              call "$root/a.req" "$root/a.res" || true
+              python3 - "$root/p.res" "$root/e.res" "$root/a.res" "$kind" "$slug" "$id" <<'PY'
+          import json,sys,os
+          p=json.load(open(sys.argv[1],encoding='utf-8')); e=json.load(open(sys.argv[2],encoding='utf-8'))
+          a={}
+          try: a=json.load(open(sys.argv[3],encoding='utf-8'))
+          except: pass
+          post=((p.get('data') or {}).get('post') or {})
+          doc=((e.get('data') or {}).get('document') or {})
+          av=(a.get('data') or {}) if isinstance(a,dict) else {}
+          print('CMP kind=%s slug=%s id=%s status=%s parent=%s featured=%s content_len=%s excerpt_len=%s elem_count=%s edit_mode=%r template_type=%r acf=%s'%(
+            sys.argv[4],sys.argv[5],sys.argv[6],post.get('status'),post.get('parent'),post.get('featured_media'),len(post.get('content') or ''),len(post.get('excerpt') or ''),len(doc.get('data') or []),doc.get('edit_mode'),doc.get('template_type'),json.dumps(av,separators=(',',':'))[:5000]))
           PY
-
-          payload=$(cat "$root/payload.json")
-          req "$root/dry.req" "cond-dry-${GITHUB_RUN_ID}" option.update true false "$payload"
-          call "$root/dry.req" "$root/dry.res"
-          echo DRY_RUN_OK
-          req "$root/live.req" "cond-live-${GITHUB_RUN_ID}" option.update false true "$payload"
-          call "$root/live.req" "$root/live.res"
-          echo CONDITION_CACHE_UPDATED
-
-          for action in elementor.regenerate cache.flush; do
-            req "$root/a.req" "cond-${action//./-}-${GITHUB_RUN_ID}" "$action" false true '{}'
-            call "$root/a.req" "$root/a.res"
+            done
           done
-
-          req "$root/read.req" "cond-read-${GITHUB_RUN_ID}" option.get true false '{"name":"elementor_pro_theme_builder_conditions"}'
-          call "$root/read.req" "$root/read.res"
-          python3 - "$root/read.res" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); v=(d.get('data') or {}).get('value') or {}
-          cond=((v.get('single') or {}).get('900460') or [])
-          need=['include/singular/page/900512','include/singular/page/900514','include/singular/page/900516','include/singular/page/900518','include/singular/page/900520','include/singular/page/900522']
-          assert all(x in cond for x in need),cond
-          print('READBACK_OK count='+str(len(cond)))
-          PY
-
-          failures=0
-          for i in "${!slugs[@]}"; do
-            slug="${slugs[$i]}"; id="${ids[$i]}"; out="$root/$slug.html"
-            meta=$(curl -sS -L --max-redirs 8 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site/ch/$slug/?condfix=${GITHUB_RUN_ID}")
-            code="${meta%%|*}"; final="${meta#*|}"
-            metrics=$(python3 - "$out" <<'PY'
-          import re,sys
-          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          b=re.search(r'<body\b([^>]*)>',t,re.I|re.S); a=b.group(1) if b else ''
-          cls=re.search(r'class=["\']([^"\']+)',a,re.I); c=cls.group(1) if cls else ''
-          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S); text=' '.join(text.split())
-          print('%d|%d|%d|%s'%(len(t.encode()),len(text),t.lower().count('elementor-element'),'elementor-page-900460' in c))
-          PY
-          )
-            echo "VERIFY slug=$slug http=$code final=$final metrics=$metrics"
-            elems=$(echo "$metrics"|cut -d'|' -f3); seo=$(echo "$metrics"|cut -d'|' -f4)
-            [[ "$code" == 200 && "$final" == *"/ch/$slug/"* && "$elems" -ge 200 && "$seo" == True ]] || failures=$((failures+1))
-          done
-          echo "FINAL failures=$failures"
-          (( failures == 0 ))
-          echo 'FINAL_SUCCESS display_conditions=6 ch_pages=6 template=900460'
