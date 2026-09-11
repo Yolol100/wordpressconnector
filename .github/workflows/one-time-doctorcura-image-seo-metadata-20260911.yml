@@ -1,0 +1,88 @@
+name: One-time DoctorCura image SEO metadata 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-seo-metadata-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Update image title alt caption and description
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/image-seo"; mkdir -p "$root"
+          python3 - "$root/plan.json" <<'PY'
+          import json,sys
+          plan=[
+          [900478,'Gewichtsmanagement mit Ernährungsberatung','Ernährungsberaterin misst den Taillenumfang einer Patientin beim Gewichtsmanagement','Medizinisch begleitetes Gewichtsmanagement mit individueller Ernährungsberatung.','Eine Ernährungsberaterin misst den Taillenumfang einer Patientin im Rahmen eines medizinisch begleiteten Gewichtsmanagements bei DoctorCura.'],
+          [900479,'Ärztliche Begleitung beim Gewichtsmanagement','Ärztin misst den Taillenumfang einer Patientin während der Gewichtsberatung','Individuelle ärztliche Begleitung beim Gewichtsmanagement.','Eine Ärztin misst den Taillenumfang einer Patientin als Teil einer individuellen medizinischen Beratung zum Gewichtsmanagement bei DoctorCura.'],
+          [900480,'Akne-Behandlung und Hautbeurteilung','Junge Frau betrachtet ihr Hautbild im Spiegel vor einer Akne-Behandlung','Online ärztliche Beurteilung von Akne und Hautproblemen.','Eine junge Frau betrachtet ihr Hautbild im Spiegel. Das Bild unterstützt die DoctorCura-Seite zur medizinischen Beurteilung und Behandlung von Akne.'],
+          [900483,'Hautunreinheiten bei Akne','Frau berührt ihr Gesicht mit sichtbaren Hautunreinheiten','Medizinische Beratung bei Akne und sichtbaren Hautunreinheiten.','Eine Frau berührt ihr Gesicht mit sichtbaren Hautunreinheiten. Das Bild gehört zur DoctorCura-Seite über ärztliche Akne-Behandlung.'],
+          [900486,'Schlafberatung bei Schlafproblemen','Frau liegt nachts wach im Bett und kann wegen Schlafproblemen nicht schlafen','Ärztliche Schlafberatung bei anhaltenden Schlafproblemen.','Eine Frau liegt nachts wach im Bett. Das Bild gehört zur DoctorCura-Seite über ärztliche Schlafberatung und die medizinische Beurteilung von Schlafproblemen.'],
+          [900488,'Schlafprobleme und nächtliche Unruhe','Besorgter Mann liegt nachts wach im Bett bei Schlafproblemen','Medizinische Unterstützung bei Schlafproblemen und nächtlicher Unruhe.','Ein Mann liegt nachts wach im Bett und wirkt besorgt. Das Bild unterstützt die DoctorCura-Seite zur medizinischen Beratung bei Schlafproblemen.'],
+          [900487,'Vertrauliches Arztgespräch bei Erektionsproblemen','Mann im vertraulichen Arztgespräch zu gesundheitlichen Beschwerden','Vertrauliche medizinische Beratung bei Erektionsproblemen.','Ein Mann spricht vertraulich mit einem Arzt über gesundheitliche Beschwerden. Das Bild gehört zur DoctorCura-Seite über medizinische Beratung bei Erektionsproblemen.'],
+          [900490,'Medizinische Beratung bei Erektionsproblemen','Junger Mann in einem vertraulichen medizinischen Beratungsgespräch','Diskrete ärztliche Beratung zu Erektionsproblemen.','Ein junger Mann führt ein vertrauliches medizinisches Beratungsgespräch. Das Bild unterstützt die DoctorCura-Seite zur ärztlichen Beurteilung von Erektionsproblemen.'],
+          [900491,'Haarausfall beim Kämmen erkennen','Person kämmt die Haare und prüft sie auf Anzeichen von Haarausfall','Medizinische Beurteilung und Behandlung von Haarausfall.','Eine Person kämmt die Haare und prüft sie auf mögliche Anzeichen von Haarausfall. Das Bild gehört zur DoctorCura-Seite über medizinische Behandlung von Haarausfall.'],
+          [900492,'Haaransatz bei Haarausfall beurteilen','Mann betrachtet seinen Haaransatz im Spiegel bei möglichem Haarausfall','Ärztliche Beratung bei Veränderungen des Haaransatzes und Haarausfall.','Ein Mann betrachtet seinen Haaransatz im Spiegel. Das Bild unterstützt die DoctorCura-Seite zur ärztlichen Beurteilung und Behandlung von Haarausfall.'],
+          [900493,'Online-Arztberatung per Laptop','Frau nutzt einen Laptop für eine Online-Sprechstunde mit einem Arzt','Online ärztliche Beratung bequem von zu Hause aus.','Eine Frau nutzt einen Laptop für eine digitale Sprechstunde. Das Bild gehört zur DoctorCura-Seite über den Online-Arztservice.'],
+          [900495,'Online-Sprechstunde mit einer Ärztin','Mann führt per Laptop eine Online-Sprechstunde mit einer Ärztin','Digitale Sprechstunde mit medizinischer Beurteilung durch eine Ärztin.','Ein Mann spricht per Laptop mit einer Ärztin. Das Bild unterstützt die DoctorCura-Seite über Online-Sprechstunden und digitale medizinische Beratung.']]
+          json.dump(plan,open(sys.argv[1],'w'),ensure_ascii=False)
+          PY
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan=json.load(open(sys.argv[1],encoding='utf-8')); root=sys.argv[2]
+          for row in plan:
+              i,title,alt,caption,description=row
+              req={'version':1,'request_id':f'image-seo-dry-{i}','action':'media.update','dry_run':True,'confirm':False,'payload':{'id':i,'title':title,'alt':alt,'caption':caption,'description':description}}
+              json.dump(req,open(os.path.join(root,f'{i}.dry.json'),'w'),ensure_ascii=False,separators=(',',':'))
+              req['request_id']=f'image-seo-live-{i}'; req['dry_run']=False; req['confirm']=True
+              json.dump(req,open(os.path.join(root,f'{i}.live.json'),'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            for mode in dry live; do
+              code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/$id.$mode.json" -o "$root/$id.$mode.res" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+              [[ "$code" == 200 ]]
+              python3 - "$root/$id.$mode.res" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+            done
+            echo "UPDATED_MEDIA=$id"
+          done
+          echo '=== READBACK ==='
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          for row in json.load(open(sys.argv[1],encoding='utf-8')):
+              i=row[0]
+              req={'version':1,'request_id':f'image-seo-read-{i}','action':'media.get','dry_run':True,'confirm':False,'payload':{'id':i}}
+              json.dump(req,open(os.path.join(sys.argv[2],f'{i}.get.json'),'w'),separators=(',',':'))
+          PY
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/$id.get.json" -o "$root/$id.get.res" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]]
+          done
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan={int(r[0]):r[1:] for r in json.load(open(sys.argv[1],encoding='utf-8'))}
+          for i,want in plan.items():
+              d=json.load(open(os.path.join(sys.argv[2],f'{i}.get.res'),encoding='utf-8')); assert d.get('ok'),d
+              m=((d.get('data') or {}).get('media') or {})
+              got=[m.get('title'),m.get('alt'),m.get('caption'),m.get('description')]
+              assert got==want,(i,got,want)
+              print('MEDIA_SEO_OK id=%d url=%s'%(i,m.get('url')))
+          print('FINAL_IMAGE_METADATA_SEO_SUCCESS images=12 fields=48')
+          PY
