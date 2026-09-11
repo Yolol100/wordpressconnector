@@ -13,7 +13,7 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - name: Verify existing canary bypassing page cache
         env:
@@ -26,12 +26,12 @@ jobs:
           target_url='https://doctorcura.com/en/gewichtsmanagement/'
           test_url="$site${source_path}?redirectcheck=${GITHUB_RUN_ID}"
           headers="$RUNNER_TEMP/headers.txt"
-          code=$(curl -sS -D "$headers" -o /dev/null --max-redirs 0 -H 'Cache-Control: no-cache, no-store' -w '%{http_code}' "$test_url" || true)
+          code=$(curl -sS --connect-timeout 10 --max-time 30 -D "$headers" -o /dev/null --max-redirs 0 -H 'Cache-Control: no-cache, no-store' -w '%{http_code}' "$test_url" || true)
           loc=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$headers")
           echo "VERIFY_BUST_INITIAL http=$code location=$loc"
           grep -Ei '^(server|cache-control|x-redirect-by|x-cache|cf-cache-status|location):' "$headers" || true
           [[ "$code" == 301 && "$loc" == "$target_url" ]]
-          final=$(curl -sS -L --max-redirs 5 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{url_effective}' "$test_url")
+          final=$(curl -sS --connect-timeout 10 --max-time 45 -L --max-redirs 5 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{url_effective}' "$test_url" || true)
           echo "VERIFY_BUST_FINAL=$final"
           [[ "$final" == "200|$target_url" ]]
           echo 'CACHE_BUST_CANARY_SUCCESS'
