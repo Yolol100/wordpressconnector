@@ -1,0 +1,96 @@
+name: One-time DoctorCura image visual metadata final 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-visual-metadata-final-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Apply visually verified image metadata and read back
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/image-visual-final"; rm -rf "$root"; mkdir -p "$root"
+          python3 - "$root/plan.json" <<'PY'
+          import json,sys
+          plan=[
+          [900478,'Gewichtsmanagement und Ernährungsberatung','Frau misst den Taillenumfang einer anderen Frau neben Obst und Gemüse','Taillenumfang messen im Rahmen von Gewichtsmanagement und Ernährungsberatung.','Eine Frau misst den Taillenumfang einer anderen Frau; auf dem Tisch liegen frisches Obst und Gemüse. Die Aufnahme illustriert Ernährungsberatung und Gewichtsmanagement.'],
+          [900479,'Ärztliche Kontrolle beim Gewichtsmanagement','Ärztin misst mit einem Maßband den Taillenumfang einer Patientin','Ärztliche Messung des Taillenumfangs als Teil des Gewichtsmanagements.','Eine Ärztin misst mit einem Maßband den Taillenumfang einer Patientin. Die Aufnahme illustriert eine medizinische Kontrolle im Rahmen des Gewichtsmanagements.'],
+          [900480,'Akne im Spiegel beurteilen','Frau mit sichtbarer Akne betrachtet ihre Gesichtshaut im Spiegel','Sichtbare Akne wird im Spiegel betrachtet.','Eine Frau mit sichtbaren Hautunreinheiten betrachtet ihre Gesichtshaut im Spiegel. Die Aufnahme illustriert die Beurteilung von Akne und Hautveränderungen.'],
+          [900483,'Hautunreinheiten bei Akne','Frau berührt eine sichtbare Hautunreinheit an ihrer Wange','Sichtbare Hautunreinheiten im Gesicht bei Akne.','Eine Frau berührt eine sichtbare Hautunreinheit an ihrer Wange. Die Aufnahme illustriert typische Hautveränderungen bei Akne.'],
+          [900486,'Schlafprobleme in der Nacht','Frau liegt nachts wach im Bett und hält eine Hand an die Stirn','Nächtliches Wachliegen bei Schlafproblemen.','Eine Frau liegt nachts wach im Bett und hält eine Hand an die Stirn. Die Aufnahme illustriert nächtliche Unruhe und Schlafprobleme.'],
+          [900488,'Nächtliche Unruhe und Schlafprobleme','Mann liegt nachts wach im Bett und hält sich die Stirn','Nächtliches Wachliegen und Unruhe bei Schlafproblemen.','Ein Mann liegt nachts wach im Bett und hält sich die Stirn. Die Aufnahme illustriert nächtliche Unruhe und anhaltende Schlafprobleme.'],
+          [900487,'Ärztliche Beratung bei Erektionsproblemen','Arzt und Mann schauen gemeinsam auf ein Klemmbrett','Vertrauliche ärztliche Beratung bei Erektionsproblemen.','Ein Arzt und ein Mann schauen gemeinsam auf ein Klemmbrett. Die Aufnahme illustriert ein vertrauliches ärztliches Beratungsgespräch im Zusammenhang mit Erektionsproblemen.'],
+          [900490,'Vertrauliches Arztgespräch bei Erektionsproblemen','Junger Mann sitzt in einer Praxis im Gespräch mit einem Arzt','Diskrete medizinische Beratung bei Erektionsproblemen.','Ein junger Mann sitzt in einer Praxis einem Arzt gegenüber. Die Aufnahme illustriert eine vertrauliche medizinische Beratung bei Erektionsproblemen.'],
+          [900491,'Haarausfall beim Kämmen','Nahaufnahme eines Haaransatzes, während das Haar mit einem Kamm angehoben wird','Haaransatz und Haardichte beim Kämmen betrachten.','Eine Nahaufnahme zeigt einen Haaransatz, während das Haar mit einem Kamm angehoben wird. Die Aufnahme illustriert die Beobachtung von Haardichte und möglichem Haarausfall.'],
+          [900492,'Haaransatz bei Haarausfall','Mann betrachtet seinen Haaransatz im Spiegel und streicht die Haare zurück','Veränderungen des Haaransatzes bei Haarausfall erkennen.','Ein Mann betrachtet seinen Haaransatz im Spiegel und streicht die Haare zurück. Die Aufnahme illustriert sichtbare Veränderungen des Haaransatzes bei Haarausfall.'],
+          [900493,'Online-Arztberatung mit Medikamentenbesprechung','Frau spricht per Laptop mit einer medizinischen Fachperson, die eine Medikamentenflasche zeigt','Online-Beratung mit Erklärung eines Medikaments per Video.','Eine Frau nimmt zu Hause per Laptop an einer Online-Beratung teil. Auf dem Bildschirm zeigt eine medizinische Fachperson eine Medikamentenflasche in die Kamera.'],
+          [900495,'Videosprechstunde mit Ärztin','Mann spricht per Laptop mit einer Ärztin in weißem Kittel und Headset','Online-Arztberatung per Videosprechstunde.','Ein Mann nimmt zu Hause per Laptop an einer Videosprechstunde teil. Auf dem Bildschirm ist eine Ärztin in weißem Kittel mit Headset zu sehen.']]
+          json.dump(plan,open(sys.argv[1],'w'),ensure_ascii=False)
+          PY
+
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan=json.load(open(sys.argv[1],encoding='utf-8')); root=sys.argv[2]
+          for row in plan:
+              i,title,alt,caption,description=row
+              payload={'id':i,'title':title,'alt':alt,'caption':caption,'description':description}
+              for name,dry,confirm in [('dry',True,False),('live',False,True)]:
+                  req={'version':1,'request_id':f'visual-final-{name}-{i}','action':'media.update','dry_run':dry,'confirm':confirm,'payload':payload}
+                  json.dump(req,open(os.path.join(root,f'{i}.{name}.json'),'w'),ensure_ascii=False,separators=(',',':'))
+              get={'version':1,'request_id':f'visual-final-get-{i}','action':'media.get','dry_run':True,'confirm':False,'payload':{'id':i}}
+              json.dump(get,open(os.path.join(root,f'{i}.get.json'),'w'),separators=(',',':'))
+          PY
+
+          call_connector(){
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          ids=(900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495)
+          for id in "${ids[@]}"; do
+            call_connector "$root/$id.dry.json" "$root/$id.dry.res"
+            call_connector "$root/$id.live.json" "$root/$id.live.res"
+            call_connector "$root/$id.get.json" "$root/$id.get.res"
+          done
+
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan={int(r[0]):r[1:] for r in json.load(open(sys.argv[1],encoding='utf-8'))}; root=sys.argv[2]
+          for i,want in plan.items():
+              d=json.load(open(os.path.join(root,f'{i}.get.res'),encoding='utf-8')); m=((d.get('data') or {}).get('media') or {})
+              got=[m.get('title'),m.get('alt'),m.get('caption'),m.get('description')]
+              assert got==want,(i,got,want)
+              assert m.get('alt') and len(m['alt']) <= 125,(i,m.get('alt'))
+              print('VISUAL_METADATA_OK id=%d alt_chars=%d filename=%s'%(i,len(m['alt']),os.path.basename(str(m.get('file') or ''))))
+          print('VISUAL_METADATA_READBACK_SUCCESS images=12 fields=48')
+          PY
+
+          route_fail=0
+          for slug in gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt; do
+            for p in "/$slug/" "/en/$slug/" "/fr/$slug/" "/ch/$slug/"; do
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$p" || true)
+              [[ "${meta%%|*}" == 200 && "${meta#*|}" == "$site$p" ]] || route_fail=$((route_fail+1))
+            done
+          done
+          echo "ROUTE_SUMMARY total=24 failures=$route_fail"
+          (( route_fail == 0 ))
+          echo 'FINAL_VISUAL_IMAGE_SEO_SUCCESS images=12 fields=48 canonical_routes=24'
