@@ -1,0 +1,105 @@
+name: One-time DoctorCura CH six-page inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-sixpage-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Inspect six CH page candidates and translated routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo 'TARGET_MISMATCH'; exit 1; }
+          root="$RUNNER_TEMP/dc-ch-inspect"; rm -rf "$root"; mkdir -p "$root/pages"
+
+          health_code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/health")
+          [[ "$health_code" == 200 ]] || { echo "HEALTH_HTTP=$health_code"; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          print('HEALTH_OK='+str(bool(d.get('ok')))+' VERSION='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          page=1
+          while (( page <= 20 )); do
+            out="$root/pages/$page.json"
+            code=$(curl -sS -L --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$site/wp-json/wp/v2/pages?context=edit&per_page=100&page=$page&status=any")
+            if [[ "$code" == 400 ]] && grep -q 'rest_post_invalid_page_number' "$out"; then rm -f "$out"; break; fi
+            [[ "$code" == 200 ]] || { echo "PAGES_HTTP=$code PAGE=$page"; cat "$out"; exit 1; }
+            count=$(python3 - "$out" <<'PY'
+          import json,sys
+          print(len(json.load(open(sys.argv[1],encoding='utf-8'))))
+          PY
+          )
+            (( count < 100 )) && break
+            page=$((page+1))
+          done
+          jq -s 'add' "$root"/pages/*.json > "$root/all-pages.json"
+
+          python3 - "$root/all-pages.json" <<'PY'
+          import json,re,sys
+          pages=json.load(open(sys.argv[1],encoding='utf-8'))
+          desired=['gewichtsmanagement','akne-behandlung','schlafberatung','erektionsprobleme','haarausfall','online-arzt']
+          needles={
+            'gewichtsmanagement':['gewichtsmanagement','gewichts','gewicht'],
+            'akne-behandlung':['akne-behandlung','akne','acne'],
+            'schlafberatung':['schlafberatung','schlaf'],
+            'erektionsprobleme':['erektionsprobleme','erektion','erect'],
+            'haarausfall':['haarausfall','haar'],
+            'online-arzt':['online-arzt','online arzt','arzt'],
+          }
+          def title(p):
+            t=p.get('title') or {}
+            return str(t.get('raw') or t.get('rendered') or '')
+          print('TOTAL_PAGES='+str(len(pages)))
+          exact=[]
+          for p in pages:
+            slug=str(p.get('slug') or '')
+            if slug in desired:
+              exact.append(p)
+          print('EXACT_COUNT='+str(len(exact)))
+          for p in exact:
+            print('EXACT id=%s status=%s slug=%s parent=%s title=%r link=%s' % (p.get('id'),p.get('status'),p.get('slug'),p.get('parent'),title(p),p.get('link')))
+          for key,terms in needles.items():
+            hits=[]
+            for p in pages:
+              hay=(str(p.get('slug') or '')+' '+title(p)).lower()
+              if any(term in hay for term in terms): hits.append(p)
+            print('CANDIDATES '+key+' count='+str(len(hits)))
+            for p in hits[:12]:
+              print('CANDIDATE target=%s id=%s status=%s slug=%s parent=%s title=%r link=%s' % (key,p.get('id'),p.get('status'),p.get('slug'),p.get('parent'),title(p),p.get('link')))
+          ch=[]
+          for p in pages:
+            s=str(p.get('slug') or '').lower(); t=title(p).strip().lower()
+            if s=='ch' or t in {'ch','schweiz','switzerland','suisse','svizzera'}:
+              ch.append(p)
+          print('CH_PARENT_CANDIDATES='+str(len(ch)))
+          for p in ch:
+            print('CH_PARENT id=%s status=%s slug=%s parent=%s title=%r link=%s' % (p.get('id'),p.get('status'),p.get('slug'),p.get('parent'),title(p),p.get('link')))
+          PY
+
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          for lang in de en fr; do
+            for slug in "${slugs[@]}"; do
+              if [[ "$lang" == de ]]; then path="/ch/$slug/"; else path="/$lang/ch/$slug/"; fi
+              code=$(curl -sS -L --connect-timeout 10 --max-time 35 -H 'Cache-Control: no-cache, no-store' -o "$root/route.html" -w '%{http_code}' "$site$path" || true)
+              final=$(curl -sS -L --connect-timeout 10 --max-time 35 -o /dev/null -w '%{url_effective}' "$site$path" || true)
+              printf 'ROUTE lang=%s path=%s http=%s final=%s\n' "$lang" "$path" "$code" "$final"
+            done
+          done
