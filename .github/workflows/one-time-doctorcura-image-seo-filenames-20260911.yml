@@ -1,0 +1,298 @@
+name: One-time DoctorCura image SEO filenames 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-seo-filenames-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Create SEO filenames and verify all landing pages
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-image-filenames"; rm -rf "$root"; mkdir -p "$root"
+          plugin='wp-content/plugins/gtranslate/gtranslate.php'
+          marker='DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_20260911'
+          patched=0
+
+          conn(){
+            code=$(curl -sS --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; return 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          python3 - "$root/read.req" "$plugin" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'imgfn-read','action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          conn "$root/read.req" "$root/read.res"
+
+          python3 - "$root/read.res" "$root" "$plugin" "$marker" <<'PY'
+          import json,sys,os
+          d=json.load(open(sys.argv[1],encoding='utf-8')); data=d.get('data') or {}; st=data.get('file') or {}; content=data.get('content') or ''
+          root,path,marker=sys.argv[2:5]; sha=st.get('sha256') or ''
+          assert st.get('path')==path and st.get('writable_text_scope') is True and len(sha)==64,st
+          assert marker not in content,'temporary route already present'
+          open(os.path.join(root,'original.php'),'w',encoding='utf-8').write(content)
+          snippet=r'''
+
+          // DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_20260911
+          add_action('rest_api_init', function () {
+              register_rest_route('doctorcura-maint/v1', '/image-filename-seo', array(
+                  'methods' => 'POST',
+                  'permission_callback' => function () { return current_user_can('manage_options'); },
+                  'callback' => function (WP_REST_Request $request) {
+                      $map = array(
+                          900478 => 'gewichtsmanagement-ernaehrungsberatung',
+                          900479 => 'gewichtsmanagement-aerztliche-begleitung',
+                          900480 => 'akne-behandlung-hautbild',
+                          900483 => 'akne-behandlung-hautunreinheiten',
+                          900486 => 'schlafberatung-schlafprobleme',
+                          900488 => 'schlafprobleme-naechtliche-unruhe',
+                          900487 => 'erektionsprobleme-arztgespraech',
+                          900490 => 'erektionsprobleme-medizinische-beratung',
+                          900491 => 'haarausfall-haare-kaemmen',
+                          900492 => 'haarausfall-haaransatz',
+                          900493 => 'online-arztberatung-laptop',
+                          900495 => 'online-sprechstunde-aerztin',
+                      );
+                      $id = (int) $request->get_param('id');
+                      $confirm = filter_var($request->get_param('confirm'), FILTER_VALIDATE_BOOLEAN);
+                      if (! isset($map[$id]) || 'attachment' !== get_post_type($id) || ! wp_attachment_is_image($id)) {
+                          return new WP_Error('doctorcura_invalid_image', 'Image is not in the approved landing-page set.', array('status' => 400));
+                      }
+                      $old_file = get_attached_file($id);
+                      $old_meta = wp_get_attachment_metadata($id);
+                      if (! $old_file || ! is_file($old_file) || ! is_array($old_meta)) {
+                          return new WP_Error('doctorcura_missing_image', 'Current attachment file or metadata is missing.', array('status' => 500));
+                      }
+                      $uploads = wp_get_upload_dir();
+                      $root = realpath($uploads['basedir']);
+                      $dir = realpath(dirname($old_file));
+                      if (! $root || ! $dir || ($dir !== $root && 0 !== strpos($dir, rtrim($root, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR))) {
+                          return new WP_Error('doctorcura_unsafe_path', 'Attachment is outside the uploads directory.', array('status' => 500));
+                      }
+                      $ext = strtolower((string) pathinfo($old_file, PATHINFO_EXTENSION));
+                      if (! in_array($ext, array('jpg','jpeg','png','webp'), true)) {
+                          return new WP_Error('doctorcura_bad_extension', 'Unsupported image extension.', array('status' => 400));
+                      }
+                      $new_file = $dir . DIRECTORY_SEPARATOR . $map[$id] . '.' . $ext;
+                      if (basename($old_file) === basename($new_file)) {
+                          return rest_ensure_response(array('ok'=>true,'status'=>'already_done','id'=>$id,'filename'=>basename($new_file),'url'=>wp_get_attachment_url($id)));
+                      }
+                      if (! $confirm) {
+                          return rest_ensure_response(array('ok'=>true,'status'=>'dry_run','id'=>$id,'from'=>basename($old_file),'to'=>basename($new_file)));
+                      }
+                      require_once ABSPATH . 'wp-admin/includes/image.php';
+                      $new_original = null;
+                      try {
+                          if (file_exists($new_file)) {
+                              if (hash_file('sha256', $new_file) !== hash_file('sha256', $old_file)) {
+                                  throw new RuntimeException('SEO target filename already exists with different bytes.');
+                              }
+                          } elseif (! copy($old_file, $new_file)) {
+                              throw new RuntimeException('Could not copy primary image to SEO filename.');
+                          }
+                          if (! empty($old_meta['original_image'])) {
+                              $old_original = $dir . DIRECTORY_SEPARATOR . basename((string) $old_meta['original_image']);
+                              if (is_file($old_original)) {
+                                  $orig_ext = strtolower((string) pathinfo($old_original, PATHINFO_EXTENSION));
+                                  $new_original = $dir . DIRECTORY_SEPARATOR . $map[$id] . '-original.' . $orig_ext;
+                                  if (file_exists($new_original)) {
+                                      if (hash_file('sha256', $new_original) !== hash_file('sha256', $old_original)) {
+                                          throw new RuntimeException('SEO original-image filename conflict.');
+                                      }
+                                  } elseif (! copy($old_original, $new_original)) {
+                                      throw new RuntimeException('Could not copy original image to SEO filename.');
+                                  }
+                              }
+                          }
+                          update_attached_file($id, $new_file);
+                          if (basename((string) get_attached_file($id)) !== basename($new_file)) {
+                              throw new RuntimeException('Attached-file readback did not match SEO filename.');
+                          }
+                          $new_meta = wp_generate_attachment_metadata($id, $new_file);
+                          if (! is_array($new_meta) || empty($new_meta['file'])) {
+                              throw new RuntimeException('Could not regenerate image metadata for SEO filename.');
+                          }
+                          if ($new_original && is_file($new_original)) {
+                              $new_meta['original_image'] = basename($new_original);
+                          }
+                          wp_update_attachment_metadata($id, $new_meta);
+                          $check_meta = wp_get_attachment_metadata($id);
+                          $check_file = get_attached_file($id);
+                          if (! is_array($check_meta) || basename((string) $check_file) !== basename($new_file) || basename((string) $check_meta['file']) !== basename($new_file)) {
+                              throw new RuntimeException('Final attachment metadata readback failed.');
+                          }
+                          foreach ((array) ($check_meta['sizes'] ?? array()) as $size) {
+                              if (! empty($size['file']) && 0 !== strpos((string) $size['file'], $map[$id] . '-')) {
+                                  throw new RuntimeException('Generated image size retained a non-SEO filename.');
+                              }
+                          }
+                          return rest_ensure_response(array('ok'=>true,'status'=>'renamed','id'=>$id,'filename'=>basename($new_file),'url'=>wp_get_attachment_url($id),'sizes'=>count((array)($check_meta['sizes'] ?? array()))));
+                      } catch (Throwable $e) {
+                          update_attached_file($id, $old_file);
+                          wp_update_attachment_metadata($id, $old_meta);
+                          return new WP_Error('doctorcura_image_rename_failed', $e->getMessage(), array('status' => 500));
+                      }
+                  },
+              ));
+          });
+          // DOCTORCURA_TEMP_IMAGE_FILENAME_SEO_20260911_END
+          '''
+          stripped=content.rstrip()
+          if stripped.endswith('?>'):
+              pos=content.rfind('?>'); patched=content[:pos]+snippet+'\n'+content[pos:]
+          else:
+              patched=content+snippet+'\n'
+          for name,dry,confirm,rid in [('patch-dry.req',True,False,'imgfn-patch-dry'),('patch-live.req',False,True,'imgfn-patch-live')]:
+              req={'version':1,'request_id':rid,'action':'filesystem.write_text','dry_run':dry,'confirm':confirm,'payload':{'path':path,'content':patched,'expected_sha256':sha}}
+              json.dump(req,open(os.path.join(root,name),'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+          conn "$root/patch-dry.req" "$root/patch-dry.res"
+          conn "$root/patch-live.req" "$root/patch-live.res"
+          patched=1
+
+          restore_plugin(){
+            rc=$?
+            if (( patched == 1 )); then
+              python3 - "$root/read-current.req" "$plugin" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'imgfn-read-current','action':'filesystem.read_text','dry_run':True,'confirm':False,'payload':{'path':sys.argv[2]}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+              if conn "$root/read-current.req" "$root/read-current.res"; then
+                python3 - "$root/read-current.res" "$root/original.php" "$root/restore.req" "$plugin" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); st=(d.get('data') or {}).get('file') or {}
+          original=open(sys.argv[2],encoding='utf-8').read(); path=sys.argv[4]
+          req={'version':1,'request_id':'imgfn-restore','action':'filesystem.write_text','dry_run':False,'confirm':True,'payload':{'path':path,'content':original,'expected_sha256':st.get('sha256')}}
+          json.dump(req,open(sys.argv[3],'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+                conn "$root/restore.req" "$root/restore.res" || true
+              fi
+            fi
+            exit "$rc"
+          }
+          trap restore_plugin EXIT
+
+          python3 - "$root/plan.json" <<'PY'
+          import json,sys
+          plan={
+            900478:'gewichtsmanagement-ernaehrungsberatung',
+            900479:'gewichtsmanagement-aerztliche-begleitung',
+            900480:'akne-behandlung-hautbild',
+            900483:'akne-behandlung-hautunreinheiten',
+            900486:'schlafberatung-schlafprobleme',
+            900488:'schlafprobleme-naechtliche-unruhe',
+            900487:'erektionsprobleme-arztgespraech',
+            900490:'erektionsprobleme-medizinische-beratung',
+            900491:'haarausfall-haare-kaemmen',
+            900492:'haarausfall-haaransatz',
+            900493:'online-arztberatung-laptop',
+            900495:'online-sprechstunde-aerztin'}
+          json.dump(plan,open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+
+          echo '=== RENAME EACH ATTACHMENT ==='
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            for confirm in false true; do
+              body="$root/body-$id-$confirm.json"
+              printf '{"id":%s,"confirm":%s}' "$id" "$confirm" > "$body"
+              code=$(curl -sS --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$body" -o "$root/route-$id-$confirm.json" -w '%{http_code}' "$site/wp-json/doctorcura-maint/v1/image-filename-seo")
+              [[ "$code" == 200 ]] || { echo "RENAME_HTTP id=$id confirm=$confirm code=$code"; cat "$root/route-$id-$confirm.json"; exit 1; }
+              python3 - "$root/route-$id-$confirm.json" "$id" "$confirm" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') is True,d
+          if sys.argv[3]=='false': assert d.get('status') in ('dry_run','already_done'),d
+          else: assert d.get('status') in ('renamed','already_done'),d
+          print('ROUTE_OK id=%s status=%s filename=%s'%(sys.argv[2],d.get('status'),d.get('filename') or d.get('to')))
+          PY
+            done
+          done
+
+          echo '=== CONNECTOR READBACK ==='
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan=json.load(open(sys.argv[1])); root=sys.argv[2]
+          for sid in plan:
+              i=int(sid)
+              req={'version':1,'request_id':'imgfn-get-'+sid,'action':'media.get','dry_run':True,'confirm':False,'payload':{'id':i}}
+              json.dump(req,open(os.path.join(root,'get-'+sid+'.req'),'w'),separators=(',',':'))
+          PY
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            conn "$root/get-$id.req" "$root/get-$id.res"
+          done
+          python3 - "$root/plan.json" "$root" <<'PY'
+          import json,sys,os
+          plan=json.load(open(sys.argv[1])); root=sys.argv[2]
+          for sid,base in plan.items():
+              d=json.load(open(os.path.join(root,'get-'+sid+'.res'),encoding='utf-8')); m=((d.get('data') or {}).get('media') or {}); md=m.get('metadata') or {}
+              fn=os.path.basename(str(m.get('file') or '')); url=str(m.get('url') or '')
+              assert fn.startswith(base+'.'),(sid,fn,base); assert ('/'+base+'.') in url,(sid,url)
+              assert os.path.basename(str(md.get('file') or '')).startswith(base+'.'),(sid,md.get('file'))
+              sizes=(md.get('sizes') or {}).values(); assert sizes,(sid,'no_sizes')
+              assert all(str(x.get('file') or '').startswith(base+'-') for x in sizes),(sid,'bad_size_names')
+              print('MEDIA_FILENAME_OK id=%s filename=%s sizes=%d url=%s'%(sid,fn,len(md.get('sizes') or {}),url))
+          print('FILENAME_READBACK_OK images=12')
+          PY
+
+          echo '=== VERIFY NEW FILE URLS ==='
+          for id in 900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495; do
+            url=$(python3 - "$root/get-$id.res" <<'PY'
+          import json,sys
+          print((((json.load(open(sys.argv[1])).get('data') or {}).get('media') or {}).get('url') or ''))
+          PY
+          )
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}' "$url")
+            [[ "$code" == 200 ]] || { echo "IMAGE_URL_FAIL id=$id http=$code url=$url"; exit 1; }
+          done
+
+          echo '=== PAGE REGRESSION ==='
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          route_fail=0
+          for slug in "${slugs[@]}"; do
+            for path in "/$slug/" "/en/$slug/" "/fr/$slug/" "/ch/$slug/"; do
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              [[ "$code" == 200 && "$final" == "$site$path" ]] || route_fail=$((route_fail+1))
+            done
+          done
+          echo "PAGE_ROUTE_SUMMARY total=24 failures=$route_fail"
+          (( route_fail == 0 ))
+
+          echo '=== NEW FILENAMES IN UNCACHED GERMAN PAGES ==='
+          declare -A b1 b2
+          b1[gewichtsmanagement]='gewichtsmanagement-ernaehrungsberatung'; b2[gewichtsmanagement]='gewichtsmanagement-aerztliche-begleitung'
+          b1[akne-behandlung]='akne-behandlung-hautbild'; b2[akne-behandlung]='akne-behandlung-hautunreinheiten'
+          b1[schlafberatung]='schlafberatung-schlafprobleme'; b2[schlafberatung]='schlafprobleme-naechtliche-unruhe'
+          b1[erektionsprobleme]='erektionsprobleme-arztgespraech'; b2[erektionsprobleme]='erektionsprobleme-medizinische-beratung'
+          b1[haarausfall]='haarausfall-haare-kaemmen'; b2[haarausfall]='haarausfall-haaransatz'
+          b1[online-arzt]='online-arztberatung-laptop'; b2[online-arzt]='online-sprechstunde-aerztin'
+          visible_fail=0
+          for slug in "${slugs[@]}"; do
+            out="$root/page-$slug.html"
+            code=$(curl -sS -L --connect-timeout 10 --max-time 60 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}' "$site/$slug/?image_seo_filename_check=${GITHUB_RUN_ID}")
+            if [[ "$code" != 200 ]] || ! grep -Fq "${b1[$slug]}" "$out" || ! grep -Fq "${b2[$slug]}" "$out"; then visible_fail=$((visible_fail+1)); fi
+            echo "PAGE_IMAGE_FILENAME slug=$slug http=$code image1=${b1[$slug]} image2=${b2[$slug]}"
+          done
+          echo "PAGE_IMAGE_FILENAME_SUMMARY failures=$visible_fail"
+          (( visible_fail == 0 ))
+
+          echo 'FINAL_IMAGE_FILENAME_SEO_SUCCESS images=12 canonical_routes=24'
