@@ -1,4 +1,4 @@
-name: One-time DoctorCura CH Elementor render diagnose 20260911
+name: One-time DoctorCura CH SEO template refresh 20260911
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  diagnose:
+  refresh:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Compare SEO template and original/CH Elementor documents
+      - name: Resave SEO template via Elementor API and verify CH rendering
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
           REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -24,70 +24,77 @@ jobs:
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
-          root="$RUNNER_TEMP/dc-ch-render"; rm -rf "$root"; mkdir -p "$root"
-          originals=(900448 900449 900450 900451 900452 900453)
-          clones=(900512 900514 900516 900518 900520 900522)
-          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          root="$RUNNER_TEMP/dc-seo-refresh"; rm -rf "$root"; mkdir -p "$root"
           template=900460
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          clones=(900512 900514 900516 900518 900520 900522)
 
-          make_req(){ python3 - "$1" "$2" "$3" <<'PY'
+          req(){
+            python3 - "$1" "$2" "$3" "$4" "$5" "$6" <<'PY'
           import json,sys
-          out,rid,payload=sys.argv[1:]
-          json.dump({'version':1,'request_id':rid,'action':'elementor.inspect','dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
           PY
           }
           call(){
-            code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
-            [[ "$code" == 200 ]] || exit 1
+            code=$(curl -sS -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo HTTP_$code; cat "$2"; exit 1; }
             python3 - "$2" <<'PY'
           import json,sys
           d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
           PY
           }
 
-          make_req "$root/template.req" "diag-template-${GITHUB_RUN_ID}" "{\"id\":$template}"
-          call "$root/template.req" "$root/template.res"
-          python3 - "$root/template.res" <<'PY'
-          import json,sys,collections
+          req "$root/inspect.req" "seo-refresh-inspect-${GITHUB_RUN_ID}" elementor.inspect true false "{\"id\":$template}"
+          call "$root/inspect.req" "$root/inspect.res"
+          python3 - "$root/inspect.res" "$root/payload.json" "${clones[*]}" <<'PY'
+          import json,sys,re
           d=json.load(open(sys.argv[1],encoding='utf-8')); doc=((d.get('data') or {}).get('document') or {})
-          widgets=[]
-          def walk(x):
-              if isinstance(x,dict):
-                  if x.get('widgetType'): widgets.append(x.get('widgetType'))
-                  for v in x.values(): walk(v)
-              elif isinstance(x,list):
-                  for v in x: walk(v)
-          walk(doc.get('data') or [])
-          print('TEMPLATE id=%s type=%s elements=%d conditions=%s' % (doc.get('post_id'),doc.get('template_type'),len(doc.get('data') or []),json.dumps(doc.get('conditions') or [])))
-          print('TEMPLATE_WIDGETS='+json.dumps(collections.Counter(widgets),sort_keys=True))
+          cond=doc.get('conditions') or []
+          text=json.dumps(cond)
+          for cid in map(int,sys.argv[3].split()): assert re.search(r'(?<!\d)%d(?!\d)'%cid,text),cid
+          payload={'id':int(doc['post_id']),'data':doc.get('data') or [],'page_settings':doc.get('page_settings') or {},'template_type':doc.get('template_type') or 'single-page','edit_mode':doc.get('edit_mode') or 'builder','conditions':cond}
+          json.dump(payload,open(sys.argv[2],'w'),ensure_ascii=False,separators=(',',':'))
+          print('PRECHECK template=%s conditions=%d elements=%d'%(doc.get('post_id'),len(cond),len(doc.get('data') or [])))
           PY
 
-          for i in "${!originals[@]}"; do
-            oid="${originals[$i]}"; cid="${clones[$i]}"; slug="${slugs[$i]}"
-            for kind in original clone; do
-              if [[ "$kind" == original ]]; then id="$oid"; else id="$cid"; fi
-              make_req "$root/$kind-$id.req" "diag-$kind-$id-${GITHUB_RUN_ID}" "{\"id\":$id}"
-              call "$root/$kind-$id.req" "$root/$kind-$id.res"
-            done
-            python3 - "$root/original-$oid.res" "$root/clone-$cid.res" "$slug" <<'PY'
-          import json,sys,hashlib
-          a=json.load(open(sys.argv[1],encoding='utf-8')); b=json.load(open(sys.argv[2],encoding='utf-8')); slug=sys.argv[3]
-          da=((a.get('data') or {}).get('document') or {}); db=((b.get('data') or {}).get('document') or {})
-          ja=json.dumps(da.get('data') or [],sort_keys=True,separators=(',',':'))
-          jb=json.dumps(db.get('data') or [],sort_keys=True,separators=(',',':'))
-          print('DOC slug=%s orig=%s clone=%s orig_elements=%d clone_elements=%d same_data=%s orig_type=%s clone_type=%s orig_settings=%s clone_settings=%s' % (slug,da.get('post_id'),db.get('post_id'),len(da.get('data') or []),len(db.get('data') or []),ja==jb,da.get('template_type'),db.get('template_type'),json.dumps(da.get('page_settings') or {},sort_keys=True),json.dumps(db.get('page_settings') or {},sort_keys=True)))
-          PY
-            for path in "/$slug/" "/ch/$slug/"; do
-              key=$(printf '%s' "$path" | tr '/-' '__')
-              curl -sS -L -H 'Cache-Control: no-cache, no-store' -o "$root/$key.html" "$site$path?diag=${GITHUB_RUN_ID}"
-              python3 - "$root/$key.html" "$path" <<'PY'
+          payload=$(cat "$root/payload.json")
+          req "$root/dry.req" "seo-refresh-dry-${GITHUB_RUN_ID}" elementor.replace_document true false "$payload"
+          call "$root/dry.req" "$root/dry.res"
+          echo DRY_RUN_OK
+          req "$root/live.req" "seo-refresh-live-${GITHUB_RUN_ID}" elementor.replace_document false true "$payload"
+          call "$root/live.req" "$root/live.res"
+          echo TEMPLATE_RESAVED
+
+          for action in elementor.regenerate rewrite.flush cache.flush; do
+            req "$root/a.req" "seo-refresh-${action//./-}-${GITHUB_RUN_ID}" "$action" false true '{}'
+            call "$root/a.req" "$root/a.res"
+          done
+          echo CACHES_REFRESHED
+
+          failures=0
+          for slug in "${slugs[@]}"; do
+            for kind in base ch; do
+              if [[ "$kind" == base ]]; then path="/$slug/"; else path="/ch/$slug/"; fi
+              out="$root/$kind-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path?seo_refresh=${GITHUB_RUN_ID}")
+              code="${meta%%|*}"; final="${meta#*|}"
+              metrics=$(python3 - "$out" <<'PY'
           import re,sys
           t=open(sys.argv[1],encoding='utf-8',errors='ignore').read()
-          body=re.search(r'<body\b[^>]*>(.*)</body>',t,re.I|re.S)
-          s=body.group(1) if body else t
-          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',s,flags=re.I|re.S)
+          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S)
           text=' '.join(text.split())
-          print('HTML path=%s bytes=%d textchars=%d elementor=%d postcontent=%d' % (sys.argv[2],len(t.encode()),len(text),t.lower().count('elementor-element'),t.lower().count('elementor-widget-theme-post-content')))
+          print('%d|%d|%d'%(len(t.encode()),len(text),t.lower().count('elementor-element')))
           PY
+          )
+              echo "RENDER kind=$kind slug=$slug http=$code final=$final metrics=$metrics"
+              [[ "$code" == 200 && "$final" == *"$path"* ]] || failures=$((failures+1))
+              if [[ "$kind" == ch ]]; then
+                elems=$(printf '%s' "$metrics" | cut -d'|' -f3)
+                txt=$(printf '%s' "$metrics" | cut -d'|' -f2)
+                [[ "$elems" -ge 200 && "$txt" -ge 10000 ]] || failures=$((failures+1))
+              fi
             done
           done
+          echo "FINAL failures=$failures"
+          (( failures == 0 ))
