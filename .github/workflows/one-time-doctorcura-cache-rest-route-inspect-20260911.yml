@@ -1,0 +1,43 @@
+name: One-time DoctorCura cache REST route inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-cache-rest-route-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect cache related WordPress REST routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          out="$RUNNER_TEMP/wp-json.json"
+          code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$site/wp-json/" || true)
+          echo "WPJSON_HTTP=$code"; [[ "$code" == 200 ]] || exit 1
+          python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          print('NAMESPACES '+json.dumps([x for x in d.get('namespaces',[]) if any(k in x.lower() for k in ['host','lite','cache','rocket','redis'])],ensure_ascii=False))
+          for path,meta in (d.get('routes') or {}).items():
+              low=path.lower()
+              if any(k in low for k in ['hostinger','litespeed','cache','rocket','redis']):
+                  methods=[]
+                  for ep in meta.get('endpoints') or []:
+                      m=ep.get('methods')
+                      if isinstance(m,list): methods.extend(m)
+                      elif isinstance(m,str): methods.append(m)
+                  print('ROUTE path=%s methods=%s' % (path,','.join(sorted(set(methods)))))
+          PY
