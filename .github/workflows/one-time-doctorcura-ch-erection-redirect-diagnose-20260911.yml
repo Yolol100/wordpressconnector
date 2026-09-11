@@ -1,0 +1,100 @@
+name: One-time DoctorCura CH erection redirect diagnose 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-erection-redirect-diagnose-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Diagnose page 900451 redirect and verify rollback state
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-ch-redirect-diag"; rm -rf "$root"; mkdir -p "$root"
+
+          call_connector() {
+            local tag="$1" action="$2" payload="$3"
+            python3 - "$root/req-$tag.json" "$action" "$payload" "$GITHUB_RUN_ID" "$tag" <<'PY'
+          import json,sys
+          out,action,payload,runid,tag=sys.argv[1:]
+          json.dump({'version':1,'request_id':f'dc-ch-diag-{tag}-{runid}','action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/req-$tag.json" -o "$root/res-$tag.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP tag=$tag code=$code"; cat "$root/res-$tag.json"; exit 1; }
+          }
+
+          hcode=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/health")
+          [[ "$hcode" == 200 ]] || exit 1
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          ids=(900448 900449 900450 900451 900452 900453)
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            code=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/page-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit")
+            [[ "$code" == 200 ]] || exit 1
+            python3 - "$root/page-$id.json" "$id" "$slug" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); pid=int(sys.argv[2]); expected=sys.argv[3]
+          print('PAGE_STATE id=%s slug=%s status=%s parent=%s link=%s' % (pid,p.get('slug'),p.get('status'),p.get('parent'),p.get('link')))
+          assert p.get('slug')==expected and p.get('status')=='publish'
+          PY
+          done
+
+          pcode=$(curl -sS -L --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/parent.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/900510?context=edit" || true)
+          if [[ "$pcode" == 200 ]]; then
+            python3 - "$root/parent.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          print('PARENT_STATE id=900510 slug=%s status=%s parent=%s link=%s' % (p.get('slug'),p.get('status'),p.get('parent'),p.get('link')))
+          PY
+          else
+            echo "PARENT_STATE http=$pcode"
+          fi
+
+          call_connector post451 post.get '{"id":900451}'
+          call_connector yoast451 yoast.inspect '{"id":900451}'
+          call_connector yoast448 yoast.inspect '{"id":900448}'
+          call_connector plugins plugin.list '{}'
+
+          python3 - "$root/res-post451.json" "$root/res-yoast451.json" "$root/res-yoast448.json" "$root/res-plugins.json" <<'PY'
+          import json,sys
+          def load(p): return json.load(open(p,encoding='utf-8'))
+          p=load(sys.argv[1]); y=load(sys.argv[2]); c=load(sys.argv[3]); pl=load(sys.argv[4])
+          post=(p.get('data') or {}).get('post') or {}
+          print('CONNECTOR_POST451 slug=%s status=%s parent=%s permalink=%s' % (post.get('slug'),post.get('status'),post.get('parent'),post.get('permalink')))
+          for label,d in [('YOAST451',y),('YOAST448',c)]:
+              data=d.get('data') or {}; fields=data.get('fields') or {}
+              keep={k:fields.get(k) for k in ['canonical','redirect','robots_noindex','robots_nofollow','breadcrumb_title','title']}
+              print(label+' '+json.dumps(keep,ensure_ascii=False,separators=(',',':')))
+          data=pl.get('data') or {}
+          items=data.get('plugins') or data.get('items') or []
+          for item in items:
+              if not isinstance(item,dict): continue
+              text=(' '.join(str(item.get(k) or '') for k in ['name','plugin','file','slug'])).lower()
+              if any(x in text for x in ['redirect','seo','cache','gtranslate','translate']):
+                  print('PLUGIN '+json.dumps({k:item.get(k) for k in ['name','plugin','file','slug','version','active'] if k in item},ensure_ascii=False,separators=(',',':')))
+          PY
+
+          for url in "$site/ch/erektionsprobleme/" "$site/erektionsprobleme/" "$site/ch/gewichtsmanagement/"; do
+            echo "HEADERS url=$url"
+            curl -sS --connect-timeout 10 --max-time 30 -o /dev/null -D - "$url?dc_ch_diag=${GITHUB_RUN_ID}" | tr -d '\r' | grep -Ei '^(HTTP/|location:|x-redirect-by:|cache-control:|x-cache:|cf-cache-status:|server:)' || true
+          done
