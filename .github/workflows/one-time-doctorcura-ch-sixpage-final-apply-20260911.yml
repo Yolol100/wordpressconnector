@@ -1,0 +1,203 @@
+name: One-time DoctorCura CH six-page final apply 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-sixpage-final-apply-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Finalize CH routes and verify DE EN FR
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          root="$RUNNER_TEMP/dc-ch-final"; rm -rf "$root"; mkdir -p "$root"
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          ids=(900448 900449 900450 900451 900452 900453)
+          parent_id=900510
+
+          make_req() {
+            local out="$1" rid="$2" action="$3" dry="$4" confirm="$5" payload="$6"
+            python3 - "$out" "$rid" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+
+          call_connector() {
+            local req="$1" out="$2" code
+            for attempt in 1 2 3; do
+              code=$(curl -sS --retry 2 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 150 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute" || true)
+              if [[ "$code" == 200 ]]; then break; fi
+              echo "CONNECTOR_RETRY attempt=$attempt http=$code"
+              sleep 5
+            done
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$out" 2>/dev/null || true; return 1; }
+            python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print('CONNECTOR_ERROR='+str(d.get('error') or d.get('message') or d))
+              raise SystemExit(1)
+          PY
+          }
+
+          health_code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/health" || true)
+          [[ "$health_code" == 200 ]] || { echo "HEALTH_HTTP=$health_code"; exit 1; }
+          python3 - "$root/health.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok') and d.get('transport')=='rest',d
+          print('HEALTH_OK version='+str(d.get('version') or d.get('connector_version') or 'unknown'))
+          PY
+
+          # Confirm the six intended landing pages are still the exact published top-level originals.
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            code=$(curl -sS --retry 3 --retry-delay 2 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/page-before-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || { echo "PAGE_BEFORE_HTTP id=$id http=$code"; exit 1; }
+            python3 - "$root/page-before-$id.json" "$id" "$slug" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); pid=int(sys.argv[2]); slug=sys.argv[3]
+          assert int(p.get('id') or 0)==pid and p.get('slug')==slug and p.get('status')=='publish' and int(p.get('parent') or 0)==0,(pid,p.get('slug'),p.get('status'),p.get('parent'))
+          PY
+          done
+          echo 'PRECHECK_CHILDREN_OK count=6'
+
+          # Restore the previously-created technical CH parent if present in Trash, otherwise create it.
+          pcode=$(curl -sS --retry 3 --retry-delay 2 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/parent-before.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$parent_id?context=edit" || true)
+          if [[ "$pcode" == 200 ]]; then
+            read -r pstatus pslug <<< "$(python3 - "$root/parent-before.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); print(str(p.get('status') or ''),str(p.get('slug') or ''))
+          PY
+          )"
+            if [[ "$pstatus" == trash && ( "$pslug" == ch || "$pslug" == ch__trashed* ) ]]; then
+              make_req "$root/restore-preview.json" "dc-ch-final-parent-preview-${GITHUB_RUN_ID}" post.restore true false "{\"id\":$parent_id}"
+              call_connector "$root/restore-preview.json" "$root/restore-preview-result.json"
+              make_req "$root/restore.json" "dc-ch-final-parent-${GITHUB_RUN_ID}" post.restore false true "{\"id\":$parent_id}"
+              call_connector "$root/restore.json" "$root/restore-result.json"
+              echo "PARENT_RESTORED id=$parent_id"
+            elif [[ "$pstatus" == draft && "$pslug" == ch ]]; then
+              echo "PARENT_REUSED id=$parent_id"
+            else
+              echo "PARENT_CONFLICT id=$parent_id status=$pstatus slug=$pslug"; exit 1
+            fi
+          else
+            make_req "$root/create-parent-preview.json" "dc-ch-final-parent-create-preview-${GITHUB_RUN_ID}" post.create true false '{"title":"CH","slug":"ch","type":"page","status":"draft","content":""}'
+            call_connector "$root/create-parent-preview.json" "$root/create-parent-preview-result.json"
+            make_req "$root/create-parent.json" "dc-ch-final-parent-create-${GITHUB_RUN_ID}" post.create false true '{"title":"CH","slug":"ch","type":"page","status":"draft","content":""}'
+            call_connector "$root/create-parent.json" "$root/create-parent-result.json"
+            parent_id=$(python3 - "$root/create-parent-result.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); p=(d.get('data') or {}).get('post') or {}
+          assert p.get('slug')=='ch' and p.get('status')=='draft',p
+          print(int(p['id']))
+          PY
+          )
+            echo "PARENT_CREATED id=$parent_id"
+          fi
+
+          # Move only the six requested pages under the CH parent, atomically.
+          python3 - "$root/children-live.json" "$parent_id" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          out,parent,runid=sys.argv[1:]; parent=int(parent)
+          ids=[900448,900449,900450,900451,900452,900453]
+          ops=[{'action':'post.update','payload':{'id':pid,'parent':parent}} for pid in ids]
+          json.dump({'version':1,'request_id':f'dc-ch-final-children-{runid}','action':'connector.batch','dry_run':False,'confirm':True,'payload':{'operations':ops}},open(out,'w'),separators=(',',':'))
+          PY
+          call_connector "$root/children-live.json" "$root/children-live-result.json"
+          echo "CHILDREN_APPLIED count=6 parent_id=$parent_id"
+
+          # Refresh WordPress routing/cache layers exposed safely by the connector.
+          make_req "$root/rewrite-preview.json" "dc-ch-final-rewrite-preview-${GITHUB_RUN_ID}" rewrite.flush true false '{}'
+          call_connector "$root/rewrite-preview.json" "$root/rewrite-preview-result.json"
+          make_req "$root/rewrite-live.json" "dc-ch-final-rewrite-${GITHUB_RUN_ID}" rewrite.flush false true '{}'
+          call_connector "$root/rewrite-live.json" "$root/rewrite-live-result.json"
+          echo 'REWRITE_FLUSH_OK'
+
+          make_req "$root/cache-preview.json" "dc-ch-final-cache-preview-${GITHUB_RUN_ID}" cache.flush true false '{}'
+          call_connector "$root/cache-preview.json" "$root/cache-preview-result.json"
+          make_req "$root/cache-live.json" "dc-ch-final-cache-${GITHUB_RUN_ID}" cache.flush false true '{}'
+          call_connector "$root/cache-live.json" "$root/cache-live-result.json"
+          echo 'WORDPRESS_CACHE_FLUSH_OK'
+
+          # Authoritative WordPress permalink readback: all six must now be /ch/{slug}/.
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            code=$(curl -sS --retry 3 --retry-delay 2 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/page-after-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit" || true)
+            [[ "$code" == 200 ]] || exit 1
+            python3 - "$root/page-after-$id.json" "$id" "$slug" "$parent_id" "$site" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); pid=int(sys.argv[2]); slug=sys.argv[3]; parent=int(sys.argv[4]); site=sys.argv[5]
+          expected=f'{site}/ch/{slug}/'
+          got=p.get('link')
+          assert int(p.get('parent') or 0)==parent and got==expected,(pid,p.get('parent'),got,expected)
+          print('PERMALINK_OK id=%s link=%s' % (pid,got))
+          PY
+          done
+
+          # Verify German source routes at the origin with a cache-busting query. Also record plain URL state.
+          source_fail=0; plain_stale=0
+          for slug in "${slugs[@]}"; do
+            path="/ch/$slug/"
+            meta=$(curl -sS -L --retry 2 --retry-delay 3 --retry-all-errors --connect-timeout 12 --max-time 60 -H 'Cache-Control: no-cache, no-store' -o "$root/de-$slug.html" -w '%{http_code}|%{url_effective}' "$site$path?dc_ch_final=${GITHUB_RUN_ID}" || true)
+            code="${meta%%|*}"; final="${meta#*|}"
+            lang=$(python3 - "$root/de-$slug.html" <<'PY'
+          import re,sys
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read(100000)
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I); print(m.group(1) if m else 'unknown')
+          PY
+          )
+            echo "DE_ROUTE path=$path http=$code final=$final html_lang=$lang"
+            if [[ "$code" != 200 || "$final" != *"/ch/$slug/"* ]]; then source_fail=$((source_fail+1)); fi
+            plain=$(curl -sS --connect-timeout 12 --max-time 40 -H 'Cache-Control: no-cache, no-store' -o /dev/null -w '%{http_code}|%{redirect_url}' "$site$path" || true)
+            phttp="${plain%%|*}"; predir="${plain#*|}"
+            echo "DE_PLAIN path=$path http=$phttp redirect=$predir"
+            if [[ "$phttp" != 200 ]]; then plain_stale=$((plain_stale+1)); fi
+            sleep 2
+          done
+          [[ "$source_fail" == 0 ]] || { echo "DE_ROUTE_FAILURES=$source_fail"; exit 1; }
+          echo "DE_ROUTES_OK count=6 plain_non200=$plain_stale"
+
+          # Verify GTranslate routes only for these six CH pages. No global GTranslate setting is changed.
+          translated_ok=0; translated_fail=0
+          for lang in en fr; do
+            for slug in "${slugs[@]}"; do
+              path="/$lang/ch/$slug/"; ok=0
+              for attempt in 1 2 3; do
+                out="$root/$lang-$slug.html"
+                meta=$(curl -sS -L --retry 2 --retry-delay 4 --retry-all-errors --connect-timeout 12 --max-time 70 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path?dc_ch_final=${GITHUB_RUN_ID}-${attempt}" || true)
+                code="${meta%%|*}"; final="${meta#*|}"
+                hlang=$(python3 - "$out" <<'PY'
+          import re,sys,os
+          if not os.path.exists(sys.argv[1]): print('missing'); raise SystemExit
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read(120000)
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I); print(m.group(1) if m else 'unknown')
+          PY
+          )
+                echo "GT_ROUTE lang=$lang path=$path attempt=$attempt http=$code final=$final html_lang=$hlang"
+                if [[ "$code" == 200 && "$final" == *"/$lang/ch/$slug/"* && "$hlang" == "$lang"* ]]; then ok=1; translated_ok=$((translated_ok+1)); break; fi
+                sleep 8
+              done
+              if (( ok == 0 )); then translated_fail=$((translated_fail+1)); fi
+              sleep 3
+            done
+          done
+          echo "GT_SUMMARY ok=$translated_ok fail=$translated_fail"
+          if (( translated_fail != 0 )); then exit 2; fi
+          echo "FINAL_SUCCESS de=6 en=6 fr=6 plain_non200=$plain_stale"
