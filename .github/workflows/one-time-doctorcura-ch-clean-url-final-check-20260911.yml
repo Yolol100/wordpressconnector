@@ -1,0 +1,47 @@
+name: One-time DoctorCura CH clean URL final check 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-clean-url-final-check-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Check clean public DE EN FR URLs
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          fail=0
+          for lang in de en fr; do
+            for slug in "${slugs[@]}"; do
+              if [[ "$lang" == de ]]; then path="/ch/$slug/"; else path="/$lang/ch/$slug/"; fi
+              meta=$(curl -sS -L --retry 2 --retry-delay 3 --retry-all-errors --connect-timeout 12 --max-time 55 -o "$RUNNER_TEMP/$lang-$slug.html" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              hlang=$(python3 - "$RUNNER_TEMP/$lang-$slug.html" <<'PY'
+          import re,sys,os
+          p=sys.argv[1]
+          if not os.path.exists(p): print('missing'); raise SystemExit
+          t=open(p,encoding='utf-8',errors='ignore').read(120000)
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I); print(m.group(1) if m else 'unknown')
+          PY
+          )
+              echo "CLEAN lang=$lang path=$path http=$code final=$final html_lang=$hlang"
+              expected="$site$path"
+              if [[ "$code" != 200 || "$final" != "$expected" || "$hlang" != "$lang"* ]]; then fail=$((fail+1)); fi
+              sleep 2
+            done
+          done
+          echo "CLEAN_SUMMARY failures=$fail"
+          (( fail == 0 ))
