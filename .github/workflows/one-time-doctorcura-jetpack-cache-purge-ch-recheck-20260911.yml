@@ -1,0 +1,63 @@
+name: One-time DoctorCura Jetpack cache purge CH recheck 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-jetpack-cache-purge-ch-recheck-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  purge-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Purge page cache then verify six CH routes in DE EN FR
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          root="$RUNNER_TEMP/dc-cache-purge"; rm -rf "$root"; mkdir -p "$root"
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+
+          code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors -X POST --connect-timeout 12 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/jetpack-purge.json" -w '%{http_code}' "$site/wp-json/jetpack/v4/site/cache/flush" || true)
+          echo "JETPACK_CACHE_PURGE_HTTP=$code"
+          if [[ "$code" != 200 && "$code" != 201 && "$code" != 204 ]]; then
+            cat "$root/jetpack-purge.json" 2>/dev/null || true
+            exit 1
+          fi
+          cat "$root/jetpack-purge.json" 2>/dev/null | head -c 1000 || true; echo
+
+          sleep 8
+          fail=0
+          for lang in de en fr; do
+            for slug in "${slugs[@]}"; do
+              if [[ "$lang" == de ]]; then path="/ch/$slug/"; else path="/$lang/ch/$slug/"; fi
+              out="$root/$lang-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 3 --retry-all-errors --connect-timeout 12 --max-time 55 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}|%{num_redirects}' "$site$path" || true)
+              code="${meta%%|*}"; rest="${meta#*|}"; final="${rest%%|*}"; redirects="${rest##*|}"
+              hlang=$(python3 - "$out" <<'PY'
+          import re,sys,os
+          p=sys.argv[1]
+          if not os.path.exists(p): print('missing'); raise SystemExit
+          t=open(p,encoding='utf-8',errors='ignore').read(150000)
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I)
+          print(m.group(1) if m else 'unknown')
+          PY
+          )
+              echo "CLEAN_AFTER_PURGE lang=$lang path=$path http=$code final=$final redirects=$redirects html_lang=$hlang"
+              expected="$site$path"
+              if [[ "$code" != 200 || "$final" != "$expected" || "$hlang" != "$lang"* ]]; then fail=$((fail+1)); fi
+              sleep 2
+            done
+          done
+          echo "FINAL_CLEAN_SUMMARY failures=$fail"
+          (( fail == 0 ))
