@@ -34,24 +34,19 @@ jobs:
           call(){
             code=$(curl -sS -L --connect-timeout 12 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
             [[ "$code" == 200 ]] || { echo "HTTP=$code"; cat "$2"; exit 1; }
-            python3 - "$2" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          assert d.get('ok'),d
-          PY
           }
           make_req "$root/t.req" "cond-template-${GITHUB_RUN_ID}" elementor.inspect '{"id":900460}'
           call "$root/t.req" "$root/t.res"
           python3 - "$root/t.res" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8')); doc=((d.get('data') or {}).get('document') or {})
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          doc=((d.get('data') or {}).get('document') or {})
           print('TEMPLATE_CONDITIONS='+json.dumps(doc.get('conditions') or [],separators=(',',':')))
           PY
-          make_req "$root/o.req" "cond-option-${GITHUB_RUN_ID}" option.get '{"key":"elementor_pro_theme_builder_conditions"}'
+          make_req "$root/o.req" "cond-option-${GITHUB_RUN_ID}" option.get '{"name":"elementor_pro_theme_builder_conditions"}'
           call "$root/o.req" "$root/o.res"
           python3 - "$root/o.res" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          data=d.get('data') or {}
-          print('OPTION_DATA='+json.dumps(data,separators=(',',':'))[:12000])
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          print('OPTION_DATA='+json.dumps(d.get('data') or {},separators=(',',':'))[:12000])
           PY
