@@ -1,0 +1,51 @@
+name: One-time DoctorCura cache stack inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-cache-stack-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect cache related plugins and safe filesystem markers
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-cache-inspect"; rm -rf "$root"; mkdir -p "$root"
+          call() {
+            tag="$1" action="$2" payload="$3"
+            python3 - "$root/$tag-req.json" "$action" "$payload" "$GITHUB_RUN_ID" "$tag" <<'PY'
+          import json,sys
+          out,action,payload,runid,tag=sys.argv[1:]
+          json.dump({'version':1,'request_id':f'dc-cache-{tag}-{runid}','action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS -L --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/$tag-req.json" -o "$root/$tag-res.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || exit 1
+          }
+          call plugins plugin.list '{}'
+          call fsi filesystem.inspect '{}'
+          python3 - "$root/plugins-res.json" "$root/fsi-res.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8')); f=json.load(open(sys.argv[2],encoding='utf-8'))
+          items=(p.get('data') or {}).get('plugins') or (p.get('data') or {}).get('items') or []
+          for i in items:
+              if not isinstance(i,dict): continue
+              txt=' '.join(str(i.get(k) or '') for k in ['name','file','slug','plugin']).lower()
+              if any(x in txt for x in ['hostinger','rocket','cache','cloudflare','redis','object','redirect']):
+                  print('PLUGIN '+json.dumps({k:i.get(k) for k in ['name','file','slug','version','active'] if k in i},ensure_ascii=False,separators=(',',':')))
+          data=f.get('data') or {}
+          print('FILESYSTEM_INSPECT '+json.dumps(data,ensure_ascii=False,separators=(',',':'))[:4000])
+          PY
