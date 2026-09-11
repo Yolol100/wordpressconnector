@@ -1,0 +1,53 @@
+name: One-time DoctorCura cache provider inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-cache-provider-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Inspect active cache plugins and REST cache route metadata
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/dc-cache-provider"; rm -rf "$root"; mkdir -p "$root"
+
+          python3 - "$root/plugin-req.json" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':f'dc-cache-provider-plugins-{sys.argv[2]}','action':'plugin.list','dry_run':True,'confirm':False,'payload':{}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$root/plugin-req.json" -o "$root/plugins.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute" || true)
+          echo "PLUGIN_LIST_HTTP=$code"; [[ "$code" == 200 ]] || exit 1
+
+          code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/wpjson.json" -w '%{http_code}' "$site/wp-json/" || true)
+          echo "WPJSON_HTTP=$code"; [[ "$code" == 200 ]] || exit 1
+
+          python3 - "$root/plugins.json" "$root/wpjson.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          data=p.get('data') or {}
+          items=data.get('plugins') or data.get('items') or []
+          for i in items:
+              if not isinstance(i,dict): continue
+              text=' '.join(str(i.get(k) or '') for k in ['name','file','slug','plugin']).lower()
+              if any(k in text for k in ['rocket','jetpack','hostinger','cache','redis','cloudflare']):
+                  print('PLUGIN '+json.dumps({k:i.get(k) for k in ['name','file','slug','version','active','status'] if k in i},ensure_ascii=False,separators=(',',':')))
+          w=json.load(open(sys.argv[2],encoding='utf-8'))
+          for path in ['/jetpack/v4/site/cache/flush','/elementor/v1/cache','/wp-site-health/v1/tests/page-cache']:
+              meta=(w.get('routes') or {}).get(path)
+              print('ROUTE_META '+path+' '+json.dumps(meta,ensure_ascii=False,separators=(',',':'))[:6000])
+          PY
