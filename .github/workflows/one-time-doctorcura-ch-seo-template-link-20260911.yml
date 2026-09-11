@@ -1,0 +1,191 @@
+name: One-time DoctorCura CH SEO template link 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-ch-seo-template-link-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  link:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Detect SEO template, add six CH page conditions, verify
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo TARGET_MISMATCH; exit 1; }
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          root="$RUNNER_TEMP/dc-ch-seo-template"; rm -rf "$root"; mkdir -p "$root"
+
+          originals=(900448 900449 900450 900451 900452 900453)
+          clones=(900512 900514 900516 900518 900520 900522)
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+
+          make_req() {
+            local out="$1" rid="$2" action="$3" dry="$4" confirm="$5" payload="$6"
+            python3 - "$out" "$rid" "$action" "$dry" "$confirm" "$payload" <<'PY'
+          import json,sys
+          out,rid,action,dry,confirm,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+
+          call_connector() {
+            local req="$1" out="$2" code
+            code=$(curl -sS -L --connect-timeout 12 --max-time 150 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute" || true)
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$out" 2>/dev/null || true; exit 1; }
+            python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print('CONNECTOR_ERROR='+str(d.get('error') or d.get('message') or d)); raise SystemExit(1)
+          PY
+          }
+
+          # Verify clone identities before changing any template condition.
+          for i in "${!clones[@]}"; do
+            cid="${clones[$i]}"; slug="${slugs[$i]}"
+            code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/ch-$cid.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$cid?context=edit")
+            [[ "$code" == 200 ]] || exit 1
+            python3 - "$root/ch-$cid.json" "$cid" "$slug" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert int(p.get('id') or 0)==int(sys.argv[2]) and p.get('slug')==sys.argv[3] and p.get('status')=='publish',(p.get('id'),p.get('slug'),p.get('status'))
+          assert '/ch/' in str(p.get('link') or ''),p.get('link')
+          PY
+          done
+          echo 'CH_CLONES_PRECHECK_OK count=6'
+
+          # List Elementor library templates and inspect all likely Theme Builder templates.
+          page=1
+          : > "$root/templates.ndjson"
+          while (( page <= 10 )); do
+            out="$root/templates-$page.json"
+            code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$site/wp-json/wp/v2/elementor_library?context=edit&per_page=100&page=$page")
+            if [[ "$code" == 400 ]] && grep -q 'rest_post_invalid_page_number' "$out"; then break; fi
+            [[ "$code" == 200 ]] || { echo "TEMPLATE_LIST_HTTP=$code"; cat "$out"; exit 1; }
+            jq -c '.[]' "$out" >> "$root/templates.ndjson"
+            count=$(jq 'length' "$out")
+            (( count < 100 )) && break
+            page=$((page+1))
+          done
+
+          template_ids=($(jq -r '.id' "$root/templates.ndjson"))
+          [[ ${#template_ids[@]} -gt 0 ]] || { echo NO_ELEMENTOR_TEMPLATES; exit 1; }
+          : > "$root/candidates.tsv"
+
+          for tid in "${template_ids[@]}"; do
+            printf '{"id":%s}' "$tid" > "$root/payload-$tid.json"
+            make_req "$root/inspect-$tid.json" "dc-ch-seo-inspect-$tid-${GITHUB_RUN_ID}" elementor.inspect true false "$(cat "$root/payload-$tid.json")"
+            if ! call_connector "$root/inspect-$tid.json" "$root/inspect-$tid-res.json"; then continue; fi
+            python3 - "$root/templates.ndjson" "$root/inspect-$tid-res.json" "$tid" "${originals[*]}" >> "$root/candidates.tsv" <<'PY'
+          import json,sys,re
+          nd,resf,tid,orig_s=sys.argv[1:]
+          tid=int(tid); orig=set(map(int,orig_s.split()))
+          meta=None
+          for line in open(nd,encoding='utf-8'):
+              x=json.loads(line)
+              if int(x.get('id') or 0)==tid: meta=x; break
+          res=json.load(open(resf,encoding='utf-8'))
+          doc=((res.get('data') or {}).get('document') or {})
+          cond=doc.get('conditions') or []
+          title=''
+          if meta:
+              t=meta.get('title') or {}; title=str(t.get('raw') or t.get('rendered') or '')
+          text=json.dumps(cond,ensure_ascii=False)
+          hits=sum(1 for oid in orig if re.search(r'(?<!\d)%d(?!\d)'%oid,text))
+          seo=1 if 'seo' in title.lower() else 0
+          if hits or seo:
+              print(f'{tid}\t{hits}\t{seo}\t{title}\t{json.dumps(cond,ensure_ascii=False,separators=(",",":"))}')
+          PY
+          done
+
+          cat "$root/candidates.tsv" || true
+
+          # Select the template already assigned to the original six pages. If not unique, fail safely.
+          python3 - "$root/candidates.tsv" "$root/selected.json" "${originals[*]}" "${clones[*]}" <<'PY'
+          import json,sys,re
+          src,out,orig_s,clone_s=sys.argv[1:]
+          orig=list(map(int,orig_s.split())); clones=list(map(int,clone_s.split()))
+          rows=[]
+          for line in open(src,encoding='utf-8'):
+              parts=line.rstrip('\n').split('\t',4)
+              if len(parts)<5: continue
+              rows.append({'id':int(parts[0]),'hits':int(parts[1]),'seo':int(parts[2]),'title':parts[3],'conditions':json.loads(parts[4])})
+          best=[r for r in rows if r['hits']==6]
+          if len(best)!=1:
+              print('Expected exactly one Elementor template referencing all six original pages; found',[(r['id'],r['hits'],r['title']) for r in rows])
+              raise SystemExit(2)
+          r=best[0]
+          old=r['conditions']; new=list(old)
+          mapping=dict(zip(orig,clones))
+          for c in old:
+              if not isinstance(c,str): continue
+              for oid,cid in mapping.items():
+                  if re.search(r'(?<!\d)%d(?!\d)'%oid,c):
+                      nc=re.sub(r'(?<!\d)%d(?!\d)'%oid,str(cid),c)
+                      if nc not in new: new.append(nc)
+          added=[x for x in new if x not in old]
+          if len(added)!=6:
+              print('Expected 6 mirrored CH conditions, got',len(added),added)
+              raise SystemExit(3)
+          json.dump({'template_id':r['id'],'title':r['title'],'old_conditions':old,'new_conditions':new,'added':added},open(out,'w'),ensure_ascii=False,indent=2)
+          print('SELECTED_TEMPLATE id=%s title=%r added=%d' % (r['id'],r['title'],len(added)))
+          PY
+
+          tid=$(jq -r '.template_id' "$root/selected.json")
+          conditions=$(jq -c '.new_conditions' "$root/selected.json")
+          payload=$(python3 - "$tid" "$conditions" <<'PY'
+          import json,sys
+          print(json.dumps({'id':int(sys.argv[1]),'conditions':json.loads(sys.argv[2])},separators=(',',':')))
+          PY
+          )
+
+          # Dry-run then live apply. Elementor adapter preserves data/settings when omitted.
+          make_req "$root/dry.json" "dc-ch-seo-template-dry-${GITHUB_RUN_ID}" elementor.replace_document true false "$payload"
+          call_connector "$root/dry.json" "$root/dry-res.json"
+          echo 'DRY_RUN_OK'
+          make_req "$root/live.json" "dc-ch-seo-template-live-${GITHUB_RUN_ID}" elementor.replace_document false true "$payload"
+          call_connector "$root/live.json" "$root/live-res.json"
+          echo 'TEMPLATE_CONDITIONS_UPDATED'
+
+          # Readback must contain all six original and all six CH page ids in conditions.
+          make_req "$root/readback.json" "dc-ch-seo-template-readback-${GITHUB_RUN_ID}" elementor.inspect true false "{\"id\":$tid}"
+          call_connector "$root/readback.json" "$root/readback-res.json"
+          python3 - "$root/readback-res.json" "${originals[*]}" "${clones[*]}" <<'PY'
+          import json,sys,re
+          d=json.load(open(sys.argv[1],encoding='utf-8')); text=json.dumps((((d.get('data') or {}).get('document') or {}).get('conditions') or []))
+          for n in map(int,(sys.argv[2]+' '+sys.argv[3]).split()):
+              assert re.search(r'(?<!\d)%d(?!\d)'%n,text),n
+          print('CONDITION_READBACK_OK originals=6 ch=6')
+          PY
+
+          # Refresh Elementor and WordPress cache/rewrite layers.
+          for action in rewrite.flush cache.flush elementor.regenerate; do
+            make_req "$root/${action//./-}.json" "dc-ch-seo-${action//./-}-${GITHUB_RUN_ID}" "$action" false true '{}'
+            call_connector "$root/${action//./-}.json" "$root/${action//./-}-res.json"
+          done
+
+          # Visual-content sanity: CH pages must remain HTTP 200 and contain a main/body area beyond header/footer.
+          failures=0
+          for slug in "${slugs[@]}"; do
+            out="$root/$slug.html"
+            meta=$(curl -sS -L --max-redirs 8 --connect-timeout 12 --max-time 60 -H 'Cache-Control: no-cache, no-store' -o "$out" -w '%{http_code}|%{url_effective}' "$site/ch/$slug/?seo_template_check=${GITHUB_RUN_ID}")
+            code="${meta%%|*}"; final="${meta#*|}"
+            bytes=$(wc -c < "$out")
+            echo "CH_PAGE slug=$slug http=$code final=$final bytes=$bytes"
+            [[ "$code" == 200 && "$final" == *"/ch/$slug/"* && "$bytes" -gt 30000 ]] || failures=$((failures+1))
+          done
+          echo "FINAL_SUMMARY failures=$failures template_id=$tid"
+          (( failures == 0 ))
