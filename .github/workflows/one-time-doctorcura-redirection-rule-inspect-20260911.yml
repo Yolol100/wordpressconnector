@@ -1,0 +1,43 @@
+name: One-time DoctorCura Redirection rule inspect 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-redirection-rule-inspect-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect matching Redirection plugin rules
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          for term in erektionsprobleme gewichtsmanagement ch; do
+            out="$RUNNER_TEMP/redir-$term.json"
+            code=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --get --data-urlencode "filterBy[url]=$term" --data-urlencode 'per_page=200' -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$site/wp-json/redirection/v1/redirect" || true)
+            echo "REDIRECTION_API term=$term http=$code"
+            if [[ "$code" == 200 ]]; then
+              python3 - "$out" "$term" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); term=sys.argv[2]
+          items=d.get('items') if isinstance(d,dict) else []
+          print('RULE_COUNT term=%s count=%s total=%s' % (term,len(items or []),d.get('total') if isinstance(d,dict) else None))
+          for i in (items or []):
+              print('RULE '+json.dumps({k:i.get(k) for k in ['id','url','match_url','action_type','action_code','action_data','title','regex','status','group_id']},ensure_ascii=False,separators=(',',':')))
+          PY
+            else
+              head -c 1000 "$out" || true; echo
+            fi
+          done
