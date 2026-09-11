@@ -1,0 +1,231 @@
+name: One-time DoctorCura flat language fix 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-flat-language-fix-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Create CH copies, restore flat DE EN FR routes, verify
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo TARGET_MISMATCH; exit 1; }
+          test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
+          root="$RUNNER_TEMP/dc-flat-language"; rm -rf "$root"; mkdir -p "$root"
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          ids=(900448 900449 900450 900451 900452 900453)
+          parent_id=900510
+          clone_ids=()
+          original_move_request=""
+
+          make_req() {
+            local out="$1" rid="$2" action="$3" dry="$4" confirm="$5" payload_file="$6"
+            python3 - "$out" "$rid" "$action" "$dry" "$confirm" "$payload_file" <<'PY'
+          import json,sys
+          out,rid,action,dry,confirm,payload_file=sys.argv[1:]
+          payload=json.load(open(payload_file,encoding='utf-8'))
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':dry=='true','confirm':confirm=='true','payload':payload},open(out,'w'),separators=(',',':'))
+          PY
+          }
+
+          call_connector() {
+            local req="$1" out="$2" code=""
+            for attempt in 1 2 3; do
+              code=$(curl -sS --retry 2 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$req" -o "$out" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute" || true)
+              [[ "$code" == 200 ]] && break
+              echo "CONNECTOR_RETRY attempt=$attempt http=$code"
+              sleep 5
+            done
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$out" 2>/dev/null || true; return 1; }
+            python3 - "$out" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          if not d.get('ok'):
+              print('CONNECTOR_ERROR='+str(d.get('error') or d.get('message') or d))
+              raise SystemExit(1)
+          PY
+          }
+
+          simple_req() {
+            local tag="$1" action="$2" dry="$3" confirm="$4" payload_json="$5"
+            printf '%s' "$payload_json" > "$root/$tag-payload.json"
+            make_req "$root/$tag-req.json" "dc-flat-$tag-${GITHUB_RUN_ID}" "$action" "$dry" "$confirm" "$root/$tag-payload.json"
+            call_connector "$root/$tag-req.json" "$root/$tag-res.json"
+          }
+
+          cleanup_failed() {
+            local rc=$?
+            if (( rc != 0 )); then
+              echo "FIX_FAILED rc=$rc"
+              if [[ -n "$original_move_request" ]]; then
+                printf '{"request_id":"%s"}' "$original_move_request" > "$root/rb-originals-payload.json"
+                make_req "$root/rb-originals-req.json" "dc-flat-rb-originals-${GITHUB_RUN_ID}" connector.rollback false true "$root/rb-originals-payload.json"
+                call_connector "$root/rb-originals-req.json" "$root/rb-originals-res.json" || true
+              fi
+              for cid in "${clone_ids[@]:-}"; do
+                [[ -n "$cid" ]] || continue
+                simple_req "trash-$cid" post.trash false true "{\"id\":$cid}" || true
+              done
+              simple_req rewrite-rb rewrite.flush false true '{}' || true
+              simple_req cache-rb cache.flush false true '{}' || true
+            fi
+            exit "$rc"
+          }
+          trap cleanup_failed EXIT
+
+          health=$(curl -sS --retry 3 --retry-delay 3 --retry-all-errors -L --connect-timeout 12 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -o "$root/health.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/health" || true)
+          [[ "$health" == 200 ]] || { echo "HEALTH_HTTP=$health"; exit 1; }
+
+          # Preconditions: technical CH parent exists and the six originals are currently its published children.
+          pcode=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/parent.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$parent_id?context=edit")
+          [[ "$pcode" == 200 ]] || exit 1
+          python3 - "$root/parent.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert p.get('slug')=='ch' and p.get('status') in ('draft','publish'),(p.get('slug'),p.get('status'))
+          PY
+
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            code=$(curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/page-$id.json" -w '%{http_code}' "$site/wp-json/wp/v2/pages/$id?context=edit")
+            [[ "$code" == 200 ]] || exit 1
+            python3 - "$root/page-$id.json" "$id" "$slug" "$parent_id" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          assert int(p.get('id') or 0)==int(sys.argv[2])
+          assert p.get('slug')==sys.argv[3]
+          assert p.get('status')=='publish'
+          assert int(p.get('parent') or 0)==int(sys.argv[4]),(p.get('id'),p.get('parent'))
+          PY
+          done
+          echo PRECHECK_OK
+
+          # Clone each original Elementor document as a draft with a temporary slug.
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"
+            printf '{"id":%s}' "$id" > "$root/inspect-$id-payload.json"
+            make_req "$root/inspect-$id-req.json" "dc-flat-inspect-$id-${GITHUB_RUN_ID}" elementor.inspect true false "$root/inspect-$id-payload.json"
+            call_connector "$root/inspect-$id-req.json" "$root/inspect-$id-res.json"
+
+            python3 - "$root/page-$id.json" "$root/inspect-$id-res.json" "$root/create-$id-payload.json" "$slug" "$GITHUB_RUN_ID" <<'PY'
+          import json,sys
+          page=json.load(open(sys.argv[1],encoding='utf-8'))
+          res=json.load(open(sys.argv[2],encoding='utf-8'))
+          doc=((res.get('data') or {}).get('document') or {})
+          title=((page.get('title') or {}).get('raw') or (page.get('title') or {}).get('rendered') or '')
+          content=((page.get('content') or {}).get('raw') or '')
+          payload={
+            'post_type':'page','status':'draft','title':title,
+            'slug':'ch-temp-'+sys.argv[4]+'-'+sys.argv[5],
+            'content':content,'data':doc.get('data') or [],
+            'page_settings':doc.get('page_settings') or {},
+            'template_type':doc.get('template_type') or '',
+            'edit_mode':doc.get('edit_mode') or 'builder',
+            'conditions':doc.get('conditions') or []
+          }
+          json.dump(payload,open(sys.argv[3],'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+
+            make_req "$root/create-$id-preview-req.json" "dc-flat-create-preview-$id-${GITHUB_RUN_ID}" elementor.create_document true false "$root/create-$id-payload.json"
+            call_connector "$root/create-$id-preview-req.json" "$root/create-$id-preview-res.json"
+            make_req "$root/create-$id-req.json" "dc-flat-create-$id-${GITHUB_RUN_ID}" elementor.create_document false true "$root/create-$id-payload.json"
+            call_connector "$root/create-$id-req.json" "$root/create-$id-res.json"
+            cid=$(python3 - "$root/create-$id-res.json" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8'))
+          doc=((d.get('data') or {}).get('document') or {})
+          cid=int(doc.get('post_id') or 0)
+          assert cid>0,doc
+          print(cid)
+          PY
+          )
+            clone_ids+=("$cid")
+            simple_req "clone-parent-$cid" post.update false true "{\"id\":$cid,\"parent\":$parent_id}"
+            echo "CLONE_READY source=$id clone=$cid slug=$slug"
+          done
+
+          [[ "${#clone_ids[@]}" == 6 ]] || exit 1
+
+          # Move the original six pages back to top level. These remain the canonical German pages.
+          python3 - "$root/originals-move-payload.json" <<'PY'
+          import json
+          ids=[900448,900449,900450,900451,900452,900453]
+          json.dump({'operations':[{'action':'post.update','payload':{'id':i,'parent':0}} for i in ids]},open(__import__('sys').argv[1],'w'),separators=(',',':'))
+          PY
+          original_move_request="dc-flat-originals-${GITHUB_RUN_ID}"
+          make_req "$root/originals-move-req.json" "$original_move_request" connector.batch false true "$root/originals-move-payload.json"
+          call_connector "$root/originals-move-req.json" "$root/originals-move-res.json"
+          echo ORIGINALS_FLATTENED
+
+          # Finalize the six CH copies with the exact same page slugs and publish them.
+          python3 - "$root/clones-final-payload.json" "${clone_ids[@]}" <<'PY'
+          import json,sys
+          slugs=['gewichtsmanagement','akne-behandlung','schlafberatung','erektionsprobleme','haarausfall','online-arzt']
+          ids=[int(x) for x in sys.argv[2:]]
+          assert len(ids)==6
+          ops=[{'action':'post.update','payload':{'id':cid,'slug':slug,'status':'publish','parent':900510}} for cid,slug in zip(ids,slugs)]
+          json.dump({'operations':ops},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+          make_req "$root/clones-final-req.json" "dc-flat-clones-final-${GITHUB_RUN_ID}" connector.batch false true "$root/clones-final-payload.json"
+          call_connector "$root/clones-final-req.json" "$root/clones-final-res.json"
+          echo CH_COPIES_PUBLISHED
+
+          simple_req rewrite rewrite.flush false true '{}'
+          simple_req cache cache.flush false true '{}'
+          simple_req elementor elementor.regenerate false true '{}'
+          echo CACHES_REFRESHED
+
+          # Authoritative REST permalink checks.
+          for idx in "${!ids[@]}"; do
+            id="${ids[$idx]}"; slug="${slugs[$idx]}"; cid="${clone_ids[$idx]}"
+            curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/base-$id.json" "$site/wp-json/wp/v2/pages/$id?context=edit"
+            curl -sS -L --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -o "$root/ch-$cid.json" "$site/wp-json/wp/v2/pages/$cid?context=edit"
+            python3 - "$root/base-$id.json" "$root/ch-$cid.json" "$slug" "$site" <<'PY'
+          import json,sys
+          b=json.load(open(sys.argv[1],encoding='utf-8')); c=json.load(open(sys.argv[2],encoding='utf-8')); slug=sys.argv[3]; site=sys.argv[4]
+          assert b.get('status')=='publish' and int(b.get('parent') or 0)==0 and b.get('link')==f'{site}/{slug}/',b.get('link')
+          assert c.get('status')=='publish' and int(c.get('parent') or 0)==900510 and c.get('link')==f'{site}/ch/{slug}/',c.get('link')
+          print('PERMALINK_OK base='+b.get('link')+' ch='+c.get('link'))
+          PY
+          done
+
+          # Public clean URL verification: DE, EN, FR and Swiss-DE CH are four parallel routes.
+          failures=0
+          for slug in "${slugs[@]}"; do
+            for spec in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
+              IFS='|' read -r label path expected_lang <<< "$spec"
+              out="$root/check-$label-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --retry 2 --retry-delay 2 --retry-all-errors --connect-timeout 12 --max-time 60 -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              hlang=$(python3 - "$out" <<'PY'
+          import re,sys,os
+          p=sys.argv[1]
+          if not os.path.exists(p): print('missing'); raise SystemExit
+          t=open(p,encoding='utf-8',errors='ignore').read(150000)
+          m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I)
+          print(m.group(1) if m else 'unknown')
+          PY
+          )
+              echo "ROUTE label=$label path=$path http=$code final=$final html_lang=$hlang"
+              [[ "$code" == 200 && "$final" == "$site$path" && "$hlang" == "$expected_lang"* ]] || failures=$((failures+1))
+            done
+          done
+          echo "FINAL_SUMMARY failures=$failures"
+          (( failures == 0 ))
+          trap - EXIT
+          echo "FINAL_SUCCESS base_de=6 en=6 fr=6 ch_de=6"
