@@ -1,0 +1,91 @@
+name: One-time DoctorCura ACF images definitive audit 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-acf-images-definitive-audit-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Verify all ACF text fields and both image fields on every CH page
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          root="$RUNNER_TEMP/acf-final"; mkdir -p "$root"
+          src=(900448 900449 900450 900451 900452 900453)
+          ch=(900512 900514 900516 900518 900520 900522)
+          slugs=(gewichtsmanagement akne-behandlung schlafberatung erektionsprobleme haarausfall online-arzt)
+          req(){ python3 - "$1" "$2" "$3" "$4" <<'PY'
+          import json,sys
+          out,rid,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),separators=(',',':'))
+          PY
+          }
+          call(){
+            code=$(curl -sS --connect-timeout 10 --max-time 90 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { cat "$2"; exit 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+          req "$root/g.req" "acf-final-schema-${GITHUB_RUN_ID}" acf.field_groups '{"post_id":900448}'; call "$root/g.req" "$root/g.res"
+          python3 - "$root/g.res" <<'PY'
+          import json,sys
+          groups=(json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('field_groups') or []
+          f={x.get('name'):x.get('type') for g in groups for x in (g.get('fields') or []) if x.get('name')}
+          assert f.get('titel_1')=='text' and f.get('titel_2')=='text',f
+          assert f.get('tekst_1')=='wysiwyg' and f.get('tekst_2')=='wysiwyg',f
+          assert f.get('afbeelding_1')=='image' and f.get('afbeelding_2')=='image',f
+          print('SCHEMA_OK')
+          PY
+          total_images=0
+          for i in "${!src[@]}"; do
+            s="${src[$i]}"; c="${ch[$i]}"; slug="${slugs[$i]}"
+            req "$root/s.req" "acf-final-src-$s-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$s}"; call "$root/s.req" "$root/s.res"
+            req "$root/c.req" "acf-final-ch-$c-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$c}"; call "$root/c.req" "$root/c.res"
+            python3 - "$root/s.res" "$root/c.res" "$slug" "$root/ids" <<'PY'
+          import json,sys
+          sf=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          cf=((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          expected={'titel_1','tekst_1','afbeelding_1','titel_2','tekst_2','afbeelding_2'}
+          assert set(sf)==expected and set(cf)==expected,(sys.argv[3],list(sf),list(cf))
+          assert sf==cf,(sys.argv[3],'source_ch_mismatch')
+          for k in ('titel_1','tekst_1','titel_2','tekst_2'):
+              assert isinstance(cf[k],str) and cf[k].strip(),(sys.argv[3],k,'empty')
+          ids=[int(cf['afbeelding_1'] or 0),int(cf['afbeelding_2'] or 0)]
+          assert all(x>0 for x in ids),(sys.argv[3],ids)
+          with open(sys.argv[4],'w') as out:
+              out.write(str(ids[0])+'\n'+str(ids[1])+'\n')
+          print('ACF_VALUES_OK slug=%s image1=%d image2=%d'%(sys.argv[3],ids[0],ids[1]))
+          PY
+            count=0
+            while IFS= read -r mid; do
+              req "$root/m.req" "acf-final-media-$c-$mid-${GITHUB_RUN_ID}" media.get "{\"id\":$mid}"; call "$root/m.req" "$root/m.res"
+              python3 - "$root/m.res" "$slug" "$mid" <<'PY'
+          import json,sys
+          m=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('media') or {})
+          assert int(m.get('id') or 0)==int(sys.argv[3]),(sys.argv[2],sys.argv[3])
+          assert str(m.get('mime_type') or '').startswith('image/'),(sys.argv[2],sys.argv[3],m.get('mime_type'))
+          assert str(m.get('url') or '').startswith('http'),(sys.argv[2],sys.argv[3],m.get('url'))
+          print('IMAGE_OK slug=%s id=%s mime=%s'%(sys.argv[2],sys.argv[3],m.get('mime_type')))
+          PY
+              count=$((count+1)); total_images=$((total_images+1))
+            done < "$root/ids"
+            [[ "$count" == 2 ]]
+          done
+          [[ "$total_images" == 12 ]]
+          echo 'FINAL_ACF_AUDIT_SUCCESS pages=6 fields_per_page=6 image_fields_verified=12'
