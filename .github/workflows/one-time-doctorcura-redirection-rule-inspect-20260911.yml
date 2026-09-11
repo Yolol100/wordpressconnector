@@ -1,4 +1,4 @@
-name: One-time DoctorCura Redirection existing rule inspect 20260911
+name: One-time DoctorCura nested route redirect canary 20260911
 
 on:
   push:
@@ -11,11 +11,11 @@ permissions:
   contents: read
 
 jobs:
-  inspect:
+  canary:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: List all existing Redirection rules
+      - name: Add one exact redirect and verify it
         env:
           SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
           REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
@@ -24,15 +24,56 @@ jobs:
         run: |
           set -euo pipefail
           site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
-          out="$RUNNER_TEMP/rules.json"
-          code=$(curl -sS --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --get --data-urlencode 'per_page=200' -H 'Accept: application/json' -o "$out" -w '%{http_code}' "$site/wp-json/redirection/v1/redirect" || true)
-          echo "HTTP=$code"
-          [[ "$code" == 200 ]]
-          python3 - "$out" <<'PY'
+          source_path='/en/ch/gewichtsmanagement/'
+          target_url='https://doctorcura.com/en/gewichtsmanagement/'
+          list="$RUNNER_TEMP/list.json"
+          curl -sS --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --get --data-urlencode 'per_page=200' -H 'Accept: application/json' "$site/wp-json/redirection/v1/redirect" -o "$list"
+          state=$(python3 - "$list" "$source_path" "$target_url" <<'PY'
           import json,sys
-          d=json.load(open(sys.argv[1],encoding='utf-8'))
-          items=d.get('items') or []
-          print('TOTAL='+str(len(items)))
-          for i in items:
-              print('RULE '+json.dumps({k:i.get(k) for k in ['id','url','match_url','match_data','match_type','action_type','action_code','action_data','title','regex','status','enabled','group_id','position']},ensure_ascii=False,separators=(',',':')))
+          d=json.load(open(sys.argv[1],encoding='utf-8')); src=sys.argv[2].rstrip('/'); tgt=sys.argv[3]
+          found=[]
+          for i in d.get('items') or []:
+              u=str(i.get('url') or '').rstrip('/')
+              if u==src:
+                  found.append(i)
+          if not found: print('create')
+          elif any(((i.get('action_data') or {}).get('url')==tgt and int(i.get('action_code') or 0)==301 and i.get('enabled',True)) for i in found): print('ok')
+          else:
+              print('conflict')
+              for i in found: print(json.dumps(i,ensure_ascii=False))
           PY
+          )
+          echo "PREFLIGHT=$state"
+          [[ "$state" != conflict* ]] || exit 1
+          if [[ "$state" == create ]]; then
+            payload="$RUNNER_TEMP/payload.json"
+            python3 - "$payload" "$source_path" "$target_url" <<'PY'
+          import json,sys
+          body={
+            'id':0,
+            'url':sys.argv[2],
+            'title':'DoctorCura flatten CH translation route 2026-09-11',
+            'match_data':{'source':{'flag_query':'ignore','flag_case':False,'flag_trailing':False,'flag_regex':False}},
+            'match_type':'url',
+            'action_type':'url',
+            'position':0,
+            'group_id':1,
+            'action_code':301,
+            'action_data':{'url':sys.argv[3]},
+          }
+          json.dump(body,open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$payload" -o "$RUNNER_TEMP/create.json" -w '%{http_code}' "$site/wp-json/redirection/v1/redirect")
+            echo "CREATE_HTTP=$code"
+            cat "$RUNNER_TEMP/create.json"; echo
+            [[ "$code" == 200 ]]
+          fi
+          headers="$RUNNER_TEMP/headers.txt"
+          code=$(curl -sS -D "$headers" -o /dev/null --max-redirs 0 -w '%{http_code}' "$site$source_path" || true)
+          loc=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$headers")
+          echo "VERIFY_INITIAL http=$code location=$loc"
+          [[ "$code" == 301 && "$loc" == "$target_url" ]]
+          final=$(curl -sS -L --max-redirs 5 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$source_path")
+          echo "VERIFY_FINAL=$final"
+          [[ "$final" == "200|$target_url" ]]
+          echo 'CANARY_SUCCESS'
