@@ -1,0 +1,207 @@
+name: One-time DoctorCura post-fix final audit 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-postfix-final-audit-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Verify all DoctorCura landing page data, ACF, Elementor and routes
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"
+          [[ "$site" == 'https://doctorcura.com' ]] || { echo "Unexpected site $site"; exit 1; }
+          root="$RUNNER_TEMP/dc-postfix-audit"; rm -rf "$root"; mkdir -p "$root"
+          src=(900448 900449 900450 900451 900452 900453)
+          ch=(900512 900514 900516 900518 900520 900522)
+          slugs=(gewichtsmanagement akne-behandeling schlafberatung erektionsprobleme haarausfall online-arzt)
+          expected='["titel_1","tekst_1","afbeelding_1","titel_2","tekst_2","afbeelding_2"]'
+
+          req(){ python3 - "$1" "$2" "$3" "$4" <<'PY'
+          import json,sys
+          out,rid,action,payload=sys.argv[1:]
+          json.dump({'version':1,'request_id':rid,'action':action,'dry_run':True,'confirm':False,'payload':json.loads(payload)},open(out,'w'),ensure_ascii=False,separators=(',',':'))
+          PY
+          }
+          call(){
+            code=$(curl -sS --connect-timeout 12 --max-time 120 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$1" -o "$2" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]] || { echo "CONNECTOR_HTTP=$code"; cat "$2"; exit 1; }
+            python3 - "$2" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          PY
+          }
+
+          echo '=== ACF FIELD SCHEMA ==='
+          req "$root/groups.req" "postfix-groups-${GITHUB_RUN_ID}" acf.field_groups '{"post_id":900448}'
+          call "$root/groups.req" "$root/groups.res"
+          python3 - "$root/groups.res" <<'PY'
+          import json,sys
+          groups=(json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('field_groups') or []
+          fields={}
+          for g in groups:
+              for f in g.get('fields') or []:
+                  if f.get('name'): fields[f['name']]=f.get('type')
+          expected={'titel_1','tekst_1','afbeelding_1','titel_2','tekst_2','afbeelding_2'}
+          assert expected.issubset(fields),('missing_acf_schema',sorted(expected-set(fields)))
+          assert fields['afbeelding_1']=='image' and fields['afbeelding_2']=='image',('acf_image_types',fields)
+          for k in ('titel_1','tekst_1','titel_2','tekst_2'):
+              assert fields[k] in {'text','textarea','wysiwyg'},(k,fields[k])
+          print('ACF_SCHEMA_OK '+json.dumps({k:fields[k] for k in sorted(expected)},separators=(',',':')))
+          PY
+
+          echo '=== SOURCE/CH DATA + BOTH ACF IMAGES ==='
+          for i in "${!src[@]}"; do
+            s="${src[$i]}"; c="${ch[$i]}"; slug="${slugs[$i]}"
+            req "$root/sp.req" "postfix-sp-$s-${GITHUB_RUN_ID}" post.get "{\"id\":$s}"; call "$root/sp.req" "$root/sp.res"
+            req "$root/cp.req" "postfix-cp-$c-${GITHUB_RUN_ID}" post.get "{\"id\":$c}"; call "$root/cp.req" "$root/cp.res"
+            req "$root/sa.req" "postfix-sa-$s-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$s}"; call "$root/sa.req" "$root/sa.res"
+            req "$root/ca.req" "postfix-ca-$c-${GITHUB_RUN_ID}" acf.get "{\"post_id\":$c}"; call "$root/ca.req" "$root/ca.res"
+            python3 - "$root/sp.res" "$root/cp.res" "$root/sa.res" "$root/ca.res" "$slug" "$expected" "$root/media_ids" <<'PY'
+          import json,sys
+          sp=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('post') or {})
+          cp=((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('post') or {})
+          sa=((json.load(open(sys.argv[3],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          ca=((json.load(open(sys.argv[4],encoding='utf-8')).get('data') or {}).get('fields') or {})
+          slug=sys.argv[5]; expected=set(json.loads(sys.argv[6]))
+          assert sp.get('status')=='publish' and cp.get('status')=='publish',(slug,'status')
+          assert sp.get('slug')==slug and cp.get('slug')==slug,(slug,'slug')
+          assert int(cp.get('parent') or 0)==900510,(slug,'parent')
+          for k in ('title','content','excerpt'):
+              assert cp.get(k)==sp.get(k) and bool(cp.get(k)),(slug,k)
+          assert int(cp.get('featured_media') or 0)==int(sp.get('featured_media') or 0)>0,(slug,'featured')
+          assert set(sa)==expected and set(ca)==expected,(slug,'acf_keys',list(sa),list(ca))
+          assert ca==sa,(slug,'acf_values')
+          for k in ('titel_1','tekst_1','titel_2','tekst_2'):
+              assert isinstance(sa.get(k),str) and sa[k].strip(),(slug,k,'empty')
+          mids=[]
+          for k in ('afbeelding_1','afbeelding_2'):
+              mid=int(sa.get(k) or 0); assert mid>0,(slug,k,sa.get(k)); mids.append(mid)
+          with open(sys.argv[7],'w') as f:
+              for mid in mids: f.write(str(mid)+'\n')
+          print('PAIR_OK slug=%s acf=6 featured=%s image1=%d image2=%d'%(slug,cp.get('featured_media'),mids[0],mids[1]))
+          PY
+            media_count=0
+            while IFS= read -r mid || [[ -n "$mid" ]]; do
+              [[ -n "$mid" ]] || continue
+              req "$root/m.req" "postfix-media-$c-$mid-${GITHUB_RUN_ID}" media.get "{\"id\":$mid}"; call "$root/m.req" "$root/m.res"
+              python3 - "$root/m.res" "$slug" "$mid" <<'PY'
+          import json,sys
+          m=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('media') or {})
+          assert int(m.get('id') or 0)==int(sys.argv[3]),(sys.argv[2],sys.argv[3],'missing')
+          assert str(m.get('mime_type') or '').startswith('image/'),(sys.argv[2],sys.argv[3],m.get('mime_type'))
+          assert str(m.get('url') or '').startswith('http'),(sys.argv[2],sys.argv[3],'url')
+          print('ACF_IMAGE_OK slug=%s id=%s mime=%s'%(sys.argv[2],sys.argv[3],m.get('mime_type')))
+          PY
+              media_count=$((media_count+1))
+            done < "$root/media_ids"
+            [[ "$media_count" == 2 ]]
+          done
+
+          echo '=== ELEMENTOR SEO TEMPLATE ==='
+          req "$root/cond.req" "postfix-cond-${GITHUB_RUN_ID}" option.get '{"name":"elementor_pro_theme_builder_conditions"}'; call "$root/cond.req" "$root/cond.res"
+          req "$root/tpl.req" "postfix-tpl-${GITHUB_RUN_ID}" elementor.inspect '{"id":900460}'; call "$root/tpl.req" "$root/tpl.res"
+          python3 - "$root/cond.res" "$root/tpl.res" <<'PY'
+          import json,sys
+          active=((((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('value') or {}).get('single') or {}).get('900460') or [])
+          stored=(((json.load(open(sys.argv[2],encoding='utf-8')).get('data') or {}).get('document') or {}).get('conditions') or [])
+          ids=[900448,900449,900450,900451,900452,900453,900512,900514,900516,900518,900520,900522]
+          need={'include/singular/page/%d'%x for x in ids}
+          assert need.issubset(set(active)) and need.issubset(set(stored)),('conditions_missing',sorted(need-set(active)),sorted(need-set(stored)))
+          assert len(active)==len(set(active)) and len(stored)==len(set(stored)),('condition_duplicates',active,stored)
+          print('ELEMENTOR_OK template=900460 active=%d stored=%d'%(len(active),len(stored)))
+          PY
+
+          echo '=== GTRANSLATE PATCH + REDIRECTION CLEANUP ==='
+          req "$root/gt.req" "postfix-gt-${GITHUB_RUN_ID}" filesystem.read_text '{"path":"wp-content/plugins/gtranslate/url_addon/gtranslate.php"}'; call "$root/gt.req" "$root/gt.res"
+          python3 - "$root/gt.res" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}; c=data.get('content') or ''; f=data.get('file') or {}
+          assert c.count('DOCTORCURA_FLAT_CH_LANGUAGE_ROUTES')==2,'GTranslate flat-route patch missing or duplicated'
+          for slug in ['gewichtsmanagement','akne-behandlung','schlafberatung','erektionsprobleme','haarausfall','online-arzt']:
+              assert "'%s'"%slug in c,slug
+          print('GTRANSLATE_PATCH_OK sha256=%s'%(f.get('sha256')))
+          PY
+          redir="$root/redir.json"
+          rcode=$(curl -sS --connect-timeout 10 --max-time 45 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --get --data-urlencode 'per_page=200' -H 'Accept: application/json' -o "$redir" -w '%{http_code}' "$site/wp-json/redirection/v1/redirect" || true)
+          [[ "$rcode" == 200 ]]
+          python3 - "$redir" <<'PY'
+          import json,sys
+          items=json.load(open(sys.argv[1],encoding='utf-8')).get('items') or []
+          leftovers=[i for i in items if i.get('title')=='DoctorCura flatten CH translation route 2026-09-11']
+          assert not leftovers,('ineffective_redirection_canary_leftover',leftovers)
+          print('REDIRECTION_CLEANUP_OK')
+          PY
+
+          echo '=== 24 CANONICAL ROUTES ==='
+          route_fail=0
+          for slug in "${slugs[@]}"; do
+            for spec in "de|/$slug/|de" "en|/en/$slug/|en" "fr|/fr/$slug/|fr" "ch|/ch/$slug/|de"; do
+              IFS='|' read -r label path expected_lang <<< "$spec"
+              out="$root/$label-$slug.html"
+              meta=$(curl -sS -L --max-redirs 8 --connect-timeout 10 --max-time 60 -H 'Cache-Control: no-cache' -o "$out" -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              metrics=$(python3 - "$out" <<'PY'
+          import os,re,sys
+          if not os.path.exists(sys.argv[1]): print('missing|0|0|0'); raise SystemExit
+          t=open(sys.argv[1],encoding='utf-8',errors='ignore').read(); m=re.search(r'<html[^>]*\blang=["\']([^"\']+)',t,re.I)
+          lang=m.group(1) if m else 'unknown'
+          text=re.sub(r'<script\b[^>]*>.*?</script>|<style\b[^>]*>.*?</style>|<[^>]+>',' ',t,flags=re.I|re.S); text=' '.join(text.split())
+          print('%s|%d|%d|%d'%(lang,len(text),len(re.findall(r'<img\b',t,re.I)),t.lower().count('elementor-element')))
+          PY
+          )
+              IFS='|' read -r hlang txt imgs elems <<< "$metrics"
+              echo "ROUTE label=$label slug=$slug http=$code final=$final lang=$hlang text=$txt imgs=$imgs elems=$elems"
+              [[ "$code" == 200 && "$final" == "$site$path" && "$hlang" == "$expected_lang"* && "$txt" -gt 10000 && "$imgs" -ge 10 && "$elems" -ge 230 ]] || route_fail=$((route_fail+1))
+              if [[ "$label" == de || "$label" == ch ]]; then echo "$txt|$imgs|$elems" > "$root/$label-$slug.metrics"; fi
+            done
+            python3 - "$root/de-$slug.metrics" "$root/ch-$slug.metrics" "$slug" <<'PY'
+          import sys
+          d=[int(x) for x in open(sys.argv[1]).read().strip().split('|')]; c=[int(x) for x in open(sys.argv[2]).read().strip().split('|')]
+          assert d==c,(sys.argv[3],'DE_CH_render_not_identical',d,c)
+          print('DE_CH_RENDER_IDENTICAL slug=%s metrics=%s'%(sys.argv[3],d))
+          PY
+          done
+          echo "ROUTE_SUMMARY total=24 failures=$route_fail"; (( route_fail == 0 ))
+
+          echo '=== 12 NESTED EN/FR ROUTES MUST 301 FLAT ==='
+          nested_fail=0
+          for lang in en fr; do
+            for slug in "${slugs[@]}"; do
+              path="/$lang/ch/$slug/"; target="$site/$lang/$slug/"; h="$root/n-$lang-$slug.headers"
+              code=$(curl -sS --connect-timeout 10 --max-time 45 --max-redirs 0 -D "$h" -o /dev/null -H 'Cache-Control: no-cache' -w '%{http_code}' "$site$path" || true)
+              loc=$(awk 'BEGIN{IGNORECASE=1} /^location:/{sub(/^[^:]+:[[:space:]]*/,""); sub(/\r$/,""); print; exit}' "$h")
+              echo "NESTED lang=$lang slug=$slug http=$code location=$loc"
+              [[ "$code" == 301 && "$loc" == "$target" ]] || nested_fail=$((nested_fail+1))
+            done
+          done
+          echo "NESTED_SUMMARY total=12 failures=$nested_fail"; (( nested_fail == 0 ))
+
+          echo '=== 12 INVALID CH/LANGUAGE NESTINGS MUST NOT BE LIVE ==='
+          invalid_fail=0
+          for prefix in ch/en ch/fr; do
+            for slug in "${slugs[@]}"; do
+              path="/$prefix/$slug/"
+              meta=$(curl -sS -L --max-redirs 5 --connect-timeout 10 --max-time 45 -o /dev/null -w '%{http_code}|%{url_effective}' "$site$path" || true)
+              code="${meta%%|*}"; final="${meta#*|}"
+              echo "INVALID path=$path http=$code final=$final"
+              [[ "$code" != 200 || "$final" != "$site$path" ]] || invalid_fail=$((invalid_fail+1))
+            done
+          done
+          echo "INVALID_SUMMARY total=12 live_duplicates=$invalid_fail"; (( invalid_fail == 0 ))
+
+          echo 'FINAL_POSTFIX_AUDIT_SUCCESS pages=6 acf_fields_per_page=6 acf_images_verified=12 elementor_template=900460 canonical_routes=24 nested_redirects=12 invalid_nested_live=0'
