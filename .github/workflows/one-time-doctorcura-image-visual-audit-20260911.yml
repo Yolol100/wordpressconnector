@@ -1,0 +1,60 @@
+name: One-time DoctorCura image visual audit 20260911
+
+on:
+  push:
+    branches:
+      - chat/doctorcura-ch-sixpage-inspect-20260911
+    paths:
+      - '.github/workflows/one-time-doctorcura-image-visual-audit-20260911.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Download current landing-page images and metadata
+        env:
+          SITE_URL: ${{ vars.DOCTORCURA_SITE_URL }}
+          REST_USERNAME: ${{ secrets.DOCTORCURA_REST_USERNAME }}
+          REST_APP_PASSWORD: ${{ secrets.DOCTORCURA_REST_APPLICATION_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          site="${SITE_URL%/}"; [[ "$site" == 'https://doctorcura.com' ]] || exit 1
+          out="$RUNNER_TEMP/doctorcura-images"; mkdir -p "$out"
+          ids=(900478 900479 900480 900483 900486 900488 900487 900490 900491 900492 900493 900495)
+          : > "$out/manifest.jsonl"
+          for id in "${ids[@]}"; do
+            python3 - "$out/$id.req.json" "$id" <<'PY'
+          import json,sys
+          json.dump({'version':1,'request_id':'visual-audit-'+sys.argv[2],'action':'media.get','dry_run':True,'confirm':False,'payload':{'id':int(sys.argv[2])}},open(sys.argv[1],'w'),separators=(',',':'))
+          PY
+            code=$(curl -sS --connect-timeout 10 --max-time 60 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" -H 'Accept: application/json' -H 'Content-Type: application/json' --data-binary "@$out/$id.req.json" -o "$out/$id.res.json" -w '%{http_code}' "$site/wp-json/webactueel-wordpress-connector/v1/execute")
+            [[ "$code" == 200 ]]
+            python3 - "$out/$id.res.json" "$out/manifest.jsonl" <<'PY'
+          import json,sys,os
+          d=json.load(open(sys.argv[1],encoding='utf-8')); assert d.get('ok'),d
+          m=((d.get('data') or {}).get('media') or {})
+          row={k:m.get(k) for k in ('id','title','alt','caption','description','url','file','mime_type')}
+          with open(sys.argv[2],'a',encoding='utf-8') as f: f.write(json.dumps(row,ensure_ascii=False)+'\n')
+          print(row['url'])
+          PY
+            url=$(python3 - "$out/$id.res.json" <<'PY'
+          import json,sys,os
+          m=((json.load(open(sys.argv[1],encoding='utf-8')).get('data') or {}).get('media') or {})
+          print(m.get('url') or '')
+          PY
+            )
+            ext="${url##*.}"; ext="${ext%%\?*}"
+            curl -fsSL --connect-timeout 10 --max-time 90 "$url" -o "$out/$id.$ext"
+          done
+          ls -lh "$out"
+      - name: Upload visual audit artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doctorcura-image-visual-audit
+          path: ${{ runner.temp }}/doctorcura-images
+          retention-days: 1
