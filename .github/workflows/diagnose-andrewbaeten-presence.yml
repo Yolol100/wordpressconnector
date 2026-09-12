@@ -1,0 +1,46 @@
+name: Diagnose AndrewBaeten Presence
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/diagnose-andrewbaeten-presence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public connector presence routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          urls=(
+            'https://andrewbaeten.nl/wp-json/webactueel-wordpress-connector/v1/presence'
+            'https://andrewbaeten.nl/?rest_route=/webactueel-wordpress-connector/v1/presence'
+          )
+          for url in "${urls[@]}"; do
+            for mode in default browser; do
+              echo "=== $mode $url ==="
+              headers="$RUNNER_TEMP/headers"
+              body="$RUNNER_TEMP/body"
+              args=(--silent --show-error --location --connect-timeout 10 --max-time 30 --dump-header "$headers" --output "$body" --write-out '%{http_code} %{content_type} %{url_effective}')
+              if [[ "$mode" == browser ]]; then
+                args+=(--header 'Accept: application/json' --user-agent 'Mozilla/5.0 (compatible; WebactueelConnector/1.0)')
+              fi
+              meta=$(curl "${args[@]}" "$url" || true)
+              echo "meta=$meta"
+              echo "bytes=$(wc -c < "$body" 2>/dev/null || echo 0)"
+              echo 'headers:'
+              sed -n '1,25p' "$headers" 2>/dev/null || true
+              echo 'body-prefix:'
+              python3 - "$body" <<'PY'
+          import pathlib, sys
+          p = pathlib.Path(sys.argv[1])
+          data = p.read_bytes()[:1200] if p.exists() else b''
+          print(repr(data))
+          PY
+            done
+          done
