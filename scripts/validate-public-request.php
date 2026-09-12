@@ -183,6 +183,9 @@ if ('acf.schema.ensure_text_fields' === $action) {
         if ('' === $label || strlen($label) > 80 || preg_match('/[\x00-\x1F\x7F]/', $label)) {
             $errors[] = $context . '.label is invalid.';
         }
+        if (preg_match($secretKeyPattern, $name) || preg_match($secretKeyPattern, $label)) {
+            $errors[] = $context . ' uses a secret-like ACF field name or label.';
+        }
         if (isset($seenKeys[$fieldKey]) || isset($seenNames[$name])) {
             $errors[] = $context . ' duplicates another ACF field key or name.';
         }
