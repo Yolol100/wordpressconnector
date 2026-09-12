@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-v114-apply-dryrun-20260912-2041",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-12T18:42:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.13.0",
+    "to_version": "1.14.0",
+    "readback_verified": null
+}
