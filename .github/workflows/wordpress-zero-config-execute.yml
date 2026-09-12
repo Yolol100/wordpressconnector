@@ -151,10 +151,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1"
-          code=$(curl --silent --show-error --output "$RUNNER_TEMP/presence.json" --write-out '%{http_code}' --connect-timeout 10 --max-time 30 "$base/presence")
-          [[ "$code" == 200 ]]
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(empty($d["ok"])||empty($d["zero_config"]))exit(1);' "$RUNNER_TEMP/presence.json"
+          pretty="${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/presence"
+          fallback="${SITE_URL%/}/?rest_route=/webactueel-wordpress-connector/v1/presence"
+
+          valid_presence() {
+            php -r '
+              try {
+                $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);
+              } catch (Throwable $e) {
+                exit(1);
+              }
+              exit(!empty($d["ok"]) && !empty($d["zero_config"]) ? 0 : 1);
+            ' "$1"
+          }
+
+          probe_presence() {
+            local url="$1" out="$2" attempt code bytes digest
+            for attempt in 1 2 3; do
+              : > "$out"
+              code=$(curl --silent --show-error --output "$out" --write-out '%{http_code}' \
+                --connect-timeout 10 --max-time 30 \
+                --header 'Accept: application/json' \
+                --user-agent 'Webactueel-WordPress-Connector/zero-config' \
+                "$url" || true)
+              if [[ "$code" == 200 ]] && valid_presence "$out"; then
+                return 0
+              fi
+              bytes=$(wc -c < "$out" 2>/dev/null || echo 0)
+              digest=$(sha256sum "$out" 2>/dev/null | awk '{print $1}' || echo unavailable)
+              echo "Presence probe attempt ${attempt} failed (HTTP ${code:-transport-error}, ${bytes} bytes, sha256=${digest})." >&2
+              sleep "$attempt"
+            done
+            return 1
+          }
+
+          probe_presence "$pretty" "$RUNNER_TEMP/presence.json" || \
+            probe_presence "$fallback" "$RUNNER_TEMP/presence-fallback.json"
 
       - name: Upload request assets with short-lived GitHub OIDC
         env:
