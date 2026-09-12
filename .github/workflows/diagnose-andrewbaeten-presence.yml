@@ -1,0 +1,33 @@
+name: Diagnose AndrewBaeten Presence
+
+on:
+  push:
+    paths:
+      - '.github/workflows/diagnose-andrewbaeten-presence.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check WordPress connector presence
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://andrewbaeten.nl/wp-json/webactueel-wordpress-connector/v1/presence'
+          body="$RUNNER_TEMP/presence.json"
+          headers="$RUNNER_TEMP/headers.txt"
+          code=$(curl --silent --show-error --location --dump-header "$headers" --output "$body" --write-out '%{http_code}' --connect-timeout 10 --max-time 30 "$url" || true)
+          echo "HTTP_STATUS=$code"
+          echo '--- RESPONSE HEADERS ---'
+          sed -n '1,20p' "$headers" | sed -E 's/(set-cookie:).*/\1 [redacted]/I'
+          echo '--- RESPONSE BODY ---'
+          if php -r '$d=json_decode(file_get_contents($argv[1]),true);exit(is_array($d)?0:1);' "$body"; then
+            php -r '$d=json_decode(file_get_contents($argv[1]),true);$safe=[];foreach(["ok","connector","zero_config","auth","code","message"] as $k){if(array_key_exists($k,$d))$safe[$k]=$d[$k];}echo json_encode($safe,JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT),"\n";' "$body"
+          else
+            head -c 500 "$body" | tr '\n' ' '; echo
+          fi
+          test "$code" = '200'
