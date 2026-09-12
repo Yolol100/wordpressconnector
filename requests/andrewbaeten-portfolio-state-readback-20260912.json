@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-portfolio-state-readback-20260912",
+  "action": "acf.field_groups",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4470
+  }
+}
