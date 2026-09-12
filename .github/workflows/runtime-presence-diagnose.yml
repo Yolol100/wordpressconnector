@@ -1,0 +1,44 @@
+name: Runtime Presence Diagnose
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/runtime-presence-diagnose.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Inspect public connector presence response
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://andrewbaeten.nl/wp-json/webactueel-wordpress-connector/v1/presence'
+          headers="$RUNNER_TEMP/presence.headers"
+          body="$RUNNER_TEMP/presence.body"
+          code=$(curl --silent --show-error --dump-header "$headers" --output "$body" --write-out '%{http_code}' --connect-timeout 10 --max-time 30 "$url")
+          echo "HTTP_STATUS=$code"
+          echo '--- headers ---'
+          sed -n '1,80p' "$headers"
+          echo '--- body diagnostics ---'
+          php -r '
+            $s=file_get_contents($argv[1]);
+            echo "bytes=".strlen($s).PHP_EOL;
+            echo "prefix_hex=".bin2hex(substr($s,0,256)).PHP_EOL;
+            $p=substr($s,0,2048);
+            $p=preg_replace("/[^\\x09\\x0A\\x0D\\x20-\\x7E]/", "?", $p);
+            echo "prefix_text=<<<".PHP_EOL.$p.PHP_EOL.">>>".PHP_EOL;
+            try {
+              $d=json_decode($s,true,512,JSON_THROW_ON_ERROR);
+              echo "json=valid".PHP_EOL;
+              echo "ok=".(!empty($d["ok"])?"true":"false").PHP_EOL;
+              echo "zero_config=".(!empty($d["zero_config"])?"true":"false").PHP_EOL;
+            } catch (Throwable $e) {
+              echo "json=invalid".PHP_EOL;
+              echo "json_error=".$e->getMessage().PHP_EOL;
+            }
+          ' "$body"
