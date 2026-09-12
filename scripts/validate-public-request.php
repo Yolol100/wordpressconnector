@@ -28,6 +28,8 @@ if (! is_array($data)) {
 $publicActions = array(
     'post.update',
     'acf.update',
+    'acf.field_groups',
+    'acf.schema.ensure_text_fields',
     'elementor.inspect',
     'elementor.patch_element',
     'connector.batch',
@@ -122,6 +124,77 @@ $validateLeaf = static function (string $leafAction, array $leafPayload, string 
 
 if (in_array($action, $leafActions, true)) {
     $validateLeaf($action, $payload, 'payload');
+}
+
+if ('acf.field_groups' === $action) {
+    foreach (array_keys($payload) as $key) {
+        if ('post_id' !== (string) $key) {
+            $errors[] = 'payload has unknown or public-forbidden ACF field-group key: ' . (string) $key;
+        }
+    }
+    if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+        $errors[] = 'payload.post_id must be a positive integer for public ACF field-group discovery.';
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'acf.field_groups must use dry_run=true in public GitHub runtime mode.';
+    }
+}
+
+if ('acf.schema.ensure_text_fields' === $action) {
+    $allowedKeys = array('post_id', 'group_key', 'fields');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden ACF schema key: ' . (string) $key;
+        }
+    }
+    if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+        $errors[] = 'payload.post_id must be a positive integer for ACF schema ensure.';
+    }
+    $groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
+    if (! preg_match('/^group_[A-Za-z0-9_-]{6,80}$/D', $groupKey)) {
+        $errors[] = 'payload.group_key must be a valid ACF field-group key.';
+    }
+    $fields = isset($payload['fields']) && is_array($payload['fields']) ? array_values($payload['fields']) : array();
+    if (! $fields || count($fields) > 12) {
+        $errors[] = 'payload.fields must contain 1-12 ACF text field definitions.';
+    }
+    $seenKeys = array();
+    $seenNames = array();
+    foreach ($fields as $index => $field) {
+        $context = 'payload.fields[' . $index . ']';
+        if (! is_array($field)) {
+            $errors[] = $context . ' must be an object.';
+            continue;
+        }
+        foreach (array_keys($field) as $key) {
+            if (! in_array((string) $key, array('key', 'name', 'label'), true)) {
+                $errors[] = $context . ' has unknown ACF text field property: ' . (string) $key;
+            }
+        }
+        $fieldKey = isset($field['key']) ? (string) $field['key'] : '';
+        $name = isset($field['name']) ? (string) $field['name'] : '';
+        $label = isset($field['label']) ? trim((string) $field['label']) : '';
+        if (! preg_match('/^field_[A-Za-z0-9_-]{6,80}$/D', $fieldKey)) {
+            $errors[] = $context . '.key is invalid.';
+        }
+        if (! preg_match('/^[a-z][a-z0-9_]{2,63}$/D', $name)) {
+            $errors[] = $context . '.name is invalid.';
+        }
+        if ('' === $label || strlen($label) > 80 || preg_match('/[\x00-\x1F\x7F]/', $label)) {
+            $errors[] = $context . '.label is invalid.';
+        }
+        if (isset($seenKeys[$fieldKey]) || isset($seenNames[$name])) {
+            $errors[] = $context . ' duplicates another ACF field key or name.';
+        }
+        $seenKeys[$fieldKey] = true;
+        $seenNames[$name] = true;
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed acf.schema.ensure_text_fields requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
 }
 
 if ('elementor.inspect' === $action) {
