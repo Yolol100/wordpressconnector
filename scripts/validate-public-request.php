@@ -28,6 +28,10 @@ if (! is_array($data)) {
 $publicActions = array(
     'post.update',
     'acf.update',
+    'acf.field_groups',
+    'acf.schema.ensure_text_fields',
+    'elementor.inspect',
+    'elementor.patch_element',
     'connector.batch',
     'connector.rollback',
     'connector.update.check',
@@ -86,6 +90,12 @@ $assertPositivePostTarget = static function (array $candidate, string $context) 
     $errors[] = $context . ' requires post_id or an integer target.';
 };
 
+$assertPositiveId = static function (array $candidate, string $context) use (&$errors): void {
+    if (! isset($candidate['id']) || ! is_int($candidate['id']) || $candidate['id'] <= 0) {
+        $errors[] = $context . '.id must be a positive integer.';
+    }
+};
+
 $validateLeaf = static function (string $leafAction, array $leafPayload, string $context) use (&$errors, $assertPositivePostTarget): void {
     if ('post.update' === $leafAction) {
         $id = isset($leafPayload['id']) ? (int) $leafPayload['id'] : 0;
@@ -114,6 +124,133 @@ $validateLeaf = static function (string $leafAction, array $leafPayload, string 
 
 if (in_array($action, $leafActions, true)) {
     $validateLeaf($action, $payload, 'payload');
+}
+
+if ('acf.field_groups' === $action) {
+    foreach (array_keys($payload) as $key) {
+        if ('post_id' !== (string) $key) {
+            $errors[] = 'payload has unknown or public-forbidden ACF field-group key: ' . (string) $key;
+        }
+    }
+    if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+        $errors[] = 'payload.post_id must be a positive integer for public ACF field-group discovery.';
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'acf.field_groups must use dry_run=true in public GitHub runtime mode.';
+    }
+}
+
+if ('acf.schema.ensure_text_fields' === $action) {
+    $allowedKeys = array('post_id', 'group_key', 'fields');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden ACF schema key: ' . (string) $key;
+        }
+    }
+    if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+        $errors[] = 'payload.post_id must be a positive integer for ACF schema ensure.';
+    }
+    $groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
+    if (! preg_match('/^group_[A-Za-z0-9_-]{6,80}$/D', $groupKey)) {
+        $errors[] = 'payload.group_key must be a valid ACF field-group key.';
+    }
+    $fields = isset($payload['fields']) && is_array($payload['fields']) ? array_values($payload['fields']) : array();
+    if (! $fields || count($fields) > 12) {
+        $errors[] = 'payload.fields must contain 1-12 ACF text field definitions.';
+    }
+    $seenKeys = array();
+    $seenNames = array();
+    foreach ($fields as $index => $field) {
+        $context = 'payload.fields[' . $index . ']';
+        if (! is_array($field)) {
+            $errors[] = $context . ' must be an object.';
+            continue;
+        }
+        foreach (array_keys($field) as $key) {
+            if (! in_array((string) $key, array('key', 'name', 'label'), true)) {
+                $errors[] = $context . ' has unknown ACF text field property: ' . (string) $key;
+            }
+        }
+        $fieldKey = isset($field['key']) ? (string) $field['key'] : '';
+        $name = isset($field['name']) ? (string) $field['name'] : '';
+        $label = isset($field['label']) ? trim((string) $field['label']) : '';
+        if (! preg_match('/^field_[A-Za-z0-9_-]{6,80}$/D', $fieldKey)) {
+            $errors[] = $context . '.key is invalid.';
+        }
+        if (! preg_match('/^[a-z][a-z0-9_]{2,63}$/D', $name)) {
+            $errors[] = $context . '.name is invalid.';
+        }
+        if ('' === $label || strlen($label) > 80 || preg_match('/[\x00-\x1F\x7F]/', $label)) {
+            $errors[] = $context . '.label is invalid.';
+        }
+        if (preg_match($secretKeyPattern, $name) || preg_match($secretKeyPattern, $label)) {
+            $errors[] = $context . ' uses a secret-like ACF field name or label.';
+        }
+        if (isset($seenKeys[$fieldKey]) || isset($seenNames[$name])) {
+            $errors[] = $context . ' duplicates another ACF field key or name.';
+        }
+        $seenKeys[$fieldKey] = true;
+        $seenNames[$name] = true;
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed acf.schema.ensure_text_fields requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+}
+
+if ('elementor.inspect' === $action) {
+    $allowedKeys = array('id', 'element_ids');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden Elementor inspect key: ' . (string) $key;
+        }
+    }
+    $assertPositiveId($payload, 'payload');
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'elementor.inspect must use dry_run=true in public GitHub runtime mode.';
+    }
+    if (array_key_exists('element_ids', $payload)) {
+        if (! is_array($payload['element_ids']) || count($payload['element_ids']) > 50) {
+            $errors[] = 'payload.element_ids must be an array of at most 50 Elementor element ids.';
+        } else {
+            foreach ($payload['element_ids'] as $elementId) {
+                if (! is_string($elementId) || ! preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $elementId)) {
+                    $errors[] = 'payload.element_ids contains an invalid Elementor element id.';
+                    break;
+                }
+            }
+        }
+    }
+}
+
+if ('elementor.patch_element' === $action) {
+    $allowedKeys = array('id', 'element_id', 'settings');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden Elementor patch key: ' . (string) $key;
+        }
+    }
+    $assertPositiveId($payload, 'payload');
+    $elementId = isset($payload['element_id']) ? (string) $payload['element_id'] : '';
+    if (! preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $elementId)) {
+        $errors[] = 'payload.element_id must be a valid Elementor element id.';
+    }
+    if (empty($payload['settings']) || ! is_array($payload['settings'])) {
+        $errors[] = 'payload.settings must be a non-empty object.';
+    } else {
+        $keys = array_keys($payload['settings']);
+        if ($keys === range(0, count($keys) - 1)) {
+            $errors[] = 'payload.settings must be an object, not a list.';
+        }
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed elementor.patch_element requires expected_fingerprint from the preceding dry-run or inspect.';
+        }
+    }
 }
 
 if ('connector.batch' === $action) {
