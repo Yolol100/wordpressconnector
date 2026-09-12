@@ -166,7 +166,33 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout exact pull request history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect dependency manifest changes
+        id: dependency_changes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" --)"
+          if printf '%s\n' "$changed" | grep -Eq '(^|/)(composer\.(json|lock)|package(-lock)?\.json|npm-shrinkwrap\.json|pnpm-lock\.yaml|yarn\.lock)$'; then
+            echo 'changed=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Review dependency changes
+        if: steps.dependency_changes.outputs.changed == 'true'
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
+
+      - name: Dependency review not required
+        if: steps.dependency_changes.outputs.changed != 'true'
+        run: echo 'No dependency manifest or lockfile changed in this pull request.'
