@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.0
+Stable tag: 1.14.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.14.1 fixes ACF schema text-field creation so top-level fields use the field group's persistent numeric parent ID, verifies readback against that parent and safely recovers an orphaned generated text field left by an interrupted 1.14.0 schema write.
 
 Version 1.14.0 adds narrowly bounded public-runtime Elementor inspection/settings patching and controlled ACF text-field schema creation for verified public targets. Confirmed writes remain fingerprint-gated, sanitized receipts expose only bounded evidence, and rollback is retained for supported mutations.
 
@@ -47,6 +49,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.1 =
+* Resolve ACF field-group keys to persistent numeric group IDs before creating top-level text fields.
+* Verify ACF schema readback and rollback against the persistent parent ID returned by ACF.
+* Recover only matching generated orphan text fields with parent 0, while failing closed on conflicting global fields.
+* Append newly created/recovered fields with deterministic menu order and add regression coverage for the parent/orphan boundary.
 
 = 1.14.0 =
 * Add bounded public-runtime `elementor.inspect` and settings-only `elementor.patch_element` with mandatory fingerprint protection for confirmed writes.

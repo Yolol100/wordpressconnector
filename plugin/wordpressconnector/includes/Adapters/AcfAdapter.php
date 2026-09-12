@@ -196,11 +196,13 @@ final class AcfAdapter
             throw new RuntimeException('acf.schema.ensure_text_fields requires 1-12 text field definitions.');
         }
         $this->assertGroupAppliesToPost($groupKey, $postId);
+        $groupId = $this->groupId($groupKey);
 
         $normalized = $this->normalizeRequestedTextFields($requested);
         $existingFields = $this->groupFields($groupKey);
         $existingByKey = array();
         $existingByName = array();
+        $nextMenuOrder = 0;
         foreach ($existingFields as $field) {
             if (! empty($field['key'])) {
                 $existingByKey[(string) $field['key']] = $field;
@@ -208,10 +210,12 @@ final class AcfAdapter
             if (! empty($field['name'])) {
                 $existingByName[(string) $field['name']] = $field;
             }
+            $nextMenuOrder = max($nextMenuOrder, ((int) ($field['menu_order'] ?? -1)) + 1);
         }
 
         $before = array();
         $wouldCreate = array();
+        $recoverable = array();
         foreach ($normalized as $definition) {
             $key = $definition['key'];
             $name = $definition['name'];
@@ -219,7 +223,7 @@ final class AcfAdapter
             $byName = $existingByName[$name] ?? null;
             if (is_array($byKey)) {
                 $summary = $this->fieldSummary($byKey);
-                if (! $this->fieldMatchesDefinition($summary, $definition, $groupKey)) {
+                if (! $this->fieldMatchesDefinition($summary, $definition, $groupId)) {
                     throw new RuntimeException('Existing ACF field key conflicts with requested text field: ' . $key);
                 }
                 if (is_array($byName) && (string) ($byName['key'] ?? '') !== $key) {
@@ -231,6 +235,24 @@ final class AcfAdapter
             if (is_array($byName)) {
                 throw new RuntimeException('Existing ACF field name conflicts with requested text field: ' . $name);
             }
+
+            $global = acf_get_field($key);
+            if (is_array($global)) {
+                $summary = $this->fieldSummary($global);
+                $globalId = isset($global['ID']) ? (int) $global['ID'] : 0;
+                if ($globalId <= 0
+                    || 0 !== (int) ($summary['parent'] ?? 0)
+                    || (string) ($summary['name'] ?? '') !== $name
+                    || 'text' !== (string) ($summary['type'] ?? '')
+                    || ! empty($summary['required'])) {
+                    throw new RuntimeException('Existing global ACF field conflicts with requested text field: ' . $key);
+                }
+                $before[$key] = $summary;
+                $recoverable[$key] = $globalId;
+                $wouldCreate[] = $definition;
+                continue;
+            }
+
             $before[$key] = null;
             $wouldCreate[] = $definition;
         }
@@ -264,15 +286,18 @@ final class AcfAdapter
                 'placeholder' => '',
                 'prepend' => '',
                 'append' => '',
-                'parent' => $groupKey,
-                'menu_order' => 0,
+                'parent' => $groupId,
+                'menu_order' => $nextMenuOrder++,
             );
+            if (isset($recoverable[$definition['key']])) {
+                $field['ID'] = (int) $recoverable[$definition['key']];
+            }
             $saved = acf_update_field($field);
             if (! is_array($saved)) {
                 throw new RuntimeException('ACF field creation failed for: ' . $definition['key']);
             }
             $readback = acf_get_field($definition['key']);
-            if (! is_array($readback) || ! $this->fieldMatchesDefinition($this->fieldSummary($readback), $definition, $groupKey)) {
+            if (! is_array($readback) || ! $this->fieldMatchesDefinition($this->fieldSummary($readback), $definition, $groupId)) {
                 throw new RuntimeException('ACF field creation readback failed for: ' . $definition['key']);
             }
             $created[] = $definition;
@@ -304,6 +329,7 @@ final class AcfAdapter
             throw new RuntimeException('acf.schema.remove_text_fields requires a valid post_id, group_key and 1-12 field definitions.');
         }
         $this->assertGroupAppliesToPost($groupKey, $postId);
+        $groupId = $this->groupId($groupKey);
         $normalized = $this->normalizeRequestedTextFields($requested);
 
         $before = array();
@@ -314,7 +340,7 @@ final class AcfAdapter
                 continue;
             }
             $summary = $this->fieldSummary($existing);
-            if (! $this->fieldMatchesDefinition($summary, $definition, $groupKey)) {
+            if (! $this->fieldMatchesDefinition($summary, $definition, $groupId)) {
                 throw new RuntimeException('Refusing to remove an ACF field that no longer matches the rollback definition: ' . $definition['key']);
             }
             $before[$definition['key']] = $summary;
@@ -388,6 +414,16 @@ final class AcfAdapter
         }
     }
 
+    private function groupId(string $groupKey): int
+    {
+        $group = acf_get_field_group($groupKey);
+        $groupId = is_array($group) && isset($group['ID']) ? (int) $group['ID'] : 0;
+        if ($groupId <= 0) {
+            throw new RuntimeException('ACF field group has no persistent database ID: ' . $groupKey);
+        }
+        return $groupId;
+    }
+
     private function groupFields(string $groupKey): array
     {
         $group = acf_get_field_group($groupKey);
@@ -448,13 +484,13 @@ final class AcfAdapter
         );
     }
 
-    private function fieldMatchesDefinition(array $summary, array $definition, string $groupKey): bool
+    private function fieldMatchesDefinition(array $summary, array $definition, int $groupId): bool
     {
         return (string) ($summary['key'] ?? '') === (string) $definition['key']
             && (string) ($summary['name'] ?? '') === (string) $definition['name']
             && (string) ($summary['label'] ?? '') === (string) $definition['label']
             && 'text' === (string) ($summary['type'] ?? '')
-            && $groupKey === (string) ($summary['parent'] ?? '')
+            && (string) $groupId === (string) ($summary['parent'] ?? '')
             && empty($summary['required']);
     }
 
