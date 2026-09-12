@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "request_id": "andrewbaeten-update-check-20260912",
+  "site_url": "https://andrewbaeten.nl",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
