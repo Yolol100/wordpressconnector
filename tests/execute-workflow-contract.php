@@ -27,6 +27,13 @@ $required = array(
     'git show "request-head:$path" > "$root/assets/inbox/$relative"',
     'site_url',
     '/presence',
+    '?rest_route=/webactueel-wordpress-connector/v1/presence',
+    'probe_presence()',
+    'for attempt in 1 2 3; do',
+    "--header 'Accept: application/json'",
+    "--user-agent 'Webactueel-WordPress-Connector/zero-config'",
+    'catch (Throwable $e)',
+    'Presence probe attempt ${attempt} failed',
     'Upload request assets with short-lived GitHub OIDC',
     '--form-string "request_id=${REQUEST_ID}"',
     '--form-string "asset_path=${relative}"',
@@ -54,6 +61,7 @@ $forbidden = array(
     'secrets.',
     '--user ',
     'REST_APP_PASSWORD',
+    'cat "$RUNNER_TEMP/presence.json"',
 );
 foreach ($forbidden as $needle) {
     if (strpos($workflow, $needle) !== false) {
@@ -70,6 +78,10 @@ if (false === $preflight || false === $revalidation || false === $execute || $re
 }
 if (substr_count($workflow, 'ACTIONS_ID_TOKEN_REQUEST_TOKEN') < 2) {
     fwrite(STDERR, "OIDC must cover both request-scoped asset transport and final execution without persistent credentials.\n");
+    exit(1);
+}
+if (substr_count($workflow, 'probe_presence ') < 2) {
+    fwrite(STDERR, "Presence verification must retry the canonical route and fail over to the WordPress rest_route fallback.\n");
     exit(1);
 }
 echo "zero-config execute workflow contract OK\n";
