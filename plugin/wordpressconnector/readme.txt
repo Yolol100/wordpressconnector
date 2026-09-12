@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.13.0
+Stable tag: 1.14.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,9 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-Version 1.13.0 makes the guarded GitHub runtime zero-config after plugin activation. The WordPress admin no longer requires connector checkboxes, GitHub repository variables, WordPress usernames or Application Passwords for the canonical GitHub path. The trusted GitHub Actions executor requests a short-lived GitHub OIDC token and WordPress validates its signature, audience, repository identity, owner identity, main-branch workflow identity, runner environment, validity window and replay identifier before execution.
+Version 1.14.0 adds narrowly bounded public-runtime Elementor inspection/settings patching and controlled ACF text-field schema creation for verified public targets. Confirmed writes remain fingerprint-gated, sanitized receipts expose only bounded evidence, and rollback is retained for supported mutations.
+
+Version 1.13.0 made the guarded GitHub runtime zero-config after plugin activation. The WordPress admin no longer requires connector checkboxes, GitHub repository variables, WordPress usernames or Application Passwords for the canonical GitHub path. The trusted GitHub Actions executor requests a short-lived GitHub OIDC token and WordPress validates its signature, audience, repository identity, owner identity, main-branch workflow identity, runner environment, validity window and replay identifier before execution.
 
 A minimal HTTPS presence endpoint allows a known site URL to prove that the connector is installed without exposing WordPress content. The target site URL travels with the temporary runtime request and is validated before execution. GitHub cannot securely enumerate arbitrary unknown websites merely because a plugin was installed; global site discovery requires a separate authenticated registry and is intentionally not simulated with public crawling or leaked site lists.
 
@@ -45,6 +47,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.0 =
+* Add bounded public-runtime `elementor.inspect` and settings-only `elementor.patch_element` with mandatory fingerprint protection for confirmed writes.
+* Add sanitized Elementor receipts that expose only safe element metadata, selected public settings, fingerprints and rollback/readback evidence.
+* Add bounded ACF field-group discovery and text-field schema creation for existing field groups that apply to verified public posts.
+* Preserve existing ACF fields and values; schema rollback removes only exact fields created by the guarded schema action.
+* Add regression coverage for forbidden full-element replacement, widget-type changes, secret-like fields, unsafe identifiers, schema-in-batch attempts and public receipt leakage.
 
 = 1.13.0 =
 * Replace long-lived GitHub-to-WordPress Application Password transport with short-lived GitHub Actions OIDC for the canonical GitHub executor.
