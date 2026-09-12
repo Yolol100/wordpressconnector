@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-acf-stats-dryrun-20260912-2055",
+  "action": "acf.schema.ensure_text_fields",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4470,
+    "group_key": "group_69deb89e918e3",
+    "fields": [
+      {"key":"field_webactueel_stat_1_label","name":"stat_1_label","label":"Stat 1 label"},
+      {"key":"field_webactueel_stat_1_value","name":"stat_1_value","label":"Stat 1 value"},
+      {"key":"field_webactueel_stat_2_label","name":"stat_2_label","label":"Stat 2 label"},
+      {"key":"field_webactueel_stat_2_value","name":"stat_2_value","label":"Stat 2 value"},
+      {"key":"field_webactueel_stat_3_label","name":"stat_3_label","label":"Stat 3 label"},
+      {"key":"field_webactueel_stat_3_value","name":"stat_3_value","label":"Stat 3 value"},
+      {"key":"field_webactueel_stat_4_label","name":"stat_4_label","label":"Stat 4 label"},
+      {"key":"field_webactueel_stat_4_value","name":"stat_4_value","label":"Stat 4 value"}
+    ]
+  }
+}
