@@ -49,6 +49,98 @@ $fingerprint = static function ($value) use ($normalize): string {
     return hash('sha256', $json);
 };
 
+$secretKeyPattern = '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer[_-]?secret|client[_-]?secret|authorization|cookie|application[_-]?password|license[_-]?key)/i';
+
+$safePublicValue = static function ($value, int $depth = 0) use (&$safePublicValue, $secretKeyPattern) {
+    if ($depth > 3) {
+        return '[truncated]';
+    }
+    if (is_string($value)) {
+        return strlen($value) > 800 ? substr($value, 0, 800) . '…' : $value;
+    }
+    if (is_int($value) || is_float($value) || is_bool($value) || null === $value) {
+        return $value;
+    }
+    if (! is_array($value)) {
+        return null;
+    }
+    $out = array();
+    $count = 0;
+    foreach ($value as $key => $item) {
+        if ($count >= 20) {
+            $out['_truncated'] = true;
+            break;
+        }
+        $name = (string) $key;
+        if (preg_match($secretKeyPattern, $name)) {
+            continue;
+        }
+        $out[$key] = $safePublicValue($item, $depth + 1);
+        ++$count;
+    }
+    return $out;
+};
+
+$summarizeElementorElements = static function (array $elements, array $requestedIds = array()) use ($safePublicValue): array {
+    $summaries = array();
+    $allowedSettingKeys = array('title', 'text', 'button_text', '__dynamic__', 'link', 'url', 'html', 'editor', 'description', 'before', 'after');
+    $requested = array();
+    foreach ($requestedIds as $elementId) {
+        if (is_string($elementId) && preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $elementId)) {
+            $requested[$elementId] = true;
+        }
+    }
+    $walk = static function (array $nodes) use (&$walk, &$summaries, $allowedSettingKeys, $safePublicValue, $requested): void {
+        foreach ($nodes as $node) {
+            if (! is_array($node)) {
+                continue;
+            }
+            $id = isset($node['id']) ? (string) $node['id'] : '';
+            $include = $id !== '' && (! $requested || isset($requested[$id]));
+            if ($include && count($summaries) < 200) {
+                $entry = array('id' => $id);
+                if (isset($node['elType']) && '' !== (string) $node['elType']) {
+                    $entry['elType'] = (string) $node['elType'];
+                }
+                if (isset($node['widgetType']) && '' !== (string) $node['widgetType']) {
+                    $entry['widgetType'] = (string) $node['widgetType'];
+                }
+                $settings = isset($node['settings']) && is_array($node['settings']) ? $node['settings'] : array();
+                $safeSettings = array();
+                foreach ($allowedSettingKeys as $key) {
+                    if (array_key_exists($key, $settings)) {
+                        $safeSettings[$key] = $safePublicValue($settings[$key]);
+                    }
+                }
+                if ($safeSettings) {
+                    $entry['settings'] = $safeSettings;
+                }
+                $summaries[] = $entry;
+            }
+            if (isset($node['elements']) && is_array($node['elements']) && count($summaries) < 200) {
+                $walk($node['elements']);
+            }
+        }
+    };
+    $walk($elements);
+    return $summaries;
+};
+
+$containsRequested = static function ($expected, $actual) use (&$containsRequested): bool {
+    if (! is_array($expected)) {
+        return $expected === $actual;
+    }
+    if (! is_array($actual)) {
+        return false;
+    }
+    foreach ($expected as $key => $value) {
+        if (! array_key_exists($key, $actual) || ! $containsRequested($value, $actual[$key])) {
+            return false;
+        }
+    }
+    return true;
+};
+
 $verifyLeaf = static function (string $leafAction, array $payload, array $leafResult): ?bool {
     if ('acf.update' === $leafAction) {
         $expected = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : null;
@@ -135,6 +227,47 @@ if (! $ok) {
         }
         if (isset($data['after']) && is_array($data['after'])) {
             $receipt['after_fingerprint'] = $fingerprint($data['after']);
+        }
+        if (! $dryRun && ! empty($data['rollback_request_id'])) {
+            $receipt['rollback_available'] = true;
+        }
+    } elseif ('elementor.inspect' === $action) {
+        $document = isset($data['document']) && is_array($data['document']) ? $data['document'] : array();
+        $documentFingerprint = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}$/D', $documentFingerprint)) {
+            $receipt['document_fingerprint'] = $documentFingerprint;
+        }
+        if (isset($document['post_id'])) {
+            $receipt['post_id'] = (int) $document['post_id'];
+        }
+        foreach (array('document_type', 'edit_mode', 'template_type', 'elementor_version') as $field) {
+            if (isset($document[$field]) && is_scalar($document[$field])) {
+                $receipt[$field] = substr((string) $document[$field], 0, 100);
+            }
+        }
+        $requestedIds = isset($payload['element_ids']) && is_array($payload['element_ids']) ? $payload['element_ids'] : array();
+        $elements = isset($document['data']) && is_array($document['data']) ? $document['data'] : array();
+        $receipt['elements'] = $summarizeElementorElements($elements, $requestedIds);
+        $receipt['readback_verified'] = null;
+    } elseif ('elementor.patch_element' === $action) {
+        $beforeElement = isset($data['before_element']) && is_array($data['before_element']) ? $data['before_element'] : null;
+        $afterElement = isset($data['after_element']) && is_array($data['after_element']) ? $data['after_element'] : null;
+        $requestedSettings = isset($payload['settings']) && is_array($payload['settings']) ? $payload['settings'] : null;
+        $actualSettings = is_array($afterElement) && isset($afterElement['settings']) && is_array($afterElement['settings']) ? $afterElement['settings'] : null;
+        $receipt['readback_verified'] = null !== $requestedSettings && null !== $actualSettings
+            ? $containsRequested($requestedSettings, $actualSettings)
+            : false;
+        if (isset($data['post_id'])) {
+            $receipt['post_id'] = (int) $data['post_id'];
+        }
+        if (isset($data['element_id'])) {
+            $receipt['element_id'] = substr((string) $data['element_id'], 0, 64);
+        }
+        if (null !== $beforeElement) {
+            $receipt['before_fingerprint'] = $fingerprint($beforeElement);
+        }
+        if (null !== $afterElement) {
+            $receipt['after_fingerprint'] = $fingerprint($afterElement);
         }
         if (! $dryRun && ! empty($data['rollback_request_id'])) {
             $receipt['rollback_available'] = true;
