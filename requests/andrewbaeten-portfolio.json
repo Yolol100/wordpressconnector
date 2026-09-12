@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "request_id": "andrewbaeten-portfolio-update-check-20260912",
-  "site_url": "https://andrewbaeten.nl/",
+  "request_id": "andrewbaeten-portfolio-update-check-20260912b",
+  "site_url": "https://andrewbaeten.nl",
   "action": "connector.update.check",
   "dry_run": true,
   "confirm": false,
