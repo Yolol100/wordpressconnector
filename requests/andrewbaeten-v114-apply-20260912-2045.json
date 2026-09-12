@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-v114-apply-20260912-2045",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d4420182c7c5a22d5c196560eec907fafdd19efa3db985c474ad177230de19a3",
+  "payload": {}
+}
