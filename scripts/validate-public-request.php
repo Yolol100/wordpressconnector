@@ -28,6 +28,8 @@ if (! is_array($data)) {
 $publicActions = array(
     'post.update',
     'acf.update',
+    'elementor.inspect',
+    'elementor.patch_element',
     'connector.batch',
     'connector.rollback',
     'connector.update.check',
@@ -86,6 +88,12 @@ $assertPositivePostTarget = static function (array $candidate, string $context) 
     $errors[] = $context . ' requires post_id or an integer target.';
 };
 
+$assertPositiveId = static function (array $candidate, string $context) use (&$errors): void {
+    if (! isset($candidate['id']) || ! is_int($candidate['id']) || $candidate['id'] <= 0) {
+        $errors[] = $context . '.id must be a positive integer.';
+    }
+};
+
 $validateLeaf = static function (string $leafAction, array $leafPayload, string $context) use (&$errors, $assertPositivePostTarget): void {
     if ('post.update' === $leafAction) {
         $id = isset($leafPayload['id']) ? (int) $leafPayload['id'] : 0;
@@ -114,6 +122,59 @@ $validateLeaf = static function (string $leafAction, array $leafPayload, string 
 
 if (in_array($action, $leafActions, true)) {
     $validateLeaf($action, $payload, 'payload');
+}
+
+if ('elementor.inspect' === $action) {
+    $allowedKeys = array('id', 'element_ids');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden Elementor inspect key: ' . (string) $key;
+        }
+    }
+    $assertPositiveId($payload, 'payload');
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'elementor.inspect must use dry_run=true in public GitHub runtime mode.';
+    }
+    if (array_key_exists('element_ids', $payload)) {
+        if (! is_array($payload['element_ids']) || count($payload['element_ids']) > 50) {
+            $errors[] = 'payload.element_ids must be an array of at most 50 Elementor element ids.';
+        } else {
+            foreach ($payload['element_ids'] as $elementId) {
+                if (! is_string($elementId) || ! preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $elementId)) {
+                    $errors[] = 'payload.element_ids contains an invalid Elementor element id.';
+                    break;
+                }
+            }
+        }
+    }
+}
+
+if ('elementor.patch_element' === $action) {
+    $allowedKeys = array('id', 'element_id', 'settings');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden Elementor patch key: ' . (string) $key;
+        }
+    }
+    $assertPositiveId($payload, 'payload');
+    $elementId = isset($payload['element_id']) ? (string) $payload['element_id'] : '';
+    if (! preg_match('/^[A-Za-z0-9_-]{1,64}$/D', $elementId)) {
+        $errors[] = 'payload.element_id must be a valid Elementor element id.';
+    }
+    if (empty($payload['settings']) || ! is_array($payload['settings'])) {
+        $errors[] = 'payload.settings must be a non-empty object.';
+    } else {
+        $keys = array_keys($payload['settings']);
+        if ($keys === range(0, count($keys) - 1)) {
+            $errors[] = 'payload.settings must be an object, not a list.';
+        }
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed elementor.patch_element requires expected_fingerprint from the preceding dry-run or inspect.';
+        }
+    }
 }
 
 if ('connector.batch' === $action) {
