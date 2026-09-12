@@ -1,0 +1,24 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-acf-stats-dryrun2-20260912-2100",
+    "action": "acf.schema.ensure_text_fields",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-12T19:00:23+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4470,
+    "group_key": "group_69deb89e918e3",
+    "schema_fingerprint": "d0967fb9d7d97fd1e6a44d06f6dddd7438f0291fa141a36c2e07c8f421f5f90c",
+    "would_create": [
+        "field_webactueel_stat_1_label",
+        "field_webactueel_stat_1_value",
+        "field_webactueel_stat_2_label",
+        "field_webactueel_stat_2_value",
+        "field_webactueel_stat_3_label",
+        "field_webactueel_stat_3_value",
+        "field_webactueel_stat_4_label",
+        "field_webactueel_stat_4_value"
+    ],
+    "readback_verified": null
+}
