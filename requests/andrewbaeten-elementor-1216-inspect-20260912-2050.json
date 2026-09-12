@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-elementor-1216-inspect-20260912-2050",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 1216
+  }
+}
