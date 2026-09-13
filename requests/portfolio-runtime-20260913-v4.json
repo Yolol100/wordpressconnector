@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-7a-stats-write-20260913-v4",
+  "request_id": "portfolio-batch-7a-stats-write-retry1-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": false,
