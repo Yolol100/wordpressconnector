@@ -1,14 +1,15 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-2-stats-preview-20260913-v4",
+  "request_id": "portfolio-batch-2-stats-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {
           "post_id": 3660,
           "fields": {
@@ -25,6 +26,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {
           "post_id": 2213,
           "fields": {
