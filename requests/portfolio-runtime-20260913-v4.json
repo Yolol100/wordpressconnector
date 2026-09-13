@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-hasene-intro-write-20260913-v4",
+  "request_id": "portfolio-marcosmontage-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "b8ef38e7dd75f6294a515c14d443d9eba735636d0a8d72e04c590a739fc55338",
+  "expected_fingerprint": "ed9053998bca6c26cc4c4eb1628d9956a60213b775a0e285668600d0ed1b301a",
   "payload": {
-    "id": 1714,
-    "excerpt": "For Hasene, I created a WordPress website presenting humanitarian projects and donation opportunities clearly; visit <a href=\"https://hasene.nl/\">hasene.nl</a> to explore their international relief and development work."
+    "id": 1439,
+    "excerpt": "For Marco’s Montage, I built a WordPress website presenting insulation expertise and completed projects clearly; visit <a href=\"https://marcosmontage.nl/\">marcosmontage.nl</a> to explore their nationwide installation services."
   }
 }
