@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-superfruitmand-intro-write-20260913-v4",
+  "request_id": "portfolio-kroess-visser-post-read-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "3c43ea58e18024c645542c61fa3aefa53ccd25d029ab78b65a1fcd7e9bbe86ae",
-  "payload": {
-    "id": 1392,
-    "excerpt": "For Superfruitmand, I built a WordPress webshop presenting fresh fruit boxes, sustainable choices and online ordering clearly; visit <a href=\"https://superfruitmand.nl/\">superfruitmand.nl</a> to explore the range."
-  }
+  "payload": {"id": 1391}
 }
