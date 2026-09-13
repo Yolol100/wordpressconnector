@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-pastry-company-intro-write-20260914-v4",
+  "request_id": "portfolio-casareno-post-list-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "744192012c0374020099d978c9291f3a1abe2989c6851b00aced510caec617be",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "id": 1373,
-    "excerpt": "For Pastry Company, I built a WordPress webshop showcasing handmade Caribbean treats, vegan options and event catering; visit <a href=\"https://pastrycompany.nl/\">pastrycompany.nl</a> to explore the menu."
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 20,
+    "page": 1,
+    "search": "CasaReno",
+    "orderby": "ID",
+    "order": "ASC"
   }
 }
