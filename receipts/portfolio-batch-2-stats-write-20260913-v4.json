@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch-2-stats-write-20260913-v4",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:18:47+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "05cebe78b0ff6cdece761b545cb34e0eaef78b1ce18d850ca8adf944235cdeb6"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "4270d6f6f5e096451f5bf1d7177104510a2e1a9d50b8b3333fc03f8ca85c2c42"
+        }
+    ],
+    "rollback_available": true
+}
