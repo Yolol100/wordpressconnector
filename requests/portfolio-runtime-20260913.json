@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "request_id": "portfolio-connector-version-check-20260913-v2",
+  "site_url": "https://andrewbaeten.nl",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
