@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-ib-traject-intro-write-20260913-v4-r2",
+  "request_id": "portfolio-businesssuites-post-read-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "ded7245ea5d3a4138705b408d3099114d3ff54ffc9c5dbacf1f0b8c09c55baeb",
-  "payload": {
-    "id": 1384,
-    "excerpt": "For IB Traject, I built a WordPress website presenting civil engineering expertise, projects and public-sector support clearly; visit <a href=\"https://ibtraject.nl/\">ibtraject.nl</a> to explore their work."
-  }
+  "payload": {"id": 1383}
 }
