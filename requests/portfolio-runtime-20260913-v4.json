@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-kervana-post-readback-after-failed-intro-20260913-v4",
+  "request_id": "portfolio-jouwgroenteboer-post-readback-pre-intro-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
-  "payload": {"id":1424}
+  "payload": {"id": 1423}
 }
