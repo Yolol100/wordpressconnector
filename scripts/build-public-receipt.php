@@ -354,8 +354,20 @@ if (! $ok) {
                 $receipt['from_version'] = $from;
                 $receipt['to_version'] = $to;
             }
-            $currentFingerprint = (string) ($data['_current_fingerprint'] ?? '');
-            if (preg_match('/^[a-f0-9]{64}\z/', $currentFingerprint)) $receipt['before_fingerprint'] = $currentFingerprint;
+            // Runner intentionally removes internal _current_fingerprint before transport.
+            // This public adapter has a fixed two-field state; reconstruct its digest
+            // from the validated live preview, never from caller-supplied request data.
+            if ($planValid
+                && ($plan['package_asset'] ?? '') === 'wordpressconnector.zip'
+                && ($plan['checksum_asset'] ?? '') === 'wordpressconnector.zip.sha256') {
+                $receipt['before_fingerprint'] = $fingerprint(array(
+                    'plugin_file' => 'wordpressconnector/wordpressconnector.php',
+                    'version' => $from,
+                ));
+            }
+            if (isset($plan['rollback_supported']) && is_bool($plan['rollback_supported'])) {
+                $receipt['rollback_supported'] = $plan['rollback_supported'];
+            }
             $receipt['readback_verified'] = null;
         } else {
             $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : array();
