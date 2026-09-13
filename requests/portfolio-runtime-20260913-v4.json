@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-kervana-post-readback-pre-retry-20260913-v4",
+  "request_id": "portfolio-kervana-intro-write-retry-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id": 1424}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "f9bc4b35d3cf8e521a07428481f54a24075b6fe890634b275cbe76bd27aa5d32",
+  "payload": {
+    "id": 1424,
+    "excerpt": "For Kervana, I built a WordPress website presenting air conditioning, underfloor heating, heat pumps and maintenance clearly; visit <a href=\"https://kervana.nl/\">kervana.nl</a> to explore their installation services."
+  }
 }
