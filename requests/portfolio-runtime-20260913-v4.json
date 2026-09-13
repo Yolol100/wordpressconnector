@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-ozturk-intro-write-20260913-v4",
+  "request_id": "portfolio-kervana-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "56bec11a4f36337b3dd883d5338415602589d3c19e72b1fd55e499e0eafdc6d9",
+  "expected_fingerprint": "78eb38fd551576ac3ceecd7c2cd8bf70528eaac11921f923edbcdf8e52a8f1d5",
   "payload": {
-    "id": 1426,
-    "excerpt": "For Ozturk Motion Pictures, I built a WordPress website presenting wedding films, photography and authentic storytelling; visit <a href=\"https://ozturkmotionpictures.nl/\">ozturkmotionpictures.nl</a> to explore their cinematic wedding work."
+    "id": 1424,
+    "excerpt": "For Kervana, I built a WordPress website presenting air conditioning, underfloor heating, heat pumps and maintenance clearly; visit <a href=\"https://kervana.nl/\">kervana.nl</a> to explore their installation services."
   }
 }
