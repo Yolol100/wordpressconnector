@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-zeninspec-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-zeninspec-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "e6b59c20e515833e1e1775e20aa69b4f511f3d65f0e47e9e448630df49eef5ed",
   "payload": {
-    "id": 1370
+    "id": 1370,
+    "excerpt": "For Zeninspec, I built a WordPress website presenting inspection, testing and certification services; visit <a href=\"https://www.zeninspec.com/\">Zeninspec.com</a> to explore their work across energy and chemicals."
   }
 }
