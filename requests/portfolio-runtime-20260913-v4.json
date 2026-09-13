@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-dmelektro-intro-write-20260913-v4",
+  "request_id": "portfolio-bedrijfspostadres-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "7abdd2e6396ac2b85f1edc6c6c435d7daac37a2f5620adc74b1bc323b529bf05",
+  "expected_fingerprint": "66b9aeb3eccdf56ea99084726c7e8422091f6b9788533c6ba06c943753566cc8",
   "payload": {
-    "id": 1863,
-    "excerpt": "For DM Elektro, I built a WordPress website presenting modern electrical installations and smart solutions; visit <a href=\"https://dmelektro.nl/\">dmelektro.nl</a> to explore their services and request a quote."
+    "id": 1855,
+    "excerpt": "For Bedrijfspostadres, I created a WordPress website that explains KvK-ready business addresses, digital mail handling and flexible plans; visit <a href=\"https://bedrijfspostadres.nl/\">bedrijfspostadres.nl</a> to start an application."
   }
 }
