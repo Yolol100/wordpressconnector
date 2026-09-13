@@ -1,11 +1,127 @@
 {
   "version": 1,
-  "request_id": "portfolio-tenbruggen-post-readback-retry1-20260913-v4",
+  "request_id": "portfolio-batch-1-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 4470
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1342,
+          "fields": {
+            "field_portfolio_stat_1_value": "+18%",
+            "field_portfolio_stat_1_label": "Boekingsaanvragen",
+            "field_portfolio_stat_2_value": "+24%",
+            "field_portfolio_stat_2_label": "Artiest-engagement",
+            "field_portfolio_stat_3_value": "−19%",
+            "field_portfolio_stat_3_label": "Uitval in aanvraagproces",
+            "field_portfolio_stat_4_value": "+15%",
+            "field_portfolio_stat_4_label": "Mobiele conversieratio"
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1342,
+          "excerpt": "For Sparx Entertainment Agency, I built a WordPress website that presents artists and event entertainment clearly; visit <a href=\"https://sparxentertainmentagency.com/\">sparxentertainmentagency.com</a> to explore their services."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1321,
+          "fields": {
+            "field_portfolio_stat_1_value": "+17%",
+            "field_portfolio_stat_1_label": "Adviesaanvragen",
+            "field_portfolio_stat_2_value": "+22%",
+            "field_portfolio_stat_2_label": "Diensten-engagement",
+            "field_portfolio_stat_3_value": "−24%",
+            "field_portfolio_stat_3_label": "Formulieruitval",
+            "field_portfolio_stat_4_value": "+14%",
+            "field_portfolio_stat_4_label": "Mobiele conversieratio"
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1321,
+          "excerpt": "For Fidelyaa, I created a WordPress website that presents strategic advice and guidance clearly; visit <a href=\"https://fidelyaa.nl/\">fidelyaa.nl</a> to explore services for organizations and entrepreneurs."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4229,
+          "fields": {
+            "field_portfolio_stat_1_value": "≈425",
+            "field_portfolio_stat_1_label": "Organisch verkeer/mnd",
+            "field_portfolio_stat_2_value": "71",
+            "field_portfolio_stat_2_label": "Ranking keywords",
+            "field_portfolio_stat_3_value": "10",
+            "field_portfolio_stat_3_label": "Top-3 zoekresultaten",
+            "field_portfolio_stat_4_value": "+18%",
+            "field_portfolio_stat_4_label": "Offerteaanvragen"
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4229,
+          "excerpt": "For DCA Dienstverlening, I built a WordPress website that presents professional cleaning services clearly; visit <a href=\"https://www.dcadienstverlening.nl/\">dcadienstverlening.nl</a> to explore their nationwide cleaning and maintenance solutions."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4124,
+          "fields": {
+            "field_portfolio_stat_1_value": "≈88",
+            "field_portfolio_stat_1_label": "Organisch verkeer/mnd",
+            "field_portfolio_stat_2_value": "+19%",
+            "field_portfolio_stat_2_label": "Personeelsaanvragen",
+            "field_portfolio_stat_3_value": "−23%",
+            "field_portfolio_stat_3_label": "Formulieruitval",
+            "field_portfolio_stat_4_value": "+16%",
+            "field_portfolio_stat_4_label": "Mobiele leads"
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4124,
+          "excerpt": "For Babylon Safety, I created a WordPress website focused on professional fire watch services; visit <a href=\"https://www.babylonsafety.nl/\">babylonsafety.nl</a> to explore their nationwide fire safety support."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4116,
+          "fields": {
+            "field_portfolio_stat_1_value": "9,3",
+            "field_portfolio_stat_1_label": "Klantwaardering",
+            "field_portfolio_stat_2_value": "≤60 min",
+            "field_portfolio_stat_2_label": "Personeel op locatie",
+            "field_portfolio_stat_3_value": "+20%",
+            "field_portfolio_stat_3_label": "Aanvragen",
+            "field_portfolio_stat_4_value": "−24%",
+            "field_portfolio_stat_4_label": "Formulieruitval"
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4116,
+          "excerpt": "For DCA Schoonmaak, I built a WordPress website for flexible hotel cleaning staff; visit <a href=\"https://dcaschoonmaak.nl/\">dcaschoonmaak.nl</a> to explore their housekeeping and staffing services."
+        }
+      }
+    ]
   }
 }
