@@ -1,14 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-2-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-spring-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "operations": [
-      {"action": "post.get", "payload": {"id": 3660}},
-      {"action": "post.get", "payload": {"id": 2213}}
-    ]
-  }
+  "payload": {"id": 3660}
 }
