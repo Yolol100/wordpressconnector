@@ -199,6 +199,21 @@ $summarizeAcfGroups = static function (array $groups): array {
     return $safe;
 };
 
+$summarizePost = static function (array $post, bool $includeExcerpt = false) use ($safePublicValue): array {
+    $safe = array(
+        'id' => isset($post['id']) ? (int) $post['id'] : 0,
+        'type' => substr((string) ($post['type'] ?? ''), 0, 80),
+        'status' => substr((string) ($post['status'] ?? ''), 0, 40),
+        'title' => substr((string) ($post['title'] ?? ''), 0, 240),
+        'slug' => substr((string) ($post['slug'] ?? ''), 0, 240),
+        'permalink' => substr((string) ($post['permalink'] ?? ''), 0, 500),
+    );
+    if ($includeExcerpt) {
+        $safe['excerpt'] = $safePublicValue((string) ($post['excerpt'] ?? ''));
+    }
+    return $safe;
+};
+
 $errorCode = static function (string $message): string {
     $value = strtolower($message);
     if (false !== strpos($value, 'stale target')) return 'stale_target';
@@ -245,7 +260,24 @@ if (! $ok) {
     $payload = isset($request['payload']) && is_array($request['payload']) ? $request['payload'] : array();
     $data = isset($result['data']) && is_array($result['data']) ? $result['data'] : array();
 
-    if (in_array($action, array('post.update','acf.update'), true)) {
+    if ('post.get' === $action) {
+        $post = isset($data['post']) && is_array($data['post']) ? $data['post'] : array();
+        $receipt['post'] = $summarizePost($post, true);
+        $postFingerprint = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}$/D', $postFingerprint)) {
+            $receipt['post_fingerprint'] = $postFingerprint;
+        }
+        $receipt['readback_verified'] = null;
+    } elseif ('post.list' === $action) {
+        $items = isset($data['items']) && is_array($data['items']) ? array_values($data['items']) : array();
+        $receipt['items'] = array_map(static function ($post) use ($summarizePost): array {
+            return $summarizePost(is_array($post) ? $post : array(), false);
+        }, array_slice($items, 0, 100));
+        foreach (array('page','per_page','total','pages') as $field) {
+            if (isset($data[$field])) $receipt[$field] = max(0, (int) $data[$field]);
+        }
+        $receipt['readback_verified'] = null;
+    } elseif (in_array($action, array('post.update','acf.update'), true)) {
         $receipt['readback_verified'] = $verifyLeaf($action, $payload, $data);
         if (isset($data['before']) && is_array($data['before'])) $receipt['before_fingerprint'] = $fingerprint($data['before']);
         if (isset($data['after']) && is_array($data['after'])) $receipt['after_fingerprint'] = $fingerprint($data['after']);
