@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-mpo-intro-write-20260913-v4",
+  "request_id": "portfolio-ib-traject-post-read-after-stats-20260913-v4-r2",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "459fe791c4d4652fadb3fad13adb04d53747e7f81b3122eb917df7005c729299",
-  "payload": {
-    "id": 1390,
-    "excerpt": "For Monitor Politieke Ontwikkeling, I built a WordPress platform presenting political monitoring, research and participation clearly; visit <a href=\"https://monitorpolitiekeontwikkeling.nl/\">monitorpolitiekeontwikkeling.nl</a> to explore their work."
-  }
+  "payload": {"id": 1384}
 }
