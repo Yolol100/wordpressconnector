@@ -1,22 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-casareno-stats-write-20260914-v4",
+  "request_id": "portfolio-casareno-post-read-after-stats-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "post_id": 1372,
-    "fields": {
-      "field_portfolio_stat_1_value": "Nationwide",
-      "field_portfolio_stat_1_label": "Service Coverage",
-      "field_portfolio_stat_2_value": "9",
-      "field_portfolio_stat_2_label": "Renovation Services",
-      "field_portfolio_stat_3_value": "5",
-      "field_portfolio_stat_3_label": "Project Stages",
-      "field_portfolio_stat_4_value": "Turn-Key",
-      "field_portfolio_stat_4_label": "Full-Service Delivery"
-    }
+    "id": 1372
   }
 }
