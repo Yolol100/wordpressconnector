@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-voicelinq-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:28:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1870,
+        "type": "post",
+        "status": "publish",
+        "title": "Voicelinq",
+        "slug": "voicelinq",
+        "permalink": "https://andrewbaeten.nl/voicelinq/",
+        "excerpt": "VoiceLinq combines translation and interpreting services with concise positioning and direct enquiry routes."
+    },
+    "post_fingerprint": "d32d015196da1c755f790d183ec579ae934ae863474154457a824ee02414c203",
+    "readback_verified": null
+}
