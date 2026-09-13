@@ -266,15 +266,32 @@ $updateResultPath = $writeJson('update-result.json', array(
             'checksum_asset' => 'wordpressconnector.zip.sha256',
             'rollback_supported' => false,
         ),
-        '_current_fingerprint' => str_repeat('d', 64),
+        // Actual Runner output omits _current_fingerprint and includes a private token.
+        'current_state_token' => 'private-site-token-must-not-leak',
     ),
 ));
 $updateReceiptPath = $tmp . '/update-receipt.json';
 list($status) = $run($receiptBuilder, array($updateRequestPath, $updateResultPath, $updateReceiptPath));
 $updateReceipt = json_decode((string) file_get_contents($updateReceiptPath), true, 512, JSON_THROW_ON_ERROR);
-if (0 !== $status || true !== ($updateReceipt['update_plan_verified'] ?? null) || ($updateReceipt['from_version'] ?? '') !== '1.12.1' || ($updateReceipt['to_version'] ?? '') !== '1.12.2' || ($updateReceipt['before_fingerprint'] ?? '') !== str_repeat('d', 64)) {
+if (0 !== $status || true !== ($updateReceipt['update_plan_verified'] ?? null) || ($updateReceipt['from_version'] ?? '') !== '1.12.1' || ($updateReceipt['to_version'] ?? '') !== '1.12.2' || ($updateReceipt['before_fingerprint'] ?? '') !== hash('sha256', '{"plugin_file":"wordpressconnector/wordpressconnector.php","version":"1.12.1"}') || ($updateReceipt['rollback_supported'] ?? null) !== false) {
     fwrite(STDERR, "Public self-update dry-run receipt is incomplete.\n");
     exit(1);
+}
+
+if (str_contains((string) file_get_contents($updateReceiptPath), 'private-site-token')) {
+    fwrite(STDERR, "Public self-update receipt leaked a private state token.\n");
+    exit(1);
+}
+foreach (array('tag' => 'v9.9.9', 'package_asset' => 'other.zip', 'from_version' => 'unknown') as $key => $invalid) {
+    $invalidResult = json_decode((string) file_get_contents($updateResultPath), true, 512, JSON_THROW_ON_ERROR);
+    $invalidResult['data']['would_update_connector'][$key] = $invalid;
+    $invalidPath = $writeJson('invalid-update-' . $key . '.json', $invalidResult);
+    list($status) = $run($receiptBuilder, array($updateRequestPath, $invalidPath, $updateReceiptPath));
+    $invalidReceipt = json_decode((string) file_get_contents($updateReceiptPath), true, 512, JSON_THROW_ON_ERROR);
+    if (0 !== $status || isset($invalidReceipt['before_fingerprint'])) {
+        fwrite(STDERR, "Invalid update preview produced a confirmation fingerprint.\n");
+        exit(1);
+    }
 }
 
 $confirmedRequest = $updateConfirm;
