@@ -1,8 +1,20 @@
 {
   "version": 1,
-  "request_id": "portfolio-voltworks-post-readback-fresh-20260913-v4",
+  "request_id": "portfolio-voltworks-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
-  "payload": {"id": 1419}
+  "payload": {
+    "post_id": 1419,
+    "fields": {
+      "field_portfolio_stat_1_value": "4",
+      "field_portfolio_stat_1_label": "Energy solutions",
+      "field_portfolio_stat_2_value": "1 min",
+      "field_portfolio_stat_2_label": "Free check",
+      "field_portfolio_stat_3_value": "4.6/5",
+      "field_portfolio_stat_3_label": "Displayed rating",
+      "field_portfolio_stat_4_value": "Rotterdam",
+      "field_portfolio_stat_4_label": "Office location"
+    }
+  }
 }
