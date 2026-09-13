@@ -1,0 +1,116 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-template-reinspect-6-20260913-v3",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T11:50:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "e81edb5da0f7c2ee18b7680ff21612b9b57074ba4cbeb8a27dc6ccaa9650f83c",
+    "post_id": 1216,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "600883c",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f3bf485\" name=\"post-excerpt\" settings=\"%7B%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "7175498",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Resultaat",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"c31a001\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_1_value%3Aportfolio_stat_1_value%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "9d3ce1f",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"c31a002\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_1_label%3Aportfolio_stat_1_label%22%7D\"]"
+                },
+                "editor": "<p>Resultaat</p>"
+            }
+        },
+        {
+            "id": "7483cee",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Resultaat",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"c31a003\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_2_value%3Aportfolio_stat_2_value%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "88531ce",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"c31a004\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_2_label%3Aportfolio_stat_2_label%22%7D\"]"
+                },
+                "editor": "<p>Resultaat</p>"
+            }
+        },
+        {
+            "id": "bfa4398",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Resultaat",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"c31a005\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_3_value%3Aportfolio_stat_3_value%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "fba12f2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"c31a006\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_3_label%3Aportfolio_stat_3_label%22%7D\"]"
+                },
+                "editor": "<p>Resultaat</p>"
+            }
+        },
+        {
+            "id": "e4bd965",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Link",
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "92bd881",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "View project",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"82a2a41\" name=\"acf-url\" settings=\"%7B%22key%22%3A%22field_69eba2ddebee1%3Alink%22%7D\"]"
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
