@@ -1,0 +1,126 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-acf-inspect-20260913",
+    "action": "acf.field_groups",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T07:02:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4470,
+    "field_groups": [
+        {
+            "key": "group_69deb89e918e3",
+            "title": "Portfolio",
+            "fields": [
+                {
+                    "key": "field_69deb8a3bcd88",
+                    "name": "",
+                    "label": "Tab 1",
+                    "type": "tab",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8b3bcd89",
+                    "name": "client",
+                    "label": "Client",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8c0bcd8a",
+                    "name": "category",
+                    "label": "Category",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8cebcd8b",
+                    "name": "role",
+                    "label": "Role",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_69eba2ddebee1",
+                    "name": "link",
+                    "label": "Link",
+                    "type": "url",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8d2bcd8c",
+                    "name": "",
+                    "label": "Tab 2",
+                    "type": "tab",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8ddbcd8d",
+                    "name": "description_1",
+                    "label": "Description 1",
+                    "type": "wysiwyg",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8e4bcd8e",
+                    "name": "description_2",
+                    "label": "Description 2",
+                    "type": "wysiwyg",
+                    "required": false
+                },
+                {
+                    "key": "field_69deb8f5bcd8f",
+                    "name": "",
+                    "label": "Tab 3",
+                    "type": "tab",
+                    "required": false
+                },
+                {
+                    "key": "field_69eb8f89143db",
+                    "name": "afbeelding_1",
+                    "label": "Afbeelding 1",
+                    "type": "image",
+                    "required": false
+                },
+                {
+                    "key": "field_69eb8f92143dc",
+                    "name": "afbeelding_2",
+                    "label": "Afbeelding 2",
+                    "type": "image",
+                    "required": false
+                },
+                {
+                    "key": "field_69eb8f95143dd",
+                    "name": "afbeelding_3",
+                    "label": "Afbeelding 3",
+                    "type": "image",
+                    "required": false
+                },
+                {
+                    "key": "field_69eb8f96143de",
+                    "name": "afbeelding_4",
+                    "label": "Afbeelding 4",
+                    "type": "image",
+                    "required": false
+                },
+                {
+                    "key": "field_6a9fca2f8b73c",
+                    "name": "",
+                    "label": "Tab 4",
+                    "type": "tab",
+                    "required": false
+                },
+                {
+                    "key": "field_portfolio_show_webactueel_credit",
+                    "name": "show_webactueel_credit",
+                    "label": "Show Webactueel collaboration credit",
+                    "type": "true_false",
+                    "required": false
+                }
+            ]
+        }
+    ],
+    "schema_fingerprint": "e4ea4ae21cd64c5d752a92b85a6ced433d0fe99caca15c29398edc2107cc52fa",
+    "readback_verified": null
+}
