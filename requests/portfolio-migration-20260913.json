@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "request_id": "portfolio-schema-correct-preview-20260913",
+  "request_id": "portfolio-schema-create-20260913",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.schema.ensure_text_fields",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "fields": [
       {
@@ -50,5 +50,6 @@
     ],
     "group_key": "group_69deb89e918e3",
     "post_id": 4470
-  }
+  },
+  "expected_fingerprint": "478299817c4e9363827c6a9cf8958cc2810bcfd887a01cf77a700bd51827d9c7"
 }
