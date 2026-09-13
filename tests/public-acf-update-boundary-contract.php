@@ -64,6 +64,7 @@ function add_option($key, $value, $deprecated = '', $autoload = true): bool { re
 function wp_json_encode($value): string { return json_encode($value); }
 function wp_cache_delete($key, $group = ''): bool { return true; }
 
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Request.php';
