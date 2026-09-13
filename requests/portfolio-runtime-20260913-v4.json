@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-mdv-installaties-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-mdv-installaties-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
-  "payload": {"id": 1377}
+  "expected_fingerprint": "4d05cd473d18354b125e164b946617ef6fa6fa4c55594a765b40cc0d753fda63",
+  "payload": {
+    "id": 1377,
+    "excerpt": "For MDV Installaties, I built a WordPress website presenting electrical services, maintenance and 24/7 emergency support clearly; visit <a href=\"https://mdvinstallaties.nl/\">mdvinstallaties.nl</a> to explore their expertise."
+  }
 }
