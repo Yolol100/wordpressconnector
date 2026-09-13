@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-leercentrum-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-leercentrum-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id": 1417}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "e8c734a9a29ab52e9686babbfeeee4e24d8ef4fe1017860ae5417c7d04adcd40",
+  "payload": {
+    "id": 1417,
+    "excerpt": "For Leercentrum, I built a WordPress website presenting manual, automatic and refresher driving lessons clearly; visit <a href=\"https://leercentrum.nl/\">leercentrum.nl</a> to explore their training options."
+  }
 }
