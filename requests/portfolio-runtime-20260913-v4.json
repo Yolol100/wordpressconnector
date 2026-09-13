@@ -1,13 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-jouwgroenteboer-intro-write-20260913-v4",
+  "request_id": "portfolio-envolt-post-readback-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "4fffab25eaa2353fe9c5df5b38a19e9ac0d59ddcd1d1a0903d15f9a510d6c085",
-  "payload": {
-    "id": 1423,
-    "excerpt": "For Jouwgroenteboer, I built a WordPress ecommerce website presenting fresh fruit, vegetables, deals and direct ordering clearly; visit <a href=\"https://jouwgroenteboer.nl/\">jouwgroenteboer.nl</a> to explore their online shop."
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "payload": {"id": 1427}
 }
