@@ -1,12 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-template-final-inspect-20260913-v3",
+  "request_id": "portfolio-acf-group-audit-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.inspect",
+  "action": "acf.field_groups",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 1216,
-    "element_ids": ["7175498","9d3ce1f","7483cee","88531ce","bfa4398","fba12f2","e4bd965","92bd881","600883c"]
+    "post_id": 4470
   }
 }
