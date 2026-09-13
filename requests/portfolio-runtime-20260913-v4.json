@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-bluecenter-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-bluecenter-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
-  "payload": {"id": 1376}
+  "expected_fingerprint": "8305be0104ccbeb70893998fb7027d7769179ea9179f7a4ae3af2402907f5bc9",
+  "payload": {
+    "id": 1376,
+    "excerpt": "For Bluecenter, I built a WordPress website presenting beauty treatments, personal consultations and online booking clearly; visit <a href=\"https://bluecenter.nl/\">bluecenter.nl</a> to explore their services."
+  }
 }
