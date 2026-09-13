@@ -1,9 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-brightlyn-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-batch-4-intros-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {"id": 1832}
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {"action":"post.update","expected_fingerprint":"7abdd2e6396ac2b85f1edc6c435d7daac37a2f5620adc74b1bc323b529bf05","payload":{"id":1863,"excerpt":"For DM Elektro, I built a WordPress website presenting modern electrical installations and smart solutions; visit <a href=\"https://dmelektro.nl/\">dmelektro.nl</a> to explore their services and request a quote."}},
+      {"action":"post.update","expected_fingerprint":"66b9aeb3eccdf56ea99084726c7e8422091f6b9788533c6ba06c943753566cc8","payload":{"id":1855,"excerpt":"For Bedrijfspostadres, I created a WordPress website that explains KvK-ready business addresses, digital mail handling and flexible plans; visit <a href=\"https://bedrijfspostadres.nl/\">bedrijfspostadres.nl</a> to start an application."}},
+      {"action":"post.update","expected_fingerprint":"649ed8b5c7e8c91a4c9cacf9bf63b0cf0dd8adb212f8a03402f4011a0d5ee326","payload":{"id":1839,"excerpt":"For YCO IT, I built a WordPress website presenting risk management, compliance and certification services clearly; visit <a href=\"https://yco-it.nl/\">yco-it.nl</a> to explore their practical advisory solutions."}},
+      {"action":"post.update","expected_fingerprint":"22a036159a2c6348b01ed5343d466a6be0e3e7ae326d8f99218e2f43a738ce66","payload":{"id":1846,"excerpt":"For GL Drive, I created a WordPress website focused on trial lessons, flexible driving instruction and learner confidence; visit <a href=\"https://gldrive.nl/\">gldrive.nl</a> to explore their driving-school approach."}},
+      {"action":"post.update","expected_fingerprint":"42402409d11e6a7a86ac5747ff340d3c403e2a8a199b3842e26102c5e8943ca9","payload":{"id":1832,"excerpt":"For Brightlyn, I built a WordPress website presenting cybersecurity, regulatory compliance and resilience for critical industries; visit <a href=\"https://brightlyn.nl/\">brightlyn.nl</a> to explore their end-to-end security approach."}}
+    ]
+  }
 }
