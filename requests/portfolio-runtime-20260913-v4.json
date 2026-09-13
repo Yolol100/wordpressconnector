@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-businesssuites-post-read-after-stats-20260913-v4",
+  "request_id": "portfolio-businesssuites-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
-  "payload": {"id": 1383}
+  "expected_fingerprint": "1661553927cbde5029dac95b7f5a674414d68dcd98c697497f72c560d0982921",
+  "payload": {
+    "id": 1383,
+    "excerpt": "For BusinessSuites, I built a WordPress website presenting flexible offices, meeting spaces and workspace locations clearly; visit <a href=\"https://businesssuites.nl/\">businesssuites.nl</a> to explore available spaces."
+  }
 }
