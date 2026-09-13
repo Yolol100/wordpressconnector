@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-gs-privechauffeur-intro-write-20260913-v4",
+  "request_id": "portfolio-proline-afbouw-post-read-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "33d5a638e9aa2d7c548ed7e83158e17dd2df299ef1fe164eb0614b8b702b1b26",
-  "payload": {
-    "id": 1381,
-    "excerpt": "For GS Privéchauffeur, I built a WordPress website presenting premium chauffeur, airport and business transport services clearly; visit <a href=\"https://gsprivechauffeur.nl/\">gsprivechauffeur.nl</a> to book reliable travel."
-  }
+  "payload": {"id": 1379}
 }
