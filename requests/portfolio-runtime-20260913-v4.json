@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-gldrive-intro-write-20260913-v4",
+  "request_id": "portfolio-brightlyn-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "22a036159a2c6348b01ed5343d466a6be0e3e7ae326d8f99218e2f43a738ce66",
+  "expected_fingerprint": "42402409d11e6a7a86ac5747ff340d3c403e2a8a199b3842e26102c5e8943ca9",
   "payload": {
-    "id": 1846,
-    "excerpt": "For GL Drive, I created a WordPress website focused on trial lessons, flexible driving instruction and learner confidence; visit <a href=\"https://gldrive.nl/\">gldrive.nl</a> to explore their driving-school approach."
+    "id": 1832,
+    "excerpt": "For Brightlyn, I built a WordPress website presenting cybersecurity, regulatory compliance and resilience for critical industries; visit <a href=\"https://brightlyn.nl/\">brightlyn.nl</a> to explore their end-to-end security approach."
   }
 }
