@@ -1,22 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-leercentrum-stats-write-20260913-v4",
+  "request_id": "portfolio-leercentrum-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
-  "payload": {
-    "post_id": 1417,
-    "fields": {
-      "field_portfolio_stat_1_value": "€54",
-      "field_portfolio_stat_1_label": "Manual lesson",
-      "field_portfolio_stat_2_value": "€70",
-      "field_portfolio_stat_2_label": "Automatic lesson",
-      "field_portfolio_stat_3_value": "8",
-      "field_portfolio_stat_3_label": "Teaching locations",
-      "field_portfolio_stat_4_value": "7 days",
-      "field_portfolio_stat_4_label": "Weekly availability"
-    }
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "payload": {"id": 1417}
 }
