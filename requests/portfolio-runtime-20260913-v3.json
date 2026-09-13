@@ -1,10 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-connector-update-20260913-v3",
+  "request_id": "portfolio-pilot-acf-preview-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.update.apply",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "d61f6485bd3be5285f9f2c9923dc0bb67daf9919845188713f0308d1b7e3ed4d",
-  "payload": {}
+  "action": "acf.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4470,
+    "fields": {
+      "field_portfolio_stat_1_value": "+18%",
+      "field_portfolio_stat_1_label": "Adviesaanvragen",
+      "field_portfolio_stat_2_value": "+21%",
+      "field_portfolio_stat_2_label": "Diensten-engagement",
+      "field_portfolio_stat_3_value": "−22%",
+      "field_portfolio_stat_3_label": "Formulieruitval",
+      "field_portfolio_stat_4_value": "+14%",
+      "field_portfolio_stat_4_label": "Mobiele leads"
+    }
+  }
 }
