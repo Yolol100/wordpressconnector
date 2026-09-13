@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-devrijesmid-intro-write-20260913-v4",
+  "request_id": "portfolio-marcoverhuurt-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "555034b882b3c65a2a32be2e15f7c787f1943be3cadf1c4e3acdcae74a3d8fa7",
+  "expected_fingerprint": "8100708cf995cfd2f40674563df307f5f71cfd76ec4a0ba43b4ddb5fe57fefd6",
   "payload": {
-    "id": 1430,
-    "excerpt": "For De Vrije Smid, I built a WordPress website presenting plumbing, installation and metalwork services clearly; visit <a href=\"https://devrijesmid.nl/\">devrijesmid.nl</a> to explore their practical technical expertise."
+    "id": 1428,
+    "excerpt": "For Marco Verhuurt, I created a WordPress rental website presenting telehandlers and forklifts for work at height; visit <a href=\"https://marcoverhuurt.nl/\">marcoverhuurt.nl</a> to explore their equipment range."
   }
 }
