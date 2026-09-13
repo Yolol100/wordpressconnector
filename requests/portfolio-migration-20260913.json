@@ -1,11 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-acf-inspect-20260913",
+  "request_id": "portfolio-update-preview2-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.field_groups",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "post_id": 4470
-  }
+  "payload": {}
 }
