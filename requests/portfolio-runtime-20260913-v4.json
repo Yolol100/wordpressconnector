@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-autoinkoopatlas-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-autoinkoopatlas-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id": 1416}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "39ca7a63b95a95061f77c2e0ed4c4e69417fb866393e201815869b7b40e83ff3",
+  "payload": {
+    "id": 1416,
+    "excerpt": "For Auto Inkoop Atlas, I built a WordPress website simplifying direct vehicle sales and valuations; visit <a href=\"https://autoinkoop-atlas.nl/\">autoinkoop-atlas.nl</a> to sell your car without intermediaries."
+  }
 }
