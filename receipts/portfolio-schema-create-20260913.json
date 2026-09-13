@@ -1,0 +1,37 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-schema-create-20260913",
+    "action": "acf.schema.ensure_text_fields",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T07:11:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4470,
+    "group_key": "group_69deb89e918e3",
+    "schema_fingerprint": "478299817c4e9363827c6a9cf8958cc2810bcfd887a01cf77a700bd51827d9c7",
+    "would_create": [
+        "field_portfolio_stat_1_value",
+        "field_portfolio_stat_1_label",
+        "field_portfolio_stat_2_value",
+        "field_portfolio_stat_2_label",
+        "field_portfolio_stat_3_value",
+        "field_portfolio_stat_3_label",
+        "field_portfolio_stat_4_value",
+        "field_portfolio_stat_4_label"
+    ],
+    "readback_verified": true,
+    "created": [
+        "field_portfolio_stat_1_value",
+        "field_portfolio_stat_1_label",
+        "field_portfolio_stat_2_value",
+        "field_portfolio_stat_2_label",
+        "field_portfolio_stat_3_value",
+        "field_portfolio_stat_3_label",
+        "field_portfolio_stat_4_value",
+        "field_portfolio_stat_4_label"
+    ],
+    "before_fingerprint": "5bce6974080fffc2736b1c88613d2c2e796020eee6021eaf3b7ce5798f2ad89b",
+    "after_fingerprint": "b2fa649ea8e9292272354226e7a475a8cebd3d49ee0908f9c9558c8969119dd7",
+    "rollback_available": true
+}
