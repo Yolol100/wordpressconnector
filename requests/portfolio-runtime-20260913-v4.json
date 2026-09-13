@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-odetra-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-odetra-post-readback-after-stats-retry1-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
-  "payload": {"post_id":1429}
+  "payload": {"id":1429}
 }
