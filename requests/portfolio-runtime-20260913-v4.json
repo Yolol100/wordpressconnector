@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-marcosmontage-intro-write-20260913-v4",
+  "request_id": "portfolio-oxfordacademy-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "ed9053998bca6c26cc4c4eb1628d9956a60213b775a0e285668600d0ed1b301a",
+  "expected_fingerprint": "4d38139901adfdc57138039263974e4bb6313b12668d585d0ab869c2023b36ff",
   "payload": {
-    "id": 1439,
-    "excerpt": "For Marco’s Montage, I built a WordPress website presenting insulation expertise and completed projects clearly; visit <a href=\"https://marcosmontage.nl/\">marcosmontage.nl</a> to explore their nationwide installation services."
+    "id": 1435,
+    "excerpt": "For Oxford Academy, I created a WordPress website presenting tutoring, homework support and exam training clearly; visit <a href=\"https://oxfordacademy.nl/\">oxfordacademy.nl</a> to explore their education programmes."
   }
 }
