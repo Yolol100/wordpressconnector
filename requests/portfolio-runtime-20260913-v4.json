@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-progress-post-read-20260913-v4",
+  "request_id": "portfolio-superfruitmand-post-read-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "confirm": true,
-  "payload": {"id": 1394}
+  "payload": {"id": 1392}
 }
