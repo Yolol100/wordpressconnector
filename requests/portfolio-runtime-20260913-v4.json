@@ -1,13 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-kervana-intro-write-20260913-v4",
+  "request_id": "portfolio-kervana-post-readback-after-failed-intro-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "78eb38fd551576ac3ceecd7c2cd8bf70528eaac11921f923edbcdf8e52a8f1d5",
-  "payload": {
-    "id": 1424,
-    "excerpt": "For Kervana, I built a WordPress website presenting plumbing, heating and renovation services clearly; visit <a href=\"https://www.kervana.nl/\">kervana.nl</a> to explore their installation and maintenance expertise."
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "payload": {"id":1424}
 }
