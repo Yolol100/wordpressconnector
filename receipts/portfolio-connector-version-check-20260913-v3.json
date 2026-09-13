@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-connector-version-check-20260913-v3",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T11:17:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "current_version": "1.14.1",
+    "latest_version": "1.14.2",
+    "update_available": true,
+    "readback_verified": null
+}
