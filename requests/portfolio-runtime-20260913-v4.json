@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-casareno-intro-write-20260914-v4",
+  "request_id": "portfolio-schipholparkeren-post-list-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "6de74c1877ec974dfc98152bad1053ff9e9a33f13df843dbc578212ede4820c7",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "id": 1372,
-    "excerpt": "For CasaReno, I built a WordPress website showcasing nationwide renovation, turn-key construction and a clear project process; visit <a href=\"https://casareno.nl/\">casareno.nl</a> to explore their work."
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 20,
+    "page": 1,
+    "search": "Schipholparkeren",
+    "orderby": "ID",
+    "order": "ASC"
   }
 }
