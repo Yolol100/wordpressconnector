@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "request_id": "portfolio-schema-preview-20260913",
+  "request_id": "portfolio-orphan-recovery-preview-20260913",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.schema.ensure_text_fields",
   "dry_run": true,
@@ -10,42 +10,42 @@
       {
         "key": "field_webactueel_stat_1_value",
         "label": "Resultaat 1 – cijfer",
-        "name": "portfolio_stat_1_value"
+        "name": "stat_1_value"
       },
       {
         "key": "field_webactueel_stat_1_label",
         "label": "Resultaat 1 – tekst",
-        "name": "portfolio_stat_1_label"
+        "name": "stat_1_label"
       },
       {
         "key": "field_webactueel_stat_2_value",
         "label": "Resultaat 2 – cijfer",
-        "name": "portfolio_stat_2_value"
+        "name": "stat_2_value"
       },
       {
         "key": "field_webactueel_stat_2_label",
         "label": "Resultaat 2 – tekst",
-        "name": "portfolio_stat_2_label"
+        "name": "stat_2_label"
       },
       {
         "key": "field_webactueel_stat_3_value",
         "label": "Resultaat 3 – cijfer",
-        "name": "portfolio_stat_3_value"
+        "name": "stat_3_value"
       },
       {
         "key": "field_webactueel_stat_3_label",
         "label": "Resultaat 3 – tekst",
-        "name": "portfolio_stat_3_label"
+        "name": "stat_3_label"
       },
       {
         "key": "field_webactueel_stat_4_value",
         "label": "Resultaat 4 – cijfer",
-        "name": "portfolio_stat_4_value"
+        "name": "stat_4_value"
       },
       {
         "key": "field_webactueel_stat_4_label",
         "label": "Resultaat 4 – tekst",
-        "name": "portfolio_stat_4_label"
+        "name": "stat_4_label"
       }
     ],
     "group_key": "group_69deb89e918e3",
