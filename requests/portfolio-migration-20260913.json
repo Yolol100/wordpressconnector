@@ -1,10 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-update-apply-20260913",
+  "request_id": "portfolio-update-readback-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.update.apply",
-  "dry_run": false,
-  "confirm": true,
-  "payload": {},
-  "expected_fingerprint": "8c9c60df2c44c3a23dfac1528f49596e581a59425ef95ce6b3ad255fa81cc85c"
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
 }
