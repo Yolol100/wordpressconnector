@@ -1,10 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-pilot-acf-preview-20260913-v3",
+  "request_id": "portfolio-pilot-acf-write-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.update",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
   "payload": {
     "post_id": 4470,
     "fields": {
