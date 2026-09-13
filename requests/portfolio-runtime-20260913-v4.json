@@ -1,9 +1,28 @@
 {
   "version": 1,
-  "request_id": "portfolio-acdrive-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-batch-2-intros-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {"id": 2213}
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "expected_fingerprint": "7f37e76335cc0e6a1e1690f2190ac321ce42112f9fefd04bef4c1e0da424c684",
+        "payload": {
+          "id": 3660,
+          "excerpt": "For Spring Architecten, I built a WordPress portfolio that gives architectural projects visual priority; visit <a href=\"https://spring-architecten.nl/\">spring-architecten.nl</a> to explore their work across housing, education and care."
+        }
+      },
+      {
+        "action": "post.update",
+        "expected_fingerprint": "678434c808ea13682808075134e5b8135ed32d93033fd7b778d6f337e393cd9d",
+        "payload": {
+          "id": 2213,
+          "excerpt": "For AC Drive, I created a WordPress website that guides learners from a free trial lesson to suitable driving packages; visit <a href=\"https://acdrive.nl/\">acdrive.nl</a> to start."
+        }
+      }
+    ]
+  }
 }
