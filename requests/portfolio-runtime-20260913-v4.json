@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-brightlyn-intro-write-20260913-v4",
+  "request_id": "portfolio-batch-5-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "42402409d11e6a7a86ac5747ff340d3c403e2a8a199b3842e26102c5e8943ca9",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "id": 1832,
-    "excerpt": "For Brightlyn, I built a WordPress website presenting cybersecurity, regulatory compliance and resilience for critical industries; visit <a href=\"https://brightlyn.nl/\">brightlyn.nl</a> to explore their end-to-end security approach."
+    "operations": [
+      {"action":"acf.update","payload":{"post_id":1438,"fields":{"portfolio_stat_1_value":"4.9/5","portfolio_stat_1_label":"Customer rating","portfolio_stat_2_value":"324","portfolio_stat_2_label":"Customer reviews","portfolio_stat_3_value":"9","portfolio_stat_3_label":"Renovation services","portfolio_stat_4_value":"3","portfolio_stat_4_label":"Core project routes"}}},
+      {"action":"acf.update","payload":{"post_id":1714,"fields":{"portfolio_stat_1_value":"100","portfolio_stat_1_label":"Orphans targeted","portfolio_stat_2_value":"€42.5K","portfolio_stat_2_label":"Benin project goal","portfolio_stat_3_value":"€6.9K","portfolio_stat_3_label":"Makeni project goal","portfolio_stat_4_value":"€13.5K","portfolio_stat_4_label":"Solar project goal"}}},
+      {"action":"acf.update","payload":{"post_id":1439,"fields":{"portfolio_stat_1_value":"1,600+","portfolio_stat_1_label":"Completed projects","portfolio_stat_2_value":"30+","portfolio_stat_2_label":"Skilled professionals","portfolio_stat_3_value":"Since 1996","portfolio_stat_3_label":"Active in insulation","portfolio_stat_4_value":"8–1,000","portfolio_stat_4_label":"Homes per project"}}},
+      {"action":"acf.update","payload":{"post_id":1435,"fields":{"portfolio_stat_1_value":"100%","portfolio_stat_1_label":"Exam pass rate","portfolio_stat_2_value":"11","portfolio_stat_2_label":"Exam candidates passed","portfolio_stat_3_value":"€0","portfolio_stat_3_label":"Registration fee","portfolio_stat_4_value":"4","portfolio_stat_4_label":"Max. young learners/class"}}},
+      {"action":"acf.update","payload":{"post_id":1434,"fields":{"portfolio_stat_1_value":"90","portfolio_stat_1_label":"Showroom appointments/week","portfolio_stat_2_value":"12","portfolio_stat_2_label":"Showroom specialists","portfolio_stat_3_value":"30+","portfolio_stat_3_label":"Partner brands","portfolio_stat_4_value":"14","portfolio_stat_4_label":"Featured projects"}}}
+    ]
   }
 }
