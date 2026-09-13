@@ -1,8 +1,20 @@
 {
   "version": 1,
-  "request_id": "portfolio-autoinkoopatlas-post-readback-fresh-20260913-v4",
+  "request_id": "portfolio-autoinkoopatlas-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
-  "payload": {"id": 1416}
+  "payload": {
+    "post_id": 1416,
+    "fields": {
+      "field_portfolio_stat_1_value": "5 min",
+      "field_portfolio_stat_1_label": "Vehicle registration",
+      "field_portfolio_stat_2_value": "30 min",
+      "field_portfolio_stat_2_label": "Bid response",
+      "field_portfolio_stat_3_value": "1 hour",
+      "field_portfolio_stat_3_label": "Buyer arrival",
+      "field_portfolio_stat_4_value": "3",
+      "field_portfolio_stat_4_label": "Sale steps"
+    }
+  }
 }
