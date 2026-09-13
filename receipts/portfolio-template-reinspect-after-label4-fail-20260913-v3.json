@@ -1,0 +1,52 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-template-reinspect-after-label4-fail-20260913-v3",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T11:54:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "508687a92ebcf5adab1fecae7618a4dd5ef8b14a4d71c95b517c49310c1ffb0c",
+    "post_id": 1216,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "600883c",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f3bf485\" name=\"post-excerpt\" settings=\"%7B%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "e4bd965",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Resultaat",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"c31a007\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_4_value%3Aportfolio_stat_4_value%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "92bd881",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "View project",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"82a2a41\" name=\"acf-url\" settings=\"%7B%22key%22%3A%22field_69eba2ddebee1%3Alink%22%7D\"]"
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
