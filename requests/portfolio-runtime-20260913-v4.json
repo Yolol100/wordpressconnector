@@ -1,9 +1,32 @@
 {
   "version": 1,
-  "request_id": "portfolio-fixfinder-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-batch-3-intros-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {"id": 1877}
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "expected_fingerprint": "7d68f1aa3069c0047a6a523910e7fa441239b95b46cc85e6d1c1bc0ae721b3af",
+        "payload": {"id": 1898, "excerpt": "For Starkeuken, I built a WordPress website that presents affordable fitted kitchens, products and advice clearly; visit <a href=\"https://starkeuken.nl/\">starkeuken.nl</a> to explore their kitchens and services."}
+      },
+      {
+        "action": "post.update",
+        "expected_fingerprint": "ff296cc54454a621a41b08a80e59209a5ed6b355cd98dec1bc1c93b0bd910087",
+        "payload": {"id": 1884, "excerpt": "For QuickTemp, I created a WordPress recruitment website connecting employers with flexible staff across hospitality, production and logistics; visit <a href=\"https://quicktemp.nl/\">quicktemp.nl</a> to explore their services."}
+      },
+      {
+        "action": "post.update",
+        "expected_fingerprint": "d32d015196da1c755f790d183ec579ae934ae863474154457a824ee02414c203",
+        "payload": {"id": 1870, "excerpt": "For VoiceLinq, I built a WordPress website that presents interpreting and translation services clearly for organizations and linguists; visit <a href=\"https://voicelinq.nl/\">voicelinq.nl</a> to explore their services."}
+      },
+      {
+        "action": "post.update",
+        "expected_fingerprint": "b88e4ea41fb0fadaf23919710ddf1711885e841688b18b1cb92f869239f47236",
+        "payload": {"id": 1877, "excerpt": "For FixFinder, I created a WordPress platform that helps drivers find transparent car-care services and local garage partners; visit <a href=\"https://fixfinder.nl/\">fixfinder.nl</a> to plan an appointment."}
+      }
+    ]
+  }
 }
