@@ -1,8 +1,20 @@
 {
   "version": 1,
-  "request_id": "portfolio-sodrive-post-readback-fresh-20260913-v4",
+  "request_id": "portfolio-sodrive-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
-  "payload": {"id": 1418}
+  "payload": {
+    "post_id": 1418,
+    "fields": {
+      "field_portfolio_stat_1_value": "60 min",
+      "field_portfolio_stat_1_label": "Trial lesson",
+      "field_portfolio_stat_2_value": "€53",
+      "field_portfolio_stat_2_label": "Manual lesson",
+      "field_portfolio_stat_3_value": "€60",
+      "field_portfolio_stat_3_label": "Automatic lesson",
+      "field_portfolio_stat_4_value": "100+",
+      "field_portfolio_stat_4_label": "Places served"
+    }
+  }
 }
