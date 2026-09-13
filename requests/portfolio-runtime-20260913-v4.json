@@ -1,22 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-sodrive-positive-stats-write-20260913-v4",
+  "request_id": "portfolio-sodrive-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
+  "action": "post.get",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "85f68162c4c3bc39a63ee7c3b3fc4903556553e917b3941a41abb12622c01ebb",
   "payload": {
-    "post_id": 1418,
-    "fields": {
-      "field_portfolio_stat_1_value": "1,850",
-      "field_portfolio_stat_1_label": "Successful students",
-      "field_portfolio_stat_2_value": "110+",
-      "field_portfolio_stat_2_label": "Excellent reviews",
-      "field_portfolio_stat_3_value": "100+",
-      "field_portfolio_stat_3_label": "Places served",
-      "field_portfolio_stat_4_value": "1–2 mo",
-      "field_portfolio_stat_4_label": "Fast-track licence"
-    }
+    "id": 1418
   }
 }
