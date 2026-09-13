@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-sodrive-intro-write-20260913-v4",
+  "request_id": "portfolio-tasveren-post-read-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "bc471fe9f2da03cc438866060a1603aff6a31033f59e6b8d390ae553064bfe3d",
-  "payload": {
-    "id": 1418,
-    "excerpt": "For Sodrive, I built a WordPress website presenting driving lessons, fast-track courses and nationwide availability clearly; visit <a href=\"https://sodrive.nl/\">sodrive.nl</a> to start learning."
-  }
+  "payload": {"id": 1415}
 }
