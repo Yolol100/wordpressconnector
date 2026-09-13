@@ -1,9 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-sodrive-positive-stats-preview-20260913-v4",
+  "request_id": "portfolio-sodrive-positive-stats-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.update",
-  "dry_run": true,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "85f68162c4c3bc39a63ee7c3b3fc4903556553e917b3941a41abb12622c01ebb",
   "payload": {
     "post_id": 1418,
     "fields": {
