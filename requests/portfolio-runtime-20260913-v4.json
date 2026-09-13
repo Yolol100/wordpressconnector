@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-palmeroshop-intro-write-20260913-v4",
+  "request_id": "portfolio-devrijesmid-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "ddf2f7dcbb30c3afbc92a5dde98a2db4b162997ae64d8eb144571aab98fda438",
+  "expected_fingerprint": "555034b882b3c65a2a32be2e15f7c787f1943be3cadf1c4e3acdcae74a3d8fa7",
   "payload": {
-    "id": 1431,
-    "excerpt": "For Palmero Shop, I built a WordPress webshop presenting massage guns, specifications and customer reviews clearly; visit <a href=\"https://palmeroshop.com/\">palmeroshop.com</a> to explore the PalmeroGun range."
+    "id": 1430,
+    "excerpt": "For De Vrije Smid, I built a WordPress website presenting plumbing, installation and metalwork services clearly; visit <a href=\"https://devrijesmid.nl/\">devrijesmid.nl</a> to explore their practical technical expertise."
   }
 }
