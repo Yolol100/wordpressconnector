@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-mdv-installaties-post-read-after-stats-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:19:20+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1377,
+        "type": "post",
+        "status": "publish",
+        "title": "Mdvinstallaties",
+        "slug": "mdvinstallaties",
+        "permalink": "https://andrewbaeten.nl/mdvinstallaties/",
+        "excerpt": "Installation website separating electrical projects, renovations, maintenance and security support so customers can quickly identify the right service and make contact."
+    },
+    "post_fingerprint": "4d05cd473d18354b125e164b946617ef6fa6fa4c55594a765b40cc0d753fda63",
+    "readback_verified": null
+}
