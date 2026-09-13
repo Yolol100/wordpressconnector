@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-ourwp-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-ourwp-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "805725fe13a2614b44569d79f17f0c8befcd43e7dac9c8e258a05c4ea3b8767f",
   "payload": {
-    "id": 1375
+    "id": 1375,
+    "excerpt": "For OurWP, I built a WordPress website presenting virtual offices, business addresses and digital mail handling; visit <a href=\"https://ourwp.nl/\">ourwp.nl</a> to explore their services."
   }
 }
