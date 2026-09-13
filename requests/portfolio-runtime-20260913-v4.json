@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-odetra-intro-write-20260913-v4",
+  "request_id": "portfolio-ozturk-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "5874e1077405a705355e890b53194915e2e2c4c439db090ed52cb135fb128267",
+  "expected_fingerprint": "56bec11a4f36337b3dd883d5338415602589d3c19e72b1fd55e499e0eafdc6d9",
   "payload": {
-    "id": 1429,
-    "excerpt": "For Odetra, I built a WordPress website presenting Northern Cyprus property opportunities and inspection trips clearly; visit <a href=\"https://odetra.com/\">odetra.com</a> to explore their real estate services."
+    "id": 1426,
+    "excerpt": "For Ozturk Motion Pictures, I built a WordPress website presenting wedding films, photography and authentic storytelling; visit <a href=\"https://ozturkmotionpictures.nl/\">ozturkmotionpictures.nl</a> to explore their cinematic wedding work."
   }
 }
