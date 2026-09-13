@@ -1,12 +1,23 @@
 {
   "version": 1,
-  "request_id": "portfolio-template-reinspect-3-20260913-v3",
+  "request_id": "portfolio-template-patch-label2-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.inspect",
-  "dry_run": true,
-  "confirm": false,
+  "action": "elementor.patch_element",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "80b0be2898e0f6263a1ec305e9b0658e5119a7ade2281491e8fda5eac3250167",
   "payload": {
     "id": 1216,
-    "element_ids": ["7175498","9d3ce1f","7483cee","88531ce","bfa4398","fba12f2","e4bd965","92bd881","600883c"]
+    "element_id": "88531ce",
+    "settings": {
+      "editor": "<p>Resultaat</p>",
+      "__dynamic__": {
+        "editor": "[elementor-tag id=\"c31a004\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_2_label%3Aportfolio_stat_2_label%22%7D\"]"
+      },
+      "text_color": "#FFFFFF",
+      "typography_typography": "custom",
+      "typography_font_size": {"unit":"px","size":18,"sizes":[]},
+      "typography_font_size_mobile": {"unit":"px","size":18,"sizes":[]}
+    }
   }
 }
