@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-kroess-visser-post-read-after-stats-20260913-v4",
+  "request_id": "portfolio-kroess-visser-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
-  "payload": {"id": 1391}
+  "expected_fingerprint": "179b14ba7d9d6507dc51745a439d2d6b385ce1feaed580298a541e8077fba903",
+  "payload": {
+    "id": 1391,
+    "excerpt": "For Kroess & Visser, I built a WordPress website presenting accountancy, tax and advisory expertise clearly; visit <a href=\"https://kroessvisser.nl/\">kroessvisser.nl</a> to explore their services."
+  }
 }
