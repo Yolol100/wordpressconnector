@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-update-preview2-20260913",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T07:03:32+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.14.0",
+    "to_version": "1.14.1",
+    "before_fingerprint": "8c9c60df2c44c3a23dfac1528f49596e581a59425ef95ce6b3ad255fa81cc85c",
+    "rollback_supported": false,
+    "readback_verified": null
+}
