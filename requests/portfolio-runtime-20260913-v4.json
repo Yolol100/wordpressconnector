@@ -1,13 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-schipholparkeren-intro-write-20260914-v4",
+  "request_id": "portfolio-zen-post-list-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "d3c5655485bc73d64cd59ef5b578b40b52a6b1f2b917b281e076a6ff135f7a28",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "id": 1371,
-    "excerpt": "For Schipholparkeren, I built a WordPress comparison website helping travellers compare airport parking options; visit <a href=\"https://schipholparkeren.com/\">SchipholParkeren.com</a> to explore the service."
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 20,
+    "page": 1,
+    "search": "ZEN",
+    "orderby": "ID",
+    "order": "ASC"
   }
 }
