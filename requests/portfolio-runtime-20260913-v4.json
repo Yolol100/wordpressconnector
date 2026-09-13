@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-envolt-post-readback-20260913-v4",
+  "request_id": "portfolio-ozturk-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id": 1427}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "56bec11a4f36337b3dd883d5338415602589d3c19e72b1fd55e499e0eafdc6d9",
+  "payload": {
+    "id": 1426,
+    "excerpt": "For Ozturk Motion Pictures, I built a WordPress portfolio showcasing wedding films, photography and authentic storytelling; visit <a href=\"https://ozturkmotionpictures.nl/\">ozturkmotionpictures.nl</a> to explore their cinematic wedding work."
+  }
 }
