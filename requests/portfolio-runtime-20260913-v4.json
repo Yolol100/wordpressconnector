@@ -1,22 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-wehear4u-stats-write-20260913-v4",
+  "request_id": "portfolio-wehear4u-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
-  "payload": {
-    "post_id": 1332,
-    "fields": {
-      "field_portfolio_stat_1_value": "31",
-      "field_portfolio_stat_1_label": "Fundraiser donations",
-      "field_portfolio_stat_2_value": "€1.9K",
-      "field_portfolio_stat_2_label": "Raised",
-      "field_portfolio_stat_3_value": "€15K",
-      "field_portfolio_stat_3_label": "Fundraising goal",
-      "field_portfolio_stat_4_value": "≈10 days",
-      "field_portfolio_stat_4_label": "Planned Kenya trip"
-    }
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 1332}
 }
