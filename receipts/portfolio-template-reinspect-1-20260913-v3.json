@@ -1,0 +1,110 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-template-reinspect-1-20260913-v3",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T11:24:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "b7dd03d5d168e35e9b6592422b6a1d836e61494ed9c64cd8de009c22f4dd1a58",
+    "post_id": 1216,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "600883c",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f3bf485\" name=\"post-excerpt\" settings=\"%7B%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "7175498",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Resultaat",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"c31a001\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_1_value%3Aportfolio_stat_1_value%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "9d3ce1f",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f6efba2\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8b3bcd89%3Aclient%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "7483cee",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Category"
+            }
+        },
+        {
+            "id": "88531ce",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"7cce8d7\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8c0bcd8a%3Aservice%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "bfa4398",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Role"
+            }
+        },
+        {
+            "id": "fba12f2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"d5352d6\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8cebcd8b%3Adate%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "e4bd965",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Link",
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "92bd881",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "View project",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"82a2a41\" name=\"acf-url\" settings=\"%7B%22key%22%3A%22field_69eba2ddebee1%3Alink%22%7D\"]"
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
