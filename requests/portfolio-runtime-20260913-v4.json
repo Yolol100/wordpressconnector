@@ -1,9 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-mdv-installaties-post-read-20260914-v4",
+  "request_id": "portfolio-mdv-installaties-stats-dry-run-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
   "confirm": true,
-  "payload": {"id": 1377}
+  "payload": {
+    "post_id": 1377,
+    "fields": {
+      "field_portfolio_stat_1_value": "24/7",
+      "field_portfolio_stat_1_label": "Emergency service",
+      "field_portfolio_stat_2_value": "Recognised",
+      "field_portfolio_stat_2_label": "Techniek Nederland",
+      "field_portfolio_stat_3_value": "5",
+      "field_portfolio_stat_3_label": "Named service areas",
+      "field_portfolio_stat_4_value": "NEN",
+      "field_portfolio_stat_4_label": "Standards-based work"
+    }
+  }
 }
