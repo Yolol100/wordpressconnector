@@ -1,0 +1,281 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-template-inspect-20260913-v3",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T11:22:21+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "445f5daad44b215a76c0c8ac70877c6a83133ebecb386e04dfbd93093e228b14",
+    "post_id": 1216,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "b13323b",
+            "elType": "container"
+        },
+        {
+            "id": "9020729",
+            "elType": "container"
+        },
+        {
+            "id": "c5159bb",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Portfolio",
+                "__dynamic__": {
+                    "title": "[elementor-tag id=\"90918a0\" name=\"page-title\" settings=\"%7B%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "600883c",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f3bf485\" name=\"post-excerpt\" settings=\"%7B%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "bd6563e",
+            "elType": "widget",
+            "widgetType": "shortcode"
+        },
+        {
+            "id": "8dbc557",
+            "elType": "container"
+        },
+        {
+            "id": "1dde33b",
+            "elType": "container"
+        },
+        {
+            "id": "7175498",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Client"
+            }
+        },
+        {
+            "id": "9d3ce1f",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"f6efba2\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8b3bcd89%3Aclient%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "81e9a84",
+            "elType": "container"
+        },
+        {
+            "id": "7483cee",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Category"
+            }
+        },
+        {
+            "id": "88531ce",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"7cce8d7\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8c0bcd8a%3Aservice%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "1c3f910",
+            "elType": "container"
+        },
+        {
+            "id": "bfa4398",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Role"
+            }
+        },
+        {
+            "id": "fba12f2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"d5352d6\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8cebcd8b%3Adate%22%7D\"]"
+                },
+                "editor": "<p>California Art Gallery Museum</p>"
+            }
+        },
+        {
+            "id": "abd257f",
+            "elType": "container"
+        },
+        {
+            "id": "e4bd965",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Link",
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "92bd881",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "View project",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"82a2a41\" name=\"acf-url\" settings=\"%7B%22key%22%3A%22field_69eba2ddebee1%3Alink%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "3b77dee",
+            "elType": "container"
+        },
+        {
+            "id": "9abed80",
+            "elType": "container"
+        },
+        {
+            "id": "2f60839",
+            "elType": "container"
+        },
+        {
+            "id": "4ff11a7",
+            "elType": "container"
+        },
+        {
+            "id": "2849037",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Problem"
+            }
+        },
+        {
+            "id": "de06414",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"2cffdcf\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8ddbcd8d%3Adescription_1%22%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "cdfd268",
+            "elType": "container"
+        },
+        {
+            "id": "5117013",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Solution"
+            }
+        },
+        {
+            "id": "d1c7d74",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "__dynamic__": {
+                    "editor": "[elementor-tag id=\"a5b7dea\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_69deb8e4bcd8e%3Adescription_2%22%7D\"]"
+                },
+                "editor": "<p>Thing form thing fifth. Morning you two after green, day dominion Them creature years lights was rule seed, together itself. Lights creeping second spirit air the. You night and their.</p><p>Let. Gathered hath doesn’t air, unto his brought morning. Creepeth deep, dry whales. Given light, moving our. Third greater them replenish fourth. Us give multiply stars grass is to she’d and beast. Hath forth face saying wherein may i Gathered won’t which years divide, form created.</p>"
+            }
+        },
+        {
+            "id": "bbcf389",
+            "elType": "container"
+        },
+        {
+            "id": "a69fff4",
+            "elType": "container",
+            "settings": {
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "b113e46",
+            "elType": "widget",
+            "widgetType": "image",
+            "settings": {
+                "__dynamic__": {
+                    "image": "[elementor-tag id=\"1a00e77\" name=\"acf-image\" settings=\"%7B%22key%22%3A%22field_69eb8f89143db%3Aafbeelding_1%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "50b2aeb",
+            "elType": "container",
+            "settings": {
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "2f08296",
+            "elType": "widget",
+            "widgetType": "image",
+            "settings": {
+                "__dynamic__": {
+                    "image": "[elementor-tag id=\"1a00e77\" name=\"acf-image\" settings=\"%7B%22key%22%3A%22field_69eb8f92143dc%3Aafbeelding_2%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "396015a",
+            "elType": "container",
+            "settings": {
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "e8809ff",
+            "elType": "widget",
+            "widgetType": "image",
+            "settings": {
+                "__dynamic__": {
+                    "image": "[elementor-tag id=\"1a00e77\" name=\"acf-image\" settings=\"%7B%22key%22%3A%22field_69eb8f95143dd%3Aafbeelding_3%22%7D\"]"
+                }
+            }
+        },
+        {
+            "id": "581a871",
+            "elType": "container",
+            "settings": {
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "7124b91",
+            "elType": "widget",
+            "widgetType": "image",
+            "settings": {
+                "__dynamic__": {
+                    "image": "[elementor-tag id=\"1a00e77\" name=\"acf-image\" settings=\"%7B%22key%22%3A%22field_69eb8f96143de%3Aafbeelding_4%22%7D\"]"
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
