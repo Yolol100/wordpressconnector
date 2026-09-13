@@ -1,13 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-bedrijfsboekhouder-intro-write-20260913-v4",
+  "request_id": "portfolio-progress-post-read-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "1a15c3ab3005459ed526ee79d54352dc76e4e1c37a1d2535fa032d69fdd3c244",
   "payload": {
-    "id": 1393,
-    "excerpt": "For Bedrijfsboekhouder, I built a WordPress website presenting bookkeeping, accountancy and financial support clearly; visit <a href=\"https://bedrijfsboekhouder.nl/\">bedrijfsboekhouder.nl</a> to explore their services."
+    "id": 1394
   }
 }
