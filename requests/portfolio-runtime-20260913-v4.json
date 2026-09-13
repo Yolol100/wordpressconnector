@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-neturalhome-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-homeplaza-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {"id": 1434}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "e38274a22cb5f5c3e3626e6c651842875a1ed9ef86567d013a4fef3426478232",
+  "payload": {
+    "id": 1438,
+    "excerpt": "For Home Plaza, I built a WordPress website presenting renovation, showroom and interior services clearly; visit <a href=\"https://home-plaza.nl/\">home-plaza.nl</a> to explore their complete home improvement offering."
+  }
 }
