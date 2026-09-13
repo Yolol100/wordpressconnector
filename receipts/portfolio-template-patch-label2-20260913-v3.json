@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-template-patch-label2-20260913-v3",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T11:28:48+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 1216,
+    "element_id": "88531ce",
+    "before_fingerprint": "da1b568eaf02c0e7ca8ee3cf30988666a563d9f50990a11fd85dc94a2dead722",
+    "after_fingerprint": "1cd4d0364dd726806b43f6cd9034dbc188fac716412a2b06ad34e91ae1ff197d",
+    "rollback_available": true
+}
