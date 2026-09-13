@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-schema-readback-20260913",
+  "request_id": "portfolio-template-inspect-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.field_groups",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_id": 4470
+    "id": 1216
   }
 }
