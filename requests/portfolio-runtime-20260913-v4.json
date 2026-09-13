@@ -1,12 +1,16 @@
 {
   "version": 1,
-  "request_id": "portfolio-byderma-card3-label-inspect-20260914-v4",
+  "request_id": "portfolio-byderma-card3-label-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.inspect",
-  "dry_run": true,
-  "confirm": false,
+  "action": "elementor.patch_element",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d509b7fb3895e477254eb49a8489ac7e6040723bd84c2ef3120a74bd07d89fbd",
   "payload": {
     "id": 4733,
-    "element_ids": ["e21mflbl"]
+    "element_id": "e21mflbl",
+    "settings": {
+      "editor": "<p>EXPERTISE AREAS</p>"
+    }
   }
 }
