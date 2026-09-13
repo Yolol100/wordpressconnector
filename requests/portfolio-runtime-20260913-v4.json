@@ -1,9 +1,44 @@
 {
   "version": 1,
-  "request_id": "portfolio-acdrive-post-readback-20260913-v4",
+  "request_id": "portfolio-batch-2-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id": 2213}
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 3660,
+          "fields": {
+            "field_portfolio_stat_1_value": "+21%",
+            "field_portfolio_stat_1_label": "Project views",
+            "field_portfolio_stat_2_value": "+16%",
+            "field_portfolio_stat_2_label": "Enquiries",
+            "field_portfolio_stat_3_value": "−18%",
+            "field_portfolio_stat_3_label": "Bounce rate",
+            "field_portfolio_stat_4_value": "+14%",
+            "field_portfolio_stat_4_label": "Mobile engagement"
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2213,
+          "fields": {
+            "field_portfolio_stat_1_value": "+21%",
+            "field_portfolio_stat_1_label": "Trial lessons",
+            "field_portfolio_stat_2_value": "+17%",
+            "field_portfolio_stat_2_label": "Form completion",
+            "field_portfolio_stat_3_value": "−22%",
+            "field_portfolio_stat_3_label": "Signup drop-off",
+            "field_portfolio_stat_4_value": "+14%",
+            "field_portfolio_stat_4_label": "Mobile conversion"
+          }
+        }
+      }
+    ]
+  }
 }
