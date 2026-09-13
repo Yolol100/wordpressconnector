@@ -1,7 +1,7 @@
 {
   "version": 1,
   "request_id": "andrewbaeten-phase1-update-check-20260913",
-  "site_url": "https://andrewbaeten.nl/",
+  "site_url": "https://andrewbaeten.nl",
   "action": "connector.update.check",
   "dry_run": true,
   "confirm": false,
