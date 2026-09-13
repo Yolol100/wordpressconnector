@@ -1,11 +1,32 @@
 {
   "version": 1,
-  "request_id": "portfolio-template-inspect-20260913",
+  "request_id": "portfolio-card-patch0-preview-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.inspect",
+  "action": "elementor.patch_element",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 1216
+    "id": 1216,
+    "element_id": "7175498",
+    "settings": {
+      "title": "",
+      "__dynamic__": {
+        "title": "[elementor-tag id=\"pv1\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_portfolio_stat_1_value%3Aportfolio_stat_1_value%22%7D\"]"
+      },
+      "header_size": "p",
+      "title_color": "#FFBB28",
+      "typography_typography": "custom",
+      "typography_font_size": {
+        "unit": "px",
+        "size": 32,
+        "sizes": []
+      },
+      "typography_font_size_mobile": {
+        "unit": "px",
+        "size": 28,
+        "sizes": []
+      },
+      "typography_font_weight": "600"
+    }
   }
 }
