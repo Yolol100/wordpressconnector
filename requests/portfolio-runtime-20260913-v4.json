@@ -1,16 +1,12 @@
 {
   "version": 1,
-  "request_id": "portfolio-byderma-card2-label-write-20260914-v4",
+  "request_id": "portfolio-byderma-card2-value-inspect-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.patch_element",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "77ef79ed6196b67763cc307d99df09d1566b616cd8b3b248c54fafdb414bcefd",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "id": 4733,
-    "element_id": "e21mslbl",
-    "settings": {
-      "editor": "<p>TREATMENT CATEGORIES</p>"
-    }
+    "element_ids": ["e21msval"]
   }
 }
