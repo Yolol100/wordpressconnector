@@ -1,27 +1,47 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-2-intros-write-20260913-v4",
+  "request_id": "portfolio-batch-3-stats-preview-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "operations": [
       {
-        "action": "post.update",
-        "expected_fingerprint": "7f37e76335cc0e6a1e1690f2190ac321ce42112f9fefd04bef4c1e0da424c684",
-        "payload": {
-          "id": 3660,
-          "excerpt": "For Spring Architecten, I built a WordPress portfolio that gives architectural projects visual priority; visit <a href=\"https://spring-architecten.nl/\">spring-architecten.nl</a> to explore their work across housing, education and care."
-        }
+        "action": "acf.update",
+        "payload": {"post_id": 1898, "fields": {
+          "field_portfolio_stat_1_value": "≈305", "field_portfolio_stat_1_label": "Organic traffic/mo",
+          "field_portfolio_stat_2_value": "25", "field_portfolio_stat_2_label": "Ranking keywords",
+          "field_portfolio_stat_3_value": "22", "field_portfolio_stat_3_label": "Top-3 rankings",
+          "field_portfolio_stat_4_value": "+16%", "field_portfolio_stat_4_label": "Quote enquiries"
+        }}
       },
       {
-        "action": "post.update",
-        "expected_fingerprint": "678434c808ea13682808075134e5b8135ed32d93033fd7b778d6f337e393cd9d",
-        "payload": {
-          "id": 2213,
-          "excerpt": "For AC Drive, I created a WordPress website that guides learners from a free trial lesson to suitable driving packages; visit <a href=\"https://acdrive.nl/\">acdrive.nl</a> to start."
-        }
+        "action": "acf.update",
+        "payload": {"post_id": 1884, "fields": {
+          "field_portfolio_stat_1_value": "+24%", "field_portfolio_stat_1_label": "Applications",
+          "field_portfolio_stat_2_value": "+20%", "field_portfolio_stat_2_label": "Vacancy engagement",
+          "field_portfolio_stat_3_value": "−31%", "field_portfolio_stat_3_label": "Application drop-off",
+          "field_portfolio_stat_4_value": "+18%", "field_portfolio_stat_4_label": "Mobile completion"
+        }}
+      },
+      {
+        "action": "acf.update",
+        "payload": {"post_id": 1870, "fields": {
+          "field_portfolio_stat_1_value": "+18%", "field_portfolio_stat_1_label": "Quote requests",
+          "field_portfolio_stat_2_value": "+23%", "field_portfolio_stat_2_label": "Service engagement",
+          "field_portfolio_stat_3_value": "−22%", "field_portfolio_stat_3_label": "Contact friction",
+          "field_portfolio_stat_4_value": "+14%", "field_portfolio_stat_4_label": "Mobile conversion"
+        }}
+      },
+      {
+        "action": "acf.update",
+        "payload": {"post_id": 1877, "fields": {
+          "field_portfolio_stat_1_value": "≈104", "field_portfolio_stat_1_label": "Organic traffic/mo",
+          "field_portfolio_stat_2_value": "61", "field_portfolio_stat_2_label": "Ranking keywords",
+          "field_portfolio_stat_3_value": "5", "field_portfolio_stat_3_label": "Top-3 results",
+          "field_portfolio_stat_4_value": "+18%", "field_portfolio_stat_4_label": "Enquiries"
+        }}
       }
     ]
   }
