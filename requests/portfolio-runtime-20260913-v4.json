@@ -1,14 +1,15 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-3-stats-preview-20260913-v4",
+  "request_id": "portfolio-batch-3-stats-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {"post_id": 1898, "fields": {
           "field_portfolio_stat_1_value": "≈305", "field_portfolio_stat_1_label": "Organic traffic/mo",
           "field_portfolio_stat_2_value": "25", "field_portfolio_stat_2_label": "Ranking keywords",
@@ -18,6 +19,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {"post_id": 1884, "fields": {
           "field_portfolio_stat_1_value": "+24%", "field_portfolio_stat_1_label": "Applications",
           "field_portfolio_stat_2_value": "+20%", "field_portfolio_stat_2_label": "Vacancy engagement",
@@ -27,6 +29,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {"post_id": 1870, "fields": {
           "field_portfolio_stat_1_value": "+18%", "field_portfolio_stat_1_label": "Quote requests",
           "field_portfolio_stat_2_value": "+23%", "field_portfolio_stat_2_label": "Service engagement",
@@ -36,6 +39,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
         "payload": {"post_id": 1877, "fields": {
           "field_portfolio_stat_1_value": "≈104", "field_portfolio_stat_1_label": "Organic traffic/mo",
           "field_portfolio_stat_2_value": "61", "field_portfolio_stat_2_label": "Ranking keywords",
