@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-bedrijfspostadres-intro-write-20260913-v4",
+  "request_id": "portfolio-ycoit-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "66b9aeb3eccdf56ea99084726c7e8422091f6b9788533c6ba06c943753566cc8",
+  "expected_fingerprint": "649ed8b5c7e8c91a4c9cacf9bf63b0cf0dd8adb212f8a03402f4011a0d5ee326",
   "payload": {
-    "id": 1855,
-    "excerpt": "For Bedrijfspostadres, I created a WordPress website that explains KvK-ready business addresses, digital mail handling and flexible plans; visit <a href=\"https://bedrijfspostadres.nl/\">bedrijfspostadres.nl</a> to start an application."
+    "id": 1839,
+    "excerpt": "For YCO IT, I built a WordPress website presenting risk management, compliance and certification services clearly; visit <a href=\"https://yco-it.nl/\">yco-it.nl</a> to explore their practical advisory solutions."
   }
 }
