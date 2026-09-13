@@ -1,11 +1,10 @@
 {
   "version": 1,
-  "request_id": "portfolio-tenbruggen-intro-write-20260913-v3",
+  "request_id": "portfolio-tenbruggen-intro-preview-2-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "e186f128a08230fc3313cae23fe7c9d40cc19fdb50e06c949a5ed65445d2f659",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "id": 4470,
     "excerpt": "Voor Ten Bruggen maakte ik een WordPress-website die accountancy, belastingadvies en salarisadministratie overzichtelijk presenteert; via <a href=\"https://tenbruggen.nl/\">tenbruggen.nl</a> vinden bezoekers direct de passende dienstverlening."
