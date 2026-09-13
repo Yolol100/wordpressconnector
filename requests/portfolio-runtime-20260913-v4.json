@@ -1,16 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-7a-stats-write-retry1-20260913-v4",
+  "request_id": "portfolio-odetra-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
-  "payload": {
-    "operations": [
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1429,"fields":{"field_portfolio_stat_1_value":"1000+","field_portfolio_stat_1_label":"Homes available","field_portfolio_stat_2_value":"1–3 days","field_portfolio_stat_2_label":"Inspection trip","field_portfolio_stat_3_value":"3","field_portfolio_stat_3_label":"Travel elements included","field_portfolio_stat_4_value":"1","field_portfolio_stat_4_label":"Netherlands office briefing"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1426,"fields":{"field_portfolio_stat_1_value":"6 weeks","field_portfolio_stat_1_label":"Photo delivery","field_portfolio_stat_2_value":"70–80","field_portfolio_stat_2_label":"Album photos","field_portfolio_stat_3_value":"7 days","field_portfolio_stat_3_label":"Quote validity","field_portfolio_stat_4_value":"14 days","field_portfolio_stat_4_label":"Invoice term"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1424,"fields":{"field_portfolio_stat_1_value":"5","field_portfolio_stat_1_label":"Core services","field_portfolio_stat_2_value":"4","field_portfolio_stat_2_label":"Client stories","field_portfolio_stat_3_value":"3","field_portfolio_stat_3_label":"Climate systems","field_portfolio_stat_4_value":"1","field_portfolio_stat_4_label":"Amsterdam location"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1423,"fields":{"field_portfolio_stat_1_value":"€50","field_portfolio_stat_1_label":"Free delivery threshold","field_portfolio_stat_2_value":"12","field_portfolio_stat_2_label":"Shop categories","field_portfolio_stat_3_value":"8","field_portfolio_stat_3_label":"Products listed","field_portfolio_stat_4_value":"€7.96","field_portfolio_stat_4_label":"Starting product price"}}}
-    ]
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "payload": {"post_id":1429}
 }
