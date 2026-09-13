@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-oxfordacademy-intro-write-20260913-v4",
+  "request_id": "portfolio-neturalhome-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "4d38139901adfdc57138039263974e4bb6313b12668d585d0ab869c2023b36ff",
+  "expected_fingerprint": "9796d2b4075de2d257eae666ae347836ecdc3d5541f002da0be40f1c54bbc86c",
   "payload": {
-    "id": 1435,
-    "excerpt": "For Oxford Academy, I created a WordPress website presenting tutoring, homework support and exam training clearly; visit <a href=\"https://oxfordacademy.nl/\">oxfordacademy.nl</a> to explore their education programmes."
+    "id": 1434,
+    "excerpt": "For Netural Home, I built a WordPress website presenting interiors, renovation services and showroom expertise clearly; visit <a href=\"https://neturalhome.nl/\">neturalhome.nl</a> to explore their complete home offering."
   }
 }
