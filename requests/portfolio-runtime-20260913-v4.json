@@ -1,17 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-6-stats-write-20260913-v4",
+  "request_id": "portfolio-solardaktechnique-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
-  "payload": {
-    "operations": [
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1432,"fields":{"field_portfolio_stat_1_value":"≤4 weeks","field_portfolio_stat_1_label":"Delivery target","field_portfolio_stat_2_value":"24 h","field_portfolio_stat_2_label":"Survey planning","field_portfolio_stat_3_value":"6","field_portfolio_stat_3_label":"Solar packages","field_portfolio_stat_4_value":"4","field_portfolio_stat_4_label":"Process steps"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1433,"fields":{"field_portfolio_stat_1_value":"9.4","field_portfolio_stat_1_label":"Customer rating","field_portfolio_stat_2_value":"Up to 60%","field_portfolio_stat_2_label":"Savings claim","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Companies per request","field_portfolio_stat_4_value":"From €249","field_portfolio_stat_4_label":"Starting price"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1431,"fields":{"field_portfolio_stat_1_value":"4.7/5","field_portfolio_stat_1_label":"Customer rating","field_portfolio_stat_2_value":"30","field_portfolio_stat_2_label":"Speed settings","field_portfolio_stat_3_value":"6","field_portfolio_stat_3_label":"Massage heads","field_portfolio_stat_4_value":"Up to 6 h","field_portfolio_stat_4_label":"Battery life"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1430,"fields":{"field_portfolio_stat_1_value":"4.8/5","field_portfolio_stat_1_label":"Customer rating","field_portfolio_stat_2_value":"54","field_portfolio_stat_2_label":"Customer reviews","field_portfolio_stat_3_value":"3","field_portfolio_stat_3_label":"Core services","field_portfolio_stat_4_value":"30 years","field_portfolio_stat_4_label":"Experience"}}},
-      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1428,"fields":{"field_portfolio_stat_1_value":"Since 1996","field_portfolio_stat_1_label":"Experience","field_portfolio_stat_2_value":"14 m","field_portfolio_stat_2_label":"Maximum reach","field_portfolio_stat_3_value":"4,000 kg","field_portfolio_stat_3_label":"Maximum lift","field_portfolio_stat_4_value":"3","field_portfolio_stat_4_label":"Rough-terrain forklifts"}}}
-    ]
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 1432}
 }
