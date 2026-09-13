@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-marcoverhuurt-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-solardaktechnique-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {"id": 1428}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "211a25cc7a5825509a1cbbf9521cd62b514141c659d1908104573d1f9f94c5c4",
+  "payload": {
+    "id": 1432,
+    "excerpt": "For Solar Daktechnique, I built a WordPress website presenting solar panels, batteries and charging solutions clearly; visit <a href=\"https://solardaktechnique.nl/\">solardaktechnique.nl</a> to explore their sustainable energy services."
+  }
 }
