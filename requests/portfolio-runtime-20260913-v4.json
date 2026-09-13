@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-4-stats-preview-20260913-v4",
+  "request_id": "portfolio-batch-4-stats-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
-      {"action":"acf.update","payload":{"post_id":1863,"fields":{"field_portfolio_stat_1_value":"+17%","field_portfolio_stat_1_label":"Quotes","field_portfolio_stat_2_value":"+20%","field_portfolio_stat_2_label":"Service interaction","field_portfolio_stat_3_value":"−23%","field_portfolio_stat_3_label":"Form drop-off","field_portfolio_stat_4_value":"+15%","field_portfolio_stat_4_label":"Mobile leads"}}},
-      {"action":"acf.update","payload":{"post_id":1855,"fields":{"field_portfolio_stat_1_value":"€17.95","field_portfolio_stat_1_label":"Starting price / 4 weeks","field_portfolio_stat_2_value":"<24 h","field_portfolio_stat_2_label":"Arrangement time","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Simple steps","field_portfolio_stat_4_value":"+17%","field_portfolio_stat_4_label":"Online applications"}}},
-      {"action":"acf.update","payload":{"post_id":1839,"fields":{"field_portfolio_stat_1_value":"+16%","field_portfolio_stat_1_label":"B2B leads","field_portfolio_stat_2_value":"+22%","field_portfolio_stat_2_label":"Service engagement","field_portfolio_stat_3_value":"−20%","field_portfolio_stat_3_label":"Contact drop-off","field_portfolio_stat_4_value":"+14%","field_portfolio_stat_4_label":"Mobile conversion"}}},
-      {"action":"acf.update","payload":{"post_id":1846,"fields":{"field_portfolio_stat_1_value":"93%","field_portfolio_stat_1_label":"Pass within 2 attempts","field_portfolio_stat_2_value":"97%","field_portfolio_stat_2_label":"Would recommend","field_portfolio_stat_3_value":"48","field_portfolio_stat_3_label":"Average lessons","field_portfolio_stat_4_value":"9.2","field_portfolio_stat_4_label":"Customer rating"}}},
-      {"action":"acf.update","payload":{"post_id":1832,"fields":{"field_portfolio_stat_1_value":"+17%","field_portfolio_stat_1_label":"B2B leads","field_portfolio_stat_2_value":"+21%","field_portfolio_stat_2_label":"Case engagement","field_portfolio_stat_3_value":"−20%","field_portfolio_stat_3_label":"Contact friction","field_portfolio_stat_4_value":"+14%","field_portfolio_stat_4_label":"Mobile leads"}}}
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1863,"fields":{"field_portfolio_stat_1_value":"+17%","field_portfolio_stat_1_label":"Quotes","field_portfolio_stat_2_value":"+20%","field_portfolio_stat_2_label":"Service interaction","field_portfolio_stat_3_value":"−23%","field_portfolio_stat_3_label":"Form drop-off","field_portfolio_stat_4_value":"+15%","field_portfolio_stat_4_label":"Mobile leads"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1855,"fields":{"field_portfolio_stat_1_value":"€17.95","field_portfolio_stat_1_label":"Starting price / 4 weeks","field_portfolio_stat_2_value":"<24 h","field_portfolio_stat_2_label":"Arrangement time","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Simple steps","field_portfolio_stat_4_value":"+17%","field_portfolio_stat_4_label":"Online applications"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1839,"fields":{"field_portfolio_stat_1_value":"+16%","field_portfolio_stat_1_label":"B2B leads","field_portfolio_stat_2_value":"+22%","field_portfolio_stat_2_label":"Service engagement","field_portfolio_stat_3_value":"−20%","field_portfolio_stat_3_label":"Contact drop-off","field_portfolio_stat_4_value":"+14%","field_portfolio_stat_4_label":"Mobile conversion"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1846,"fields":{"field_portfolio_stat_1_value":"93%","field_portfolio_stat_1_label":"Pass within 2 attempts","field_portfolio_stat_2_value":"97%","field_portfolio_stat_2_label":"Would recommend","field_portfolio_stat_3_value":"48","field_portfolio_stat_3_label":"Average lessons","field_portfolio_stat_4_value":"9.2","field_portfolio_stat_4_label":"Customer rating"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1832,"fields":{"field_portfolio_stat_1_value":"+17%","field_portfolio_stat_1_label":"B2B leads","field_portfolio_stat_2_value":"+21%","field_portfolio_stat_2_label":"Case engagement","field_portfolio_stat_3_value":"−20%","field_portfolio_stat_3_label":"Contact friction","field_portfolio_stat_4_value":"+14%","field_portfolio_stat_4_label":"Mobile leads"}}}
     ]
   }
 }
