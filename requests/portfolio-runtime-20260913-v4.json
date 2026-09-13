@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-marcoverhuurt-intro-write-20260913-v4",
+  "request_id": "portfolio-envolt-identity-read-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "8100708cf995cfd2f40674563df307f5f71cfd76ec4a0ba43b4ddb5fe57fefd6",
-  "payload": {
-    "id": 1428,
-    "excerpt": "For Marco Verhuurt, I created a WordPress rental website presenting telehandlers and forklifts for work at height; visit <a href=\"https://marcoverhuurt.nl/\">marcoverhuurt.nl</a> to explore their equipment range."
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 1427}
 }
