@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-autoinkoopatlas-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T18:25:07+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "e02f7d974ab16658f561d3bbd3d8d8f5464f8bea35e4dab9577a92c98979bd10",
+    "after_fingerprint": "63ba68c4e011b8acaef97fa80b4d9f2cc4f16e967aa93b4ef8bd45173eecb47d",
+    "rollback_available": true
+}
