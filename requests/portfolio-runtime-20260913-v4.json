@@ -1,22 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-bluecenter-stats-write-20260914-v4",
+  "request_id": "portfolio-bluecenter-post-read-after-stats-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
-  "payload": {
-    "post_id": 1376,
-    "fields": {
-      "field_portfolio_stat_1_value": "3",
-      "field_portfolio_stat_1_label": "Client stories",
-      "field_portfolio_stat_2_value": "30–60 min",
-      "field_portfolio_stat_2_label": "Typical session",
-      "field_portfolio_stat_3_value": "Up to 12 mo",
-      "field_portfolio_stat_3_label": "Filler effect",
-      "field_portfolio_stat_4_value": "Qualified",
-      "field_portfolio_stat_4_label": "Specialists"
-    }
-  }
+  "payload": {"id": 1376}
 }
