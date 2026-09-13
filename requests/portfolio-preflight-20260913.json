@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "request_id": "portfolio-preflight-20260913",
+  "request_id": "portfolio-update-preview-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.update.check",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
   "payload": {}
