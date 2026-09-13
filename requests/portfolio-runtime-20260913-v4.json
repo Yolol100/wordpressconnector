@@ -1,22 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-schipholparkeren-stats-write-retry-20260914-v4",
+  "request_id": "portfolio-schipholparkeren-post-read-after-stats-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "post_id": 1371,
-    "fields": {
-      "field_portfolio_stat_1_value": "64,608+",
-      "field_portfolio_stat_1_label": "People Served",
-      "field_portfolio_stat_2_value": "Annual",
-      "field_portfolio_stat_2_label": "Provider Quality Testing",
-      "field_portfolio_stat_3_value": "3+ Years",
-      "field_portfolio_stat_3_label": "Minimum Provider Track Record",
-      "field_portfolio_stat_4_value": "24/7",
-      "field_portfolio_stat_4_label": "Provider Availability Standard"
-    }
+    "id": 1371
   }
 }
