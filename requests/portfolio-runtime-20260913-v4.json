@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-1-post-list-20260913-v4",
+  "request_id": "portfolio-sparx-post-readback-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.list",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "post_type": "post",
-    "status": "publish",
-    "per_page": 100
-  }
+  "payload": {"id": 1342}
 }
