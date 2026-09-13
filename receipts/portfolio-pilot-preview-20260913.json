@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "portfolio-pilot-preview-20260913",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T07:18:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
