@@ -1,17 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-ourwp-post-list-20260914-v4",
+  "request_id": "portfolio-ourwp-post-get-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.list",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "post",
-    "status": "publish",
-    "per_page": 20,
-    "page": 1,
-    "search": "OurWP",
-    "orderby": "ID",
-    "order": "ASC"
+    "id": 1375
   }
 }
