@@ -1,0 +1,24 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-orphan-recovery-preview-20260913",
+    "action": "acf.schema.ensure_text_fields",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T07:07:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4470,
+    "group_key": "group_69deb89e918e3",
+    "schema_fingerprint": "dc2d2191e095596dd61ef42fad9eb1d8c320636f54cf20543a9339b7fb05becc",
+    "would_create": [
+        "field_webactueel_stat_1_value",
+        "field_webactueel_stat_1_label",
+        "field_webactueel_stat_2_value",
+        "field_webactueel_stat_2_label",
+        "field_webactueel_stat_3_value",
+        "field_webactueel_stat_3_label",
+        "field_webactueel_stat_4_value",
+        "field_webactueel_stat_4_label"
+    ],
+    "readback_verified": null
+}
