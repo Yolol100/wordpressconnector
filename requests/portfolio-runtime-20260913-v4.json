@@ -1,9 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-prometaal-post-read-after-stats-20260913-v4",
+  "request_id": "portfolio-prometaal-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
-  "payload": {"id": 1395}
+  "expected_fingerprint": "6f71fcf3f946d3b6a23f8c2e5759560aec1779d20f79ea71a1e1adc713bce075",
+  "payload": {
+    "id": 1395,
+    "excerpt": "For Prometaal, I built a WordPress website presenting sustainable metal recycling, vehicle-wreck transport and collection services; visit <a href=\"https://www.prometaal.nl/\">prometaal.nl</a> to explore their recycling solutions."
+  }
 }
