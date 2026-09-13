@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-neturalhome-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:05:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "c734d4c6f803f41bc4939f0af0b3ddf5f36cb9e09481d4bc6233c001a1bfc2c5",
+    "after_fingerprint": "3d91977f03fb3e19f9a845e3c5c7eaf1aef208fb33d2902881500af33ed2c930",
+    "rollback_available": true
+}
