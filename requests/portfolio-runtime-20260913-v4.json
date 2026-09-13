@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-solardaktechnique-intro-write-20260913-v4",
+  "request_id": "portfolio-woningontruimingvergelijken-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "211a25cc7a5825509a1cbbf9521cd62b514141c659d1908104573d1f9f94c5c4",
+  "expected_fingerprint": "0d3856ebff85a86d0a63c453da0702cede8aeb683d6c6908505f767903504d32",
   "payload": {
-    "id": 1432,
-    "excerpt": "For Solar Daktechnique, I built a WordPress website presenting solar panels, batteries and charging solutions clearly; visit <a href=\"https://solardaktechnique.nl/\">solardaktechnique.nl</a> to explore their sustainable energy services."
+    "id": 1433,
+    "excerpt": "For Woningontruimingvergelijken, I created a WordPress comparison website helping visitors request and compare clearance quotes; visit <a href=\"https://woningontruimingvergelijken.nl/\">woningontruimingvergelijken.nl</a> to explore their nationwide service."
   }
 }
