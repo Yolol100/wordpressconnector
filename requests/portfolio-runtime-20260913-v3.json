@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "request_id": "portfolio-acf-group-audit-20260913-v3",
+  "request_id": "portfolio-tenbruggen-intro-preview-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.field_groups",
+  "action": "post.update",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_id": 4470
+    "id": 4470,
+    "excerpt": "Voor Ten Bruggen maakte ik een WordPress-website die accountancy, belastingadvies en salarisadministratie overzichtelijk presenteert; via <a href=\"https://tenbruggen.nl/\">tenbruggen.nl</a> vinden bezoekers direct de passende dienstverlening."
   }
 }
