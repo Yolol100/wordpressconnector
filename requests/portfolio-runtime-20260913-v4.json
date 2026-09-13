@@ -1,17 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-casareno-post-list-20260914-v4",
+  "request_id": "portfolio-casareno-post-get-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.list",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "post",
-    "status": "publish",
-    "per_page": 20,
-    "page": 1,
-    "search": "CasaReno",
-    "orderby": "ID",
-    "order": "ASC"
+    "id": 1372
   }
 }
