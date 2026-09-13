@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-gldrive-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-brightlyn-post-readback-after-stats-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id": 1846}
+  "payload": {"id": 1832}
 }
