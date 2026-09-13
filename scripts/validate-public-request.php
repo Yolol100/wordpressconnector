@@ -26,6 +26,8 @@ if (! is_array($data)) {
 }
 
 $publicActions = array(
+    'post.list',
+    'post.get',
     'post.update',
     'acf.update',
     'acf.field_groups',
@@ -124,6 +126,51 @@ $validateLeaf = static function (string $leafAction, array $leafPayload, string 
 
 if (in_array($action, $leafActions, true)) {
     $validateLeaf($action, $payload, 'payload');
+}
+
+if ('post.get' === $action) {
+    foreach (array_keys($payload) as $key) {
+        if ('id' !== (string) $key) {
+            $errors[] = 'payload has unknown or public-forbidden post.get key: ' . (string) $key;
+        }
+    }
+    $assertPositiveId($payload, 'payload');
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'post.get must use dry_run=true in public GitHub runtime mode.';
+    }
+}
+
+if ('post.list' === $action) {
+    $allowedKeys = array('post_type', 'status', 'per_page', 'page', 'search', 'orderby', 'order');
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'payload has unknown or public-forbidden post.list key: ' . (string) $key;
+        }
+    }
+    if (isset($payload['post_type']) && (! is_string($payload['post_type']) || ! preg_match('/^[a-z0-9_-]{1,40}$/D', $payload['post_type']))) {
+        $errors[] = 'payload.post_type must be a valid post type key.';
+    }
+    if (isset($payload['status']) && 'publish' !== (string) $payload['status']) {
+        $errors[] = 'payload.status may only be publish in public GitHub runtime mode.';
+    }
+    if (isset($payload['per_page']) && (! is_int($payload['per_page']) || $payload['per_page'] < 1 || $payload['per_page'] > 100)) {
+        $errors[] = 'payload.per_page must be an integer from 1 through 100.';
+    }
+    if (isset($payload['page']) && (! is_int($payload['page']) || $payload['page'] < 1)) {
+        $errors[] = 'payload.page must be a positive integer.';
+    }
+    if (isset($payload['search']) && (! is_string($payload['search']) || strlen($payload['search']) > 160 || preg_match('/[\x00-\x1F\x7F]/', $payload['search']))) {
+        $errors[] = 'payload.search must be a bounded printable string.';
+    }
+    if (isset($payload['orderby']) && (! is_string($payload['orderby']) || ! in_array($payload['orderby'], array('ID', 'date', 'modified', 'title', 'name', 'menu_order'), true))) {
+        $errors[] = 'payload.orderby is not allowed in public GitHub runtime mode.';
+    }
+    if (isset($payload['order']) && (! is_string($payload['order']) || ! in_array(strtoupper($payload['order']), array('ASC', 'DESC'), true))) {
+        $errors[] = 'payload.order must be ASC or DESC.';
+    }
+    if (isset($data['dry_run']) && false === $data['dry_run']) {
+        $errors[] = 'post.list must use dry_run=true in public GitHub runtime mode.';
+    }
 }
 
 if ('acf.field_groups' === $action) {
