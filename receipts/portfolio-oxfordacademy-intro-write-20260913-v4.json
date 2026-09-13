@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-oxfordacademy-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:04:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "f528177cf9dad7c2a85b0cd3559fce2d2000e100993e3c48952de1d23ecd70e6",
+    "after_fingerprint": "5290f4924e0c56b0b0b00a3f8bccb3a4b1f8cf24dba07515f813c252e1ae1e09",
+    "rollback_available": true
+}
