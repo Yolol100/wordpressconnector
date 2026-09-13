@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-pilot-rollback-preview-20260913-v3",
+  "request_id": "portfolio-template-inspect-20260913-v3",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.rollback",
+  "action": "elementor.inspect",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "request_id": "portfolio-pilot-acf-write-20260913-v3"
+    "id": 1216
   }
 }
