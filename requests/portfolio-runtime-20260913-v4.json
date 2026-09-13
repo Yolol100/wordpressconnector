@@ -1,15 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch-1-intros-write-20260913-v4",
+  "request_id": "portfolio-batch-1-post-list-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
-  "payload": {"operations": [
-    {"action":"post.update","expected_fingerprint":"68e684e1f84f7185e42efb4fc9f4524c2b339f4f5bcc8e039a84d7a9872ff876","payload":{"id":1342,"excerpt":"For Sparx Entertainment Agency, I built a WordPress website that presents artists and event entertainment clearly; visit <a href=\"https://sparxentertainmentagency.com/\">sparxentertainmentagency.com</a> to explore their services."}},
-    {"action":"post.update","expected_fingerprint":"a4a33378d2c0c4946084451df660785037cb88c68b224c099e6f648c630d5fac","payload":{"id":1321,"excerpt":"For Fidelyaa, I created a WordPress website that presents strategic advice and guidance clearly; visit <a href=\"https://fidelyaa.nl/\">fidelyaa.nl</a> to explore services for organizations and entrepreneurs."}},
-    {"action":"post.update","expected_fingerprint":"0b181272f6b1259d44190bd02c44fbe2e102ff6e31403845b917688b2a913efe","payload":{"id":4229,"excerpt":"For DCA Dienstverlening, I built a WordPress website that presents professional cleaning services clearly; visit <a href=\"https://www.dcadienstverlening.nl/\">dcadienstverlening.nl</a> to explore their nationwide cleaning and maintenance solutions."}},
-    {"action":"post.update","expected_fingerprint":"0272f89fca2075c405a8320b78d78816291a92fa8508e8062375330d856b6217","payload":{"id":4124,"excerpt":"For Babylon Safety, I created a WordPress website focused on professional fire watch services; visit <a href=\"https://www.babylonsafety.nl/\">babylonsafety.nl</a> to explore their nationwide fire safety support."}},
-    {"action":"post.update","expected_fingerprint":"e4cf8800ef7a3d0e38669315ee7e314b012116b739bcc45ad89ce99359eee6d7","payload":{"id":4116,"excerpt":"For DCA Schoonmaak, I built a WordPress website for flexible hotel cleaning staff; visit <a href=\"https://dcaschoonmaak.nl/\">dcaschoonmaak.nl</a> to explore their housekeeping and staffing services."}}
-  ]}
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 100
+  }
 }
