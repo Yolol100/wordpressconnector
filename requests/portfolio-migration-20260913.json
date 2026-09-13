@@ -1,55 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-schema-create-20260913",
+  "request_id": "portfolio-schema-readback-20260913",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.schema.ensure_text_fields",
-  "dry_run": false,
-  "confirm": true,
+  "action": "acf.field_groups",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "fields": [
-      {
-        "key": "field_portfolio_stat_1_value",
-        "label": "Resultaat 1 – cijfer",
-        "name": "portfolio_stat_1_value"
-      },
-      {
-        "key": "field_portfolio_stat_1_label",
-        "label": "Resultaat 1 – tekst",
-        "name": "portfolio_stat_1_label"
-      },
-      {
-        "key": "field_portfolio_stat_2_value",
-        "label": "Resultaat 2 – cijfer",
-        "name": "portfolio_stat_2_value"
-      },
-      {
-        "key": "field_portfolio_stat_2_label",
-        "label": "Resultaat 2 – tekst",
-        "name": "portfolio_stat_2_label"
-      },
-      {
-        "key": "field_portfolio_stat_3_value",
-        "label": "Resultaat 3 – cijfer",
-        "name": "portfolio_stat_3_value"
-      },
-      {
-        "key": "field_portfolio_stat_3_label",
-        "label": "Resultaat 3 – tekst",
-        "name": "portfolio_stat_3_label"
-      },
-      {
-        "key": "field_portfolio_stat_4_value",
-        "label": "Resultaat 4 – cijfer",
-        "name": "portfolio_stat_4_value"
-      },
-      {
-        "key": "field_portfolio_stat_4_label",
-        "label": "Resultaat 4 – tekst",
-        "name": "portfolio_stat_4_label"
-      }
-    ],
-    "group_key": "group_69deb89e918e3",
     "post_id": 4470
-  },
-  "expected_fingerprint": "478299817c4e9363827c6a9cf8958cc2810bcfd887a01cf77a700bd51827d9c7"
+  }
 }
