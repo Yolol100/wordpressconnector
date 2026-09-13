@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-proline-afbouw-intro-write-20260914-v4",
+  "request_id": "portfolio-mdv-installaties-post-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "72ae5ad0f40fce3561e5319155285d9cbda27a8af3bd8ba96037d62700253019",
-  "payload": {
-    "id": 1379,
-    "excerpt": "For Proline Afbouw, I built a WordPress website presenting finishing, painting and ceiling services clearly; visit <a href=\"https://prolineafbouw.nl/\">prolineafbouw.nl</a> to explore their craftsmanship."
-  }
+  "payload": {"id": 1377}
 }
