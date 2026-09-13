@@ -1,13 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-wehear4u-intro-write-retry-20260913-v4",
+  "request_id": "portfolio-spring-post-readback-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "f791fe9f406566a79295343cda470da02f062a37dae0e0ce28825bb4cf70773c",
-  "payload": {
-    "id": 1332,
-    "excerpt": "For We Hear 4 U, I created a responsive WordPress experience that makes hearing-care information and support routes accessible; visit <a href=\"https://wehear4u.com/\">wehear4u.com</a> to discover their mission."
-  }
+  "action": "post.get",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {"id": 3660}
 }
