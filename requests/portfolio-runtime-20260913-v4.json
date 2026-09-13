@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-voltworks-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-voltworks-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id": 1419}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "8df1c8d0faa10dd718155ed96a45628c919d917a8b2fd330451d5b9d63aa8478",
+  "payload": {
+    "id": 1419,
+    "excerpt": "For Voltworks, I built a WordPress website presenting solar panels, charging stations, home batteries and heat pumps clearly; visit <a href=\"https://voltworks.nl/\">voltworks.nl</a> for sustainable energy solutions."
+  }
 }
