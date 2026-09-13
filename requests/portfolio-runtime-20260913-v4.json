@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-woningontruimingvergelijken-intro-write-20260913-v4",
+  "request_id": "portfolio-palmeroshop-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.update",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "0d3856ebff85a86d0a63c453da0702cede8aeb683d6c6908505f767903504d32",
+  "expected_fingerprint": "ddf2f7dcbb30c3afbc92a5dde98a2db4b162997ae64d8eb144571aab98fda438",
   "payload": {
-    "id": 1433,
-    "excerpt": "For Woningontruimingvergelijken, I created a WordPress comparison website helping visitors request and compare clearance quotes; visit <a href=\"https://woningontruimingvergelijken.nl/\">woningontruimingvergelijken.nl</a> to explore their nationwide service."
+    "id": 1431,
+    "excerpt": "For Palmero Shop, I built a WordPress webshop presenting massage guns, specifications and customer reviews clearly; visit <a href=\"https://palmeroshop.com/\">palmeroshop.com</a> to explore the PalmeroGun range."
   }
 }
