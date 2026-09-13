@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-progress-post-read-after-stats-20260913-v4",
+  "request_id": "portfolio-progress-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
+  "expected_fingerprint": "53ec3529f2757c9389db687bd48a20f8997a82f404af9f114fb72299787d6e7c",
   "payload": {
-    "id": 1394
+    "id": 1394,
+    "excerpt": "For Progress, I built a WordPress website presenting recruitment, staffing solutions and specialist sectors clearly; visit <a href=\"https://pro-gress.nl/\">pro-gress.nl</a> to explore current opportunities."
   }
 }
