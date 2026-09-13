@@ -1,8 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-jouwgroenteboer-post-readback-after-stats-20260913-v4",
+  "request_id": "portfolio-odetra-intro-write-20260913-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
-  "payload": {"id":1423}
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "5874e1077405a705355e890b53194915e2e2c4c439db090ed52cb135fb128267",
+  "payload": {
+    "id": 1429,
+    "excerpt": "For Odetra, I built a WordPress website presenting Northern Cyprus property opportunities and inspection trips clearly; visit <a href=\"https://odetra.com/\">odetra.com</a> to explore their real estate services."
+  }
 }
