@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-4-extra-probe-20260914-v4",
+  "request_id": "portfolio-cards-batch-4-extra-probe-retry-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
