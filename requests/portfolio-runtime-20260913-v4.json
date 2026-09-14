@@ -1,22 +1,12 @@
 {
   "version": 1,
-  "request_id": "portfolio-audit-fix-vchetwonder-write-20260914-v4",
+  "request_id": "portfolio-audit-fix-batch2-traffic-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
+  "action": "connector.batch",
   "dry_run": false,
   "confirm": true,
-  "expected_fingerprint": "ff2fce3d3821c22f809ce15656e9bbe2071209fb51b1260ca9d974f23eb1f199",
-  "payload": {
-    "post_id": 1891,
-    "fields": {
-      "field_portfolio_stat_1_value": "31",
-      "field_portfolio_stat_1_label": "Domain Rating",
-      "field_portfolio_stat_2_value": "340",
-      "field_portfolio_stat_2_label": "Referring domains",
-      "field_portfolio_stat_3_value": "13",
-      "field_portfolio_stat_3_label": "Organic keywords",
-      "field_portfolio_stat_4_value": "87",
-      "field_portfolio_stat_4_label": "Est. organic visits / month"
-    }
-  }
+  "payload": {"operations": [
+    {"action":"acf.update","expected_fingerprint":"76fcd76cb8f453f62ee260c737dd03e8c50724342226af34ef481af79868f39b","payload":{"post_id":1401,"fields":{"field_portfolio_stat_1_value":"10","field_portfolio_stat_1_label":"Referring domains","field_portfolio_stat_2_value":"14","field_portfolio_stat_2_label":"Backlinks","field_portfolio_stat_3_value":"10","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"188","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
+    {"action":"acf.update","expected_fingerprint":"033bf15c99ce0c417c8de144b214a0adb6d816a9572ab525c6c0284dc45d6233","payload":{"post_id":1397,"fields":{"field_portfolio_stat_1_value":"0.5","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"418","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"536","field_portfolio_stat_3_label":"Backlinks","field_portfolio_stat_4_value":"9","field_portfolio_stat_4_label":"Est. organic visits / month"}}}
+  ]}
 }
