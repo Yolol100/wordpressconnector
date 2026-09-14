@@ -1,10 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-enspect-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-enspect-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "69c254c55240ebabb5843198d607dbdaeb210d62e3284f0ce271d76a38465911",
   "payload": {
-    "id": 1366
+    "id": 1366,
+    "excerpt": "For Enspect, I built a WordPress website that makes electrical inspections, standards and reporting easy to navigate; visit <a href=\"https://enspect.nl/\">Enspect.nl</a> to explore their nationwide services."
   }
 }
