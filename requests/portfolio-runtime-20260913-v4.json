@@ -1,10 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-enspect-stats-dry-run-retry1-20260914-v4",
+  "request_id": "portfolio-enspect-stats-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.update",
-  "dry_run": true,
+  "dry_run": false,
   "confirm": true,
+  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
   "payload": {
     "post_id": 1366,
     "fields": {
