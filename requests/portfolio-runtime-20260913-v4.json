@@ -1,14 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-4-plugin-source-read-20260914-v4",
+  "request_id": "portfolio-seo-image-assistant-source-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "operations": [
-      {"action":"post.get","payload":{"post_id":4092}},
-      {"action":"post.get","payload":{"post_id":2283}}
-    ]
-  }
+  "payload": {"post_id":4092}
 }
