@@ -1,13 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-enspect-intro-write-20260914-v4",
+  "request_id": "portfolio-rbmb-stats-dry-run-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "acf.update",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "69c254c55240ebabb5843198d607dbdaeb210d62e3284f0ce271d76a38465911",
   "payload": {
-    "id": 1366,
-    "excerpt": "For Enspect, I built a WordPress website that makes electrical inspections, standards and reporting easy to navigate; visit <a href=\"https://enspect.nl/\">Enspect.nl</a> to explore their nationwide services."
+    "post_id": 1303,
+    "fields": {
+      "field_portfolio_stat_1_value": "8",
+      "field_portfolio_stat_1_label": "PRODUCT CATEGORIES",
+      "field_portfolio_stat_2_value": "PRO + DIY",
+      "field_portfolio_stat_2_label": "CUSTOMER FOCUS",
+      "field_portfolio_stat_3_value": "HOW-TO",
+      "field_portfolio_stat_3_label": "KNOWLEDGE CENTRE",
+      "field_portfolio_stat_4_value": "ONLINE",
+      "field_portfolio_stat_4_label": "SHOPPING"
+    }
   }
 }
