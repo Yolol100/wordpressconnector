@@ -1,22 +1,10 @@
 {
   "version": 1,
-  "request_id": "portfolio-enspect-stats-write-20260914-v4",
+  "request_id": "portfolio-enspect-post-read-after-stats-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "acf.update",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+  "action": "post.get",
+  "dry_run": true,
   "payload": {
-    "post_id": 1366,
-    "fields": {
-      "field_portfolio_stat_1_value": "28+",
-      "field_portfolio_stat_1_label": "YEARS EXPERIENCE",
-      "field_portfolio_stat_2_value": "6",
-      "field_portfolio_stat_2_label": "INSPECTION TYPES",
-      "field_portfolio_stat_3_value": "3",
-      "field_portfolio_stat_3_label": "INSPECTION STEPS",
-      "field_portfolio_stat_4_value": "NATIONWIDE",
-      "field_portfolio_stat_4_label": "SERVICE AREA"
-    }
+    "id": 1366
   }
 }
