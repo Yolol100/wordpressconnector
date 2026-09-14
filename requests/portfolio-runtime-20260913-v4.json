@@ -1,21 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-b5-b6-preview-20260915-v4",
+  "request_id": "portfolio-ahrefs-b5-b6-write-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
-      {"action":"acf.update","payload":{"post_id":1391,"fields":{"field_portfolio_stat_4_value":"≈1,083","field_portfolio_stat_4_label":"EST. ORGANIC TRAFFIC/MO"}}},
-      {"action":"acf.update","payload":{"post_id":1379,"fields":{"field_portfolio_stat_4_value":"70","field_portfolio_stat_4_label":"Ahrefs Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1376,"fields":{"field_portfolio_stat_4_value":"53","field_portfolio_stat_4_label":"Ahrefs Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1375,"fields":{"field_portfolio_stat_1_value":"30","field_portfolio_stat_1_label":"Ahrefs Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1371,"fields":{"field_portfolio_stat_2_value":"≈218","field_portfolio_stat_2_label":"EST. ORGANIC TRAFFIC/MO"}}},
-      {"action":"acf.update","payload":{"post_id":1367,"fields":{"field_portfolio_stat_1_value":"53","field_portfolio_stat_1_label":"Ahrefs Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1366,"fields":{"field_portfolio_stat_3_value":"32","field_portfolio_stat_3_label":"Ahrefs Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1303,"fields":{"field_portfolio_stat_4_value":"≈4,272","field_portfolio_stat_4_label":"EST. ORGANIC TRAFFIC/MO"}}},
-      {"action":"acf.update","payload":{"post_id":1241,"fields":{"field_portfolio_stat_3_value":"≈218","field_portfolio_stat_3_label":"EST. ORGANIC TRAFFIC/MO"}}}
+      {"action":"acf.update","expected_fingerprint":"b47ac6ec9b42ad5985a83ea1d7ea3aaedf3f00c3b2d9f0a05ec161c8f85e1f50","payload":{"post_id":1391,"fields":{"field_portfolio_stat_4_value":"≈1,083","field_portfolio_stat_4_label":"EST. ORGANIC TRAFFIC/MO"}}},
+      {"action":"acf.update","expected_fingerprint":"81e33261c0cb9573d5195eea179c4d842b5f339342425985b010701747712ed2","payload":{"post_id":1379,"fields":{"field_portfolio_stat_4_value":"70","field_portfolio_stat_4_label":"Ahrefs Domain Rating"}}},
+      {"action":"acf.update","expected_fingerprint":"d8450fe479bf710fbb47fea53e315f668adb6e97ee1816658c206859622f301c","payload":{"post_id":1376,"fields":{"field_portfolio_stat_4_value":"53","field_portfolio_stat_4_label":"Ahrefs Domain Rating"}}},
+      {"action":"acf.update","expected_fingerprint":"2c57a58bd54439bc6e52de1b526627fc9266da215f5390298543f8be1dc50715","payload":{"post_id":1375,"fields":{"field_portfolio_stat_1_value":"30","field_portfolio_stat_1_label":"Ahrefs Domain Rating"}}},
+      {"action":"acf.update","expected_fingerprint":"140e9c3791fa1a2e15c8a562bc909e4c5a33e9fa1c3b42745104acc96ec5c476","payload":{"post_id":1371,"fields":{"field_portfolio_stat_2_value":"≈218","field_portfolio_stat_2_label":"EST. ORGANIC TRAFFIC/MO"}}},
+      {"action":"acf.update","expected_fingerprint":"676864dc3c930b67e92a5e0815c7571eb6ad2eac5c45f95a42178c1ba11b1d83","payload":{"post_id":1367,"fields":{"field_portfolio_stat_1_value":"53","field_portfolio_stat_1_label":"Ahrefs Domain Rating"}}},
+      {"action":"acf.update","expected_fingerprint":"474125f89751f24581d106eec5380493aaebeb584c99dac7b72602737264a858","payload":{"post_id":1366,"fields":{"field_portfolio_stat_3_value":"32","field_portfolio_stat_3_label":"Ahrefs Domain Rating"}}},
+      {"action":"acf.update","expected_fingerprint":"3a75c5f18bed30ef046b309effd7c7cad6b5e0258d9f8a69aa65df3c6f057ced","payload":{"post_id":1303,"fields":{"field_portfolio_stat_4_value":"≈4,272","field_portfolio_stat_4_label":"EST. ORGANIC TRAFFIC/MO"}}},
+      {"action":"acf.update","expected_fingerprint":"1036f93989a5b31ac546f94e539dffbd5c8af847f2f0b25d4d9630c0f8fcec62","payload":{"post_id":1241,"fields":{"field_portfolio_stat_3_value":"≈218","field_portfolio_stat_3_label":"EST. ORGANIC TRAFFIC/MO"}}}
     ]
   }
 }
