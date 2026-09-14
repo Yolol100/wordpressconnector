@@ -1,10 +1,16 @@
 {
   "version": 1,
-  "request_id": "portfolio-byderma-intro-inspect-retry2-20260914-v4",
+  "request_id": "portfolio-byderma-intro-write-retry2-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "elementor.inspect",
-  "dry_run": true,
+  "action": "elementor.patch_element",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "afc6c07a832603fabc88be334fc6eafdbc2826013b9e575bc56f4855a174695f",
   "payload": {
-    "id": 4733
+    "id": 4733,
+    "element_id": "e2100003",
+    "settings": {
+      "editor": "<p>For Byderma, I built a WordPress experience focused on treatments and online customer journeys; visit <a href=\"https://byderma.nl/\">Byderma.nl</a> to explore their aesthetic care services.</p>"
+    }
   }
 }
