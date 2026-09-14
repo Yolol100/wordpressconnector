@@ -1,11 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-werkenbijefe-post-read-20260914-v4",
+  "request_id": "portfolio-werkenbijefe-stats-dry-run-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
   "confirm": true,
   "payload": {
-    "id": 1241
+    "post_id": 1241,
+    "fields": {
+      "field_portfolio_stat_1_value": "2002",
+      "field_portfolio_stat_1_label": "ESTABLISHED",
+      "field_portfolio_stat_2_value": "9",
+      "field_portfolio_stat_2_label": "SERVICE SECTORS",
+      "field_portfolio_stat_3_value": "3",
+      "field_portfolio_stat_3_label": "APPLICATION STEPS",
+      "field_portfolio_stat_4_value": "5",
+      "field_portfolio_stat_4_label": "WORK BENEFITS"
+    }
   }
 }
