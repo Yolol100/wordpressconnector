@@ -1,13 +1,14 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-4-autoinkoopatlas-probe-20260914-v4",
+  "request_id": "portfolio-cards-batch-4-plugin-source-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
   "payload": {
     "operations": [
-      {"action":"acf.update","payload":{"post_id":1416,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}}
+      {"action":"post.get","payload":{"post_id":4092}},
+      {"action":"post.get","payload":{"post_id":2283}}
     ]
   }
 }
