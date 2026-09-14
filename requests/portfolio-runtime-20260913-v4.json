@@ -1,13 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-sanatolia-intro-write-20260914-v4",
+  "request_id": "portfolio-tenbrugge-post-read-cleanup-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "af2ec22810e9454ee7b56f9027fc85362588cbb3837cdbc9adedb2a2ed670236",
   "payload": {
-    "id": 4448,
-    "excerpt": "For Sanatolia, I built a WordPress platform showcasing cultural events, theatre courses and participation routes; visit <a href=\"https://sanatolia.nl/\">Sanatolia.nl</a> to explore their arts programmes."
+    "id": 4470
   }
 }
