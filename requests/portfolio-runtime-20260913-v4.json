@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-seo-image-assistant-post-read-20260914-v4",
+  "request_id": "portfolio-exam-registration-manager-post-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id":4092}
+  "payload": {"id":2305}
 }
