@@ -1,23 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-2-empty-check-20260914-v4",
+  "request_id": "portfolio-modern-image-manager-card-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
+  "action": "acf.get",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "operations": [
-      {"action":"acf.update","payload":{"post_id":1714,"fields":{"field_portfolio_stat_1_value":"36","field_portfolio_stat_1_label":"Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1439,"fields":{"field_portfolio_stat_1_value":"314","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":1438,"fields":{"field_portfolio_stat_1_value":"374","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":1430,"fields":{"field_portfolio_stat_1_value":"26","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":1429,"fields":{"field_portfolio_stat_1_value":"27","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":1427,"fields":{"field_portfolio_stat_1_value":"29","field_portfolio_stat_1_label":"Domain Rating"}}},
-      {"action":"acf.update","payload":{"post_id":1423,"fields":{"field_portfolio_stat_1_value":"4","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":1419,"fields":{"field_portfolio_stat_1_value":"154","field_portfolio_stat_1_label":"Referring domains"}}},
-      {"action":"acf.update","payload":{"post_id":2473,"fields":{"field_portfolio_stat_1_value":"1.5.55","field_portfolio_stat_1_label":"Stable release"}}},
-      {"action":"acf.update","payload":{"post_id":2223,"fields":{"field_portfolio_stat_1_value":"4","field_portfolio_stat_1_label":"REST scan actions"}}},
-      {"action":"acf.update","payload":{"post_id":2173,"fields":{"field_portfolio_stat_1_value":"WordPress 6.5+","field_portfolio_stat_1_label":"Compatibility baseline"}}}
+    "post_id": 2473,
+    "fields": [
+      "field_portfolio_stat_1_value",
+      "field_portfolio_stat_1_label",
+      "field_portfolio_stat_2_value",
+      "field_portfolio_stat_2_label",
+      "field_portfolio_stat_3_value",
+      "field_portfolio_stat_3_label",
+      "field_portfolio_stat_4_value",
+      "field_portfolio_stat_4_label"
     ]
   }
 }
