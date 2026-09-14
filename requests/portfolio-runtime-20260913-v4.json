@@ -1,11 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-sanatolia-post-read-20260914-v4",
+  "request_id": "portfolio-sanatolia-stats-dry-run-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
   "confirm": true,
   "payload": {
-    "id": 4448
+    "post_id": 4448,
+    "fields": {
+      "field_portfolio_stat_1_value": "2014",
+      "field_portfolio_stat_1_label": "ESTABLISHED IN NL",
+      "field_portfolio_stat_2_value": "10",
+      "field_portfolio_stat_2_label": "COURSE TYPES",
+      "field_portfolio_stat_3_value": "3",
+      "field_portfolio_stat_3_label": "LESSON LOCATIONS",
+      "field_portfolio_stat_4_value": "ANNUAL",
+      "field_portfolio_stat_4_label": "PERFORMANCE"
+    }
   }
 }
