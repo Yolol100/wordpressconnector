@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-seo-image-assistant-source-read-2-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T14:27:40+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4092,
+        "type": "post",
+        "status": "publish",
+        "title": "SEO Image Assistant",
+        "slug": "seo-image-assistant",
+        "permalink": "https://andrewbaeten.nl/seo-image-assistant/",
+        "excerpt": "Editorial stock-image workflow that keeps page context, licensing state and ACF image mapping inside WordPress before the asset reaches the media workflow."
+    },
+    "post_fingerprint": "8137cc30cca9095993d29063f09406506d7494256f2d3bd3507f7f95c7664320",
+    "readback_verified": null
+}
