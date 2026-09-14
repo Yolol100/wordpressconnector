@@ -1,13 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-rbmb-intro-write-20260914-v4",
+  "request_id": "portfolio-werkenbijefe-post-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "1e6e126ce106fdabf3e58d12520e191f60b22d556453b34938be4bf81f76a10d",
   "payload": {
-    "id": 1303,
-    "excerpt": "For RBMB, I built a WordPress webshop presenting professional building materials, practical guides and online shopping clearly; visit <a href=\"https://rbmb.nl/\">RBMB.nl</a> to explore their range."
+    "id": 1241
   }
 }
