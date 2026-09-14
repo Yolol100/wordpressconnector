@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-2487-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T16:11:10+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 2487,
+        "type": "post",
+        "status": "publish",
+        "title": "Egaline Calculator",
+        "slug": "egaline-calculator",
+        "permalink": "https://andrewbaeten.nl/egaline-calculator/",
+        "excerpt": "WooCommerce material calculator with linked area, thickness and bag calculations, live pricing, product settings and cart/order integration."
+    },
+    "post_fingerprint": "6aa4e8eae1db0daf68c1b5c6238c71b2202780d19239e00c12698cb388763f9c",
+    "readback_verified": null
+}
