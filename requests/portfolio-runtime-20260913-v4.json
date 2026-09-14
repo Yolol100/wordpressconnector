@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-seo-image-assistant-source-read-20260914-v4",
+  "request_id": "portfolio-seo-image-assistant-source-read-2-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {"post_id":4092}
+  "payload": {"id":4092}
 }
