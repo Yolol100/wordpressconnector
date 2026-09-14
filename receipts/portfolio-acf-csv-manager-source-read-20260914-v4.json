@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-acf-csv-manager-source-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T14:28:32+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 2283,
+        "type": "post",
+        "status": "publish",
+        "title": "ACF CSV Manager",
+        "slug": "acf-csv-manager",
+        "permalink": "https://andrewbaeten.nl/acf-csv-manager/",
+        "excerpt": "Spreadsheet-first WordPress content workflow for exporting ACF/page text, reviewing edits and importing validated CSV/XLSX changes safely."
+    },
+    "post_fingerprint": "d6e4fc675dd63e7bff16fa5bc0a5b3c4fba63aad1d3cbd15571c615101ca0b8b",
+    "readback_verified": null
+}
