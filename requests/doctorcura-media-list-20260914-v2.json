@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "request_id": "doctorcura-media-list-20260914-v2",
+  "site_url": "https://doctorcura.com",
+  "action": "media.list",
+  "dry_run": true,
+  "confirm": true,
+  "payload": {
+    "per_page": 5,
+    "page": 1
+  }
+}
