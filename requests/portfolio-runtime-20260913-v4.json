@@ -1,13 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-werkenbijefe-intro-write-20260914-v4",
+  "request_id": "portfolio-sanatolia-post-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "post.get",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "7602bd0319a8ea8afab2929f3ad0b52fd3354a1c5b6b153ad5569a2f18cd2691",
   "payload": {
-    "id": 1241,
-    "excerpt": "For Werken Bij EFE, I built a WordPress recruitment website focused on vacancies, career guidance and easy applications; visit <a href=\"https://werkenbijefe.nl/\">WerkenBijEFE.nl</a> to explore opportunities."
+    "id": 4448
   }
 }
