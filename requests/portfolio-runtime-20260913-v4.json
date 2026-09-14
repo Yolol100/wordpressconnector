@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-batch4-write-20260915-v4",
+  "request_id": "portfolio-ahrefs-batch4-retest-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "operations": [
       {
         "action": "acf.update",
-        "expected_fingerprint": "b6744510213dfa7c4373a9bafc47472da50bdf1c6fef3a5413706477fd423711",
+        "expected_fingerprint": "b87963195f9e2741c4cc92bd14ea68f3b5cf807a0fafb7def9167a46d193c4fc",
         "payload": {
           "post_id": 1424,
           "fields": {
@@ -20,7 +20,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "f05fc4a734724cf19c76b26f2d3f0023a6250ba1a4cc1fc72353b5580bd6e650",
+        "expected_fingerprint": "eacca8bcfb414de6b729a006dc7fadd12510a56f547b771069a0188e7e2bb6f8",
         "payload": {
           "post_id": 1418,
           "fields": {
@@ -31,7 +31,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "cef3af129ebce00e8127567c7a60b29aa6439c0b9426d4f73fe3ad9716934a47",
+        "expected_fingerprint": "343dc43cf260946f11d6fa4ec928936123f880f0c476910cddc05e6421a57823",
         "payload": {
           "post_id": 1405,
           "fields": {
@@ -42,7 +42,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "e0638be8536080003cb88c0fb5207d417864331d6a770a97c56e508b823f07ba",
+        "expected_fingerprint": "6fc4e5bd4ed3d8ed3507845f0f08d9b01db2612ba508b86d3e5d2a96bf0af1f4",
         "payload": {
           "post_id": 1402,
           "fields": {
@@ -53,7 +53,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "28fbe3c6ed600333bd4dfda1c907e9a0c463638c8a7c7fa5f9c73438ae85f4cd",
+        "expected_fingerprint": "be017243f137e5faeb3aa7a6db2fea1f8f087aa910d05dded43d9c1015145619",
         "payload": {
           "post_id": 1401,
           "fields": {
@@ -64,7 +64,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "07a2351bc8504fdba8c90026000ea1d38568dff9cddf895fac214c970391bb65",
+        "expected_fingerprint": "f1f7b5ad55bbc35bcbcc98ead7ef4587d7be349da45947eda1546f1d5a6d8035",
         "payload": {
           "post_id": 1395,
           "fields": {
@@ -75,7 +75,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "0af0848d9fc8f167a0f0ae24764dfc2a967a8a2012460dfe19db90631aa50504",
+        "expected_fingerprint": "783cdf4e1c44fa1b5ad25cfdbd50b9ce83532028336b50392b167afaa0eb23e4",
         "payload": {
           "post_id": 1394,
           "fields": {
