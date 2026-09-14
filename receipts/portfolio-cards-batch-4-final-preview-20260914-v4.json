@@ -1,0 +1,41 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-cards-batch-4-final-preview-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T14:31:49+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "f26459c1462d55f119daf5285b9cd98e5d5c8ac26c3e00f8972b09fbf2909357"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "8ac196c14ed274373da78c32a2071e3bf757f4a2125e9a264e43a007415f016b"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "4e174fec586401009987ca7d37e1b8686c57eb2460d1be99dff0e70c4b95de64"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "73ca4706de25329e9e47e1e74e7e6f91c34578cc2b5111884fc5f03b82f56f70"
+        }
+    ]
+}
