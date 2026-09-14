@@ -1,9 +1,16 @@
 {
   "version": 1,
-  "request_id": "portfolio-boekhoudsnel-source-read-20260914-v4",
+  "request_id": "portfolio-cards-batch-4-final-preview-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id":1422}
+  "payload": {
+    "operations": [
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":4092,"fields":{"field_portfolio_stat_1_value":"1.6.79","field_portfolio_stat_1_label":"Stable release","field_portfolio_stat_2_value":"50","field_portfolio_stat_2_label":"Search results per batch","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Image target slots","field_portfolio_stat_4_value":"2","field_portfolio_stat_4_label":"Verified WP/PHP baselines"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":2283,"fields":{"field_portfolio_stat_1_value":"2","field_portfolio_stat_1_label":"Spreadsheet formats","field_portfolio_stat_2_value":"3","field_portfolio_stat_2_label":"Review workflow stages","field_portfolio_stat_3_value":"ACF","field_portfolio_stat_3_label":"Field workflow","field_portfolio_stat_4_value":"Validated","field_portfolio_stat_4_label":"Import safety"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1427,"fields":{"field_portfolio_stat_1_value":"29","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"140","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"345","field_portfolio_stat_3_label":"Backlinks","field_portfolio_stat_4_value":"Electrical","field_portfolio_stat_4_label":"Service focus"}}},
+      {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1422,"fields":{"field_portfolio_stat_1_value":"Bookkeeping","field_portfolio_stat_1_label":"Service focus","field_portfolio_stat_2_value":"Plain language","field_portfolio_stat_2_label":"Content approach","field_portfolio_stat_3_value":"Entrepreneurs","field_portfolio_stat_3_label":"Target audience","field_portfolio_stat_4_value":"Direct contact","field_portfolio_stat_4_label":"Conversion path"}}}
+    ]
+  }
 }
