@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-rhapsodyhealthcare-post-read-after-stats-20260914-v4",
+  "request_id": "portfolio-rhapsodyhealthcare-intro-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
+  "expected_fingerprint": "9f5c15800d9377d5d9d7177d4c8b3633555785057bb195e5b17cea2a80e3afc9",
   "payload": {
-    "id": 4933
+    "id": 4933,
+    "excerpt": "For Rhapsody Healthcare, I built a WordPress website presenting supportive care, living and guidance clearly; visit <a href=\"https://www.rhapsodyhealthcare.nl/\">RhapsodyHealthcare.nl</a> to explore their services."
   }
 }
