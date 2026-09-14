@@ -1,23 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-3-empty-probe-20260914-v4",
+  "request_id": "portfolio-cards-batch-3-progress-probe-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
   "payload": {
     "operations": [
-      {"action":"acf.update","payload":{"post_id":4092,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":2305,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":2283,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":2213,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1378,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1369,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1368,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1352,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1342,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1332,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}},
-      {"action":"acf.update","payload":{"post_id":1321,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}}
+      {"action":"acf.update","payload":{"post_id":1394,"fields":{"field_portfolio_stat_1_value":"probe","field_portfolio_stat_1_label":"probe","field_portfolio_stat_2_value":"probe","field_portfolio_stat_2_label":"probe","field_portfolio_stat_3_value":"probe","field_portfolio_stat_3_label":"probe","field_portfolio_stat_4_value":"probe","field_portfolio_stat_4_label":"probe"}}}
     ]
   }
 }
