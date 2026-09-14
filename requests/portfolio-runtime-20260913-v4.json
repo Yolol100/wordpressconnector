@@ -1,13 +1,22 @@
 {
   "version": 1,
-  "request_id": "portfolio-text-batch-5-item-4239-write-20260914-v4",
+  "request_id": "portfolio-text-batch-5-fresh-state-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.update",
-  "dry_run": false,
+  "action": "connector.batch",
+  "dry_run": true,
   "confirm": true,
-  "expected_fingerprint": "f43ac1744f9c77c918f179a3c9e7614bd5500650a2a9f085e4d95d4152ce726a",
   "payload": {
-    "id": 4239,
-    "excerpt": "A WordPress workflow plugin that safely maps Media Library images to ACF image fields and featured images, with preview, batch processing and rollback support."
+    "operations": [
+      {"action":"post.get","payload":{"id":4239}},
+      {"action":"post.get","payload":{"id":4190}},
+      {"action":"post.get","payload":{"id":4155}},
+      {"action":"post.get","payload":{"id":4141}},
+      {"action":"post.get","payload":{"id":4096}},
+      {"action":"post.get","payload":{"id":2989}},
+      {"action":"post.get","payload":{"id":2487}},
+      {"action":"post.get","payload":{"id":2298}},
+      {"action":"post.get","payload":{"id":2255}},
+      {"action":"post.get","payload":{"id":2238}}
+    ]
   }
 }
