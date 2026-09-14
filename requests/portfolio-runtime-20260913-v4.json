@@ -1,11 +1,21 @@
 {
   "version": 1,
-  "request_id": "portfolio-rhapsodyhealthcare-post-read-20260914-v4",
+  "request_id": "portfolio-rhapsodyhealthcare-stats-dry-run-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
+  "action": "acf.update",
   "dry_run": true,
   "confirm": true,
   "payload": {
-    "id": 4933
+    "post_id": 4933,
+    "fields": {
+      "field_portfolio_stat_1_value": "4",
+      "field_portfolio_stat_1_label": "CARE SERVICES",
+      "field_portfolio_stat_2_value": "5",
+      "field_portfolio_stat_2_label": "GUIDANCE STEPS",
+      "field_portfolio_stat_3_value": "6",
+      "field_portfolio_stat_3_label": "SERVICE AREAS",
+      "field_portfolio_stat_4_value": "24/7",
+      "field_portfolio_stat_4_label": "CARE AVAILABLE"
+    }
   }
 }
