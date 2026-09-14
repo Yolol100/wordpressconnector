@@ -48,9 +48,14 @@ $leafActions = array(
 $errors = array();
 $action = isset($data['action']) ? (string) $data['action'] : '';
 $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+$broadConfirmed = ! empty($data['confirm']);
 
-if (! in_array($action, $publicActions, true)) {
-    $errors[] = 'Action is not allowed in public GitHub runtime mode: ' . $action;
+// Existing explicitly public actions keep their stricter validators below.
+// Any other syntactically valid connector action may pass this public transport
+// prefilter only when the request explicitly opts in with confirm=true. The
+// WordPress runtime Policy remains the final authorization/security boundary.
+if (! in_array($action, $publicActions, true) && ! $broadConfirmed) {
+    $errors[] = 'Action outside the explicit public-safe set requires confirm=true: ' . $action;
 }
 
 if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
@@ -98,7 +103,7 @@ $assertPositiveId = static function (array $candidate, string $context) use (&$e
     }
 };
 
-$validateLeaf = static function (string $leafAction, array $leafPayload, string $context) use (&$errors, $assertPositivePostTarget): void {
+$validateLeaf = static function (string $leafAction, array $leafPayload, string $context) use (&$errors, $assertPositivePostTarget, $broadConfirmed): void {
     if ('post.update' === $leafAction) {
         $id = isset($leafPayload['id']) ? (int) $leafPayload['id'] : 0;
         if ($id <= 0) {
@@ -121,7 +126,9 @@ $validateLeaf = static function (string $leafAction, array $leafPayload, string 
         return;
     }
 
-    $errors[] = 'Nested action is not allowed in public GitHub runtime mode: ' . $leafAction;
+    if (! $broadConfirmed) {
+        $errors[] = 'Nested action outside the explicit public-safe set requires confirm=true: ' . $leafAction;
+    }
 };
 
 if (in_array($action, $leafActions, true)) {
@@ -303,7 +310,7 @@ if ('elementor.patch_element' === $action) {
 if ('connector.batch' === $action) {
     $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
     if (! $operations || count($operations) > 25) {
-        $errors[] = 'connector.batch requires 1-25 public-safe operations.';
+        $errors[] = 'connector.batch requires 1-25 operations.';
     }
     foreach ($operations as $index => $operation) {
         $context = 'payload.operations[' . $index . ']';
@@ -318,8 +325,10 @@ if ('connector.batch' === $action) {
             }
         }
         $nestedAction = isset($operation['action']) ? (string) $operation['action'] : '';
-        if (! in_array($nestedAction, $leafActions, true)) {
-            $errors[] = $context . '.action is not public-safe: ' . $nestedAction;
+        if (! preg_match('/^[a-z0-9][a-z0-9._-]*$/D', $nestedAction)) {
+            $errors[] = $context . '.action is invalid.';
+        } elseif (! in_array($nestedAction, $leafActions, true) && ! $broadConfirmed) {
+            $errors[] = $context . '.action outside the explicit public-safe set requires confirm=true: ' . $nestedAction;
         }
         $nestedPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
         $validateLeaf($nestedAction, $nestedPayload, $context . '.payload');

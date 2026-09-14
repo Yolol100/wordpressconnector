@@ -30,6 +30,7 @@ run_php tests/rest-transport-contract.php
 run_php tests/request-workflow-contract.php
 run_php tests/execute-workflow-contract.php
 run_php tests/public-runtime-contract.php
+run_php tests/public-broad-actions-contract.php
 run_php tests/public-post-read-contract.php
 run_php tests/public-elementor-runtime-contract.php
 run_php tests/public-acf-schema-contract.php
