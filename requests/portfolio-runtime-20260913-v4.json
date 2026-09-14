@@ -1,10 +1,11 @@
 {
   "version": 1,
-  "request_id": "portfolio-audit-fix-vchetwonder-preview-20260914-v4",
+  "request_id": "portfolio-audit-fix-vchetwonder-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "acf.update",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "ff2fce3d3821c22f809ce15656e9bbe2071209fb51b1260ca9d974f23eb1f199",
   "payload": {
     "post_id": 1891,
     "fields": {
