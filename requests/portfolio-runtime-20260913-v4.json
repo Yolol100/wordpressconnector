@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "request_id": "portfolio-batch69-post-get-1368-20260914-v4",
+  "request_id": "portfolio-batch70-post-get-1369-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "payload": {
-    "id": 1368
+    "id": 1369
   }
 }
