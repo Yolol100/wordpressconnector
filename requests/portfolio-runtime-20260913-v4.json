@@ -1,14 +1,15 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-batch4-preview-20260915-v4",
+  "request_id": "portfolio-ahrefs-batch4-write-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
       {
         "action": "acf.update",
+        "expected_fingerprint": "b6744510213dfa7c4373a9bafc47472da50bdf1c6fef3a5413706477fd423711",
         "payload": {
           "post_id": 1424,
           "fields": {
@@ -19,6 +20,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "f05fc4a734724cf19c76b26f2d3f0023a6250ba1a4cc1fc72353b5580bd6e650",
         "payload": {
           "post_id": 1418,
           "fields": {
@@ -29,6 +31,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "cef3af129ebce00e8127567c7a60b29aa6439c0b9426d4f73fe3ad9716934a47",
         "payload": {
           "post_id": 1405,
           "fields": {
@@ -39,6 +42,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "e0638be8536080003cb88c0fb5207d417864331d6a770a97c56e508b823f07ba",
         "payload": {
           "post_id": 1402,
           "fields": {
@@ -49,6 +53,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "28fbe3c6ed600333bd4dfda1c907e9a0c463638c8a7c7fa5f9c73438ae85f4cd",
         "payload": {
           "post_id": 1401,
           "fields": {
@@ -59,6 +64,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "07a2351bc8504fdba8c90026000ea1d38568dff9cddf895fac214c970391bb65",
         "payload": {
           "post_id": 1395,
           "fields": {
@@ -69,6 +75,7 @@
       },
       {
         "action": "acf.update",
+        "expected_fingerprint": "0af0848d9fc8f167a0f0ae24764dfc2a967a8a2012460dfe19db90631aa50504",
         "payload": {
           "post_id": 1394,
           "fields": {
