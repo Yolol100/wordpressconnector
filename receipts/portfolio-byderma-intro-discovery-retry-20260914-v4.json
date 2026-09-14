@@ -1,0 +1,476 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-intro-discovery-retry-20260914-v4",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T00:05:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "afc6c07a832603fabc88be334fc6eafdbc2826013b9e575bc56f4855a174695f",
+    "post_id": 4733,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "e2100001",
+            "elType": "container"
+        },
+        {
+            "id": "e21hcopy",
+            "elType": "container"
+        },
+        {
+            "id": "e21heyeb",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>WORDPRESS + WOOCOMMERCE CASE STUDY</p>"
+            }
+        },
+        {
+            "id": "e2100002",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Byderma"
+            }
+        },
+        {
+            "id": "e21hsub1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Treatments, booking and ecommerce - one clear WordPress experience.</p>"
+            }
+        },
+        {
+            "id": "e2100003",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>I was the WordPress Developer. I structured how treatment discovery, appointment booking and WooCommerce relate, then carried the same hierarchy across desktop and mobile.</p>"
+            }
+        },
+        {
+            "id": "e21cred1",
+            "elType": "widget",
+            "widgetType": "shortcode"
+        },
+        {
+            "id": "e21hbtn1",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "Visit live Byderma",
+                "link": {
+                    "url": "https://byderma.nl",
+                    "is_external": "on",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "e21hmedi",
+            "elType": "container"
+        },
+        {
+            "id": "e21himg1",
+            "elType": "widget",
+            "widgetType": "image"
+        },
+        {
+            "id": "e2100010",
+            "elType": "container"
+        },
+        {
+            "id": "e21mrol1",
+            "elType": "container"
+        },
+        {
+            "id": "e21mrlbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>REVIEWS</p>"
+            }
+        },
+        {
+            "id": "e21mrval",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>2,600+</p>"
+            }
+        },
+        {
+            "id": "e21mstk1",
+            "elType": "container"
+        },
+        {
+            "id": "e21mslbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>TREATMENT CATEGORIES</p>"
+            }
+        },
+        {
+            "id": "e21msval",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>6</p>"
+            }
+        },
+        {
+            "id": "e21mfoc1",
+            "elType": "container"
+        },
+        {
+            "id": "e21mflbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>EXPERTISE AREAS</p>"
+            }
+        },
+        {
+            "id": "e21mfval",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>3</p>"
+            }
+        },
+        {
+            "id": "e21mliv1",
+            "elType": "container"
+        },
+        {
+            "id": "e21mllbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>CLIENT BENEFITS</p>"
+            }
+        },
+        {
+            "id": "e21mlval",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>MEMBER CLUB</p>"
+            }
+        },
+        {
+            "id": "e2100030",
+            "elType": "container"
+        },
+        {
+            "id": "e21story",
+            "elType": "container"
+        },
+        {
+            "id": "e21chall",
+            "elType": "container"
+        },
+        {
+            "id": "e21chlbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>THE CHALLENGE</p>"
+            }
+        },
+        {
+            "id": "e21chhed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Three user journeys had to feel like one platform."
+            }
+        },
+        {
+            "id": "e21chtxt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Byderma combines beauty treatments, a large WooCommerce catalogue, appointments and member benefits. The challenge was to keep treatment discovery, shopping and booking distinct enough to understand without fragmenting the brand experience.</p>"
+            }
+        },
+        {
+            "id": "e21contr",
+            "elType": "container"
+        },
+        {
+            "id": "e21colbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>MY CONTRIBUTION</p>"
+            }
+        },
+        {
+            "id": "e21cohed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "I structured the experience around what the visitor is trying to do."
+            }
+        },
+        {
+            "id": "e21cotxt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>My role was WordPress Developer. I organised the WordPress and WooCommerce experience around three tasks, then kept that hierarchy clear on smaller screens.</p>"
+            }
+        },
+        {
+            "id": "e21crow1",
+            "elType": "container"
+        },
+        {
+            "id": "e21c1hed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Treatment discovery → booking"
+            }
+        },
+        {
+            "id": "e21c1txt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Treatment information leads naturally into appointment booking instead of being mixed into the shop journey.</p>"
+            }
+        },
+        {
+            "id": "e21crow2",
+            "elType": "container"
+        },
+        {
+            "id": "e21c2hed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "WooCommerce stays product-focused"
+            }
+        },
+        {
+            "id": "e21c2txt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Product discovery and purchasing stay inside the webshop, while account and member content remains available without interrupting the primary journeys.</p>"
+            }
+        },
+        {
+            "id": "e21crow3",
+            "elType": "container"
+        },
+        {
+            "id": "e21c3hed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Responsive hierarchy stays intact"
+            }
+        },
+        {
+            "id": "e21c3txt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Desktop, tablet and mobile keep the same task separation so visitors do not have to relearn the experience on smaller screens.</p>"
+            }
+        },
+        {
+            "id": "e2100038",
+            "elType": "container"
+        },
+        {
+            "id": "e21outl1",
+            "elType": "container"
+        },
+        {
+            "id": "e21outlb",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>OUTCOME</p>"
+            }
+        },
+        {
+            "id": "e21outhe",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "One platform. Three clear journeys."
+            }
+        },
+        {
+            "id": "e21outr1",
+            "elType": "container"
+        },
+        {
+            "id": "e21outtx",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Treatment discovery, appointment booking and ecommerce remain recognisable as separate tasks while the experience still feels like one Byderma platform.</p>"
+            }
+        },
+        {
+            "id": "e2100040",
+            "elType": "container"
+        },
+        {
+            "id": "e21prhdr",
+            "elType": "container"
+        },
+        {
+            "id": "e21prhlf",
+            "elType": "container"
+        },
+        {
+            "id": "e21prlbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>RESPONSIVE PROOF</p>"
+            }
+        },
+        {
+            "id": "e21prhed",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "The hierarchy stays clear across desktop, tablet and mobile."
+            }
+        },
+        {
+            "id": "e21prhrt",
+            "elType": "container"
+        },
+        {
+            "id": "e21prtxt",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Project captures show the same separation between treatment discovery, booking and ecommerce across tablet and mobile.</p>"
+            }
+        },
+        {
+            "id": "e21prgrd",
+            "elType": "container"
+        },
+        {
+            "id": "e21prone",
+            "elType": "container"
+        },
+        {
+            "id": "e21pri01",
+            "elType": "widget",
+            "widgetType": "image"
+        },
+        {
+            "id": "e21prc01",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Tablet treatment discovery</p>"
+            }
+        },
+        {
+            "id": "e21prtwo",
+            "elType": "container"
+        },
+        {
+            "id": "e21pri02",
+            "elType": "widget",
+            "widgetType": "image"
+        },
+        {
+            "id": "e21prc02",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Mobile responsive view</p>"
+            }
+        },
+        {
+            "id": "e21prthr",
+            "elType": "container"
+        },
+        {
+            "id": "e21pri03",
+            "elType": "widget",
+            "widgetType": "image"
+        },
+        {
+            "id": "e21prc03",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Mobile conversion flow</p>"
+            }
+        },
+        {
+            "id": "e2100060",
+            "elType": "container"
+        },
+        {
+            "id": "e21nxtlf",
+            "elType": "container"
+        },
+        {
+            "id": "e21nxtlb",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>NEXT CASE</p>"
+            }
+        },
+        {
+            "id": "e21nxthe",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Tenbrugge"
+            }
+        },
+        {
+            "id": "e21nxttx",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>A structured WordPress website for financial services, clarity and direct contact.</p>"
+            }
+        },
+        {
+            "id": "e21nxtrt",
+            "elType": "container"
+        },
+        {
+            "id": "e21nxtbt",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View Tenbrugge →",
+                "link": {
+                    "url": "https://andrewbaeten.nl/tenbrugge/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
