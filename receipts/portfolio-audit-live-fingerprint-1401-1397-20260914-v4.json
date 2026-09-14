@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-live-fingerprint-1401-1397-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T19:19:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "c85e62706732414511f36bdbfa0cbd7f5d63a9c89009ed45d81506b82aa522ca",
+            "after_fingerprint": "c85e62706732414511f36bdbfa0cbd7f5d63a9c89009ed45d81506b82aa522ca"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "6929902f7c40c26ede907716e270a4a43cb04552e0443088aa31067949a8fb1b",
+            "after_fingerprint": "6929902f7c40c26ede907716e270a4a43cb04552e0443088aa31067949a8fb1b"
+        }
+    ]
+}
