@@ -1,22 +1,23 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-2-open-preview-20260914-v4",
+  "request_id": "portfolio-cards-batch-2-empty-check-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
   "payload": {
     "operations": [
-      {"action":"acf.update","payload":{"post_id":1891,"fields":{"field_portfolio_stat_1_value":"31","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"340","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"13","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"87","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1435,"fields":{"field_portfolio_stat_1_value":"42","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"584","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"68","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"269","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1434,"fields":{"field_portfolio_stat_1_value":"3.3","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"347","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"2","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1433,"fields":{"field_portfolio_stat_1_value":"7","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"89","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"1","field_portfolio_stat_3_label":"Organic keyword","field_portfolio_stat_4_value":"4","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1432,"fields":{"field_portfolio_stat_1_value":"35","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"844","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"9","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1424,"fields":{"field_portfolio_stat_1_value":"21","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"626","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"1","field_portfolio_stat_3_label":"Organic keyword","field_portfolio_stat_4_value":"11","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1418,"fields":{"field_portfolio_stat_1_value":"16","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"1016","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"19","field_portfolio_stat_3_label":"Organic keywords","field_portfolio_stat_4_value":"595","field_portfolio_stat_4_label":"Est. organic visits / month"}}},
-      {"action":"acf.update","payload":{"post_id":1426,"fields":{"field_portfolio_stat_1_value":"1","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"194","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"1","field_portfolio_stat_3_label":"Organic keyword","field_portfolio_stat_4_value":"3","field_portfolio_stat_4_label":"Featured wedding stories"}}},
-      {"action":"acf.update","payload":{"post_id":1417,"fields":{"field_portfolio_stat_1_value":"377","field_portfolio_stat_1_label":"Referring domains","field_portfolio_stat_2_value":"1","field_portfolio_stat_2_label":"Organic keyword","field_portfolio_stat_3_value":"2","field_portfolio_stat_3_label":"Est. organic visits / month","field_portfolio_stat_4_value":"8","field_portfolio_stat_4_label":"Driving lesson locations"}}},
-      {"action":"acf.update","payload":{"post_id":1428,"fields":{"field_portfolio_stat_1_value":"10","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"16","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Telehandler models","field_portfolio_stat_4_value":"14 m","field_portfolio_stat_4_label":"Maximum reach"}}}
+      {"action":"acf.update","payload":{"post_id":1714,"fields":{"field_portfolio_stat_1_value":"36","field_portfolio_stat_1_label":"Domain Rating"}}},
+      {"action":"acf.update","payload":{"post_id":1439,"fields":{"field_portfolio_stat_1_value":"314","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":1438,"fields":{"field_portfolio_stat_1_value":"374","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":1430,"fields":{"field_portfolio_stat_1_value":"26","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":1429,"fields":{"field_portfolio_stat_1_value":"27","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":1427,"fields":{"field_portfolio_stat_1_value":"29","field_portfolio_stat_1_label":"Domain Rating"}}},
+      {"action":"acf.update","payload":{"post_id":1423,"fields":{"field_portfolio_stat_1_value":"4","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":1419,"fields":{"field_portfolio_stat_1_value":"154","field_portfolio_stat_1_label":"Referring domains"}}},
+      {"action":"acf.update","payload":{"post_id":2473,"fields":{"field_portfolio_stat_1_value":"1.5.55","field_portfolio_stat_1_label":"Stable release"}}},
+      {"action":"acf.update","payload":{"post_id":2223,"fields":{"field_portfolio_stat_1_value":"4","field_portfolio_stat_1_label":"REST scan actions"}}},
+      {"action":"acf.update","payload":{"post_id":2173,"fields":{"field_portfolio_stat_1_value":"WordPress 6.5+","field_portfolio_stat_1_label":"Compatibility baseline"}}}
     ]
   }
 }
