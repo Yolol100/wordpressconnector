@@ -1,15 +1,15 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-batch2-write-20260915-v4",
+  "request_id": "portfolio-ahrefs-batch2-retest-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "operations": [
       {
         "action": "acf.update",
-        "expected_fingerprint": "5f81a0c60ebea29cf4614fe1b7fbf5c9179b7155bf6cdede3562a570e3d86cf9",
+        "expected_fingerprint": "2adea9606e12fa5e2e1e62107a0965d19dfe34b99e32addbb06e2efba68807ed",
         "payload": {
           "post_id": 2213,
           "fields": {
@@ -20,7 +20,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "62732151997b2b3a49a82886c5ffe03cb9ae32e024abf4b8c150d0f671dd7d69",
+        "expected_fingerprint": "2c528641283b68bea0e0702b624be80baef0d30dfa76078dd98cc5ce09417d66",
         "payload": {
           "post_id": 1898,
           "fields": {
@@ -31,7 +31,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "87945cd14f55ab472bf2f2578e5f244931628b2e475b51af6b64d99a386a11dc",
+        "expected_fingerprint": "8a91bad8735e5b4f8b5ba2ea238af5048b67d17b40ec5e08683279e3bead3ac9",
         "payload": {
           "post_id": 1884,
           "fields": {
@@ -42,7 +42,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "cf9c7b5bd202e70736520126ba84bb08a21572de29940dec3966841052eef431",
+        "expected_fingerprint": "382a0ef8a20e205378d67139faa04e98d1f3f663ee62b53316ab45c73a9f9874",
         "payload": {
           "post_id": 1877,
           "fields": {
@@ -53,7 +53,7 @@
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "19be413fa54bcd0dca39872d37aa232cdf4ed99c58f236103fd90b19ae697943",
+        "expected_fingerprint": "ff856440c67dc7c7c6d6af089fc2875fd1cbb98ce4ecc33f2b6d18636d400b31",
         "payload": {
           "post_id": 1863,
           "fields": {
