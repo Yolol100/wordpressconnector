@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-enspect-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T00:25:44+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "68b2dacfad336db5f4bab8d3ec483078ec1763b2074ff6ee0e3da96513a997a9",
+    "after_fingerprint": "b6be192e9a7a3488c02be417a90b64dcc3310d18d30851070a9560195f7d1188",
+    "rollback_available": true
+}
