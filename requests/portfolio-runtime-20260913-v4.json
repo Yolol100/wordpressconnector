@@ -1,11 +1,12 @@
 {
   "version": 1,
-  "request_id": "portfolio-audit-negative-stale-confirmed-20260914-v4",
+  "request_id": "portfolio-audit-final-sentinel-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": false,
-  "confirm": true,
+  "dry_run": true,
+  "confirm": false,
   "payload": {"operations": [
-    {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":4239,"fields":{"field_portfolio_stat_1_value":"1.7.48","field_portfolio_stat_1_label":"Stable release","field_portfolio_stat_2_value":"3","field_portfolio_stat_2_label":"Image target types","field_portfolio_stat_3_value":"25","field_portfolio_stat_3_label":"Rollback runs per user","field_portfolio_stat_4_value":"90 days","field_portfolio_stat_4_label":"Rollback retention"}}}
+    {"action":"acf.update","payload":{"post_id":4239,"fields":{"field_portfolio_stat_1_value":"1.7.48","field_portfolio_stat_1_label":"Stable release","field_portfolio_stat_2_value":"3","field_portfolio_stat_2_label":"Image target types","field_portfolio_stat_3_value":"25","field_portfolio_stat_3_label":"Rollback runs per user","field_portfolio_stat_4_value":"90 days","field_portfolio_stat_4_label":"Rollback retention"}}},
+    {"action":"post.update","payload":{"id":4239,"excerpt":"A WordPress workflow plugin that safely maps Media Library images to ACF image fields and featured images, with preview, batch processing and rollback support."}}
   ]}
 }
