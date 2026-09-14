@@ -1,22 +1,16 @@
 {
   "version": 1,
-  "request_id": "portfolio-text-batch-5-final-verify-20260914-v4",
+  "request_id": "portfolio-cards-batch-4-final-retest-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
-  "confirm": true,
+  "confirm": false,
   "payload": {
     "operations": [
-      {"action":"post.update","payload":{"id":4239,"excerpt":"A WordPress workflow plugin that safely maps Media Library images to ACF image fields and featured images, with preview, batch processing and rollback support."}},
-      {"action":"post.update","payload":{"id":4190,"excerpt":"A review-first WordPress translation plugin with visual editing, CSV/XLIFF workflows, AI-assisted translation and multilingual SEO foundations."}},
-      {"action":"post.update","payload":{"id":4155,"excerpt":"A WordPress workflow plugin for finding, reviewing, licensing and mapping Shutterstock images to SEO pages, featured images and ACF fields."}},
-      {"action":"post.update","payload":{"id":4141,"excerpt":"A WooCommerce logistics integration that connects eligible orders to the SooCool transport API with background sync, webhooks and shipping labels."}},
-      {"action":"post.update","payload":{"id":4096,"excerpt":"An admin-only WordPress content and media workflow for controlled TXT import/export, ACF data, image metadata, previews and safe round-trip updates."}},
-      {"action":"post.update","payload":{"id":2989,"excerpt":"A WordPress admin tool for managing ACF, SEO, image metadata, titles and excerpts with validated CSV/XLSX/ZIP import and export."}},
-      {"action":"post.update","payload":{"id":2487,"excerpt":"A WooCommerce product calculator that turns area and thickness inputs into required material quantities, bag counts and order-aware pricing metadata."}},
-      {"action":"post.update","payload":{"id":2298,"excerpt":"A WordPress service-management plugin with a dedicated content type, category taxonomy, searchable shortcode and CSV import/export."}},
-      {"action":"post.update","payload":{"id":2255,"excerpt":"A WordPress course-management plugin with course availability fields, responsive layouts, a shortcode and two public REST endpoints."}},
-      {"action":"post.update","payload":{"id":2238,"excerpt":"A WordPress patch-management tool for reviewing exact file changes, inspecting plugins, creating backups and applying reviewed patches behind production safety gates."}}
+      {"action":"acf.update","expected_fingerprint":"f26459c1462d55f119daf5285b9cd98e5d5c8ac26c3e00f8972b09fbf2909357","payload":{"post_id":4092,"fields":{"field_portfolio_stat_1_value":"1.6.79","field_portfolio_stat_1_label":"Stable release","field_portfolio_stat_2_value":"50","field_portfolio_stat_2_label":"Search results per batch","field_portfolio_stat_3_value":"4","field_portfolio_stat_3_label":"Image target slots","field_portfolio_stat_4_value":"2","field_portfolio_stat_4_label":"Verified WP/PHP baselines"}}},
+      {"action":"acf.update","expected_fingerprint":"8ac196c14ed274373da78c32a2071e3bf757f4a2125e9a264e43a007415f016b","payload":{"post_id":2283,"fields":{"field_portfolio_stat_1_value":"2","field_portfolio_stat_1_label":"Spreadsheet formats","field_portfolio_stat_2_value":"3","field_portfolio_stat_2_label":"Review workflow stages","field_portfolio_stat_3_value":"ACF","field_portfolio_stat_3_label":"Field workflow","field_portfolio_stat_4_value":"Validated","field_portfolio_stat_4_label":"Import safety"}}},
+      {"action":"acf.update","expected_fingerprint":"4e174fec586401009987ca7d37e1b8686c57eb2460d1be99dff0e70c4b95de64","payload":{"post_id":1427,"fields":{"field_portfolio_stat_1_value":"29","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"140","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"345","field_portfolio_stat_3_label":"Backlinks","field_portfolio_stat_4_value":"Electrical","field_portfolio_stat_4_label":"Service focus"}}},
+      {"action":"acf.update","expected_fingerprint":"73ca4706de25329e9e47e1e74e7e6f91c34578cc2b5111884fc5f03b82f56f70","payload":{"post_id":1422,"fields":{"field_portfolio_stat_1_value":"Bookkeeping","field_portfolio_stat_1_label":"Service focus","field_portfolio_stat_2_value":"Plain language","field_portfolio_stat_2_label":"Content approach","field_portfolio_stat_3_value":"Entrepreneurs","field_portfolio_stat_3_label":"Target audience","field_portfolio_stat_4_value":"Direct contact","field_portfolio_stat_4_label":"Conversion path"}}}
     ]
   }
 }
