@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-batch2-retest-20260915-v4",
+  "request_id": "portfolio-ahrefs-batch3-preview-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
@@ -9,56 +9,51 @@
     "operations": [
       {
         "action": "acf.update",
-        "expected_fingerprint": "2adea9606e12fa5e2e1e62107a0965d19dfe34b99e32addbb06e2efba68807ed",
         "payload": {
-          "post_id": 2213,
+          "post_id": 1855,
           "fields": {
-            "field_portfolio_stat_3_value": "52",
-            "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
+            "field_portfolio_stat_3_value": "≈81",
+            "field_portfolio_stat_3_label": "EST. ORGANIC TRAFFIC/MO"
           }
         }
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "2c528641283b68bea0e0702b624be80baef0d30dfa76078dd98cc5ce09417d66",
         "payload": {
-          "post_id": 1898,
+          "post_id": 1714,
           "fields": {
-            "field_portfolio_stat_4_value": "37",
+            "field_portfolio_stat_4_value": "≈489",
+            "field_portfolio_stat_4_label": "EST. ORGANIC TRAFFIC/MO"
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1438,
+          "fields": {
+            "field_portfolio_stat_4_value": "52",
             "field_portfolio_stat_4_label": "Ahrefs Domain Rating"
           }
         }
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "8a91bad8735e5b4f8b5ba2ea238af5048b67d17b40ec5e08683279e3bead3ac9",
         "payload": {
-          "post_id": 1884,
+          "post_id": 1435,
           "fields": {
-            "field_portfolio_stat_3_value": "41",
-            "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
+            "field_portfolio_stat_3_value": "≈269",
+            "field_portfolio_stat_3_label": "EST. ORGANIC TRAFFIC/MO"
           }
         }
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "382a0ef8a20e205378d67139faa04e98d1f3f663ee62b53316ab45c73a9f9874",
         "payload": {
-          "post_id": 1877,
+          "post_id": 1433,
           "fields": {
-            "field_portfolio_stat_4_value": "56",
-            "field_portfolio_stat_4_label": "Ahrefs Top-10 keywords"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "ff856440c67dc7c7c6d6af089fc2875fd1cbb98ce4ecc33f2b6d18636d400b31",
-        "payload": {
-          "post_id": 1863,
-          "fields": {
-            "field_portfolio_stat_3_value": "29",
-            "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
+            "field_portfolio_stat_2_value": "≈72",
+            "field_portfolio_stat_2_label": "EST. ORGANIC TRAFFIC/MO"
           }
         }
       }
