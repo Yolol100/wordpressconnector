@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "request_id": "portfolio-text-batch-5-item-2989-read-20260914-v4",
+  "request_id": "portfolio-text-batch-5-item-2487-read-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "post.get",
   "dry_run": true,
   "confirm": false,
-  "payload": {"id": 2989}
+  "payload": {"id": 2487}
 }
