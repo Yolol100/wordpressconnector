@@ -1,11 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-tenbrugge-post-read-cleanup-20260914-v4",
+  "request_id": "portfolio-tenbrugge-intro-write-cleanup-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "post.get",
-  "dry_run": true,
+  "action": "post.update",
+  "dry_run": false,
   "confirm": true,
+  "expected_fingerprint": "44504280c83b0f81a2557b53876c377d5fddbc88d0d143ff0d1b050252cea836",
   "payload": {
-    "id": 4470
+    "id": 4470,
+    "excerpt": "For Ten Bruggen, I built a WordPress website with clear navigation and streamlined client journeys; visit <a href=\"https://tenbruggen.nl/\">TenBruggen.nl</a> to explore their official website."
   }
 }
