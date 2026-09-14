@@ -1,22 +1,13 @@
 {
   "version": 1,
-  "request_id": "portfolio-text-batch-5-write-20260914-v4",
+  "request_id": "portfolio-text-batch-5-item-4239-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
-  "action": "connector.batch",
+  "action": "post.update",
   "dry_run": false,
   "confirm": true,
+  "expected_fingerprint": "f43ac1744f9c77c918f179a3c9e7614bd5500650a2a9f085e4d95d4152ce726a",
   "payload": {
-    "operations": [
-      {"action":"post.update","expected_fingerprint":"f43ac1744f9c77c918f179a3c9e7614bd5500650a2a9f085e4d95d4152ce726a","payload":{"id":4239,"excerpt":"A WordPress workflow plugin that safely maps Media Library images to ACF image fields and featured images, with preview, batch processing and rollback support."}},
-      {"action":"post.update","expected_fingerprint":"dede374adecec9372b710bfdc5bb9c6ae2cea332e0788a40f5271e2637098483","payload":{"id":4190,"excerpt":"A review-first WordPress translation plugin with visual editing, CSV/XLIFF workflows, AI-assisted translation and multilingual SEO foundations."}},
-      {"action":"post.update","expected_fingerprint":"38b26124dd71e62f9f65ba529914673f588603b658f5d38ab1e0b816f675828f","payload":{"id":4155,"excerpt":"A WordPress workflow plugin for finding, reviewing, licensing and mapping Shutterstock images to SEO pages, featured images and ACF fields."}},
-      {"action":"post.update","expected_fingerprint":"b2e14db77746043fcd549b121c20bd8310636215b33b79ae9993158c92702f46","payload":{"id":4141,"excerpt":"A WooCommerce logistics integration that connects eligible orders to the SooCool transport API with background sync, webhooks and shipping labels."}},
-      {"action":"post.update","expected_fingerprint":"3e88a9bdfd7d0b12a96a10d5d66286162d6be71eafdb1ebb9719aae6241936d5","payload":{"id":4096,"excerpt":"An admin-only WordPress content and media workflow for controlled TXT import/export, ACF data, image metadata, previews and safe round-trip updates."}},
-      {"action":"post.update","expected_fingerprint":"13c98519cb5dc8527fe6e5c4a5f66df25cb123b233afc989ef9c81e6ed2407d8","payload":{"id":2989,"excerpt":"A WordPress admin tool for managing ACF, SEO, image metadata, titles and excerpts with validated CSV/XLSX/ZIP import and export."}},
-      {"action":"post.update","expected_fingerprint":"14339039d8ba0a90857371303baacb3c656dbd53b44da9f2cdfdc4c77167a8a0","payload":{"id":2487,"excerpt":"A WooCommerce product calculator that turns area and thickness inputs into required material quantities, bag counts and order-aware pricing metadata."}},
-      {"action":"post.update","expected_fingerprint":"ba8b02d31f15f65aee48ac982d8215da3ba8eb7ba3e2354037b4f515f192cc7f","payload":{"id":2298,"excerpt":"A WordPress service-management plugin with a dedicated content type, category taxonomy, searchable shortcode and CSV import/export."}},
-      {"action":"post.update","expected_fingerprint":"0304b089ddf8799b8b34ea2a4a8570e428aba4a2b4321384077c5889a961068c","payload":{"id":2255,"excerpt":"A WordPress course-management plugin with course availability fields, responsive layouts, a shortcode and two public REST endpoints."}},
-      {"action":"post.update","expected_fingerprint":"c912a675dac42ee20e150af028a1e1a2f0480f53b19c366d97887d31e46fec29","payload":{"id":2238,"excerpt":"A WordPress patch-management tool for reviewing exact file changes, inspecting plugins, creating backups and applying reviewed patches behind production safety gates."}}
-    ]
+    "id": 4239,
+    "excerpt": "A WordPress workflow plugin that safely maps Media Library images to ACF image fields and featured images, with preview, batch processing and rollback support."
   }
 }
