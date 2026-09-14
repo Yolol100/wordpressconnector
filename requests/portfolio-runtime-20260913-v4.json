@@ -1,89 +1,29 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-batch4-retest-20260915-v4",
+  "request_id": "portfolio-ahrefs-b5-b6-acf-inspect-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
   "confirm": false,
   "payload": {
     "operations": [
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "b87963195f9e2741c4cc92bd14ea68f3b5cf807a0fafb7def9167a46d193c4fc",
-        "payload": {
-          "post_id": 1424,
-          "fields": {
-            "field_portfolio_stat_4_value": "21",
-            "field_portfolio_stat_4_label": "Ahrefs Domain Rating"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "eacca8bcfb414de6b729a006dc7fadd12510a56f547b771069a0188e7e2bb6f8",
-        "payload": {
-          "post_id": 1418,
-          "fields": {
-            "field_portfolio_stat_4_value": "≈595",
-            "field_portfolio_stat_4_label": "EST. ORGANIC TRAFFIC/MO"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "343dc43cf260946f11d6fa4ec928936123f880f0c476910cddc05e6421a57823",
-        "payload": {
-          "post_id": 1405,
-          "fields": {
-            "field_portfolio_stat_4_value": "40",
-            "field_portfolio_stat_4_label": "Ahrefs Domain Rating"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "6fc4e5bd4ed3d8ed3507845f0f08d9b01db2612ba508b86d3e5d2a96bf0af1f4",
-        "payload": {
-          "post_id": 1402,
-          "fields": {
-            "field_portfolio_stat_3_value": "≈42",
-            "field_portfolio_stat_3_label": "EST. ORGANIC TRAFFIC/MO"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "be017243f137e5faeb3aa7a6db2fea1f8f087aa910d05dded43d9c1015145619",
-        "payload": {
-          "post_id": 1401,
-          "fields": {
-            "field_portfolio_stat_3_value": "≈188",
-            "field_portfolio_stat_3_label": "EST. ORGANIC TRAFFIC/MO"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "f1f7b5ad55bbc35bcbcc98ead7ef4587d7be349da45947eda1546f1d5a6d8035",
-        "payload": {
-          "post_id": 1395,
-          "fields": {
-            "field_portfolio_stat_4_value": "≈210",
-            "field_portfolio_stat_4_label": "EST. ORGANIC TRAFFIC/MO"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "783cdf4e1c44fa1b5ad25cfdbd50b9ce83532028336b50392b167afaa0eb23e4",
-        "payload": {
-          "post_id": 1394,
-          "fields": {
-            "field_portfolio_stat_4_value": "47",
-            "field_portfolio_stat_4_label": "Ahrefs Domain Rating"
-          }
-        }
-      }
+      {"action":"acf.get","payload":{"post_id":1391,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1379,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1376,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1375,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1374,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1371,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1370,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1369,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1368,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1367,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1366,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1352,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1342,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1332,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1321,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1303,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}},
+      {"action":"acf.get","payload":{"post_id":1241,"fields":["field_portfolio_stat_1_value","field_portfolio_stat_1_label","field_portfolio_stat_2_value","field_portfolio_stat_2_label","field_portfolio_stat_3_value","field_portfolio_stat_3_label","field_portfolio_stat_4_value","field_portfolio_stat_4_label"]}}
     ]
   }
 }
