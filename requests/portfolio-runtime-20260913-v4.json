@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "request_id": "portfolio-ahrefs-picks-retest-20260914-v4",
+  "request_id": "portfolio-ahrefs-batch2-preview-20260915-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
   "dry_run": true,
@@ -9,55 +9,50 @@
     "operations": [
       {
         "action": "acf.update",
-        "expected_fingerprint": "9773f496f1e79883fc1bf9477ecb35d3a85097d11d432453a007806ad19d06b1",
         "payload": {
-          "post_id": 4933,
+          "post_id": 2213,
           "fields": {
-            "field_portfolio_stat_2_value": "≈51",
-            "field_portfolio_stat_2_label": "EST. ORGANIC TRAFFIC/MO"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "7200ef8b3ed6ff53e35374119f0ba47fbbd3cd137f2bb4631b386d48355dd527",
-        "payload": {
-          "post_id": 4229,
-          "fields": {
-            "field_portfolio_stat_4_value": "18 → 55",
-            "field_portfolio_stat_4_label": "AHREFS DOMAIN RATING"
-          }
-        }
-      },
-      {
-        "action": "acf.update",
-        "expected_fingerprint": "42ae0e07b8653c3e01b5baef6b3f7d26ff5487f5aa07e87fce04a701a5e558ed",
-        "payload": {
-          "post_id": 4124,
-          "fields": {
-            "field_portfolio_stat_3_value": "62",
+            "field_portfolio_stat_3_value": "52",
             "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
           }
         }
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "50ca75d5f6332734f53a08684c46db86f95af71f582ac5e9325122e4108667ee",
         "payload": {
-          "post_id": 4116,
+          "post_id": 1898,
           "fields": {
-            "field_portfolio_stat_4_value": "62",
+            "field_portfolio_stat_4_value": "37",
             "field_portfolio_stat_4_label": "Ahrefs Domain Rating"
           }
         }
       },
       {
         "action": "acf.update",
-        "expected_fingerprint": "7fd066440ebb4617f7631257840d30a6859dc298d09c875fa35ef93329f83960",
         "payload": {
-          "post_id": 3660,
+          "post_id": 1884,
           "fields": {
-            "field_portfolio_stat_3_value": "25",
+            "field_portfolio_stat_3_value": "41",
+            "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1877,
+          "fields": {
+            "field_portfolio_stat_4_value": "56",
+            "field_portfolio_stat_4_label": "Ahrefs Top-10 keywords"
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1863,
+          "fields": {
+            "field_portfolio_stat_3_value": "29",
             "field_portfolio_stat_3_label": "Ahrefs Domain Rating"
           }
         }
