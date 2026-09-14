@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "request_id": "portfolio-cards-batch-3-final-preview-20260914-v4",
+  "request_id": "portfolio-cards-batch-3-write-20260914-v4",
   "site_url": "https://andrewbaeten.nl",
   "action": "connector.batch",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "payload": {
     "operations": [
       {"action":"acf.update","expected_fingerprint":"041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967","payload":{"post_id":1396,"fields":{"field_portfolio_stat_1_value":"29","field_portfolio_stat_1_label":"Domain Rating","field_portfolio_stat_2_value":"131","field_portfolio_stat_2_label":"Referring domains","field_portfolio_stat_3_value":"143","field_portfolio_stat_3_label":"Backlinks","field_portfolio_stat_4_value":"8 years","field_portfolio_stat_4_label":"Product warranty"}}},
