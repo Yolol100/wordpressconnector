@@ -37,6 +37,7 @@ run_php tests/public-acf-schema-contract.php
 run_php tests/public-acf-update-boundary-contract.php
 run_php tests/portfolio-stats-unpublished-contract.php
 run_php tests/portfolio-stats-public-runtime-contract.php
+run_php tests/portfolio-stats-public-transport-contract.php
 run_php tests/acf-schema-parent-contract.php
 run_php tests/workflow-security-contract.php
 run_php tests/mutation-lock-contract.php
