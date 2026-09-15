@@ -1,1 +1,1 @@
-{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"andrew-connector-1143-update-check-20260915","action":"connector.update.check","dry_run":true,"confirm":false,"payload":{}}
+{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"andrew-connector-1143-apply-dryrun-20260915","action":"connector.update.apply","dry_run":true,"confirm":false,"payload":{}}
