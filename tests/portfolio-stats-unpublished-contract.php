@@ -67,6 +67,7 @@ function update_field($key, $value, $postId): bool
     return true;
 }
 
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
