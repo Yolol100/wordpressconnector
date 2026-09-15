@@ -1,1 +1,1 @@
-{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-post-check","action":"post.get","dry_run":true,"confirm":true,"payload":{"id":5104}}
+{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-list-check","action":"post.list","dry_run":true,"confirm":true,"payload":{"post_type":"post","status":"publish","search":"Kirpal","per_page":20}}
