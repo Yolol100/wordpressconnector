@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.4
+Stable tag: 1.14.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.14.5 aligns the public GitHub transport prefilter with the guarded portfolio-stat runtime introduced in 1.14.4. A bounded `acf.portfolio_stats_update` dry-run can now reach Runner admission without `confirm=true`; the transport independently enforces the fixed eight-field allowlist and requires an expected fingerprint plus confirmation for live writes. All non-portfolio public request validation continues through the preserved legacy validator unchanged.
 
 Version 1.14.4 hardens the dedicated portfolio-stat action introduced in 1.14.3. Public GitHub execution now uses Runner-level payload admission instead of the self-update-only `public_repository_safe` bypass, confirmed writes require the fingerprint from the preceding dry-run, unpublished portfolio rollbacks use the same bounded action and exact readback, failed-write compensation is readback-verified, and sanitized receipts expose deterministic before/after fingerprints plus mutation readback and rollback evidence without exposing field values.
 
@@ -55,6 +57,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.5 =
+* Admit bounded `acf.portfolio_stats_update` dry-runs through the public GitHub transport without requiring mutation confirmation.
+* Enforce the exact eight portfolio field keys, positive integer post ID and bounded text values before dispatching the request.
+* Require `confirm=true` and the preceding dry-run fingerprint for live portfolio-stat requests at both transport and Runner layers.
+* Preserve all non-portfolio public request validation through the existing validator and add transport regression coverage.
 
 = 1.14.4 =
 * Route `acf.portfolio_stats_update` through payload-aware Runner admission instead of the self-update-only `public_repository_safe` marker.
