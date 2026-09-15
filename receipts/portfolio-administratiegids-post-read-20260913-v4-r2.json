@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-administratiegids-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:44:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1400,
+        "type": "post",
+        "status": "publish",
+        "title": "Administratiegids",
+        "slug": "administratiegids",
+        "permalink": "https://andrewbaeten.nl/administratiegids/",
+        "excerpt": "Administration comparison site connecting local provider discovery, quote requests and reviews while keeping participating businesses’ lead-generation information in a separate route."
+    },
+    "post_fingerprint": "39a019309d8fa5c268962961ba9666a2de1f72d3b8479e32f55ec80fcdae85f0",
+    "readback_verified": null
+}

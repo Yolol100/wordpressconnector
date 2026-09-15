@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-mdv-installaties-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T22:21:13+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "7fe0ec989f58c39f37b13c058a01b66de9b6ba6b07a4bc8cc9ef516acd990333",
+    "after_fingerprint": "601636d92f29c52a263ff4af30b3e25bf3eacfcea14abac3a8c748a79d1d27a9",
+    "rollback_available": true
+}

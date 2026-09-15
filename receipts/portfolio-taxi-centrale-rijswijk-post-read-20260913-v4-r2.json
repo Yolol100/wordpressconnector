@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-taxi-centrale-rijswijk-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:38:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1401,
+        "type": "post",
+        "status": "publish",
+        "title": "Taxicentralerijswijk",
+        "slug": "taxicentralerijswijk",
+        "permalink": "https://andrewbaeten.nl/taxicentralerijswijk/",
+        "excerpt": "Transport website organising taxi fares, airport and city rides, payment information and booking choices around a clear reservation route for mobile travellers."
+    },
+    "post_fingerprint": "7e1bfa3d0c1f2824454a8ce4e4ed7aba31f76be793dc3d440df3e91850388ff0",
+    "readback_verified": null
+}

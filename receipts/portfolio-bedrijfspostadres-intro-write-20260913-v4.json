@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-bedrijfspostadres-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:39:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "099fc95fcb77b6f555a2613c06b79a951daeba6ace3563f4254965731dbdcc14",
+    "after_fingerprint": "e8cdb171124fce3b9aa2a78c85f0fc50430a75bac883f15e39b29c8c13e4b987",
+    "rollback_available": true
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-4141-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T15:30:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4141,
+        "type": "post",
+        "status": "publish",
+        "title": "Socool for Woocommerce",
+        "slug": "socool-for-woocommerce",
+        "permalink": "https://andrewbaeten.nl/socool-for-woocommerce/",
+        "excerpt": "Transport automation that keeps WooCommerce orders, pickup and delivery events, labels and tracking tied to the correct order through retries and webhook safeguards."
+    },
+    "post_fingerprint": "b2769e40f41d37ee57cfe6131b7c890bd710af2a2f1778e0dcc78c588d3227aa",
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-brightlyn-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:35:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1832,
+        "type": "post",
+        "status": "publish",
+        "title": "Brightlyn",
+        "slug": "brightlyn",
+        "permalink": "https://andrewbaeten.nl/brightlyn/",
+        "excerpt": "Cybersecurity consultancy WordPress website connecting complex regulatory services, sector focus and a clear end-to-end advisory approach."
+    },
+    "post_fingerprint": "42402409d11e6a7a86ac5747ff340d3c403e2a8a199b3842e26102c5e8943ca9",
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-tasveren-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:34:00+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1415,
+        "type": "post",
+        "status": "publish",
+        "title": "Tasveren",
+        "slug": "tasveren",
+        "permalink": "https://andrewbaeten.nl/tasveren/",
+        "excerpt": "Horticulture platform connecting pot filling, labelling, crop support, staffing and equipment rental with facility context and clear business quotation actions."
+    },
+    "post_fingerprint": "05c7677f234e58b603c2744847b075928398811d2bc94e231190caa09036f9c0",
+    "readback_verified": null
+}

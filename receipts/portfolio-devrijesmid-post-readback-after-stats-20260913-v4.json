@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-devrijesmid-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:49:05+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1430,
+        "type": "post",
+        "status": "publish",
+        "title": "Devrijesmid",
+        "slug": "devrijesmid",
+        "permalink": "https://andrewbaeten.nl/devrijesmid/",
+        "excerpt": "Plumbing and installation site turning technical services into concise customer-facing information followed by enquiry."
+    },
+    "post_fingerprint": "555034b882b3c65a2a32be2e15f7c787f1943be3cadf1c4e3acdcae74a3d8fa7",
+    "readback_verified": null
+}

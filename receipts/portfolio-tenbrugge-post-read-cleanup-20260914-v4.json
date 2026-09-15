@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-tenbrugge-post-read-cleanup-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T01:22:42+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4470,
+        "type": "post",
+        "status": "publish",
+        "title": "Tenbrugge",
+        "slug": "tenbrugge",
+        "permalink": "https://andrewbaeten.nl/tenbrugge/",
+        "excerpt": "Voor Ten Bruggen maakte ik een WordPress-website die accountancy, belastingadvies en salarisadministratie overzichtelijk presenteert; via <a href=\"https://tenbruggen.nl/\">tenbruggen.nl</a> vinden bezoekers direct de passende dienstverlening."
+    },
+    "post_fingerprint": "44504280c83b0f81a2557b53876c377d5fddbc88d0d143ff0d1b050252cea836",
+    "readback_verified": null
+}

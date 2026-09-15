@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ourwp-post-get-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:36:59+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1375,
+        "type": "post",
+        "status": "publish",
+        "title": "Ourwp",
+        "slug": "ourwp",
+        "permalink": "https://andrewbaeten.nl/ourwp/",
+        "excerpt": "Virtual-office website explaining business addresses, registration, mail scanning and plan choices so entrepreneurs can protect privacy and start with fewer administrative questions."
+    },
+    "post_fingerprint": "805725fe13a2614b44569d79f17f0c8befcd43e7dac9c8e258a05c4ea3b8767f",
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-zeninspec-post-get-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T23:27:36+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1370,
+        "type": "post",
+        "status": "publish",
+        "title": "Zeninspec",
+        "slug": "zeninspec",
+        "permalink": "https://andrewbaeten.nl/zeninspec/",
+        "excerpt": "Inspection and certification website organising technical services, sectors and trust information so industrial clients can quickly reach relevant expertise and request contact."
+    },
+    "post_fingerprint": "e6b59c20e515833e1e1775e20aa69b4f511f3d65f0e47e9e448630df49eef5ed",
+    "readback_verified": null
+}

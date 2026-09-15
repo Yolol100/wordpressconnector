@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-pastry-company-post-read-after-stats-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:44:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1373,
+        "type": "post",
+        "status": "publish",
+        "title": "Pastrycompany",
+        "slug": "pastrycompany",
+        "permalink": "https://andrewbaeten.nl/pastrycompany/",
+        "excerpt": "Food webshop separating direct product ordering from catering and event enquiries while keeping flavours, offers and practical next steps easy to discover."
+    },
+    "post_fingerprint": "744192012c0374020099d978c9291f3a1abe2989c6851b00aced510caec617be",
+    "readback_verified": null
+}

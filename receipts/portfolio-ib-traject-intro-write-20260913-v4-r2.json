@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ib-traject-intro-write-20260913-v4-r2",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T21:52:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "a5ae07fc628af638945dc4f9f1fcacc4245ddedb04e9bf9e5ab2beca9869c031",
+    "after_fingerprint": "73a84052546232212a074ac849421df807da7d41e12891f69a0dff31f6a205f4",
+    "rollback_available": true
+}

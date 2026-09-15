@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-post-get-retry-1374-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T23:33:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1374,
+        "type": "post",
+        "status": "publish",
+        "title": "Byderma",
+        "slug": "byderma",
+        "permalink": "https://andrewbaeten.nl/byderma/",
+        "excerpt": "Beauty platform separating treatment discovery, appointment booking and product shopping while keeping reviews, memberships and gift options connected to the BYDERMA brand."
+    },
+    "post_fingerprint": "cc70385df7ecb5335a422efc90df6856f51ebd9c485ad9666c666d619c8395c1",
+    "readback_verified": null
+}

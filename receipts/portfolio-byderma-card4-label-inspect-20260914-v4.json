@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-card4-label-inspect-20260914-v4",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T23:48:04+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "17a68a2a7782fb8f594040073246ea4216d58660b8710ac76438d089f9e746ef",
+    "post_id": 4733,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "4.2.4",
+    "elements": [
+        {
+            "id": "e21mllbl",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>LIVE</p>"
+            }
+        }
+    ],
+    "readback_verified": null
+}

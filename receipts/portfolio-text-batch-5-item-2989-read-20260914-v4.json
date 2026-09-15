@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-2989-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T16:10:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 2989,
+        "type": "post",
+        "status": "publish",
+        "title": "ACF Page Text Manager",
+        "slug": "acf-page-text-manager",
+        "permalink": "https://andrewbaeten.nl/acf-page-text-manager/",
+        "excerpt": "Central WordPress text-management tool for ACF, Yoast/Rank Math metadata, image text, titles and excerpts with validated CSV/XLSX workflows."
+    },
+    "post_fingerprint": "e1786b54015398e1b90bc75129a2ac63584566907a2c80110edabba7cb3d4ea9",
+    "readback_verified": null
+}

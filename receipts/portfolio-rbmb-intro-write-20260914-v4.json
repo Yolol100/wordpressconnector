@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-rbmb-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T01:14:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "8105e50a9c96058fed38eb9560af149a915a710b2a9181a2293db1a2902101fc",
+    "after_fingerprint": "24a9bb1994a007f362f71dd998b5dbe6ad8a81ae38ea5ee09beb654ee1ce540c",
+    "rollback_available": true
+}

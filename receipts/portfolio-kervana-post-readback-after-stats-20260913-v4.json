@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kervana-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T15:31:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1424,
+        "type": "post",
+        "status": "publish",
+        "title": "Kervana",
+        "slug": "kervana",
+        "permalink": "https://andrewbaeten.nl/kervana/",
+        "excerpt": "Installation-services site covering air conditioning, underfloor heating, heat pumps, maintenance and boilers, supported by project proof, reviews and quote access."
+    },
+    "post_fingerprint": "78eb38fd551576ac3ceecd7c2cd8bf70528eaac11921f923edbcdf8e52a8f1d5",
+    "readback_verified": null
+}

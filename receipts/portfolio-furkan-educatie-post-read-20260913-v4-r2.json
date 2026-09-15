@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-furkan-educatie-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:34:54+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1409,
+        "type": "post",
+        "status": "publish",
+        "title": "Furkaneducatie",
+        "slug": "furkaneducatie",
+        "permalink": "https://andrewbaeten.nl/furkaneducatie/",
+        "excerpt": "Education platform organising religious lessons, tutoring, homework, schedules, documents and registration for a large student community across public and member-only tasks."
+    },
+    "post_fingerprint": "779494bad430ebcd82bf56f8caa5463c91d5b73c900afd9c9a97e7ea95e8811e",
+    "readback_verified": null
+}
