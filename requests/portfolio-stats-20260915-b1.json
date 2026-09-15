@@ -1,1 +1,1 @@
-{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-schema","action":"acf.field_groups","dry_run":true,"confirm":true,"payload":{"post_id":5104}}
+{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-connector-check","action":"connector.update.check","dry_run":true,"confirm":true,"payload":{}}
