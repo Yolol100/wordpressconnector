@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.2
+Stable tag: 1.14.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.14.3 adds a dedicated, narrowly bounded `acf.portfolio_stats_update` action for the eight existing portfolio-stat text fields on standard WordPress posts, including draft, pending, private, future and password-protected published targets. It does not relax generic public post reads or generic `acf.update`: the action requires edit capability, an applicable ACF field group, exact allowlisted field names, text-only values, confirmation for writes and exact readback, with immediate compensation if a write/readback fails.
 
 Version 1.14.2 fixes the guarded public-runtime contract for post-targeted ACF updates and rollback. Public `acf.update` remains privileged by default, but the runtime may admit only a narrowly validated existing text-field update on one published editable post; rollback snapshots now retain their source/public provenance so public rollback cannot cross into unrelated privileged snapshots.
 
@@ -46,11 +48,18 @@ Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
 
-Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF text-field identity, applicable field group and edit capability; the broad privileged ACF action remains blocked outside that bounded case.
+Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF text-field identity, applicable field group and edit capability; the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; it does not make unpublished post content readable.
 
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.3 =
+* Add dedicated `acf.portfolio_stats_update` for the eight existing portfolio-stat ACF text fields on standard WordPress posts, including unpublished targets.
+* Keep generic `post.get`, `post.list` and `acf.update` visibility rules unchanged; the exception cannot expose unpublished post content or update arbitrary ACF fields.
+* Require target edit capability, a normal content status, applicable ACF field groups, exact allowlisted field names, text-only values and write confirmation.
+* Verify exact ACF readback and immediately restore the captured pre-write values if any field write or readback fails.
+* Add regression coverage for draft/private success and custom post types, Trash, non-text, wrong-group, non-allowlisted and malformed field failures.
 
 = 1.14.2 =
 * Align the public transport and runtime contracts for post-targeted `acf.update` without marking the broad privileged ACF action public-safe.

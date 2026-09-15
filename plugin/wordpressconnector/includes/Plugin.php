@@ -19,6 +19,7 @@ use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
+use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
@@ -48,6 +49,7 @@ final class Plugin
             new ElementorFormsAdapter(),
             new WooCommerceAdapter(),
             new AcfAdapter(),
+            new PortfolioStatsAdapter(),
             new YoastAdapter(),
             new MediaAdapter(),
             new AutoImageAttributesAdapter(),
