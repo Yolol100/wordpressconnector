@@ -83,18 +83,21 @@ $adapter = new PortfolioStatsAdapter();
 $adapter->register($registry);
 $descriptor = $registry->descriptor('acf.portfolio_stats_update');
 
+if (empty($descriptor['privileged']) || ! empty($descriptor['public_repository_safe'])) {
+    fwrite(STDERR, "Portfolio stats action must remain privileged and must not use the public_repository_safe bypass.\n");
+    exit(1);
+}
+
 try {
-    Policy::assertActionAllowed($descriptor, false, false);
-    fwrite(STDERR, "Unconfirmed portfolio stats mutation unexpectedly passed.\n");
+    Policy::assertActionAllowed($descriptor, false, true);
+    fwrite(STDERR, "Direct public execution unexpectedly bypassed Runner payload validation.\n");
     exit(1);
 } catch (RuntimeException $expected) {
-    if (false === strpos($expected->getMessage(), 'confirm=true')) {
-        fwrite(STDERR, "Unexpected confirmation failure: {$expected->getMessage()}\n");
+    if (false === strpos($expected->getMessage(), 'public-repository mode')) {
+        fwrite(STDERR, "Unexpected direct public action failure: {$expected->getMessage()}\n");
         exit(1);
     }
 }
-Policy::assertActionAllowed($descriptor, true, true);
-Policy::assertActionAllowed($descriptor, false, true);
 
 $fields = array(
     'field_portfolio_stat_1_value' => '3',
@@ -109,6 +112,10 @@ if (($dry['after'] ?? null) !== $fields || empty($dry['_current_fingerprint'])) 
 $live = $registry->execute('acf.portfolio_stats_update', array('post_id' => 4090, 'fields' => $fields), array('dry_run' => false, 'confirm' => true));
 if (($live['after'] ?? null) !== $fields || empty($live['_rollback'])) {
     fwrite(STDERR, "Private portfolio stats write/readback contract failed.\n");
+    exit(1);
+}
+if (($live['_rollback']['action'] ?? '') !== 'acf.portfolio_stats_update') {
+    fwrite(STDERR, "Portfolio stats rollback is not routed through the bounded unpublished action.\n");
     exit(1);
 }
 foreach ($fields as $key => $value) {

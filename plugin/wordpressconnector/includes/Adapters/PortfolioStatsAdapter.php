@@ -30,7 +30,6 @@ final class PortfolioStatsAdapter
         $registry->register('acf.portfolio_stats_update', array($this, 'update'), array(
             'mutation' => true,
             'privileged' => true,
-            'public_repository_safe' => true,
             'description' => 'Update only the eight existing portfolio-stat ACF text fields on one standard WordPress post, including unpublished targets.',
         ));
     }
@@ -89,7 +88,6 @@ final class PortfolioStatsAdapter
         }
 
         $before = array();
-        $resolved = array();
         $seenNames = array();
         foreach ($fields as $fieldKey => $value) {
             $fieldKey = (string) $fieldKey;
@@ -117,7 +115,6 @@ final class PortfolioStatsAdapter
             }
             Policy::assertKeyAllowed($name);
             $seenNames[$name] = true;
-            $resolved[$fieldKey] = $field;
             $before[$fieldKey] = get_field($fieldKey, $postId, false);
         }
 
@@ -151,14 +148,26 @@ final class PortfolioStatsAdapter
             }
             $result['after'] = $after;
         } catch (Throwable $error) {
+            $restoreFailures = array();
             foreach ($before as $fieldKey => $oldValue) {
                 update_field((string) $fieldKey, $oldValue, $postId);
+                $restored = get_field((string) $fieldKey, $postId, false);
+                if ($restored !== $oldValue) {
+                    $restoreFailures[] = (string) $fieldKey;
+                }
+            }
+            if ($restoreFailures) {
+                throw new RuntimeException(
+                    'Portfolio stats compensation readback failed for: ' . implode(', ', $restoreFailures) . '. Original error: ' . $error->getMessage(),
+                    0,
+                    $error
+                );
             }
             throw $error;
         }
 
         $result['_rollback'] = array(
-            'action' => 'acf.update',
+            'action' => 'acf.portfolio_stats_update',
             'payload' => array('post_id' => $postId, 'fields' => $before),
         );
         return $result;

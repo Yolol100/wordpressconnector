@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.3
+Stable tag: 1.14.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,6 +14,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
+Version 1.14.4 hardens the dedicated portfolio-stat action introduced in 1.14.3. Public GitHub execution now uses Runner-level payload admission instead of the self-update-only `public_repository_safe` bypass, confirmed writes require the fingerprint from the preceding dry-run, unpublished portfolio rollbacks use the same bounded action and exact readback, failed-write compensation is readback-verified, and sanitized receipts expose deterministic before/after fingerprints plus mutation readback and rollback evidence without exposing field values.
+
 Version 1.14.3 adds a dedicated, narrowly bounded `acf.portfolio_stats_update` action for the eight existing portfolio-stat text fields on standard WordPress posts, including draft, pending, private, future and password-protected published targets. It does not relax generic public post reads or generic `acf.update`: the action requires edit capability, an applicable ACF field group, exact allowlisted field names, text-only values, confirmation for writes and exact readback, with immediate compensation if a write/readback fails.
 
 Version 1.14.2 fixes the guarded public-runtime contract for post-targeted ACF updates and rollback. Public `acf.update` remains privileged by default, but the runtime may admit only a narrowly validated existing text-field update on one published editable post; rollback snapshots now retain their source/public provenance so public rollback cannot cross into unrelated privileged snapshots.
@@ -22,7 +24,7 @@ Version 1.14.1 fixes ACF schema text-field creation so top-level fields use the 
 
 Version 1.14.0 adds narrowly bounded public-runtime Elementor inspection/settings patching and controlled ACF text-field schema creation for verified public targets. Confirmed writes remain fingerprint-gated, sanitized receipts expose only bounded evidence, and rollback is retained for supported mutations.
 
-Version 1.13.0 made the guarded GitHub runtime zero-config after plugin activation. The WordPress admin no longer requires connector checkboxes, GitHub repository variables, WordPress usernames or Application Passwords for the canonical GitHub path. The trusted GitHub Actions executor requests a short-lived GitHub OIDC token and WordPress validates its signature, audience, repository identity, owner identity, main-branch workflow identity, runner environment, validity window and replay identifier before execution.
+Version 1.13.0 made the guarded GitHub runtime zero-config after plugin activation. The WordPress admin no longer requires connector checkboxes, GitHub site variables, WordPress usernames or Application Passwords for the canonical GitHub path. The trusted GitHub Actions executor requests a short-lived GitHub OIDC token and WordPress validates its signature, audience, repository identity, owner identity, main-branch workflow identity, runner environment, validity window and replay identifier before execution.
 
 A minimal HTTPS presence endpoint allows a known site URL to prove that the connector is installed without exposing WordPress content. The target site URL travels with the temporary runtime request and is validated before execution. GitHub cannot securely enumerate arbitrary unknown websites merely because a plugin was installed; global site discovery requires a separate authenticated registry and is intentionally not simulated with public crawling or leaked site lists.
 
@@ -48,11 +50,19 @@ Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
 
-Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF text-field identity, applicable field group and edit capability; the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; it does not make unpublished post content readable.
+Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF text-field identity, applicable field group and edit capability; the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; public execution is admitted only after payload validation and confirmed writes require the preceding dry-run fingerprint. It does not make unpublished post content readable.
 
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.4 =
+* Route `acf.portfolio_stats_update` through payload-aware Runner admission instead of the self-update-only `public_repository_safe` marker.
+* Require confirmed public portfolio-stat writes to carry the exact fingerprint produced by the preceding dry-run.
+* Store portfolio-stat rollback snapshots using the same bounded unpublished-capable action and retain guarded compatibility with existing 1.14.3 snapshots.
+* Verify immediate compensation by exact readback if a write or post-write readback fails.
+* Emit sanitized portfolio-stat receipts with readback status, deterministic before/after fingerprints and rollback availability without exposing ACF values.
+* Add end-to-end contract coverage for guarded draft/private writes, fingerprint enforcement, executable public rollback and receipt minimization.
 
 = 1.14.3 =
 * Add dedicated `acf.portfolio_stats_update` for the eight existing portfolio-stat ACF text fields on standard WordPress posts, including unpublished targets.
