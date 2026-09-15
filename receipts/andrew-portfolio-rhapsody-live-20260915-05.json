@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-portfolio-rhapsody-live-20260915-05",
+    "action": "acf.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-15T19:52:17+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "07971fe1a6dbaf89387e44e19b829c2d4f0e70c2dc4d19cc4bf7783e5b3107fa",
+    "after_fingerprint": "b5412b722564f89fe9696697090f97527534a60d023cf105787fcfa7ffec7d3b",
+    "rollback_available": true
+}
