@@ -1,11 +1,9 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-portfolio-acf-schema-20260915-02",
-  "action": "acf.field_groups",
+  "request_id": "andrew-connector-version-check-20260915-03",
+  "action": "connector.update.check",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "post_id": 5104
-  }
+  "payload": {}
 }
