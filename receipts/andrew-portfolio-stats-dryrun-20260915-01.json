@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "andrew-portfolio-stats-dryrun-20260915-01",
+    "action": "acf.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-15T19:44:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
