@@ -1,0 +1,140 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-portfolio-batch-d-live-20260915",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-15T20:05:21+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ffae600a0f735aae20a105d588dc0946e4e2ad9dd931c2917eabd1c551d02f68",
+            "after_fingerprint": "ffae600a0f735aae20a105d588dc0946e4e2ad9dd931c2917eabd1c551d02f68"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "671358f2345731d36b63ccea27b8774bfda3eebc809b7d4f161c599d2519e5a8",
+            "after_fingerprint": "671358f2345731d36b63ccea27b8774bfda3eebc809b7d4f161c599d2519e5a8"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "2704088b1290ce6bb4bd8676f82ca59613d7494262e273320f453afbc6d85682",
+            "after_fingerprint": "04660f12d4b4fd07a0af0b49685f6915831203c6461b5780aec3d0f40506adfc"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "c7020966da9ade40859070433b1f1f70f7c9fdfde6429c72998a1aa9b0704fc1",
+            "after_fingerprint": "7786c8ecc42b9272d322afa3393bb0f36d05170e5329a3b56ae6f19392cdc427"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "5c17837aa935b6fe9d44f1752e3774fe31d416c38176694f72f4111492634149",
+            "after_fingerprint": "851fc69d17724046a9bc633bbb866faa02269257a2926470d46b4e79363e8faf"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "6c8a77fb85fcce04a4abb27b8cad58eee559bd5695ebf39fa26e190511d82e3a",
+            "after_fingerprint": "b45afe10d3e9f08e8a279e97afb8832db5e6565796e96422b3e4b4be86b9ca34"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "5d4bcc09e1bce4f42a5c7993d6012ba49791c4d24dd8f01c2e6297aef80872fd",
+            "after_fingerprint": "ba0faa20ab4523b5dcaa02e2957662780efa9bfcaef64691547d2ea5bd9643c0"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "c7020966da9ade40859070433b1f1f70f7c9fdfde6429c72998a1aa9b0704fc1",
+            "after_fingerprint": "a62376b7a072cdd0e088823a5b181c36be8123aaccb2dd5379ab317460a8d04a"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b6d5b490f1bc1d0bf9f84ab79831323018c8c458d211b224bd909b9a91d9810c",
+            "after_fingerprint": "273c07ff164e26b4458c0a98058f633f12844b78025769bb88b47f50c27b2da4"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "5b5a66748cadb3f014efd1b23ab880b44c8bab5ee020a695c271a71adb0ea5a3",
+            "after_fingerprint": "5b5a66748cadb3f014efd1b23ab880b44c8bab5ee020a695c271a71adb0ea5a3"
+        },
+        {
+            "index": 10,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0b7cffc7913d2a87cd67dbd85aeda1942ab9f242e74f8116c7a1d6dae66c80d3",
+            "after_fingerprint": "b9716d167c131dc6a7ea6dd36a4b9adc67c5c498f654bb71ec64ec633f298fd9"
+        },
+        {
+            "index": 11,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "78d7fcbf6f805e21409dcf6a5bfb69915778af30694c70dd5430f51c192c7178",
+            "after_fingerprint": "4bd238e7f02a9068dd67021eb945d1cf8b06f5b568bb417a22b1b805822260eb"
+        },
+        {
+            "index": 12,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "204b48d7dbb21721e679cbd58befa8a1fb17f8b928c135b387df3b9c98bf3e2c",
+            "after_fingerprint": "8050de0b6412326e2af3f281ffec73aa7c36f592754b1ce9b9b4a1e84567fe3c"
+        },
+        {
+            "index": 13,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "e24ddab6457e3614e7f22790a16aaff6eb94890ca0f015de5f3ad6a1b3e07e2d",
+            "after_fingerprint": "350133d3f8c1af32ab6ed97f46138ccb93f7d4c07e346acecc10142c8d611ec0"
+        },
+        {
+            "index": 14,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "90bd0eb4b809fd58497bbf09e0274ef2648808be9b781db8bc03c898ad844b5d",
+            "after_fingerprint": "b1b2ce774d0a6ec5be60057372cd3aacbad4ecee1b84117d2dafe44e6c0d9210"
+        },
+        {
+            "index": 15,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "7c0561e9fe2577b6902fd6f969d8be00a4192b5959ced222e9f8868758877a6b",
+            "after_fingerprint": "f28e6759f64765ee6f86fc5bb88aad5d8cb44aeb57d61a8dabde4a6b997a9b25"
+        },
+        {
+            "index": 16,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "855f4db916338cf91ae45c30bfca3f7a1953f51b13f9736fa6eb031ce2d43690",
+            "after_fingerprint": "cb2d95a87bb6bfce6d9a9e137a380829e91df609a12f7abc67842b7f48e51d06"
+        },
+        {
+            "index": 17,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ace1fa23df3c207b640c44712776d3e2017672b67d4fb1ebb08bce0355b93969",
+            "after_fingerprint": "9e36082cb821a20641a722108886c978ba16d889b55b52ab7fc0e3ecd06ee7be"
+        }
+    ],
+    "rollback_available": true
+}
