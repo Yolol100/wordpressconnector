@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-nl-read-20260915",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-15T14:04:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4603,
+        "type": "attachment",
+        "status": "inherit",
+        "title": "Ten Bruggen Payroll Administration Page",
+        "slug": "minimalistic-ipad-mockup-28",
+        "permalink": "https://andrewbaeten.nl/tenbrugge/minimalistic-ipad-mockup-28/",
+        "excerpt": "Tablet view of the payroll administration service page with appointment booking.salarisadministratiepagina met afspraakplanner."
+    },
+    "post_fingerprint": "7b3c1e216fb28bfd9f4a08fe50bfdc4989ae6cb9c7c5c58c9ade5c0c04bc01ce",
+    "readback_verified": null
+}
