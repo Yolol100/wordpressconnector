@@ -1,10 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-portfolio-rhapsody-dryrun-20260915-04",
+  "request_id": "andrew-portfolio-rhapsody-live-20260915-05",
   "action": "acf.update",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "07971fe1a6dbaf89387e44e19b829c2d4f0e70c2dc4d19cc4bf7783e5b3107fa",
   "payload": {
     "post_id": 4933,
     "fields": {
