@@ -1,21 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-portfolio-stats-dryrun-20260915-01",
-  "action": "acf.update",
+  "request_id": "andrew-portfolio-acf-schema-20260915-02",
+  "action": "acf.field_groups",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_id": 5104,
-    "fields": {
-      "field_portfolio_stat_1_value": "3",
-      "field_portfolio_stat_1_label": "Practice Areas",
-      "field_portfolio_stat_2_value": "Direct",
-      "field_portfolio_stat_2_label": "Fixed Contact",
-      "field_portfolio_stat_3_value": "Mobile-first",
-      "field_portfolio_stat_3_label": "Legal Navigation",
-      "field_portfolio_stat_4_value": "WordPress",
-      "field_portfolio_stat_4_label": "Service Website"
-    }
+    "post_id": 5104
   }
 }
