@@ -65,6 +65,7 @@ jobs:
           (( request_count == 1 )) || exit 1
           git show "trusted-main:scripts/validate-request.php" > "$root/trusted/scripts/validate-request.php"
           git show "trusted-main:scripts/validate-public-request.php" > "$root/trusted/scripts/validate-public-request.php"
+          git show "trusted-main:scripts/validate-public-request-legacy.php" > "$root/trusted/scripts/validate-public-request-legacy.php"
           git show "trusted-main:scripts/build-public-receipt.php" > "$root/trusted/scripts/build-public-receipt.php"
           git show "request-head:$request_path" > "$root/request.json"
           php "$root/trusted/scripts/validate-request.php" "$root/request.json"

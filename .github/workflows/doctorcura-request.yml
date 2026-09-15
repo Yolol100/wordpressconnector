@@ -63,6 +63,7 @@ jobs:
           mkdir -p ../trusted/scripts ../request
           git show "trusted-base:scripts/validate-request.php" > ../trusted/scripts/validate-request.php
           git show "trusted-base:scripts/validate-public-request.php" > ../trusted/scripts/validate-public-request.php
+          git show "trusted-base:scripts/validate-public-request-legacy.php" > ../trusted/scripts/validate-public-request-legacy.php
           git show "request-head:$request_path" > ../request/request.json
           php ../trusted/scripts/validate-request.php ../request/request.json
           php ../trusted/scripts/validate-public-request.php ../request/request.json

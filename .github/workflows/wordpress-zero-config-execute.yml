@@ -120,6 +120,7 @@ jobs:
           if [[ "${{ github.event.repository.private }}" != true ]]; then
             public_mode=true
             git show "trusted-main:scripts/validate-public-request.php" > "$root/trusted/validate-public-request.php"
+            git show "trusted-main:scripts/validate-public-request-legacy.php" > "$root/trusted/validate-public-request-legacy.php"
             git show "trusted-main:scripts/build-public-receipt.php" > "$root/trusted/build-public-receipt.php"
             php "$root/trusted/validate-public-request.php" "$root/request.json"
           fi

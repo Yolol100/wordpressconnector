@@ -127,6 +127,7 @@ jobs:
 
           if [[ "$public_mode" == 'true' ]]; then
             git show "trusted-base:scripts/validate-public-request.php" > ../trusted/scripts/validate-public-request.php
+            git show "trusted-base:scripts/validate-public-request-legacy.php" > ../trusted/scripts/validate-public-request-legacy.php
             php ../trusted/scripts/validate-public-request.php ../request/request.json
           fi
 
