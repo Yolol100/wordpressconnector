@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "portfolio-stats-20260915-schema",
+    "action": "acf.field_groups",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-15T14:37:04+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
