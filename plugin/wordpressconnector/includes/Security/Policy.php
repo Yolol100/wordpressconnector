@@ -23,12 +23,35 @@ final class Policy
         'WPCONNECTOR_ALLOW_WRITES','WPCONNECTOR_ALLOW_PRIVILEGED','WPCONNECTOR_ALLOW_SENSITIVE','WPCONNECTOR_ALLOW_SYSTEM_UPDATES','WPCONNECTOR_ALLOW_FILESYSTEM_WRITES',
     );
 
+    private const PUBLIC_REPOSITORY_ACTIONS = array(
+        'post.list',
+        'post.get',
+        'post.update',
+        'acf.update',
+        'acf.portfolio_stats_update',
+        'acf.field_groups',
+        'acf.schema.ensure_text_fields',
+        'elementor.inspect',
+        'elementor.patch_element',
+        'connector.batch',
+        'connector.rollback',
+        'connector.update.check',
+        'connector.update.apply',
+    );
+
     private static ?bool $runtimePublicRepository = null;
     private static bool $requestConfirmed = false;
 
     public static function assertActionAllowed(array $descriptor, bool $dryRun, bool $confirm): void
     {
         self::$requestConfirmed = $confirm;
+
+        if (self::publicRepositoryContext()) {
+            $action = isset($descriptor['name']) ? (string) $descriptor['name'] : '';
+            if (! in_array($action, self::PUBLIC_REPOSITORY_ACTIONS, true)) {
+                throw new RuntimeException('Action is not allowed in public-repository mode: ' . $action);
+            }
+        }
 
         if (! empty($descriptor['sensitive'])) {
             if (self::publicRepositoryContext()) {
