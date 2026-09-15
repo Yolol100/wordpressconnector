@@ -1,1 +1,1 @@
-{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-connector-check","action":"connector.update.check","dry_run":true,"confirm":true,"payload":{}}
+{"version":1,"site_url":"https://andrewbaeten.nl","request_id":"portfolio-stats-20260915-post-check","action":"post.get","dry_run":true,"confirm":true,"payload":{"id":5104}}
