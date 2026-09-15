@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-stats-20260915-list-check",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-15T14:43:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [],
+    "page": 1,
+    "per_page": 20,
+    "total": 0,
+    "pages": 0,
+    "readback_verified": null
+}
