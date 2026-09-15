@@ -206,6 +206,15 @@ final class Runner
             $descriptor['privileged'] = false;
             return $descriptor;
         }
+        if ('acf.portfolio_stats_update' === $action) {
+            $this->assertPublicPortfolioStatsPayload($payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public portfolio stats update requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('connector.rollback' === $action) {
             $requestId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
             if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
@@ -223,6 +232,17 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicPortfolioStatsPayload(array $payload): int
+    {
+        $preview = $this->registry->execute('acf.portfolio_stats_update', $payload, array('dry_run' => true, 'confirm' => true, 'public_validation' => true));
+        $postId = isset($preview['post_id']) ? (int) $preview['post_id'] : 0;
+        $fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
+        if ($postId <= 0 || ! preg_match('/^[a-f0-9]{64}\z/', $fingerprint)) {
+            throw new RuntimeException('Portfolio stats public validation did not produce a guarded target fingerprint.');
+        }
+        return $postId;
     }
 
     private function assertPublicAcfUpdatePayload(array $payload): int
@@ -310,6 +330,7 @@ final class Runner
         $rollbackAction = (string) ($rollback['action'] ?? '');
         $allowed = array(
             'acf.update' => array('acf.update'),
+            'acf.portfolio_stats_update' => array('acf.portfolio_stats_update', 'acf.update'),
             'post.update' => array('post.update'),
             'elementor.patch_element' => array('elementor.replace_document'),
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
@@ -318,7 +339,9 @@ final class Runner
         if (! isset($allowed[$sourceAction]) || ! in_array($rollbackAction, $allowed[$sourceAction], true)) {
             throw new RuntimeException('Rollback snapshot is not eligible for the guarded public rollback route.');
         }
-        if ('acf.update' === $rollbackAction) {
+        if ('acf.portfolio_stats_update' === $sourceAction) {
+            $this->assertPublicPortfolioStatsPayload((array) ($rollback['payload'] ?? array()));
+        } elseif ('acf.update' === $rollbackAction) {
             $this->assertPublicAcfUpdatePayload((array) ($rollback['payload'] ?? array()));
         } elseif ('post.update' === $rollbackAction) {
             $this->assertPublicRollbackPostPayload((array) ($rollback['payload'] ?? array()));
@@ -337,6 +360,8 @@ final class Runner
                 }
                 if ('acf.update' === $operation['action']) {
                     $this->assertPublicAcfUpdatePayload($operation['payload']);
+                } elseif ('acf.portfolio_stats_update' === $operation['action']) {
+                    $this->assertPublicPortfolioStatsPayload($operation['payload']);
                 } elseif ('post.update' === $operation['action']) {
                     $this->assertPublicRollbackPostPayload($operation['payload']);
                 } else {
