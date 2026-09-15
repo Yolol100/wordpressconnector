@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-devrijesmid-20260915-preview",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-15T16:47:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8dcc569058d25315c4ea405ab175988d6a461448f8f8dabb88005a0d13a7f0c4",
+            "after_fingerprint": "ac9f27d1b2597380d9c308cb37f247e1a6da56ec864484aed197bbc353dfdffb"
+        }
+    ]
+}
