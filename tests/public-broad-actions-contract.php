@@ -36,6 +36,7 @@ foreach (array(
     'media.list' => array('per_page' => 10, 'page' => 1),
     'media.get' => array('id' => 123),
     'media.update' => array('id' => 123, 'alt' => 'SEO alt text'),
+    'post.trash' => array('id' => 4933),
     'plugin.update' => array('plugin' => 'example/example.php'),
     'filesystem.inspect' => array(),
 ) as $action => $payload) {
@@ -43,20 +44,11 @@ foreach (array(
     $request['request_id'] = 'public-broad-' . substr(hash('sha256', $action), 0, 12);
     $request['action'] = $action;
     $request['payload'] = $payload;
-    list($status, $output) = $run($write(str_replace('.', '-', $action) . '.json', $request));
-    if (0 !== $status) {
-        fwrite(STDERR, "Confirmed broad public action was rejected: {$action}: {$output}\n");
+    list($status) = $run($write(str_replace('.', '-', $action) . '.json', $request));
+    if (0 === $status) {
+        fwrite(STDERR, "Confirmed non-allowlisted public action unexpectedly passed: {$action}\n");
         exit(1);
     }
-}
-
-$unconfirmed = $base;
-$unconfirmed['request_id'] = 'public-broad-3001';
-$unconfirmed['confirm'] = false;
-list($status) = $run($write('unconfirmed.json', $unconfirmed));
-if (0 === $status) {
-    fwrite(STDERR, "Unconfirmed broad public action unexpectedly passed.\n");
-    exit(1);
 }
 
 $secret = $base;
@@ -75,9 +67,48 @@ $batch['action'] = 'connector.batch';
 $batch['payload'] = array('operations' => array(
     array('action' => 'media.update', 'payload' => array('id' => 123, 'alt' => 'SEO alt text')),
 ));
-list($status, $output) = $run($write('batch.json', $batch));
-if (0 !== $status) {
-    fwrite(STDERR, "Confirmed broad batch action was rejected: {$output}\n");
+list($status) = $run($write('batch.json', $batch));
+if (0 === $status) {
+    fwrite(STDERR, "Confirmed broad batch action unexpectedly passed.\n");
+    exit(1);
+}
+
+require_once $root . '/plugin/wordpressconnector/includes/Security/Policy.php';
+\Webactueel\WordPressConnector\Security\Policy::setPublicRepositoryContext(true);
+
+$unsafeDescriptor = array(
+    'name' => 'post.trash',
+    'mutation' => true,
+    'privileged' => false,
+    'sensitive' => false,
+    'system_update' => false,
+    'public_repository_safe' => false,
+    'capability' => null,
+);
+$blocked = false;
+try {
+    \Webactueel\WordPressConnector\Security\Policy::assertActionAllowed($unsafeDescriptor, false, true);
+} catch (RuntimeException $error) {
+    $blocked = str_contains($error->getMessage(), 'not allowed in public-repository mode');
+}
+if (! $blocked) {
+    fwrite(STDERR, "Server policy did not block non-allowlisted public post.trash.\n");
+    exit(1);
+}
+
+$safeDescriptor = array(
+    'name' => 'post.get',
+    'mutation' => false,
+    'privileged' => false,
+    'sensitive' => false,
+    'system_update' => false,
+    'public_repository_safe' => false,
+    'capability' => null,
+);
+try {
+    \Webactueel\WordPressConnector\Security\Policy::assertActionAllowed($safeDescriptor, true, false);
+} catch (RuntimeException $error) {
+    fwrite(STDERR, 'Server policy rejected allowlisted public post.get: ' . $error->getMessage() . "\n");
     exit(1);
 }
 
