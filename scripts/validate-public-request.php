@@ -25,7 +25,39 @@ if (! is_array($data)) {
     exit(1);
 }
 
-if ('acf.portfolio_stats_update' !== (string) ($data['action'] ?? '')) {
+$action = (string) ($data['action'] ?? '');
+$publicActions = array(
+    'post.list',
+    'post.get',
+    'post.update',
+    'acf.update',
+    'acf.portfolio_stats_update',
+    'acf.field_groups',
+    'acf.schema.ensure_text_fields',
+    'elementor.inspect',
+    'elementor.patch_element',
+    'connector.batch',
+    'connector.rollback',
+    'connector.update.check',
+    'connector.update.apply',
+);
+if (! in_array($action, $publicActions, true)) {
+    fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
+    exit(1);
+}
+
+if ('connector.batch' === $action) {
+    $operations = isset($data['payload']['operations']) && is_array($data['payload']['operations']) ? $data['payload']['operations'] : array();
+    foreach ($operations as $index => $operation) {
+        $nestedAction = is_array($operation) && isset($operation['action']) ? (string) $operation['action'] : '';
+        if (! in_array($nestedAction, array('post.update', 'acf.update'), true)) {
+            fwrite(STDERR, 'Public connector.batch operation is not allowed at index ' . $index . ': ' . $nestedAction . "\n");
+            exit(1);
+        }
+    }
+}
+
+if ('acf.portfolio_stats_update' !== $action) {
     require __DIR__ . '/validate-public-request-legacy.php';
     return;
 }
