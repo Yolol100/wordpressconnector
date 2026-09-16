@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Runtime;
 
 use RuntimeException;
+use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Json;
 
 final class Request
@@ -99,14 +100,38 @@ final class Request
             $confirm = $data['confirm'];
         }
 
+        $expectedFingerprint = self::hexGuard($data, 'expected_fingerprint');
+        $expectedStateToken = self::hexGuard($data, 'expected_state_token');
+
+        if (class_exists(Policy::class) && Policy::publicRepositoryContext()) {
+            if ('connector.batch' === $action) {
+                $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
+                foreach ($operations as $index => $operation) {
+                    $leafAction = is_array($operation) && isset($operation['action']) ? (string) $operation['action'] : '';
+                    if (! in_array($leafAction, array('post.update', 'acf.update'), true)) {
+                        throw new RuntimeException('Public connector.batch operation is not allowed at index ' . $index . ': ' . $leafAction . '.');
+                    }
+                }
+            }
+
+            $fingerprintRequired = array(
+                'acf.schema.ensure_text_fields',
+                'elementor.patch_element',
+                'connector.update.apply',
+            );
+            if (! $dryRun && in_array($action, $fingerprintRequired, true) && null === $expectedFingerprint) {
+                throw new RuntimeException('Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.');
+            }
+        }
+
         return new self(
             $id,
             $action,
             $payload,
             $dryRun,
             $confirm,
-            self::hexGuard($data, 'expected_fingerprint'),
-            self::hexGuard($data, 'expected_state_token')
+            $expectedFingerprint,
+            $expectedStateToken
         );
     }
 

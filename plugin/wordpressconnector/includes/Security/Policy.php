@@ -23,12 +23,35 @@ final class Policy
         'WPCONNECTOR_ALLOW_WRITES','WPCONNECTOR_ALLOW_PRIVILEGED','WPCONNECTOR_ALLOW_SENSITIVE','WPCONNECTOR_ALLOW_SYSTEM_UPDATES','WPCONNECTOR_ALLOW_FILESYSTEM_WRITES',
     );
 
+    private const PUBLIC_REPOSITORY_ACTIONS = array(
+        'post.list',
+        'post.get',
+        'post.update',
+        'acf.update',
+        'acf.portfolio_stats_update',
+        'acf.field_groups',
+        'acf.schema.ensure_text_fields',
+        'elementor.inspect',
+        'elementor.patch_element',
+        'connector.batch',
+        'connector.rollback',
+        'connector.update.check',
+        'connector.update.apply',
+    );
+
     private static ?bool $runtimePublicRepository = null;
     private static bool $requestConfirmed = false;
 
     public static function assertActionAllowed(array $descriptor, bool $dryRun, bool $confirm): void
     {
         self::$requestConfirmed = $confirm;
+
+        if (self::publicRepositoryContext()) {
+            $action = isset($descriptor['name']) ? (string) $descriptor['name'] : '';
+            if (! in_array($action, self::PUBLIC_REPOSITORY_ACTIONS, true)) {
+                throw new RuntimeException('Action is not allowed in public-repository mode: ' . $action);
+            }
+        }
 
         if (! empty($descriptor['sensitive'])) {
             if (self::publicRepositoryContext()) {
@@ -70,6 +93,43 @@ final class Policy
         }
         if (! self::flag('WPCONNECTOR_ALLOW_WRITES')) {
             throw new RuntimeException('Writes are disabled by server policy.');
+        }
+    }
+
+    public static function assertPublicActionTarget(string $action, array $payload): void
+    {
+        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
+            return;
+        }
+
+        if ('acf.update' === $action) {
+            $postId = isset($payload['post_id']) && is_int($payload['post_id']) ? $payload['post_id'] : (isset($payload['target']) && is_int($payload['target']) ? $payload['target'] : 0);
+        } else {
+            $postId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        }
+        if ($postId <= 0) {
+            throw new RuntimeException('Public ' . $action . ' requires a positive post id.');
+        }
+        $post = get_post($postId);
+        if (! $post instanceof \WP_Post) {
+            throw new RuntimeException('Public ' . $action . ' target post was not found.');
+        }
+        $requiresEdit = in_array($action, array('post.update', 'acf.update', 'elementor.patch_element'), true);
+        self::assertPublicContentTarget($post, $requiresEdit);
+    }
+
+    public static function assertPublicContentTarget(\WP_Post $post, bool $requiresEdit = false): void
+    {
+        self::assertReadablePostType((string) $post->post_type);
+        $postType = get_post_type_object((string) $post->post_type);
+        if (! $postType || ! $postType->public) {
+            throw new RuntimeException('Only public post types may be targeted in public-repository mode.');
+        }
+        if ('publish' !== (string) $post->post_status || '' !== (string) $post->post_password) {
+            throw new RuntimeException('Only published, non-password-protected public content may be targeted in public-repository mode.');
+        }
+        if ($requiresEdit && (! function_exists('current_user_can') || ! current_user_can('edit_post', (int) $post->ID))) {
+            throw new RuntimeException('Current user lacks permission to edit the public connector target.');
         }
     }
 

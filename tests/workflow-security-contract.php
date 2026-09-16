@@ -19,6 +19,7 @@ foreach ($files as $file) {
 }
 $request = (string) file_get_contents($workflowDir . '/wordpress-request.yml');
 $execute = (string) file_get_contents($workflowDir . '/wordpress-zero-config-execute.yml');
+$doctorCura = (string) file_get_contents($workflowDir . '/doctorcura-execute.yml');
 if (strpos($request, "if: github.actor != 'github-actions[bot]'") === false) { fwrite(STDERR, "Request workflow lacks bot-feedback-loop suppression.\n"); exit(1); }
 if (strpos($request, '100755') !== false || strpos($request, "!= '100644'") === false) { fwrite(STDERR, "Credential-free request guard must accept only regular non-executable 100644 request files.\n"); exit(1); }
 foreach (array('id-token: write','ACTIONS_ID_TOKEN_REQUEST_URL','X-Webactueel-GitHub-OIDC') as $needle) {
@@ -26,5 +27,11 @@ foreach (array('id-token: write','ACTIONS_ID_TOKEN_REQUEST_URL','X-Webactueel-Gi
 }
 foreach (array('secrets.','WPCONNECTOR_REST_APPLICATION_PASSWORD','--user ') as $needle) {
     if (strpos($execute,$needle)!==false) { fwrite(STDERR,"Trusted zero-config executor contains forbidden long-lived credential pattern: {$needle}.\n"); exit(1); }
+}
+if (substr_count($doctorCura, 'X-WPConnector-Public-Repository: 1') < 2) {
+    fwrite(STDERR, "DoctorCura executor must activate public-repository policy for health and execute requests.\n"); exit(1);
+}
+if (strpos($doctorCura, 'public_repository_mode') === false) {
+    fwrite(STDERR, "DoctorCura executor must verify public-repository policy through health readback.\n"); exit(1);
 }
 echo "workflow zero-config security contract OK\n";

@@ -48,10 +48,11 @@ putenv('WPCONNECTOR_ALLOW_PRIVILEGED');
 
 Policy::setPublicRepositoryContext(true);
 $GLOBALS['wpconnector_test_caps']=array('update_plugins');
-Policy::assertActionAllowed(array('mutation'=>true,'privileged'=>true,'system_update'=>true,'public_repository_safe'=>true,'capability'=>'update_plugins'),false,true);
-$expectFailure(static fn()=>Policy::assertActionAllowed(array('privileged'=>true),true,false),'unmarked public privileged action','public-repository mode');
-$expectFailure(static fn()=>Policy::assertActionAllowed(array('sensitive'=>true),true,true),'public sensitive action','Sensitive actions are blocked');
-$expectFailure(static fn()=>Policy::assertActionAllowed(array('privileged'=>true,'public_repository_safe'=>true,'capability'=>'install_plugins'),true,false),'missing function-level capability','lacks the required WordPress capability');
+Policy::assertActionAllowed(array('name'=>'connector.update.apply','mutation'=>true,'privileged'=>true,'system_update'=>true,'public_repository_safe'=>true,'capability'=>'update_plugins'),false,true);
+$expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'acf.update','privileged'=>true),true,false),'unmarked public privileged action','public-repository mode');
+$expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'post.get','sensitive'=>true),true,true),'public sensitive action','Sensitive actions are blocked');
+$expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'connector.update.apply','privileged'=>true,'public_repository_safe'=>true,'capability'=>'install_plugins'),true,false),'missing function-level capability','lacks the required WordPress capability');
+$expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'post.trash','mutation'=>true),false,true),'non-allowlisted public action','not allowed in public-repository mode');
 Policy::setPublicRepositoryContext(false);
 $GLOBALS['wpconnector_test_caps']=array();
 
