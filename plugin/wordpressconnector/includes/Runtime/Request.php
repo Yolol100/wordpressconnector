@@ -103,7 +103,7 @@ final class Request
         $expectedFingerprint = self::hexGuard($data, 'expected_fingerprint');
         $expectedStateToken = self::hexGuard($data, 'expected_state_token');
 
-        if (Policy::publicRepositoryContext()) {
+        if (class_exists(Policy::class) && Policy::publicRepositoryContext()) {
             if ('connector.batch' === $action) {
                 $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
                 foreach ($operations as $index => $operation) {
