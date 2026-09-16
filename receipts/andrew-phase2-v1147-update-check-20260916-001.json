@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-phase2-v1147-update-check-20260916-001",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-16T07:22:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "current_version": "1.14.3",
+    "latest_version": "1.14.7",
+    "update_available": true,
+    "readback_verified": null
+}
