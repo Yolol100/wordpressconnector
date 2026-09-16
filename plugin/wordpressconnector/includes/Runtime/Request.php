@@ -115,10 +115,8 @@ final class Request
             }
 
             $fingerprintRequired = array(
-                'acf.portfolio_stats_update',
                 'acf.schema.ensure_text_fields',
                 'elementor.patch_element',
-                'connector.rollback',
                 'connector.update.apply',
             );
             if (! $dryRun && in_array($action, $fingerprintRequired, true) && null === $expectedFingerprint) {
