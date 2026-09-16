@@ -110,9 +110,21 @@ final class Policy
         if (! $post instanceof \WP_Post) {
             throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
-        self::assertPostReadable($post);
-        if ('elementor.inspect' !== $action && (! function_exists('current_user_can') || ! current_user_can('edit_post', $postId))) {
-            throw new RuntimeException('Current user lacks permission to edit the public ' . $action . ' target.');
+        self::assertPublicContentTarget($post, 'elementor.inspect' !== $action);
+    }
+
+    public static function assertPublicContentTarget(\WP_Post $post, bool $requiresEdit = false): void
+    {
+        self::assertReadablePostType((string) $post->post_type);
+        $postType = get_post_type_object((string) $post->post_type);
+        if (! $postType || ! $postType->public) {
+            throw new RuntimeException('Only public post types may be targeted in public-repository mode.');
+        }
+        if ('publish' !== (string) $post->post_status || '' !== (string) $post->post_password) {
+            throw new RuntimeException('Only published, non-password-protected public content may be targeted in public-repository mode.');
+        }
+        if ($requiresEdit && (! function_exists('current_user_can') || ! current_user_can('edit_post', (int) $post->ID))) {
+            throw new RuntimeException('Current user lacks permission to edit the public connector target.');
         }
     }
 
