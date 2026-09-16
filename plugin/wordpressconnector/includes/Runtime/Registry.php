@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Runtime;
 
 use RuntimeException;
+use Webactueel\WordPressConnector\Security\Policy;
 
 final class Registry
 {
@@ -53,6 +54,7 @@ final class Registry
     public function execute(string $name, array $payload, array $context = array()): array
     {
         $descriptor = $this->descriptor($name);
+        Policy::assertPublicActionTarget($name, $payload);
         $result = call_user_func($descriptor['handler'], $payload, $context);
         if (! is_array($result)) {
             throw new RuntimeException('Connector action did not return an array: ' . $name);
