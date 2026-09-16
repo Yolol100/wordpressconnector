@@ -1,8 +1,8 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-phase2-v1147-update-check-20260916-001",
-  "action": "connector.update.check",
+  "request_id": "andrew-phase2-v1147-update-dry-20260916-002",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
   "payload": {}
