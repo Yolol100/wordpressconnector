@@ -96,6 +96,26 @@ final class Policy
         }
     }
 
+    public static function assertPublicActionTarget(string $action, array $payload): void
+    {
+        if (! self::publicRepositoryContext() || 'post.update' !== $action) {
+            return;
+        }
+
+        $postId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        if ($postId <= 0) {
+            throw new RuntimeException('Public post.update requires a positive post id.');
+        }
+        $post = get_post($postId);
+        if (! $post instanceof \WP_Post) {
+            throw new RuntimeException('Public post.update target post was not found.');
+        }
+        self::assertPostReadable($post);
+        if (! function_exists('current_user_can') || ! current_user_can('edit_post', $postId)) {
+            throw new RuntimeException('Current user lacks permission to edit the public post.update target.');
+        }
+    }
+
     public static function assertPostReadable(\WP_Post $post): void
     {
         self::assertReadablePostType((string) $post->post_type);
