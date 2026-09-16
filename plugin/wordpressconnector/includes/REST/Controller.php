@@ -74,6 +74,13 @@ final class Controller
         }
         if (! is_user_logged_in()) { return new \WP_Error('wpconnector_auth_required','Authentication is required.',array('status'=>401)); }
         if (! current_user_can('manage_options')) { return new \WP_Error('wpconnector_forbidden','Administrator capability is required.',array('status'=>403)); }
+        $publicContext = (string) $request->get_header('x-wpconnector-public-repository');
+        if ('' !== $publicContext) {
+            if ('1' !== $publicContext) {
+                return new \WP_Error('wpconnector_public_context_invalid','Public-repository mode header must be exactly 1.',array('status'=>400));
+            }
+            Policy::setPublicRepositoryContext(true);
+        }
         return true;
     }
 
@@ -87,6 +94,7 @@ final class Controller
         return new \WP_REST_Response(array(
             'ok'=>true,'transport'=>'rest','version'=>defined('WPCONNECTOR_VERSION')?WPCONNECTOR_VERSION:null,'user_id'=>get_current_user_id(),
             'authentication'=>'wordpress-or-github-oidc',
+            'public_repository_mode'=>Policy::publicRepositoryContext(),
             'gates'=>array(
                 'writes'=>Policy::flag('WPCONNECTOR_ALLOW_WRITES'),
                 'privileged'=>Policy::flag('WPCONNECTOR_ALLOW_PRIVILEGED'),
