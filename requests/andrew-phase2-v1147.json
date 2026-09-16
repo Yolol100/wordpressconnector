@@ -1,21 +1,21 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-phase2-kirpal-stats-dry-20260916-005",
+  "request_id": "andrew-phase2-ultracache-stats-dry-20260916-007",
   "action": "acf.portfolio_stats_update",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_id": 5104,
+    "post_id": 4090,
     "fields": {
-      "field_portfolio_stat_1_value": "3",
-      "field_portfolio_stat_1_label": "Practice Areas",
-      "field_portfolio_stat_2_value": "Direct",
-      "field_portfolio_stat_2_label": "Fixed Contact",
-      "field_portfolio_stat_3_value": "Mobile-first",
-      "field_portfolio_stat_3_label": "Legal Navigation",
-      "field_portfolio_stat_4_value": "WordPress",
-      "field_portfolio_stat_4_label": "Service Website"
+      "field_portfolio_stat_1_value": "1.6.79",
+      "field_portfolio_stat_1_label": "Stable Release",
+      "field_portfolio_stat_2_value": "50",
+      "field_portfolio_stat_2_label": "Search Results",
+      "field_portfolio_stat_3_value": "4",
+      "field_portfolio_stat_3_label": "Image Slots",
+      "field_portfolio_stat_4_value": "Review-first",
+      "field_portfolio_stat_4_label": "License Flow"
     }
   }
 }
