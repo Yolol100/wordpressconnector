@@ -86,9 +86,9 @@ jobs:
           test -n "${SITE_URL:-}" && test -n "${REST_USERNAME:-}" && test -n "${REST_APP_PASSWORD:-}"
           [[ "$SITE_URL" == 'https://doctorcura.com' || "$SITE_URL" == 'https://doctorcura.com/' ]] || { echo 'DoctorCura site target mismatch.' >&2; exit 1; }
           health="$RUNNER_TEMP/doctorcura-request/health.json"
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --output "$health" --write-out '%{http_code}' "${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/health")
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 30 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'X-WPConnector-Public-Repository: 1' --output "$health" --write-out '%{http_code}' "${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/health")
           [[ "$code" == '200' ]] || { echo "DoctorCura health HTTP $code" >&2; exit 1; }
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if(empty($d["ok"])||($d["transport"]??"")!=="rest"){exit(1);} echo "DoctorCura REST connector health OK; version=".(string)($d["version"]??$d["connector_version"]??"unknown").PHP_EOL;' "$health"
+          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if(empty($d["ok"])||($d["transport"]??"")!=="rest"||true!==($d["public_repository_mode"]??false)){exit(1);} echo "DoctorCura REST connector health OK; public policy active; version=".(string)($d["version"]??$d["connector_version"]??"unknown").PHP_EOL;' "$health"
 
       - name: Execute DoctorCura connector request
         id: request
@@ -102,7 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/doctorcura-request"
-          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' --data-binary "@$root/request.json" --output "$root/result.json" --write-out '%{http_code}' "${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/execute")
+          code=$(curl --silent --show-error --location --connect-timeout 10 --max-time 180 --user "${REST_USERNAME}:${REST_APP_PASSWORD}" --header 'Accept: application/json' --header 'Content-Type: application/json' --header 'X-WPConnector-Public-Repository: 1' --data-binary "@$root/request.json" --output "$root/result.json" --write-out '%{http_code}' "${SITE_URL%/}/wp-json/webactueel-wordpress-connector/v1/execute")
           [[ "$code" == '200' ]] || { echo "DoctorCura execute HTTP $code" >&2; exit 1; }
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); if(($d["request_id"]??"")!==$argv[2]){exit(1);}' "$root/result.json" "$REQUEST_ID"
 
