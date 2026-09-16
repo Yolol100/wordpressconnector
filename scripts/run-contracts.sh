@@ -32,6 +32,7 @@ run_php tests/execute-workflow-contract.php
 run_php tests/public-runtime-contract.php
 run_php tests/public-broad-actions-contract.php
 run_php tests/public-post-read-contract.php
+run_php tests/public-post-update-target-contract.php
 run_php tests/public-elementor-runtime-contract.php
 run_php tests/public-acf-schema-contract.php
 run_php tests/public-acf-update-boundary-contract.php
