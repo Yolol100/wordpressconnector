@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-phase2-v1147-update-dry-20260916-002",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-16T07:23:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.14.3",
+    "to_version": "1.14.7",
+    "before_fingerprint": "d3e4013756ba624664506c8d4c1ccfc7303c6963333c15e58a3756f6f18bb446",
+    "rollback_supported": false,
+    "readback_verified": null
+}
