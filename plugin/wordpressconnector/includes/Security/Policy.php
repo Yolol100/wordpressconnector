@@ -98,21 +98,21 @@ final class Policy
 
     public static function assertPublicActionTarget(string $action, array $payload): void
     {
-        if (! self::publicRepositoryContext() || 'post.update' !== $action) {
+        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
             return;
         }
 
         $postId = isset($payload['id']) ? (int) $payload['id'] : 0;
         if ($postId <= 0) {
-            throw new RuntimeException('Public post.update requires a positive post id.');
+            throw new RuntimeException('Public ' . $action . ' requires a positive post id.');
         }
         $post = get_post($postId);
         if (! $post instanceof \WP_Post) {
-            throw new RuntimeException('Public post.update target post was not found.');
+            throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
         self::assertPostReadable($post);
-        if (! function_exists('current_user_can') || ! current_user_can('edit_post', $postId)) {
-            throw new RuntimeException('Current user lacks permission to edit the public post.update target.');
+        if ('elementor.inspect' !== $action && (! function_exists('current_user_can') || ! current_user_can('edit_post', $postId))) {
+            throw new RuntimeException('Current user lacks permission to edit the public ' . $action . ' target.');
         }
     }
 
