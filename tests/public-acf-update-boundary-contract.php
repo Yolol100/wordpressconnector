@@ -12,16 +12,18 @@ class WP_Post
     public string $post_password = '';
     public int $post_parent = 0;
 
-    public function __construct(int $id, string $status = 'publish')
+    public function __construct(int $id, string $status = 'publish', string $type = 'portfolio')
     {
         $this->ID = $id;
         $this->post_status = $status;
+        $this->post_type = $type;
     }
 }
 
 function get_post($id)
 {
     $id = (int) $id;
+    if (98 === $id) return new WP_Post($id, 'inherit', 'attachment');
     if (99 === $id) return new WP_Post($id, 'draft');
     if ($id <= 0) return null;
     return new WP_Post($id);
@@ -139,6 +141,7 @@ $case = $base; $case['request_id'] = 'public-acf-boundary-1005'; $case['payload'
 $case = $base; $case['request_id'] = 'public-acf-boundary-1006'; $case['payload'] = array('target' => 'options', 'fields' => array('field_portfolio_stat_1_value' => '+18%')); $cases['options target'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1007'; $case['payload']['fields'] = array('field_portfolio_secretname' => 'value'); $cases['secret-like field name'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1008'; $case['payload']['unexpected'] = true; $cases['unknown payload key'] = $case;
+$case = $base; $case['request_id'] = 'public-acf-boundary-1009'; $case['payload']['post_id'] = 98; $cases['unpublished attachment target'] = $case;
 
 foreach ($cases as $label => $request) {
     $result = $runner->run(Request::fromArray($request));
