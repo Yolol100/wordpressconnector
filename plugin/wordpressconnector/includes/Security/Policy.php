@@ -98,11 +98,15 @@ final class Policy
 
     public static function assertPublicActionTarget(string $action, array $payload): void
     {
-        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
+        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
             return;
         }
 
-        $postId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        if ('acf.update' === $action) {
+            $postId = isset($payload['post_id']) && is_int($payload['post_id']) ? $payload['post_id'] : (isset($payload['target']) && is_int($payload['target']) ? $payload['target'] : 0);
+        } else {
+            $postId = isset($payload['id']) ? (int) $payload['id'] : 0;
+        }
         if ($postId <= 0) {
             throw new RuntimeException('Public ' . $action . ' requires a positive post id.');
         }
@@ -110,7 +114,8 @@ final class Policy
         if (! $post instanceof \WP_Post) {
             throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
-        self::assertPublicContentTarget($post, 'elementor.inspect' !== $action);
+        $requiresEdit = in_array($action, array('post.update', 'acf.update', 'elementor.patch_element'), true);
+        self::assertPublicContentTarget($post, $requiresEdit);
     }
 
     public static function assertPublicContentTarget(\WP_Post $post, bool $requiresEdit = false): void
