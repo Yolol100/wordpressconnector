@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.6
+Stable tag: 1.14.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.14.7 makes the public sanitized receipt builder self-contained so trusted executors no longer depend on a separately materialized legacy helper. Existing receipt contracts, including connector self-update and bounded portfolio-stat evidence, remain preserved and are covered by an isolated workspace regression test.
 
 Version 1.14.6 fixes the public GitHub trusted-workspace packaging regression introduced in 1.14.5 by provisioning the preserved legacy validator alongside the portfolio-specific validator in every affected request and executor workflow. It adds isolated trusted-workspace regression coverage for portfolio dry/live gating and existing public post, ACF, Elementor, rollback and connector-update routes.
 
@@ -59,6 +61,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.7 =
+* Make `build-public-receipt.php` self-contained so trusted public executors do not require a separately materialized legacy receipt helper.
+* Preserve sanitized connector-update, post, ACF, Elementor, rollback, batch and portfolio-stat receipt behavior.
+* Add an isolated workspace regression proving connector update-check/apply and portfolio receipts work with only the main receipt builder present.
 
 = 1.14.6 =
 * Provision `validate-public-request-legacy.php` alongside the delegated public validator in every affected WordPress and DoctorCura trusted workspace.
