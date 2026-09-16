@@ -26,6 +26,7 @@ $GLOBALS['wpconnector_public_target_posts'] = array(
     103 => new WP_Post(103, 'private'),
     104 => new WP_Post(104, 'publish', 'protected'),
     105 => new WP_Post(105, 'publish', '', 'internal_note'),
+    106 => new WP_Post(106, 'inherit', '', 'attachment'),
 );
 $GLOBALS['wpconnector_public_target_can_edit'] = true;
 
@@ -94,6 +95,7 @@ foreach (array(
     103 => 'private target',
     104 => 'password-protected target',
     105 => 'non-public post type',
+    106 => 'unpublished attachment target',
 ) as $id => $label) {
     $before = $leafCalls;
     $expectFailure(static function () use ($registry, $id): void {
