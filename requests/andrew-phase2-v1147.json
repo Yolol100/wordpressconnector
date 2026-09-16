@@ -1,9 +1,21 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrew-phase2-v1147-update-readback-20260916-004",
-  "action": "connector.update.check",
+  "request_id": "andrew-phase2-kirpal-stats-dry-20260916-005",
+  "action": "acf.portfolio_stats_update",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "post_id": 5104,
+    "fields": {
+      "field_portfolio_stat_1_value": "3",
+      "field_portfolio_stat_1_label": "Practice Areas",
+      "field_portfolio_stat_2_value": "Direct",
+      "field_portfolio_stat_2_label": "Fixed Contact",
+      "field_portfolio_stat_3_value": "Mobile-first",
+      "field_portfolio_stat_3_label": "Legal Navigation",
+      "field_portfolio_stat_4_value": "WordPress",
+      "field_portfolio_stat_4_label": "Service Website"
+    }
+  }
 }
