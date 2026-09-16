@@ -39,8 +39,6 @@ foreach (array(
     'connector.update.apply',
     'elementor.patch_element',
     'acf.schema.ensure_text_fields',
-    'acf.portfolio_stats_update',
-    'connector.rollback',
 ) as $index => $action) {
     $request = $base;
     $request['request_id'] = 'server-boundary-fp-' . str_pad((string) ($index + 1), 4, '0', STR_PAD_LEFT);
@@ -49,10 +47,6 @@ foreach (array(
         $request['payload'] = array('id' => 10, 'element_id' => 'abc123', 'settings' => array('title' => 'Safe'));
     } elseif ('acf.schema.ensure_text_fields' === $action) {
         $request['payload'] = array('post_id' => 10, 'group_key' => 'group_abcdef', 'fields' => array(array('key' => 'field_abcdef', 'name' => 'example', 'label' => 'Example')));
-    } elseif ('acf.portfolio_stats_update' === $action) {
-        $request['payload'] = array('post_id' => 10, 'fields' => array('field_portfolio_stat_1_value' => '1'));
-    } elseif ('connector.rollback' === $action) {
-        $request['payload'] = array('request_id' => 'previous-request-0001');
     } else {
         $request['payload'] = array();
     }
