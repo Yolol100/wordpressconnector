@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-phase2-ultracache-final-readback-20260916-010",
+    "action": "acf.portfolio_stats_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-16T07:43:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4090,
+    "readback_verified": null,
+    "before_fingerprint": "7786c8ecc42b9272d322afa3393bb0f36d05170e5329a3b56ae6f19392cdc427",
+    "after_fingerprint": "7786c8ecc42b9272d322afa3393bb0f36d05170e5329a3b56ae6f19392cdc427"
+}
