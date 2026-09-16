@@ -26,6 +26,7 @@ $GLOBALS['wpconnector_elementor_target_posts'] = array(
     203 => new WP_Post(203, 'private'),
     204 => new WP_Post(204, 'publish', 'protected'),
     205 => new WP_Post(205, 'publish', '', 'internal_note'),
+    206 => new WP_Post(206, 'inherit', '', 'attachment'),
 );
 $GLOBALS['wpconnector_elementor_target_can_edit'] = true;
 
@@ -88,7 +89,7 @@ if (($patch['post_id'] ?? 0) !== 201 || 1 !== $patchCalls) {
     exit(1);
 }
 
-foreach (array(202 => 'draft', 203 => 'private', 204 => 'password-protected', 205 => 'non-public type') as $id => $label) {
+foreach (array(202 => 'draft', 203 => 'private', 204 => 'password-protected', 205 => 'non-public type', 206 => 'unpublished attachment') as $id => $label) {
     $beforeInspect = $inspectCalls;
     $expectFailure(static function () use ($registry, $id): void {
         $registry->execute('elementor.inspect', array('id' => $id), array('dry_run' => true));
