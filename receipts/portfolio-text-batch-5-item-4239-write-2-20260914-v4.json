@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-4239-write-2-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T15:25:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "f43ac1744f9c77c918f179a3c9e7614bd5500650a2a9f085e4d95d4152ce726a",
+    "after_fingerprint": "3bad8a17a8c33ea991be503a5b8c523acd382e638a05407f7a6a098d29ddc197",
+    "rollback_available": true
+}

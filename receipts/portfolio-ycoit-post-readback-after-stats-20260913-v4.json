@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ycoit-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:34:20+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1839,
+        "type": "post",
+        "status": "publish",
+        "title": "Yco-it",
+        "slug": "yco-it",
+        "permalink": "https://andrewbaeten.nl/yco-it/",
+        "excerpt": "YCO IT separates risk management, compliance, certification, consultation and recruitment into audience-specific routes."
+    },
+    "post_fingerprint": "649ed8b5c7e8c91a4c9cacf9bf63b0cf0dd8adb212f8a03402f4011a0d5ee326",
+    "readback_verified": null
+}

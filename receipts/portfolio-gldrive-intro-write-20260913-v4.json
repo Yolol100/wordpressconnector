@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-gldrive-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:41:32+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "251852629e9bd2fb06120ca3f1608f8a49c04726ae36bc08edb42ce38139af3b",
+    "after_fingerprint": "43cb077adad868605231272926e07ea3e4e413b907efe99ce6c46790c5c0cb93",
+    "rollback_available": true
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-gs-privechauffeur-post-read-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:57:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1381,
+        "type": "post",
+        "status": "publish",
+        "title": "Gsprivechauffeur",
+        "slug": "gsprivechauffeur",
+        "permalink": "https://andrewbaeten.nl/gsprivechauffeur/",
+        "excerpt": "Private-driver platform guiding customers from service selection through pickup details, vehicle choice and payment for chauffeur, airport, BOB and transport bookings."
+    },
+    "post_fingerprint": "33d5a638e9aa2d7c548ed7e83158e17dd2df299ef1fe164eb0614b8b702b1b26",
+    "readback_verified": null
+}

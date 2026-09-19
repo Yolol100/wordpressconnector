@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-sodrive-post-readback-after-stats-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:27:47+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1418,
+        "type": "post",
+        "status": "publish",
+        "title": "Sodrive",
+        "slug": "sodrive",
+        "permalink": "https://andrewbaeten.nl/sodrive/",
+        "excerpt": "Driving-school platform connecting trial lessons, course pricing, intensive training, theory support and customer reviews with a direct signup route for new students."
+    },
+    "post_fingerprint": "bc471fe9f2da03cc438866060a1603aff6a31033f59e6b8d390ae553064bfe3d",
+    "readback_verified": null
+}

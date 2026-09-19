@@ -1,0 +1,48 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ahrefs-picks-retest-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T21:49:07+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "9773f496f1e79883fc1bf9477ecb35d3a85097d11d432453a007806ad19d06b1",
+            "after_fingerprint": "9773f496f1e79883fc1bf9477ecb35d3a85097d11d432453a007806ad19d06b1"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "7200ef8b3ed6ff53e35374119f0ba47fbbd3cd137f2bb4631b386d48355dd527",
+            "after_fingerprint": "7200ef8b3ed6ff53e35374119f0ba47fbbd3cd137f2bb4631b386d48355dd527"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "42ae0e07b8653c3e01b5baef6b3f7d26ff5487f5aa07e87fce04a701a5e558ed",
+            "after_fingerprint": "42ae0e07b8653c3e01b5baef6b3f7d26ff5487f5aa07e87fce04a701a5e558ed"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "50ca75d5f6332734f53a08684c46db86f95af71f582ac5e9325122e4108667ee",
+            "after_fingerprint": "50ca75d5f6332734f53a08684c46db86f95af71f582ac5e9325122e4108667ee"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "7fd066440ebb4617f7631257840d30a6859dc298d09c875fa35ef93329f83960",
+            "after_fingerprint": "7fd066440ebb4617f7631257840d30a6859dc298d09c875fa35ef93329f83960"
+        }
+    ]
+}

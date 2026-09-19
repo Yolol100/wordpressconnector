@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ozturk-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T15:30:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1426,
+        "type": "post",
+        "status": "publish",
+        "title": "Ozturkmotionpictures",
+        "slug": "ozturkmotionpictures",
+        "permalink": "https://andrewbaeten.nl/ozturkmotionpictures/",
+        "excerpt": "Wedding photography and film WordPress portfolio combining visual storytelling, galleries, couple stories and a clear enquiry path."
+    },
+    "post_fingerprint": "56bec11a4f36337b3dd883d5338415602589d3c19e72b1fd55e499e0eafdc6d9",
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-woningontruimingvergelijken-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:45:44+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1433,
+        "type": "post",
+        "status": "publish",
+        "title": "Woningontruimingvergelijken",
+        "slug": "woningontruimingvergelijken",
+        "permalink": "https://andrewbaeten.nl/woningontruimingvergelijken/",
+        "excerpt": "Home-clearance comparison site pairing an immediate quote request with city pages, FAQs and practical information for visitors who want more context."
+    },
+    "post_fingerprint": "0d3856ebff85a86d0a63c453da0702cede8aeb683d6c6908505f767903504d32",
+    "readback_verified": null
+}

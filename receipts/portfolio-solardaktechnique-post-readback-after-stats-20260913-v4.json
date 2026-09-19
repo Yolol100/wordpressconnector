@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-solardaktechnique-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:44:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1432,
+        "type": "post",
+        "status": "publish",
+        "title": "Solardaktechnique",
+        "slug": "solardaktechnique",
+        "permalink": "https://andrewbaeten.nl/solardaktechnique/",
+        "excerpt": "Solar Daktechnique separates energy-service choices from supporting technical detail before quotation or contact."
+    },
+    "post_fingerprint": "211a25cc7a5825509a1cbbf9521cd62b514141c659d1908104573d1f9f94c5c4",
+    "readback_verified": null
+}

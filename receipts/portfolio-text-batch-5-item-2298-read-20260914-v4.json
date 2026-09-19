@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-2298-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T16:12:07+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 2298,
+        "type": "post",
+        "status": "publish",
+        "title": "Services Overview Manager",
+        "slug": "services-overview-manager",
+        "permalink": "https://andrewbaeten.nl/services-overview-manager/",
+        "excerpt": "Service-catalogue tooling built around a dedicated WordPress content model, with frontend discovery and controlled CSV administration."
+    },
+    "post_fingerprint": "46066bb3ffcf411a25ff0f3447e1a5e1e20dc58d4fd2c075c611f88eeb52c5f0",
+    "readback_verified": null
+}

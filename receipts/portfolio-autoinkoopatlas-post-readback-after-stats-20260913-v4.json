@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-autoinkoopatlas-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T18:22:24+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1416,
+        "type": "post",
+        "status": "publish",
+        "title": "Autoinkoopatlas",
+        "slug": "autoinkoopatlas",
+        "permalink": "https://andrewbaeten.nl/autoinkoopatlas/",
+        "excerpt": "Vehicle-buying platform guiding sellers through car details, contact information, optional photos and a clear three-step route from submission to offer and sale."
+    },
+    "post_fingerprint": "39ca7a63b95a95061f77c2e0ed4c4e69417fb866393e201815869b7b40e83ff3",
+    "readback_verified": null
+}

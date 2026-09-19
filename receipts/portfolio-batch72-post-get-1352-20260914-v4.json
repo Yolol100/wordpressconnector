@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch72-post-get-1352-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T00:12:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1352,
+        "type": "post",
+        "status": "publish",
+        "title": "Leeuwbeveiliging",
+        "slug": "leeuwbeveiliging",
+        "permalink": "https://andrewbaeten.nl/leeuwbeveiliging/",
+        "excerpt": "Security-services website combining clear service information, professional trust signals and direct enquiry routes for businesses looking for dependable protection and support."
+    },
+    "post_fingerprint": "fbcafd298444a57ad86ad0d2e021f1afe9ce16e8420c6c54a2b52bb3da24ffc4",
+    "readback_verified": null
+}

@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-pastry-company-stats-dry-run-20260914-v4",
+    "action": "acf.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:41:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+    "after_fingerprint": "a18f9c8048001218206a762e98d48cf951c439685e835fe03cbadb06c2d55ce1"
+}

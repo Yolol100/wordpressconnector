@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-starkeuken-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:26:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1898,
+        "type": "post",
+        "status": "publish",
+        "title": "Starkeuken",
+        "slug": "starkeuken",
+        "permalink": "https://andrewbaeten.nl/starkeuken/",
+        "excerpt": "Kitchen-specialist WordPress site built around product categories, showroom information and a clear handoff from inspiration to advice."
+    },
+    "post_fingerprint": "7d68f1aa3069c0047a6a523910e7fa441239b95b46cc85e6d1c1bc0ae721b3af",
+    "readback_verified": null
+}

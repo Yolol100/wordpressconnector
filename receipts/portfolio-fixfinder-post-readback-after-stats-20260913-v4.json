@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-fixfinder-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:28:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1877,
+        "type": "post",
+        "status": "publish",
+        "title": "Fixfinder",
+        "slug": "fixfinder",
+        "permalink": "https://andrewbaeten.nl/fixfinder/",
+        "excerpt": "Automotive platform that starts with the vehicle, then narrows into maintenance, APK, repair and specialist services before appointment booking."
+    },
+    "post_fingerprint": "b88e4ea41fb0fadaf23919710ddf1711885e841688b18b1cb92f869239f47236",
+    "readback_verified": null
+}

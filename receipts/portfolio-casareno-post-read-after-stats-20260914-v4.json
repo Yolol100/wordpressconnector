@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-casareno-post-read-after-stats-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:48:21+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1372,
+        "type": "post",
+        "status": "publish",
+        "title": "Casareno",
+        "slug": "casareno",
+        "permalink": "https://andrewbaeten.nl/casareno/",
+        "excerpt": "Renovation website connecting services, completed projects and process steps so homeowners can understand Casareno’s approach before requesting a personal project consultation."
+    },
+    "post_fingerprint": "6de74c1877ec974dfc98152bad1053ff9e9a33f13df843dbc578212ede4820c7",
+    "readback_verified": null
+}

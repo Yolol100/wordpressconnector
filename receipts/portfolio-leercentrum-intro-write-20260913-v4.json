@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-leercentrum-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T18:10:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "23230e4dee8d068e0879877d1bbf5a2e9fd2747d0202c77dde0d0b1a0f756b75",
+    "after_fingerprint": "16117ddb58bb88364734e379ecb96c16e008d1a8f8ba52346aa526263b64b7fb",
+    "rollback_available": true
+}

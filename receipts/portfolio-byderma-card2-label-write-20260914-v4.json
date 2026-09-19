@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-card2-label-write-20260914-v4",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T23:42:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 4733,
+    "element_id": "e21mslbl",
+    "before_fingerprint": "688d0a94f5b2d0efad9f7b92a037ec90a46ad65c17ff2b7ea1c5a6f7076e957f",
+    "after_fingerprint": "689d6ee5c98ac6ccacf183f6a4060809f3182c1d90bf661ff74f4cf748e2546a",
+    "rollback_available": true
+}

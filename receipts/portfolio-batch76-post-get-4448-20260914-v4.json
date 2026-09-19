@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch76-post-get-4448-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T00:15:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4448,
+        "type": "post",
+        "status": "publish",
+        "title": "Sanatolia",
+        "slug": "sanatolia",
+        "permalink": "https://andrewbaeten.nl/sanatolia/",
+        "excerpt": "Cultural platform connecting Sanatolia’s events, courses, mission and ticket routes, giving visitors a simple way to discover activities and participate."
+    },
+    "post_fingerprint": "af2ec22810e9454ee7b56f9027fc85362588cbb3837cdbc9adedb2a2ed670236",
+    "readback_verified": null
+}

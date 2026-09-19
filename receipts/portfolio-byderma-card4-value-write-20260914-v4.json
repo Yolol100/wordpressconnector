@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-card4-value-write-20260914-v4",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T23:50:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 4733,
+    "element_id": "e21mlval",
+    "before_fingerprint": "0e200ef62f7d9e1b32ab0bcd4f851f182fa4e8226c22d296fa2f02cf19413f22",
+    "after_fingerprint": "1739f6770f8349cc84da1f7e586693a4cb8fd3fcc22849844f3f6fac491339d5",
+    "rollback_available": true
+}
