@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-connector-1.14.9-live-20260921",
+    "action": "connector.update.apply",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-21T17:43:17+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "from_version": "1.14.8",
+    "to_version": "1.14.9",
+    "package_sha256": "cca0252668b0becc186a2838d2263722796dc8098b2147e0458b2b734ae31f89"
+}
