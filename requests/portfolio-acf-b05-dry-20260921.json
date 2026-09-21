@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-acf-b05-dry-20260921",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1432,
+          "fields": {
+            "field_69deb8ddbcd8d": "The current offer is centred on energy products and package combinations, not roof construction. Visitors need to compare generation, storage, charging and inverter choices without being led into a roof-and-solar decision that the live service structure no longer reflects.",
+            "field_69deb8e4bcd8e": "I structured the journey around individual energy solutions and the available package combinations. Product routes explain solar panels, inverters, charging and storage first, while postcode-based advice and quotation actions provide the next step without treating projected savings, payback or installation timing as portfolio results."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1434,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors are choosing between several interior categories and room-based solutions, not simply one sustainable-home measure. The website needed to make products, inspiration and renovation services understandable together while keeping showroom advice and project contact close to the relevant decision.",
+            "field_69deb8e4bcd8e": "I grouped the experience around product categories such as sanitary, flooring, tiles and window decoration, supported by room solutions, renovation work and completed projects. Showroom advice, appointments and quotation actions then turn visual inspiration into a practical route without making sustainability claims the centre of the case."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1435,
+          "fields": {
+            "field_69deb8ddbcd8d": "Oxfordacademy needs to help students and parents compare programmes without making the website feel like a long course catalogue. A visitor may be checking the subject, schedule, level or practical requirements before deciding whether a programme fits.",
+            "field_69deb8e4bcd8e": "I shaped Oxfordacademy so programmes provide the first decision point, followed by the details students and parents need to judge fit. Course information, schedules and practical requirements stay close to the relevant programme instead of being repeated across unrelated sections."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1439,
+          "fields": {
+            "field_69deb8ddbcd8d": "The business is focused on insulation projects rather than general installation and finishing work. Contractors need to understand the insulation scope, project experience and company context before deciding whether Marco’s Montage fits a specific construction assignment.",
+            "field_69deb8e4bcd8e": "I organised the site around insulation as the primary service, supported by completed projects, company information, certificates, partners and a direct quotation route. Equipment rental remains separate through Marco Verhuurt, preventing the rental offer from diluting the main B2B insulation proposition."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1714,
+          "fields": {
+            "field_69deb8ddbcd8d": "Hasene communicates humanitarian work to people who may arrive with different intentions: learning about a project, supporting a campaign, donating or understanding the organisation. Emotional stories matter, but they cannot replace clear information about what a campaign is for and how someone can participate.",
+            "field_69deb8e4bcd8e": "I structured Hasene around its humanitarian projects and campaigns, giving visitors context before presenting the relevant participation or donation route. Project information explains what the initiative concerns, while organisational details help people understand who is behind the work. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1438,
+          "fields": {
+            "field_69deb8ddbcd8d": "Homeplaza has to help people explore home and interior options before they know the exact product or service they want. Visual inspiration can attract attention, but it creates a risk that practical categories and next steps disappear behind imagery.",
+            "field_69deb8e4bcd8e": "I designed Homeplaza so visual inspiration supports the main home categories instead of replacing them. Visitors can start with the type of product or service they are exploring, see relevant examples and then move into the practical information connected to that choice."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1832,
+          "fields": {
+            "field_69deb8ddbcd8d": "Brightlyn presents cybersecurity services to organisations that may understand the risk they face without knowing which technical service should come first. Security, assessment and support topics can overlap, and a site filled with specialist terms can make decision makers feel less certain rather than more informed.",
+            "field_69deb8e4bcd8e": "I shaped Brightlyn around the security questions an organisation is likely to recognize before it knows the technical answer. Separate service routes explain what each area is for, while risk context and technical proof appear where they help a decision maker judge relevance."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1839,
+          "fields": {
+            "field_69deb8ddbcd8d": "Business clients may know they face a compliance, audit or control requirement without knowing whether ISAE, ISO, risk management or another framework applies. Dense specialist terminology could make those routes harder to distinguish before an advisory conversation begins.",
+            "field_69deb8e4bcd8e": "I separated risk management, compliance, certification and control topics into recognisable service routes, supported by quickscan and consultation actions. Recruitment and IT-detachering content remain available for a second audience without competing with the primary advisory journey. This keeps technical detail available without making the first decision dependent on specialist terminology."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1846,
+          "fields": {
+            "field_69deb8ddbcd8d": "Gldrive needs to help learner drivers choose lessons before they have much experience with driving-school terms. Packages, prices, exam preparation and instructor information all influence the decision, but they should not arrive with equal weight.",
+            "field_69deb8e4bcd8e": "I structured Gldrive around the decisions a learner makes before booking: choose the lesson route, compare the relevant package information and then review exam or instructor details where they help. Pricing stays connected to the option it belongs to, so visitors do not have to reconstruct the offer from separate pages."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1855,
+          "fields": {
+            "field_69deb8ddbcd8d": "Bedrijfspostadres serves entrepreneurs who need a business address but may be comparing combinations of registration, post handling and scanning. The service seems simple until package details, account access and practical conditions are added.",
+            "field_69deb8e4bcd8e": "I designed Bedrijfspostadres around the steps an entrepreneur takes before choosing a package. The core address service is explained first, followed by post handling, scanning and the differences that matter between available options. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1863,
+          "fields": {
+            "field_69deb8ddbcd8d": "Dmelektro works for homeowners and businesses that may arrive with an electrical problem, an installation project or a maintenance need. Those situations require different information, and a broad list of electrical services would not help visitors judge urgency, scope or the right next step.",
+            "field_69deb8e4bcd8e": "I shaped Dmelektro around the type of electrical need rather than a single generic service page. Installation work, maintenance and other technical support have clear routes, with practical information introduced where it helps someone understand what to describe in an enquiry."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1877,
+          "fields": {
+            "field_69deb8ddbcd8d": "Fixfinder covers a large range of automotive services, while drivers may start with their vehicle and a maintenance or repair need rather than the exact technical service name. A traditional garage directory would make that choice unnecessarily difficult.",
+            "field_69deb8e4bcd8e": "I organised the journey around vehicle identification and service selection first. Drivers can then choose the relevant APK, maintenance, repair or specialist service and continue into date, time and location selection, turning a broad automotive catalogue into a defined appointment flow."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1870,
+          "fields": {
+            "field_69deb8ddbcd8d": "VoiceLinq serves different language-service needs: organisations and individuals may need an interpreter or translation, while professionals visit for assignments or to enter the interpreting field. Combining those intentions into one generic communication journey would make the next step unclear.",
+            "field_69deb8e4bcd8e": "I separated the experience into requesting an interpreter, existing-interpreter information and becoming an interpreter, while translation expertise remains part of the wider language offer. Direct calls to action keep each audience on its own route without forcing clients through recruitment content or interpreters through customer enquiries."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1884,
+          "fields": {
+            "field_69deb8ddbcd8d": "QuickTemp serves employers looking for flexible staffing and candidates looking for work across several sectors. Those journeys need different information: businesses start from workforce needs and job types, while candidates need a simple way to indicate their preferred work and availability.",
+            "field_69deb8e4bcd8e": "I separated employer-oriented sector and staffing content from the candidate signup route. Hospitality, production, logistics and horticulture provide clear work contexts, while candidates can apply directly through a focused form instead of first navigating an unsupported vacancy catalogue. Employer and candidate actions remain separated throughout the responsive journey."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1891,
+          "fields": {
+            "field_69deb8ddbcd8d": "Expectant parents need different information during pregnancy, preparation for birth and the postnatal period. Mixing those stages into generic family-care content would make important maternity information harder to find and incorrectly position a midwifery practice as childcare.",
+            "field_69deb8e4bcd8e": "I shaped the information around pregnancy, birth and postnatal care so each stage has its own practical context and relevant contact route. The calm hierarchy helps expectant parents move through the maternity journey without turning medical care into promotional promises or unsupported outcome claims."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1898,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors may begin with a kitchen, bathroom or individual interior product and still need to compare styles, materials and practical options before visiting a showroom. Strong imagery therefore had to inspire without hiding product categories, locations or the route to advice.",
+            "field_69deb8e4bcd8e": "I arranged product and inspiration content around recognisable interior categories, then connected those choices to practical information and the two showroom locations. Advice actions appear after relevant product context, helping visitors move from browsing kitchens, bathrooms or tiles towards a more informed showroom conversation."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2173,
+          "fields": {
+            "field_69deb8ddbcd8d": "Super Simple Internal Links addresses a WordPress task that becomes difficult when a site has many pages and repeated internal-link opportunities. Manual editing can be inconsistent, but automatic linking also creates risk if keyword rules, exclusions and limits are not visible.",
+            "field_69deb8e4bcd8e": "I designed Super Simple Internal Links around a central WordPress admin workflow where keyword rules, automatic linking, exclusions, suggestions and reports stay visible. Administrators can review the configuration, maintain larger rule sets through import or export and inspect logs instead of treating link creation as a black box."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2213,
+          "fields": {
+            "field_69deb8ddbcd8d": "AC Drive needs to help learner drivers choose a lesson route before they understand differences between packages, exam preparation and requirements. A driving-school site can easily become a price list, but price alone does not explain what a learner is selecting or what the next step involves.",
+            "field_69deb8e4bcd8e": "I designed AC Drive around the choices a learner makes before booking. Lesson routes provide the starting point, followed by package information and practical details that belong to each option. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2223,
+          "fields": {
+            "field_69deb8ddbcd8d": "Image Usage Scanner solves a WordPress maintenance question that is deceptively difficult: where is a media item being used? Images can appear as featured media, in normal content or inside supported ACF fields, so deleting or replacing a file based on one screen can break references elsewhere.",
+            "field_69deb8e4bcd8e": "I shaped Image Usage Scanner as an admin-only audit workflow that reports media relationships instead of modifying them. It checks featured images and supported ACF image or gallery fields in bounded batches, saving progress so a scan can continue after interruption."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2255,
+          "fields": {
+            "field_69deb8ddbcd8d": "Course Dates Manager addresses a publishing problem that appears when course information and dates are maintained in pages. Editors can end up repeating programme details, schedules and category information in several places, which makes updates harder to keep consistent.",
+            "field_69deb8e4bcd8e": "I developed Course Dates Manager around a dedicated course post type and taxonomy so programme information can be maintained in one structured place. A responsive shortcode renders the public overview, while paginated REST endpoints expose only published course data for integrations that need it."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2238,
+          "fields": {
+            "field_69deb8ddbcd8d": "AI Patch Runner deals with a high-risk WordPress task: applying structured code changes to installed plugins without turning the admin area into an unrestricted file editor. A bad patch can break functionality, so speed is less important than knowing what changes, who applies it and how to recover if the result is wrong.",
+            "field_69deb8e4bcd8e": "I designed AI Patch Runner as an admin-only workflow for structured JSON patch packages. Preview is kept separate from execution so a proposed change can be inspected before plugin files are modified. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2283,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF CSV Manager began as a way to make structured WordPress content easier to review outside separate editing screens. Exporting ACF-oriented data to CSV can help with bulk review, but importing changes back creates risk when rows, fields or content ownership are unclear.",
+            "field_69deb8e4bcd8e": "I developed ACF CSV Manager as an earlier workflow for exporting ACF-related content into a reviewable spreadsheet format and returning approved updates through WordPress. The design demonstrated how bulk text work could be organised without opening every page individually, while keeping the import process separate from normal editing."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2473,
+          "fields": {
+            "field_69deb8ddbcd8d": "Modern Image Manager brings WordPress media tasks into one admin workflow, which is useful but also risky. Editing metadata is simple compared with renaming files, importing CSV changes or deleting attachments, because those actions can affect URLs and references across the site.",
+            "field_69deb8e4bcd8e": "I shaped Modern Image Manager as a WordPress admin interface for metadata editing, CSV import and export, usage scanning and ZIP exports. Requests are validated before higher-risk actions run, and filename changes preserve the current extension. Supporting information stays close to the choice it is meant to clarify."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2989,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF Page Text Manager addresses a WordPress editing problem created when page text lives across core fields, ACF, SEO plugins and media metadata. Reviewing content one screen at a time is slow, but bulk spreadsheets introduce their own risks when unsupported fields or media instructions are included.",
+            "field_69deb8e4bcd8e": "I developed ACF Page Text Manager around one WordPress admin screen for supported core fields, ACF text, SEO metadata and image text. Editors can update values inline or move selected content through CSV and XLSX workflows, with validation before imported data is processed."
+          }
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 3660,
+          "fields": {
+            "field_69deb8ddbcd8d": "Spring architecten needs a portfolio that lets the work establish credibility before visitors read a long explanation of the studio. Prospective clients often start with project type, visual character and relevance.",
+            "field_69deb8e4bcd8e": "I structured Spring architecten around project imagery and the information that helps a prospective client understand each piece of work. Projects come forward first, with architectural context and studio information supporting the visual evidence rather than competing with it. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      }
+    ]
+  }
+}
