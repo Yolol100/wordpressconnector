@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-kirpal-verify-20260921",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 5104,
+    "content": "<!-- wp:paragraph -->\n<p>A responsive WordPress site for Kirpal Advocatuur turns three legal practice areas into a calm, approachable journey from legal question to relevant information and contact.</p>\n<!-- /wp:paragraph -->",
+    "description_1": "Employment law, personal injury and contract law needed to feel distinct without burying visitors in dense legal copy. The harder balance was credibility: the site had to feel authoritative and trustworthy while remaining personal, readable and straightforward across screen sizes.",
+    "description_2": "I separated the three practice areas into distinct service routes, tightened the content hierarchy and kept contact actions close to the relevant legal information. A restrained visual style supports the firm’s professional character, while responsive layouts keep navigation and service content consistent across desktop, tablet and mobile."
+  }
+}
