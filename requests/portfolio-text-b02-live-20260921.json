@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-text-b02-live-20260921",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1368,
+          "fields": {
+            "field_69deb8ddbcd8d": "Astenadvies needs to speak to people who may know they need financial guidance but do not yet know which type of advice fits their situation. Questions about planning, finances or business decisions can overlap, and specialist terms can make that first step more difficult.",
+            "field_69deb8e4bcd8e": "For Astenadvies, I organised the WordPress content around recognizable financial questions instead of leading with specialist terminology. Separate service areas give visitors a place to start, while short explanations show what kind of advice belongs in each route. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        },
+        "expected_fingerprint": "7ab0d2290276d9fd8b5b989ccd924af69af8f30d71d037f77ea9a5e9c5056eb1"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1370,
+          "fields": {
+            "field_69deb8ddbcd8d": "Zeninspec presents technical inspection, testing and certification-related services to decision makers who may arrive with a specific question. Laboratory work, cargo and marine services, accreditation information and certification topics are connected, but they are not interchangeable.",
+            "field_69deb8e4bcd8e": "I designed the Zeninspec WordPress structure so technical service areas can be found separately within one company framework. Laboratory, cargo, marine and certification-related routes are separated early, and accreditation information is placed where it supports the relevant decision rather than appearing as a broad marketing badge."
+          }
+        },
+        "expected_fingerprint": "8b53a3ab1d9059f5af409da9b8021ea9d83758fea0793ad763f31d0d6afb186e"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1371,
+          "fields": {
+            "field_69deb8ddbcd8d": "Schipholparkeren has to turn a travel plan into a parking reservation without making visitors search for the practical steps. Travellers arrive with dates, flight timing, luggage and different expectations about valet or comfort parking.",
+            "field_69deb8e4bcd8e": "I designed Schipholparkeren around the reservation sequence a traveller actually follows. Trip dates and the parking choice come first, followed by the details needed to complete a booking and any optional car services that fit the journey. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        },
+        "expected_fingerprint": "2587a8b7326182d25be86045424c3e8938cdfa7f997b71d2dd5b0df2de9ee7bb"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1372,
+          "fields": {
+            "field_69deb8ddbcd8d": "Homeowners may start with anything from a bathroom or floor to a complete renovation or new-build project. The site therefore had to connect inspiration, individual services and larger project routes without making visitors understand the full construction process before finding what fits their plans.",
+            "field_69deb8e4bcd8e": "I structured the experience around recognisable construction routes, supported by project examples and a five-step working process. Individual services remain easy to find, while larger renovation, new-build and turn-key journeys provide deeper context before the consultation action. The same hierarchy remains understandable on smaller screens."
+          }
+        },
+        "expected_fingerprint": "3d82526d5f821a3ec5443e41699d71beab9518de8c67fc4a10c05c2d7eaa8c00"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1373,
+          "fields": {
+            "field_69deb8ddbcd8d": "Pastrycompany combines two buying situations that need different information: ordering food online and arranging catering for an event. A customer choosing a product wants options, price and a cart path, while someone planning catering needs context about the service before sending an enquiry.",
+            "field_69deb8e4bcd8e": "I arranged Pastrycompany so product shopping and catering remain connected but follow their own paths. WooCommerce categories, product details and cart actions support customers who are ready to order, while catering pages explain the event service and lead naturally to an enquiry."
+          }
+        },
+        "expected_fingerprint": "f17815245e546c9531f2d084d4722bf9e3cf46bac7ee5e1aa40241f28a8bd26e"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1374,
+          "fields": {
+            "field_69deb8ddbcd8d": "Byderma brings treatments, appointments and product shopping together, creating a navigation problem that a beauty website or webshop does not have. Someone researching a treatment needs different information from a customer who wants to buy skincare, while members may also look for benefits or account options.",
+            "field_69deb8e4bcd8e": "For Byderma, I structured the WordPress and WooCommerce experience around three distinct actions: explore treatments, book an appointment and shop for products. Treatment pages provide context before a booking action, while product categories and product pages keep the normal shopping path direct."
+          }
+        },
+        "expected_fingerprint": "bad9e203803b5cedd2d5feb3feb6adc6245953ad2d55a12c3a7a9a52c9cd3414"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1375,
+          "fields": {
+            "field_69deb8ddbcd8d": "Ourwp offers business-address services to entrepreneurs who need to understand more than a postal location before choosing a package. Registration use, post handling, scanning and account access each affect the service, so a visitor needs to compare what is included and what happens after signup.",
+            "field_69deb8e4bcd8e": "I designed Ourwp around the questions an entrepreneur needs answered before selecting an address package. The website explains the address service, post handling and scanning first, then connects those details to package choices and the signup route. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        },
+        "expected_fingerprint": "18e7d43815b19506cd33290426497e4a19dda2264448a4519e98d62c27e3b19c"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1376,
+          "fields": {
+            "field_69deb8ddbcd8d": "Bluecenter offers several beauty treatments, but people do not compare facial care, permanent makeup, massage and laser hair removal in the same way. A visitor may start with a concern, a price question or a treatment name, and each route needs different practical information before an appointment makes sense.",
+            "field_69deb8e4bcd8e": "I shaped Bluecenter around recognizable treatment categories, then placed prices, practical details and common questions close to the service where they matter. Visitors can understand the difference between facial treatments, permanent makeup, massage and laser hair removal before deciding whether to book or ask for more information."
+          }
+        },
+        "expected_fingerprint": "a9f48e8ed835c2efb60b6adaf9c618b814fe438371ad38d2946f039670671a00"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1377,
+          "fields": {
+            "field_69deb8ddbcd8d": "Mdvinstallaties serves customers with very different technical needs. Someone planning electrical work or a renovation can take time to compare services, while a person needing maintenance or locksmith help may want a faster route to contact.",
+            "field_69deb8e4bcd8e": "I arranged Mdvinstallaties so planned installation work, renovations, maintenance and locksmith support each have a clear route. Customers can start from the job they need rather than reading a long company introduction, then see the practical information that helps them decide whether to request service or make direct contact."
+          }
+        },
+        "expected_fingerprint": "cec1a33d3ada4689d27a3df5f53d34d8def25d93326f9e727256b4f6deec1d09"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1378,
+          "content": "A WordPress website for C&K Bouw separating construction and staffing needs from the employer journey, so clients and building professionals can quickly choose the relevant route."
+        },
+        "expected_fingerprint": "cb758cb84ff1dc46f6a369cb632a65f9c0a8d507f80ae1cb8459ba0f858da8d7"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1378,
+          "fields": {
+            "field_69deb8ddbcd8d": "Business clients visit for construction work or specialist capacity, while professionals visit to understand the company and employment opportunities. Treating those audiences as one journey would mix project enquiries with career-oriented information and make the next action less obvious.",
+            "field_69deb8e4bcd8e": "I separated commercial construction content from the employer route while keeping shared company context consistent. Services and projects support client decisions, while the Werken bij section gives professionals company information and a direct open-application route. Audience-specific actions prevent both journeys from competing for attention."
+          }
+        },
+        "expected_fingerprint": "32cd7990f1e7bf1d65f10963c6dcbbc8827f85ae206d18e6edbbd4a321ee99b0"
+      }
+    ]
+  }
+}
