@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-acf-schema-5104-20260921",
+  "action": "acf.field_groups",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 5104
+  }
+}
