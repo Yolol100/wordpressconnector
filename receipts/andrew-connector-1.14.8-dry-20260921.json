@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrew-connector-1.14.8-dry-20260921",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-21T11:37:21+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.14.7",
+    "to_version": "1.14.8",
+    "before_fingerprint": "82f87480483c7509ed29b07e6d411698f7b8ae59bfa24e33142d36543dc287cb",
+    "rollback_supported": false,
+    "readback_verified": null
+}
