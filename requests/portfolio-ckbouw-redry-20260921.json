@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-ckbouw-redry-20260921",
+  "action": "post.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 1378,
+    "content": "A WordPress website for C&K Bouw separating construction and staffing needs from the employer journey, so clients and building professionals can quickly choose the relevant route."
+  }
+}
