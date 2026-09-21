@@ -32,6 +32,7 @@ $publicActions = array(
     'post.update',
     'acf.update',
     'acf.portfolio_stats_update',
+    'portfolio.case_text_update',
     'acf.field_groups',
     'acf.schema.ensure_text_fields',
     'elementor.inspect',
@@ -55,6 +56,50 @@ if ('connector.batch' === $action) {
             exit(1);
         }
     }
+}
+
+if ('portfolio.case_text_update' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, array('post_id','content','description_1','description_2'), true)) {
+            $errors[] = 'Portfolio case text payload has unsupported key: ' . (string) $key;
+        }
+    }
+    if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+        $errors[] = 'Portfolio case text payload.post_id must be a positive integer.';
+    }
+    $hasValue = false;
+    foreach (array('content','description_1','description_2') as $key) {
+        if (! array_key_exists($key, $payload)) continue;
+        $hasValue = true;
+        $value = $payload[$key];
+        $limit = 'content' === $key ? 12000 : 5000;
+        if (! is_string($value) || strlen($value) > $limit || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value)) {
+            $errors[] = 'Portfolio case text value is invalid: ' . $key;
+        }
+        if ('content' !== $key && is_string($value) && (false !== strpos($value, '<') || false !== strpos($value, '>'))) {
+            $errors[] = 'Portfolio case descriptions must not contain HTML.';
+        }
+    }
+    if (! $hasValue) $errors[] = 'Portfolio case text requires at least one text value.';
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+    }
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if (! $dryRun) {
+        if (empty($data['confirm'])) $errors[] = 'Public mutation requires confirm=true when dry_run=false.';
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed portfolio.case_text_update requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+    if ($errors) {
+        foreach (array_values(array_unique($errors)) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: portfolio.case_text_update' . PHP_EOL;
+    return;
 }
 
 if ('acf.portfolio_stats_update' !== $action) {

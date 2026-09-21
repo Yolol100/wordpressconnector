@@ -32,7 +32,134 @@ final class PortfolioStatsAdapter
             'privileged' => true,
             'description' => 'Update only the eight existing portfolio-stat ACF text fields on one standard WordPress post, including unpublished targets.',
         ));
+        $registry->register('portfolio.case_text_update', array($this, 'updateCaseText'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'description' => 'Update only portfolio intro content plus description_1 and description_2 on one standard WordPress post, including unpublished targets.',
+        ));
     }
+
+
+    public function updateCaseText(array $payload, array $context): array
+    {
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, array('post_id', 'content', 'description_1', 'description_2'), true)) {
+                throw new RuntimeException('Portfolio case text update contains unsupported payload key: ' . (string) $key);
+            }
+        }
+        if (! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] <= 0) {
+            throw new RuntimeException('Portfolio case text update requires a positive integer post_id.');
+        }
+        $postId = $payload['post_id'];
+        $post = get_post($postId);
+        if (! $post instanceof \WP_Post) {
+            throw new RuntimeException('Portfolio case text target post was not found.');
+        }
+        if ('post' !== (string) $post->post_type || ! in_array((string) $post->post_status, self::ALLOWED_POST_STATUSES, true)) {
+            throw new RuntimeException('Portfolio case text target must be a normal WordPress post in an allowed content status.');
+        }
+        if (! function_exists('current_user_can') || ! current_user_can('edit_post', $postId)) {
+            throw new RuntimeException('Current user lacks permission to edit the portfolio case text target.');
+        }
+
+        $requested = array();
+        if (array_key_exists('content', $payload)) {
+            $value = $payload['content'];
+            if (! is_string($value) || strlen($value) > 12000 || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value)) {
+                throw new RuntimeException('Portfolio case content must be text up to 12000 bytes without control characters.');
+            }
+            $requested['content'] = $value;
+        }
+
+        $fieldMap = array(
+            'description_1' => 'field_69deb8ddbcd8d',
+            'description_2' => 'field_69deb8e4bcd8e',
+        );
+        $descriptionKeys = array_intersect(array_keys($fieldMap), array_keys($payload));
+        if ($descriptionKeys) {
+            foreach (array('acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field') as $function) {
+                if (! function_exists($function)) {
+                    throw new RuntimeException('Portfolio case text ACF API is unavailable: ' . $function);
+                }
+            }
+            $allowedParents = array();
+            foreach ((array) acf_get_field_groups(array('post_id' => $postId)) as $group) {
+                if (! is_array($group)) continue;
+                if (! empty($group['key'])) $allowedParents[(string) $group['key']] = true;
+                if (! empty($group['ID'])) $allowedParents[(string) $group['ID']] = true;
+            }
+            if (! $allowedParents) {
+                throw new RuntimeException('No ACF field group applies to the portfolio case text target.');
+            }
+            foreach ($descriptionKeys as $name) {
+                $value = $payload[$name];
+                if (! is_string($value) || strlen($value) > 5000 || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value) || false !== strpos($value, '<') || false !== strpos($value, '>')) {
+                    throw new RuntimeException('Portfolio case descriptions must be plain text up to 5000 bytes without HTML or control characters.');
+                }
+                $fieldKey = $fieldMap[$name];
+                $field = acf_get_field($fieldKey);
+                if (! is_array($field) || (string) ($field['name'] ?? '') !== $name || ! in_array((string) ($field['type'] ?? ''), array('text','textarea','wysiwyg'), true) || ! isset($allowedParents[(string) ($field['parent'] ?? '')])) {
+                    throw new RuntimeException('Portfolio case description field is missing or outside the target field group: ' . $name);
+                }
+                $requested[$name] = $value;
+            }
+        }
+        if (! $requested) {
+            throw new RuntimeException('Portfolio case text update requires content and/or description fields.');
+        }
+
+        $before = array();
+        foreach ($requested as $name => $value) {
+            if ('content' === $name) {
+                $before[$name] = (string) $post->post_content;
+            } else {
+                $before[$name] = get_field($fieldMap[$name], $postId, false);
+            }
+        }
+        $result = array('post_id' => $postId, 'before' => $before, 'after' => $requested, '_current_fingerprint' => Fingerprint::make($before));
+        if (! empty($context['dry_run'])) return $result;
+
+        try {
+            if (array_key_exists('content', $requested)) {
+                $updated = wp_update_post(array('ID' => $postId, 'post_content' => $requested['content']), true);
+                if (is_wp_error($updated)) throw new RuntimeException('Portfolio case content update failed: ' . $updated->get_error_message());
+            }
+            foreach ($descriptionKeys as $name) {
+                $fieldKey = $fieldMap[$name];
+                if (false === update_field($fieldKey, $requested[$name], $postId) && get_field($fieldKey, $postId, false) !== $requested[$name]) {
+                    throw new RuntimeException('Portfolio case ACF update failed for: ' . $name);
+                }
+            }
+            $afterPost = get_post($postId);
+            $after = array();
+            foreach ($requested as $name => $value) {
+                $actual = 'content' === $name ? ($afterPost instanceof \WP_Post ? (string) $afterPost->post_content : null) : get_field($fieldMap[$name], $postId, false);
+                if ($actual !== $value) throw new RuntimeException('Portfolio case readback mismatch for: ' . $name);
+                $after[$name] = $actual;
+            }
+            $result['after'] = $after;
+        } catch (Throwable $error) {
+            $failures = array();
+            if (array_key_exists('content', $before)) {
+                $restore = wp_update_post(array('ID' => $postId, 'post_content' => $before['content']), true);
+                $restoredPost = get_post($postId);
+                if (is_wp_error($restore) || ! $restoredPost instanceof \WP_Post || (string) $restoredPost->post_content !== $before['content']) $failures[] = 'content';
+            }
+            foreach ($descriptionKeys as $name) {
+                $fieldKey = $fieldMap[$name];
+                update_field($fieldKey, $before[$name], $postId);
+                if (get_field($fieldKey, $postId, false) !== $before[$name]) $failures[] = $name;
+            }
+            if ($failures) throw new RuntimeException('Portfolio case compensation failed for: ' . implode(', ', $failures) . '. Original error: ' . $error->getMessage(), 0, $error);
+            throw $error;
+        }
+
+        $rollbackPayload = array('post_id' => $postId);
+        foreach ($before as $name => $value) $rollbackPayload[$name] = $value;
+        $result['_rollback'] = array('action' => 'portfolio.case_text_update', 'payload' => $rollbackPayload);
+        return $result;
+    }
+
 
     public function update(array $payload, array $context): array
     {

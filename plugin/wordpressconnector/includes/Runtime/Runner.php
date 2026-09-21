@@ -215,6 +215,15 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('portfolio.case_text_update' === $action) {
+            $this->assertPublicPortfolioCaseTextPayload($payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public portfolio case text update requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('connector.rollback' === $action) {
             $requestId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
             if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
@@ -232,6 +241,17 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicPortfolioCaseTextPayload(array $payload): int
+    {
+        $preview = $this->registry->execute('portfolio.case_text_update', $payload, array('dry_run' => true, 'confirm' => true, 'public_validation' => true));
+        $postId = isset($preview['post_id']) ? (int) $preview['post_id'] : 0;
+        $fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
+        if ($postId <= 0 || ! preg_match('/^[a-f0-9]{64}\z/', $fingerprint)) {
+            throw new RuntimeException('Portfolio case text public validation did not produce a guarded target fingerprint.');
+        }
+        return $postId;
     }
 
     private function assertPublicPortfolioStatsPayload(array $payload): int
@@ -335,6 +355,7 @@ final class Runner
         $allowed = array(
             'acf.update' => array('acf.update'),
             'acf.portfolio_stats_update' => array('acf.portfolio_stats_update', 'acf.update'),
+            'portfolio.case_text_update' => array('portfolio.case_text_update'),
             'post.update' => array('post.update'),
             'elementor.patch_element' => array('elementor.replace_document'),
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
@@ -345,6 +366,8 @@ final class Runner
         }
         if ('acf.portfolio_stats_update' === $sourceAction) {
             $this->assertPublicPortfolioStatsPayload((array) ($rollback['payload'] ?? array()));
+        } elseif ('portfolio.case_text_update' === $sourceAction) {
+            $this->assertPublicPortfolioCaseTextPayload((array) ($rollback['payload'] ?? array()));
         } elseif ('acf.update' === $rollbackAction) {
             $this->assertPublicAcfUpdatePayload((array) ($rollback['payload'] ?? array()));
         } elseif ('post.update' === $rollbackAction) {
