@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-kroessvisser-live-20260921",
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d20caf737b80983bc6eefaf08cb1126dcfea2c9cecf48527e191db162a4ac032",
+  "payload": {
+    "id": 1391,
+    "content": "A multidisciplinary WordPress website helping Kroess & Visser clients navigate a broad accountancy and advisory portfolio before moving towards the specialist or conversation relevant to their situation."
+  }
+}
