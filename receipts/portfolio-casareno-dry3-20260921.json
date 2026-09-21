@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-casareno-dry3-20260921",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-21T21:16:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1372,
+    "readback_verified": null,
+    "before_fingerprint": "db260f3b68260d567a169c9cd696797d3bdc78df82c0da083ab0caf45d4e644b",
+    "after_fingerprint": "db260f3b68260d567a169c9cd696797d3bdc78df82c0da083ab0caf45d4e644b"
+}
