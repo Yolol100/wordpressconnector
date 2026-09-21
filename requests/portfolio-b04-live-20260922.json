@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b04-live-20260922",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1395,
+          "fields": {
+            "field_69deb8ddbcd8d": "Prometaal works with recyclable materials, collection and logistics for business customers, so the first question is often operational: what material is involved and how should it be handled? Sustainability information matters, but it cannot replace details about collection, transport or the type of recycling service a company needs.",
+            "field_69deb8e4bcd8e": "I arranged Prometaal around the material and service questions that business customers are likely to know first. Recyclable materials, collection and logistics each have a clear place, while sustainability context supports the process instead of becoming the only message. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        },
+        "expected_fingerprint": "b12d5414b43db467af0558c50ce052d5dbb5e1695250f8ac26cf6541aa6e0a03"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1396,
+          "fields": {
+            "field_69deb8ddbcd8d": "Blenco sells made-to-measure window decoration, which means customers cannot simply choose a product and add a standard quantity to the cart. Product type, fabric or style, colour, measurements and mounting choices all affect what is being ordered.",
+            "field_69deb8e4bcd8e": "I structured Blenco so customers configure a made-to-measure product step by step instead of confronting every option at once. Product type and visual choices come first, followed by colour, measurements and mounting preferences. Relevant actions remain close to the information needed for the next step."
+          }
+        },
+        "expected_fingerprint": "4cb6165d7b70242c5b8d6fe868feb4ef26c12e84bf28c9693d1ecb0c6a3604e3"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1397,
+          "fields": {
+            "field_69deb8ddbcd8d": "C10media works across outdoor media, digital, radio, television and print, so a client may arrive with a campaign goal rather than a preferred channel. Listing every medium at the same level would force visitors to design their own media plan before they understand where the agency can help.",
+            "field_69deb8e4bcd8e": "I designed C10media around the campaign decision rather than around a long inventory of media products. Strategy gives the starting context, while outdoor, digital, radio, television and print can each explain where they fit. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        },
+        "expected_fingerprint": "ce7a1f313257e9ec8b41bb5ecb180f1461ba62f1c49c7f27bebedb37c34b9f98"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1400,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors can arrive with different service needs and locations, so company listings alone are not enough. The platform needs to connect a request with relevant providers, comparable information and a clear quotation route without making the discovery process unnecessarily complex.",
+            "field_69deb8e4bcd8e": "I shaped the platform around service selection, local relevance and quotation requests. Visitors can move from their need to suitable provider information and request quotes from multiple businesses, while reviews and pricing support comparison. On mobile, provider content, forms and next actions remain easy to follow."
+          }
+        },
+        "expected_fingerprint": "375fb964541eff2eb14901593907347aef7c7df1c5b715fe09805f28b7e06ced"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1402,
+          "fields": {
+            "field_69deb8ddbcd8d": "Customers need to compare different levels of car care, understand pricing and decide whether to walk in, request a quote or plan a visit. Strong visual branding therefore had to work alongside practical service information rather than push it out of view.",
+            "field_69deb8e4bcd8e": "I arranged six car-care services into distinct routes and kept pricing, location information and next actions close to each decision. Visitors can choose between walk-in service and planned booking, while the two locations remain easy to find. The responsive structure keeps those practical choices prominent on mobile."
+          }
+        },
+        "expected_fingerprint": "03cb7293b6f8a39f426d48c883f53f930a5458899afe1054f820f0082733c07f"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1401,
+          "fields": {
+            "field_69deb8ddbcd8d": "Taxicentralerijswijk serves passengers with transport needs, including local rides, airport journeys and business travel. An airport passenger needs flight-related clarity, while a local passenger may care about pickup, destination and quick contact.",
+            "field_69deb8e4bcd8e": "I structured Taxicentralerijswijk around the type of journey a passenger is planning. Local rides, airport transport and business travel have their own context, so visitors can understand what information belongs to the request before opening a booking or contact route."
+          }
+        },
+        "expected_fingerprint": "baa7822d3d754a936538bf65d6c9896552222f7e27cf8c61978449028bdebaa0"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1405,
+          "fields": {
+            "field_69deb8ddbcd8d": "Vanbachfinance needs to explain financial support to businesses that may arrive with questions about administration, reporting, tax work or finance guidance. These topics are connected, but a visitor should not have to understand internal structure before finding the relevant service.",
+            "field_69deb8e4bcd8e": "I designed Vanbachfinance around the financial tasks clients are likely to recognise first. Administration, reporting, tax support and finance guidance each receive a clear route, with supporting information added where it helps someone decide whether the service fits their question."
+          }
+        },
+        "expected_fingerprint": "38fd3b95ef4d84de0f729ba0c163868d5db6ff037fd32b91db1c45171f190001"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1406,
+          "fields": {
+            "field_69deb8ddbcd8d": "Werkenbijalpinadrive is a recruitment site for driving professionals, so candidates need more than a list of open roles. They want to understand the employer, the type of driving work, practical conditions and what the application process looks like before sharing their details.",
+            "field_69deb8e4bcd8e": "I shaped Werkenbijalpinadrive around the candidate's decision sequence. Employer information and the reality of the work provide context first, while vacancies lead into role details and a direct application path. Supporting information stays close to the choice it is meant to clarify."
+          }
+        },
+        "expected_fingerprint": "b7f439c223fe6aa595ac67993e2293da9fd735226a13bb2672057b39cb536ae6"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1410,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sodriveacademie trains prospective driving instructors, and those students need to understand more than the course name before enrolling. Requirements, programme content, planning and the route into the profession can all affect whether the training fits someone's situation.",
+            "field_69deb8e4bcd8e": "I arranged Sodriveacademie around the questions a prospective driving instructor is likely to ask before enrolling. The training route is introduced first, followed by course content, requirements, planning and practical details. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        },
+        "expected_fingerprint": "1cb9c9f8478ca1405a7f5d3d96a098c25ce7a5bf1d1cdff0b542fd766a636a35"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1409,
+          "fields": {
+            "field_69deb8ddbcd8d": "Furkaneducatie supports students and parents through courses, tutoring and learning programmes. Families may arrive with questions about age, subject or format, so a single overview of everything offered would not help them decide which route fits.",
+            "field_69deb8e4bcd8e": "I structured Furkaneducatie around distinct learning programmes so students and parents can start with the type of support they are considering. Course and tutoring information explains the purpose, practical details and next step before a registration or contact action appears."
+          }
+        },
+        "expected_fingerprint": "e9734462b899b8592b0eb9556e2e74eacdba401154823635ccd8c0ea096290e3"
+      }
+    ]
+  }
+}
