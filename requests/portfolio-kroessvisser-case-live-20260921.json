@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-kroessvisser-case-live-20260921",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "ac10e79d77d3f1ae4a12a04291e7b30e1fd0a0e53b8b1061511de41ab3e4f460",
+  "payload": {
+    "post_id": 1391,
+    "content": "A multidisciplinary WordPress website helping Kroess & Visser clients navigate a broad accountancy and advisory portfolio before moving towards the specialist or conversation relevant to their situation.",
+    "description_1": "The service portfolio extends far beyond bookkeeping and tax, covering financial, organisational, technology and specialist advisory topics. Presenting those areas as one general finance offer would make it harder for business clients to identify where their specific question belongs.",
+    "description_2": "I organised individual advisory areas as separate routes while keeping shared company and sector context connected. Detailed service pages explain accountancy, tax, payroll, audit, corporate finance and specialist business advice, with consultation actions positioned beside the service being considered. This keeps a broad specialist offer navigable without flattening it into general finance copy."
+  }
+}
