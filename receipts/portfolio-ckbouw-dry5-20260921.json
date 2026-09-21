@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ckbouw-dry5-20260921",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-21T21:18:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1378,
+    "readback_verified": null,
+    "before_fingerprint": "046549ff60c1a8f1f97b425c3a1f0710756119c4009ec29eb7b3f66e6725f0c0",
+    "after_fingerprint": "ab0c1077256711cdbc35168640d012943280cf506a8fa3700431ef60e807e9b0"
+}
