@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-text-b03-live-20260921",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1379,
+          "fields": {
+            "field_69deb8ddbcd8d": "Prolineafbouw offers several finishing services that may appear similar to a visitor who is not familiar with construction terminology. Latex spraying, system ceilings, walls, metal-stud work, plastering and painting solve different parts of a project, so a simple list would not give property owners enough help to choose a route.",
+            "field_69deb8e4bcd8e": "I designed Prolineafbouw around individual finishing services so visitors can understand where latex spraying, ceilings, walls, metal-stud work, plastering and painting fit within a project. Each service can carry its own explanation and relevant examples before the visitor reaches a quotation or contact action."
+          }
+        },
+        "expected_fingerprint": "4b2a14a2b50e1c81b262a55842e627f97fb0cf7b444c85f25c1f15587c03dcea"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1380,
+          "fields": {
+            "field_69deb8ddbcd8d": "Connectwerk has to serve candidates and employers from the same recruitment platform, but their goals are different. Candidates want vacancies, role details and an easy way to register or apply.",
+            "field_69deb8e4bcd8e": "I shaped Connectwerk around two direct entry routes: finding work and finding staff. Candidates can move from vacancy discovery to role information, registration or application without passing through employer sales content. Supporting information stays close to the choice it is meant to clarify."
+          }
+        },
+        "expected_fingerprint": "3f0ccebc8023e66746b0e972332cb80672d523c1fc8085474d51bbadfef32398"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1381,
+          "fields": {
+            "field_69deb8ddbcd8d": "Gsprivechauffeur serves passengers whose transport needs are not all the same. An airport transfer starts with flight timing and luggage, a BOB ride is about getting people and their car home, while vehicle transport or valet parking involves a different handover.",
+            "field_69deb8e4bcd8e": "I arranged Gsprivechauffeur around the journey type first, then the information needed to request it. Private chauffeur, airport transport, BOB rides, vehicle transport and valet parking each have their own context instead of sharing one vague description. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        },
+        "expected_fingerprint": "767839efdb14c0e2c042e61f7400c3018233074ae33670d0328d9d9d0366d87a"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1383,
+          "fields": {
+            "field_69deb8ddbcd8d": "Businesssuites offers flexible workspace, but a company looking for a private office is making a different decision from someone booking a meeting room or comparing coworking. Location, facilities, pricing and the amount of privacy can all affect the choice, so one long property page would make comparison harder.",
+            "field_69deb8e4bcd8e": "I structured Businesssuites around workspace type and location rather than treating every space as the same product. Private offices, coworking and meeting rooms can each explain their use, facilities and relevant pricing before a visitor moves toward a viewing, booking or enquiry."
+          }
+        },
+        "expected_fingerprint": "2b07368c8e2b875e76f04ed50a89d7262b0f9ca738cfedc19f9610de2f394d55"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1384,
+          "fields": {
+            "field_69deb8ddbcd8d": "Ibtraject works across several civil-engineering disciplines that can sound closely related to a non-specialist client. Design, contract preparation, cost estimates, supervision, participation and cable coordination each solve a different part of an infrastructure project.",
+            "field_69deb8e4bcd8e": "I designed Ibtraject around the stages and specialist roles that appear in civil-engineering projects. Design, contracts, estimates, supervision, participation and cable coordination are separated so a public-sector client can identify the relevant expertise before opening deeper project information. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        },
+        "expected_fingerprint": "0a49fe7458b1decb04bc62f4aba72b3addd2f2b37f99d6392c0161c6955693bc"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1390,
+          "fields": {
+            "field_69deb8ddbcd8d": "MPO combines long-term monitoring and research with activities, press updates, participation initiatives and supporter information. Without clear separation, fast-changing political content can make reports, organisational context and practical information harder for readers, supporters and journalists to locate.",
+            "field_69deb8e4bcd8e": "I separated durable monitoring themes and research from activities, press updates, support and contact content. Reports and position papers remain easy to reach, while current updates can change independently without replacing the organisation’s core information or forcing every audience through the same content stream."
+          }
+        },
+        "expected_fingerprint": "c67545ea90e7bdea54fbba2e34eae7973c55c810c3dc0fc41e659dee6db1ead4"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1391,
+          "content": "A multidisciplinary WordPress website helping Kroess & Visser clients navigate a broad accountancy and advisory portfolio before moving towards the specialist or conversation relevant to their situation."
+        },
+        "expected_fingerprint": "d20caf737b80983bc6eefaf08cb1126dcfea2c9cecf48527e191db162a4ac032"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1391,
+          "fields": {
+            "field_69deb8ddbcd8d": "The service portfolio extends far beyond bookkeeping and tax, covering financial, organisational, technology and specialist advisory topics. Presenting those areas as one general finance offer would make it harder for business clients to identify where their specific question belongs.",
+            "field_69deb8e4bcd8e": "I organised individual advisory areas as separate routes while keeping shared company and sector context connected. Detailed service pages explain accountancy, tax, payroll, audit, corporate finance and specialist business advice, with consultation actions positioned beside the service being considered. This keeps a broad specialist offer navigable without flattening it into general finance copy."
+          }
+        },
+        "expected_fingerprint": "a5242a4c9f8717a032ffcab4bd19dbc1f7dc7b9fb1d8be5edea6c43b5ea2120d"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1392,
+          "fields": {
+            "field_69deb8ddbcd8d": "Superfruitmand sells fruit boxes, baskets and gifts to both consumers and business buyers. Those shoppers may arrive with a different occasion in mind, such as a personal gift, an office order or a recurring business need.",
+            "field_69deb8e4bcd8e": "I structured Superfruitmand around the reason for buying as well as the product itself. Fruit boxes, baskets, gifts and business options each have a clear place, while product pages provide the detail needed before adding an item to the cart."
+          }
+        },
+        "expected_fingerprint": "eb40767b734ff3d5c89d28e1760375bed3f406a896e5fcbb72e3a49ec3daa65d"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1394,
+          "fields": {
+            "field_69deb8ddbcd8d": "Progress has to support two recruitment audiences without making either one search through the other's information. Job seekers want vacancies, role details and a clear application path, while employers need staffing services, sector knowledge and enough trust to start a hiring conversation.",
+            "field_69deb8e4bcd8e": "I designed Progress around a clear choice between finding work and finding people. Candidates can move from vacancies to role information and application actions without being interrupted by employer sales content. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        },
+        "expected_fingerprint": "573c50903f5bc2c382d31956c9c64acc291e5b2f29f13d1b9f2e909dc86f5ec1"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1393,
+          "fields": {
+            "field_69deb8ddbcd8d": "Bedrijfsboekhouder offers online accounting support to entrepreneurs who may need bookkeeping, tax returns, annual accounts, payroll help or financial guidance. These services often connect, but a visitor should not have to understand accounting terminology before finding the right starting point.",
+            "field_69deb8e4bcd8e": "I shaped Bedrijfsboekhouder around recognizable business needs instead of internal accounting categories. Bookkeeping, tax work, annual accounts and payroll support each have a clear route, with supporting details placed where they help an entrepreneur understand what comes next. Supporting information stays close to the choice it is meant to clarify."
+          }
+        },
+        "expected_fingerprint": "5f33adcd3df4b30fac6f69b05130abb3e634ea651f830271cb3cea99e462c828"
+      }
+    ]
+  }
+}
