@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-ckbouw-dry5-20260921",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1378,
+    "content": "A WordPress website for C&K Bouw separating construction and staffing needs from the employer journey, so clients and building professionals can quickly choose the relevant route.",
+    "description_1": "Business clients visit for construction work or specialist capacity, while professionals visit to understand the company and employment opportunities. Treating those audiences as one journey would mix project enquiries with career-oriented information and make the next action less obvious.",
+    "description_2": "I separated commercial construction content from the employer route while keeping shared company context consistent. Services and projects support client decisions, while the Werken bij section gives professionals company information and a direct open-application route. Audience-specific actions prevent both journeys from competing for attention."
+  }
+}
