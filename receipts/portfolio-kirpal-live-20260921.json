@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kirpal-live-20260921",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-21T17:45:20+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 5104,
+    "readback_verified": true,
+    "before_fingerprint": "45361b186ccbb0e6253bb055352d0dffdebb91b2791cef23bac838f9ab86ed8d",
+    "after_fingerprint": "99e361b8a161c7ee4da2c9ab263016c7d2d94cd43a0f51731d1877ef10531dea",
+    "rollback_available": true
+}
