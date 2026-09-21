@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-gsprivechauffeur-fix-dry-20260921",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1381,
+    "content": "A chauffeur-booking WordPress website connecting GS Privechauffeur’s transport services with trip details, vehicle choice, contact information and reservation in one clear flow."
+  }
+}
