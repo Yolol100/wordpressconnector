@@ -260,7 +260,19 @@ if (! $ok) {
     $payload = isset($request['payload']) && is_array($request['payload']) ? $request['payload'] : array();
     $data = isset($result['data']) && is_array($result['data']) ? $result['data'] : array();
 
-    if ('acf.portfolio_stats_update' === $action) {
+    if ('portfolio.case_text_update' === $action) {
+        $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : null;
+        $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : null;
+        $expected = array();
+        foreach (array('content','description_1','description_2') as $key) {
+            if (array_key_exists($key, $payload)) $expected[$key] = $payload[$key];
+        }
+        $receipt['post_id'] = isset($data['post_id']) ? (int) $data['post_id'] : (int) ($payload['post_id'] ?? 0);
+        $receipt['readback_verified'] = $dryRun ? null : (null !== $after && $expected === $after);
+        if (null !== $before) $receipt['before_fingerprint'] = $fingerprint($before);
+        if (null !== $after) $receipt['after_fingerprint'] = $fingerprint($after);
+        if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+    } elseif ('acf.portfolio_stats_update' === $action) {
         $fields = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
         $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : null;
         $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : null;
