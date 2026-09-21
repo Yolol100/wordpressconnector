@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-text-b01-live-20260921",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4933,
+          "fields": {
+            "field_69deb8ddbcd8d": "Clients, relatives and referrers arrive with different questions about assisted living, day activities, guidance, eligibility and locations. Mixing those needs into one broad care story would make it harder to understand what support applies and what practical step comes next.",
+            "field_69deb8e4bcd8e": "Care services, locations and practical information each received a distinct place in the journey. I kept the wording and sections compact, then connected relevant pages to registration, contact and introductory-conversation routes. On mobile, those priorities remain in a predictable order rather than becoming one long care-information page."
+          }
+        },
+        "expected_fingerprint": "985d0a84b7228e0840471aa6e9abd90e064d48c32f8ca49e63c1dea21c20f40b"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4470,
+          "fields": {
+            "field_69deb8ddbcd8d": "Business owners and private clients can arrive with very different financial questions, often without knowing the accounting term for the service they need. Long explanations or specialist language would make that first choice harder, especially on smaller screens.",
+            "field_69deb8e4bcd8e": "I arranged the site around recognisable financial questions and separated accountancy, tax, payroll and wider guidance before introducing deeper detail. Plain-language headings keep the first decision lightweight, while contact and appointment actions appear once visitors have enough context to choose the appropriate route."
+          }
+        },
+        "expected_fingerprint": "49ab98c008145f14f2f025fbe3ff539cdd24c3137f3d94085f85d7e39392ef5d"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4448,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sanatolia combines theatre, cultural events and a broad course programme for different ages and interests. A single list would make activities such as drawing, folk dance, guitar, saz and creative drama harder to distinguish and weaken the organisation’s cultural character.",
+            "field_69deb8e4bcd8e": "I split the experience into event discovery and course participation, then kept practical details, tickets and joining actions beside the activity they belong to. The visual hierarchy gives cultural content room to feel expressive without hiding useful information, while mobile cards preserve a simple reading order."
+          }
+        },
+        "expected_fingerprint": "abf346f50fa7338d4bb94a5a80035ac5c3610a20c07383b1848a6f262530967b"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1241,
+          "fields": {
+            "field_69deb8ddbcd8d": "With many live vacancies, candidates could easily focus on job titles while missing the information needed to judge EFE as an employer. Vacancy lists, role details and application actions also become harder to follow when compressed onto mobile screens.",
+            "field_69deb8e4bcd8e": "Vacancy discovery stays prominent, but I connected it to role information, employer context and a defined application sequence. Simple headings and predictable mobile ordering help candidates move from finding a position to understanding it and applying, without turning the site into an endless list of openings."
+          }
+        },
+        "expected_fingerprint": "c6a7df965f73f368512b8609d5b9e324c19936bc4549f05b5dc685cd71c79a93"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1303,
+          "fields": {
+            "field_69deb8ddbcd8d": "Tradespeople and DIY buyers may know the building task they need to complete without knowing the exact product, quantity or preparation method. A broad catalogue therefore risks becoming difficult to navigate when categories, technical context and buying actions compete for attention.",
+            "field_69deb8e4bcd8e": "I structured the webshop around practical product groups such as egaline, mortar, primers, coatings, adhesives, tools and insulation, with guides supporting choices that need extra context. Product pages carry deeper detail before cart actions, while mobile keeps category entry points, product cards and purchasing actions easy to scan."
+          }
+        },
+        "expected_fingerprint": "d462cef30cda0d0a87589970cf19e42c8eae0ba10e3bff2aa07af1d3b487c118"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1366,
+          "fields": {
+            "field_69deb8ddbcd8d": "A facility or technical contact may know an inspection is required without knowing whether SCIOS Scope 8, 10 or 12, a NEN inspection or thermography applies. Presenting every standard at once would create a wall of technical terminology before the first useful decision.",
+            "field_69deb8e4bcd8e": "I separated inspection types into individual service routes and placed practical explanations beside each option instead of inside generic company copy. The journey then moves toward quotation and reporting context through short sections that preserve their order on mobile without making unsupported safety or compliance promises."
+          }
+        },
+        "expected_fingerprint": "8e0ee20f8515118117148115166b83e336d994a524e34b206b829fab671bcb23"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1352,
+          "fields": {
+            "field_69deb8ddbcd8d": "Security clients often start with a situation, not a service name. Guarding, crowd management and risk planning therefore had to be differentiated without relying on fear-based messaging, vague expertise claims or broad promises about outcomes that depend on the actual assignment.",
+            "field_69deb8e4bcd8e": "I made client situations the entry point and connected them to the relevant security service, with credibility information supporting the decision where appropriate. Enquiry actions appear after enough context to describe the assignment, while calm wording and a consistent mobile sequence keep the journey practical rather than promotional."
+          }
+        },
+        "expected_fingerprint": "0fc2045dbb034fb7bf651a4547efd002a258b0a64e3a84ac00b0f38b8526c674"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1367,
+          "fields": {
+            "field_69deb8ddbcd8d": "Online treatment cannot be presented like an ordinary ecommerce purchase. Patients need to distinguish information, medical questions, clinician review and practical follow-up without the interface implying automatic approval, diagnosis, safety or treatment outcomes.",
+            "field_69deb8e4bcd8e": "I ordered the experience around the care process: treatment context first, then the questionnaire and review stages, followed by prescription and delivery information where relevant. Direct labels, nearby safeguards and a defined mobile form sequence explain what happens next without turning a clinically reviewed service into a buy-now flow."
+          }
+        },
+        "expected_fingerprint": "ba56cf9297daa800faeec5f911c401d30bcf8a920c27c8d8b57ee142c50f4470"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1369,
+          "fields": {
+            "field_69deb8ddbcd8d": "Controlled-temperature projects differ by use, temperature range, size and technical requirements, so one generic service page would hide important distinctions. Visitors need enough information to recognise the relevant route without processing specifications that may not apply to their situation.",
+            "field_69deb8e4bcd8e": "I gave each build type its own route and placed technical considerations where they help a company judge fit before requesting a quotation. Project examples support the service context without implying identical future outcomes, and the same hierarchy carries onto mobile so detailed information does not overwhelm the initial choice."
+          }
+        },
+        "expected_fingerprint": "82a600330e2997ce5953dd4fd11efec69c4eda17c365f74d011fb1fe2ab7f3db"
+      }
+    ]
+  }
+}
