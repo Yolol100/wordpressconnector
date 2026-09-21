@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-ckbouw-live-20260921",
+  "action": "post.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "cb758cb84ff1dc46f6a369cb632a65f9c0a8d507f80ae1cb8459ba0f858da8d7",
+  "payload": {
+    "id": 1378,
+    "content": "A WordPress website for C&K Bouw separating construction and staffing needs from the employer journey, so clients and building professionals can quickly choose the relevant route."
+  }
+}
