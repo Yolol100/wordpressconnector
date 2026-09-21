@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-casareno-dry-20260921",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1372,
+    "content": "A construction WordPress website for Casareno connecting renovation, new-build and turn-key services with completed projects and a clear route towards a personal consultation.",
+    "description_1": "Homeowners may start with anything from a bathroom or floor to a complete renovation or new-build project. The site therefore had to connect inspiration, individual services and larger project routes without making visitors understand the full construction process before finding what fits their plans.",
+    "description_2": "I structured the experience around recognisable construction routes, supported by project examples and a five-step working process. Individual services remain easy to find, while larger renovation, new-build and turn-key journeys provide deeper context before the consultation action. The same hierarchy remains understandable on smaller screens."
+  }
+}
