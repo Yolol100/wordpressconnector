@@ -1,0 +1,97 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b02-final-verify-20260921",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-21T21:20:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "3b6ee9265d241a478fa99de079765d9b45447245090c83bff13acf7af95fff58",
+            "after_fingerprint": "3b6ee9265d241a478fa99de079765d9b45447245090c83bff13acf7af95fff58"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "126577caaba61d1e69a02266fe23d3586ab8ebd71fdde952c327a65a16d8e641",
+            "after_fingerprint": "126577caaba61d1e69a02266fe23d3586ab8ebd71fdde952c327a65a16d8e641"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "f168636aa4336e23de54e28222b4335c4bda2a6bbf554d980823368cb980d108",
+            "after_fingerprint": "f168636aa4336e23de54e28222b4335c4bda2a6bbf554d980823368cb980d108"
+        },
+        {
+            "index": 3,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "2ec09bc1bc424a9e6f5a82313258bdfaf0f873a9d592b16ba26f42149aa2a795",
+            "after_fingerprint": "2ec09bc1bc424a9e6f5a82313258bdfaf0f873a9d592b16ba26f42149aa2a795"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "6d901b0b3f19f38b35fc9c79f6443a55609f935ab63957e1193c5a333ac4fd39",
+            "after_fingerprint": "6d901b0b3f19f38b35fc9c79f6443a55609f935ab63957e1193c5a333ac4fd39"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ee92869f14c4837568504c483b452d4dc254d5a94bb2190040557ededceb8dfb",
+            "after_fingerprint": "ee92869f14c4837568504c483b452d4dc254d5a94bb2190040557ededceb8dfb"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "db14e541d0ff5aff5e2d45743bbc6a5e6081d652cd1d27d10f90eaac28ef936f",
+            "after_fingerprint": "db14e541d0ff5aff5e2d45743bbc6a5e6081d652cd1d27d10f90eaac28ef936f"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "62dac044d0ec361d6f2d3e407dedec0d687af8c5ae9cf499d03177cd62a16866",
+            "after_fingerprint": "62dac044d0ec361d6f2d3e407dedec0d687af8c5ae9cf499d03177cd62a16866"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "105cf3d0dffd1cbc1305179b0960fc7d523efabcc3103e0d4b4df680ca64325f",
+            "after_fingerprint": "105cf3d0dffd1cbc1305179b0960fc7d523efabcc3103e0d4b4df680ca64325f"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0d6cf3f059230666a90530a52acd3c617f00c25071ffa2918be661c67d865166",
+            "after_fingerprint": "0d6cf3f059230666a90530a52acd3c617f00c25071ffa2918be661c67d865166"
+        },
+        {
+            "index": 10,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "1b6ec67973a8ebf59684bf142d0b50afa652922318a799b92bcd01b0f5f3f070",
+            "after_fingerprint": "1b6ec67973a8ebf59684bf142d0b50afa652922318a799b92bcd01b0f5f3f070"
+        },
+        {
+            "index": 11,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "d391175215c6c3bfd7446f391f2305f1fde53c9ce828136ee1359c971f96689b",
+            "after_fingerprint": "d391175215c6c3bfd7446f391f2305f1fde53c9ce828136ee1359c971f96689b"
+        }
+    ]
+}
