@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b04-final-verify-20260921",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1395,
+          "content": "A B2B recycling WordPress website explaining PRO Metaal’s metal collection, container service and responsible recycling, with clear routes for companies needing practical disposal support."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1395,
+          "fields": {
+            "field_69deb8ddbcd8d": "Prometaal works with recyclable materials, collection and logistics for business customers, so the first question is often operational: what material is involved and how should it be handled? Sustainability information matters, but it cannot replace details about collection, transport or the type of recycling service a company needs.",
+            "field_69deb8e4bcd8e": "I arranged Prometaal around the material and service questions that business customers are likely to know first. Recyclable materials, collection and logistics each have a clear place, while sustainability context supports the process instead of becoming the only message. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1396,
+          "content": "A WooCommerce made-to-measure webshop guiding Blenco customers from window-decoration style and colour choices through dimensions, mounting options, pricing and online ordering."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1396,
+          "fields": {
+            "field_69deb8ddbcd8d": "Blenco sells made-to-measure window decoration, which means customers cannot simply choose a product and add a standard quantity to the cart. Product type, fabric or style, colour, measurements and mounting choices all affect what is being ordered.",
+            "field_69deb8e4bcd8e": "I structured Blenco so customers configure a made-to-measure product step by step instead of confronting every option at once. Product type and visual choices come first, followed by colour, measurements and mounting preferences. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1397,
+          "content": "A media-agency WordPress website presenting C10 Media’s cross-channel advertising services, campaign work and cases with clear routes towards strategy discussions and new client enquiries."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1397,
+          "fields": {
+            "field_69deb8ddbcd8d": "C10media works across outdoor media, digital, radio, television and print, so a client may arrive with a campaign goal rather than a preferred channel. Listing every medium at the same level would force visitors to design their own media plan before they understand where the agency can help.",
+            "field_69deb8e4bcd8e": "I designed C10media around the campaign decision rather than around a long inventory of media products. Strategy gives the starting context, while outdoor, digital, radio, television and print can each explain where they fit. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1400,
+          "content": "A WordPress comparison platform helping visitors find local service providers, request multiple quotations and compare price, reviews and regional fit before choosing."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1400,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors can arrive with different service needs and locations, so company listings alone are not enough. The platform needs to connect a request with relevant providers, comparable information and a clear quotation route without making the discovery process unnecessarily complex.",
+            "field_69deb8e4bcd8e": "I shaped the platform around service selection, local relevance and quotation requests. Visitors can move from their need to suitable provider information and request quotes from multiple businesses, while reviews and pricing support comparison. On mobile, provider content, forms and next actions remain easy to follow."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1402,
+          "content": "A mobile-focused WordPress website connecting Miami Carwash’s six car-care services, transparent pricing, two locations and flexible walk-in or booking options."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1402,
+          "fields": {
+            "field_69deb8ddbcd8d": "Customers need to compare different levels of car care, understand pricing and decide whether to walk in, request a quote or plan a visit. Strong visual branding therefore had to work alongside practical service information rather than push it out of view.",
+            "field_69deb8e4bcd8e": "I arranged six car-care services into distinct routes and kept pricing, location information and next actions close to each decision. Visitors can choose between walk-in service and planned booking, while the two locations remain easy to find. The responsive structure keeps those practical choices prominent on mobile."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1401,
+          "content": "A taxi-booking WordPress website helping Taxi Centrale Rijswijk visitors review fares, choose transport options and move from route information to a mobile-friendly reservation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1401,
+          "fields": {
+            "field_69deb8ddbcd8d": "Taxicentralerijswijk serves passengers with transport needs, including local rides, airport journeys and business travel. An airport passenger needs flight-related clarity, while a local passenger may care about pickup, destination and quick contact.",
+            "field_69deb8e4bcd8e": "I structured Taxicentralerijswijk around the type of journey a passenger is planning. Local rides, airport transport and business travel have their own context, so visitors can understand what information belongs to the request before opening a booking or contact route."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1405,
+          "content": "A financial-services WordPress website helping entrepreneurs compare Van Bach Finance bookkeeping, payroll, tax and advice packages before scheduling a personal introductory appointment."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1405,
+          "fields": {
+            "field_69deb8ddbcd8d": "Vanbachfinance needs to explain financial support to businesses that may arrive with questions about administration, reporting, tax work or finance guidance. These topics are connected, but a visitor should not have to understand internal structure before finding the relevant service.",
+            "field_69deb8e4bcd8e": "I designed Vanbachfinance around the financial tasks clients are likely to recognise first. Administration, reporting, tax support and finance guidance each receive a clear route, with supporting information added where it helps someone decide whether the service fits their question."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1406,
+          "content": "A recruitment WordPress website helping driving instructors explore Alpina Drive vacancies, work benefits and location options before moving directly towards an application."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1406,
+          "fields": {
+            "field_69deb8ddbcd8d": "Werkenbijalpinadrive is a recruitment site for driving professionals, so candidates need more than a list of open roles. They want to understand the employer, the type of driving work, practical conditions and what the application process looks like before sharing their details.",
+            "field_69deb8e4bcd8e": "I shaped Werkenbijalpinadrive around the candidate's decision sequence. Employer information and the reality of the work provide context first, while vacancies lead into role details and a direct application path. Supporting information stays close to the choice it is meant to clarify."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1410,
+          "content": "An education WordPress website guiding future driving instructors through SoDrive Academie training options, prices, start dates, available places and direct course registration."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1410,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sodriveacademie trains prospective driving instructors, and those students need to understand more than the course name before enrolling. Requirements, programme content, planning and the route into the profession can all affect whether the training fits someone's situation.",
+            "field_69deb8e4bcd8e": "I arranged Sodriveacademie around the questions a prospective driving instructor is likely to ask before enrolling. The training route is introduced first, followed by course content, requirements, planning and practical details. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1409,
+          "content": "A community-education WordPress website bringing Furkan Educatie lessons, homework, dates, documents, registration and member access together for students, parents and families."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1409,
+          "fields": {
+            "field_69deb8ddbcd8d": "Furkaneducatie supports students and parents through courses, tutoring and learning programmes. Families may arrive with questions about age, subject or format, so a single overview of everything offered would not help them decide which route fits.",
+            "field_69deb8e4bcd8e": "I structured Furkaneducatie around distinct learning programmes so students and parents can start with the type of support they are considering. Course and tutoring information explains the purpose, practical details and next step before a registration or contact action appears."
+          }
+        }
+      }
+    ]
+  }
+}
