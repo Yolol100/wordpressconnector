@@ -307,8 +307,12 @@ final class Runner
                 throw new RuntimeException('Public ACF values must be text strings up to 1000 bytes without control characters.');
             }
             $field = acf_get_field($fieldKey);
-            if (! is_array($field) || 'text' !== (string) ($field['type'] ?? '')) {
-                throw new RuntimeException('Public ACF field is missing or is not a text field: ' . $fieldKey);
+            $fieldType = is_array($field) ? (string) ($field['type'] ?? '') : '';
+            if (! is_array($field) || ! in_array($fieldType, array('text', 'textarea', 'wysiwyg'), true)) {
+                throw new RuntimeException('Public ACF field is missing or is not an allowed textual field: ' . $fieldKey);
+            }
+            if (in_array($fieldType, array('textarea', 'wysiwyg'), true) && (false !== strpos($value, '<') || false !== strpos($value, '>'))) {
+                throw new RuntimeException('Public multiline ACF values must be plain text without HTML markup: ' . $fieldKey);
             }
             $name = (string) ($field['name'] ?? '');
             $parent = (string) ($field['parent'] ?? '');

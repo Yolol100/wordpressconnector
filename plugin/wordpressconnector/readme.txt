@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.7
+Stable tag: 1.14.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.14.8 extends the guarded public ACF editorial route to existing `text`, `textarea` and `wysiwyg` fields that belong to an applicable field group on a published editable post. Multiline/WYSIWYG values remain plain-text only in public-repository mode, keep the existing 1000-byte limit, and retain capability, field-key, stale-state, readback and rollback boundaries.
 
 Version 1.14.7 makes the public sanitized receipt builder self-contained so trusted executors no longer depend on a separately materialized legacy helper. Existing receipt contracts, including connector self-update and bounded portfolio-stat evidence, remain preserved and are covered by an isolated workspace regression test.
 
@@ -34,7 +36,7 @@ Version 1.13.0 made the guarded GitHub runtime zero-config after plugin activati
 
 A minimal HTTPS presence endpoint allows a known site URL to prove that the connector is installed without exposing WordPress content. The target site URL travels with the temporary runtime request and is validated before execution. GitHub cannot securely enumerate arbitrary unknown websites merely because a plugin was installed; global site discovery requires a separate authenticated registry and is intentionally not simulated with public crawling or leaked site lists.
 
-Mutation safety remains request-scoped: real writes require confirm=true; stale-state fingerprints/tokens remain available; mutations remain idempotent and serialized; supported changes retain exact readback and rollback. Public post-targeted ACF writes are additionally limited to existing ACF text fields whose field groups apply to the selected published post, and public rollback is limited to snapshots created by the guarded public runtime itself. Optional WPCONNECTOR_ALLOW_* constants or environment variables can still disable execution classes server-side without requiring WordPress admin setup.
+Mutation safety remains request-scoped: real writes require confirm=true; stale-state fingerprints/tokens remain available; mutations remain idempotent and serialized; supported changes retain exact readback and rollback. Public post-targeted ACF writes are additionally limited to existing ACF text, textarea or WYSIWYG fields whose field groups apply to the selected published post. Public textarea/WYSIWYG values must remain plain text without HTML markup, and public rollback is limited to snapshots created by the guarded public runtime itself. Optional WPCONNECTOR_ALLOW_* constants or environment variables can still disable execution classes server-side without requiring WordPress admin setup.
 
 Public GitHub repositories remain deliberately restricted. Public runtime branches may only use the explicit public-safe action contract, sensitive actions stay blocked, full WordPress responses are never persisted publicly, and only sanitized receipts are written back.
 
@@ -56,11 +58,16 @@ Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
 REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
 
-Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF text-field identity, applicable field group and edit capability; the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; public execution is admitted only after payload validation and confirmed writes require the preceding dry-run fingerprint. It does not make unpublished post content readable.
+Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF textual-field identity (`text`, `textarea` or `wysiwyg`), applicable field group and edit capability; textarea/WYSIWYG updates are plain-text only in public-repository mode, and the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; public execution is admitted only after payload validation and confirmed writes require the preceding dry-run fingerprint. It does not make unpublished post content readable.
 
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.14.8 =
+* Extend guarded public `acf.update` to existing ACF `textarea` and `wysiwyg` fields in addition to `text` fields when the field belongs to an applicable group on the published target.
+* Keep public multiline/WYSIWYG values plain-text only, bounded to the existing 1000-byte value limit and protected by the existing field-key, capability, stale-state, readback and rollback controls.
+* Add regression coverage for allowed textarea/WYSIWYG updates, non-text rejection and HTML-markup rejection.
 
 = 1.14.7 =
 * Make `build-public-receipt.php` self-contained so trusted public executors do not require a separately materialized legacy receipt helper.

@@ -45,7 +45,9 @@ function acf_get_field($key)
     $fields = array(
         'field_portfolio_stat_1_value' => array('key' => 'field_portfolio_stat_1_value', 'name' => 'portfolio_stat_1_value', 'type' => 'text', 'parent' => 555),
         'field_portfolio_stat_1_label' => array('key' => 'field_portfolio_stat_1_label', 'name' => 'portfolio_stat_1_label', 'type' => 'text', 'parent' => 555),
-        'field_portfolio_nontext' => array('key' => 'field_portfolio_nontext', 'name' => 'portfolio_nontext', 'type' => 'textarea', 'parent' => 555),
+        'field_portfolio_textarea' => array('key' => 'field_portfolio_textarea', 'name' => 'portfolio_textarea', 'type' => 'textarea', 'parent' => 555),
+        'field_portfolio_wysiwyg' => array('key' => 'field_portfolio_wysiwyg', 'name' => 'portfolio_wysiwyg', 'type' => 'wysiwyg', 'parent' => 555),
+        'field_portfolio_nontext' => array('key' => 'field_portfolio_nontext', 'name' => 'portfolio_nontext', 'type' => 'image', 'parent' => 555),
         'field_portfolio_wrongparent' => array('key' => 'field_portfolio_wrongparent', 'name' => 'portfolio_wrongparent', 'type' => 'text', 'parent' => 999),
         'field_portfolio_secretname' => array('key' => 'field_portfolio_secretname', 'name' => 'api_key', 'type' => 'text', 'parent' => 555),
     );
@@ -132,9 +134,24 @@ if (empty($result['ok']) || ($result['action'] ?? '') !== 'acf.update') {
     exit(1);
 }
 
+foreach (array(
+    'field_portfolio_textarea' => "Plain multiline editorial text.\nSecond line.",
+    'field_portfolio_wysiwyg' => 'Plain editorial WYSIWYG text without markup.',
+) as $fieldKey => $value) {
+    $editorial = $base;
+    $editorial['request_id'] = 'public-acf-editorial-' . substr(md5($fieldKey), 0, 12);
+    $editorial['payload']['fields'] = array($fieldKey => $value);
+    $editorialResult = $runner->run(Request::fromArray($editorial));
+    if (empty($editorialResult['ok'])) {
+        fwrite(STDERR, 'Allowed public editorial ACF field was rejected: ' . $fieldKey . "\n");
+        exit(1);
+    }
+}
+
 $cases = array();
 $case = $base; $case['request_id'] = 'public-acf-boundary-1001'; $case['payload']['fields'] = array('portfolio_stat_1_value' => '+18%'); $cases['field name instead of key'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1002'; $case['payload']['fields'] = array('field_portfolio_nontext' => 'text'); $cases['non-text field'] = $case;
+$case = $base; $case['request_id'] = 'public-acf-boundary-1010'; $case['payload']['fields'] = array('field_portfolio_wysiwyg' => '<strong>markup</strong>'); $cases['WYSIWYG markup'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1003'; $case['payload']['fields'] = array('field_portfolio_wrongparent' => 'text'); $cases['field outside target group'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1004'; $case['payload']['post_id'] = 99; $cases['non-public post'] = $case;
 $case = $base; $case['request_id'] = 'public-acf-boundary-1005'; $case['payload']['fields'] = array('field_portfolio_stat_1_value' => array('not' => 'text')); $cases['non-string value'] = $case;
