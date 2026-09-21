@@ -1,0 +1,77 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-b01-live-20260921",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-21T11:41:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "985d0a84b7228e0840471aa6e9abd90e064d48c32f8ca49e63c1dea21c20f40b",
+            "after_fingerprint": "5e9564f81e73c1904393118c5dfb7dc320ae222e551f24f27364bdd4ead870a5"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "49ab98c008145f14f2f025fbe3ff539cdd24c3137f3d94085f85d7e39392ef5d",
+            "after_fingerprint": "c42a4b31307636dc2b31afe16ad29c46e53d59dd47f82d6626969e38ec20c94a"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "abf346f50fa7338d4bb94a5a80035ac5c3610a20c07383b1848a6f262530967b",
+            "after_fingerprint": "6087ec39691f644a49023a1d452577ec774155e850288d3eed42ec9595da6165"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "c6a7df965f73f368512b8609d5b9e324c19936bc4549f05b5dc685cd71c79a93",
+            "after_fingerprint": "58e1be81064ee1a5de12ae38ca3ff8ea504610a87ef3c4295f2d5cd5286840f1"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "d462cef30cda0d0a87589970cf19e42c8eae0ba10e3bff2aa07af1d3b487c118",
+            "after_fingerprint": "56842936d4c7811d1a98735e67e3f518f7eeb796fff3dcab4bb79bdfaa8dc3cb"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8e0ee20f8515118117148115166b83e336d994a524e34b206b829fab671bcb23",
+            "after_fingerprint": "4a3b1b30b157bc98882637979d321f7814556cdaa7a720d47faef357dde32a95"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0fc2045dbb034fb7bf651a4547efd002a258b0a64e3a84ac00b0f38b8526c674",
+            "after_fingerprint": "d429f8910a7b65d9d5dbcb04278edc03432afa76a31e21b0585cc943f4c32176"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ba56cf9297daa800faeec5f911c401d30bcf8a920c27c8d8b57ee142c50f4470",
+            "after_fingerprint": "ed60ee15d6e1df7623f28e009a3f814d855894aa792abdc9e243d16f85b227fa"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "82a600330e2997ce5953dd4fd11efec69c4eda17c365f74d011fb1fe2ab7f3db",
+            "after_fingerprint": "4d492d8c75c5fa89d691c1c720a4b0a2f7e7da6cf15ca15f3b2f5bbf3aeaea67"
+        }
+    ],
+    "rollback_available": true
+}
