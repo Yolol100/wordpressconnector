@@ -29,6 +29,7 @@ final class Policy
         'post.update',
         'acf.update',
         'acf.portfolio_stats_update',
+        'portfolio.case_text_update',
         'acf.field_groups',
         'acf.schema.ensure_text_fields',
         'elementor.inspect',
