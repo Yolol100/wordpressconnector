@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-post-search-kirpal-20260921",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-21T11:29:02+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [],
+    "page": 1,
+    "per_page": 10,
+    "total": 0,
+    "pages": 0,
+    "readback_verified": null
+}
