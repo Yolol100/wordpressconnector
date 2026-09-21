@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "portfolio-kroessvisser-live-20260921",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-21T21:34:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "stale_target"
+}
