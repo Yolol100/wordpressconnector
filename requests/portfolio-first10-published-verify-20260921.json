@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-first10-published-verify-20260921",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4933,
+          "content": "<!-- wp:paragraph -->\n<p>Rhapsody Healthcare’s WordPress experience centres on care routes, locations and registration, giving clients, families and referrers a simpler way to find relevant support.</p>\n<!-- /wp:paragraph -->"
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4933,
+          "fields": {
+            "field_69deb8ddbcd8d": "Clients, relatives and referrers arrive with different questions about assisted living, day activities, guidance, eligibility and locations. Mixing those needs into one broad care story would make it harder to understand what support applies and what practical step comes next.",
+            "field_69deb8e4bcd8e": "Care services, locations and practical information each received a distinct place in the journey. I kept the wording and sections compact, then connected relevant pages to registration, contact and introductory-conversation routes. On mobile, those priorities remain in a predictable order rather than becoming one long care-information page."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4470,
+          "content": "<!-- wp:paragraph -->\n<p>Ten Bruggen’s WordPress site translates accountancy, tax, payroll and financial guidance into four recognisable service routes, with appointment booking available when visitors are ready.</p>\n<!-- /wp:paragraph -->"
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4470,
+          "fields": {
+            "field_69deb8ddbcd8d": "Business owners and private clients can arrive with very different financial questions, often without knowing the accounting term for the service they need. Long explanations or specialist language would make that first choice harder, especially on smaller screens.",
+            "field_69deb8e4bcd8e": "I arranged the site around recognisable financial questions and separated accountancy, tax, payroll and wider guidance before introducing deeper detail. Plain-language headings keep the first decision lightweight, while contact and appointment actions appear once visitors have enough context to choose the appropriate route."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4448,
+          "content": "<!-- wp:paragraph -->\n<p>Events and courses form two distinct paths in the WordPress site I shaped for Stichting Sanatolia, keeping cultural discovery and participation easy to understand.</p>\n<!-- /wp:paragraph -->"
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4448,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sanatolia combines theatre, cultural events and a broad course programme for different ages and interests. A single list would make activities such as drawing, folk dance, guitar, saz and creative drama harder to distinguish and weaken the organisation’s cultural character.",
+            "field_69deb8e4bcd8e": "I split the experience into event discovery and course participation, then kept practical details, tickets and joining actions beside the activity they belong to. The visual hierarchy gives cultural content room to feel expressive without hiding useful information, while mobile cards preserve a simple reading order."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1241,
+          "content": "I built Werken bij EFE as a recruitment journey rather than a vacancy list, connecting role discovery, employer context and the application process."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1241,
+          "fields": {
+            "field_69deb8ddbcd8d": "With many live vacancies, candidates could easily focus on job titles while missing the information needed to judge EFE as an employer. Vacancy lists, role details and application actions also become harder to follow when compressed onto mobile screens.",
+            "field_69deb8e4bcd8e": "Vacancy discovery stays prominent, but I connected it to role information, employer context and a defined application sequence. Simple headings and predictable mobile ordering help candidates move from finding a position to understanding it and applying, without turning the site into an endless list of openings."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1303,
+          "content": "RBMB is a WooCommerce webshop focused on product choice, connecting building-material categories with practical guidance so professionals and DIY customers can move from a job to suitable products."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1303,
+          "fields": {
+            "field_69deb8ddbcd8d": "Tradespeople and DIY buyers may know the building task they need to complete without knowing the exact product, quantity or preparation method. A broad catalogue therefore risks becoming difficult to navigate when categories, technical context and buying actions compete for attention.",
+            "field_69deb8e4bcd8e": "I structured the webshop around practical product groups such as egaline, mortar, primers, coatings, adhesives, tools and insulation, with guides supporting choices that need extra context. Product pages carry deeper detail before cart actions, while mobile keeps category entry points, product cards and purchasing actions easy to scan."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1366,
+          "content": "Enspect’s WordPress site turns technical inspection routes into a clearer journey, from identifying the relevant SCIOS or NEN check to requesting a quote."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1366,
+          "fields": {
+            "field_69deb8ddbcd8d": "A facility or technical contact may know an inspection is required without knowing whether SCIOS Scope 8, 10 or 12, a NEN inspection or thermography applies. Presenting every standard at once would create a wall of technical terminology before the first useful decision.",
+            "field_69deb8e4bcd8e": "I separated inspection types into individual service routes and placed practical explanations beside each option instead of inside generic company copy. The journey then moves toward quotation and reporting context through short sections that preserve their order on mobile without making unsupported safety or compliance promises."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1352,
+          "content": "Business security starts with a situation, so I designed Leeuwbeveiliging around location, event and operational needs instead of a flat list of services."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1352,
+          "fields": {
+            "field_69deb8ddbcd8d": "Security clients often start with a situation, not a service name. Guarding, crowd management and risk planning therefore had to be differentiated without relying on fear-based messaging, vague expertise claims or broad promises about outcomes that depend on the actual assignment.",
+            "field_69deb8e4bcd8e": "I made client situations the entry point and connected them to the relevant security service, with credibility information supporting the decision where appropriate. Enquiry actions appear after enough context to describe the assignment, while calm wording and a consistent mobile sequence keep the journey practical rather than promotional."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1367,
+          "content": "Doctorcura’s WordPress journey is structured around treatment information, medical review and pharmacy follow-up, so patients can understand the sequence without it resembling a simple checkout."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1367,
+          "fields": {
+            "field_69deb8ddbcd8d": "Online treatment cannot be presented like an ordinary ecommerce purchase. Patients need to distinguish information, medical questions, clinician review and practical follow-up without the interface implying automatic approval, diagnosis, safety or treatment outcomes.",
+            "field_69deb8e4bcd8e": "I ordered the experience around the care process: treatment context first, then the questionnaire and review stages, followed by prescription and delivery information where relevant. Direct labels, nearby safeguards and a defined mobile form sequence explain what happens next without turning a clinically reviewed service into a buy-now flow."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1369,
+          "content": "The Koelcellenbouw WordPress site separates cold rooms, freezer rooms, cleanrooms and turnkey work into distinct project routes that lead from technical context towards quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1369,
+          "fields": {
+            "field_69deb8ddbcd8d": "Controlled-temperature projects differ by use, temperature range, size and technical requirements, so one generic service page would hide important distinctions. Visitors need enough information to recognise the relevant route without processing specifications that may not apply to their situation.",
+            "field_69deb8e4bcd8e": "I gave each build type its own route and placed technical considerations where they help a company judge fit before requesting a quotation. Project examples support the service context without implying identical future outcomes, and the same hierarchy carries onto mobile so detailed information does not overwhelm the initial choice."
+          }
+        }
+      }
+    ]
+  }
+}
