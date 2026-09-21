@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kroessvisser-case-live-20260921",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-21T21:36:30+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1391,
+    "readback_verified": true,
+    "before_fingerprint": "ac10e79d77d3f1ae4a12a04291e7b30e1fd0a0e53b8b1061511de41ab3e4f460",
+    "after_fingerprint": "d704da6d2fb69578bd3c455f0f5dd9b46096787b293cc7c08df24ebf0054f829",
+    "rollback_available": true
+}
