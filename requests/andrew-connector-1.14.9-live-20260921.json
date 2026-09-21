@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrew-connector-1.14.9-live-20260921",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "5e06272d23aadd0c5777edc22ef41f6f0b5d41f9b5c1d7b687650c05aeca5d44",
+  "payload": {}
+}
