@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p64-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1839,
+    "content": "A B2B risk, compliance and certification WordPress website helping organisations distinguish ISAE, ISO, information-security and control services before moving to a quickscan or consultation.",
+    "description_1": "Business clients may know they face a compliance, audit or control requirement without knowing whether ISAE, ISO, risk management or another framework applies. Dense specialist terminology could make those routes harder to distinguish before an advisory conversation begins.",
+    "description_2": "I separated risk management, compliance, certification and control topics into recognisable service routes, supported by quickscan and consultation actions. Recruitment and IT-detachering content remain available for a second audience without competing with the primary advisory journey. This keeps technical detail available without making the first decision dependent on specialist terminology."
+  },
+  "expected_fingerprint": "a7557e3971570a0436d9187cb83e201be4356ed4f80f391722561c1aaa17dec0"
+}
