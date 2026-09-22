@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p54-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1431,
+    "content": "A WooCommerce recovery-products webshop helping shoppers compare massage guns and accessories, understand product differences and move from product education to checkout.",
+    "description_1": "Palmeroshop offers recovery products that can look similar, especially to shoppers who are new to massage guns or related wellness equipment. Product pages therefore need to explain practical differences without turning general product information into medical advice.",
+    "description_2": "I shaped Palmeroshop so shoppers can move from the recovery category to individual products and compare the details that belong to the purchase decision. Product information, pricing and cart actions remain connected, while supporting explanations help customers understand the equipment without presenting it as a guaranteed medical solution."
+  }
+}
