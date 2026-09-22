@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p78-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 2473,
+    "content": "A WordPress media-management plugin combining metadata editing, CSV import and export, usage scanning and controlled ZIP exports within one admin workflow.",
+    "description_1": "Modern Image Manager brings WordPress media tasks into one admin workflow, which is useful but also risky. Editing metadata is simple compared with renaming files, importing CSV changes or deleting attachments, because those actions can affect URLs and references across the site.",
+    "description_2": "I shaped Modern Image Manager as a WordPress admin interface for metadata editing, CSV import and export, usage scanning and ZIP exports. Requests are validated before higher-risk actions run, and filename changes preserve the current extension. Supporting information stays close to the choice it is meant to clarify."
+  }
+}
