@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p57-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1434,
+    "content": "An interior and renovation WordPress website helping visitors explore sanitary, flooring, tiles, window decoration and room solutions before moving to showroom advice, an appointment or quotation.",
+    "description_1": "Visitors are choosing between several interior categories and room-based solutions, not simply one sustainable-home measure. The website needed to make products, inspiration and renovation services understandable together while keeping showroom advice and project contact close to the relevant decision.",
+    "description_2": "I grouped the experience around product categories such as sanitary, flooring, tiles and window decoration, supported by room solutions, renovation work and completed projects. Showroom advice, appointments and quotation actions then turn visual inspiration into a practical route without making sustainability claims the centre of the case."
+  },
+  "expected_fingerprint": "12b668a7a573d8e2e4d76dc6704cc6d9ce10a82af981f64561b239da562eed5a"
+}
