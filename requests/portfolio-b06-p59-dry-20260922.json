@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p59-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1439,
+    "content": "A B2B insulation WordPress website presenting Marcos Montage’s insulation services, project experience, certificates and partners before guiding contractors towards a quotation.",
+    "description_1": "The business is focused on insulation projects rather than general installation and finishing work. Contractors need to understand the insulation scope, project experience and company context before deciding whether Marco’s Montage fits a specific construction assignment.",
+    "description_2": "I organised the site around insulation as the primary service, supported by completed projects, company information, certificates, partners and a direct quotation route. Equipment rental remains separate through Marco Verhuurt, preventing the rental offer from diluting the main B2B insulation proposition."
+  }
+}
