@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p56-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1432,
+    "content": "A sustainable-energy WordPress website helping homeowners compare solar panels, inverters, charging and storage solutions before requesting postcode-based advice or a quotation.",
+    "description_1": "The current offer is centred on energy products and package combinations, not roof construction. Visitors need to compare generation, storage, charging and inverter choices without being led into a roof-and-solar decision that the live service structure no longer reflects.",
+    "description_2": "I structured the journey around individual energy solutions and the available package combinations. Product routes explain solar panels, inverters, charging and storage first, while postcode-based advice and quotation actions provide the next step without treating projected savings, payback or installation timing as portfolio results."
+  }
+}
