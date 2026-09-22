@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p70-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1891,
+    "content": "A midwifery WordPress website organising pregnancy, birth and postnatal-care information around the stages expectant parents need most, with location and contact routes kept close to each stage.",
+    "description_1": "Expectant parents need different information during pregnancy, preparation for birth and the postnatal period. Mixing those stages into generic family-care content would make important maternity information harder to find and incorrectly position a midwifery practice as childcare.",
+    "description_2": "I shaped the information around pregnancy, birth and postnatal care so each stage has its own practical context and relevant contact route. The calm hierarchy helps expectant parents move through the maternity journey without turning medical care into promotional promises or unsupported outcome claims."
+  },
+  "expected_fingerprint": "5868258352e95b713e38272687b0fbee210d9ea7d7dab2af8051bf34f212169d"
+}
