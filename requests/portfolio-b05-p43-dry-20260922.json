@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-p43-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1418,
+    "content": "A driving-school WordPress website guiding learner drivers through lesson options, packages, pricing, exam information and trial-lesson registration.",
+    "description_1": "Sodrive needs to help learner drivers compare lesson options before they are ready to book. Packages, pricing, exam preparation and practical information all matter, but they answer different questions at different stages.",
+    "description_2": "I structured Sodrive around the decisions a learner makes before booking. Lesson types and packages provide the first comparison, followed by pricing, exam information and practical details that help someone understand what the route involves. Relevant actions remain close to the information needed for the next step."
+  }
+}
