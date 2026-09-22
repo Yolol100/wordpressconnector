@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p60-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1714,
+    "content": "A humanitarian nonprofit WordPress website connecting Hasene’s projects and campaigns with clear donation, participation and organisational information.",
+    "description_1": "Hasene communicates humanitarian work to people who may arrive with different intentions: learning about a project, supporting a campaign, donating or understanding the organisation. Emotional stories matter, but they cannot replace clear information about what a campaign is for and how someone can participate.",
+    "description_2": "I structured Hasene around its humanitarian projects and campaigns, giving visitors context before presenting the relevant participation or donation route. Project information explains what the initiative concerns, while organisational details help people understand who is behind the work. Relevant actions remain close to the information needed for the next step."
+  },
+  "expected_fingerprint": "0a094ffff79fa8833f92c9c015121df59f3b5545f0fc52550765f5550e27b3e2"
+}
