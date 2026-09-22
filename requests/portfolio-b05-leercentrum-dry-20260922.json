@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-leercentrum-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1417,
+    "content": "A driving-school WordPress website helping learners compare manual and automatic lessons, packages, prices, refresher training and trial-lesson options.",
+    "description_1": "Learners need to compare manual and automatic driving lessons, prices, packages and practical conditions before starting. Others arrive specifically for refresher training, so treating everything as one generic course journey would hide important differences between those decisions.",
+    "description_2": "I structured the site around manual and automatic lesson routes, followed by package pricing and trial-lesson information. Refresher training and regional availability remain separate where needed, while enquiry and registration forms appear after visitors have enough context to choose their next step."
+  }
+}
