@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-live-20260922",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1415,
+          "content": "A B2B horticultural-services WordPress website helping growers compare staffing, crop work, potting, labelling and equipment rental before requesting a quotation."
+        },
+        "expected_fingerprint": "56a2bf0a938758206fc808cf7635d6da7bea8ef0e970465e4963ae744cfb5587"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1415,
+          "fields": {
+            "field_69deb8ddbcd8d": "Tasveren combines horticultural production with staffing, potting work and rental services. Visitors need to distinguish operational tasks such as crop support, pot and tray filling, labelling and equipment rental without working through broad or unrelated horticulture information.",
+            "field_69deb8e4bcd8e": "I separated the experience into recognisable routes for staffing, produce and crop work, potting services and rental. Facility tasks such as filling pots and trays and labelling remain connected to their operational context, while quotation actions give business customers a direct next step."
+          }
+        },
+        "expected_fingerprint": "f68b5045eb6a63243a36afc15f7bd393b39bb6c2cbb4576aa4c582c75c688019"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1417,
+          "content": "A driving-school WordPress website helping learners compare manual and automatic lessons, packages, prices, refresher training and trial-lesson options."
+        },
+        "expected_fingerprint": "4f3cd5993313c2e630b80f1fbae6fce9553e25754d93ee10ccc2dba6f990fd4d"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1417,
+          "fields": {
+            "field_69deb8ddbcd8d": "Learners need to compare manual and automatic driving lessons, prices, packages and practical conditions before starting. Others arrive specifically for refresher training, so treating everything as one generic course journey would hide important differences between those decisions.",
+            "field_69deb8e4bcd8e": "I structured the site around manual and automatic lesson routes, followed by package pricing and trial-lesson information. Refresher training and regional availability remain separate where needed, while enquiry and registration forms appear after visitors have enough context to choose their next step."
+          }
+        },
+        "expected_fingerprint": "43b4f108046e01fb6950e5d7d93b169e2c42fe05f63f5cd0ae8f15d9a14d2829"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1418,
+          "content": "A driving-school WordPress website guiding learner drivers through lesson options, packages, pricing, exam information and trial-lesson registration."
+        },
+        "expected_fingerprint": "6909dfba4eafcbc4c083db395eb92e0c7bc2b904d48743efaa55e7468010e5a8"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1418,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sodrive needs to help learner drivers compare lesson options before they are ready to book. Packages, pricing, exam preparation and practical information all matter, but they answer different questions at different stages.",
+            "field_69deb8e4bcd8e": "I structured Sodrive around the decisions a learner makes before booking. Lesson types and packages provide the first comparison, followed by pricing, exam information and practical details that help someone understand what the route involves. Relevant actions remain close to the information needed for the next step."
+          }
+        },
+        "expected_fingerprint": "a60560defd143e723c2dbb1ee67dea2cb95b72cd0d2789dd8ee0af779e33cb00"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1416,
+          "content": "An automotive lead-generation WordPress website guiding car owners from vehicle details and valuation interest through the selling process to an offer and handover."
+        },
+        "expected_fingerprint": "760c81ae3e86b3f127640799a8b3d7898eda598b798333b4ad85fb29275ece5d"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1416,
+          "fields": {
+            "field_69deb8ddbcd8d": "Autoinkoopatlas serves car owners who want to sell a vehicle and need to understand what happens before they submit their details. A seller may want a valuation, information about the selling process or reassurance about the handover.",
+            "field_69deb8e4bcd8e": "I arranged Autoinkoopatlas around the seller's journey from orientation to vehicle submission. The site explains the selling steps and relevant trust information before asking for the details needed for a valuation or follow-up. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        },
+        "expected_fingerprint": "53172ab92365ecc21e1a8548c5e66157b373530c9a1f36a46b8dbae9ae376fe2"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1422,
+          "content": "A bookkeeping WordPress website helping entrepreneurs understand bookkeeping, tax work, annual accounts and support packages before making an enquiry."
+        },
+        "expected_fingerprint": "971f2e66482a6e2f6dad76a1f52f329d712a6a1b17246a94f265208169ccd954"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1422,
+          "fields": {
+            "field_69deb8ddbcd8d": "Boekhoudsnel has to make bookkeeping services understandable to entrepreneurs who may be comparing packages as well as individual tasks. Bookkeeping, tax work and annual accounts often belong together, but a visitor still needs to know what is included and when a package or direct conversation is appropriate.",
+            "field_69deb8e4bcd8e": "I designed Boekhoudsnel around the accounting tasks an entrepreneur is likely to recognise first, then connected them to package information where comparison is useful. Bookkeeping, tax work and annual accounts each have clear explanations, while packages show how recurring support can be grouped without hiding the underlying services."
+          }
+        },
+        "expected_fingerprint": "4d9b59fedc03353e38559cda763c97a7480009dee463a56b38e7822f0a33cadd"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1419,
+          "content": "A sustainable-energy WordPress website helping homeowners compare solar panels, charging stations, home batteries and heat pumps before requesting tailored advice or a quotation."
+        },
+        "expected_fingerprint": "d0337eec59f403d1783edf5252d3c70b4f0051549524c817900a20c031e5f70c"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1419,
+          "fields": {
+            "field_69deb8ddbcd8d": "Solar panels, charging stations, home batteries and heat pumps each involve different questions about suitability and installation. Presenting them as one generic electrical service would make it harder for homeowners to identify which energy route matches their situation.",
+            "field_69deb8e4bcd8e": "I separated the four energy solutions into distinct routes and connected them to practical information and a postcode-based check. Monitoring and supporting energy information remain available where relevant, while quotation and advice actions follow the product context instead of treating every household as the same installation."
+          }
+        },
+        "expected_fingerprint": "49eda6f9f503ef199457a38bef9953846ff8cca55d7108a27aeae2a3753015c6"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1423,
+          "content": "A WooCommerce grocery webshop helping customers browse fresh fruit and vegetables, review product details and quantities, and move quickly from category discovery to cart."
+        },
+        "expected_fingerprint": "7058f415cde0c93df6884ccdaccce8c8f5b2381607a423d5ad82c2bf9ecb3442"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1423,
+          "fields": {
+            "field_69deb8ddbcd8d": "Jouwgroenteboer is a WooCommerce grocery shop where customers may browse fruit and vegetables by habit or need. Product freshness is important to the business, but the webshop still has to help people find items, understand quantities and move into the cart without making every product page feel identical.",
+            "field_69deb8e4bcd8e": "I arranged Jouwgroenteboer around fast category discovery and repeatable product decisions. Fruit, vegetables and related produce groups give shoppers a clear starting point, while product pages provide the quantity, price and relevant details needed before adding an item to the cart."
+          }
+        },
+        "expected_fingerprint": "dde40cd94cfcfa3e201250ec139cfcf6f05885795060eddbba1205b9a695de41"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1424,
+          "content": "A home-installation WordPress website helping homeowners navigate heating, climate and maintenance services before requesting advice or a quotation."
+        },
+        "expected_fingerprint": "03ed7efbb72d8439e0edb054cf5d23958ebdcc2d7e4efb13bc7c09f8eb0a20ec"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1424,
+          "fields": {
+            "field_69deb8ddbcd8d": "Kervana serves homeowners who may know they have a heating or climate problem without knowing which technical service they need. Heating, cooling, maintenance and installation questions can overlap, especially when an existing system is involved.",
+            "field_69deb8e4bcd8e": "I structured Kervana around the type of question a homeowner is likely to bring to the site. Heating, climate solutions and maintenance each have a clear route, with supporting information introduced after the visitor has chosen the area that fits the situation."
+          }
+        },
+        "expected_fingerprint": "0bb37a9233852c6aabe03e8355eb62cc512c8de8562fae2a4f347d6ed397bc91"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1427,
+          "content": "An electrical-services WordPress website helping visitors distinguish electrical work, charging and other energy solutions before moving to project information or contact."
+        },
+        "expected_fingerprint": "b5a9503696fdd96a07c12c874f90b8fbecdce189f54d6c3dd7b6b406b5d229e6"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1427,
+          "fields": {
+            "field_69deb8ddbcd8d": "Envolt combines electrical work with energy solutions, so visitors can arrive with different starting points. One person may need an electrical installation, while another is exploring charging or energy-related improvements.",
+            "field_69deb8e4bcd8e": "I designed Envolt around separate technical needs instead of one long list of capabilities. Electrical work, energy solutions and related project information each have their own place, so visitors can start with the question they recognise and then read the details that matter for that route."
+          }
+        },
+        "expected_fingerprint": "b80198b4f7c6af0eb0bee75a94ee47fe229ffc79c7a9f526a34509dd2f06c15d"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1426,
+          "content": "A wedding photography and film WordPress portfolio showcasing films, photography, couple stories and galleries before guiding prospective couples towards an enquiry."
+        },
+        "expected_fingerprint": "7a9599306d5d65bc7c571ce311e122afb89e68c171ff77b62acce6558520be71"
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1426,
+          "fields": {
+            "field_69deb8ddbcd8d": "Ozturkmotionpictures has to win trust through creative work, but couples still need practical information before choosing a wedding filmmaker. A showreel communicates style, but it does not explain what is included, how the service works or how someone can make contact.",
+            "field_69deb8e4bcd8e": "I placed Ozturkmotionpictures' film work at the centre of the WordPress experience, then added service context around the moments when a couple is likely to ask practical questions. Wedding films and visual examples establish the creative direction first, while concise explanations clarify the offer without interrupting the viewing experience."
+          }
+        },
+        "expected_fingerprint": "07e8bc380eed2c413a14c285c5181fcdc849a2c82388b9e4145d2d1a2f0f1459"
+      }
+    ]
+  }
+}
