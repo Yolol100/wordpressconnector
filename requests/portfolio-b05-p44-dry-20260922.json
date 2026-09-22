@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-p44-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1416,
+    "content": "An automotive lead-generation WordPress website guiding car owners from vehicle details and valuation interest through the selling process to an offer and handover.",
+    "description_1": "Autoinkoopatlas serves car owners who want to sell a vehicle and need to understand what happens before they submit their details. A seller may want a valuation, information about the selling process or reassurance about the handover.",
+    "description_2": "I arranged Autoinkoopatlas around the seller's journey from orientation to vehicle submission. The site explains the selling steps and relevant trust information before asking for the details needed for a valuation or follow-up. This keeps the main route understandable while deeper detail remains available when needed."
+  }
+}
