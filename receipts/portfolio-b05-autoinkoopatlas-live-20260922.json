@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-autoinkoopatlas-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T10:48:22+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1416,
+    "readback_verified": true,
+    "before_fingerprint": "11bb12dd37429d93a3742efe0ac81b26c8aae2d7e2538a72fc1f1f6fb9f62623",
+    "after_fingerprint": "8b2c59d840d0baecc0fb2c09ea5731ec48b0a31d271cff47a20052f63b065320",
+    "rollback_available": true
+}
