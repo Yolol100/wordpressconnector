@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p58-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1435,
+    "content": "An education WordPress website helping students and parents compare tutoring, homework support, exam preparation and other programmes before choosing a trial lesson or registration route.",
+    "description_1": "Oxfordacademy needs to help students and parents compare programmes without making the website feel like a long course catalogue. A visitor may be checking the subject, schedule, level or practical requirements before deciding whether a programme fits.",
+    "description_2": "I shaped Oxfordacademy so programmes provide the first decision point, followed by the details students and parents need to judge fit. Course information, schedules and practical requirements stay close to the relevant programme instead of being repeated across unrelated sections."
+  },
+  "expected_fingerprint": "a85d5deb80e1e6102c18ead5c2738915e8f500575cd1ea5411a434356e21252e"
+}
