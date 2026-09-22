@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p77-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 2283,
+    "content": "A WordPress content-management plugin helping administrators export ACF and page text for spreadsheet review and import validated edits back through a controlled workflow.",
+    "description_1": "ACF CSV Manager began as a way to make structured WordPress content easier to review outside separate editing screens. Exporting ACF-oriented data to CSV can help with bulk review, but importing changes back creates risk when rows, fields or content ownership are unclear.",
+    "description_2": "I developed ACF CSV Manager as an earlier workflow for exporting ACF-related content into a reviewable spreadsheet format and returning approved updates through WordPress. The design demonstrated how bulk text work could be organised without opening every page individually, while keeping the import process separate from normal editing."
+  }
+}
