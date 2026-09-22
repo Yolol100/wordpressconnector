@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-jouwgroenteboer-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1423,
+    "content": "A WooCommerce grocery webshop helping customers browse fresh fruit and vegetables, review product details and quantities, and move quickly from category discovery to cart.",
+    "description_1": "Jouwgroenteboer is a WooCommerce grocery shop where customers may browse fruit and vegetables by habit or need. Product freshness is important to the business, but the webshop still has to help people find items, understand quantities and move into the cart without making every product page feel identical.",
+    "description_2": "I arranged Jouwgroenteboer around fast category discovery and repeatable product decisions. Fruit, vegetables and related produce groups give shoppers a clear starting point, while product pages provide the quantity, price and relevant details needed before adding an item to the cart."
+  }
+}
