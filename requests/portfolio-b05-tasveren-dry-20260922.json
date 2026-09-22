@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-tasveren-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1415,
+    "content": "A B2B horticultural-services WordPress website helping growers compare staffing, crop work, potting, labelling and equipment rental before requesting a quotation.",
+    "description_1": "Tasveren combines horticultural production with staffing, potting work and rental services. Visitors need to distinguish operational tasks such as crop support, pot and tray filling, labelling and equipment rental without working through broad or unrelated horticulture information.",
+    "description_2": "I separated the experience into recognisable routes for staffing, produce and crop work, potting services and rental. Facility tasks such as filling pots and trays and labelling remain connected to their operational context, while quotation actions give business customers a direct next step."
+  }
+}
