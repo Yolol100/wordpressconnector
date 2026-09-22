@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p55-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1433,
+    "content": "A comparison and lead-generation WordPress website helping visitors understand home-clearance services, compare local providers and submit a relevant quote request.",
+    "description_1": "Woningontruimingvergelijken serves people who may be arranging a clearance during a move, estate situation or property handover. They often need to understand what a clearance can include before comparing providers, and local availability may matter.",
+    "description_2": "I arranged Woningontruimingvergelijken around the questions that come before a quote request. Practical information helps visitors define the clearance need first, after which the platform can guide them toward provider comparison and a request containing the details that matter. This keeps the main route understandable while deeper detail remains available when needed."
+  }
+}
