@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b08-p80-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T21:23:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 3660,
+    "readback_verified": true,
+    "before_fingerprint": "11a1b0dc66359ecbe0e7b631ba9ce884aa5d92b6c6a4104918722bb7d2f26942",
+    "after_fingerprint": "68df54b25e726f266877efd6c5c17bb5852e7b1362e90bb70cb488a1eb072160",
+    "rollback_available": true
+}
