@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p51-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1429,
+    "content": "A real-estate investment WordPress website presenting Odetra’s international property opportunities and project context before guiding investors towards further information or contact.",
+    "description_1": "Odetra presents property investment opportunities, where visitors need more than an attractive project image before deciding whether to ask for details. Investors need to understand the opportunity, project context and relevant information before they are ready for contact.",
+    "description_2": "I arranged Odetra so each property opportunity can be understood through its own project context before a visitor reaches the enquiry step. The WordPress structure separates the overview from deeper information, allowing investors to scan available projects first and then focus on the details that are relevant to a specific opportunity."
+  }
+}
