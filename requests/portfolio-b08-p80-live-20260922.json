@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p80-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 3660,
+    "content": "A portfolio-led architecture WordPress website placing large project imagery first while supporting it with clear project browsing, studio mission and team information across desktop, tablet and mobile.",
+    "description_1": "Spring architecten needs a portfolio that lets the work establish credibility before visitors read a long explanation of the studio. Prospective clients often start with project type, visual character and relevance.",
+    "description_2": "I structured Spring architecten around project imagery and the information that helps a prospective client understand each piece of work. Projects come forward first, with architectural context and studio information supporting the visual evidence rather than competing with it. Relevant actions remain close to the information needed for the next step."
+  },
+  "expected_fingerprint": "11a1b0dc66359ecbe0e7b631ba9ce884aa5d92b6c6a4104918722bb7d2f26942"
+}
