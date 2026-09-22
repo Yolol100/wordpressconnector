@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-kervana-dry-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-22T10:45:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1424,
+    "readback_verified": null,
+    "before_fingerprint": "f20066d081b11aedfcb74e91c356bcf5700205ecf298ed436051066e1699763f",
+    "after_fingerprint": "34c5c686b3c19268d24249b5e311933575b4681c61d02742e0b04971d015463a"
+}
