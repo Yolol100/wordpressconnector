@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p65-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1855,
+    "content": "A business-address WordPress website helping entrepreneurs compare registration-address packages, locations, post handling and scanning options before starting a structured application.",
+    "description_1": "Bedrijfspostadres serves entrepreneurs who need a business address but may be comparing combinations of registration, post handling and scanning. The service seems simple until package details, account access and practical conditions are added.",
+    "description_2": "I designed Bedrijfspostadres around the steps an entrepreneur takes before choosing a package. The core address service is explained first, followed by post handling, scanning and the differences that matter between available options. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+  },
+  "expected_fingerprint": "67c96cde1aaf5889bf47dad8a163f358fa0bb00acd94485242dc43cd7f55d627"
+}
