@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p67-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1877,
+    "content": "An automotive booking WordPress website helping drivers select a vehicle, choose maintenance, APK, repair or specialist services and move directly towards an appointment.",
+    "description_1": "Fixfinder covers a large range of automotive services, while drivers may start with their vehicle and a maintenance or repair need rather than the exact technical service name. A traditional garage directory would make that choice unnecessarily difficult.",
+    "description_2": "I organised the journey around vehicle identification and service selection first. Drivers can then choose the relevant APK, maintenance, repair or specialist service and continue into date, time and location selection, turning a broad automotive catalogue into a defined appointment flow."
+  },
+  "expected_fingerprint": "f69cb780e81de515dccc99dc8bdd54c888a2d4bd13adf41484c5d7c5fa4d57e2"
+}
