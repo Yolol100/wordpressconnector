@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-voltworks-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1419,
+    "content": "A sustainable-energy WordPress website helping homeowners compare solar panels, charging stations, home batteries and heat pumps before requesting tailored advice or a quotation.",
+    "description_1": "Solar panels, charging stations, home batteries and heat pumps each involve different questions about suitability and installation. Presenting them as one generic electrical service would make it harder for homeowners to identify which energy route matches their situation.",
+    "description_2": "I separated the four energy solutions into distinct routes and connected them to practical information and a postcode-based check. Monitoring and supporting energy information remain available where relevant, while quotation and advice actions follow the product context instead of treating every household as the same installation."
+  }
+}
