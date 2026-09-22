@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-ozturkmotionpictures-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d2c2401f30c220709abb00bd916114ef8361c616ff2e6a0de83c699ad2f3d09e",
+  "payload": {
+    "post_id": 1426,
+    "content": "A wedding photography and film WordPress portfolio showcasing films, photography, couple stories and galleries before guiding prospective couples towards an enquiry.",
+    "description_1": "Ozturkmotionpictures has to win trust through creative work, but couples still need practical information before choosing a wedding filmmaker. A showreel communicates style, but it does not explain what is included, how the service works or how someone can make contact.",
+    "description_2": "I placed Ozturkmotionpictures' film work at the centre of the WordPress experience, then added service context around the moments when a couple is likely to ask practical questions. Wedding films and visual examples establish the creative direction first, while concise explanations clarify the offer without interrupting the viewing experience."
+  }
+}
