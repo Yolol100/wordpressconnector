@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p66-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1863,
+    "content": "An electrical-services WordPress website helping homeowners and businesses navigate installations, lighting, PV, batteries, heat pumps and maintenance before requesting advice or a quotation.",
+    "description_1": "Dmelektro works for homeowners and businesses that may arrive with an electrical problem, an installation project or a maintenance need. Those situations require different information, and a broad list of electrical services would not help visitors judge urgency, scope or the right next step.",
+    "description_2": "I shaped Dmelektro around the type of electrical need rather than a single generic service page. Installation work, maintenance and other technical support have clear routes, with practical information introduced where it helps someone understand what to describe in an enquiry."
+  }
+}
