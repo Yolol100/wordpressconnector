@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b06-p56-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T19:08:57+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1432,
+    "readback_verified": true,
+    "before_fingerprint": "1d93f6932cfad5e13c75193c67edf8d3f278535ee2cade7610cdf1747d790488",
+    "after_fingerprint": "e6fcd3451f9263fc9cc4f809dcb2565a2e8162026c6c6f6f3b7c243f48cf7f1b",
+    "rollback_available": true
+}
