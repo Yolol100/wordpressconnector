@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p71-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2173,
+    "content": "A WordPress internal-linking plugin helping administrators manage keyword-to-URL rules, exclusions, limits, reports and supported integrations from one controlled workflow.",
+    "description_1": "Super Simple Internal Links addresses a WordPress task that becomes difficult when a site has many pages and repeated internal-link opportunities. Manual editing can be inconsistent, but automatic linking also creates risk if keyword rules, exclusions and limits are not visible.",
+    "description_2": "I designed Super Simple Internal Links around a central WordPress admin workflow where keyword rules, automatic linking, exclusions, suggestions and reports stay visible. Administrators can review the configuration, maintain larger rule sets through import or export and inspect logs instead of treating link creation as a black box."
+  },
+  "expected_fingerprint": "fd8336e7814354b45797dd7119404b306789087b5ba63c480ad045056e6e9da0"
+}
