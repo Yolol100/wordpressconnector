@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p52-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1428,
+    "content": "An equipment-rental WordPress website helping customers compare machine types, reach, lifting capacity and attachments before requesting availability, advice or a tailored rental quote.",
+    "description_1": "Customers often know the height, load or site conditions of a job before they know the exact machine model. The site therefore needed to make technical specifications comparable without suggesting that every machine is available on every date or suitable for every task.",
+    "description_2": "I organised the rental offer around machine type and practical specifications such as reach, lifting capacity and attachments. Each option leads into detailed information, advice and a tailored rental request, while the same hierarchy stays usable on mobile for customers comparing equipment on location."
+  }
+}
