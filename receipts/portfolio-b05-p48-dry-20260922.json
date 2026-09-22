@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-p48-dry-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-22T17:52:10+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1424,
+    "readback_verified": null,
+    "before_fingerprint": "34c5c686b3c19268d24249b5e311933575b4681c61d02742e0b04971d015463a",
+    "after_fingerprint": "34c5c686b3c19268d24249b5e311933575b4681c61d02742e0b04971d015463a"
+}
