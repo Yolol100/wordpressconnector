@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-kervana-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "f20066d081b11aedfcb74e91c356bcf5700205ecf298ed436051066e1699763f",
+  "payload": {
+    "post_id": 1424,
+    "content": "A home-installation WordPress website helping homeowners navigate heating, climate and maintenance services before requesting advice or a quotation.",
+    "description_1": "Kervana serves homeowners who may know they have a heating or climate problem without knowing which technical service they need. Heating, cooling, maintenance and installation questions can overlap, especially when an existing system is involved.",
+    "description_2": "I structured Kervana around the type of question a homeowner is likely to bring to the site. Heating, climate solutions and maintenance each have a clear route, with supporting information introduced after the visitor has chosen the area that fits the situation."
+  }
+}
