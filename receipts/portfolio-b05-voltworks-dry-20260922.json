@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-voltworks-dry-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-22T10:44:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1419,
+    "readback_verified": null,
+    "before_fingerprint": "3631f4cee61797a8e0c60c3543796df469afe05fad27e3e71fe4b2cf2ab6bc6f",
+    "after_fingerprint": "b6c82963a944308896d534ddd2a6db2012d3bc0b8388f3d9eae5b1a5d374e715"
+}
