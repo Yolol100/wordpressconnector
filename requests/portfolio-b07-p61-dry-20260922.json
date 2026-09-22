@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p61-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1438,
+    "content": "An interior and home-renovation WordPress website helping visitors explore kitchens, bathrooms, floors, wall finishes, steel doors and custom renovation options before booking showroom advice or requesting a quote.",
+    "description_1": "Homeplaza has to help people explore home and interior options before they know the exact product or service they want. Visual inspiration can attract attention, but it creates a risk that practical categories and next steps disappear behind imagery.",
+    "description_2": "I designed Homeplaza so visual inspiration supports the main home categories instead of replacing them. Visitors can start with the type of product or service they are exploring, see relevant examples and then move into the practical information connected to that choice."
+  }
+}
