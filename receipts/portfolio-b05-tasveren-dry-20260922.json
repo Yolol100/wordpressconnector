@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-tasveren-dry-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-22T10:44:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1415,
+    "readback_verified": null,
+    "before_fingerprint": "2902b1a85df5fde598b0bfe0a26532c52cb8161657c220f6bac9b373a11619f4",
+    "after_fingerprint": "1f08c7bf0e6b0a6271ae2ba352ca42b68cda0eddf9ba3515fe6146c73f86e2ab"
+}
