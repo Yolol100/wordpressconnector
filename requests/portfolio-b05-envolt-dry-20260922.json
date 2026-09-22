@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-envolt-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1427,
+    "content": "An electrical-services WordPress website helping visitors distinguish electrical work, charging and other energy solutions before moving to project information or contact.",
+    "description_1": "Envolt combines electrical work with energy solutions, so visitors can arrive with different starting points. One person may need an electrical installation, while another is exploring charging or energy-related improvements.",
+    "description_2": "I designed Envolt around separate technical needs instead of one long list of capabilities. Electrical work, energy solutions and related project information each have their own place, so visitors can start with the question they recognise and then read the details that matter for that route."
+  }
+}
