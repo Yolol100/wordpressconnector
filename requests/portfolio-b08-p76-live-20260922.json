@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p76-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2238,
+    "content": "An admin-only WordPress developer tool for previewing, applying and rolling back structured JSON patch packages, with production patching blocked by default unless explicitly enabled.",
+    "description_1": "AI Patch Runner deals with a high-risk WordPress task: applying structured code changes to installed plugins without turning the admin area into an unrestricted file editor. A bad patch can break functionality, so speed is less important than knowing what changes, who applies it and how to recover if the result is wrong.",
+    "description_2": "I designed AI Patch Runner as an admin-only workflow for structured JSON patch packages. Preview is kept separate from execution so a proposed change can be inspected before plugin files are modified. Relevant actions remain close to the information needed for the next step."
+  },
+  "expected_fingerprint": "95d822996712183686b42184a959e9f3c407f1b3ef87c8fa9ea828be4ef1fb56"
+}
