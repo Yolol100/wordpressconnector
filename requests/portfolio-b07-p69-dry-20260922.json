@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p69-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1884,
+    "content": "A staffing WordPress website separating employer recruitment needs from candidate applications across hospitality, production, logistics and horticulture.",
+    "description_1": "QuickTemp serves employers looking for flexible staffing and candidates looking for work across several sectors. Those journeys need different information: businesses start from workforce needs and job types, while candidates need a simple way to indicate their preferred work and availability.",
+    "description_2": "I separated employer-oriented sector and staffing content from the candidate signup route. Hospitality, production, logistics and horticulture provide clear work contexts, while candidates can apply directly through a focused form instead of first navigating an unsupported vacancy catalogue. Employer and candidate actions remain separated throughout the responsive journey."
+  }
+}
