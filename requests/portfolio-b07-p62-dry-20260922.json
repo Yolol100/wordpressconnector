@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p62-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1832,
+    "content": "A cybersecurity and regulatory-consulting WordPress website helping organisations navigate risk, resilience, DORA, NIS2 and assurance services before moving to a consultation.",
+    "description_1": "Brightlyn presents cybersecurity services to organisations that may understand the risk they face without knowing which technical service should come first. Security, assessment and support topics can overlap, and a site filled with specialist terms can make decision makers feel less certain rather than more informed.",
+    "description_2": "I shaped Brightlyn around the security questions an organisation is likely to recognize before it knows the technical answer. Separate service routes explain what each area is for, while risk context and technical proof appear where they help a decision maker judge relevance."
+  }
+}
