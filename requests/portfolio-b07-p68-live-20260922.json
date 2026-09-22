@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p68-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1870,
+    "content": "A language-services WordPress website separating interpreter requests, translation support and interpreter recruitment into clear routes for clients and professionals.",
+    "description_1": "VoiceLinq serves different language-service needs: organisations and individuals may need an interpreter or translation, while professionals visit for assignments or to enter the interpreting field. Combining those intentions into one generic communication journey would make the next step unclear.",
+    "description_2": "I separated the experience into requesting an interpreter, existing-interpreter information and becoming an interpreter, while translation expertise remains part of the wider language offer. Direct calls to action keep each audience on its own route without forcing clients through recruitment content or interpreters through customer enquiries."
+  },
+  "expected_fingerprint": "8c6fc53861edeb766523a88ad6b8687be21d3300833ca3e512c12850d6562256"
+}
