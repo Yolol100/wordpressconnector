@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p74-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2223,
+    "content": "A read-only WordPress media-audit plugin helping administrators find where images are used across featured media and supported ACF fields before replacing or deleting files.",
+    "description_1": "Image Usage Scanner solves a WordPress maintenance question that is deceptively difficult: where is a media item being used? Images can appear as featured media, in normal content or inside supported ACF fields, so deleting or replacing a file based on one screen can break references elsewhere.",
+    "description_2": "I shaped Image Usage Scanner as an admin-only audit workflow that reports media relationships instead of modifying them. It checks featured images and supported ACF image or gallery fields in bounded batches, saving progress so a scan can continue after interruption."
+  },
+  "expected_fingerprint": "665ce7dd505d9afe84fbe9f0059dcd035b39065a3aa340e4f77e483ef54674d8"
+}
