@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p79-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2989,
+    "content": "A WordPress admin tool centralising ACF text, core page fields, SEO metadata and image text with inline editing plus validated CSV and XLSX workflows.",
+    "description_1": "ACF Page Text Manager addresses a WordPress editing problem created when page text lives across core fields, ACF, SEO plugins and media metadata. Reviewing content one screen at a time is slow, but bulk spreadsheets introduce their own risks when unsupported fields or media instructions are included.",
+    "description_2": "I developed ACF Page Text Manager around one WordPress admin screen for supported core fields, ACF text, SEO metadata and image text. Editors can update values inline or move selected content through CSV and XLSX workflows, with validation before imported data is processed."
+  },
+  "expected_fingerprint": "02f3a00ac190c4505b577e040e8defcefd85cc90f999c61914975f8f5b8eed3c"
+}
