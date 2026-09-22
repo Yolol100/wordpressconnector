@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-ozturkmotionpictures-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T10:49:32+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1426,
+    "readback_verified": true,
+    "before_fingerprint": "d2c2401f30c220709abb00bd916114ef8361c616ff2e6a0de83c699ad2f3d09e",
+    "after_fingerprint": "27444bf2ad1bc87495fb9e067fb2a1950bd8661658f75e9fce6285bbeecf34cf",
+    "rollback_available": true
+}
