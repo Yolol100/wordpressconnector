@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-leercentrum-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T10:48:10+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1417,
+    "readback_verified": true,
+    "before_fingerprint": "22e17dd5b779f053be15fd4efbdbf148a5f1262b173205593bee075b071e1567",
+    "after_fingerprint": "9373cf2a2c528bce732f60ec2b0c528fec2b35549145957f67c485c7954901ed",
+    "rollback_available": true
+}
