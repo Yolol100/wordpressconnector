@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p75-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2255,
+    "content": "A WordPress course-management plugin centralising schedules, start dates, course types, times, meetings, registration status and available places for responsive listings and REST integrations.",
+    "description_1": "Course Dates Manager addresses a publishing problem that appears when course information and dates are maintained in pages. Editors can end up repeating programme details, schedules and category information in several places, which makes updates harder to keep consistent.",
+    "description_2": "I developed Course Dates Manager around a dedicated course post type and taxonomy so programme information can be maintained in one structured place. A responsive shortcode renders the public overview, while paginated REST endpoints expose only published course data for integrations that need it."
+  },
+  "expected_fingerprint": "b30e9cf45dff4da55f88e10daff327d6a85c35304d060f689b90be830f56c53a"
+}
