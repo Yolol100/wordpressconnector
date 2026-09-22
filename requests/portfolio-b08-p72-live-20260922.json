@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p72-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1898,
+    "content": "An interior and showroom WordPress website helping visitors explore kitchens, appliances, bathrooms, sanitary products and tiles before moving to advice at one of the showroom locations.",
+    "description_1": "Visitors may begin with a kitchen, bathroom or individual interior product and still need to compare styles, materials and practical options before visiting a showroom. Strong imagery therefore had to inspire without hiding product categories, locations or the route to advice.",
+    "description_2": "I arranged product and inspiration content around recognisable interior categories, then connected those choices to practical information and the two showroom locations. Advice actions appear after relevant product context, helping visitors move from browsing kitchens, bathrooms or tiles towards a more informed showroom conversation."
+  },
+  "expected_fingerprint": "d9967772acc6e2373c31e66a4725cfe94ce3e9345f2693282e68af8ee8714363"
+}
