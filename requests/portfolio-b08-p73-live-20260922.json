@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b08-p73-live-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2213,
+    "content": "A driving-school WordPress website guiding learners from a free trial lesson through packages, pricing and the route to a driving licence before direct enquiry or signup.",
+    "description_1": "AC Drive needs to help learner drivers choose a lesson route before they understand differences between packages, exam preparation and requirements. A driving-school site can easily become a price list, but price alone does not explain what a learner is selecting or what the next step involves.",
+    "description_2": "I designed AC Drive around the choices a learner makes before booking. Lesson routes provide the starting point, followed by package information and practical details that belong to each option. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+  },
+  "expected_fingerprint": "5365cef232e78c11c992352f5e9cd390c35ab2e8f8a17ed16b8632f71d54240a"
+}
