@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-jouwgroenteboer-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T10:49:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1423,
+    "readback_verified": true,
+    "before_fingerprint": "58ff0fc7875dbc9a263e6638923f1a13ef2940ad6c9b1ded49a9724565340256",
+    "after_fingerprint": "dea0c5c3399b9eb94f97f0e59d12a698879eb51976314225b24ff21480d83a80",
+    "rollback_available": true
+}
