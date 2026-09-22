@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b07-p63-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1846,
+    "content": "A driving-school WordPress website guiding learner drivers from trial lessons and intensive-course options through instructor information, reviews, FAQs and mobile registration.",
+    "description_1": "Gldrive needs to help learner drivers choose lessons before they have much experience with driving-school terms. Packages, prices, exam preparation and instructor information all influence the decision, but they should not arrive with equal weight.",
+    "description_2": "I structured Gldrive around the decisions a learner makes before booking: choose the lesson route, compare the relevant package information and then review exam or instructor details where they help. Pricing stays connected to the option it belongs to, so visitors do not have to reconstruct the offer from separate pages."
+  }
+}
