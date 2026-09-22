@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-intros-live-20260922",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1415,
+          "content": "A B2B horticultural-services WordPress website helping growers compare staffing, crop work, potting, labelling and equipment rental before requesting a quotation."
+        },
+        "expected_fingerprint": "56a2bf0a938758206fc808cf7635d6da7bea8ef0e970465e4963ae744cfb5587"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1417,
+          "content": "A driving-school WordPress website helping learners compare manual and automatic lessons, packages, prices, refresher training and trial-lesson options."
+        },
+        "expected_fingerprint": "4f3cd5993313c2e630b80f1fbae6fce9553e25754d93ee10ccc2dba6f990fd4d"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1418,
+          "content": "A driving-school WordPress website guiding learner drivers through lesson options, packages, pricing, exam information and trial-lesson registration."
+        },
+        "expected_fingerprint": "6909dfba4eafcbc4c083db395eb92e0c7bc2b904d48743efaa55e7468010e5a8"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1416,
+          "content": "An automotive lead-generation WordPress website guiding car owners from vehicle details and valuation interest through the selling process to an offer and handover."
+        },
+        "expected_fingerprint": "760c81ae3e86b3f127640799a8b3d7898eda598b798333b4ad85fb29275ece5d"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1422,
+          "content": "A bookkeeping WordPress website helping entrepreneurs understand bookkeeping, tax work, annual accounts and support packages before making an enquiry."
+        },
+        "expected_fingerprint": "971f2e66482a6e2f6dad76a1f52f329d712a6a1b17246a94f265208169ccd954"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1419,
+          "content": "A sustainable-energy WordPress website helping homeowners compare solar panels, charging stations, home batteries and heat pumps before requesting tailored advice or a quotation."
+        },
+        "expected_fingerprint": "d0337eec59f403d1783edf5252d3c70b4f0051549524c817900a20c031e5f70c"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1423,
+          "content": "A WooCommerce grocery webshop helping customers browse fresh fruit and vegetables, review product details and quantities, and move quickly from category discovery to cart."
+        },
+        "expected_fingerprint": "7058f415cde0c93df6884ccdaccce8c8f5b2381607a423d5ad82c2bf9ecb3442"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1424,
+          "content": "A home-installation WordPress website helping homeowners navigate heating, climate and maintenance services before requesting advice or a quotation."
+        },
+        "expected_fingerprint": "03ed7efbb72d8439e0edb054cf5d23958ebdcc2d7e4efb13bc7c09f8eb0a20ec"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1427,
+          "content": "An electrical-services WordPress website helping visitors distinguish electrical work, charging and other energy solutions before moving to project information or contact."
+        },
+        "expected_fingerprint": "b5a9503696fdd96a07c12c874f90b8fbecdce189f54d6c3dd7b6b406b5d229e6"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1426,
+          "content": "A wedding photography and film WordPress portfolio showcasing films, photography, couple stories and galleries before guiding prospective couples towards an enquiry."
+        },
+        "expected_fingerprint": "7a9599306d5d65bc7c571ce311e122afb89e68c171ff77b62acce6558520be71"
+      }
+    ]
+  }
+}
