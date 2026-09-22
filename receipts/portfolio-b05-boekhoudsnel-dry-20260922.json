@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-boekhoudsnel-dry-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-22T10:44:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1422,
+    "readback_verified": null,
+    "before_fingerprint": "48740099807e1bc34391ff31c45f941359794a694602985759306c3d744dce8d",
+    "after_fingerprint": "a3a5181e2e590c415857de8116cd7f9875d39562a565afdc900ec4c57ed9ed4e"
+}
