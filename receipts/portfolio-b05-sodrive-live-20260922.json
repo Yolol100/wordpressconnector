@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b05-sodrive-live-20260922",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-22T10:48:20+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1418,
+    "readback_verified": true,
+    "before_fingerprint": "b59a4be3bdae9f947cb41c4ada513c485a30048bd60214d55b9a56382b41949c",
+    "after_fingerprint": "a0ff8abb412724b07bb34cce7e191546d0c83e442aa056ca7d96d6d533a9ee33",
+    "rollback_available": true
+}
