@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b06-p53-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1430,
+    "content": "A technical-services WordPress website helping customers identify plumbing, installation-technology and metalwork support before moving to contact or quotation.",
+    "description_1": "Customers may arrive with a leak, heating or installation issue, or a metal repair, without knowing which technical discipline applies. Focusing the site mainly on custom metalwork would hide two major service areas and make the first choice unnecessarily difficult.",
+    "description_2": "I arranged the site around three clear service routes: plumbing, installation technology and metalwork. Each route explains the relevant jobs and practical context before contact or quotation, so visitors can start from the problem they recognise instead of interpreting a broad technical-services message."
+  }
+}
