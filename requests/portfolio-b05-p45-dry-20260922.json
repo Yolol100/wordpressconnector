@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b05-p45-dry-20260922",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1422,
+    "content": "A bookkeeping WordPress website helping entrepreneurs understand bookkeeping, tax work, annual accounts and support packages before making an enquiry.",
+    "description_1": "Boekhoudsnel has to make bookkeeping services understandable to entrepreneurs who may be comparing packages as well as individual tasks. Bookkeeping, tax work and annual accounts often belong together, but a visitor still needs to know what is included and when a package or direct conversation is appropriate.",
+    "description_2": "I designed Boekhoudsnel around the accounting tasks an entrepreneur is likely to recognise first, then connected them to package information where comparison is useful. Bookkeeping, tax work and annual accounts each have clear explanations, while packages show how recurring support can be grouped without hiding the underlying services."
+  }
+}
