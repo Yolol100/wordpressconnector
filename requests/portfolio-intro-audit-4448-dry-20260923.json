@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-4448-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4448,
+    "content": "A cultural WordPress website for Stichting Sanatolia separating events and courses, with ticketing and participation routes across theatre, arts and learning programmes.",
+    "description_1": "Sanatolia combines theatre, cultural events and a broad course programme for different ages and interests. A single list would make activities such as drawing, folk dance, guitar, saz and creative drama harder to distinguish and weaken the organisation’s cultural character.",
+    "description_2": "I split the experience into event discovery and course participation, then kept practical details, tickets and joining actions beside the activity they belong to. The visual hierarchy gives cultural content room to feel expressive without hiding useful information, while mobile cards preserve a simple reading order."
+  }
+}
