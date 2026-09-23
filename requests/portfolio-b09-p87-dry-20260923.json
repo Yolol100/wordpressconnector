@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p87-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1332,
+    "content": "A humanitarian WordPress website explaining Wehear4u’s hearing-care mission and guiding visitors towards hearing-aid donations, financial support, partnerships and participation.",
+    "description_1": "Wehear4u has to explain a humanitarian hearing-care mission to people who may arrive for different reasons. One visitor may want to donate used hearing aids, another may want to support the work financially, become a collection point or simply understand what happens in Kenya.",
+    "description_2": "I designed Wehear4u around the mission first and participation second. The WordPress experience explains who the initiative aims to support and why hearing care matters before introducing the different ways visitors can help. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+  }
+}
