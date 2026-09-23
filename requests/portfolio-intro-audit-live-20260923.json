@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-live-20260923",
+  "action": "connector.batch",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4448,
+          "content": "A cultural WordPress website for Stichting Sanatolia separating events and courses, with ticketing and participation routes across theatre, arts and learning programmes."
+        },
+        "expected_fingerprint": "bbec6eb4abf7422ef3510f7ca577a4e03203ea7d05a34186c177a2d4b3da4342"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1241,
+          "content": "A recruitment WordPress website for Werken bij EFE connecting vacancy discovery, employer information and a direct application process for candidates across multiple sectors."
+        },
+        "expected_fingerprint": "82a0db8cc2c84ed3be5b7327c864dec2a92ee7efd74506398eb1efa7a6a46fc7"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1352,
+          "content": "A security-services WordPress website for Leeuw Beveiliging organising guarding, crowd management and risk planning around location, event and operational needs before enquiry."
+        },
+        "expected_fingerprint": "b3f1eca99dd9374f7792f7375d5d745156d3f8740766b670e6f7e1a06721834c"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1368,
+          "content": "A financial-advice WordPress website for Astenadvies organising planning, finance and business guidance into recognisable service routes before visitors start a conversation."
+        },
+        "expected_fingerprint": "0ed91d2f6649364906e5e681c68e3c78cbf986f7638fae519cd8673b83ac080b"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1370,
+          "content": "A technical-inspection WordPress website for ZEN Inspection separating laboratory, cargo, marine and certification-related services for decision-makers seeking relevant expertise or a quotation."
+        },
+        "expected_fingerprint": "ffb68c2f8a28e311394a2896033cbf879df393d44984bb1a800e894da2732cfb"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1371,
+          "content": "A parking-reservation WordPress website guiding travellers from trip dates and parking choice to booking, with optional charging, washing and refuelling services alongside the main journey."
+        },
+        "expected_fingerprint": "323942d1fb75a7312d9b5b66e4b0420bd2a1664b64f3ec0abbc865fc38c22919"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1373,
+          "content": "A WooCommerce food webshop for Pastrycompany with separate routes for online product ordering and catering enquiries, supported by product details and event-service context."
+        },
+        "expected_fingerprint": "d25bbf1be65aea21d0ed8a966aa7423d025fbb66539094a04ddabfdf2fa673b8"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1375,
+          "content": "A WordPress website for Ourwp explaining virtual offices, KvK business addresses, post handling, scanning and package choices before entrepreneurs sign up or make contact."
+        },
+        "expected_fingerprint": "4bf6181f7079e5db8337c0b04aeda1974a6778878a79069bf853d66e3fe8f989"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1374,
+          "content": "A WordPress and WooCommerce beauty platform for Byderma separating treatment discovery, appointment booking and product shopping, with member benefits alongside those customer routes."
+        },
+        "expected_fingerprint": "9c68cf9449dff670471e4c1f631c60cf36d6d7a2c1ad6261f25ea4f1cab79d84"
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4092,
+          "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields."
+        },
+        "expected_fingerprint": "14b6048bbd9975a25037bf1f088ad9196d2cff3500b6d2ff14369838468fda27"
+      }
+    ]
+  }
+}
