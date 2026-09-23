@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-total-verify2-g5-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1426,
+          "content": "A wedding photography and film WordPress portfolio showcasing films, photography, couple stories and galleries before guiding prospective couples towards an enquiry."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1426,
+          "fields": {
+            "field_69deb8ddbcd8d": "Ozturkmotionpictures has to win trust through creative work, but couples still need practical information before choosing a wedding filmmaker. A showreel communicates style, but it does not explain what is included, how the service works or how someone can make contact.",
+            "field_69deb8e4bcd8e": "I placed Ozturkmotionpictures' film work at the centre of the WordPress experience, then added service context around the moments when a couple is likely to ask practical questions. Wedding films and visual examples establish the creative direction first, while concise explanations clarify the offer without interrupting the viewing experience."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1429,
+          "content": "A real-estate investment WordPress website presenting Odetra’s international property opportunities and project context before guiding investors towards further information or contact."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1429,
+          "fields": {
+            "field_69deb8ddbcd8d": "Odetra presents property investment opportunities, where visitors need more than an attractive project image before deciding whether to ask for details. Investors need to understand the opportunity, project context and relevant information before they are ready for contact.",
+            "field_69deb8e4bcd8e": "I arranged Odetra so each property opportunity can be understood through its own project context before a visitor reaches the enquiry step. The WordPress structure separates the overview from deeper information, allowing investors to scan available projects first and then focus on the details that are relevant to a specific opportunity."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1428,
+          "content": "An equipment-rental WordPress website helping customers compare machine types, reach, lifting capacity and attachments before requesting availability, advice or a tailored rental quote."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1428,
+          "fields": {
+            "field_69deb8ddbcd8d": "Customers often know the height, load or site conditions of a job before they know the exact machine model. The site therefore needed to make technical specifications comparable without suggesting that every machine is available on every date or suitable for every task.",
+            "field_69deb8e4bcd8e": "I organised the rental offer around machine type and practical specifications such as reach, lifting capacity and attachments. Each option leads into detailed information, advice and a tailored rental request, while the same hierarchy stays usable on mobile for customers comparing equipment on location."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1430,
+          "content": "A technical-services WordPress website helping customers identify plumbing, installation-technology and metalwork support before moving to contact or quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1430,
+          "fields": {
+            "field_69deb8ddbcd8d": "Customers may arrive with a leak, heating or installation issue, or a metal repair, without knowing which technical discipline applies. Focusing the site mainly on custom metalwork would hide two major service areas and make the first choice unnecessarily difficult.",
+            "field_69deb8e4bcd8e": "I arranged the site around three clear service routes: plumbing, installation technology and metalwork. Each route explains the relevant jobs and practical context before contact or quotation, so visitors can start from the problem they recognise instead of interpreting a broad technical-services message."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1431,
+          "content": "A WooCommerce recovery-products webshop helping shoppers compare massage guns and accessories, understand product differences and move from product education to checkout."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1431,
+          "fields": {
+            "field_69deb8ddbcd8d": "Palmeroshop offers recovery products that can look similar, especially to shoppers who are new to massage guns or related wellness equipment. Product pages therefore need to explain practical differences without turning general product information into medical advice.",
+            "field_69deb8e4bcd8e": "I shaped Palmeroshop so shoppers can move from the recovery category to individual products and compare the details that belong to the purchase decision. Product information, pricing and cart actions remain connected, while supporting explanations help customers understand the equipment without presenting it as a guaranteed medical solution."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1433,
+          "content": "A comparison and lead-generation WordPress website helping visitors understand home-clearance services, compare local providers and submit a relevant quote request."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1433,
+          "fields": {
+            "field_69deb8ddbcd8d": "Woningontruimingvergelijken serves people who may be arranging a clearance during a move, estate situation or property handover. They often need to understand what a clearance can include before comparing providers, and local availability may matter.",
+            "field_69deb8e4bcd8e": "I arranged Woningontruimingvergelijken around the questions that come before a quote request. Practical information helps visitors define the clearance need first, after which the platform can guide them toward provider comparison and a request containing the details that matter. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1432,
+          "content": "A sustainable-energy WordPress website helping homeowners compare solar panels, inverters, charging and storage solutions before requesting postcode-based advice or a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1432,
+          "fields": {
+            "field_69deb8ddbcd8d": "The current offer is centred on energy products and package combinations, not roof construction. Visitors need to compare generation, storage, charging and inverter choices without being led into a roof-and-solar decision that the live service structure no longer reflects.",
+            "field_69deb8e4bcd8e": "I structured the journey around individual energy solutions and the available package combinations. Product routes explain solar panels, inverters, charging and storage first, while postcode-based advice and quotation actions provide the next step without treating projected savings, payback or installation timing as portfolio results."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1434,
+          "content": "An interior and renovation WordPress website helping visitors explore sanitary, flooring, tiles, window decoration and room solutions before moving to showroom advice, an appointment or quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1434,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors are choosing between several interior categories and room-based solutions, not simply one sustainable-home measure. The website needed to make products, inspiration and renovation services understandable together while keeping showroom advice and project contact close to the relevant decision.",
+            "field_69deb8e4bcd8e": "I grouped the experience around product categories such as sanitary, flooring, tiles and window decoration, supported by room solutions, renovation work and completed projects. Showroom advice, appointments and quotation actions then turn visual inspiration into a practical route without making sustainability claims the centre of the case."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1435,
+          "content": "An education WordPress website helping students and parents compare tutoring, homework support, exam preparation and other programmes before choosing a trial lesson or registration route."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1435,
+          "fields": {
+            "field_69deb8ddbcd8d": "Oxfordacademy needs to help students and parents compare programmes without making the website feel like a long course catalogue. A visitor may be checking the subject, schedule, level or practical requirements before deciding whether a programme fits.",
+            "field_69deb8e4bcd8e": "I shaped Oxfordacademy so programmes provide the first decision point, followed by the details students and parents need to judge fit. Course information, schedules and practical requirements stay close to the relevant programme instead of being repeated across unrelated sections."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1439,
+          "content": "A B2B insulation WordPress website presenting Marcos Montage’s insulation services, project experience, certificates and partners before guiding contractors towards a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1439,
+          "fields": {
+            "field_69deb8ddbcd8d": "The business is focused on insulation projects rather than general installation and finishing work. Contractors need to understand the insulation scope, project experience and company context before deciding whether Marco’s Montage fits a specific construction assignment.",
+            "field_69deb8e4bcd8e": "I organised the site around insulation as the primary service, supported by completed projects, company information, certificates, partners and a direct quotation route. Equipment rental remains separate through Marco Verhuurt, preventing the rental offer from diluting the main B2B insulation proposition."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1714,
+          "content": "A humanitarian nonprofit WordPress website connecting Hasene’s projects and campaigns with clear donation, participation and organisational information."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1714,
+          "fields": {
+            "field_69deb8ddbcd8d": "Hasene communicates humanitarian work to people who may arrive with different intentions: learning about a project, supporting a campaign, donating or understanding the organisation. Emotional stories matter, but they cannot replace clear information about what a campaign is for and how someone can participate.",
+            "field_69deb8e4bcd8e": "I structured Hasene around its humanitarian projects and campaigns, giving visitors context before presenting the relevant participation or donation route. Project information explains what the initiative concerns, while organisational details help people understand who is behind the work. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1438,
+          "content": "An interior and home-renovation WordPress website helping visitors explore kitchens, bathrooms, floors, wall finishes, steel doors and custom renovation options before booking showroom advice or requesting a quote."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1438,
+          "fields": {
+            "field_69deb8ddbcd8d": "Homeplaza has to help people explore home and interior options before they know the exact product or service they want. Visual inspiration can attract attention, but it creates a risk that practical categories and next steps disappear behind imagery.",
+            "field_69deb8e4bcd8e": "I designed Homeplaza so visual inspiration supports the main home categories instead of replacing them. Visitors can start with the type of product or service they are exploring, see relevant examples and then move into the practical information connected to that choice."
+          }
+        }
+      }
+    ]
+  }
+}
