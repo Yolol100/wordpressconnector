@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1370-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1370,
+    "content": "A technical-inspection WordPress website for ZEN Inspection separating laboratory, cargo, marine and certification-related services for decision-makers seeking relevant expertise or a quotation.",
+    "description_1": "Zeninspec presents technical inspection, testing and certification-related services to decision makers who may arrive with a specific question. Laboratory work, cargo and marine services, accreditation information and certification topics are connected, but they are not interchangeable.",
+    "description_2": "I designed the Zeninspec WordPress structure so technical service areas can be found separately within one company framework. Laboratory, cargo, marine and certification-related routes are separated early, and accreditation information is placed where it supports the relevant decision rather than appearing as a broad marketing badge."
+  }
+}
