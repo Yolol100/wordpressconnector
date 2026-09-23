@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p83-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4190,
+    "content": "A multilingual WordPress management plugin centralising content scanning, translation review, visual editing and CSV or XLIFF exchange across common site content.",
+    "description_1": "Webactueel Translate has to manage multilingual WordPress content across places normal translation screens may not cover. Source text can live in posts, Elementor, ACF, menus, widgets, taxonomies, WooCommerce and SEO metadata, while review status and exchange files add complexity.",
+    "description_2": "I developed Webactueel Translate as a WordPress workflow for language management, content scanning, visual editing, translation tables and CSV or XLIFF exchange. The scanner can inspect public post types, Elementor data, ACF fields, menus, widgets, taxonomies and WooCommerce content where those sources are available."
+  }
+}
