@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1352-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1352,
+    "content": "A security-services WordPress website for Leeuw Beveiliging organising guarding, crowd management and risk planning around location, event and operational needs before enquiry.",
+    "description_1": "Security clients often start with a situation, not a service name. Guarding, crowd management and risk planning therefore had to be differentiated without relying on fear-based messaging, vague expertise claims or broad promises about outcomes that depend on the actual assignment.",
+    "description_2": "I made client situations the entry point and connected them to the relevant security service, with credibility information supporting the decision where appropriate. Enquiry actions appear after enough context to describe the assignment, while calm wording and a consistent mobile sequence keep the journey practical rather than promotional."
+  },
+  "expected_fingerprint": "b3f1eca99dd9374f7792f7375d5d745156d3f8740766b670e6f7e1a06721834c"
+}
