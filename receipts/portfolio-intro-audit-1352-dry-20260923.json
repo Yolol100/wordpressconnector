@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-intro-audit-1352-dry-20260923",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-23T12:24:54+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1352,
+    "readback_verified": null,
+    "before_fingerprint": "b3f1eca99dd9374f7792f7375d5d745156d3f8740766b670e6f7e1a06721834c",
+    "after_fingerprint": "a7fed186405808d66f985042b5ba84aef5d95381d7326e9c7083730a8eea0b2b"
+}
