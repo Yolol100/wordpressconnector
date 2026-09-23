@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-case-1381-finalreadback1-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1381,
+    "content": "A chauffeur-booking WordPress website connecting GS Privechauffeur’s transport services with trip details, vehicle choice, contact information and payment in one clear flow.",
+    "description_1": "Gsprivechauffeur serves passengers whose transport needs are not all the same. An airport transfer starts with flight timing and luggage, a BOB ride is about getting people and their car home, while vehicle transport or valet parking involves a different handover.",
+    "description_2": "I arranged Gsprivechauffeur around the journey type first, then the information needed to request it. Private chauffeur, airport transport, BOB rides, vehicle transport and valet parking each have their own context instead of sharing one vague description. This keeps the main route understandable while deeper detail remains available when needed."
+  }
+}
