@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-phase2-dry-20260924",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4448,
+          "content": "A cultural WordPress website for Stichting Sanatolia separating events and courses, with ticketing and participation routes across theatre, arts and learning programmes."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4448,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sanatolia combines theatre, cultural events and a broad course programme for different ages and interests. A single list would make activities such as drawing, folk dance, guitar, saz and creative drama harder to distinguish and weaken the organisation’s cultural character.",
+            "field_69deb8e4bcd8e": "I split the experience into event discovery and course participation, then kept practical details, tickets and joining actions beside the activity they belong to. The visual hierarchy gives cultural content room to feel expressive without hiding useful information, while mobile cards preserve a simple reading order."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1241,
+          "content": "A recruitment WordPress website for Werken bij EFE connecting vacancy discovery, employer information and a direct application process for candidates across multiple sectors."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1241,
+          "fields": {
+            "field_69deb8ddbcd8d": "With many live vacancies, candidates could easily focus on job titles while missing the information needed to judge EFE as an employer. Vacancy lists, role details and application actions also become harder to follow when compressed onto mobile screens.",
+            "field_69deb8e4bcd8e": "Vacancy discovery stays prominent, but I connected it to role information, employer context and a defined application sequence. Simple headings and predictable mobile ordering help candidates move from finding a position to understanding it and applying, without turning the site into an endless list of openings."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1352,
+          "content": "A security-services WordPress website for Leeuw Beveiliging organising guarding, crowd management and risk planning around location, event and operational needs before enquiry."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1352,
+          "fields": {
+            "field_69deb8ddbcd8d": "Security clients often start with a situation, not a service name. Guarding, crowd management and risk planning therefore had to be differentiated without relying on fear-based messaging, vague expertise claims or broad promises about outcomes that depend on the actual assignment.",
+            "field_69deb8e4bcd8e": "I made client situations the entry point and connected them to the relevant security service, with credibility information supporting the decision where appropriate. Enquiry actions appear after enough context to describe the assignment, while calm wording and a consistent mobile sequence keep the journey practical rather than promotional."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1368,
+          "content": "A financial-advice WordPress website for Astenadvies organising planning, finance and business guidance into recognisable service routes before visitors start a conversation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1368,
+          "fields": {
+            "field_69deb8ddbcd8d": "Astenadvies needs to speak to people who may know they need financial guidance but do not yet know which type of advice fits their situation. Questions about planning, finances or business decisions can overlap, and specialist terms can make that first step more difficult.",
+            "field_69deb8e4bcd8e": "For Astenadvies, I organised the WordPress content around recognizable financial questions instead of leading with specialist terminology. Separate service areas give visitors a place to start, while short explanations show what kind of advice belongs in each route. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1370,
+          "content": "A technical-inspection WordPress website for ZEN Inspection separating laboratory, cargo, marine and certification-related services for decision-makers seeking relevant expertise or a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1370,
+          "fields": {
+            "field_69deb8ddbcd8d": "Zeninspec presents technical inspection, testing and certification-related services to decision makers who may arrive with a specific question. Laboratory work, cargo and marine services, accreditation information and certification topics are connected, but they are not interchangeable.",
+            "field_69deb8e4bcd8e": "I designed the Zeninspec WordPress structure so technical service areas can be found separately within one company framework. Laboratory, cargo, marine and certification-related routes are separated early, and accreditation information is placed where it supports the relevant decision rather than appearing as a broad marketing badge."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1371,
+          "content": "A parking-reservation WordPress website guiding travellers from trip dates and parking choice to booking, with optional charging, washing and refuelling services alongside the main journey."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1371,
+          "fields": {
+            "field_69deb8ddbcd8d": "Schipholparkeren has to turn a travel plan into a parking reservation without making visitors search for the practical steps. Travellers arrive with dates, flight timing, luggage and different expectations about valet or comfort parking.",
+            "field_69deb8e4bcd8e": "I designed Schipholparkeren around the reservation sequence a traveller actually follows. Trip dates and the parking choice come first, followed by the details needed to complete a booking and any optional car services that fit the journey. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1373,
+          "content": "A WooCommerce food webshop for Pastrycompany with separate routes for online product ordering and catering enquiries, supported by product details and event-service context."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1373,
+          "fields": {
+            "field_69deb8ddbcd8d": "Pastrycompany combines two buying situations that need different information: ordering food online and arranging catering for an event. A customer choosing a product wants options, price and a cart path, while someone planning catering needs context about the service before sending an enquiry.",
+            "field_69deb8e4bcd8e": "I arranged Pastrycompany so product shopping and catering remain connected but follow their own paths. WooCommerce categories, product details and cart actions support customers who are ready to order, while catering pages explain the event service and lead naturally to an enquiry."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1375,
+          "content": "A WordPress website for Ourwp explaining virtual offices, KvK business addresses, post handling, scanning and package choices before entrepreneurs sign up or make contact."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1375,
+          "fields": {
+            "field_69deb8ddbcd8d": "Ourwp offers business-address services to entrepreneurs who need to understand more than a postal location before choosing a package. Registration use, post handling, scanning and account access each affect the service, so a visitor needs to compare what is included and what happens after signup.",
+            "field_69deb8e4bcd8e": "I designed Ourwp around the questions an entrepreneur needs answered before selecting an address package. The website explains the address service, post handling and scanning first, then connects those details to package choices and the signup route. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1374,
+          "content": "A WordPress and WooCommerce beauty platform for Byderma separating treatment discovery, appointment booking and product shopping, with member benefits alongside those customer routes."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1374,
+          "fields": {
+            "field_69deb8ddbcd8d": "Byderma brings treatments, appointments and product shopping together, creating a navigation problem that a beauty website or webshop does not have. Someone researching a treatment needs different information from a customer who wants to buy skincare, while members may also look for benefits or account options.",
+            "field_69deb8e4bcd8e": "For Byderma, I structured the WordPress and WooCommerce experience around three distinct actions: explore treatments, book an appointment and shop for products. Treatment pages provide context before a booking action, while product categories and product pages keep the normal shopping path direct."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4092,
+          "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4092,
+          "fields": {
+            "field_69deb8ddbcd8d": "SEO Image Assistant for Shutterstock connects stock-image research with the WordPress page where an image may eventually be used. That creates more responsibility than a simple search box: OAuth credentials, licensing status, file validation and ACF assignments all sit in the same workflow.",
+            "field_69deb8e4bcd8e": "I shaped SEO Image Assistant for Shutterstock as a page-aware WordPress workflow that begins with keyword or page context and ends with a reviewed image assignment. OAuth connects the service, while search and suggestion queues let administrators inspect assets before licensing."
+          }
+        }
+      }
+    ]
+  }
+}
