@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-total-verify2-g3-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1390,
+          "content": "A WordPress platform organising MPO’s political monitoring, ten focus points, research, activities, press updates and support information into distinct and accessible content routes."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1390,
+          "fields": {
+            "field_69deb8ddbcd8d": "MPO combines long-term monitoring and research with activities, press updates, participation initiatives and supporter information. Without clear separation, fast-changing political content can make reports, organisational context and practical information harder for readers, supporters and journalists to locate.",
+            "field_69deb8e4bcd8e": "I separated durable monitoring themes and research from activities, press updates, support and contact content. Reports and position papers remain easy to reach, while current updates can change independently without replacing the organisation’s core information or forcing every audience through the same content stream."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1391,
+          "content": "A multidisciplinary WordPress website helping Kroess & Visser clients navigate a broad accountancy and advisory portfolio before moving towards the specialist or conversation relevant to their situation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1391,
+          "fields": {
+            "field_69deb8ddbcd8d": "The service portfolio extends far beyond bookkeeping and tax, covering financial, organisational, technology and specialist advisory topics. Presenting those areas as one general finance offer would make it harder for business clients to identify where their specific question belongs.",
+            "field_69deb8e4bcd8e": "I organised individual advisory areas as separate routes while keeping shared company and sector context connected. Detailed service pages explain accountancy, tax, payroll, audit, corporate finance and specialist business advice, with consultation actions positioned beside the service being considered. This keeps a broad specialist offer navigable without flattening it into general finance copy."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1392,
+          "content": "A WooCommerce fruit webshop helping customers browse fresh fruit boxes, baskets and gifts, compare available products and order for personal or business occasions."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1392,
+          "fields": {
+            "field_69deb8ddbcd8d": "Superfruitmand sells fruit boxes, baskets and gifts to both consumers and business buyers. Those shoppers may arrive with a different occasion in mind, such as a personal gift, an office order or a recurring business need.",
+            "field_69deb8e4bcd8e": "I structured Superfruitmand around the reason for buying as well as the product itself. Fruit boxes, baskets, gifts and business options each have a clear place, while product pages provide the detail needed before adding an item to the cart."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1394,
+          "content": "A recruitment WordPress website connecting Progress vacancies, sector expertise and candidate applications with separate employer routes for staffing, selection and temporary workforce needs."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1394,
+          "fields": {
+            "field_69deb8ddbcd8d": "Progress has to support two recruitment audiences without making either one search through the other's information. Job seekers want vacancies, role details and a clear application path, while employers need staffing services, sector knowledge and enough trust to start a hiring conversation.",
+            "field_69deb8e4bcd8e": "I designed Progress around a clear choice between finding work and finding people. Candidates can move from vacancies to role information and application actions without being interrupted by employer sales content. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1393,
+          "content": "A finance WordPress website helping entrepreneurs understand bookkeeping, tax returns, annual accounts and pricing before choosing a suitable service package or advice appointment."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1393,
+          "fields": {
+            "field_69deb8ddbcd8d": "Bedrijfsboekhouder offers online accounting support to entrepreneurs who may need bookkeeping, tax returns, annual accounts, payroll help or financial guidance. These services often connect, but a visitor should not have to understand accounting terminology before finding the right starting point.",
+            "field_69deb8e4bcd8e": "I shaped Bedrijfsboekhouder around recognizable business needs instead of internal accounting categories. Bookkeeping, tax work, annual accounts and payroll support each have a clear route, with supporting details placed where they help an entrepreneur understand what comes next. Supporting information stays close to the choice it is meant to clarify."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1395,
+          "content": "A B2B recycling WordPress website explaining PRO Metaal’s metal collection, container service and responsible recycling, with clear routes for companies needing practical disposal support."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1395,
+          "fields": {
+            "field_69deb8ddbcd8d": "Prometaal works with recyclable materials, collection and logistics for business customers, so the first question is often operational: what material is involved and how should it be handled? Sustainability information matters, but it cannot replace details about collection, transport or the type of recycling service a company needs.",
+            "field_69deb8e4bcd8e": "I arranged Prometaal around the material and service questions that business customers are likely to know first. Recyclable materials, collection and logistics each have a clear place, while sustainability context supports the process instead of becoming the only message. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1396,
+          "content": "A WooCommerce made-to-measure webshop guiding Blenco customers from window-decoration style and colour choices through dimensions, mounting options, pricing and online ordering."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1396,
+          "fields": {
+            "field_69deb8ddbcd8d": "Blenco sells made-to-measure window decoration, which means customers cannot simply choose a product and add a standard quantity to the cart. Product type, fabric or style, colour, measurements and mounting choices all affect what is being ordered.",
+            "field_69deb8e4bcd8e": "I structured Blenco so customers configure a made-to-measure product step by step instead of confronting every option at once. Product type and visual choices come first, followed by colour, measurements and mounting preferences. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1397,
+          "content": "A media-agency WordPress website presenting C10 Media’s cross-channel advertising services, campaign work and cases with clear routes towards strategy discussions and new client enquiries."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1397,
+          "fields": {
+            "field_69deb8ddbcd8d": "C10media works across outdoor media, digital, radio, television and print, so a client may arrive with a campaign goal rather than a preferred channel. Listing every medium at the same level would force visitors to design their own media plan before they understand where the agency can help.",
+            "field_69deb8e4bcd8e": "I designed C10media around the campaign decision rather than around a long inventory of media products. Strategy gives the starting context, while outdoor, digital, radio, television and print can each explain where they fit. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1400,
+          "content": "A WordPress comparison platform helping visitors find local service providers, request multiple quotations and compare price, reviews and regional fit before choosing."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1400,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors can arrive with different service needs and locations, so company listings alone are not enough. The platform needs to connect a request with relevant providers, comparable information and a clear quotation route without making the discovery process unnecessarily complex.",
+            "field_69deb8e4bcd8e": "I shaped the platform around service selection, local relevance and quotation requests. Visitors can move from their need to suitable provider information and request quotes from multiple businesses, while reviews and pricing support comparison. On mobile, provider content, forms and next actions remain easy to follow."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1402,
+          "content": "A mobile-focused WordPress website connecting Miami Carwash’s six car-care services, transparent pricing, two locations and flexible walk-in or booking options."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1402,
+          "fields": {
+            "field_69deb8ddbcd8d": "Customers need to compare different levels of car care, understand pricing and decide whether to walk in, request a quote or plan a visit. Strong visual branding therefore had to work alongside practical service information rather than push it out of view.",
+            "field_69deb8e4bcd8e": "I arranged six car-care services into distinct routes and kept pricing, location information and next actions close to each decision. Visitors can choose between walk-in service and planned booking, while the two locations remain easy to find. The responsive structure keeps those practical choices prominent on mobile."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1401,
+          "content": "A taxi-booking WordPress website helping Taxi Centrale Rijswijk visitors review fares, choose transport options and move from route information to a mobile-friendly reservation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1401,
+          "fields": {
+            "field_69deb8ddbcd8d": "Taxicentralerijswijk serves passengers with transport needs, including local rides, airport journeys and business travel. An airport passenger needs flight-related clarity, while a local passenger may care about pickup, destination and quick contact.",
+            "field_69deb8e4bcd8e": "I structured Taxicentralerijswijk around the type of journey a passenger is planning. Local rides, airport transport and business travel have their own context, so visitors can understand what information belongs to the request before opening a booking or contact route."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1405,
+          "content": "A financial-services WordPress website helping entrepreneurs compare Van Bach Finance bookkeeping, payroll, tax and advice packages before scheduling a personal introductory appointment."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1405,
+          "fields": {
+            "field_69deb8ddbcd8d": "Vanbachfinance needs to explain financial support to businesses that may arrive with questions about administration, reporting, tax work or finance guidance. These topics are connected, but a visitor should not have to understand internal structure before finding the relevant service.",
+            "field_69deb8e4bcd8e": "I designed Vanbachfinance around the financial tasks clients are likely to recognise first. Administration, reporting, tax support and finance guidance each receive a clear route, with supporting information added where it helps someone decide whether the service fits their question."
+          }
+        }
+      }
+    ]
+  }
+}
