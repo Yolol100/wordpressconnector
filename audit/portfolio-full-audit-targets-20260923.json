@@ -1,0 +1,853 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "count": 94,
+  "targets": [
+    {
+      "id": 4933,
+      "intro": "Rhapsody Healthcare’s WordPress experience centres on care routes, locations and registration, giving clients, families and referrers a simpler way to find relevant support.",
+      "problem": "Clients, relatives and referrers arrive with different questions about assisted living, day activities, guidance, eligibility and locations. Mixing those needs into one broad care story would make it harder to understand what support applies and what practical step comes next.",
+      "solution": "Care services, locations and practical information each received a distinct place in the journey. I kept the wording and sections compact, then connected relevant pages to registration, contact and introductory-conversation routes. On mobile, those priorities remain in a predictable order rather than becoming one long care-information page.",
+      "title": "Rhapsodyhealthcare",
+      "slug": "rhapsodyhealthcare",
+      "pos": 1
+    },
+    {
+      "id": 4470,
+      "intro": "Ten Bruggen’s WordPress site translates accountancy, tax, payroll and financial guidance into four recognisable service routes, with appointment booking available when visitors are ready.",
+      "problem": "Business owners and private clients can arrive with very different financial questions, often without knowing the accounting term for the service they need. Long explanations or specialist language would make that first choice harder, especially on smaller screens.",
+      "solution": "I arranged the site around recognisable financial questions and separated accountancy, tax, payroll and wider guidance before introducing deeper detail. Plain-language headings keep the first decision lightweight, while contact and appointment actions appear once visitors have enough context to choose the appropriate route.",
+      "title": "Tenbrugge",
+      "slug": "tenbrugge",
+      "pos": 2
+    },
+    {
+      "id": 4448,
+      "intro": "A cultural WordPress website for Stichting Sanatolia separating events and courses, with ticketing and participation routes across theatre, arts and learning programmes.",
+      "problem": "Sanatolia combines theatre, cultural events and a broad course programme for different ages and interests. A single list would make activities such as drawing, folk dance, guitar, saz and creative drama harder to distinguish and weaken the organisation’s cultural character.",
+      "solution": "I split the experience into event discovery and course participation, then kept practical details, tickets and joining actions beside the activity they belong to. The visual hierarchy gives cultural content room to feel expressive without hiding useful information, while mobile cards preserve a simple reading order.",
+      "title": "Sanatolia",
+      "slug": "sanatolia",
+      "pos": 3
+    },
+    {
+      "id": 1241,
+      "intro": "A recruitment WordPress website for Werken bij EFE connecting vacancy discovery, employer information and a direct application process for candidates across multiple sectors.",
+      "problem": "With many live vacancies, candidates could easily focus on job titles while missing the information needed to judge EFE as an employer. Vacancy lists, role details and application actions also become harder to follow when compressed onto mobile screens.",
+      "solution": "Vacancy discovery stays prominent, but I connected it to role information, employer context and a defined application sequence. Simple headings and predictable mobile ordering help candidates move from finding a position to understanding it and applying, without turning the site into an endless list of openings.",
+      "title": "Werkenbijefe",
+      "slug": "werkenbijefe",
+      "pos": 4
+    },
+    {
+      "id": 1303,
+      "intro": "RBMB is a WooCommerce webshop focused on product choice, connecting building-material categories with practical guidance so professionals and DIY customers can move from a job to suitable products.",
+      "problem": "Tradespeople and DIY buyers may know the building task they need to complete without knowing the exact product, quantity or preparation method. A broad catalogue therefore risks becoming difficult to navigate when categories, technical context and buying actions compete for attention.",
+      "solution": "I structured the webshop around practical product groups such as egaline, mortar, primers, coatings, adhesives, tools and insulation, with guides supporting choices that need extra context. Product pages carry deeper detail before cart actions, while mobile keeps category entry points, product cards and purchasing actions easy to scan.",
+      "title": "RBMB",
+      "slug": "rbmb",
+      "pos": 5
+    },
+    {
+      "id": 1366,
+      "intro": "Enspect’s WordPress site turns technical inspection routes into a clearer journey, from identifying the relevant SCIOS or NEN check to requesting a quote.",
+      "problem": "A facility or technical contact may know an inspection is required without knowing whether SCIOS Scope 8, 10 or 12, a NEN inspection or thermography applies. Presenting every standard at once would create a wall of technical terminology before the first useful decision.",
+      "solution": "I separated inspection types into individual service routes and placed practical explanations beside each option instead of inside generic company copy. The journey then moves toward quotation and reporting context through short sections that preserve their order on mobile without making unsupported safety or compliance promises.",
+      "title": "Enspect",
+      "slug": "enspect",
+      "pos": 6
+    },
+    {
+      "id": 1352,
+      "intro": "A security-services WordPress website for Leeuw Beveiliging organising guarding, crowd management and risk planning around location, event and operational needs before enquiry.",
+      "problem": "Security clients often start with a situation, not a service name. Guarding, crowd management and risk planning therefore had to be differentiated without relying on fear-based messaging, vague expertise claims or broad promises about outcomes that depend on the actual assignment.",
+      "solution": "I made client situations the entry point and connected them to the relevant security service, with credibility information supporting the decision where appropriate. Enquiry actions appear after enough context to describe the assignment, while calm wording and a consistent mobile sequence keep the journey practical rather than promotional.",
+      "title": "Leeuwbeveiliging",
+      "slug": "leeuwbeveiliging",
+      "pos": 7
+    },
+    {
+      "id": 1367,
+      "intro": "Doctorcura’s WordPress journey is structured around treatment information, medical review and pharmacy follow-up, so patients can understand the sequence without it resembling a simple checkout.",
+      "problem": "Online treatment cannot be presented like an ordinary ecommerce purchase. Patients need to distinguish information, medical questions, clinician review and practical follow-up without the interface implying automatic approval, diagnosis, safety or treatment outcomes.",
+      "solution": "I ordered the experience around the care process: treatment context first, then the questionnaire and review stages, followed by prescription and delivery information where relevant. Direct labels, nearby safeguards and a defined mobile form sequence explain what happens next without turning a clinically reviewed service into a buy-now flow.",
+      "title": "Doctorcura",
+      "slug": "doctorcura",
+      "pos": 8
+    },
+    {
+      "id": 1369,
+      "intro": "The Koelcellenbouw WordPress site separates cold rooms, freezer rooms, cleanrooms and turnkey work into distinct project routes that lead from technical context towards quotation.",
+      "problem": "Controlled-temperature projects differ by use, temperature range, size and technical requirements, so one generic service page would hide important distinctions. Visitors need enough information to recognise the relevant route without processing specifications that may not apply to their situation.",
+      "solution": "I gave each build type its own route and placed technical considerations where they help a company judge fit before requesting a quotation. Project examples support the service context without implying identical future outcomes, and the same hierarchy carries onto mobile so detailed information does not overwhelm the initial choice.",
+      "title": "Koelcellenbouw",
+      "slug": "koelcellenbouw",
+      "pos": 9
+    },
+    {
+      "id": 1368,
+      "problem": "Astenadvies needs to speak to people who may know they need financial guidance but do not yet know which type of advice fits their situation. Questions about planning, finances or business decisions can overlap, and specialist terms can make that first step more difficult.",
+      "solution": "For Astenadvies, I organised the WordPress content around recognizable financial questions instead of leading with specialist terminology. Separate service areas give visitors a place to start, while short explanations show what kind of advice belongs in each route. This keeps the main route understandable while deeper detail remains available when needed.",
+      "intro": "A financial-advice WordPress website for Astenadvies organising planning, finance and business guidance into recognisable service routes before visitors start a conversation.",
+      "title": "Astenadvies",
+      "slug": "astenadvies",
+      "pos": 10
+    },
+    {
+      "id": 1370,
+      "problem": "Zeninspec presents technical inspection, testing and certification-related services to decision makers who may arrive with a specific question. Laboratory work, cargo and marine services, accreditation information and certification topics are connected, but they are not interchangeable.",
+      "solution": "I designed the Zeninspec WordPress structure so technical service areas can be found separately within one company framework. Laboratory, cargo, marine and certification-related routes are separated early, and accreditation information is placed where it supports the relevant decision rather than appearing as a broad marketing badge.",
+      "intro": "A technical-inspection WordPress website for ZEN Inspection separating laboratory, cargo, marine and certification-related services for decision-makers seeking relevant expertise or a quotation.",
+      "title": "Zeninspec",
+      "slug": "zeninspec",
+      "pos": 11
+    },
+    {
+      "id": 1371,
+      "problem": "Schipholparkeren has to turn a travel plan into a parking reservation without making visitors search for the practical steps. Travellers arrive with dates, flight timing, luggage and different expectations about valet or comfort parking.",
+      "solution": "I designed Schipholparkeren around the reservation sequence a traveller actually follows. Trip dates and the parking choice come first, followed by the details needed to complete a booking and any optional car services that fit the journey. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "intro": "A parking-reservation WordPress website guiding travellers from trip dates and parking choice to booking, with optional charging, washing and refuelling services alongside the main journey.",
+      "title": "Schipholparkeren",
+      "slug": "schipholparkeren",
+      "pos": 12
+    },
+    {
+      "id": 1372,
+      "intro": "A construction WordPress website for Casareno connecting renovation, new-build and turn-key services with completed projects and a clear route towards a personal consultation.",
+      "problem": "Homeowners may start with anything from a bathroom or floor to a complete renovation or new-build project. The site therefore had to connect inspiration, individual services and larger project routes without making visitors understand the full construction process before finding what fits their plans.",
+      "solution": "I structured the experience around recognisable construction routes, supported by project examples and a five-step working process. Individual services remain easy to find, while larger renovation, new-build and turn-key journeys provide deeper context before the consultation action. The same hierarchy remains understandable on smaller screens.",
+      "title": "Casareno",
+      "slug": "casareno",
+      "pos": 13
+    },
+    {
+      "id": 1373,
+      "problem": "Pastrycompany combines two buying situations that need different information: ordering food online and arranging catering for an event. A customer choosing a product wants options, price and a cart path, while someone planning catering needs context about the service before sending an enquiry.",
+      "solution": "I arranged Pastrycompany so product shopping and catering remain connected but follow their own paths. WooCommerce categories, product details and cart actions support customers who are ready to order, while catering pages explain the event service and lead naturally to an enquiry.",
+      "intro": "A WooCommerce food webshop for Pastrycompany with separate routes for online product ordering and catering enquiries, supported by product details and event-service context.",
+      "title": "Pastrycompany",
+      "slug": "pastrycompany",
+      "pos": 14
+    },
+    {
+      "id": 1375,
+      "problem": "Ourwp offers business-address services to entrepreneurs who need to understand more than a postal location before choosing a package. Registration use, post handling, scanning and account access each affect the service, so a visitor needs to compare what is included and what happens after signup.",
+      "solution": "I designed Ourwp around the questions an entrepreneur needs answered before selecting an address package. The website explains the address service, post handling and scanning first, then connects those details to package choices and the signup route. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "intro": "A WordPress website for Ourwp explaining virtual offices, KvK business addresses, post handling, scanning and package choices before entrepreneurs sign up or make contact.",
+      "title": "Ourwp",
+      "slug": "ourwp",
+      "pos": 15
+    },
+    {
+      "id": 1374,
+      "problem": "Byderma brings treatments, appointments and product shopping together, creating a navigation problem that a beauty website or webshop does not have. Someone researching a treatment needs different information from a customer who wants to buy skincare, while members may also look for benefits or account options.",
+      "solution": "For Byderma, I structured the WordPress and WooCommerce experience around three distinct actions: explore treatments, book an appointment and shop for products. Treatment pages provide context before a booking action, while product categories and product pages keep the normal shopping path direct.",
+      "intro": "A WordPress and WooCommerce beauty platform for Byderma separating treatment discovery, appointment booking and product shopping, with member benefits alongside those customer routes.",
+      "title": "Byderma",
+      "slug": "byderma",
+      "pos": 16
+    },
+    {
+      "id": 1376,
+      "problem": "Bluecenter offers several beauty treatments, but people do not compare facial care, permanent makeup, massage and laser hair removal in the same way. A visitor may start with a concern, a price question or a treatment name, and each route needs different practical information before an appointment makes sense.",
+      "solution": "I shaped Bluecenter around recognizable treatment categories, then placed prices, practical details and common questions close to the service where they matter. Visitors can understand the difference between facial treatments, permanent makeup, massage and laser hair removal before deciding whether to book or ask for more information.",
+      "intro": "A beauty-services WordPress website for Bluecenter organising facial treatments, PMU, massage and laser hair removal with pricing and appointment information before booking.",
+      "title": "Bluecenter",
+      "slug": "bluecenter",
+      "pos": 17
+    },
+    {
+      "id": 1377,
+      "problem": "Mdvinstallaties serves customers with very different technical needs. Someone planning electrical work or a renovation can take time to compare services, while a person needing maintenance or locksmith help may want a faster route to contact.",
+      "solution": "I arranged Mdvinstallaties so planned installation work, renovations, maintenance and locksmith support each have a clear route. Customers can start from the job they need rather than reading a long company introduction, then see the practical information that helps them decide whether to request service or make direct contact.",
+      "intro": "A technical-services WordPress website for MDV Installaties separating electrical work, renovations, maintenance and locksmith support, with contact routes matched to planned and urgent needs.",
+      "title": "Mdvinstallaties",
+      "slug": "mdvinstallaties",
+      "pos": 18
+    },
+    {
+      "id": 1378,
+      "intro": "A WordPress website for C&K Bouw separating construction and staffing needs from the employer journey, so clients and building professionals can quickly choose the relevant route.",
+      "problem": "Business clients visit for construction work or specialist capacity, while professionals visit to understand the company and employment opportunities. Treating those audiences as one journey would mix project enquiries with career-oriented information and make the next action less obvious.",
+      "solution": "I separated commercial construction content from the employer route while keeping shared company context consistent. Services and projects support client decisions, while the Werken bij section gives professionals company information and a direct open-application route. Audience-specific actions prevent both journeys from competing for attention.",
+      "title": "Ckbouw",
+      "slug": "ckbouw",
+      "pos": 19
+    },
+    {
+      "id": 1379,
+      "intro": "A finishing-services WordPress website helping Proline Afbouw visitors compare latex spraying, ceilings, walls, plastering and painting before requesting a tailored quotation.",
+      "problem": "Prolineafbouw offers several finishing services that may appear similar to a visitor who is not familiar with construction terminology. Latex spraying, system ceilings, walls, metal-stud work, plastering and painting solve different parts of a project, so a simple list would not give property owners enough help to choose a route.",
+      "solution": "I designed Prolineafbouw around individual finishing services so visitors can understand where latex spraying, ceilings, walls, metal-stud work, plastering and painting fit within a project. Each service can carry its own explanation and relevant examples before the visitor reaches a quotation or contact action.",
+      "title": "Prolineafbouw",
+      "slug": "prolineafbouw",
+      "pos": 20
+    },
+    {
+      "id": 1380,
+      "intro": "A recruitment WordPress website separating Connectwerk’s candidate vacancy journey from employer staffing information, with clear registration and contact routes for both audiences.",
+      "problem": "Connectwerk has to serve candidates and employers from the same recruitment platform, but their goals are different. Candidates want vacancies, role details and an easy way to register or apply.",
+      "solution": "I shaped Connectwerk around two direct entry routes: finding work and finding staff. Candidates can move from vacancy discovery to role information, registration or application without passing through employer sales content. Supporting information stays close to the choice it is meant to clarify.",
+      "title": "Connectwerk",
+      "slug": "connectwerk",
+      "pos": 21
+    },
+    {
+      "id": 1381,
+      "intro": "A chauffeur-booking WordPress website connecting GS Privechauffeur’s transport services with trip details, vehicle choice, contact information and payment in one clear flow.",
+      "problem": "Gsprivechauffeur serves passengers whose transport needs are not all the same. An airport transfer starts with flight timing and luggage, a BOB ride is about getting people and their car home, while vehicle transport or valet parking involves a different handover.",
+      "solution": "I arranged Gsprivechauffeur around the journey type first, then the information needed to request it. Private chauffeur, airport transport, BOB rides, vehicle transport and valet parking each have their own context instead of sharing one vague description. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Gsprivechauffeur",
+      "slug": "gsprivechauffeur",
+      "pos": 22
+    },
+    {
+      "id": 1383,
+      "intro": "A flexible-office WordPress website helping Businesssuites visitors compare locations, workspace types, sizes, pricing and contract options before booking or requesting more information.",
+      "problem": "Businesssuites offers flexible workspace, but a company looking for a private office is making a different decision from someone booking a meeting room or comparing coworking. Location, facilities, pricing and the amount of privacy can all affect the choice, so one long property page would make comparison harder.",
+      "solution": "I structured Businesssuites around workspace type and location rather than treating every space as the same product. Private offices, coworking and meeting rooms can each explain their use, facilities and relevant pricing before a visitor moves toward a viewing, booking or enquiry.",
+      "title": "Businesssuites",
+      "slug": "businesssuites",
+      "pos": 23
+    },
+    {
+      "id": 1384,
+      "intro": "A civil-engineering WordPress website presenting Ingenieursbureau Traject’s specialist services, public-space projects and working method with clear routes to advice and project contact.",
+      "problem": "Ibtraject works across several civil-engineering disciplines that can sound closely related to a non-specialist client. Design, contract preparation, cost estimates, supervision, participation and cable coordination each solve a different part of an infrastructure project.",
+      "solution": "I designed Ibtraject around the stages and specialist roles that appear in civil-engineering projects. Design, contracts, estimates, supervision, participation and cable coordination are separated so a public-sector client can identify the relevant expertise before opening deeper project information. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "Ibtraject",
+      "slug": "ibtraject",
+      "pos": 24
+    },
+    {
+      "id": 1390,
+      "intro": "A WordPress platform organising MPO’s political monitoring, ten focus points, research, activities, press updates and support information into distinct and accessible content routes.",
+      "problem": "MPO combines long-term monitoring and research with activities, press updates, participation initiatives and supporter information. Without clear separation, fast-changing political content can make reports, organisational context and practical information harder for readers, supporters and journalists to locate.",
+      "solution": "I separated durable monitoring themes and research from activities, press updates, support and contact content. Reports and position papers remain easy to reach, while current updates can change independently without replacing the organisation’s core information or forcing every audience through the same content stream.",
+      "title": "Monitorpolitiekeontwikkeling",
+      "slug": "monitorpolitiekeontwikkeling",
+      "pos": 25
+    },
+    {
+      "id": 1391,
+      "intro": "A multidisciplinary WordPress website helping Kroess & Visser clients navigate a broad accountancy and advisory portfolio before moving towards the specialist or conversation relevant to their situation.",
+      "problem": "The service portfolio extends far beyond bookkeeping and tax, covering financial, organisational, technology and specialist advisory topics. Presenting those areas as one general finance offer would make it harder for business clients to identify where their specific question belongs.",
+      "solution": "I organised individual advisory areas as separate routes while keeping shared company and sector context connected. Detailed service pages explain accountancy, tax, payroll, audit, corporate finance and specialist business advice, with consultation actions positioned beside the service being considered. This keeps a broad specialist offer navigable without flattening it into general finance copy.",
+      "title": "Kroessvisser",
+      "slug": "kroessvisser",
+      "pos": 26
+    },
+    {
+      "id": 1392,
+      "intro": "A WooCommerce fruit webshop helping customers browse fresh fruit boxes, baskets and gifts, compare available products and order for personal or business occasions.",
+      "problem": "Superfruitmand sells fruit boxes, baskets and gifts to both consumers and business buyers. Those shoppers may arrive with a different occasion in mind, such as a personal gift, an office order or a recurring business need.",
+      "solution": "I structured Superfruitmand around the reason for buying as well as the product itself. Fruit boxes, baskets, gifts and business options each have a clear place, while product pages provide the detail needed before adding an item to the cart.",
+      "title": "Superfruitmand",
+      "slug": "superfruitmand",
+      "pos": 27
+    },
+    {
+      "id": 1394,
+      "intro": "A recruitment WordPress website connecting Progress vacancies, sector expertise and candidate applications with separate employer routes for staffing, selection and temporary workforce needs.",
+      "problem": "Progress has to support two recruitment audiences without making either one search through the other's information. Job seekers want vacancies, role details and a clear application path, while employers need staffing services, sector knowledge and enough trust to start a hiring conversation.",
+      "solution": "I designed Progress around a clear choice between finding work and finding people. Candidates can move from vacancies to role information and application actions without being interrupted by employer sales content. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "Progress",
+      "slug": "progress",
+      "pos": 28
+    },
+    {
+      "id": 1393,
+      "intro": "A finance WordPress website helping entrepreneurs understand bookkeeping, tax returns, annual accounts and pricing before choosing a suitable service package or advice appointment.",
+      "problem": "Bedrijfsboekhouder offers online accounting support to entrepreneurs who may need bookkeeping, tax returns, annual accounts, payroll help or financial guidance. These services often connect, but a visitor should not have to understand accounting terminology before finding the right starting point.",
+      "solution": "I shaped Bedrijfsboekhouder around recognizable business needs instead of internal accounting categories. Bookkeeping, tax work, annual accounts and payroll support each have a clear route, with supporting details placed where they help an entrepreneur understand what comes next. Supporting information stays close to the choice it is meant to clarify.",
+      "title": "Bedrijfsboekhouder",
+      "slug": "bedrijfsboekhouder",
+      "pos": 29
+    },
+    {
+      "id": 1395,
+      "intro": "A B2B recycling WordPress website explaining PRO Metaal’s metal collection, container service and responsible recycling, with clear routes for companies needing practical disposal support.",
+      "problem": "Prometaal works with recyclable materials, collection and logistics for business customers, so the first question is often operational: what material is involved and how should it be handled? Sustainability information matters, but it cannot replace details about collection, transport or the type of recycling service a company needs.",
+      "solution": "I arranged Prometaal around the material and service questions that business customers are likely to know first. Recyclable materials, collection and logistics each have a clear place, while sustainability context supports the process instead of becoming the only message. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Prometaal",
+      "slug": "prometaal",
+      "pos": 30
+    },
+    {
+      "id": 1396,
+      "intro": "A WooCommerce made-to-measure webshop guiding Blenco customers from window-decoration style and colour choices through dimensions, mounting options, pricing and online ordering.",
+      "problem": "Blenco sells made-to-measure window decoration, which means customers cannot simply choose a product and add a standard quantity to the cart. Product type, fabric or style, colour, measurements and mounting choices all affect what is being ordered.",
+      "solution": "I structured Blenco so customers configure a made-to-measure product step by step instead of confronting every option at once. Product type and visual choices come first, followed by colour, measurements and mounting preferences. Relevant actions remain close to the information needed for the next step.",
+      "title": "Blenco",
+      "slug": "blenco",
+      "pos": 31
+    },
+    {
+      "id": 1397,
+      "intro": "A media-agency WordPress website presenting C10 Media’s cross-channel advertising services, campaign work and cases with clear routes towards strategy discussions and new client enquiries.",
+      "problem": "C10media works across outdoor media, digital, radio, television and print, so a client may arrive with a campaign goal rather than a preferred channel. Listing every medium at the same level would force visitors to design their own media plan before they understand where the agency can help.",
+      "solution": "I designed C10media around the campaign decision rather than around a long inventory of media products. Strategy gives the starting context, while outdoor, digital, radio, television and print can each explain where they fit. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "C10media",
+      "slug": "c10media",
+      "pos": 32
+    },
+    {
+      "id": 1400,
+      "intro": "A WordPress comparison platform helping visitors find local service providers, request multiple quotations and compare price, reviews and regional fit before choosing.",
+      "problem": "Visitors can arrive with different service needs and locations, so company listings alone are not enough. The platform needs to connect a request with relevant providers, comparable information and a clear quotation route without making the discovery process unnecessarily complex.",
+      "solution": "I shaped the platform around service selection, local relevance and quotation requests. Visitors can move from their need to suitable provider information and request quotes from multiple businesses, while reviews and pricing support comparison. On mobile, provider content, forms and next actions remain easy to follow.",
+      "title": "Administratiegids",
+      "slug": "administratiegids",
+      "pos": 33
+    },
+    {
+      "id": 1402,
+      "intro": "A mobile-focused WordPress website connecting Miami Carwash’s six car-care services, transparent pricing, two locations and flexible walk-in or booking options.",
+      "problem": "Customers need to compare different levels of car care, understand pricing and decide whether to walk in, request a quote or plan a visit. Strong visual branding therefore had to work alongside practical service information rather than push it out of view.",
+      "solution": "I arranged six car-care services into distinct routes and kept pricing, location information and next actions close to each decision. Visitors can choose between walk-in service and planned booking, while the two locations remain easy to find. The responsive structure keeps those practical choices prominent on mobile.",
+      "title": "Miamicarwash",
+      "slug": "miamicarwash",
+      "pos": 34
+    },
+    {
+      "id": 1401,
+      "intro": "A taxi-booking WordPress website helping Taxi Centrale Rijswijk visitors review fares, choose transport options and move from route information to a mobile-friendly reservation.",
+      "problem": "Taxicentralerijswijk serves passengers with transport needs, including local rides, airport journeys and business travel. An airport passenger needs flight-related clarity, while a local passenger may care about pickup, destination and quick contact.",
+      "solution": "I structured Taxicentralerijswijk around the type of journey a passenger is planning. Local rides, airport transport and business travel have their own context, so visitors can understand what information belongs to the request before opening a booking or contact route.",
+      "title": "Taxicentralerijswijk",
+      "slug": "taxicentralerijswijk",
+      "pos": 35
+    },
+    {
+      "id": 1405,
+      "intro": "A financial-services WordPress website helping entrepreneurs compare Van Bach Finance bookkeeping, payroll, tax and advice packages before scheduling a personal introductory appointment.",
+      "problem": "Vanbachfinance needs to explain financial support to businesses that may arrive with questions about administration, reporting, tax work or finance guidance. These topics are connected, but a visitor should not have to understand internal structure before finding the relevant service.",
+      "solution": "I designed Vanbachfinance around the financial tasks clients are likely to recognise first. Administration, reporting, tax support and finance guidance each receive a clear route, with supporting information added where it helps someone decide whether the service fits their question.",
+      "title": "Vanbachfinance",
+      "slug": "vanbachfinance",
+      "pos": 36
+    },
+    {
+      "id": 1406,
+      "intro": "A recruitment WordPress website helping driving instructors explore Alpina Drive vacancies, work benefits and location options before moving directly towards an application.",
+      "problem": "Werkenbijalpinadrive is a recruitment site for driving professionals, so candidates need more than a list of open roles. They want to understand the employer, the type of driving work, practical conditions and what the application process looks like before sharing their details.",
+      "solution": "I shaped Werkenbijalpinadrive around the candidate's decision sequence. Employer information and the reality of the work provide context first, while vacancies lead into role details and a direct application path. Supporting information stays close to the choice it is meant to clarify.",
+      "title": "Werkenbijalpinadrive",
+      "slug": "werkenbijalpinadrive",
+      "pos": 37
+    },
+    {
+      "id": 1410,
+      "intro": "An education WordPress website guiding future driving instructors through SoDrive Academie training options, prices, start dates, available places and direct course registration.",
+      "problem": "Sodriveacademie trains prospective driving instructors, and those students need to understand more than the course name before enrolling. Requirements, programme content, planning and the route into the profession can all affect whether the training fits someone's situation.",
+      "solution": "I arranged Sodriveacademie around the questions a prospective driving instructor is likely to ask before enrolling. The training route is introduced first, followed by course content, requirements, planning and practical details. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Sodriveacademie",
+      "slug": "sodriveacademie",
+      "pos": 38
+    },
+    {
+      "id": 1409,
+      "intro": "A community-education WordPress website bringing Furkan Educatie lessons, homework, dates, documents, registration and member access together for students, parents and families.",
+      "problem": "Furkaneducatie supports students and parents through courses, tutoring and learning programmes. Families may arrive with questions about age, subject or format, so a single overview of everything offered would not help them decide which route fits.",
+      "solution": "I structured Furkaneducatie around distinct learning programmes so students and parents can start with the type of support they are considering. Course and tutoring information explains the purpose, practical details and next step before a registration or contact action appears.",
+      "title": "Furkaneducatie",
+      "slug": "furkaneducatie",
+      "pos": 39
+    },
+    {
+      "id": 1415,
+      "intro": "A B2B horticultural-services WordPress website helping growers compare staffing, crop work, potting, labelling and equipment rental before requesting a quotation.",
+      "problem": "Tasveren combines horticultural production with staffing, potting work and rental services. Visitors need to distinguish operational tasks such as crop support, pot and tray filling, labelling and equipment rental without working through broad or unrelated horticulture information.",
+      "solution": "I separated the experience into recognisable routes for staffing, produce and crop work, potting services and rental. Facility tasks such as filling pots and trays and labelling remain connected to their operational context, while quotation actions give business customers a direct next step.",
+      "title": "Tasveren",
+      "slug": "tasveren",
+      "pos": 40
+    },
+    {
+      "id": 1417,
+      "intro": "A driving-school WordPress website helping learners compare manual and automatic lessons, packages, prices, refresher training and trial-lesson options.",
+      "problem": "Learners need to compare manual and automatic driving lessons, prices, packages and practical conditions before starting. Others arrive specifically for refresher training, so treating everything as one generic course journey would hide important differences between those decisions.",
+      "solution": "I structured the site around manual and automatic lesson routes, followed by package pricing and trial-lesson information. Refresher training and regional availability remain separate where needed, while enquiry and registration forms appear after visitors have enough context to choose their next step.",
+      "title": "Leercentrum",
+      "slug": "leercentrum",
+      "pos": 41
+    },
+    {
+      "id": 1418,
+      "intro": "A driving-school WordPress website guiding learner drivers through lesson options, packages, pricing, exam information and trial-lesson registration.",
+      "problem": "Sodrive needs to help learner drivers compare lesson options before they are ready to book. Packages, pricing, exam preparation and practical information all matter, but they answer different questions at different stages.",
+      "solution": "I structured Sodrive around the decisions a learner makes before booking. Lesson types and packages provide the first comparison, followed by pricing, exam information and practical details that help someone understand what the route involves. Relevant actions remain close to the information needed for the next step.",
+      "title": "Sodrive",
+      "slug": "sodrive",
+      "pos": 42
+    },
+    {
+      "id": 1416,
+      "intro": "An automotive lead-generation WordPress website guiding car owners from vehicle details and valuation interest through the selling process to an offer and handover.",
+      "problem": "Autoinkoopatlas serves car owners who want to sell a vehicle and need to understand what happens before they submit their details. A seller may want a valuation, information about the selling process or reassurance about the handover.",
+      "solution": "I arranged Autoinkoopatlas around the seller's journey from orientation to vehicle submission. The site explains the selling steps and relevant trust information before asking for the details needed for a valuation or follow-up. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Autoinkoopatlas",
+      "slug": "autoinkoopatlas",
+      "pos": 43
+    },
+    {
+      "id": 1422,
+      "intro": "A bookkeeping WordPress website helping entrepreneurs understand bookkeeping, tax work, annual accounts and support packages before making an enquiry.",
+      "problem": "Boekhoudsnel has to make bookkeeping services understandable to entrepreneurs who may be comparing packages as well as individual tasks. Bookkeeping, tax work and annual accounts often belong together, but a visitor still needs to know what is included and when a package or direct conversation is appropriate.",
+      "solution": "I designed Boekhoudsnel around the accounting tasks an entrepreneur is likely to recognise first, then connected them to package information where comparison is useful. Bookkeeping, tax work and annual accounts each have clear explanations, while packages show how recurring support can be grouped without hiding the underlying services.",
+      "title": "Boekhoudsnel",
+      "slug": "boekhoudsnel-bookkeeping-service-website",
+      "pos": 44
+    },
+    {
+      "id": 1419,
+      "intro": "A sustainable-energy WordPress website helping homeowners compare solar panels, charging stations, home batteries and heat pumps before requesting tailored advice or a quotation.",
+      "problem": "Solar panels, charging stations, home batteries and heat pumps each involve different questions about suitability and installation. Presenting them as one generic electrical service would make it harder for homeowners to identify which energy route matches their situation.",
+      "solution": "I separated the four energy solutions into distinct routes and connected them to practical information and a postcode-based check. Monitoring and supporting energy information remain available where relevant, while quotation and advice actions follow the product context instead of treating every household as the same installation.",
+      "title": "Voltworks",
+      "slug": "voltworks",
+      "pos": 45
+    },
+    {
+      "id": 1423,
+      "intro": "A WooCommerce grocery webshop helping customers browse fresh fruit and vegetables, review product details and quantities, and move quickly from category discovery to cart.",
+      "problem": "Jouwgroenteboer is a WooCommerce grocery shop where customers may browse fruit and vegetables by habit or need. Product freshness is important to the business, but the webshop still has to help people find items, understand quantities and move into the cart without making every product page feel identical.",
+      "solution": "I arranged Jouwgroenteboer around fast category discovery and repeatable product decisions. Fruit, vegetables and related produce groups give shoppers a clear starting point, while product pages provide the quantity, price and relevant details needed before adding an item to the cart.",
+      "title": "Jouwgroenteboer",
+      "slug": "jouwgroenteboer",
+      "pos": 46
+    },
+    {
+      "id": 1424,
+      "intro": "A home-installation WordPress website helping homeowners navigate heating, climate and maintenance services before requesting advice or a quotation.",
+      "problem": "Kervana serves homeowners who may know they have a heating or climate problem without knowing which technical service they need. Heating, cooling, maintenance and installation questions can overlap, especially when an existing system is involved.",
+      "solution": "I structured Kervana around the type of question a homeowner is likely to bring to the site. Heating, climate solutions and maintenance each have a clear route, with supporting information introduced after the visitor has chosen the area that fits the situation.",
+      "title": "Kervana",
+      "slug": "kervana",
+      "pos": 47
+    },
+    {
+      "id": 1427,
+      "intro": "An electrical-services WordPress website helping visitors distinguish electrical work, charging and other energy solutions before moving to project information or contact.",
+      "problem": "Envolt combines electrical work with energy solutions, so visitors can arrive with different starting points. One person may need an electrical installation, while another is exploring charging or energy-related improvements.",
+      "solution": "I designed Envolt around separate technical needs instead of one long list of capabilities. Electrical work, energy solutions and related project information each have their own place, so visitors can start with the question they recognise and then read the details that matter for that route.",
+      "title": "Envolt",
+      "slug": "envolt",
+      "pos": 48
+    },
+    {
+      "id": 1426,
+      "intro": "A wedding photography and film WordPress portfolio showcasing films, photography, couple stories and galleries before guiding prospective couples towards an enquiry.",
+      "problem": "Ozturkmotionpictures has to win trust through creative work, but couples still need practical information before choosing a wedding filmmaker. A showreel communicates style, but it does not explain what is included, how the service works or how someone can make contact.",
+      "solution": "I placed Ozturkmotionpictures' film work at the centre of the WordPress experience, then added service context around the moments when a couple is likely to ask practical questions. Wedding films and visual examples establish the creative direction first, while concise explanations clarify the offer without interrupting the viewing experience.",
+      "title": "Ozturkmotionpictures",
+      "slug": "ozturkmotionpictures",
+      "pos": 49
+    },
+    {
+      "id": 1429,
+      "intro": "A real-estate investment WordPress website presenting Odetra’s international property opportunities and project context before guiding investors towards further information or contact.",
+      "problem": "Odetra presents property investment opportunities, where visitors need more than an attractive project image before deciding whether to ask for details. Investors need to understand the opportunity, project context and relevant information before they are ready for contact.",
+      "solution": "I arranged Odetra so each property opportunity can be understood through its own project context before a visitor reaches the enquiry step. The WordPress structure separates the overview from deeper information, allowing investors to scan available projects first and then focus on the details that are relevant to a specific opportunity.",
+      "title": "Odetra",
+      "slug": "odetra",
+      "pos": 50
+    },
+    {
+      "id": 1428,
+      "intro": "An equipment-rental WordPress website helping customers compare machine types, reach, lifting capacity and attachments before requesting availability, advice or a tailored rental quote.",
+      "problem": "Customers often know the height, load or site conditions of a job before they know the exact machine model. The site therefore needed to make technical specifications comparable without suggesting that every machine is available on every date or suitable for every task.",
+      "solution": "I organised the rental offer around machine type and practical specifications such as reach, lifting capacity and attachments. Each option leads into detailed information, advice and a tailored rental request, while the same hierarchy stays usable on mobile for customers comparing equipment on location.",
+      "title": "Marcoverhuurt",
+      "slug": "marcoverhuurt",
+      "pos": 51
+    },
+    {
+      "id": 1430,
+      "intro": "A technical-services WordPress website helping customers identify plumbing, installation-technology and metalwork support before moving to contact or quotation.",
+      "problem": "Customers may arrive with a leak, heating or installation issue, or a metal repair, without knowing which technical discipline applies. Focusing the site mainly on custom metalwork would hide two major service areas and make the first choice unnecessarily difficult.",
+      "solution": "I arranged the site around three clear service routes: plumbing, installation technology and metalwork. Each route explains the relevant jobs and practical context before contact or quotation, so visitors can start from the problem they recognise instead of interpreting a broad technical-services message.",
+      "title": "Devrijesmid",
+      "slug": "devrijesmid",
+      "pos": 52
+    },
+    {
+      "id": 1431,
+      "intro": "A WooCommerce recovery-products webshop helping shoppers compare massage guns and accessories, understand product differences and move from product education to checkout.",
+      "problem": "Palmeroshop offers recovery products that can look similar, especially to shoppers who are new to massage guns or related wellness equipment. Product pages therefore need to explain practical differences without turning general product information into medical advice.",
+      "solution": "I shaped Palmeroshop so shoppers can move from the recovery category to individual products and compare the details that belong to the purchase decision. Product information, pricing and cart actions remain connected, while supporting explanations help customers understand the equipment without presenting it as a guaranteed medical solution.",
+      "title": "Palmeroshop",
+      "slug": "palmeroshop",
+      "pos": 53
+    },
+    {
+      "id": 1433,
+      "intro": "A comparison and lead-generation WordPress website helping visitors understand home-clearance services, compare local providers and submit a relevant quote request.",
+      "problem": "Woningontruimingvergelijken serves people who may be arranging a clearance during a move, estate situation or property handover. They often need to understand what a clearance can include before comparing providers, and local availability may matter.",
+      "solution": "I arranged Woningontruimingvergelijken around the questions that come before a quote request. Practical information helps visitors define the clearance need first, after which the platform can guide them toward provider comparison and a request containing the details that matter. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Woningontruimingvergelijken",
+      "slug": "woningontruimingvergelijken",
+      "pos": 54
+    },
+    {
+      "id": 1432,
+      "intro": "A sustainable-energy WordPress website helping homeowners compare solar panels, inverters, charging and storage solutions before requesting postcode-based advice or a quotation.",
+      "problem": "The current offer is centred on energy products and package combinations, not roof construction. Visitors need to compare generation, storage, charging and inverter choices without being led into a roof-and-solar decision that the live service structure no longer reflects.",
+      "solution": "I structured the journey around individual energy solutions and the available package combinations. Product routes explain solar panels, inverters, charging and storage first, while postcode-based advice and quotation actions provide the next step without treating projected savings, payback or installation timing as portfolio results.",
+      "title": "Solardaktechnique",
+      "slug": "solardaktechnique",
+      "pos": 55
+    },
+    {
+      "id": 1434,
+      "intro": "An interior and renovation WordPress website helping visitors explore sanitary, flooring, tiles, window decoration and room solutions before moving to showroom advice, an appointment or quotation.",
+      "problem": "Visitors are choosing between several interior categories and room-based solutions, not simply one sustainable-home measure. The website needed to make products, inspiration and renovation services understandable together while keeping showroom advice and project contact close to the relevant decision.",
+      "solution": "I grouped the experience around product categories such as sanitary, flooring, tiles and window decoration, supported by room solutions, renovation work and completed projects. Showroom advice, appointments and quotation actions then turn visual inspiration into a practical route without making sustainability claims the centre of the case.",
+      "title": "Neturalhome",
+      "slug": "neturalhome",
+      "pos": 56
+    },
+    {
+      "id": 1435,
+      "intro": "An education WordPress website helping students and parents compare tutoring, homework support, exam preparation and other programmes before choosing a trial lesson or registration route.",
+      "problem": "Oxfordacademy needs to help students and parents compare programmes without making the website feel like a long course catalogue. A visitor may be checking the subject, schedule, level or practical requirements before deciding whether a programme fits.",
+      "solution": "I shaped Oxfordacademy so programmes provide the first decision point, followed by the details students and parents need to judge fit. Course information, schedules and practical requirements stay close to the relevant programme instead of being repeated across unrelated sections.",
+      "title": "Oxfordacademy",
+      "slug": "oxfordacademy",
+      "pos": 57
+    },
+    {
+      "id": 1439,
+      "intro": "A B2B insulation WordPress website presenting Marcos Montage’s insulation services, project experience, certificates and partners before guiding contractors towards a quotation.",
+      "problem": "The business is focused on insulation projects rather than general installation and finishing work. Contractors need to understand the insulation scope, project experience and company context before deciding whether Marco’s Montage fits a specific construction assignment.",
+      "solution": "I organised the site around insulation as the primary service, supported by completed projects, company information, certificates, partners and a direct quotation route. Equipment rental remains separate through Marco Verhuurt, preventing the rental offer from diluting the main B2B insulation proposition.",
+      "title": "Marcosmontage",
+      "slug": "marcosmontage",
+      "pos": 58
+    },
+    {
+      "id": 1714,
+      "intro": "A humanitarian nonprofit WordPress website connecting Hasene’s projects and campaigns with clear donation, participation and organisational information.",
+      "problem": "Hasene communicates humanitarian work to people who may arrive with different intentions: learning about a project, supporting a campaign, donating or understanding the organisation. Emotional stories matter, but they cannot replace clear information about what a campaign is for and how someone can participate.",
+      "solution": "I structured Hasene around its humanitarian projects and campaigns, giving visitors context before presenting the relevant participation or donation route. Project information explains what the initiative concerns, while organisational details help people understand who is behind the work. Relevant actions remain close to the information needed for the next step.",
+      "title": "Hasene",
+      "slug": "hasene",
+      "pos": 59
+    },
+    {
+      "id": 1438,
+      "intro": "An interior and home-renovation WordPress website helping visitors explore kitchens, bathrooms, floors, wall finishes, steel doors and custom renovation options before booking showroom advice or requesting a quote.",
+      "problem": "Homeplaza has to help people explore home and interior options before they know the exact product or service they want. Visual inspiration can attract attention, but it creates a risk that practical categories and next steps disappear behind imagery.",
+      "solution": "I designed Homeplaza so visual inspiration supports the main home categories instead of replacing them. Visitors can start with the type of product or service they are exploring, see relevant examples and then move into the practical information connected to that choice.",
+      "title": "Homeplaza",
+      "slug": "homeplaza",
+      "pos": 60
+    },
+    {
+      "id": 1832,
+      "intro": "A cybersecurity and regulatory-consulting WordPress website helping organisations navigate risk, resilience, DORA, NIS2 and assurance services before moving to a consultation.",
+      "problem": "Brightlyn presents cybersecurity services to organisations that may understand the risk they face without knowing which technical service should come first. Security, assessment and support topics can overlap, and a site filled with specialist terms can make decision makers feel less certain rather than more informed.",
+      "solution": "I shaped Brightlyn around the security questions an organisation is likely to recognize before it knows the technical answer. Separate service routes explain what each area is for, while risk context and technical proof appear where they help a decision maker judge relevance.",
+      "title": "Brightlyn",
+      "slug": "brightlyn",
+      "pos": 61
+    },
+    {
+      "id": 1846,
+      "intro": "A driving-school WordPress website guiding learner drivers from trial lessons and intensive-course options through instructor information, reviews, FAQs and mobile registration.",
+      "problem": "Gldrive needs to help learner drivers choose lessons before they have much experience with driving-school terms. Packages, prices, exam preparation and instructor information all influence the decision, but they should not arrive with equal weight.",
+      "solution": "I structured Gldrive around the decisions a learner makes before booking: choose the lesson route, compare the relevant package information and then review exam or instructor details where they help. Pricing stays connected to the option it belongs to, so visitors do not have to reconstruct the offer from separate pages.",
+      "title": "Gldrive",
+      "slug": "gldrive",
+      "pos": 62
+    },
+    {
+      "id": 1839,
+      "intro": "A B2B risk, compliance and certification WordPress website helping organisations distinguish ISAE, ISO, information-security and control services before moving to a quickscan or consultation.",
+      "problem": "Business clients may know they face a compliance, audit or control requirement without knowing whether ISAE, ISO, risk management or another framework applies. Dense specialist terminology could make those routes harder to distinguish before an advisory conversation begins.",
+      "solution": "I separated risk management, compliance, certification and control topics into recognisable service routes, supported by quickscan and consultation actions. Recruitment and IT-detachering content remain available for a second audience without competing with the primary advisory journey. This keeps technical detail available without making the first decision dependent on specialist terminology.",
+      "title": "Yco-it",
+      "slug": "yco-it",
+      "pos": 63
+    },
+    {
+      "id": 1855,
+      "intro": "A business-address WordPress website helping entrepreneurs compare registration-address packages, locations, post handling and scanning options before starting a structured application.",
+      "problem": "Bedrijfspostadres serves entrepreneurs who need a business address but may be comparing combinations of registration, post handling and scanning. The service seems simple until package details, account access and practical conditions are added.",
+      "solution": "I designed Bedrijfspostadres around the steps an entrepreneur takes before choosing a package. The core address service is explained first, followed by post handling, scanning and the differences that matter between available options. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "Bedrijfspostadres",
+      "slug": "bedrijfspostadres",
+      "pos": 64
+    },
+    {
+      "id": 1863,
+      "intro": "An electrical-services WordPress website helping homeowners and businesses navigate installations, lighting, PV, batteries, heat pumps and maintenance before requesting advice or a quotation.",
+      "problem": "Dmelektro works for homeowners and businesses that may arrive with an electrical problem, an installation project or a maintenance need. Those situations require different information, and a broad list of electrical services would not help visitors judge urgency, scope or the right next step.",
+      "solution": "I shaped Dmelektro around the type of electrical need rather than a single generic service page. Installation work, maintenance and other technical support have clear routes, with practical information introduced where it helps someone understand what to describe in an enquiry.",
+      "title": "Dmelektro",
+      "slug": "dmelektro",
+      "pos": 65
+    },
+    {
+      "id": 1877,
+      "intro": "An automotive booking WordPress website helping drivers select a vehicle, choose maintenance, APK, repair or specialist services and move directly towards an appointment.",
+      "problem": "Fixfinder covers a large range of automotive services, while drivers may start with their vehicle and a maintenance or repair need rather than the exact technical service name. A traditional garage directory would make that choice unnecessarily difficult.",
+      "solution": "I organised the journey around vehicle identification and service selection first. Drivers can then choose the relevant APK, maintenance, repair or specialist service and continue into date, time and location selection, turning a broad automotive catalogue into a defined appointment flow.",
+      "title": "Fixfinder",
+      "slug": "fixfinder",
+      "pos": 66
+    },
+    {
+      "id": 1870,
+      "intro": "A language-services WordPress website separating interpreter requests, translation support and interpreter recruitment into clear routes for clients and professionals.",
+      "problem": "VoiceLinq serves different language-service needs: organisations and individuals may need an interpreter or translation, while professionals visit for assignments or to enter the interpreting field. Combining those intentions into one generic communication journey would make the next step unclear.",
+      "solution": "I separated the experience into requesting an interpreter, existing-interpreter information and becoming an interpreter, while translation expertise remains part of the wider language offer. Direct calls to action keep each audience on its own route without forcing clients through recruitment content or interpreters through customer enquiries.",
+      "title": "Voicelinq",
+      "slug": "voicelinq",
+      "pos": 67
+    },
+    {
+      "id": 1884,
+      "intro": "A staffing WordPress website separating employer recruitment needs from candidate applications across hospitality, production, logistics and horticulture.",
+      "problem": "QuickTemp serves employers looking for flexible staffing and candidates looking for work across several sectors. Those journeys need different information: businesses start from workforce needs and job types, while candidates need a simple way to indicate their preferred work and availability.",
+      "solution": "I separated employer-oriented sector and staffing content from the candidate signup route. Hospitality, production, logistics and horticulture provide clear work contexts, while candidates can apply directly through a focused form instead of first navigating an unsupported vacancy catalogue. Employer and candidate actions remain separated throughout the responsive journey.",
+      "title": "Quicktemp",
+      "slug": "quicktemp",
+      "pos": 68
+    },
+    {
+      "id": 1891,
+      "intro": "A midwifery WordPress website organising pregnancy, birth and postnatal-care information around the stages expectant parents need most, with location and contact routes kept close to each stage.",
+      "problem": "Expectant parents need different information during pregnancy, preparation for birth and the postnatal period. Mixing those stages into generic family-care content would make important maternity information harder to find and incorrectly position a midwifery practice as childcare.",
+      "solution": "I shaped the information around pregnancy, birth and postnatal care so each stage has its own practical context and relevant contact route. The calm hierarchy helps expectant parents move through the maternity journey without turning medical care into promotional promises or unsupported outcome claims.",
+      "title": "Vchetwonder",
+      "slug": "vchetwonder",
+      "pos": 69
+    },
+    {
+      "id": 2173,
+      "intro": "A WordPress internal-linking plugin helping administrators manage keyword-to-URL rules, exclusions, limits, reports and supported integrations from one controlled workflow.",
+      "problem": "Super Simple Internal Links addresses a WordPress task that becomes difficult when a site has many pages and repeated internal-link opportunities. Manual editing can be inconsistent, but automatic linking also creates risk if keyword rules, exclusions and limits are not visible.",
+      "solution": "I designed Super Simple Internal Links around a central WordPress admin workflow where keyword rules, automatic linking, exclusions, suggestions and reports stay visible. Administrators can review the configuration, maintain larger rule sets through import or export and inspect logs instead of treating link creation as a black box.",
+      "title": "Super Simple Internal Links",
+      "slug": "super-simple-internal-links",
+      "pos": 70
+    },
+    {
+      "id": 1898,
+      "intro": "An interior and showroom WordPress website helping visitors explore kitchens, appliances, bathrooms, sanitary products and tiles before moving to advice at one of the showroom locations.",
+      "problem": "Visitors may begin with a kitchen, bathroom or individual interior product and still need to compare styles, materials and practical options before visiting a showroom. Strong imagery therefore had to inspire without hiding product categories, locations or the route to advice.",
+      "solution": "I arranged product and inspiration content around recognisable interior categories, then connected those choices to practical information and the two showroom locations. Advice actions appear after relevant product context, helping visitors move from browsing kitchens, bathrooms or tiles towards a more informed showroom conversation.",
+      "title": "Starkeuken",
+      "slug": "starkeuken",
+      "pos": 71
+    },
+    {
+      "id": 2213,
+      "intro": "A driving-school WordPress website guiding learners from a free trial lesson through packages, pricing and the route to a driving licence before direct enquiry or signup.",
+      "problem": "AC Drive needs to help learner drivers choose a lesson route before they understand differences between packages, exam preparation and requirements. A driving-school site can easily become a price list, but price alone does not explain what a learner is selecting or what the next step involves.",
+      "solution": "I designed AC Drive around the choices a learner makes before booking. Lesson routes provide the starting point, followed by package information and practical details that belong to each option. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "AC Drive",
+      "slug": "ac-drive",
+      "pos": 72
+    },
+    {
+      "id": 2223,
+      "intro": "A read-only WordPress media-audit plugin helping administrators find where images are used across featured media and supported ACF fields before replacing or deleting files.",
+      "problem": "Image Usage Scanner solves a WordPress maintenance question that is deceptively difficult: where is a media item being used? Images can appear as featured media, in normal content or inside supported ACF fields, so deleting or replacing a file based on one screen can break references elsewhere.",
+      "solution": "I shaped Image Usage Scanner as an admin-only audit workflow that reports media relationships instead of modifying them. It checks featured images and supported ACF image or gallery fields in bounded batches, saving progress so a scan can continue after interruption.",
+      "title": "Image Usage Scanner",
+      "slug": "image-usage-scanner",
+      "pos": 73
+    },
+    {
+      "id": 2255,
+      "intro": "A WordPress course-management plugin centralising schedules, start dates, course types, times, meetings, registration status and available places for responsive listings and REST integrations.",
+      "problem": "Course Dates Manager addresses a publishing problem that appears when course information and dates are maintained in pages. Editors can end up repeating programme details, schedules and category information in several places, which makes updates harder to keep consistent.",
+      "solution": "I developed Course Dates Manager around a dedicated course post type and taxonomy so programme information can be maintained in one structured place. A responsive shortcode renders the public overview, while paginated REST endpoints expose only published course data for integrations that need it.",
+      "title": "Course Dates Manager",
+      "slug": "course-dates-manager",
+      "pos": 74
+    },
+    {
+      "id": 2238,
+      "intro": "An admin-only WordPress developer tool for previewing, applying and rolling back structured JSON patch packages, with production patching blocked by default unless explicitly enabled.",
+      "problem": "AI Patch Runner deals with a high-risk WordPress task: applying structured code changes to installed plugins without turning the admin area into an unrestricted file editor. A bad patch can break functionality, so speed is less important than knowing what changes, who applies it and how to recover if the result is wrong.",
+      "solution": "I designed AI Patch Runner as an admin-only workflow for structured JSON patch packages. Preview is kept separate from execution so a proposed change can be inspected before plugin files are modified. Relevant actions remain close to the information needed for the next step.",
+      "title": "AI Patch Runner",
+      "slug": "ai-patch-runner",
+      "pos": 75
+    },
+    {
+      "id": 2283,
+      "intro": "A WordPress content-management plugin helping administrators export ACF and page text for spreadsheet review and import validated edits back through a controlled workflow.",
+      "problem": "ACF CSV Manager began as a way to make structured WordPress content easier to review outside separate editing screens. Exporting ACF-oriented data to CSV can help with bulk review, but importing changes back creates risk when rows, fields or content ownership are unclear.",
+      "solution": "I developed ACF CSV Manager as an earlier workflow for exporting ACF-related content into a reviewable spreadsheet format and returning approved updates through WordPress. The design demonstrated how bulk text work could be organised without opening every page individually, while keeping the import process separate from normal editing.",
+      "title": "ACF CSV Manager",
+      "slug": "acf-csv-manager",
+      "pos": 76
+    },
+    {
+      "id": 2473,
+      "intro": "A WordPress media-management plugin combining metadata editing, CSV import and export, usage scanning and controlled ZIP exports within one admin workflow.",
+      "problem": "Modern Image Manager brings WordPress media tasks into one admin workflow, which is useful but also risky. Editing metadata is simple compared with renaming files, importing CSV changes or deleting attachments, because those actions can affect URLs and references across the site.",
+      "solution": "I shaped Modern Image Manager as a WordPress admin interface for metadata editing, CSV import and export, usage scanning and ZIP exports. Requests are validated before higher-risk actions run, and filename changes preserve the current extension. Supporting information stays close to the choice it is meant to clarify.",
+      "title": "Modern Image Manager",
+      "slug": "modern-image-manager",
+      "pos": 77
+    },
+    {
+      "id": 2989,
+      "intro": "A WordPress admin tool centralising ACF text, core page fields, SEO metadata and image text with inline editing plus validated CSV and XLSX workflows.",
+      "problem": "ACF Page Text Manager addresses a WordPress editing problem created when page text lives across core fields, ACF, SEO plugins and media metadata. Reviewing content one screen at a time is slow, but bulk spreadsheets introduce their own risks when unsupported fields or media instructions are included.",
+      "solution": "I developed ACF Page Text Manager around one WordPress admin screen for supported core fields, ACF text, SEO metadata and image text. Editors can update values inline or move selected content through CSV and XLSX workflows, with validation before imported data is processed.",
+      "title": "ACF Page Text Manager",
+      "slug": "acf-page-text-manager",
+      "pos": 78
+    },
+    {
+      "id": 3660,
+      "intro": "A portfolio-led architecture WordPress website placing large project imagery first while supporting it with clear project browsing, studio mission and team information across desktop, tablet and mobile.",
+      "problem": "Spring architecten needs a portfolio that lets the work establish credibility before visitors read a long explanation of the studio. Prospective clients often start with project type, visual character and relevance.",
+      "solution": "I structured Spring architecten around project imagery and the information that helps a prospective client understand each piece of work. Projects come forward first, with architectural context and studio information supporting the visual evidence rather than competing with it. Relevant actions remain close to the information needed for the next step.",
+      "title": "Spring architecten",
+      "slug": "spring-architecten",
+      "pos": 79
+    },
+    {
+      "id": 4092,
+      "intro": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields.",
+      "problem": "SEO Image Assistant for Shutterstock connects stock-image research with the WordPress page where an image may eventually be used. That creates more responsibility than a simple search box: OAuth credentials, licensing status, file validation and ACF assignments all sit in the same workflow.",
+      "solution": "I shaped SEO Image Assistant for Shutterstock as a page-aware WordPress workflow that begins with keyword or page context and ends with a reviewed image assignment. OAuth connects the service, while search and suggestion queues let administrators inspect assets before licensing.",
+      "title": "SEO Image Assistant",
+      "slug": "seo-image-assistant",
+      "pos": 80
+    },
+    {
+      "id": 4116,
+      "intro": "A hotel-staffing WordPress website helping hospitality organisations review housekeeping and cleaning roles before requesting temporary personnel.",
+      "problem": "Hotels may need additional housekeeping capacity because of occupancy peaks, sickness or changing schedules, but the staffing requirement differs by role and shift. The website needed to make available hotel roles and the request process understandable without turning service promises about speed or quality into portfolio results.",
+      "solution": "I organised DCA Schoonmaak around recognisable hotel staffing roles and a direct personnel-request journey. Housekeeping and related cleaning positions stay close to practical process and recruiter information, giving hotel decision-makers enough context to describe their staffing need before submitting a request.",
+      "title": "Dcaschoonmaak",
+      "slug": "dcaschoonmaak",
+      "pos": 81
+    },
+    {
+      "id": 4124,
+      "intro": "An operational-safety WordPress website helping organisations compare fire-watch and specialist safety support before requesting personnel or a quotation.",
+      "problem": "Organisations may start with temporary fire risk, a shutdown, work in a confined space or another operational situation rather than the name of the specialist they require. Brandwatches, gas analysts, confined-space attendants and rescue support have different responsibilities and should not be presented as interchangeable safety roles.",
+      "solution": "I structured the site around the operational safety need, with fire-watch services forming the primary route and specialist support receiving its own context. Regional pages, practical safety content and quotation access support the decision without suggesting that temporary personnel automatically guarantee compliance, protection or incident prevention.",
+      "title": "Babylonsafety",
+      "slug": "babylonsafety",
+      "pos": 82
+    },
+    {
+      "id": 4190,
+      "intro": "A multilingual WordPress management plugin centralising content scanning, translation review, visual editing and CSV or XLIFF exchange across common site content.",
+      "problem": "Webactueel Translate has to manage multilingual WordPress content across places normal translation screens may not cover. Source text can live in posts, Elementor, ACF, menus, widgets, taxonomies, WooCommerce and SEO metadata, while review status and exchange files add complexity.",
+      "solution": "I developed Webactueel Translate as a WordPress workflow for language management, content scanning, visual editing, translation tables and CSV or XLIFF exchange. The scanner can inspect public post types, Elementor data, ACF fields, menus, widgets, taxonomies and WooCommerce content where those sources are available.",
+      "title": "Translate",
+      "slug": "translate",
+      "pos": 83
+    },
+    {
+      "id": 4155,
+      "intro": "A page-aware WordPress image workflow helping administrators research, review, license and assign Shutterstock assets to relevant content and ACF image fields.",
+      "problem": "SEO Shutterstock focuses on a practical WordPress problem: finding stock images that fit the context of a specific page instead of searching separately and remembering where each asset belongs. Page context, search terms, licensing, downloads and media assignment all happen in one workflow, so an attractive result is not enough. The asset also has to be licensed, valid and suitable for the target field.\n\nThe project therefore needed clear separation between discovery, review, licensing and assignment, with permissions around higher-risk actions. Existing usage context should help reduce repeated selections across a larger site. The portfolio story could not imply that a stock image or filename creates ranking gains by itself. The challenge was controlled page-aware image research, not a promise of automatic SEO improvement.",
+      "solution": "I structured SEO Shutterstock as a page-aware image workflow inside WordPress. Administrators begin with page or keyword context, review Shutterstock suggestions and then connect a selected licensed asset to the appropriate WordPress or ACF image location. Search, review, licensing and assignment remain separate steps so external images are never treated as automatically suitable.\n\nDownloads and media imports require valid file information before WordPress stores them, while capability checks protect higher-risk actions. Existing usage information helps reduce repeated choices across larger content sets. I kept the portfolio explanation focused on research and controlled placement rather than ranking claims. The case now shows how contextual stock-image work can fit a WordPress editorial process without suggesting that image selection alone guarantees search visibility, traffic or conversion.",
+      "title": "Seo Shutterstock",
+      "slug": "seo-shutterstock",
+      "pos": 84
+    },
+    {
+      "id": 4229,
+      "intro": "A commercial cleaning WordPress website helping organisations navigate regular cleaning, specialist services and drone-based cleaning or inspection before requesting a quotation.",
+      "problem": "DCA Dienstverlening combines regular cleaning, specialist work and drone-based cleaning or inspection. Organisations may arrive with a building type or maintenance problem rather than the exact name of the service they need.",
+      "solution": "I arranged DCA Dienstverlening around service families that match the questions organisations are likely to bring to the site. Regular cleaning, specialist cleaning and drone-related services have separate routes, while reviews, client logos and working-method information support trust without replacing the explanation of the work.",
+      "title": "Dcadienstverlening",
+      "slug": "dcadienstverlening",
+      "pos": 85
+    },
+    {
+      "id": 4239,
+      "intro": "A WordPress admin plugin for reviewing and bulk-assigning Media Library images to supported ACF Image fields and featured images with explicit mapping controls.",
+      "problem": "ACF Image Auto Filler reduces repetitive image assignment, but bulk convenience becomes risky when WordPress content contains different ACF structures. A simple Image field can be mapped predictably, while repeaters, flexible content, galleries and clones introduce nested relationships that should not be guessed.",
+      "solution": "I designed ACF Image Auto Filler around a review-first admin flow. Editors select content, supported fields and Media Library images, then see the proposed mapping before any write. Relevant actions remain close to the information needed for the next step.",
+      "title": "ACF image auto filler",
+      "slug": "acf-image-auto-filler",
+      "pos": 86
+    },
+    {
+      "id": 1332,
+      "intro": "A humanitarian WordPress website explaining Wehear4u’s hearing-care mission and guiding visitors towards hearing-aid donations, financial support, partnerships and participation.",
+      "problem": "Wehear4u has to explain a humanitarian hearing-care mission to people who may arrive for different reasons. One visitor may want to donate used hearing aids, another may want to support the work financially, become a collection point or simply understand what happens in Kenya.",
+      "solution": "I designed Wehear4u around the mission first and participation second. The WordPress experience explains who the initiative aims to support and why hearing care matters before introducing the different ways visitors can help. The same hierarchy keeps the next action visible without adding unnecessary decision points.",
+      "title": "Wehear4u",
+      "slug": "wehear4u",
+      "pos": 87
+    },
+    {
+      "id": 1321,
+      "intro": "A consultancy WordPress website helping government organisations and SMEs understand strategic advice, guidance, reintegration, activation and tender support before starting a conversation.",
+      "problem": "Government organisations and SMEs can arrive with questions around strategy, complex processes, reintegration, activation or tender guidance. Those needs overlap, but presenting them as one general consultancy service would make it harder for a prospective client to recognise which type of guidance fits the situation.",
+      "solution": "I structured Fidelyaa around strategic advice, analysis, process guidance and experience with reintegration, activation and tenders. Short explanations help organisations recognise the relevant route before contact, while the responsive hierarchy keeps the consultancy offer understandable without introducing unsupported claims about programme or business results.",
+      "title": "Fidelyaa",
+      "slug": "fidelyaa",
+      "pos": 88
+    },
+    {
+      "id": 4141,
+      "intro": "A WooCommerce logistics integration connecting orders with an external transport platform for controlled submission, delivery scheduling, status handling and shipping-label workflows.",
+      "problem": "SooCool for WooCommerce connects online orders with an external transport platform, which means one action can affect customer data, delivery information, shipping labels and order status in two systems. A failed API call cannot simply be retried without checking remote state, because a blind retry could create a second transport order.",
+      "solution": "I developed SooCool for WooCommerce around controlled order submission, delivery scheduling, status handling and recovery. WooCommerce APIs provide the order layer so the integration remains compatible with HPOS instead of relying on legacy post storage. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Socool for Woocommerce",
+      "slug": "socool-for-woocommerce",
+      "pos": 89
+    },
+    {
+      "id": 4096,
+      "intro": "A WordPress content-management plugin for exporting, reviewing and importing structured updates across posts, products, custom content, ACF fields and media-related information.",
+      "problem": "Content Sync Manager has to make large WordPress content and media updates reviewable before they become bulk writes. Pages, posts, WooCommerce products, custom post types, ACF fields and image information can be spread across screens, while an imported file may change several records at once.",
+      "solution": "I designed Content Sync Manager as an admin-only workflow for exporting, reviewing, importing and recovering WordPress content and media. It supports common post types, WooCommerce products and supported custom content while discovering relevant ACF fields dynamically. Relevant actions remain close to the information needed for the next step.",
+      "title": "Content sync manager",
+      "slug": "content-sync-manager",
+      "pos": 90
+    },
+    {
+      "id": 2487,
+      "intro": "A WooCommerce calculation plugin helping customers turn project measurements into orderable material quantities, product variations and live pricing before adding the correct amount to the cart.",
+      "problem": "The WooCommerce Egaline Calculator has to turn project measurements into a product quantity that a customer can actually order. Material requirements may depend on surface area, layer thickness, kilograms per square metre, bag weight and product variation, so a normal quantity field does not explain how much is needed.",
+      "solution": "I integrated the Egaline Calculator directly into the WooCommerce product journey before add to cart. Customers enter relevant project measurements such as area and thickness, while product settings define factors such as bag weight, material density, calculation mode and optional discount thresholds.",
+      "title": "Egaline Calculator",
+      "slug": "egaline-calculator",
+      "pos": 91
+    },
+    {
+      "id": 2305,
+      "intro": "A WordPress exam-registration workflow connecting external session planning, candidate details, registration status and payment-enabled sign-up in one structured process.",
+      "problem": "Exam availability comes from external planning data, while candidates need to select a specific session, submit their details and, where required, complete payment. WordPress therefore had to coordinate API data, registration state and payment callbacks without mixing sensitive registration records into normal page content.",
+      "solution": "I integrated the Pontifex Open Inschrijvingen SOAP API into WordPress and exposed planning and registration through dedicated frontend flows. Mollie supports payment-enabled registrations, scheduled synchronisation keeps planning data updated and webhook handling remains separated from normal content. The case focuses on workflow and integration boundaries rather than unsupported claims about registrations or exam results.",
+      "title": "Exam Registration Manager",
+      "slug": "exam-registration-manager",
+      "pos": 92
+    },
+    {
+      "id": 2298,
+      "intro": "A WordPress service-catalogue plugin using structured service content, categories, pricing fields, search and filtering, with controlled CSV import and export for administration.",
+      "problem": "Services Overview Manager addresses a content-architecture problem that appears when a growing service catalogue is maintained through repeated page sections and manual lists. Categories, summaries, prices and supporting details can drift apart, while visitors have no reliable way to search or narrow the offer.",
+      "solution": "I developed Services Overview Manager around a dedicated WordPress service post type, categories and structured metadata. Editors maintain the catalogue in one content model instead of updating repeated lists across several pages. This keeps the main route understandable while deeper detail remains available when needed.",
+      "title": "Services Overview Manager",
+      "slug": "services-overview-manager",
+      "pos": 93
+    },
+    {
+      "id": 1342,
+      "intro": "An entertainment-agency WordPress website helping visitors explore DJs, live musicians, bands, special acts and event extras before moving from inspiration to an enquiry.",
+      "problem": "Sparx Entertainment Agency has to help people planning weddings, birthdays and corporate events explore an entertainment catalogue without losing the route to an enquiry. Visitors may begin with an event type, a mood or a general idea rather than the name of a performer.",
+      "solution": "I structured Sparx Entertainment Agency around entertainment types and event needs instead of one long performer list. Visitors can move from broad choices such as DJs or live music into artists, bands, special acts and extras. Relevant actions remain close to the information needed for the next step.",
+      "title": "Sparxentertainmentagency",
+      "slug": "sparxentertainmentagency",
+      "pos": 94
+    }
+  ]
+}
