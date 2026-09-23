@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-total-verify-g8-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4239,
+          "content": "A WordPress admin plugin for reviewing and bulk-assigning Media Library images to supported ACF Image fields and featured images with explicit mapping controls."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4239,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF Image Auto Filler reduces repetitive image assignment, but bulk convenience becomes risky when WordPress content contains different ACF structures. A simple Image field can be mapped predictably, while repeaters, flexible content, galleries and clones introduce nested relationships that should not be guessed.",
+            "field_69deb8e4bcd8e": "I designed ACF Image Auto Filler around a review-first admin flow. Editors select content, supported fields and Media Library images, then see the proposed mapping before any write. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1332,
+          "content": "A humanitarian WordPress website explaining Wehear4u’s hearing-care mission and guiding visitors towards hearing-aid donations, financial support, partnerships and participation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1332,
+          "fields": {
+            "field_69deb8ddbcd8d": "Wehear4u has to explain a humanitarian hearing-care mission to people who may arrive for different reasons. One visitor may want to donate used hearing aids, another may want to support the work financially, become a collection point or simply understand what happens in Kenya.",
+            "field_69deb8e4bcd8e": "I designed Wehear4u around the mission first and participation second. The WordPress experience explains who the initiative aims to support and why hearing care matters before introducing the different ways visitors can help. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1321,
+          "content": "A consultancy WordPress website helping government organisations and SMEs understand strategic advice, guidance, reintegration, activation and tender support before starting a conversation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1321,
+          "fields": {
+            "field_69deb8ddbcd8d": "Government organisations and SMEs can arrive with questions around strategy, complex processes, reintegration, activation or tender guidance. Those needs overlap, but presenting them as one general consultancy service would make it harder for a prospective client to recognise which type of guidance fits the situation.",
+            "field_69deb8e4bcd8e": "I structured Fidelyaa around strategic advice, analysis, process guidance and experience with reintegration, activation and tenders. Short explanations help organisations recognise the relevant route before contact, while the responsive hierarchy keeps the consultancy offer understandable without introducing unsupported claims about programme or business results."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4141,
+          "content": "A WooCommerce logistics integration connecting orders with an external transport platform for controlled submission, delivery scheduling, status handling and shipping-label workflows."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4141,
+          "fields": {
+            "field_69deb8ddbcd8d": "SooCool for WooCommerce connects online orders with an external transport platform, which means one action can affect customer data, delivery information, shipping labels and order status in two systems. A failed API call cannot simply be retried without checking remote state, because a blind retry could create a second transport order.",
+            "field_69deb8e4bcd8e": "I developed SooCool for WooCommerce around controlled order submission, delivery scheduling, status handling and recovery. WooCommerce APIs provide the order layer so the integration remains compatible with HPOS instead of relying on legacy post storage. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4096,
+          "content": "A WordPress content-management plugin for exporting, reviewing and importing structured updates across posts, products, custom content, ACF fields and media-related information."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4096,
+          "fields": {
+            "field_69deb8ddbcd8d": "Content Sync Manager has to make large WordPress content and media updates reviewable before they become bulk writes. Pages, posts, WooCommerce products, custom post types, ACF fields and image information can be spread across screens, while an imported file may change several records at once.",
+            "field_69deb8e4bcd8e": "I designed Content Sync Manager as an admin-only workflow for exporting, reviewing, importing and recovering WordPress content and media. It supports common post types, WooCommerce products and supported custom content while discovering relevant ACF fields dynamically. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2487,
+          "content": "A WooCommerce calculation plugin helping customers turn project measurements into orderable material quantities, product variations and live pricing before adding the correct amount to the cart."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2487,
+          "fields": {
+            "field_69deb8ddbcd8d": "The WooCommerce Egaline Calculator has to turn project measurements into a product quantity that a customer can actually order. Material requirements may depend on surface area, layer thickness, kilograms per square metre, bag weight and product variation, so a normal quantity field does not explain how much is needed.",
+            "field_69deb8e4bcd8e": "I integrated the Egaline Calculator directly into the WooCommerce product journey before add to cart. Customers enter relevant project measurements such as area and thickness, while product settings define factors such as bag weight, material density, calculation mode and optional discount thresholds."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2305,
+          "content": "A WordPress exam-registration workflow connecting external session planning, candidate details, registration status and payment-enabled sign-up in one structured process."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2305,
+          "fields": {
+            "field_69deb8ddbcd8d": "Exam availability comes from external planning data, while candidates need to select a specific session, submit their details and, where required, complete payment. WordPress therefore had to coordinate API data, registration state and payment callbacks without mixing sensitive registration records into normal page content.",
+            "field_69deb8e4bcd8e": "I integrated the Pontifex Open Inschrijvingen SOAP API into WordPress and exposed planning and registration through dedicated frontend flows. Mollie supports payment-enabled registrations, scheduled synchronisation keeps planning data updated and webhook handling remains separated from normal content. The case focuses on workflow and integration boundaries rather than unsupported claims about registrations or exam results."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2298,
+          "content": "A WordPress service-catalogue plugin using structured service content, categories, pricing fields, search and filtering, with controlled CSV import and export for administration."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2298,
+          "fields": {
+            "field_69deb8ddbcd8d": "Services Overview Manager addresses a content-architecture problem that appears when a growing service catalogue is maintained through repeated page sections and manual lists. Categories, summaries, prices and supporting details can drift apart, while visitors have no reliable way to search or narrow the offer.",
+            "field_69deb8e4bcd8e": "I developed Services Overview Manager around a dedicated WordPress service post type, categories and structured metadata. Editors maintain the catalogue in one content model instead of updating repeated lists across several pages. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1342,
+          "content": "An entertainment-agency WordPress website helping visitors explore DJs, live musicians, bands, special acts and event extras before moving from inspiration to an enquiry."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1342,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sparx Entertainment Agency has to help people planning weddings, birthdays and corporate events explore an entertainment catalogue without losing the route to an enquiry. Visitors may begin with an event type, a mood or a general idea rather than the name of a performer.",
+            "field_69deb8e4bcd8e": "I structured Sparx Entertainment Agency around entertainment types and event needs instead of one long performer list. Visitors can move from broad choices such as DJs or live music into artists, bands, special acts and extras. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4092,
+          "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4092,
+          "fields": {
+            "field_69deb8ddbcd8d": "SEO Image Assistant for Shutterstock connects stock-image research with the WordPress page where an image may eventually be used. That creates more responsibility than a simple search box: OAuth credentials, licensing status, file validation and ACF assignments all sit in the same workflow.",
+            "field_69deb8e4bcd8e": "I shaped SEO Image Assistant for Shutterstock as a page-aware WordPress workflow that begins with keyword or page context and ends with a reviewed image assignment. OAuth connects the service, while search and suggestion queues let administrators inspect assets before licensing."
+          }
+        }
+      }
+    ]
+  }
+}
