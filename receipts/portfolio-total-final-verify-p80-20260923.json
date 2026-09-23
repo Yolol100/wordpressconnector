@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-total-final-verify-p80-20260923",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-23T21:05:38+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4092,
+    "readback_verified": null,
+    "before_fingerprint": "5ef44a2d7f02b678f456ec8dbc98375688c0484f175e4ed988e53d645ac44b8c",
+    "after_fingerprint": "5ef44a2d7f02b678f456ec8dbc98375688c0484f175e4ed988e53d645ac44b8c"
+}
