@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p86-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4239,
+    "content": "A WordPress admin plugin for reviewing and bulk-assigning Media Library images to supported ACF Image fields and featured images with explicit mapping controls.",
+    "description_1": "ACF Image Auto Filler reduces repetitive image assignment, but bulk convenience becomes risky when WordPress content contains different ACF structures. A simple Image field can be mapped predictably, while repeaters, flexible content, galleries and clones introduce nested relationships that should not be guessed.",
+    "description_2": "I designed ACF Image Auto Filler around a review-first admin flow. Editors select content, supported fields and Media Library images, then see the proposed mapping before any write. Relevant actions remain close to the information needed for the next step."
+  }
+}
