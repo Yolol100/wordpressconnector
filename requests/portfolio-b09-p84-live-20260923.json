@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p84-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 4155,
+    "content": "A page-aware WordPress image workflow helping administrators research, review, license and assign Shutterstock assets to relevant content and ACF image fields.",
+    "description_1": "SEO Shutterstock focuses on a practical WordPress problem: finding stock images that fit the context of a specific page instead of searching separately and remembering where each asset belongs. Page context, search terms, licensing, downloads and media assignment all happen in one workflow, so an attractive result is not enough. The asset also has to be licensed, valid and suitable for the target field.\n\nThe project therefore needed clear separation between discovery, review, licensing and assignment, with permissions around higher-risk actions. Existing usage context should help reduce repeated selections across a larger site. The portfolio story could not imply that a stock image or filename creates ranking gains by itself. The challenge was controlled page-aware image research, not a promise of automatic SEO improvement.",
+    "description_2": "I structured SEO Shutterstock as a page-aware image workflow inside WordPress. Administrators begin with page or keyword context, review Shutterstock suggestions and then connect a selected licensed asset to the appropriate WordPress or ACF image location. Search, review, licensing and assignment remain separate steps so external images are never treated as automatically suitable.\n\nDownloads and media imports require valid file information before WordPress stores them, while capability checks protect higher-risk actions. Existing usage information helps reduce repeated choices across larger content sets. I kept the portfolio explanation focused on research and controlled placement rather than ranking claims. The case now shows how contextual stock-image work can fit a WordPress editorial process without suggesting that image selection alone guarantees search visibility, traffic or conversion."
+  },
+  "expected_fingerprint": "2a9a4c15a62cd9a06df76058c6137fed1f2c39b0fd76d9146ba8d63be4bbc1f4"
+}
