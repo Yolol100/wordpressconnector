@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b10-p91-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2487,
+    "content": "A WooCommerce calculation plugin helping customers turn project measurements into orderable material quantities, product variations and live pricing before adding the correct amount to the cart.",
+    "description_1": "The WooCommerce Egaline Calculator has to turn project measurements into a product quantity that a customer can actually order. Material requirements may depend on surface area, layer thickness, kilograms per square metre, bag weight and product variation, so a normal quantity field does not explain how much is needed.",
+    "description_2": "I integrated the Egaline Calculator directly into the WooCommerce product journey before add to cart. Customers enter relevant project measurements such as area and thickness, while product settings define factors such as bag weight, material density, calculation mode and optional discount thresholds."
+  },
+  "expected_fingerprint": "b9783a97139abc878a177bbf8e8b0577dcd244b0a3efeeadec0b70bbd81f0093"
+}
