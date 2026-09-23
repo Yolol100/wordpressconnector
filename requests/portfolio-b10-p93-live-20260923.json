@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b10-p93-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 2298,
+    "content": "A WordPress service-catalogue plugin using structured service content, categories, pricing fields, search and filtering, with controlled CSV import and export for administration.",
+    "description_1": "Services Overview Manager addresses a content-architecture problem that appears when a growing service catalogue is maintained through repeated page sections and manual lists. Categories, summaries, prices and supporting details can drift apart, while visitors have no reliable way to search or narrow the offer.",
+    "description_2": "I developed Services Overview Manager around a dedicated WordPress service post type, categories and structured metadata. Editors maintain the catalogue in one content model instead of updating repeated lists across several pages. This keeps the main route understandable while deeper detail remains available when needed."
+  },
+  "expected_fingerprint": "6d3b379a323e1fa10c95700d28ee4c6c86d0da0704f8f21671f86543596fd66c"
+}
