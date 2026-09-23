@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-full-audit-v10-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2487,
+          "content": "A WooCommerce calculation plugin helping customers turn project measurements into orderable material quantities, product variations and live pricing before adding the correct amount to the cart."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2487,
+          "fields": {
+            "field_69deb8ddbcd8d": "The WooCommerce Egaline Calculator has to turn project measurements into a product quantity that a customer can actually order. Material requirements may depend on surface area, layer thickness, kilograms per square metre, bag weight and product variation, so a normal quantity field does not explain how much is needed.",
+            "field_69deb8e4bcd8e": "I integrated the Egaline Calculator directly into the WooCommerce product journey before add to cart. Customers enter relevant project measurements such as area and thickness, while product settings define factors such as bag weight, material density, calculation mode and optional discount thresholds."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2305,
+          "content": "A WordPress exam-registration workflow connecting external session planning, candidate details, registration status and payment-enabled sign-up in one structured process."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2305,
+          "fields": {
+            "field_69deb8ddbcd8d": "Exam availability comes from external planning data, while candidates need to select a specific session, submit their details and, where required, complete payment. WordPress therefore had to coordinate API data, registration state and payment callbacks without mixing sensitive registration records into normal page content.",
+            "field_69deb8e4bcd8e": "I integrated the Pontifex Open Inschrijvingen SOAP API into WordPress and exposed planning and registration through dedicated frontend flows. Mollie supports payment-enabled registrations, scheduled synchronisation keeps planning data updated and webhook handling remains separated from normal content. The case focuses on workflow and integration boundaries rather than unsupported claims about registrations or exam results."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2298,
+          "content": "A WordPress service-catalogue plugin using structured service content, categories, pricing fields, search and filtering, with controlled CSV import and export for administration."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2298,
+          "fields": {
+            "field_69deb8ddbcd8d": "Services Overview Manager addresses a content-architecture problem that appears when a growing service catalogue is maintained through repeated page sections and manual lists. Categories, summaries, prices and supporting details can drift apart, while visitors have no reliable way to search or narrow the offer.",
+            "field_69deb8e4bcd8e": "I developed Services Overview Manager around a dedicated WordPress service post type, categories and structured metadata. Editors maintain the catalogue in one content model instead of updating repeated lists across several pages. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1342,
+          "content": "An entertainment-agency WordPress website helping visitors explore DJs, live musicians, bands, special acts and event extras before moving from inspiration to an enquiry."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1342,
+          "fields": {
+            "field_69deb8ddbcd8d": "Sparx Entertainment Agency has to help people planning weddings, birthdays and corporate events explore an entertainment catalogue without losing the route to an enquiry. Visitors may begin with an event type, a mood or a general idea rather than the name of a performer.",
+            "field_69deb8e4bcd8e": "I structured Sparx Entertainment Agency around entertainment types and event needs instead of one long performer list. Visitors can move from broad choices such as DJs or live music into artists, bands, special acts and extras. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      }
+    ]
+  }
+}
