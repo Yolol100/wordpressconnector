@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p82-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4124,
+    "content": "An operational-safety WordPress website helping organisations compare fire-watch and specialist safety support before requesting personnel or a quotation.",
+    "description_1": "Organisations may start with temporary fire risk, a shutdown, work in a confined space or another operational situation rather than the name of the specialist they require. Brandwatches, gas analysts, confined-space attendants and rescue support have different responsibilities and should not be presented as interchangeable safety roles.",
+    "description_2": "I structured the site around the operational safety need, with fire-watch services forming the primary route and specialist support receiving its own context. Regional pages, practical safety content and quotation access support the decision without suggesting that temporary personnel automatically guarantee compliance, protection or incident prevention."
+  }
+}
