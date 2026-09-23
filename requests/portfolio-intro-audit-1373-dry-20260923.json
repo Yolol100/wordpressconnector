@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1373-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1373,
+    "content": "A WooCommerce food webshop for Pastrycompany with separate routes for online product ordering and catering enquiries, supported by product details and event-service context.",
+    "description_1": "Pastrycompany combines two buying situations that need different information: ordering food online and arranging catering for an event. A customer choosing a product wants options, price and a cart path, while someone planning catering needs context about the service before sending an enquiry.",
+    "description_2": "I arranged Pastrycompany so product shopping and catering remain connected but follow their own paths. WooCommerce categories, product details and cart actions support customers who are ready to order, while catering pages explain the event service and lead naturally to an enquiry."
+  }
+}
