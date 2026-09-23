@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-full-audit-v07-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1832,
+          "content": "A cybersecurity and regulatory-consulting WordPress website helping organisations navigate risk, resilience, DORA, NIS2 and assurance services before moving to a consultation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1832,
+          "fields": {
+            "field_69deb8ddbcd8d": "Brightlyn presents cybersecurity services to organisations that may understand the risk they face without knowing which technical service should come first. Security, assessment and support topics can overlap, and a site filled with specialist terms can make decision makers feel less certain rather than more informed.",
+            "field_69deb8e4bcd8e": "I shaped Brightlyn around the security questions an organisation is likely to recognize before it knows the technical answer. Separate service routes explain what each area is for, while risk context and technical proof appear where they help a decision maker judge relevance."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1846,
+          "content": "A driving-school WordPress website guiding learner drivers from trial lessons and intensive-course options through instructor information, reviews, FAQs and mobile registration."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1846,
+          "fields": {
+            "field_69deb8ddbcd8d": "Gldrive needs to help learner drivers choose lessons before they have much experience with driving-school terms. Packages, prices, exam preparation and instructor information all influence the decision, but they should not arrive with equal weight.",
+            "field_69deb8e4bcd8e": "I structured Gldrive around the decisions a learner makes before booking: choose the lesson route, compare the relevant package information and then review exam or instructor details where they help. Pricing stays connected to the option it belongs to, so visitors do not have to reconstruct the offer from separate pages."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1839,
+          "content": "A B2B risk, compliance and certification WordPress website helping organisations distinguish ISAE, ISO, information-security and control services before moving to a quickscan or consultation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1839,
+          "fields": {
+            "field_69deb8ddbcd8d": "Business clients may know they face a compliance, audit or control requirement without knowing whether ISAE, ISO, risk management or another framework applies. Dense specialist terminology could make those routes harder to distinguish before an advisory conversation begins.",
+            "field_69deb8e4bcd8e": "I separated risk management, compliance, certification and control topics into recognisable service routes, supported by quickscan and consultation actions. Recruitment and IT-detachering content remain available for a second audience without competing with the primary advisory journey. This keeps technical detail available without making the first decision dependent on specialist terminology."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1855,
+          "content": "A business-address WordPress website helping entrepreneurs compare registration-address packages, locations, post handling and scanning options before starting a structured application."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1855,
+          "fields": {
+            "field_69deb8ddbcd8d": "Bedrijfspostadres serves entrepreneurs who need a business address but may be comparing combinations of registration, post handling and scanning. The service seems simple until package details, account access and practical conditions are added.",
+            "field_69deb8e4bcd8e": "I designed Bedrijfspostadres around the steps an entrepreneur takes before choosing a package. The core address service is explained first, followed by post handling, scanning and the differences that matter between available options. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1863,
+          "content": "An electrical-services WordPress website helping homeowners and businesses navigate installations, lighting, PV, batteries, heat pumps and maintenance before requesting advice or a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1863,
+          "fields": {
+            "field_69deb8ddbcd8d": "Dmelektro works for homeowners and businesses that may arrive with an electrical problem, an installation project or a maintenance need. Those situations require different information, and a broad list of electrical services would not help visitors judge urgency, scope or the right next step.",
+            "field_69deb8e4bcd8e": "I shaped Dmelektro around the type of electrical need rather than a single generic service page. Installation work, maintenance and other technical support have clear routes, with practical information introduced where it helps someone understand what to describe in an enquiry."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1877,
+          "content": "An automotive booking WordPress website helping drivers select a vehicle, choose maintenance, APK, repair or specialist services and move directly towards an appointment."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1877,
+          "fields": {
+            "field_69deb8ddbcd8d": "Fixfinder covers a large range of automotive services, while drivers may start with their vehicle and a maintenance or repair need rather than the exact technical service name. A traditional garage directory would make that choice unnecessarily difficult.",
+            "field_69deb8e4bcd8e": "I organised the journey around vehicle identification and service selection first. Drivers can then choose the relevant APK, maintenance, repair or specialist service and continue into date, time and location selection, turning a broad automotive catalogue into a defined appointment flow."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1870,
+          "content": "A language-services WordPress website separating interpreter requests, translation support and interpreter recruitment into clear routes for clients and professionals."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1870,
+          "fields": {
+            "field_69deb8ddbcd8d": "VoiceLinq serves different language-service needs: organisations and individuals may need an interpreter or translation, while professionals visit for assignments or to enter the interpreting field. Combining those intentions into one generic communication journey would make the next step unclear.",
+            "field_69deb8e4bcd8e": "I separated the experience into requesting an interpreter, existing-interpreter information and becoming an interpreter, while translation expertise remains part of the wider language offer. Direct calls to action keep each audience on its own route without forcing clients through recruitment content or interpreters through customer enquiries."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1884,
+          "content": "A staffing WordPress website separating employer recruitment needs from candidate applications across hospitality, production, logistics and horticulture."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1884,
+          "fields": {
+            "field_69deb8ddbcd8d": "QuickTemp serves employers looking for flexible staffing and candidates looking for work across several sectors. Those journeys need different information: businesses start from workforce needs and job types, while candidates need a simple way to indicate their preferred work and availability.",
+            "field_69deb8e4bcd8e": "I separated employer-oriented sector and staffing content from the candidate signup route. Hospitality, production, logistics and horticulture provide clear work contexts, while candidates can apply directly through a focused form instead of first navigating an unsupported vacancy catalogue. Employer and candidate actions remain separated throughout the responsive journey."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1891,
+          "content": "A midwifery WordPress website organising pregnancy, birth and postnatal-care information around the stages expectant parents need most, with location and contact routes kept close to each stage."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1891,
+          "fields": {
+            "field_69deb8ddbcd8d": "Expectant parents need different information during pregnancy, preparation for birth and the postnatal period. Mixing those stages into generic family-care content would make important maternity information harder to find and incorrectly position a midwifery practice as childcare.",
+            "field_69deb8e4bcd8e": "I shaped the information around pregnancy, birth and postnatal care so each stage has its own practical context and relevant contact route. The calm hierarchy helps expectant parents move through the maternity journey without turning medical care into promotional promises or unsupported outcome claims."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2173,
+          "content": "A WordPress internal-linking plugin helping administrators manage keyword-to-URL rules, exclusions, limits, reports and supported integrations from one controlled workflow."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2173,
+          "fields": {
+            "field_69deb8ddbcd8d": "Super Simple Internal Links addresses a WordPress task that becomes difficult when a site has many pages and repeated internal-link opportunities. Manual editing can be inconsistent, but automatic linking also creates risk if keyword rules, exclusions and limits are not visible.",
+            "field_69deb8e4bcd8e": "I designed Super Simple Internal Links around a central WordPress admin workflow where keyword rules, automatic linking, exclusions, suggestions and reports stay visible. Administrators can review the configuration, maintain larger rule sets through import or export and inspect logs instead of treating link creation as a black box."
+          }
+        }
+      }
+    ]
+  }
+}
