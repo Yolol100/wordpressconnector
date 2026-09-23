@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-final-verify2-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4116,
+          "content": "A hotel-staffing WordPress website helping hospitality organisations review housekeeping and cleaning roles before requesting temporary personnel."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4116,
+          "fields": {
+            "field_69deb8ddbcd8d": "Hotels may need additional housekeeping capacity because of occupancy peaks, sickness or changing schedules, but the staffing requirement differs by role and shift. The website needed to make available hotel roles and the request process understandable without turning service promises about speed or quality into portfolio results.",
+            "field_69deb8e4bcd8e": "I organised DCA Schoonmaak around recognisable hotel staffing roles and a direct personnel-request journey. Housekeeping and related cleaning positions stay close to practical process and recruiter information, giving hotel decision-makers enough context to describe their staffing need before submitting a request."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4124,
+          "content": "An operational-safety WordPress website helping organisations compare fire-watch and specialist safety support before requesting personnel or a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4124,
+          "fields": {
+            "field_69deb8ddbcd8d": "Organisations may start with temporary fire risk, a shutdown, work in a confined space or another operational situation rather than the name of the specialist they require. Brandwatches, gas analysts, confined-space attendants and rescue support have different responsibilities and should not be presented as interchangeable safety roles.",
+            "field_69deb8e4bcd8e": "I structured the site around the operational safety need, with fire-watch services forming the primary route and specialist support receiving its own context. Regional pages, practical safety content and quotation access support the decision without suggesting that temporary personnel automatically guarantee compliance, protection or incident prevention."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4190,
+          "content": "A multilingual WordPress management plugin centralising content scanning, translation review, visual editing and CSV or XLIFF exchange across common site content."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4190,
+          "fields": {
+            "field_69deb8ddbcd8d": "Webactueel Translate has to manage multilingual WordPress content across places normal translation screens may not cover. Source text can live in posts, Elementor, ACF, menus, widgets, taxonomies, WooCommerce and SEO metadata, while review status and exchange files add complexity.",
+            "field_69deb8e4bcd8e": "I developed Webactueel Translate as a WordPress workflow for language management, content scanning, visual editing, translation tables and CSV or XLIFF exchange. The scanner can inspect public post types, Elementor data, ACF fields, menus, widgets, taxonomies and WooCommerce content where those sources are available."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4155,
+          "content": "A page-aware WordPress image workflow helping administrators research, review, license and assign Shutterstock assets to relevant content and ACF image fields."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4155,
+          "fields": {
+            "field_69deb8ddbcd8d": "SEO Shutterstock focuses on a practical WordPress problem: finding stock images that fit the context of a specific page instead of searching separately and remembering where each asset belongs. Page context, search terms, licensing, downloads and media assignment all happen in one workflow, so an attractive result is not enough. The asset also has to be licensed, valid and suitable for the target field.\n\nThe project therefore needed clear separation between discovery, review, licensing and assignment, with permissions around higher-risk actions. Existing usage context should help reduce repeated selections across a larger site. The portfolio story could not imply that a stock image or filename creates ranking gains by itself. The challenge was controlled page-aware image research, not a promise of automatic SEO improvement.",
+            "field_69deb8e4bcd8e": "I structured SEO Shutterstock as a page-aware image workflow inside WordPress. Administrators begin with page or keyword context, review Shutterstock suggestions and then connect a selected licensed asset to the appropriate WordPress or ACF image location. Search, review, licensing and assignment remain separate steps so external images are never treated as automatically suitable.\n\nDownloads and media imports require valid file information before WordPress stores them, while capability checks protect higher-risk actions. Existing usage information helps reduce repeated choices across larger content sets. I kept the portfolio explanation focused on research and controlled placement rather than ranking claims. The case now shows how contextual stock-image work can fit a WordPress editorial process without suggesting that image selection alone guarantees search visibility, traffic or conversion."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4229,
+          "content": "A commercial cleaning WordPress website helping organisations navigate regular cleaning, specialist services and drone-based cleaning or inspection before requesting a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4229,
+          "fields": {
+            "field_69deb8ddbcd8d": "DCA Dienstverlening combines regular cleaning, specialist work and drone-based cleaning or inspection. Organisations may arrive with a building type or maintenance problem rather than the exact name of the service they need.",
+            "field_69deb8e4bcd8e": "I arranged DCA Dienstverlening around service families that match the questions organisations are likely to bring to the site. Regular cleaning, specialist cleaning and drone-related services have separate routes, while reviews, client logos and working-method information support trust without replacing the explanation of the work."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4239,
+          "content": "A WordPress admin plugin for reviewing and bulk-assigning Media Library images to supported ACF Image fields and featured images with explicit mapping controls."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4239,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF Image Auto Filler reduces repetitive image assignment, but bulk convenience becomes risky when WordPress content contains different ACF structures. A simple Image field can be mapped predictably, while repeaters, flexible content, galleries and clones introduce nested relationships that should not be guessed.",
+            "field_69deb8e4bcd8e": "I designed ACF Image Auto Filler around a review-first admin flow. Editors select content, supported fields and Media Library images, then see the proposed mapping before any write. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1332,
+          "content": "A humanitarian WordPress website explaining Wehear4u’s hearing-care mission and guiding visitors towards hearing-aid donations, financial support, partnerships and participation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1332,
+          "fields": {
+            "field_69deb8ddbcd8d": "Wehear4u has to explain a humanitarian hearing-care mission to people who may arrive for different reasons. One visitor may want to donate used hearing aids, another may want to support the work financially, become a collection point or simply understand what happens in Kenya.",
+            "field_69deb8e4bcd8e": "I designed Wehear4u around the mission first and participation second. The WordPress experience explains who the initiative aims to support and why hearing care matters before introducing the different ways visitors can help. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1321,
+          "content": "A consultancy WordPress website helping government organisations and SMEs understand strategic advice, guidance, reintegration, activation and tender support before starting a conversation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1321,
+          "fields": {
+            "field_69deb8ddbcd8d": "Government organisations and SMEs can arrive with questions around strategy, complex processes, reintegration, activation or tender guidance. Those needs overlap, but presenting them as one general consultancy service would make it harder for a prospective client to recognise which type of guidance fits the situation.",
+            "field_69deb8e4bcd8e": "I structured Fidelyaa around strategic advice, analysis, process guidance and experience with reintegration, activation and tenders. Short explanations help organisations recognise the relevant route before contact, while the responsive hierarchy keeps the consultancy offer understandable without introducing unsupported claims about programme or business results."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4141,
+          "content": "A WooCommerce logistics integration connecting orders with an external transport platform for controlled submission, delivery scheduling, status handling and shipping-label workflows."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4141,
+          "fields": {
+            "field_69deb8ddbcd8d": "SooCool for WooCommerce connects online orders with an external transport platform, which means one action can affect customer data, delivery information, shipping labels and order status in two systems. A failed API call cannot simply be retried without checking remote state, because a blind retry could create a second transport order.",
+            "field_69deb8e4bcd8e": "I developed SooCool for WooCommerce around controlled order submission, delivery scheduling, status handling and recovery. WooCommerce APIs provide the order layer so the integration remains compatible with HPOS instead of relying on legacy post storage. This keeps the main route understandable while deeper detail remains available when needed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4096,
+          "content": "A WordPress content-management plugin for exporting, reviewing and importing structured updates across posts, products, custom content, ACF fields and media-related information."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4096,
+          "fields": {
+            "field_69deb8ddbcd8d": "Content Sync Manager has to make large WordPress content and media updates reviewable before they become bulk writes. Pages, posts, WooCommerce products, custom post types, ACF fields and image information can be spread across screens, while an imported file may change several records at once.",
+            "field_69deb8e4bcd8e": "I designed Content Sync Manager as an admin-only workflow for exporting, reviewing, importing and recovering WordPress content and media. It supports common post types, WooCommerce products and supported custom content while discovering relevant ACF fields dynamically. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      }
+    ]
+  }
+}
