@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-redry2-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4448,
+          "content": "A cultural WordPress website for Stichting Sanatolia separating events and courses, with ticketing and participation routes across theatre, arts and learning programmes."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1241,
+          "content": "A recruitment WordPress website for Werken bij EFE connecting vacancy discovery, employer information and a direct application process for candidates across multiple sectors."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1352,
+          "content": "A security-services WordPress website for Leeuw Beveiliging organising guarding, crowd management and risk planning around location, event and operational needs before enquiry."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1368,
+          "content": "A financial-advice WordPress website for Astenadvies organising planning, finance and business guidance into recognisable service routes before visitors start a conversation."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1370,
+          "content": "A technical-inspection WordPress website for ZEN Inspection separating laboratory, cargo, marine and certification-related services for decision-makers seeking relevant expertise or a quotation."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1371,
+          "content": "A parking-reservation WordPress website guiding travellers from trip dates and parking choice to booking, with optional charging, washing and refuelling services alongside the main journey."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1373,
+          "content": "A WooCommerce food webshop for Pastrycompany with separate routes for online product ordering and catering enquiries, supported by product details and event-service context."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1375,
+          "content": "A WordPress website for Ourwp explaining virtual offices, KvK business addresses, post handling, scanning and package choices before entrepreneurs sign up or make contact."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1374,
+          "content": "A WordPress and WooCommerce beauty platform for Byderma separating treatment discovery, appointment booking and product shopping, with member benefits alongside those customer routes."
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4092,
+          "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields."
+        }
+      }
+    ]
+  }
+}
