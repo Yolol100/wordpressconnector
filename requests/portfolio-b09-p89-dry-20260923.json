@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p89-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4141,
+    "content": "A WooCommerce logistics integration connecting orders with an external transport platform for controlled submission, delivery scheduling, status handling and shipping-label workflows.",
+    "description_1": "SooCool for WooCommerce connects online orders with an external transport platform, which means one action can affect customer data, delivery information, shipping labels and order status in two systems. A failed API call cannot simply be retried without checking remote state, because a blind retry could create a second transport order.",
+    "description_2": "I developed SooCool for WooCommerce around controlled order submission, delivery scheduling, status handling and recovery. WooCommerce APIs provide the order layer so the integration remains compatible with HPOS instead of relying on legacy post storage. This keeps the main route understandable while deeper detail remains available when needed."
+  }
+}
