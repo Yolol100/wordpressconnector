@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-intro-audit-1373-live-20260923",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-23T12:29:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1373,
+    "readback_verified": true,
+    "before_fingerprint": "d25bbf1be65aea21d0ed8a966aa7423d025fbb66539094a04ddabfdf2fa673b8",
+    "after_fingerprint": "30e07376920b341ad4e23a860de02f368b4b7505097fd6d4191af87d2ee33a70",
+    "rollback_available": true
+}
