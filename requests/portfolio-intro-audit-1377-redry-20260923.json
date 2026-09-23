@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1377-redry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1377,
+    "content": "A technical-services WordPress website for MDV Installaties separating electrical work, renovations, maintenance and locksmith support, with contact routes matched to planned and urgent needs.",
+    "description_1": "Mdvinstallaties serves customers with very different technical needs. Someone planning electrical work or a renovation can take time to compare services, while a person needing maintenance or locksmith help may want a faster route to contact.",
+    "description_2": "I arranged Mdvinstallaties so planned installation work, renovations, maintenance and locksmith support each have a clear route. Customers can start from the job they need rather than reading a long company introduction, then see the practical information that helps them decide whether to request service or make direct contact."
+  }
+}
