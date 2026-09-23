@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p85-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4229,
+    "content": "A commercial cleaning WordPress website helping organisations navigate regular cleaning, specialist services and drone-based cleaning or inspection before requesting a quotation.",
+    "description_1": "DCA Dienstverlening combines regular cleaning, specialist work and drone-based cleaning or inspection. Organisations may arrive with a building type or maintenance problem rather than the exact name of the service they need.",
+    "description_2": "I arranged DCA Dienstverlening around service families that match the questions organisations are likely to bring to the site. Regular cleaning, specialist cleaning and drone-related services have separate routes, while reviews, client logos and working-method information support trust without replacing the explanation of the work."
+  }
+}
