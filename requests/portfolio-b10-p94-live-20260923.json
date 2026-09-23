@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b10-p94-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1342,
+    "content": "An entertainment-agency WordPress website helping visitors explore DJs, live musicians, bands, special acts and event extras before moving from inspiration to an enquiry.",
+    "description_1": "Sparx Entertainment Agency has to help people planning weddings, birthdays and corporate events explore an entertainment catalogue without losing the route to an enquiry. Visitors may begin with an event type, a mood or a general idea rather than the name of a performer.",
+    "description_2": "I structured Sparx Entertainment Agency around entertainment types and event needs instead of one long performer list. Visitors can move from broad choices such as DJs or live music into artists, bands, special acts and extras. Relevant actions remain close to the information needed for the next step."
+  },
+  "expected_fingerprint": "8dde434333fb616149a2216cbc23e45b3c99b3dda4b35f00e4677cc4ba266490"
+}
