@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p90-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 4096,
+    "content": "A WordPress content-management plugin for exporting, reviewing and importing structured updates across posts, products, custom content, ACF fields and media-related information.",
+    "description_1": "Content Sync Manager has to make large WordPress content and media updates reviewable before they become bulk writes. Pages, posts, WooCommerce products, custom post types, ACF fields and image information can be spread across screens, while an imported file may change several records at once.",
+    "description_2": "I designed Content Sync Manager as an admin-only workflow for exporting, reviewing, importing and recovering WordPress content and media. It supports common post types, WooCommerce products and supported custom content while discovering relevant ACF fields dynamically. Relevant actions remain close to the information needed for the next step."
+  },
+  "expected_fingerprint": "5b213d6aa3ce0065d1938ecadff523e39c0afe6d57a8d5e640894cab2aa0f8aa"
+}
