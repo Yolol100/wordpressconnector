@@ -1,0 +1,181 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-total-verify2-g3-20260923",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-23T20:27:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "20489aeedae0f469764f4752c177b3dfbee4e24089bdfc6d5fea79e56e0b1852",
+            "after_fingerprint": "20489aeedae0f469764f4752c177b3dfbee4e24089bdfc6d5fea79e56e0b1852"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "4983b4a17229d2f45f339024757ed057ecf79e85b5a3f32229b092aca6c53f40",
+            "after_fingerprint": "4983b4a17229d2f45f339024757ed057ecf79e85b5a3f32229b092aca6c53f40"
+        },
+        {
+            "index": 2,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "e893e2b9fe38711b7a626a45984fc7aca1f835c35ae41bdfa77e804b077bb44b",
+            "after_fingerprint": "e893e2b9fe38711b7a626a45984fc7aca1f835c35ae41bdfa77e804b077bb44b"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a2d44fe4738a1e7d0e145da4214e804440be335547f87b7a04ec93bc15367fcb",
+            "after_fingerprint": "a2d44fe4738a1e7d0e145da4214e804440be335547f87b7a04ec93bc15367fcb"
+        },
+        {
+            "index": 4,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "6ce2b0a27922f6549f0557677039696c63793509667569c6b219f6eef9c95194",
+            "after_fingerprint": "6ce2b0a27922f6549f0557677039696c63793509667569c6b219f6eef9c95194"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0fbac6bb0a2eae60d8c1a1b06e67eda115d9e90c7417260f35ec28db7a17233c",
+            "after_fingerprint": "0fbac6bb0a2eae60d8c1a1b06e67eda115d9e90c7417260f35ec28db7a17233c"
+        },
+        {
+            "index": 6,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "e226c6bde52f626383995e1770390305d04b3b05644aa72c67286463e2722cb1",
+            "after_fingerprint": "e226c6bde52f626383995e1770390305d04b3b05644aa72c67286463e2722cb1"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "a61ff78b8b4e2b6e1814315c5ef9759b7f9ba0efa06e2632b3ebc6a68e9724a0",
+            "after_fingerprint": "a61ff78b8b4e2b6e1814315c5ef9759b7f9ba0efa06e2632b3ebc6a68e9724a0"
+        },
+        {
+            "index": 8,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "8c097cbbe85a5c358afd8d752739b5346da407224e1ed7140a4b44b2d01444d5",
+            "after_fingerprint": "8c097cbbe85a5c358afd8d752739b5346da407224e1ed7140a4b44b2d01444d5"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "0c79fec563d4c9b34a955ab8730f805ea54c64b0a182cd885f69827604eda0a9",
+            "after_fingerprint": "0c79fec563d4c9b34a955ab8730f805ea54c64b0a182cd885f69827604eda0a9"
+        },
+        {
+            "index": 10,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "ac7fcc456725bdec73e1d1d1bede86a50dd89bfe4de8061464f9ec03b475d8de",
+            "after_fingerprint": "ac7fcc456725bdec73e1d1d1bede86a50dd89bfe4de8061464f9ec03b475d8de"
+        },
+        {
+            "index": 11,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "3bc2be86eee421ab6f7bf2002272845b14af29a552b2b5927bd02787ee65dabe",
+            "after_fingerprint": "3bc2be86eee421ab6f7bf2002272845b14af29a552b2b5927bd02787ee65dabe"
+        },
+        {
+            "index": 12,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "1e7d82d628a54e88b34ecda23402c8543b0a651708b44d4baa5c6811b5fa1545",
+            "after_fingerprint": "1e7d82d628a54e88b34ecda23402c8543b0a651708b44d4baa5c6811b5fa1545"
+        },
+        {
+            "index": 13,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ea419922a51b0055022e74dd5a595252dd0b3e9f1e0e673f9a7c8219f726fdfd",
+            "after_fingerprint": "ea419922a51b0055022e74dd5a595252dd0b3e9f1e0e673f9a7c8219f726fdfd"
+        },
+        {
+            "index": 14,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "c3f14a44a4288599813f6bc502db89662dee453f2ddb0659ec5f6779eb59f7b5",
+            "after_fingerprint": "c3f14a44a4288599813f6bc502db89662dee453f2ddb0659ec5f6779eb59f7b5"
+        },
+        {
+            "index": 15,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "f07d6dcbc04e20f36c1a922133daa3b878ee110b2bb5fd2ed1433ce4b1566f21",
+            "after_fingerprint": "f07d6dcbc04e20f36c1a922133daa3b878ee110b2bb5fd2ed1433ce4b1566f21"
+        },
+        {
+            "index": 16,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "5a2f1c5c214ba9befa1054593de0ea49e0600580f4712f52fa2fc697637ff875",
+            "after_fingerprint": "5a2f1c5c214ba9befa1054593de0ea49e0600580f4712f52fa2fc697637ff875"
+        },
+        {
+            "index": 17,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "8daa149b60d7999eac819dc3ceb0711454e008c9b3cf8bb4ea7f6238ccef40de",
+            "after_fingerprint": "8daa149b60d7999eac819dc3ceb0711454e008c9b3cf8bb4ea7f6238ccef40de"
+        },
+        {
+            "index": 18,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "fd04b7a58cc9c8ebe6edf27d1b213edd36f0aaba3fdcdf461ea95b027b4dc4ca",
+            "after_fingerprint": "fd04b7a58cc9c8ebe6edf27d1b213edd36f0aaba3fdcdf461ea95b027b4dc4ca"
+        },
+        {
+            "index": 19,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "11253eaa36df5161a4a17bb06d90b112960be5f7dc4bfa2a9fb5a17f8bb589a3",
+            "after_fingerprint": "11253eaa36df5161a4a17bb06d90b112960be5f7dc4bfa2a9fb5a17f8bb589a3"
+        },
+        {
+            "index": 20,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "1d2ca562dbdc149e4bec5ca4b962e481f81633a3b8a83005a0c826300e4aff32",
+            "after_fingerprint": "1d2ca562dbdc149e4bec5ca4b962e481f81633a3b8a83005a0c826300e4aff32"
+        },
+        {
+            "index": 21,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "ba82d75a79d4cdd3d000ba3d3bc13276d9365d1cfc6c44a9f611d8bfd3ce68ef",
+            "after_fingerprint": "ba82d75a79d4cdd3d000ba3d3bc13276d9365d1cfc6c44a9f611d8bfd3ce68ef"
+        },
+        {
+            "index": 22,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "2f2181f0c579a8441165249238c9c5942174ab69483c7a12969f590f7c65b64c",
+            "after_fingerprint": "2f2181f0c579a8441165249238c9c5942174ab69483c7a12969f590f7c65b64c"
+        },
+        {
+            "index": 23,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "649899e8af48e628559df641b7548b62c28b583dc394653617c5a926c410b93b",
+            "after_fingerprint": "649899e8af48e628559df641b7548b62c28b583dc394653617c5a926c410b93b"
+        }
+    ]
+}
