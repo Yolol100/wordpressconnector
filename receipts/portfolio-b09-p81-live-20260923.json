@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b09-p81-live-20260923",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-23T11:50:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 4116,
+    "readback_verified": true,
+    "before_fingerprint": "9c0fba5569c9a6f18490eaa8b389c819ae67625af7408974c22b1c8a202f708b",
+    "after_fingerprint": "a7ef26ecf572e4a2dacf0130fd9db02ba7e360381b8cdf5322aa35c2813b663a",
+    "rollback_available": true
+}
