@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-total-verify2-g7-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2223,
+          "content": "A read-only WordPress media-audit plugin helping administrators find where images are used across featured media and supported ACF fields before replacing or deleting files."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2223,
+          "fields": {
+            "field_69deb8ddbcd8d": "Image Usage Scanner solves a WordPress maintenance question that is deceptively difficult: where is a media item being used? Images can appear as featured media, in normal content or inside supported ACF fields, so deleting or replacing a file based on one screen can break references elsewhere.",
+            "field_69deb8e4bcd8e": "I shaped Image Usage Scanner as an admin-only audit workflow that reports media relationships instead of modifying them. It checks featured images and supported ACF image or gallery fields in bounded batches, saving progress so a scan can continue after interruption."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2255,
+          "content": "A WordPress course-management plugin centralising schedules, start dates, course types, times, meetings, registration status and available places for responsive listings and REST integrations."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2255,
+          "fields": {
+            "field_69deb8ddbcd8d": "Course Dates Manager addresses a publishing problem that appears when course information and dates are maintained in pages. Editors can end up repeating programme details, schedules and category information in several places, which makes updates harder to keep consistent.",
+            "field_69deb8e4bcd8e": "I developed Course Dates Manager around a dedicated course post type and taxonomy so programme information can be maintained in one structured place. A responsive shortcode renders the public overview, while paginated REST endpoints expose only published course data for integrations that need it."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2238,
+          "content": "An admin-only WordPress developer tool for previewing, applying and rolling back structured JSON patch packages, with production patching blocked by default unless explicitly enabled."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2238,
+          "fields": {
+            "field_69deb8ddbcd8d": "AI Patch Runner deals with a high-risk WordPress task: applying structured code changes to installed plugins without turning the admin area into an unrestricted file editor. A bad patch can break functionality, so speed is less important than knowing what changes, who applies it and how to recover if the result is wrong.",
+            "field_69deb8e4bcd8e": "I designed AI Patch Runner as an admin-only workflow for structured JSON patch packages. Preview is kept separate from execution so a proposed change can be inspected before plugin files are modified. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2283,
+          "content": "A WordPress content-management plugin helping administrators export ACF and page text for spreadsheet review and import validated edits back through a controlled workflow."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2283,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF CSV Manager began as a way to make structured WordPress content easier to review outside separate editing screens. Exporting ACF-oriented data to CSV can help with bulk review, but importing changes back creates risk when rows, fields or content ownership are unclear.",
+            "field_69deb8e4bcd8e": "I developed ACF CSV Manager as an earlier workflow for exporting ACF-related content into a reviewable spreadsheet format and returning approved updates through WordPress. The design demonstrated how bulk text work could be organised without opening every page individually, while keeping the import process separate from normal editing."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2473,
+          "content": "A WordPress media-management plugin combining metadata editing, CSV import and export, usage scanning and controlled ZIP exports within one admin workflow."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2473,
+          "fields": {
+            "field_69deb8ddbcd8d": "Modern Image Manager brings WordPress media tasks into one admin workflow, which is useful but also risky. Editing metadata is simple compared with renaming files, importing CSV changes or deleting attachments, because those actions can affect URLs and references across the site.",
+            "field_69deb8e4bcd8e": "I shaped Modern Image Manager as a WordPress admin interface for metadata editing, CSV import and export, usage scanning and ZIP exports. Requests are validated before higher-risk actions run, and filename changes preserve the current extension. Supporting information stays close to the choice it is meant to clarify."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2989,
+          "content": "A WordPress admin tool centralising ACF text, core page fields, SEO metadata and image text with inline editing plus validated CSV and XLSX workflows."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2989,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF Page Text Manager addresses a WordPress editing problem created when page text lives across core fields, ACF, SEO plugins and media metadata. Reviewing content one screen at a time is slow, but bulk spreadsheets introduce their own risks when unsupported fields or media instructions are included.",
+            "field_69deb8e4bcd8e": "I developed ACF Page Text Manager around one WordPress admin screen for supported core fields, ACF text, SEO metadata and image text. Editors can update values inline or move selected content through CSV and XLSX workflows, with validation before imported data is processed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 3660,
+          "content": "A portfolio-led architecture WordPress website placing large project imagery first while supporting it with clear project browsing, studio mission and team information across desktop, tablet and mobile."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 3660,
+          "fields": {
+            "field_69deb8ddbcd8d": "Spring architecten needs a portfolio that lets the work establish credibility before visitors read a long explanation of the studio. Prospective clients often start with project type, visual character and relevance.",
+            "field_69deb8e4bcd8e": "I structured Spring architecten around project imagery and the information that helps a prospective client understand each piece of work. Projects come forward first, with architectural context and studio information supporting the visual evidence rather than competing with it. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4116,
+          "content": "A hotel-staffing WordPress website helping hospitality organisations review housekeeping and cleaning roles before requesting temporary personnel."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4116,
+          "fields": {
+            "field_69deb8ddbcd8d": "Hotels may need additional housekeeping capacity because of occupancy peaks, sickness or changing schedules, but the staffing requirement differs by role and shift. The website needed to make available hotel roles and the request process understandable without turning service promises about speed or quality into portfolio results.",
+            "field_69deb8e4bcd8e": "I organised DCA Schoonmaak around recognisable hotel staffing roles and a direct personnel-request journey. Housekeeping and related cleaning positions stay close to practical process and recruiter information, giving hotel decision-makers enough context to describe their staffing need before submitting a request."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4124,
+          "content": "An operational-safety WordPress website helping organisations compare fire-watch and specialist safety support before requesting personnel or a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4124,
+          "fields": {
+            "field_69deb8ddbcd8d": "Organisations may start with temporary fire risk, a shutdown, work in a confined space or another operational situation rather than the name of the specialist they require. Brandwatches, gas analysts, confined-space attendants and rescue support have different responsibilities and should not be presented as interchangeable safety roles.",
+            "field_69deb8e4bcd8e": "I structured the site around the operational safety need, with fire-watch services forming the primary route and specialist support receiving its own context. Regional pages, practical safety content and quotation access support the decision without suggesting that temporary personnel automatically guarantee compliance, protection or incident prevention."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4190,
+          "content": "A multilingual WordPress management plugin centralising content scanning, translation review, visual editing and CSV or XLIFF exchange across common site content."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4190,
+          "fields": {
+            "field_69deb8ddbcd8d": "Webactueel Translate has to manage multilingual WordPress content across places normal translation screens may not cover. Source text can live in posts, Elementor, ACF, menus, widgets, taxonomies, WooCommerce and SEO metadata, while review status and exchange files add complexity.",
+            "field_69deb8e4bcd8e": "I developed Webactueel Translate as a WordPress workflow for language management, content scanning, visual editing, translation tables and CSV or XLIFF exchange. The scanner can inspect public post types, Elementor data, ACF fields, menus, widgets, taxonomies and WooCommerce content where those sources are available."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4155,
+          "content": "A page-aware WordPress image workflow helping administrators research, review, license and assign Shutterstock assets to relevant content and ACF image fields."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4155,
+          "fields": {
+            "field_69deb8ddbcd8d": "SEO Shutterstock focuses on a practical WordPress problem: finding stock images that fit the context of a specific page instead of searching separately and remembering where each asset belongs. Page context, search terms, licensing, downloads and media assignment all happen in one workflow, so an attractive result is not enough. The asset also has to be licensed, valid and suitable for the target field.\n\nThe project therefore needed clear separation between discovery, review, licensing and assignment, with permissions around higher-risk actions. Existing usage context should help reduce repeated selections across a larger site. The portfolio story could not imply that a stock image or filename creates ranking gains by itself. The challenge was controlled page-aware image research, not a promise of automatic SEO improvement.",
+            "field_69deb8e4bcd8e": "I structured SEO Shutterstock as a page-aware image workflow inside WordPress. Administrators begin with page or keyword context, review Shutterstock suggestions and then connect a selected licensed asset to the appropriate WordPress or ACF image location. Search, review, licensing and assignment remain separate steps so external images are never treated as automatically suitable.\n\nDownloads and media imports require valid file information before WordPress stores them, while capability checks protect higher-risk actions. Existing usage information helps reduce repeated choices across larger content sets. I kept the portfolio explanation focused on research and controlled placement rather than ranking claims. The case now shows how contextual stock-image work can fit a WordPress editorial process without suggesting that image selection alone guarantees search visibility, traffic or conversion."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4229,
+          "content": "A commercial cleaning WordPress website helping organisations navigate regular cleaning, specialist services and drone-based cleaning or inspection before requesting a quotation."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4229,
+          "fields": {
+            "field_69deb8ddbcd8d": "DCA Dienstverlening combines regular cleaning, specialist work and drone-based cleaning or inspection. Organisations may arrive with a building type or maintenance problem rather than the exact name of the service they need.",
+            "field_69deb8e4bcd8e": "I arranged DCA Dienstverlening around service families that match the questions organisations are likely to bring to the site. Regular cleaning, specialist cleaning and drone-related services have separate routes, while reviews, client logos and working-method information support trust without replacing the explanation of the work."
+          }
+        }
+      }
+    ]
+  }
+}
