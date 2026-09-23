@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1368-live-20260924",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1368,
+    "content": "A financial-advice WordPress website for Astenadvies organising planning, finance and business guidance into recognisable service routes before visitors start a conversation.",
+    "description_1": "Astenadvies needs to speak to people who may know they need financial guidance but do not yet know which type of advice fits their situation. Questions about planning, finances or business decisions can overlap, and specialist terms can make that first step more difficult.",
+    "description_2": "For Astenadvies, I organised the WordPress content around recognizable financial questions instead of leading with specialist terminology. Separate service areas give visitors a place to start, while short explanations show what kind of advice belongs in each route. This keeps the main route understandable while deeper detail remains available when needed."
+  },
+  "expected_fingerprint": "0ed91d2f6649364906e5e681c68e3c78cbf986f7638fae519cd8673b83ac080b"
+}
