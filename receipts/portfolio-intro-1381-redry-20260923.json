@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-intro-1381-redry-20260923",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-23T17:36:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "b1f4aa603aa6237e5fcc36bc14841b85862da66098bc93c34305f57a75e28847",
+            "after_fingerprint": "7abf6819b6e7e09e52e481bd1810ab546a0a390cc3e563c0948fb40447688d8b"
+        }
+    ]
+}
