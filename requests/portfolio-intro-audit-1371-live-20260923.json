@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1371-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1371,
+    "content": "A parking-reservation WordPress website guiding travellers from trip dates and parking choice to booking, with optional charging, washing and refuelling services alongside the main journey.",
+    "description_1": "Schipholparkeren has to turn a travel plan into a parking reservation without making visitors search for the practical steps. Travellers arrive with dates, flight timing, luggage and different expectations about valet or comfort parking.",
+    "description_2": "I designed Schipholparkeren around the reservation sequence a traveller actually follows. Trip dates and the parking choice come first, followed by the details needed to complete a booking and any optional car services that fit the journey. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+  },
+  "expected_fingerprint": "323942d1fb75a7312d9b5b66e4b0420bd2a1664b64f3ec0abbc865fc38c22919"
+}
