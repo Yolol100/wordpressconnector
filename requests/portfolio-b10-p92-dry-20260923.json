@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b10-p92-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 2305,
+    "content": "A WordPress exam-registration workflow connecting external session planning, candidate details, registration status and payment-enabled sign-up in one structured process.",
+    "description_1": "Exam availability comes from external planning data, while candidates need to select a specific session, submit their details and, where required, complete payment. WordPress therefore had to coordinate API data, registration state and payment callbacks without mixing sensitive registration records into normal page content.",
+    "description_2": "I integrated the Pontifex Open Inschrijvingen SOAP API into WordPress and exposed planning and registration through dedicated frontend flows. Mollie supports payment-enabled registrations, scheduled synchronisation keeps planning data updated and webhook handling remains separated from normal content. The case focuses on workflow and integration boundaries rather than unsupported claims about registrations or exam results."
+  }
+}
