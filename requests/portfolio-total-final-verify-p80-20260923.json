@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-total-final-verify-p80-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4092,
+    "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields.",
+    "description_1": "SEO Image Assistant for Shutterstock connects stock-image research with the WordPress page where an image may eventually be used. That creates more responsibility than a simple search box: OAuth credentials, licensing status, file validation and ACF assignments all sit in the same workflow.",
+    "description_2": "I shaped SEO Image Assistant for Shutterstock as a page-aware WordPress workflow that begins with keyword or page context and ends with a reviewed image assignment. OAuth connects the service, while search and suggestion queues let administrators inspect assets before licensing."
+  }
+}
