@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-b09-p81-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 4116,
+    "content": "A hotel-staffing WordPress website helping hospitality organisations review housekeeping and cleaning roles before requesting temporary personnel.",
+    "description_1": "Hotels may need additional housekeeping capacity because of occupancy peaks, sickness or changing schedules, but the staffing requirement differs by role and shift. The website needed to make available hotel roles and the request process understandable without turning service promises about speed or quality into portfolio results.",
+    "description_2": "I organised DCA Schoonmaak around recognisable hotel staffing roles and a direct personnel-request journey. Housekeeping and related cleaning positions stay close to practical process and recruiter information, giving hotel decision-makers enough context to describe their staffing need before submitting a request."
+  },
+  "expected_fingerprint": "9c0fba5569c9a6f18490eaa8b389c819ae67625af7408974c22b1c8a202f708b"
+}
