@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1374-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1374,
+    "content": "A WordPress and WooCommerce beauty platform for Byderma separating treatment discovery, appointment booking and product shopping, with member benefits alongside those customer routes.",
+    "description_1": "Byderma brings treatments, appointments and product shopping together, creating a navigation problem that a beauty website or webshop does not have. Someone researching a treatment needs different information from a customer who wants to buy skincare, while members may also look for benefits or account options.",
+    "description_2": "For Byderma, I structured the WordPress and WooCommerce experience around three distinct actions: explore treatments, book an appointment and shop for products. Treatment pages provide context before a booking action, while product categories and product pages keep the normal shopping path direct."
+  }
+}
