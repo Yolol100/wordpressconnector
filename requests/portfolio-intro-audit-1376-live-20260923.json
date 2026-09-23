@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1376-live-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": false,
+  "confirm": true,
+  "payload": {
+    "post_id": 1376,
+    "content": "A beauty-services WordPress website for Bluecenter organising facial treatments, PMU, massage and laser hair removal with pricing and appointment information before booking.",
+    "description_1": "Bluecenter offers several beauty treatments, but people do not compare facial care, permanent makeup, massage and laser hair removal in the same way. A visitor may start with a concern, a price question or a treatment name, and each route needs different practical information before an appointment makes sense.",
+    "description_2": "I shaped Bluecenter around recognizable treatment categories, then placed prices, practical details and common questions close to the service where they matter. Visitors can understand the difference between facial treatments, permanent makeup, massage and laser hair removal before deciding whether to book or ask for more information."
+  },
+  "expected_fingerprint": "aa9df246ac7e11ec9eb268e73741652face2b44fc777c5a31fbba2babe2c7115"
+}
