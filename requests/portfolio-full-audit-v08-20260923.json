@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-full-audit-v08-20260923",
+  "action": "connector.batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 1898,
+          "content": "An interior and showroom WordPress website helping visitors explore kitchens, appliances, bathrooms, sanitary products and tiles before moving to advice at one of the showroom locations."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 1898,
+          "fields": {
+            "field_69deb8ddbcd8d": "Visitors may begin with a kitchen, bathroom or individual interior product and still need to compare styles, materials and practical options before visiting a showroom. Strong imagery therefore had to inspire without hiding product categories, locations or the route to advice.",
+            "field_69deb8e4bcd8e": "I arranged product and inspiration content around recognisable interior categories, then connected those choices to practical information and the two showroom locations. Advice actions appear after relevant product context, helping visitors move from browsing kitchens, bathrooms or tiles towards a more informed showroom conversation."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2213,
+          "content": "A driving-school WordPress website guiding learners from a free trial lesson through packages, pricing and the route to a driving licence before direct enquiry or signup."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2213,
+          "fields": {
+            "field_69deb8ddbcd8d": "AC Drive needs to help learner drivers choose a lesson route before they understand differences between packages, exam preparation and requirements. A driving-school site can easily become a price list, but price alone does not explain what a learner is selecting or what the next step involves.",
+            "field_69deb8e4bcd8e": "I designed AC Drive around the choices a learner makes before booking. Lesson routes provide the starting point, followed by package information and practical details that belong to each option. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2223,
+          "content": "A read-only WordPress media-audit plugin helping administrators find where images are used across featured media and supported ACF fields before replacing or deleting files."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2223,
+          "fields": {
+            "field_69deb8ddbcd8d": "Image Usage Scanner solves a WordPress maintenance question that is deceptively difficult: where is a media item being used? Images can appear as featured media, in normal content or inside supported ACF fields, so deleting or replacing a file based on one screen can break references elsewhere.",
+            "field_69deb8e4bcd8e": "I shaped Image Usage Scanner as an admin-only audit workflow that reports media relationships instead of modifying them. It checks featured images and supported ACF image or gallery fields in bounded batches, saving progress so a scan can continue after interruption."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2255,
+          "content": "A WordPress course-management plugin centralising schedules, start dates, course types, times, meetings, registration status and available places for responsive listings and REST integrations."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2255,
+          "fields": {
+            "field_69deb8ddbcd8d": "Course Dates Manager addresses a publishing problem that appears when course information and dates are maintained in pages. Editors can end up repeating programme details, schedules and category information in several places, which makes updates harder to keep consistent.",
+            "field_69deb8e4bcd8e": "I developed Course Dates Manager around a dedicated course post type and taxonomy so programme information can be maintained in one structured place. A responsive shortcode renders the public overview, while paginated REST endpoints expose only published course data for integrations that need it."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2238,
+          "content": "An admin-only WordPress developer tool for previewing, applying and rolling back structured JSON patch packages, with production patching blocked by default unless explicitly enabled."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2238,
+          "fields": {
+            "field_69deb8ddbcd8d": "AI Patch Runner deals with a high-risk WordPress task: applying structured code changes to installed plugins without turning the admin area into an unrestricted file editor. A bad patch can break functionality, so speed is less important than knowing what changes, who applies it and how to recover if the result is wrong.",
+            "field_69deb8e4bcd8e": "I designed AI Patch Runner as an admin-only workflow for structured JSON patch packages. Preview is kept separate from execution so a proposed change can be inspected before plugin files are modified. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2283,
+          "content": "A WordPress content-management plugin helping administrators export ACF and page text for spreadsheet review and import validated edits back through a controlled workflow."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2283,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF CSV Manager began as a way to make structured WordPress content easier to review outside separate editing screens. Exporting ACF-oriented data to CSV can help with bulk review, but importing changes back creates risk when rows, fields or content ownership are unclear.",
+            "field_69deb8e4bcd8e": "I developed ACF CSV Manager as an earlier workflow for exporting ACF-related content into a reviewable spreadsheet format and returning approved updates through WordPress. The design demonstrated how bulk text work could be organised without opening every page individually, while keeping the import process separate from normal editing."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2473,
+          "content": "A WordPress media-management plugin combining metadata editing, CSV import and export, usage scanning and controlled ZIP exports within one admin workflow."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2473,
+          "fields": {
+            "field_69deb8ddbcd8d": "Modern Image Manager brings WordPress media tasks into one admin workflow, which is useful but also risky. Editing metadata is simple compared with renaming files, importing CSV changes or deleting attachments, because those actions can affect URLs and references across the site.",
+            "field_69deb8e4bcd8e": "I shaped Modern Image Manager as a WordPress admin interface for metadata editing, CSV import and export, usage scanning and ZIP exports. Requests are validated before higher-risk actions run, and filename changes preserve the current extension. Supporting information stays close to the choice it is meant to clarify."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 2989,
+          "content": "A WordPress admin tool centralising ACF text, core page fields, SEO metadata and image text with inline editing plus validated CSV and XLSX workflows."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 2989,
+          "fields": {
+            "field_69deb8ddbcd8d": "ACF Page Text Manager addresses a WordPress editing problem created when page text lives across core fields, ACF, SEO plugins and media metadata. Reviewing content one screen at a time is slow, but bulk spreadsheets introduce their own risks when unsupported fields or media instructions are included.",
+            "field_69deb8e4bcd8e": "I developed ACF Page Text Manager around one WordPress admin screen for supported core fields, ACF text, SEO metadata and image text. Editors can update values inline or move selected content through CSV and XLSX workflows, with validation before imported data is processed."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 3660,
+          "content": "A portfolio-led architecture WordPress website placing large project imagery first while supporting it with clear project browsing, studio mission and team information across desktop, tablet and mobile."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 3660,
+          "fields": {
+            "field_69deb8ddbcd8d": "Spring architecten needs a portfolio that lets the work establish credibility before visitors read a long explanation of the studio. Prospective clients often start with project type, visual character and relevance.",
+            "field_69deb8e4bcd8e": "I structured Spring architecten around project imagery and the information that helps a prospective client understand each piece of work. Projects come forward first, with architectural context and studio information supporting the visual evidence rather than competing with it. Relevant actions remain close to the information needed for the next step."
+          }
+        }
+      },
+      {
+        "action": "post.update",
+        "payload": {
+          "id": 4092,
+          "content": "A page-aware WordPress plugin for researching and reviewing Shutterstock assets before selected images are assigned to supported WordPress and ACF image fields."
+        }
+      },
+      {
+        "action": "acf.update",
+        "payload": {
+          "post_id": 4092,
+          "fields": {
+            "field_69deb8ddbcd8d": "SEO Image Assistant for Shutterstock connects stock-image research with the WordPress page where an image may eventually be used. That creates more responsibility than a simple search box: OAuth credentials, licensing status, file validation and ACF assignments all sit in the same workflow.",
+            "field_69deb8e4bcd8e": "I shaped SEO Image Assistant for Shutterstock as a page-aware WordPress workflow that begins with keyword or page context and ends with a reviewed image assignment. OAuth connects the service, while search and suggestion queues let administrators inspect assets before licensing."
+          }
+        }
+      }
+    ]
+  }
+}
