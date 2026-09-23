@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "portfolio-intro-audit-1241-live-20260924",
+    "action": "portfolio.case_text_update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-23T23:18:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "stale_target"
+}
