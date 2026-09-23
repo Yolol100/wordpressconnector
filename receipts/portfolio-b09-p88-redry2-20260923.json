@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-b09-p88-redry2-20260923",
+    "action": "portfolio.case_text_update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-23T11:55:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 1321,
+    "readback_verified": null,
+    "before_fingerprint": "81892a6a7b017bf0557c8204e004b4714da128d54e6172536c0b6518afefe4d9",
+    "after_fingerprint": "b21900c9d833a08dd2215e3dd0643a27724d0965696199d51b42e039b98142c1"
+}
