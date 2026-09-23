@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1241-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1241,
+    "content": "A recruitment WordPress website for Werken bij EFE connecting vacancy discovery, employer information and a direct application process for candidates across multiple sectors.",
+    "description_1": "With many live vacancies, candidates could easily focus on job titles while missing the information needed to judge EFE as an employer. Vacancy lists, role details and application actions also become harder to follow when compressed onto mobile screens.",
+    "description_2": "Vacancy discovery stays prominent, but I connected it to role information, employer context and a defined application sequence. Simple headings and predictable mobile ordering help candidates move from finding a position to understanding it and applying, without turning the site into an endless list of openings."
+  }
+}
