@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "portfolio-intro-audit-1375-dry-20260923",
+  "action": "portfolio.case_text_update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 1375,
+    "content": "A WordPress website for Ourwp explaining virtual offices, KvK business addresses, post handling, scanning and package choices before entrepreneurs sign up or make contact.",
+    "description_1": "Ourwp offers business-address services to entrepreneurs who need to understand more than a postal location before choosing a package. Registration use, post handling, scanning and account access each affect the service, so a visitor needs to compare what is included and what happens after signup.",
+    "description_2": "I designed Ourwp around the questions an entrepreneur needs answered before selecting an address package. The website explains the address service, post handling and scanning first, then connects those details to package choices and the signup route. The same hierarchy keeps the next action visible without adding unnecessary decision points."
+  }
+}
