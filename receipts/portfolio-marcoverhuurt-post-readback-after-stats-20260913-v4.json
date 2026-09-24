@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-marcoverhuurt-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:51:04+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1428,
+        "type": "post",
+        "status": "publish",
+        "title": "Marcoverhuurt",
+        "slug": "marcoverhuurt",
+        "permalink": "https://andrewbaeten.nl/marcoverhuurt/",
+        "excerpt": "Rental-services site keeping the offer, supporting information and availability enquiries in one short selection path."
+    },
+    "post_fingerprint": "8100708cf995cfd2f40674563df307f5f71cfd76ec4a0ba43b4ddb5fe57fefd6",
+    "readback_verified": null
+}

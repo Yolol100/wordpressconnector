@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-dmelektro-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:32:38+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1863,
+        "type": "post",
+        "status": "publish",
+        "title": "Dmelektro",
+        "slug": "dmelektro",
+        "permalink": "https://andrewbaeten.nl/dmelektro/",
+        "excerpt": "Electrical and sustainable-energy site with dedicated pages for systems, PV, batteries, heat pumps and maintenance, supported by expertise context and quote access."
+    },
+    "post_fingerprint": "7abdd2e6396ac2b85f1edc6c6c435d7daac37a2f5620adc74b1bc323b529bf05",
+    "readback_verified": null
+}

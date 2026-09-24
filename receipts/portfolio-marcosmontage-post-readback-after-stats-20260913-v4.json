@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-marcosmontage-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:58:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1439,
+        "type": "post",
+        "status": "publish",
+        "title": "Marcosmontage",
+        "slug": "marcosmontage",
+        "permalink": "https://andrewbaeten.nl/marcosmontage/",
+        "excerpt": "Marcos Montage explains installation support through concise service information, with quotation access close to the relevant service."
+    },
+    "post_fingerprint": "ed9053998bca6c26cc4c4eb1628d9956a60213b775a0e285668600d0ed1b301a",
+    "readback_verified": null
+}

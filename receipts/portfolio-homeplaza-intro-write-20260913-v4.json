@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-homeplaza-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:01:30+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "ff846eb77183653ed97849ffa89767539423819312f69a2d1714d1f21c063127",
+    "after_fingerprint": "cd4098a5e7af92bd5ea97b181cf25be907b6eaa56c2af34657e1fd63f2d1f274",
+    "rollback_available": true
+}

@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch-2-intros-write-20260913-v4",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:22:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "826c00a32cb85842a437a3297ac7370975b3c02df1f33ba123e136e65e717439",
+            "after_fingerprint": "920782b2c81fd32b8a40112ef700f8d6fcc413d1fb3c11ed527e82e2e4201a90"
+        },
+        {
+            "index": 1,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "be91652d565a115d3edf56fe931ef9d2f414297a97d3450798b6b6e18b58538e",
+            "after_fingerprint": "f8a9f004671167f28ab61a18b87092f29afd1ce851242505ea51524eee932cbb"
+        }
+    ],
+    "rollback_available": true
+}

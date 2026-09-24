@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-doctorcura-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T00:21:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "f17d71db075f8ca64348d7f50b87b71a335c36318e47069f878082290fa3ad51",
+    "after_fingerprint": "8f2cc0ed07cffea813c6dc153e3e3d8dba09454a44a6bf80a3cac3dd6bc3a4ca",
+    "rollback_available": true
+}

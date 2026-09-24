@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch69-post-get-1368-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T00:10:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1368,
+        "type": "post",
+        "status": "publish",
+        "title": "Astenadvies",
+        "slug": "astenadvies",
+        "permalink": "https://andrewbaeten.nl/astenadvies/",
+        "excerpt": "Financial-advice website separating service areas, trust information and contact routes so visitors can understand their options before starting a personal advice conversation."
+    },
+    "post_fingerprint": "502003fbade29e6c7f858cd170c0a32fca0232a75bd2eddd439d877aa3f2a2b9",
+    "readback_verified": null
+}

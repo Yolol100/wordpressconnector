@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-odetra-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T15:37:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "35f833a5abd337249f5344c1464dff9edf905b3befedd4fa497b0bd74146de65",
+    "after_fingerprint": "a45a59a7bfff126fd5dfde8c36debce2b3b1c6e9f77bd6cce671b903e6643b40",
+    "rollback_available": true
+}

@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-voltworks-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T18:16:57+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "783777c544babd8f22cc161b3ce1d32402677eece3945ab993dba63f3f24e904",
+    "after_fingerprint": "1b77b33ebfde00ddea056483fe7c5f36efe1cbddc9f7a1996eb9c1d5a6bc3a9a",
+    "rollback_available": true
+}

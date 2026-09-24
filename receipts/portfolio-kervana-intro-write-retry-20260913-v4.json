@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kervana-intro-write-retry-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T18:02:22+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "fa4ebc043d4c48761cb5e2aa33bc6825c166700b1deaf6d21c21190f948939c2",
+    "after_fingerprint": "334e78db68dbd55a684acf99abe99a7e6a941852de95d5943cf816f0b6078e78",
+    "rollback_available": true
+}

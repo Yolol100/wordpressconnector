@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-woningontruimingvergelijken-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:53:19+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "cc1f336f9f79ad84f06b9caafe7bf70b764c01348560556fb4a7896fac54c08f",
+    "after_fingerprint": "97f8666db6290d5c4a4cb741b260b533a36fde81fff66f44dfeade04ca2b60dc",
+    "rollback_available": true
+}

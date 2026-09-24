@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-proline-afbouw-post-read-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:00:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1379,
+        "type": "post",
+        "status": "publish",
+        "title": "Prolineafbouw",
+        "slug": "prolineafbouw",
+        "permalink": "https://andrewbaeten.nl/prolineafbouw/",
+        "excerpt": "Afbouw website organising specialist finishing services, project examples and customer reviews around a direct quotation route for homes, offices and renovation projects."
+    },
+    "post_fingerprint": "72ae5ad0f40fce3561e5319155285d9cbda27a8af3bd8ba96037d62700253019",
+    "readback_verified": null
+}

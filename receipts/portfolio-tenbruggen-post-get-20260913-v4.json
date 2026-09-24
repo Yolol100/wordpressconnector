@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-tenbruggen-post-get-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T12:12:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4470,
+        "type": "post",
+        "status": "publish",
+        "title": "Tenbrugge",
+        "slug": "tenbrugge",
+        "permalink": "https://andrewbaeten.nl/tenbrugge/",
+        "excerpt": "Financial-services website separating Ten Bruggen’s accountancy and advisory expertise into clear service paths, with direct contact and appointment options for visitors seeking guidance."
+    },
+    "post_fingerprint": "7223f7f2994b0c939aec8f8f2e4c63a7cac7cc82e9dca538d7998781a5756e39",
+    "readback_verified": null
+}

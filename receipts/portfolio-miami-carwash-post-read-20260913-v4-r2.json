@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-miami-carwash-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:39:27+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1402,
+        "type": "post",
+        "status": "publish",
+        "title": "Miamicarwash",
+        "slug": "miamicarwash",
+        "permalink": "https://andrewbaeten.nl/miamicarwash/",
+        "excerpt": "Automotive-care website built for quick mobile decisions, keeping the service offer, brand presentation and contact route easy to understand before customers visit."
+    },
+    "post_fingerprint": "1353cd0620b43034adb39ba11a7b9a5faa0fb59dc791fcbf2ad0b33d9d99b97b",
+    "readback_verified": null
+}

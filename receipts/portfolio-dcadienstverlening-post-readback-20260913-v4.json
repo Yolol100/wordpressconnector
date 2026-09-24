@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-dcadienstverlening-post-readback-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T12:37:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4229,
+        "type": "post",
+        "status": "publish",
+        "title": "Dcadienstverlening",
+        "slug": "dcadienstverlening",
+        "permalink": "https://andrewbaeten.nl/dcadienstverlening/",
+        "excerpt": "Specialist cleaning choices lead into proof and quotation without collapsing business and residential needs into one path."
+    },
+    "post_fingerprint": "04583017624a1ce83f97745f4edc77d60b7e234b4fd39421556fa3906aaa853a",
+    "readback_verified": null
+}

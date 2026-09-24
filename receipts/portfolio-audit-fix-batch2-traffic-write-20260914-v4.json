@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-fix-batch2-traffic-write-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T17:39:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "76fcd76cb8f453f62ee260c737dd03e8c50724342226af34ef481af79868f39b",
+            "after_fingerprint": "3d89eca774ed6946e7ac3d0093f73eb42d19f37390bc9b0e3f591d62a0873731"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "033bf15c99ce0c417c8de144b214a0adb6d816a9572ab525c6c0284dc45d6233",
+            "after_fingerprint": "04e4291ec69bd9d0b3b53a6a77b6b8212782bf5356e3b8700908cf2dffa8c574"
+        }
+    ],
+    "rollback_available": true
+}

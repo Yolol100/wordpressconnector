@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-progress-post-read-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:04:58+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1394,
+        "type": "post",
+        "status": "publish",
+        "title": "Progress",
+        "slug": "progress",
+        "permalink": "https://andrewbaeten.nl/progress/",
+        "excerpt": "Recruitment platform separating candidate vacancy discovery from employer staffing services across technology, customer service, energy, finance, telecom and public-sector roles."
+    },
+    "post_fingerprint": "53ec3529f2757c9389db687bd48a20f8997a82f404af9f114fb72299787d6e7c",
+    "readback_verified": null
+}
