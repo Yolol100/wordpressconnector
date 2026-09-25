@@ -14,6 +14,23 @@ $forbidden = array(
 foreach ($forbidden as $path) {
     if (file_exists($root . '/' . $path)) { fwrite(STDERR,"Forbidden legacy/temporary residue: {$path}\n"); exit(1); }
 }
+
+// The default branch is reusable platform source only. Client/target-specific
+// DoctorCura runtime evidence, workflows and one-off scripts must stay off main.
+foreach (new DirectoryIterator($root) as $item) {
+    if ($item->isDot()) { continue; }
+    if (strpos($item->getFilename(), 'doctorcura-') === 0) {
+        fwrite(STDERR, "Target-specific DoctorCura residue on implementation tree: {$item->getFilename()}\n");
+        exit(1);
+    }
+}
+foreach (array($root.'/.github/workflows/doctorcura-*', $root.'/scripts/doctorcura_*') as $pattern) {
+    $matches = glob($pattern) ?: array();
+    if ($matches) {
+        fwrite(STDERR, "Target-specific DoctorCura implementation residue detected: {$matches[0]}\n");
+        exit(1);
+    }
+}
 $requiredTransport = array(
     '.github/workflows/wordpress-request.yml',
     '.github/workflows/wordpress-zero-config-execute.yml',
