@@ -8,6 +8,7 @@ $plugin = file_get_contents($root . '/plugin/wordpressconnector/includes/Plugin.
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
 $export = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php');
 $import = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php');
+$policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
 
 foreach (array(
     'adapter' => $adapter,
@@ -15,6 +16,7 @@ foreach (array(
     'bootstrap' => $bootstrap,
     'export' => $export,
     'import' => $import,
+    'policy' => $policy,
 ) as $label => $source) {
     if (! is_string($source) || '' === $source) {
         fwrite(STDERR, $label . " source is missing.\n");
@@ -58,6 +60,17 @@ if (false === strpos($import, 'public function importDocument(')) {
 if (false !== strpos($adapter, "update_post_meta(") || false !== strpos($adapter, "'_elementor_data'")) {
     fwrite(STDERR, "Connector JSON adapter must not write Elementor meta directly.\n");
     exit(1);
+}
+
+if (false !== strpos($adapter, "'public_repository_safe' => true")) {
+    fwrite(STDERR, "Private Elementor JSON actions must never be marked public_repository_safe.\n");
+    exit(1);
+}
+foreach (array('elementor.json_export', 'elementor.json_import') as $privateAction) {
+    if (false !== strpos($policy, "'" . $privateAction . "'")) {
+        fwrite(STDERR, "Private Elementor JSON action must not appear in the public repository allowlist: {$privateAction}.\n");
+        exit(1);
+    }
 }
 
 echo "private Elementor JSON action contract OK\n";
