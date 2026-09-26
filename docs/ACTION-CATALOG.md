@@ -37,6 +37,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `elementor.form_upsert` | mutation | Insert or fully replace one complete V3 Form widget or V4 Atomic Form subtree with schema checks, readback and rollback. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
 | `elementor.inventory` | read-only | Inventory registered Elementor widget provenance and actual widget/element usage across Elementor documents. |
+| `elementor.json_export` | privileged, sensitive | Export one Elementor page, post or saved template as canonical Elementor JSON through the shared export service. Private transport only. |
+| `elementor.json_import` | mutation, privileged, sensitive | Import canonical Elementor JSON into a new draft or existing target through Elementor document APIs with readback and rollback. Private transport only. |
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
 | `elementor.regenerate` | mutation | Clear Elementor generated CSS/files cache. |
 | `elementor.replace_document` | mutation | Replace Elementor elements/settings through the Elementor document API. |
