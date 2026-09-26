@@ -8,10 +8,30 @@ final class ElementorJsonExport
     private const ACTION='wpconnector_export_elementor_json'; private const POST_TYPES=array('page','post','elementor_library'); private const BUNDLE_FORMAT='wordpressconnector/elementor-site-parts-bundle'; private const BUNDLE_VERSION=1;
     public function register(): void{if(!is_admin()){return;}add_filter('page_row_actions',array($this,'rowActions'),99,2);add_filter('post_row_actions',array($this,'rowActions'),99,2);add_action('admin_post_'.self::ACTION,array($this,'download'));}
     public function rowActions(array $actions,\WP_Post $post): array{if(!$this->supportsPostType((string)$post->post_type)||!current_user_can('edit_post',(int)$post->ID)||!$this->isElementorDocument((int)$post->ID)){return $actions;}if('elementor_library'===(string)$post->post_type&&isset($actions['export-template'])){return $actions;}$actions['wpconnector_export_elementor_json']=sprintf('<a href="%1$s">%2$s</a>',esc_url($this->exportUrl((int)$post->ID,false)),esc_html__('Export Elementor JSON','wordpressconnector'));if(in_array((string)$post->post_type,array('page','post'),true)&&class_exists('ElementorPro\\Modules\\ThemeBuilder\\Module')){$actions['wpconnector_export_elementor_site_parts']=sprintf('<a href="%1$s">%2$s</a>',esc_url($this->exportUrl((int)$post->ID,true)),esc_html__('Export Elementor + Site Parts','wordpressconnector'));}return $actions;}
+    public function exportDocument(int $postId, bool $includeSiteParts = false): array
+    {
+        if ($postId < 1) {
+            throw new RuntimeException('Invalid Elementor document.');
+        }
+        $post = get_post($postId);
+        if (! $post instanceof \WP_Post || ! $this->supportsPostType((string) $post->post_type)) {
+            throw new RuntimeException('This item cannot be exported as Elementor JSON.');
+        }
+        if (! current_user_can('edit_post', $postId)) {
+            throw new RuntimeException('You are not allowed to export this Elementor document.');
+        }
+        if ($includeSiteParts && ! in_array((string) $post->post_type, array('page', 'post'), true)) {
+            throw new RuntimeException('Site-parts export is available only for pages and posts.');
+        }
+
+        $documentPayload = $this->exportPayload($this->document($postId), $post);
+        return $includeSiteParts ? $this->bundleWithSiteParts($post, $documentPayload) : $documentPayload;
+    }
+
     public function download(): void
     {
         $postId=isset($_GET['post_id'])?absint(wp_unslash($_GET['post_id'])):0;$includeSiteParts=isset($_GET['include_site_parts'])&&'1'===(string)wp_unslash($_GET['include_site_parts']);if($postId<1){wp_die(esc_html__('Invalid Elementor document.','wordpressconnector'),'',array('response'=>400));}check_admin_referer(self::ACTION.'_'.$postId);$post=get_post($postId);if(!$post instanceof \WP_Post||!$this->supportsPostType((string)$post->post_type)){wp_die(esc_html__('This item cannot be exported as Elementor JSON.','wordpressconnector'),'',array('response'=>400));}if(!current_user_can('edit_post',$postId)){wp_die(esc_html__('You are not allowed to export this Elementor document.','wordpressconnector'),'',array('response'=>403));}if($includeSiteParts&&!in_array((string)$post->post_type,array('page','post'),true)){wp_die(esc_html__('Site-parts export is available only for pages and posts.','wordpressconnector'),'',array('response'=>400));}
-        try{$documentPayload=$this->exportPayload($this->document($postId),$post);$payload=$includeSiteParts?$this->bundleWithSiteParts($post,$documentPayload):$documentPayload;$json=wp_json_encode($payload);if(!is_string($json)||''===$json){throw new RuntimeException('WordPress could not encode the Elementor export as JSON.');}}catch(RuntimeException $error){wp_die(esc_html($error->getMessage()),'',array('response'=>400));}catch(Throwable $error){wp_die(esc_html__('The Elementor JSON export could not be completed.','wordpressconnector'),'',array('response'=>500));}
+        try{$payload=$this->exportDocument($postId,$includeSiteParts);$json=wp_json_encode($payload);if(!is_string($json)||''===$json){throw new RuntimeException('WordPress could not encode the Elementor export as JSON.');}}catch(RuntimeException $error){wp_die(esc_html($error->getMessage()),'',array('response'=>400));}catch(Throwable $error){wp_die(esc_html__('The Elementor JSON export could not be completed.','wordpressconnector'),'',array('response'=>500));}
         $slug=''!==(string)$post->post_name?(string)$post->post_name:(string)$post->post_type.'-'.$postId;$filename=sanitize_file_name($slug.($includeSiteParts?'-elementor-with-site-parts.json':'-elementor.json'));nocache_headers();header('Content-Type: application/json; charset=utf-8');header('Content-Disposition: attachment; filename='.$filename);header('Content-Length: '.strlen($json));header('X-Content-Type-Options: nosniff');echo $json;exit;
     }
     private function exportUrl(int $postId,bool $includeSiteParts): string{return wp_nonce_url(add_query_arg(array('action'=>self::ACTION,'post_id'=>$postId,'include_site_parts'=>$includeSiteParts?1:0),admin_url('admin-post.php')),self::ACTION.'_'.$postId);}

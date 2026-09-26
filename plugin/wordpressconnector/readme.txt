@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.14.9
+Stable tag: 1.15.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-Version 1.14.9 adds a narrowly bounded `portfolio.case_text_update` action for portfolio intro, problem and solution copy on standard posts, including unpublished targets. It is fingerprint-gated for writes, exact-readback verified and rollbackable without exposing draft content in public receipts.\n\nVersion 1.14.8 extends the guarded public ACF editorial route to existing `text`, `textarea` and `wysiwyg` fields that belong to an applicable field group on a published editable post. Multiline/WYSIWYG values remain plain-text only in public-repository mode, keep the existing 1000-byte limit, and retain capability, field-key, stale-state, readback and rollback boundaries.
+Version 1.15.0 exposes the existing Elementor JSON export/import services through private authenticated connector actions. `elementor.json_export` is read-only; `elementor.json_import` is mutation-gated, uses Elementor document APIs, exact readback and rollback, and both actions remain sensitive so public-repository mode cannot execute them.\n\nVersion 1.14.9 adds a narrowly bounded `portfolio.case_text_update` action for portfolio intro, problem and solution copy on standard posts, including unpublished targets. It is fingerprint-gated for writes, exact-readback verified and rollbackable without exposing draft content in public receipts.\n\nVersion 1.14.8 extends the guarded public ACF editorial route to existing `text`, `textarea` and `wysiwyg` fields that belong to an applicable field group on a published editable post. Multiline/WYSIWYG values remain plain-text only in public-repository mode, keep the existing 1000-byte limit, and retain capability, field-key, stale-state, readback and rollback boundaries.
 
 Version 1.14.7 makes the public sanitized receipt builder self-contained so trusted executors no longer depend on a separately materialized legacy helper. Existing receipt contracts, including connector self-update and bounded portfolio-stat evidence, remain preserved and are covered by an isolated workspace regression test.
 
@@ -63,6 +63,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.0 =
+* Add private authenticated `elementor.json_export` and `elementor.json_import` connector actions backed by the same services as the WordPress admin UI.
+* Keep JSON import on Elementor document APIs with exact readback, mutation confirmation, idempotency and rollback.
+* Mark both JSON actions sensitive/privileged so public GitHub runtime remains fail-closed.
 
 = 1.14.9 =
 * Add bounded `portfolio.case_text_update` for post content plus the fixed `description_1` and `description_2` ACF fields on standard posts, including unpublished portfolio records.

@@ -16,6 +16,7 @@ run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
 run_php tests/elementor-json-import-contract.php
+run_php tests/elementor-json-actions-contract.php
 run_php tests/state-token-contract.php
 run_php tests/plugin-control-contract.php
 run_php tests/plugin-package-contract.php

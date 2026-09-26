@@ -14,6 +14,7 @@ use Webactueel\WordPressConnector\Adapters\DiscoveryAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorFormsAdapter;
+use Webactueel\WordPressConnector\Adapters\ElementorJsonAdapter;
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
@@ -47,6 +48,7 @@ final class Plugin
             new ElementorCapabilitiesAdapter(),
             new ElementorAdapter(),
             new ElementorFormsAdapter(),
+            new ElementorJsonAdapter(),
             new WooCommerceAdapter(),
             new AcfAdapter(),
             new PortfolioStatsAdapter(),
