@@ -9,6 +9,7 @@ use Webactueel\WordPressConnector\Admin\ElementorJsonExport;
 use Webactueel\WordPressConnector\Admin\ElementorJsonImport;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 final class ElementorJsonAdapter
 {
@@ -41,7 +42,7 @@ final class ElementorJsonAdapter
         if ($postId < 1) {
             throw new RuntimeException('elementor.json_export requires payload.id.');
         }
-        $includeSiteParts = ! empty($payload['include_site_parts']);
+        $includeSiteParts = Input::bool($payload, 'include_site_parts');
         $document = (new ElementorJsonExport())->exportDocument($postId, $includeSiteParts);
 
         return array(
