@@ -1,5 +1,7 @@
 # WordPress Connector
 
+> **Portfoliostatus:** actief ondersteunend · gecontroleerde WordPress automation bridge · geen clientcase
+
 WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients and the guarded GitHub runtime.
 
 ## Zero-config GitHub connection
