@@ -38,6 +38,7 @@ final class Policy
         'connector.rollback',
         'connector.update.check',
         'connector.update.apply',
+        'code_snippets.patch',
     );
 
     private static ?bool $runtimePublicRepository = null;
