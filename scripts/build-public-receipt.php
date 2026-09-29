@@ -281,6 +281,25 @@ if (! $ok) {
         if (null !== $before) $receipt['before_fingerprint'] = $fingerprint($before);
         if (null !== $after) $receipt['after_fingerprint'] = $fingerprint($after);
         if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+    } elseif ('code_snippets.patch' === $action) {
+        $snippet = isset($data['snippet']) && is_array($data['snippet']) ? $data['snippet'] : array();
+        $receipt['snippet_id'] = isset($snippet['id']) ? max(0, (int) $snippet['id']) : 0;
+        foreach (array('scope','type') as $field) {
+            if (isset($snippet[$field]) && is_scalar($snippet[$field])) {
+                $receipt[$field] = substr((string) $snippet[$field], 0, 80);
+            }
+        }
+        if (isset($snippet['priority'])) $receipt['priority'] = (int) $snippet['priority'];
+        if (isset($snippet['active'])) $receipt['active'] = (bool) $snippet['active'];
+        if (isset($data['replacement_count'])) $receipt['replacement_count'] = max(0, min(4, (int) $data['replacement_count']));
+        foreach (array('before_code_fingerprint','after_code_fingerprint','before_fingerprint','after_fingerprint') as $field) {
+            $value = isset($data[$field]) ? (string) $data[$field] : '';
+            if (preg_match('/^[a-f0-9]{64}\\z/', $value)) {
+                $receipt[$field] = $value;
+            }
+        }
+        $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? null));
+        if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
     } elseif ('post.get' === $action) {
         $post = isset($data['post']) && is_array($data['post']) ? $data['post'] : array();
         $receipt['post'] = $summarizePost($post, true);
