@@ -159,7 +159,27 @@ final class CacheMaintenanceAdapter
             remove_action('rocket_after_clean_domain', $callback, PHP_INT_MAX);
         }
 
-        return true === $result || $verified;
+        if (true === $result || $verified) {
+            return true;
+        }
+
+        if (! function_exists('rocket_clean_cache_dir')) {
+            return false;
+        }
+
+        $fallbackVerified = false;
+        $fallbackCallback = static function () use (&$fallbackVerified): void {
+            $fallbackVerified = true;
+        };
+
+        add_action('after_rocket_clean_cache_dir', $fallbackCallback, PHP_INT_MAX, 0);
+        try {
+            rocket_clean_cache_dir();
+        } finally {
+            remove_action('after_rocket_clean_cache_dir', $fallbackCallback, PHP_INT_MAX);
+        }
+
+        return $fallbackVerified;
     }
 
     private function flushAssetCleanup(): bool
