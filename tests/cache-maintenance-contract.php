@@ -21,6 +21,11 @@ foreach (array(
     "after_rocket_clean_cache_dir",
     "ensureAssetCleanupClass",
     "WPACU_PLUGIN_DIR",
+    "Misc.php",
+    "Tools.php",
+    "OptimizeCss.php",
+    "OptimizeJs.php",
+    "Plugin.php",
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {

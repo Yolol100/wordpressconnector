@@ -210,13 +210,37 @@ final class CacheMaintenanceAdapter
             return '';
         }
 
-        $candidate = $base . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCommon.php';
-        $real = realpath($candidate);
-        if (false === $real || 0 !== strpos($real, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) || ! is_file($real)) {
-            return '';
-        }
+        $dependencies = array(
+            array('classes' . DIRECTORY_SEPARATOR . 'Misc.php', 'WpAssetCleanUp\\Misc'),
+            array('classes' . DIRECTORY_SEPARATOR . 'Tools.php', 'WpAssetCleanUp\\Tools'),
+            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCss.php', 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCss'),
+            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeJs.php', 'WpAssetCleanUp\\OptimiseAssets\\OptimizeJs'),
+            array('classes' . DIRECTORY_SEPARATOR . 'Plugin.php', 'WpAssetCleanUp\\Plugin'),
+            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCommon.php', $class),
+        );
 
-        require_once $real;
+        foreach ($dependencies as $dependency) {
+            $dependencyClass = (string) $dependency[1];
+            if (class_exists($dependencyClass)) {
+                continue;
+            }
+
+            $candidate = $base . DIRECTORY_SEPARATOR . (string) $dependency[0];
+            $real = realpath($candidate);
+            if (
+                false === $real
+                || 0 !== strpos($real, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)
+                || ! is_file($real)
+            ) {
+                return '';
+            }
+
+            require_once $real;
+
+            if (! class_exists($dependencyClass)) {
+                return '';
+            }
+        }
 
         return class_exists($class) ? $class : '';
     }
