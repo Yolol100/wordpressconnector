@@ -1,11 +1,9 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-asset-cleanup-cache-dry-1.15.4-20260929",
-  "action": "maintenance.cache_flush",
+  "request_id": "andrewbaeten-cache-connector-1.15.5-dry-20260929",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
-  "payload": {
-    "layer": "asset_cleanup"
-  }
+  "payload": {}
 }
