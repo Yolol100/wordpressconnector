@@ -281,6 +281,44 @@ if (! $ok) {
         if (null !== $before) $receipt['before_fingerprint'] = $fingerprint($before);
         if (null !== $after) $receipt['after_fingerprint'] = $fingerprint($after);
         if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+    } elseif ('maintenance.cache_capabilities' === $action) {
+        $layers = isset($data['layers']) && is_array($data['layers']) ? $data['layers'] : array();
+        $safeLayers = array();
+        foreach (array('elementor','wp_rocket','asset_cleanup') as $layer) {
+            $state = isset($layers[$layer]) && is_array($layers[$layer]) ? $layers[$layer] : array();
+            $safeLayers[$layer] = array(
+                'provider' => substr((string) ($state['provider'] ?? ''), 0, 80),
+                'available' => ! empty($state['available']),
+                'version' => substr((string) ($state['version'] ?? ''), 0, 40),
+            );
+        }
+        $receipt['layers'] = $safeLayers;
+        $fp = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\\z/', $fp)) $receipt['layers_fingerprint'] = $fp;
+        $receipt['readback_verified'] = null;
+    } elseif ('maintenance.cache_flush' === $action) {
+        $layer = (string) ($data['layer'] ?? ($payload['layer'] ?? ''));
+        if (in_array($layer, array('elementor','wp_rocket','asset_cleanup'), true)) {
+            $receipt['layer'] = $layer;
+        }
+        $receipt['provider'] = substr((string) ($data['provider'] ?? ''), 0, 80);
+        $receipt['version'] = substr((string) ($data['version'] ?? ''), 0, 40);
+        $receipt['rollback_supported'] = false;
+        if (isset($data['rebuild_mode']) && is_scalar($data['rebuild_mode'])) {
+            $receipt['rebuild_mode'] = substr((string) $data['rebuild_mode'], 0, 100);
+        }
+        if (isset($data['json_cache_files_before'])) $receipt['json_cache_files_before'] = max(0, (int) $data['json_cache_files_before']);
+        if (isset($data['json_cache_files_after'])) $receipt['json_cache_files_after'] = max(0, (int) $data['json_cache_files_after']);
+        $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? null));
+        if ($dryRun) {
+            $state = array(
+                'provider' => (string) ($data['provider'] ?? ''),
+                'available' => ! empty($data['available']),
+                'version' => (string) ($data['version'] ?? ''),
+            );
+            $receipt['before_fingerprint'] = $fingerprint($state);
+            $receipt['would_flush'] = ! empty($data['would_flush']);
+        }
     } elseif ('code_snippets.patch' === $action) {
         $snippet = isset($data['snippet']) && is_array($data['snippet']) ? $data['snippet'] : array();
         $receipt['snippet_id'] = isset($snippet['id']) ? max(0, (int) $snippet['id']) : 0;
