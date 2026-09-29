@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-portfolio-priority-live-20260929",
+    "action": "code_snippets.patch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-29T02:10:14+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "snippet_id": 8,
+    "scope": "global",
+    "type": "php",
+    "priority": 10,
+    "active": true,
+    "replacement_count": 2,
+    "before_code_fingerprint": "c9508d908e4f2540136db982e33433a26e4320d0aceaaa1b262fa676a8c33ea5",
+    "after_code_fingerprint": "8d0278eb7b2ef47a6dc91584f8f7ece3d936dd3ff6eaeeb713f8da7ff98fe04b",
+    "before_fingerprint": "7b37bdbba9b2b79af47d821e252722122d1cadde63b7fb0394c9fc4427d78c42",
+    "after_fingerprint": "fc805da2ef45a8224d413fb3106bd5b5d4056ad11d19b8f145cd64350ac2811b",
+    "readback_verified": true,
+    "rollback_available": true
+}
