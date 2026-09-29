@@ -25,6 +25,7 @@ foreach (array(
     "clearCache",
     "clearAllCache",
     "wpacu_clear_cache_after",
+    "wpacu_css_wpconnector_verify_",
     "_last_clear_cache",
     "readback_verified",
 ) as $needle) {
