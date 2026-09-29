@@ -13,6 +13,7 @@ run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
 run_php tests/custom-css-contract.php
 run_php tests/code-snippets-contract.php
+run_php tests/cache-maintenance-contract.php
 run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
