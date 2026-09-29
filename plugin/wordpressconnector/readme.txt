@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.4
+Stable tag: 1.15.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.15.5 aligns Asset CleanUp cache maintenance with the current 1.4.0.6 runtime: it uses the plugin's own namespace-to-classes autoload contract during REST/OIDC requests, calls `clearCache()` when available, and verifies completion through `wpacu_clear_cache_after` plus the plugin's `_last_clear_cache` transient.
 
 Version 1.15.4 fixes Asset CleanUp cache clearing in REST/OIDC requests by loading the plugin's own helper classes needed by its official `clearAllCache()` path before execution. No generic cache-directory deletion is introduced.
 
@@ -65,6 +67,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.5 =
+* Align Asset CleanUp REST cache maintenance with the current plugin autoload convention instead of hardcoding legacy helper paths.
+* Prefer the current `OptimizeCommon::clearCache()` API, retain legacy `clearAllCache()` fallback, and verify execution through Asset CleanUp's completion hook plus last-clear transient.
+* Keep the integration bounded to Asset CleanUp's own classes and cache API; no generic filesystem delete is added.
 
 = 1.15.4 =
 * Load Asset CleanUp `Misc`, `Tools`, CSS/JS optimizer and plugin helper classes from its verified plugin root when REST requests do not preload them.
