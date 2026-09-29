@@ -1,12 +1,12 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-wpcode-list-20260929-0323",
+  "request_id": "andrewbaeten-elementor-snippets-20260929-0326",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "wpcode",
+    "post_type": "elementor_snippet",
     "status": "publish",
     "per_page": 100,
     "page": 1,
