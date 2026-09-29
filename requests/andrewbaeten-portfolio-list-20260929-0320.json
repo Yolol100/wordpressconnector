@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-portfolio-list-20260929-0320",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  }
+}
