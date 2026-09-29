@@ -113,7 +113,10 @@ final class CacheMaintenanceAdapter
         $class = $this->ensureAssetCleanupClass();
         return array(
             'provider' => 'Asset CleanUp',
-            'available' => '' !== $class && is_callable(array($class, 'clearAllCache')),
+            'available' => '' !== $class && (
+                is_callable(array($class, 'clearCache'))
+                || is_callable(array($class, 'clearAllCache'))
+            ),
             'version' => defined('WPACU_PLUGIN_VERSION') ? (string) WPACU_PLUGIN_VERSION : '',
         );
     }
@@ -185,13 +188,44 @@ final class CacheMaintenanceAdapter
     private function flushAssetCleanup(): bool
     {
         $class = $this->ensureAssetCleanupClass();
-        if ('' === $class || ! is_callable(array($class, 'clearAllCache'))) {
+        $method = '';
+
+        if ('' !== $class && is_callable(array($class, 'clearCache'))) {
+            $method = 'clearCache';
+        } elseif ('' !== $class && is_callable(array($class, 'clearAllCache'))) {
+            $method = 'clearAllCache';
+        }
+
+        if ('' === $method) {
             throw new RuntimeException('Asset CleanUp cache API is unavailable.');
         }
 
-        call_user_func(array($class, 'clearAllCache'), false, true);
+        if (! defined('WPACU_PLUGIN_ID')) {
+            throw new RuntimeException('Asset CleanUp cache verification marker is unavailable.');
+        }
 
-        return 0 === $this->countAssetCleanupJsonFiles();
+        $transient = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
+        $before = get_transient($transient);
+        $startedAt = time();
+        $verifiedByHook = false;
+        $callback = static function () use (&$verifiedByHook): void {
+            $verifiedByHook = true;
+        };
+
+        add_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX, 0);
+        try {
+            call_user_func(array($class, $method), false);
+        } finally {
+            remove_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX);
+        }
+
+        $after = get_transient($transient);
+        $beforeValue = is_numeric($before) ? (int) $before : 0;
+        $afterValue = is_numeric($after) ? (int) $after : 0;
+
+        return $verifiedByHook
+            && $afterValue >= ($startedAt - 1)
+            && $afterValue >= $beforeValue;
     }
 
     private function ensureAssetCleanupClass(): string
@@ -201,45 +235,50 @@ final class CacheMaintenanceAdapter
             return $class;
         }
 
-        if (! defined('WPACU_PLUGIN_DIR')) {
-            return '';
-        }
+        $classesPath = defined('WPACU_PLUGIN_CLASSES_PATH')
+            ? (string) WPACU_PLUGIN_CLASSES_PATH
+            : (defined('WPACU_PLUGIN_DIR')
+                ? rtrim((string) WPACU_PLUGIN_DIR, '/\\') . DIRECTORY_SEPARATOR . 'classes'
+                : '');
 
-        $base = realpath((string) WPACU_PLUGIN_DIR);
+        $base = '' !== $classesPath ? realpath($classesPath) : false;
         if (false === $base || ! is_dir($base)) {
             return '';
         }
 
-        $dependencies = array(
-            array('classes' . DIRECTORY_SEPARATOR . 'Misc.php', 'WpAssetCleanUp\\Misc'),
-            array('classes' . DIRECTORY_SEPARATOR . 'Tools.php', 'WpAssetCleanUp\\Tools'),
-            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCss.php', 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCss'),
-            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeJs.php', 'WpAssetCleanUp\\OptimiseAssets\\OptimizeJs'),
-            array('classes' . DIRECTORY_SEPARATOR . 'Plugin.php', 'WpAssetCleanUp\\Plugin'),
-            array('classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCommon.php', $class),
-        );
+        static $autoloadRegistered = false;
 
-        foreach ($dependencies as $dependency) {
-            $dependencyClass = (string) $dependency[1];
-            if (class_exists($dependencyClass)) {
-                continue;
-            }
+        if (! $autoloadRegistered) {
+            $prefix = 'WpAssetCleanUp\\';
 
-            $candidate = $base . DIRECTORY_SEPARATOR . (string) $dependency[0];
-            $real = realpath($candidate);
-            if (
-                false === $real
-                || 0 !== strpos($real, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)
-                || ! is_file($real)
-            ) {
-                return '';
-            }
+            spl_autoload_register(
+                static function (string $className) use ($base, $prefix): void {
+                    if (0 !== strncmp($className, $prefix, strlen($prefix))) {
+                        return;
+                    }
 
-            require_once $real;
+                    $relative = substr($className, strlen($prefix));
+                    if (false === $relative || '' === $relative) {
+                        return;
+                    }
 
-            if (! class_exists($dependencyClass)) {
-                return '';
-            }
+                    $relative = str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+                    $candidate = $base . DIRECTORY_SEPARATOR . $relative;
+                    $real = realpath($candidate);
+
+                    if (
+                        false === $real
+                        || 0 !== strpos($real, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR)
+                        || ! is_file($real)
+                    ) {
+                        return;
+                    }
+
+                    include_once $real;
+                }
+            );
+
+            $autoloadRegistered = true;
         }
 
         return class_exists($class) ? $class : '';
