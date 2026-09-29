@@ -17,6 +17,8 @@ foreach (array(
     "WpAssetCleanUp\\\\OptimiseAssets\\\\OptimizeCommon",
     "elementor/core/files/clear_cache",
     "rocket_after_clean_domain",
+    "ensureAssetCleanupClass",
+    "WPACU_PLUGIN_DIR",
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
@@ -167,6 +169,8 @@ $raw = (string) file_get_contents($liveReceiptPath);
 if (
     true !== ($receipt['readback_verified'] ?? null) ||
     'elementor' !== ($receipt['layer'] ?? '') ||
+    '3.30.0' !== ($receipt['provider_version'] ?? '') ||
+    1 !== ($receipt['version'] ?? null) ||
     false !== strpos($raw, 'must-not-leak')
 ) {
     fwrite(STDERR, "Cache flush receipt verification failed.\n");

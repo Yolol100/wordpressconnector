@@ -110,10 +110,10 @@ final class CacheMaintenanceAdapter
             );
         }
 
-        $class = 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCommon';
+        $class = $this->ensureAssetCleanupClass();
         return array(
             'provider' => 'Asset CleanUp',
-            'available' => class_exists($class) && is_callable(array($class, 'clearAllCache')),
+            'available' => '' !== $class && is_callable(array($class, 'clearAllCache')),
             'version' => defined('WPACU_PLUGIN_VERSION') ? (string) WPACU_PLUGIN_VERSION : '',
         );
     }
@@ -154,24 +154,51 @@ final class CacheMaintenanceAdapter
 
         add_action('rocket_after_clean_domain', $callback, PHP_INT_MAX, 0);
         try {
-            rocket_clean_domain();
+            $result = rocket_clean_domain();
         } finally {
             remove_action('rocket_after_clean_domain', $callback, PHP_INT_MAX);
         }
 
-        return $verified;
+        return true === $result || $verified;
     }
 
     private function flushAssetCleanup(): bool
     {
-        $class = 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCommon';
-        if (! class_exists($class) || ! is_callable(array($class, 'clearAllCache'))) {
+        $class = $this->ensureAssetCleanupClass();
+        if ('' === $class || ! is_callable(array($class, 'clearAllCache'))) {
             throw new RuntimeException('Asset CleanUp cache API is unavailable.');
         }
 
         call_user_func(array($class, 'clearAllCache'), false, true);
 
         return 0 === $this->countAssetCleanupJsonFiles();
+    }
+
+    private function ensureAssetCleanupClass(): string
+    {
+        $class = 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCommon';
+        if (class_exists($class)) {
+            return $class;
+        }
+
+        if (! defined('WPACU_PLUGIN_DIR')) {
+            return '';
+        }
+
+        $base = realpath((string) WPACU_PLUGIN_DIR);
+        if (false === $base || ! is_dir($base)) {
+            return '';
+        }
+
+        $candidate = $base . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . 'OptimiseAssets' . DIRECTORY_SEPARATOR . 'OptimizeCommon.php';
+        $real = realpath($candidate);
+        if (false === $real || 0 !== strpos($real, rtrim($base, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) || ! is_file($real)) {
+            return '';
+        }
+
+        require_once $real;
+
+        return class_exists($class) ? $class : '';
     }
 
     private function countAssetCleanupJsonFiles(): int

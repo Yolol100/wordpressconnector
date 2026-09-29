@@ -302,7 +302,7 @@ if (! $ok) {
             $receipt['layer'] = $layer;
         }
         $receipt['provider'] = substr((string) ($data['provider'] ?? ''), 0, 80);
-        $receipt['version'] = substr((string) ($data['version'] ?? ''), 0, 40);
+        $receipt['provider_version'] = substr((string) ($data['version'] ?? ''), 0, 40);
         $receipt['rollback_supported'] = false;
         if (isset($data['rebuild_mode']) && is_scalar($data['rebuild_mode'])) {
             $receipt['rebuild_mode'] = substr((string) $data['rebuild_mode'], 0, 100);
