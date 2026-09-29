@@ -20,16 +20,28 @@ foreach (array(
     "rocket_clean_cache_dir",
     "after_rocket_clean_cache_dir",
     "ensureAssetCleanupClass",
-    "WPACU_PLUGIN_DIR",
-    "Misc.php",
-    "Tools.php",
-    "OptimizeCss.php",
-    "OptimizeJs.php",
-    "Plugin.php",
+    "WPACU_PLUGIN_CLASSES_PATH",
+    "spl_autoload_register",
+    "clearCache",
+    "clearAllCache",
+    "wpacu_clear_cache_after",
+    "_last_clear_cache",
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
         fwrite(STDERR, "Cache maintenance adapter contract is missing: {$needle}\n");
+        exit(1);
+    }
+}
+
+foreach (array(
+    "unlink(",
+    "rmdir(",
+    "delete_transient(",
+    "DELETE FROM",
+) as $forbiddenNeedle) {
+    if (false !== strpos($adapter, $forbiddenNeedle)) {
+        fwrite(STDERR, "Cache maintenance adapter contains forbidden direct Asset CleanUp cache mutation primitive: {$forbiddenNeedle}\n");
         exit(1);
     }
 }
