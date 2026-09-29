@@ -242,6 +242,15 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('maintenance.cache_flush' === $action) {
+            $this->assertPublicCacheFlushPayload($payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public cache flush requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('connector.rollback' === $action) {
             $requestId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
             if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
@@ -286,6 +295,36 @@ final class Runner
         $fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
         if (empty($preview['available']) || ! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint)) {
             throw new RuntimeException('Public cache flush validation did not produce an available guarded layer.');
+        }
+
+        return $layer;
+    }
+
+    private function assertPublicCacheFlushPayload(array $payload): string
+    {
+        foreach (array_keys($payload) as $key) {
+            if ('layer' !== (string) $key) {
+                throw new RuntimeException('Public cache flush contains unsupported payload key: ' . (string) $key);
+            }
+        }
+
+        $layer = isset($payload['layer']) && is_string($payload['layer'])
+            ? sanitize_key($payload['layer'])
+            : '';
+
+        if (! in_array($layer, array('elementor', 'wp_rocket', 'asset_cleanup'), true)) {
+            throw new RuntimeException('Public cache flush layer must be elementor, wp_rocket or asset_cleanup.');
+        }
+
+        $preview = $this->registry->execute('maintenance.cache_flush', array('layer' => $layer), array(
+            'dry_run' => true,
+            'confirm' => true,
+            'public_validation' => true,
+        ));
+
+        $fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
+        if (! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint)) {
+            throw new RuntimeException('Public cache flush validation did not produce a guarded target fingerprint.');
         }
 
         return $layer;
