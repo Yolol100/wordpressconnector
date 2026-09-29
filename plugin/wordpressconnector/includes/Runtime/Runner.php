@@ -224,6 +224,15 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('code_snippets.patch' === $action) {
+            $this->assertPublicCodeSnippetsPatchPayload($payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public Code Snippets patch requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('connector.rollback' === $action) {
             $requestId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
             if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
@@ -241,6 +250,66 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicCodeSnippetsPatchPayload(array $payload): int
+    {
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, array('snippet_id', 'match_code_contains', 'replacements'), true)) {
+                throw new RuntimeException('Public Code Snippets patch contains unsupported payload key: ' . (string) $key);
+            }
+        }
+
+        $snippetId = isset($payload['snippet_id']) ? (int) $payload['snippet_id'] : 0;
+        $marker = isset($payload['match_code_contains']) && is_string($payload['match_code_contains'])
+            ? $payload['match_code_contains']
+            : '';
+
+        if (($snippetId > 0 && '' !== $marker) || ($snippetId <= 0 && '' === $marker)) {
+            throw new RuntimeException('Public Code Snippets patch requires exactly one of snippet_id or match_code_contains.');
+        }
+        if ($snippetId <= 0 && (strlen($marker) > 240 || preg_match('/[\\x00-\\x1F\\x7F]/', $marker))) {
+            throw new RuntimeException('Public Code Snippets marker must be a printable string up to 240 bytes.');
+        }
+
+        $replacements = isset($payload['replacements']) && is_array($payload['replacements'])
+            ? array_values($payload['replacements'])
+            : array();
+        if (! $replacements || count($replacements) > 4) {
+            throw new RuntimeException('Public Code Snippets patch requires 1-4 exact replacements.');
+        }
+
+        foreach ($replacements as $index => $replacement) {
+            if (! is_array($replacement)) {
+                throw new RuntimeException('Public Code Snippets replacement ' . $index . ' must be an object.');
+            }
+            foreach (array_keys($replacement) as $key) {
+                if (! in_array((string) $key, array('find', 'replace'), true)) {
+                    throw new RuntimeException('Public Code Snippets replacement contains unsupported key: ' . (string) $key);
+                }
+            }
+            $find = isset($replacement['find']) && is_string($replacement['find']) ? $replacement['find'] : '';
+            $replace = isset($replacement['replace']) && is_string($replacement['replace']) ? $replacement['replace'] : '';
+            if ('' === $find || strlen($find) > 131072 || strlen($replace) > 131072) {
+                throw new RuntimeException('Public Code Snippets replacement exceeds the bounded size limit.');
+            }
+            if (false !== strpos($find, "\0") || false !== strpos($replace, "\0")) {
+                throw new RuntimeException('Public Code Snippets replacement may not contain NUL bytes.');
+            }
+        }
+
+        $preview = $this->registry->execute('code_snippets.patch', $payload, array(
+            'dry_run' => true,
+            'confirm' => true,
+            'public_validation' => true,
+        ));
+        $targetId = isset($preview['snippet']['id']) ? (int) $preview['snippet']['id'] : 0;
+        $fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
+        if ($targetId <= 0 || ! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint)) {
+            throw new RuntimeException('Public Code Snippets validation did not produce a guarded target fingerprint.');
+        }
+
+        return $targetId;
     }
 
     private function assertPublicPortfolioCaseTextPayload(array $payload): int
@@ -360,12 +429,21 @@ final class Runner
             'elementor.patch_element' => array('elementor.replace_document'),
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
             'connector.batch' => array('connector.batch'),
+            'code_snippets.patch' => array('code_snippets.restore_code'),
         );
         if (! isset($allowed[$sourceAction]) || ! in_array($rollbackAction, $allowed[$sourceAction], true)) {
             throw new RuntimeException('Rollback snapshot is not eligible for the guarded public rollback route.');
         }
         if ('acf.portfolio_stats_update' === $sourceAction) {
             $this->assertPublicPortfolioStatsPayload((array) ($rollback['payload'] ?? array()));
+        } elseif ('code_snippets.patch' === $sourceAction) {
+            $rollbackPayload = (array) ($rollback['payload'] ?? array());
+            $snippetId = isset($rollbackPayload['snippet_id']) ? (int) $rollbackPayload['snippet_id'] : 0;
+            $code = isset($rollbackPayload['code']) && is_string($rollbackPayload['code']) ? $rollbackPayload['code'] : null;
+            $expected = isset($rollbackPayload['expected_code_fingerprint']) ? (string) $rollbackPayload['expected_code_fingerprint'] : '';
+            if ($snippetId <= 0 || null === $code || strlen($code) > 1048576 || ! preg_match('/^[a-f0-9]{64}\\z/', $expected)) {
+                throw new RuntimeException('Public Code Snippets rollback snapshot is invalid.');
+            }
         } elseif ('portfolio.case_text_update' === $sourceAction) {
             $this->assertPublicPortfolioCaseTextPayload((array) ($rollback['payload'] ?? array()));
         } elseif ('acf.update' === $rollbackAction) {

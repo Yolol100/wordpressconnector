@@ -22,7 +22,7 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 | Asset CleanUp | Version-bound | No generic settings write; unload rules need browser/regression readback |
 | Auto Image Attributes | Native allowlist | `auto_image_attributes.inspect`, `auto_image_attributes.update`, `media.*` |
 | Broken Link Checker | Version-bound / mixed cloud-local state | Dedicated installed-version contract required before writes |
-| Code Snippets | Arbitrary-code settings boundary | Snippet execution is not exposed as plugin settings; source maintenance is only possible through the separately gated filesystem contract |
+| Code Snippets | Bounded exact-patch adapter | `code_snippets.patch` can modify one uniquely identified existing PHP snippet through 1-4 exact replacements with fingerprint, readback and rollback; arbitrary creation/execution and full-source public export remain blocked |
 | Content Sync Manager | Project-specific | Dedicated contract required |
 | Duplicate Page | No dedicated adapter required | Model with `post.get` + `post.create` |
 | Elementor / Elementor Pro | Native adapter | `elementor.capabilities`, `elementor.inspect`, `elementor.inventory`, `elementor.patch_element`, `elementor.replace_document` |
