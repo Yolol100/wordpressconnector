@@ -17,6 +17,8 @@ foreach (array(
     "WpAssetCleanUp\\\\OptimiseAssets\\\\OptimizeCommon",
     "elementor/core/files/clear_cache",
     "rocket_after_clean_domain",
+    "rocket_clean_cache_dir",
+    "after_rocket_clean_cache_dir",
     "ensureAssetCleanupClass",
     "WPACU_PLUGIN_DIR",
     "readback_verified",
