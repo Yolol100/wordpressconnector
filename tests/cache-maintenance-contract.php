@@ -25,6 +25,13 @@ foreach (array(
     }
 }
 
+foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'unlink(', 'rmdir(') as $forbidden) {
+    if (false !== strpos($adapter, $forbidden)) {
+        fwrite(STDERR, "Forbidden execution/file-deletion primitive in cache maintenance adapter: {$forbidden}\n");
+        exit(1);
+    }
+}
+
 $tmp = sys_get_temp_dir() . '/wpconnector-cache-maintenance-' . bin2hex(random_bytes(6));
 if (! mkdir($tmp, 0700, true) && ! is_dir($tmp)) {
     fwrite(STDERR, "Could not create temporary directory.\n");
