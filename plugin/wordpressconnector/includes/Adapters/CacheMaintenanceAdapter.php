@@ -220,7 +220,7 @@ final class CacheMaintenanceAdapter
          * version-tolerant than relying only on optional completion hooks.
          */
         $sentinel = 'wpacu_css_wpconnector_verify_' . substr(hash('sha256', (string) microtime(true)), 0, 12);
-        set_transient($sentinel, '1', 300);
+        set_transient($sentinel, '1', 30);
 
         add_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX, 0);
         try {
@@ -230,10 +230,6 @@ final class CacheMaintenanceAdapter
         }
 
         $sentinelCleared = false === get_transient($sentinel);
-        if (! $sentinelCleared) {
-            delete_transient($sentinel);
-        }
-
         $after = get_transient($transient);
         $beforeValue = is_numeric($before) ? (int) $before : 0;
         $afterValue = is_numeric($after) ? (int) $after : 0;
