@@ -41,6 +41,7 @@ $publicActions = array(
     'connector.rollback',
     'connector.update.check',
     'connector.update.apply',
+    'code_snippets.patch',
 );
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
@@ -56,6 +57,82 @@ if ('connector.batch' === $action) {
             exit(1);
         }
     }
+}
+
+
+if ('code_snippets.patch' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, array('snippet_id','match_code_contains','replacements'), true)) {
+            $errors[] = 'Code Snippets patch payload has unsupported key: ' . (string) $key;
+        }
+    }
+
+    $snippetId = isset($payload['snippet_id']) ? $payload['snippet_id'] : null;
+    $marker = isset($payload['match_code_contains']) ? $payload['match_code_contains'] : null;
+    $hasId = is_int($snippetId) && $snippetId > 0;
+    $hasMarker = is_string($marker) && '' !== $marker;
+
+    if ($hasId === $hasMarker) {
+        $errors[] = 'Code Snippets patch requires exactly one of snippet_id or match_code_contains.';
+    }
+    if ($hasMarker && (strlen($marker) > 240 || preg_match('/[\\x00-\\x1F\\x7F]/', $marker))) {
+        $errors[] = 'Code Snippets patch marker must be printable and at most 240 bytes.';
+    }
+
+    $replacements = isset($payload['replacements']) && is_array($payload['replacements'])
+        ? array_values($payload['replacements'])
+        : array();
+    if (! $replacements || count($replacements) > 4) {
+        $errors[] = 'Code Snippets patch requires 1-4 replacements.';
+    }
+
+    foreach ($replacements as $index => $replacement) {
+        if (! is_array($replacement)) {
+            $errors[] = 'Code Snippets replacement ' . $index . ' must be an object.';
+            continue;
+        }
+        foreach (array_keys($replacement) as $key) {
+            if (! in_array((string) $key, array('find','replace'), true)) {
+                $errors[] = 'Code Snippets replacement contains unsupported key: ' . (string) $key;
+            }
+        }
+        $find = isset($replacement['find']) && is_string($replacement['find']) ? $replacement['find'] : '';
+        $replace = isset($replacement['replace']) && is_string($replacement['replace']) ? $replacement['replace'] : '';
+        if ('' === $find || strlen($find) > 131072 || strlen($replace) > 131072) {
+            $errors[] = 'Code Snippets replacement exceeds the bounded size limit.';
+        }
+        if (false !== strpos($find, "\0") || false !== strpos($replace, "\0")) {
+            $errors[] = 'Code Snippets replacement may not contain NUL bytes.';
+        }
+    }
+
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+    }
+
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if (! $dryRun) {
+        if (empty($data['confirm'])) {
+            $errors[] = 'Public mutation requires confirm=true when dry_run=false.';
+        }
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed code_snippets.patch requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+
+    if ($errors) {
+        foreach (array_values(array_unique($errors)) as $error) {
+            fwrite(STDERR, $error . "\n");
+        }
+        exit(1);
+    }
+
+    echo 'public runtime request OK: code_snippets.patch' . PHP_EOL;
+    return;
 }
 
 if ('portfolio.case_text_update' === $action) {
