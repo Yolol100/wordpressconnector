@@ -67,8 +67,8 @@ $base = array(
                 'replace' => "'priority-order-v5-portfolio-strength'",
             ),
             array(
-                'find' => "function wab_caf_get_priority_cases( \\$term_slug ) { OLD }",
-                'replace' => "function wab_caf_get_priority_cases( \\$term_slug ) { NEW }",
+                'find' => 'function wab_caf_get_priority_cases( $term_slug ) { OLD }',
+                'replace' => 'function wab_caf_get_priority_cases( $term_slug ) { NEW }',
             ),
         ),
     ),
