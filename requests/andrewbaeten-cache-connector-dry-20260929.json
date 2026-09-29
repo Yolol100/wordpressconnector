@@ -1,12 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-wp-rocket-cache-live-1.15.3-20260929",
+  "request_id": "andrewbaeten-asset-cleanup-cache-dry-1.15.3-20260929",
   "action": "maintenance.cache_flush",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "4dfbe0f7b6720331081daba5efd18715858e6cf23586e49deb127509a454cb8a",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "layer": "wp_rocket"
+    "layer": "asset_cleanup"
   }
 }
