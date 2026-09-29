@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.1
+Stable tag: 1.15.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,7 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-Version 1.15.1 adds bounded cache maintenance for Elementor, WP Rocket and Asset CleanUp. It exposes read-only availability and an exact one-layer flush action with dry-run fingerprint protection and sanitized readback evidence.\n\nVersion 1.15.0 adds a narrowly bounded `code_snippets.patch` action for one existing Code Snippets PHP record. It permits only exact replacements on a uniquely identified target, requires dry-run fingerprint protection for public writes, preserves snippet metadata and activation state, verifies exact readback and stores a guarded rollback without exposing snippet source in public receipts.\n\nVersion 1.14.9 adds a narrowly bounded `portfolio.case_text_update` action for portfolio intro, problem and solution copy on standard posts, including unpublished targets. It is fingerprint-gated for writes, exact-readback verified and rollbackable without exposing draft content in public receipts.\n\nVersion 1.14.8 extends the guarded public ACF editorial route to existing `text`, `textarea` and `wysiwyg` fields that belong to an applicable field group on a published editable post. Multiline/WYSIWYG values remain plain-text only in public-repository mode, keep the existing 1000-byte limit, and retain capability, field-key, stale-state, readback and rollback boundaries.
+Version 1.15.2 hardens the cache-maintenance adapter by accepting WP Rocket's own successful purge return as readback evidence, lazily loading Asset CleanUp's official cache class from its own verified plugin directory during REST requests, and separating provider versions from the receipt schema.\n\nVersion 1.15.1 adds bounded cache maintenance for Elementor, WP Rocket and Asset CleanUp. It exposes read-only availability and an exact one-layer flush action with dry-run fingerprint protection and sanitized readback evidence.\n\nVersion 1.15.0 adds a narrowly bounded `code_snippets.patch` action for one existing Code Snippets PHP record. It permits only exact replacements on a uniquely identified target, requires dry-run fingerprint protection for public writes, preserves snippet metadata and activation state, verifies exact readback and stores a guarded rollback without exposing snippet source in public receipts.\n\nVersion 1.14.9 adds a narrowly bounded `portfolio.case_text_update` action for portfolio intro, problem and solution copy on standard posts, including unpublished targets. It is fingerprint-gated for writes, exact-readback verified and rollbackable without exposing draft content in public receipts.\n\nVersion 1.14.8 extends the guarded public ACF editorial route to existing `text`, `textarea` and `wysiwyg` fields that belong to an applicable field group on a published editable post. Multiline/WYSIWYG values remain plain-text only in public-repository mode, keep the existing 1000-byte limit, and retain capability, field-key, stale-state, readback and rollback boundaries.
 
 Version 1.14.7 makes the public sanitized receipt builder self-contained so trusted executors no longer depend on a separately materialized legacy helper. Existing receipt contracts, including connector self-update and bounded portfolio-stat evidence, remain preserved and are covered by an isolated workspace regression test.
 
@@ -63,6 +63,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.2 =
+* Accept WP Rocket's successful `rocket_clean_domain()` return or its completion hook as bounded purge verification.
+* Load Asset CleanUp's official `OptimizeCommon` cache class from its verified plugin directory when REST requests do not preload it.
+* Preserve public receipt schema version and expose cache plugin versions as `provider_version`.
 
 = 1.15.1 =
 * Add bounded cache capability discovery and one-layer cache flush for Elementor, WP Rocket and Asset CleanUp.
