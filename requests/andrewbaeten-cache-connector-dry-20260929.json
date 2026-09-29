@@ -1,9 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-cache-capabilities-20260929",
-  "action": "maintenance.cache_capabilities",
+  "request_id": "andrewbaeten-elementor-cache-dry-20260929",
+  "action": "maintenance.cache_flush",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "layer": "elementor"
+  }
 }
