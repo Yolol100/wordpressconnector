@@ -1,9 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-cache-connector-dry-20260929",
+  "request_id": "andrewbaeten-cache-connector-live-20260929",
   "action": "connector.update.apply",
-  "dry_run": true,
-  "confirm": false,
-  "payload": {}
+  "dry_run": false,
+  "confirm": true,
+  "payload": {},
+  "expected_fingerprint": "2549aff2352a7df7ba38bad1a729bb7ddaea4d99a2874149d60a6c2bbe0ab730"
 }
