@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.5
+Stable tag: 1.15.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.15.6 makes Asset CleanUp cache verification version-tolerant by planting a short-lived `wpacu_css_*` sentinel transient and requiring Asset CleanUp's own cache-clear routine to remove it.
 
 Version 1.15.5 aligns Asset CleanUp cache maintenance with the current 1.4.0.6 runtime: it uses the plugin's own namespace-to-classes autoload contract during REST/OIDC requests, calls `clearCache()` when available, and verifies completion through `wpacu_clear_cache_after` plus the plugin's `_last_clear_cache` transient.
 
@@ -67,6 +69,10 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.6 =
+* Verify Asset CleanUp clearing with a short-lived `wpacu_css_*` sentinel transient removed by the provider-owned cache clear.
+* Retain the existing hook/marker evidence as a compatibility fallback and clean the sentinel if verification fails.
 
 = 1.15.5 =
 * Align Asset CleanUp REST cache maintenance with the current plugin autoload convention instead of hardcoding legacy helper paths.
