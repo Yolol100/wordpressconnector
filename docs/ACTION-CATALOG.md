@@ -15,6 +15,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `comment.list` | privileged, sensitive | List comments including private author metadata. |
 | `comment.trash` | mutation, privileged, sensitive | Trash a comment. |
 | `comment.update` | mutation, privileged, sensitive | Update a comment. |
+| `code_snippets.patch` | mutation, privileged | Patch one uniquely identified existing Code Snippets PHP snippet through exact bounded replacements with stale-state protection, readback and rollback. |
+| `code_snippets.restore_code` | mutation, privileged | Internal rollback action that restores the previous code for a guarded Code Snippets patch. |
 | `connector.actions` | read-only | List registered actions and security metadata. |
 | `connector.batch` | mutation | Execute up to 25 connector operations with compensation on failure. |
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
