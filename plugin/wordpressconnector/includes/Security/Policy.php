@@ -39,6 +39,8 @@ final class Policy
         'connector.update.check',
         'connector.update.apply',
         'code_snippets.patch',
+        'maintenance.cache_capabilities',
+        'maintenance.cache_flush',
     );
 
     private static ?bool $runtimePublicRepository = null;
