@@ -212,6 +212,16 @@ final class CacheMaintenanceAdapter
             $verifiedByHook = true;
         };
 
+        /*
+         * Asset CleanUp clears all transients whose names contain
+         * "_transient_wpacu_css_" / "_transient_wpacu_js_".
+         * Plant a short-lived sentinel in that exact namespace and require the
+         * provider-owned cache clear to remove it. This is stronger and more
+         * version-tolerant than relying only on optional completion hooks.
+         */
+        $sentinel = 'wpacu_css_wpconnector_verify_' . substr(hash('sha256', (string) microtime(true)), 0, 12);
+        set_transient($sentinel, '1', 300);
+
         add_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX, 0);
         try {
             call_user_func(array($class, $method), false);
@@ -219,13 +229,19 @@ final class CacheMaintenanceAdapter
             remove_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX);
         }
 
+        $sentinelCleared = false === get_transient($sentinel);
+        if (! $sentinelCleared) {
+            delete_transient($sentinel);
+        }
+
         $after = get_transient($transient);
         $beforeValue = is_numeric($before) ? (int) $before : 0;
         $afterValue = is_numeric($after) ? (int) $after : 0;
-
-        return $verifiedByHook
+        $legacyVerified = $verifiedByHook
             && $afterValue >= ($startedAt - 1)
             && $afterValue >= $beforeValue;
+
+        return $sentinelCleared || $legacyVerified;
     }
 
     private function ensureAssetCleanupClass(): string
