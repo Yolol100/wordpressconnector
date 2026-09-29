@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-cache-connector-dry-20260929",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-29T05:21:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.15.0",
+    "to_version": "1.15.1",
+    "before_fingerprint": "2549aff2352a7df7ba38bad1a729bb7ddaea4d99a2874149d60a6c2bbe0ab730",
+    "rollback_supported": false,
+    "readback_verified": null
+}
