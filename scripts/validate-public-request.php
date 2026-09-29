@@ -42,6 +42,8 @@ $publicActions = array(
     'connector.update.check',
     'connector.update.apply',
     'code_snippets.patch',
+    'maintenance.cache_capabilities',
+    'maintenance.cache_flush',
 );
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
@@ -59,6 +61,61 @@ if ('connector.batch' === $action) {
     }
 }
 
+
+if ('maintenance.cache_capabilities' === $action) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    if ($payload) {
+        fwrite(STDERR, "maintenance.cache_capabilities requires an empty payload.\n");
+        exit(1);
+    }
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        fwrite(STDERR, "expected_state_token must not be published in a public runtime request.\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: maintenance.cache_capabilities' . PHP_EOL;
+    return;
+}
+
+if ('maintenance.cache_flush' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+
+    foreach (array_keys($payload) as $key) {
+        if ('layer' !== (string) $key) {
+            $errors[] = 'Cache flush payload has unsupported key: ' . (string) $key;
+        }
+    }
+
+    $layer = isset($payload['layer']) && is_string($payload['layer']) ? $payload['layer'] : '';
+    if (! in_array($layer, array('elementor','wp_rocket','asset_cleanup'), true)) {
+        $errors[] = 'Cache flush layer must be elementor, wp_rocket or asset_cleanup.';
+    }
+
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+    }
+
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if (! $dryRun) {
+        if (empty($data['confirm'])) {
+            $errors[] = 'Public mutation requires confirm=true when dry_run=false.';
+        }
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed maintenance.cache_flush requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+
+    if ($errors) {
+        foreach (array_values(array_unique($errors)) as $error) {
+            fwrite(STDERR, $error . "\n");
+        }
+        exit(1);
+    }
+
+    echo 'public runtime request OK: maintenance.cache_flush' . PHP_EOL;
+    return;
+}
 
 if ('code_snippets.patch' === $action) {
     $errors = array();

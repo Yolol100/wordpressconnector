@@ -55,6 +55,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `media.list` | read-only | List media attachments. |
 | `media.regenerate` | mutation | Regenerate attachment metadata and image subsizes. |
 | `media.update` | mutation | Update attachment title, alt text, caption, description and parent. |
+| `maintenance.cache_capabilities` | privileged | Inspect bounded cache-maintenance availability for Elementor, WP Rocket and Asset CleanUp. |
+| `maintenance.cache_flush` | mutation, privileged | Flush exactly one bounded cache layer: Elementor generated files/data, WP Rocket domain cache or Asset CleanUp CSS/JS cache metadata. |
 | `menu.create` | mutation | Create a classic navigation menu. |
 | `menu.delete` | mutation, privileged | Delete a classic navigation menu. |
 | `menu.get` | read-only | Read a classic navigation menu and items. |
