@@ -4,7 +4,7 @@
 
 The generic connector intentionally excludes:
 
-- arbitrary PHP, shell/process or WP-CLI command passthrough;
+- arbitrary PHP, shell/process or WP-CLI command passthrough (named REST-exposed WordPress Abilities are supported separately through their registered API and permission callback);
 - arbitrary SQL and database-table writes;
 - arbitrary filesystem read/write/delete outside named media/deploy operations;
 - generic remote HTTP proxying;
