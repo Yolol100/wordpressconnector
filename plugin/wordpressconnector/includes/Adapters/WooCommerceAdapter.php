@@ -167,21 +167,63 @@ final class WooCommerceAdapter
 
     public function taxRateList(array $payload): array
     {
+        global $wpdb;
         $this->assertWoo();
-        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_rates_for_tax_class')) throw new RuntimeException('WooCommerce tax rate API is unavailable.');
+        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_class_slugs') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('WooCommerce tax rate API is unavailable.');
         $class = isset($payload['tax_class']) ? sanitize_title((string) $payload['tax_class']) : '';
         $validClasses = array('' => true);
         foreach (\WC_Tax::get_tax_class_slugs() as $slug) $validClasses[(string) $slug] = true;
         if (! isset($validClasses[$class])) throw new RuntimeException('Unknown WooCommerce tax class.');
-        $limit = isset($payload['per_page']) ? max(1, min(100, (int) $payload['per_page'])) : 50;
-        $page = isset($payload['page']) ? max(1, (int) $payload['page']) : 1;
-        $allRates = \WC_Tax::get_rates_for_tax_class($class);
-        $rates = is_array($allRates) ? array_values($allRates) : array();
-        $items = array();
-        foreach (array_slice($rates, ($page - 1) * $limit, $limit) as $rate) {
-            $items[] = $this->taxRateSnapshot($rate);
+        $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
+        $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
+        $offset = ($page - 1) * $limit;
+        $ratesTable = '`' . $wpdb->prefix . 'woocommerce_tax_rates`';
+        $locationsTable = '`' . $wpdb->prefix . 'woocommerce_tax_rate_locations`';
+        $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$ratesTable} WHERE `tax_rate_class` = %s", $class));
+        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce tax rates could not be counted.');
+        $total = (int) $totalValue;
+        $rateRows = $wpdb->get_results($wpdb->prepare(
+            "SELECT `tax_rate_id`, `tax_rate_country`, `tax_rate_state`, `tax_rate`, `tax_rate_name`, `tax_rate_priority`, `tax_rate_compound`, `tax_rate_shipping`, `tax_rate_order` FROM {$ratesTable} WHERE `tax_rate_class` = %s ORDER BY `tax_rate_order` ASC, `tax_rate_id` ASC LIMIT %d OFFSET %d",
+            $class,
+            $limit,
+            $offset
+        ));
+        if (! is_array($rateRows)) throw new RuntimeException('WooCommerce tax rates could not be read.');
+        $rateIds = array();
+        foreach ($rateRows as $rateRow) {
+            if (is_object($rateRow) && isset($rateRow->tax_rate_id)) $rateIds[] = (int) $rateRow->tax_rate_id;
         }
-        return array('tax_class' => $class, 'rates' => $items, 'page' => $page, 'per_page' => $limit, 'total' => count($rates), 'pages' => (int) ceil(count($rates) / $limit));
+        $locationCounts = array();
+        if ($rateIds) {
+            $idList = implode(',', array_map('intval', $rateIds));
+            $countRows = $wpdb->get_results("SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM {$locationsTable} WHERE `tax_rate_id` IN ({$idList}) GROUP BY `tax_rate_id`");
+            if (! is_array($countRows)) throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
+            foreach ($countRows as $countRow) {
+                if (is_object($countRow) && isset($countRow->tax_rate_id, $countRow->location_count)) $locationCounts[(int) $countRow->tax_rate_id] = (int) $countRow->location_count;
+            }
+        }
+        $items = array();
+        foreach ($rateRows as $rate) {
+            $snapshot = $this->taxRateSnapshot($rate);
+            $rateId = isset($rate->tax_rate_id) ? (int) $rate->tax_rate_id : 0;
+            $locationCount = $locationCounts[$rateId] ?? 0;
+            $locations = $locationCount > 0 ? $wpdb->get_results($wpdb->prepare(
+                "SELECT `location_type`, `location_code` FROM {$locationsTable} WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
+                $rateId,
+                100
+            )) : array();
+            if (! is_array($locations)) throw new RuntimeException('WooCommerce tax rate locations could not be read.');
+            $snapshot['locations'] = array();
+            foreach ($locations as $location) {
+                if (is_object($location) && isset($location->location_type, $location->location_code)) {
+                    $snapshot['locations'][] = array('type' => (string) $location->location_type, 'code' => (string) $location->location_code);
+                }
+            }
+            $snapshot['location_count'] = $locationCount;
+            $snapshot['locations_truncated'] = $locationCount > count($snapshot['locations']);
+            $items[] = $snapshot;
+        }
+        return array('tax_class' => $class, 'rates' => $items, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => (int) ceil($total / $limit));
     }
 
     public function productList(array $payload): array
