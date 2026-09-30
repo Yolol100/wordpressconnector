@@ -7,6 +7,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.delete` | mutation, privileged | Delete one or more ACF field values through delete_field(). |
 | `acf.field_groups` | privileged | List active ACF field groups and fields for discovery. |
 | `acf.get` | privileged | Read ACF values for a post, term, user or options target. |
+| `acf.portfolio_stats_update` | mutation, privileged | Update the eight portfolio-stat ACF text fields on one standard post with dry-run, stale-state protection and rollback. |
+| `acf.schema.ensure_text_fields` | mutation, privileged | Create a bounded set of new ACF text fields in an existing field group without altering existing fields. |
+| `acf.schema.remove_text_fields` | mutation, privileged | Remove exact ACF text fields created by a prior bounded schema ensure operation. |
 | `acf.update` | mutation, privileged | Update ACF values for a post, term, user or options target. |
 | `auto_image_attributes.inspect` | privileged | Read safe Auto Image Attributes upload and bulk-update settings. |
 | `auto_image_attributes.update` | mutation, privileged | Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback. |
@@ -86,6 +89,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.settings.inspect` | privileged | Read allowlisted settings through a plugin-owned API and return a state fingerprint. |
 | `plugin.settings.update` | mutation, privileged | Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback. |
 | `plugin.update` | mutation, privileged, system_update | Update one installed plugin. |
+| `portfolio.case_text_update` | mutation, privileged | Update portfolio intro content plus description fields on one standard post with stale-state protection and rollback. |
 | `post.create` | mutation | Create a post, page or custom post type object. |
 | `post.get` | read-only | Read one post object. |
 | `post.list` | read-only | List posts, pages or custom post types. |
