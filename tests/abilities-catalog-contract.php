@@ -20,7 +20,10 @@ final class ContractAbility
     public function get_label(): string { return 'Plugin ability'; }
     public function get_description(): string { return 'Contract test ability'; }
     public function get_category(): string { return 'test'; }
-    public function get_input_schema(): array { return array('type' => 'object'); }
+    public function get_input_schema(): array {
+        if (! empty($this->meta['large_schema'])) return array('type' => 'object', 'description' => str_repeat('x', 9000));
+        return array('type' => 'object');
+    }
     public function get_output_schema(): array { return array('type' => 'object'); }
     public function execute($input = null) {
         self::$executions++;
@@ -42,7 +45,7 @@ final class ContractAbility
 
 function wp_get_abilities(): array
 {
-    return array(
+    $abilities = array(
         'third-party-plugin/reindex-content' => new ContractAbility(array(
             'public' => true,
             'show_in_rest' => true,
@@ -55,6 +58,14 @@ function wp_get_abilities(): array
         )),
         'invalid-name' => new ContractAbility(array('public' => true)),
     );
+    for ($i = 1; $i <= 12; $i++) {
+        $abilities[sprintf('zzz-plugin/ability-%02d', $i)] = new ContractAbility(array(
+            'show_in_rest' => true,
+            'large_schema' => 1 === $i,
+            'annotations' => array('readonly' => true, 'destructive' => false),
+        ));
+    }
+    return $abilities;
 }
 
 function wp_get_ability(string $name)
@@ -64,7 +75,27 @@ function wp_get_ability(string $name)
 }
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
-$catalog = $adapter->catalog(array(), array());
+$catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 14 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+    fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
+}
+$catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
+if (4 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+    fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
+}
+$catalogEncoded = json_encode($catalog);
+if (! is_string($catalogEncoded) || strlen($catalogEncoded) > 262144) {
+    fwrite(STDERR, "Ability catalog page exceeded its transport budget.\n"); exit(1);
+}
+if (true !== ($catalog['abilities']['zzz-plugin/ability-01']['input_schema_omitted'] ?? false) || null !== ($catalog['abilities']['zzz-plugin/ability-01']['input_schema'] ?? null)) {
+    fwrite(STDERR, "Oversized Ability schema was not omitted safely.\n"); exit(1);
+}
+try {
+    $adapter->catalog(array('per_page' => '10junk'), array());
+    fwrite(STDERR, "Malformed Ability catalog pagination was accepted.\n"); exit(1);
+} catch (RuntimeException $expected) {
+    if ('per_page must be a positive integer.' !== $expected->getMessage()) throw $expected;
+}
 if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
     fwrite(STDERR, "Public third-party ability was not discovered.\n"); exit(1);
 }
