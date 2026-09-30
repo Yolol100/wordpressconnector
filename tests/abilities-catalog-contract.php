@@ -11,6 +11,7 @@ final class ContractAbility
     private array $meta;
     public static int $executions = 0;
     public static bool $large_result = false;
+    public static bool $wide_result = false;
     public static bool $repeated_result = false;
     public static bool $deep_result = false;
     public static bool $throw_result = false;
@@ -25,6 +26,7 @@ final class ContractAbility
         self::$executions++;
         if (self::$throw_result) throw new RuntimeException('api_key=private-key upstream failure');
         if (self::$large_result) return str_repeat('x', 270000);
+        if (self::$wide_result) return array_fill(0, 10001, 1);
         if (self::$deep_result) {
             $value = 'leaf';
             for ($depth = 0; $depth < 22; $depth++) $value = array('level' => $value);
@@ -95,11 +97,16 @@ ContractAbility::$large_result = true;
 try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $largeResultRejected = true; }
 ContractAbility::$large_result = false;
 if (! $largeResultRejected || 3 !== ContractAbility::$executions) { fwrite(STDERR, "Oversized read-only ability result was not bounded.\n"); exit(1); }
+$wideResultRejected = false;
+ContractAbility::$wide_result = true;
+try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $wideResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
+ContractAbility::$wide_result = false;
+if (! $wideResultRejected || 4 !== ContractAbility::$executions) { fwrite(STDERR, "High-node-count read-only ability result was not bounded.\n"); exit(1); }
 $deepResultRejected = false;
 ContractAbility::$deep_result = true;
 try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $deepResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
 ContractAbility::$deep_result = false;
-if (! $deepResultRejected || 4 !== ContractAbility::$executions) { fwrite(STDERR, "Deep read-only ability result was not bounded.\n"); exit(1); }
+if (! $deepResultRejected || 5 !== ContractAbility::$executions) { fwrite(STDERR, "Deep read-only ability result was not bounded.\n"); exit(1); }
 $exceptionRejected = false;
 ContractAbility::$throw_result = true;
 try {
@@ -108,7 +115,7 @@ try {
     $exceptionRejected = 'WordPress Ability failed.' === $expected->getMessage();
 }
 ContractAbility::$throw_result = false;
-if (! $exceptionRejected || 5 !== ContractAbility::$executions) { fwrite(STDERR, "Ability exceptions were not replaced with a generic failure.\n"); exit(1); }
+if (! $exceptionRejected || 6 !== ContractAbility::$executions) { fwrite(STDERR, "Ability exceptions were not replaced with a generic failure.\n"); exit(1); }
 if ('[redacted]' !== $result['result']['token'] || '[redacted]' !== $result['result']['nested']['api_key'] || 'safe' !== $result['result']['nested']['visible']) {
     fwrite(STDERR, "Sensitive values in read-only ability results were not recursively redacted.\n"); exit(1);
 }
@@ -117,7 +124,7 @@ try {
     fwrite(STDERR, "Mutating ability was executed by the read-only action.\n"); exit(1);
 } catch (RuntimeException $expected) {
 }
-if (5 !== ContractAbility::$executions) {
+if (6 !== ContractAbility::$executions) {
     fwrite(STDERR, "Blocked mutating ability still executed.\n"); exit(1);
 }
 echo "abilities catalog contract OK\n";
