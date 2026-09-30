@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php';
 
 final class ContractAbility
@@ -16,7 +17,7 @@ final class ContractAbility
     public function get_category(): string { return 'test'; }
     public function get_input_schema(): array { return array('type' => 'object'); }
     public function get_output_schema(): array { return array('type' => 'object'); }
-    public function execute($input = null) { self::$executions++; return array('received' => $input); }
+    public function execute($input = null) { self::$executions++; return array('received' => $input, 'token' => 'secret-value', 'nested' => (object) array('api_key' => 'private-key', 'visible' => 'safe')); }
 }
 
 function wp_get_abilities(): array
@@ -63,6 +64,9 @@ if ($descriptor['mutation'] || ! $descriptor['sensitive'] || ! $descriptor['priv
 $result = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content', 'input' => array('limit' => 3)), array());
 if (1 !== ContractAbility::$executions || 3 !== $result['result']['received']['limit']) {
     fwrite(STDERR, "Exposed read-only ability did not execute through its native API.\n"); exit(1);
+}
+if ('[redacted]' !== $result['result']['token'] || '[redacted]' !== $result['result']['nested']['api_key'] || 'safe' !== $result['result']['nested']['visible']) {
+    fwrite(STDERR, "Sensitive values in read-only ability results were not recursively redacted.\n"); exit(1);
 }
 try {
     $adapter->readAbility(array('name' => 'third-party-plugin/mutating-operation'), array());
