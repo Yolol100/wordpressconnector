@@ -14,6 +14,8 @@ final class WooCommerceAdapter
 {
     public function register(Registry $registry): void
     {
+        $registry->register('woocommerce.order.list', array($this, 'orderList'), array('privileged' => true, 'sensitive' => true, 'description' => 'List bounded WooCommerce order summaries without billing or shipping contact details.'));
+        $registry->register('woocommerce.order.get', array($this, 'orderGet'), array('privileged' => true, 'sensitive' => true, 'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'));
         $registry->register('woocommerce.product.list', array($this, 'productList'), array('description' => 'List WooCommerce products through WooCommerce CRUD.'));
         $registry->register('woocommerce.product.get', array($this, 'productGet'), array('description' => 'Read a WooCommerce product.'));
         $registry->register('woocommerce.product.create', array($this, 'productCreate'), array('mutation' => true, 'description' => 'Create a WooCommerce product.'));
@@ -30,6 +32,54 @@ final class WooCommerceAdapter
         $registry->register('woocommerce.coupon.get', array($this, 'couponGet'), array('privileged' => true, 'description' => 'Read a WooCommerce coupon.'));
         $registry->register('woocommerce.coupon.create', array($this, 'couponCreate'), array('mutation' => true, 'privileged' => true, 'description' => 'Create a WooCommerce coupon.'));
         $registry->register('woocommerce.coupon.update', array($this, 'couponUpdate'), array('mutation' => true, 'privileged' => true, 'description' => 'Update a WooCommerce coupon.'));
+    }
+
+    public function orderList(array $payload): array
+    {
+        $this->assertWoo();
+        if (! function_exists('wc_get_orders')) throw new RuntimeException('WooCommerce order query API is unavailable.');
+        Policy::assertReadablePostType('shop_order');
+        $limit = isset($payload['per_page']) ? max(1, min(100, (int) $payload['per_page'])) : 25;
+        $page = isset($payload['page']) ? max(1, (int) $payload['page']) : 1;
+        $args = array('limit' => $limit, 'page' => $page, 'paginate' => true, 'return' => 'objects');
+        if (isset($payload['status'])) {
+            $status = sanitize_key((string) $payload['status']);
+            $statuses = function_exists('wc_get_order_statuses') ? wc_get_order_statuses() : array();
+            if (! isset($statuses[$status])) throw new RuntimeException('Unknown WooCommerce order status.');
+            $args['status'] = array($status);
+        }
+        if (isset($payload['customer_id'])) {
+            $customerId = (int) $payload['customer_id'];
+            if ($customerId < 1) throw new RuntimeException('customer_id must be a positive integer.');
+            $args['customer'] = $customerId;
+        }
+        $query = wc_get_orders($args);
+        $orders = is_object($query) && isset($query->orders) ? $query->orders : (array) $query;
+        $items = array();
+        foreach ($orders as $order) {
+            if ($order instanceof \WC_Order) $items[] = $this->orderSnapshot($order, false);
+        }
+        return array(
+            'orders' => $items,
+            'page' => $page,
+            'per_page' => $limit,
+            'total' => is_object($query) && isset($query->total) ? (int) $query->total : count($items),
+            'pages' => is_object($query) && isset($query->max_num_pages) ? (int) $query->max_num_pages : 1,
+        );
+    }
+
+    public function orderGet(array $payload): array
+    {
+        $this->assertWoo();
+        if (! function_exists('wc_get_order')) throw new RuntimeException('WooCommerce order API is unavailable.');
+        Policy::assertReadablePostType('shop_order');
+        $id = isset($payload['id']) ? (int) $payload['id'] : 0;
+        if ($id < 1) throw new RuntimeException('A positive order id is required.');
+        $order = wc_get_order($id);
+        if (! $order instanceof \WC_Order) throw new RuntimeException('WooCommerce order not found.');
+        $includePersonalData = Input::bool($payload, 'include_personal_data', false);
+        $snapshot = $this->orderSnapshot($order, $includePersonalData);
+        return array('order' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
     }
 
     public function productList(array $payload): array
@@ -354,6 +404,63 @@ final class WooCommerceAdapter
         if (isset($payload['downloads']) && is_array($payload['downloads'])) $variation->set_downloads($this->buildDownloads($payload['downloads']));
         if (array_key_exists('date_on_sale_from', $payload)) $variation->set_date_on_sale_from($payload['date_on_sale_from'] ?: null);
         if (array_key_exists('date_on_sale_to', $payload)) $variation->set_date_on_sale_to($payload['date_on_sale_to'] ?: null);
+    }
+
+    private function orderSnapshot(\WC_Order $order, bool $includePersonalData): array
+    {
+        $items = array();
+        foreach ($order->get_items('line_item') as $item) {
+            $items[] = array(
+                'product_id' => (int) $item->get_product_id(),
+                'variation_id' => (int) $item->get_variation_id(),
+                'name' => (string) $item->get_name(),
+                'quantity' => (int) $item->get_quantity(),
+                'subtotal' => (string) $item->get_subtotal(),
+                'total' => (string) $item->get_total(),
+            );
+        }
+        $snapshot = array(
+            'id' => (int) $order->get_id(),
+            'status' => (string) $order->get_status(),
+            'currency' => (string) $order->get_currency(),
+            'total' => (string) $order->get_total(),
+            'total_tax' => (string) $order->get_total_tax(),
+            'shipping_total' => (string) $order->get_shipping_total(),
+            'discount_total' => (string) $order->get_discount_total(),
+            'date_created' => $this->dateValue($order->get_date_created()),
+            'date_modified' => $this->dateValue($order->get_date_modified()),
+            'customer_id' => (int) $order->get_customer_id(),
+            'payment_method' => (string) $order->get_payment_method(),
+            'shipping_method' => (string) $order->get_shipping_method(),
+            'items' => $items,
+        );
+        if ($includePersonalData) {
+            $snapshot['billing'] = array(
+                'first_name' => (string) $order->get_billing_first_name(),
+                'last_name' => (string) $order->get_billing_last_name(),
+                'company' => (string) $order->get_billing_company(),
+                'address_1' => (string) $order->get_billing_address_1(),
+                'address_2' => (string) $order->get_billing_address_2(),
+                'city' => (string) $order->get_billing_city(),
+                'state' => (string) $order->get_billing_state(),
+                'postcode' => (string) $order->get_billing_postcode(),
+                'country' => (string) $order->get_billing_country(),
+                'email' => (string) $order->get_billing_email(),
+                'phone' => (string) $order->get_billing_phone(),
+            );
+            $snapshot['shipping'] = array(
+                'first_name' => (string) $order->get_shipping_first_name(),
+                'last_name' => (string) $order->get_shipping_last_name(),
+                'company' => (string) $order->get_shipping_company(),
+                'address_1' => (string) $order->get_shipping_address_1(),
+                'address_2' => (string) $order->get_shipping_address_2(),
+                'city' => (string) $order->get_shipping_city(),
+                'state' => (string) $order->get_shipping_state(),
+                'postcode' => (string) $order->get_shipping_postcode(),
+                'country' => (string) $order->get_shipping_country(),
+            );
+        }
+        return $snapshot;
     }
 
     private function productSnapshot(\WC_Product $product): array
