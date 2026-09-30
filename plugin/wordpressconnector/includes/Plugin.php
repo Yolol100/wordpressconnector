@@ -19,6 +19,7 @@ use Webactueel\WordPressConnector\Adapters\ElementorFormsAdapter;
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
+use Webactueel\WordPressConnector\Adapters\MailboxBridgeAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
@@ -31,7 +32,9 @@ use Webactueel\WordPressConnector\Admin\Settings;
 use Webactueel\WordPressConnector\CLI\Command;
 use Webactueel\WordPressConnector\REST\AssetStore;
 use Webactueel\WordPressConnector\REST\Controller;
+use Webactueel\WordPressConnector\REST\MailboxBridgeController;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
+use Webactueel\WordPressConnector\Runtime\MailboxBridgeStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Runtime\SnapshotStore;
@@ -41,7 +44,9 @@ final class Plugin
     public static function boot(): void
     {
         $registry = new Registry();
+        $mailboxBridge = new MailboxBridgeStore();
         $adapters = array(
+            new MailboxBridgeAdapter($mailboxBridge),
             new DiscoveryAdapter(),
             new AbilitiesAdapter(),
             new CoreAdapter(),
@@ -76,6 +81,7 @@ final class Plugin
         (new ElementorJsonExport())->register();
         (new ElementorJsonImport())->register();
         (new Controller($runner, new AssetStore()))->register();
+        (new MailboxBridgeController($mailboxBridge))->register();
 
         if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
             \WP_CLI::add_command('wordpress-connector', new Command($runner));
