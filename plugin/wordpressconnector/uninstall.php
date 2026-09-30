@@ -27,6 +27,13 @@ $cleanupCurrentSite = static function (): void {
         'wpconnector_processed_',
         '_transient_wpconnector_oidc_jti_',
         '_transient_timeout_wpconnector_oidc_jti_',
+        '_transient_wpconnector_mailbox_main_sha_v1',
+        '_transient_timeout_wpconnector_mailbox_main_sha_v1',
+        '_transient_wpconnector_mailbox_request_',
+        '_transient_timeout_wpconnector_mailbox_request_',
+        '_transient_wpconnector_mailbox_result_',
+        '_transient_timeout_wpconnector_mailbox_result_',
+        'wpconnector_mailbox_lock_',
     ) as $prefix) {
         $like = $wpdb->esc_like($prefix) . '%';
         $names = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like));

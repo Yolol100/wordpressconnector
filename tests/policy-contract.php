@@ -30,6 +30,9 @@ Policy::assertActionAllowed($descriptor,true,false);
 $expectFailure(static fn()=>Policy::assertKeyAllowed('api_key'),'secret-like key');
 $expectFailure(static fn()=>Policy::assertMetaKeyAllowed('_edit_lock'),'protected metadata');
 $expectFailure(static fn()=>Policy::assertOptionKeyAllowed('active_plugins'),'system-owned option');
+$expectFailure(static fn()=>Policy::assertOptionKeyAllowed('_transient_wpconnector_mailbox_request_deadbeef'),'mailbox request transient');
+$expectFailure(static fn()=>Policy::assertOptionKeyAllowed('_transient_timeout_wpconnector_mailbox_result_deadbeef'),'mailbox result transient');
+$expectFailure(static fn()=>Policy::assertOptionKeyAllowed('wpconnector_mailbox_lock_deadbeef'),'mailbox state lock');
 Policy::assertMetaKeyAllowed('public_project_note');
 Policy::assertOptionKeyAllowed('blogdescription');
 

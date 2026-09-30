@@ -44,3 +44,4 @@ The `/presence` route gives deterministic recognition for a known domain. There 
 ## State and mutation safety
 
 The semantic connector runtime remains unchanged in principle: strict request IDs, dry-run, `confirm=true` for real mutations, capability checks, idempotency, mutation locking, stale-state fingerprints/tokens, exact readback and rollback where supported. GitHub OIDC changes transport authentication, not the semantic action contract.
+\n\n## Private mailbox bridge\n\nFor mailbox operations, the normal authenticated connector stores one bounded request temporarily in WordPress. The public Leadscanner executor receives only the request ID, fetches the private request with its dedicated short-lived OIDC identity, performs the pinned mailbox runtime operation, and posts the private result back to WordPress with a fresh OIDC token. ChatGPT reads the result through the normal private connector path. Public GitHub surfaces never carry mailbox payloads.\n

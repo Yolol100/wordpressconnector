@@ -10,6 +10,7 @@ run_php() {
 find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
 run_php tests/policy-contract.php
 run_php tests/github-oidc-contract.php
+run_php tests/mailbox-bridge-contract.php
 run_php tests/action-catalog.php
 run_php tests/user-password-reset-contract.php
 run_php tests/custom-css-contract.php

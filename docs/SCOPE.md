@@ -44,3 +44,8 @@ Explicit privileged actions cover users/roles, plugin/theme lifecycle, WordPress
 ## State and extension contract
 
 Mutations support idempotency, locking, `expected_fingerprint`, site-scoped `expected_state_token`, readback and rollback. Other plugins may register semantic actions through `wpconnector_register_actions`; every extension must declare security metadata and use its owner's supported API/storage contract.
+
+
+## Controller-owned opaque handoffs
+
+The connector may store a bounded, short-lived opaque request/result envelope in WordPress for a controller-owned cross-domain workflow only when the external execution remains outside this plugin. Such a handoff must use an exact authenticated executor identity, sensitive/privileged connector actions, TTL and size limits, idempotency/stale-result protection, verified cleanup, and dedicated storage that generic option/meta/filesystem actions cannot expose. It must not add external-domain business logic, credentials, IMAP/SMTP/API execution or a generic HTTP proxy to the WordPress connector.
