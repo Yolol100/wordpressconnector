@@ -43,15 +43,48 @@ class WC_Tax
 {
     public static function get_tax_rate_classes(): array { return array((object) array('tax_rate_class_id' => 8, 'name' => 'Reduced rate', 'slug' => 'reduced-rate')); }
     public static function get_tax_class_slugs(): array { return array('reduced-rate'); }
-    public static function get_rates_for_tax_class(string $class): array
+}
+class WooTaxWpdbStub
+{
+    public $prefix = 'wp_';
+    public function prepare(string $query, ...$values): string
     {
-        return array((object) array('tax_rate_id' => '12', 'tax_rate_country' => 'NL', 'tax_rate' => '9.0000', 'tax_rate_name' => 'Reduced', 'secret' => 'must-not-leak'));
+        foreach ($values as $value) {
+            $replacement = is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
+            $query = preg_replace('/%[sd]/', $replacement, $query, 1);
+        }
+        return $query;
+    }
+    public function get_var(string $query)
+    {
+        if (false !== strpos($query, 'COUNT(*)') && false !== strpos($query, 'woocommerce_tax_rates')) return 101;
+        throw new RuntimeException('Unexpected tax scalar query: ' . $query);
+    }
+    public function get_results(string $query): array
+    {
+        if (false !== strpos($query, 'SELECT `tax_rate_id`, `tax_rate_country`')) {
+            if (false === strpos($query, 'LIMIT 50')) throw new RuntimeException('Tax rates must use bounded SQL pagination.');
+            preg_match('/OFFSET (\d+)/', $query, $matches);
+            $offset = isset($matches[1]) ? (int) $matches[1] : 0;
+            return array((object) array('tax_rate_id' => (string) (12 + $offset), 'tax_rate_country' => 'NL', 'tax_rate' => '9.0000', 'tax_rate_name' => 'Reduced', 'secret' => 'must-not-leak'));
+        }
+        if (false !== strpos($query, 'COUNT(*) AS `location_count`')) {
+            return array((object) array('tax_rate_id' => 12, 'location_count' => 101));
+        }
+        if (false !== strpos($query, 'SELECT `location_type`, `location_code`')) {
+            if (false === strpos($query, 'LIMIT 100')) throw new RuntimeException('Tax rate locations must have a hard result bound.');
+            $locations = array();
+            for ($i = 1; $i <= 100; $i++) $locations[] = (object) array('location_type' => 'postcode', 'location_code' => '12345-' . (12345 + $i));
+            return $locations;
+        }
+        throw new RuntimeException('Unexpected tax result query: ' . $query);
     }
 }
 function get_user_by(string $field, int $id) { return in_array($id, array(17, 18, 19, 20), true) ? (object) array('ID' => $id, 'roles' => array('test-role')) : false; }
 function wc_get_product(int $id = 0) { return null; }
 function current_user_can(string $capability): bool { return 'manage_woocommerce' === $capability; }
 function sanitize_title(string $value): string { return strtolower(trim(preg_replace('/[^a-z0-9-]+/i', '-', $value), '-')); }
+$wpdb = new WooTaxWpdbStub();
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
 $adapter = new \Webactueel\WordPressConnector\Adapters\WooCommerceAdapter();
@@ -101,7 +134,10 @@ try {
 $classes = $adapter->taxClassList();
 if ('reduced-rate' !== $classes['classes'][0]['slug'] || '' !== $classes['standard_class']) throw new RuntimeException('Tax class inventory failed.');
 $rates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500));
-if (100 !== $rates['per_page'] || '12' !== $rates['rates'][0]['id'] || isset($rates['rates'][0]['secret'])) throw new RuntimeException('Tax rates were not bounded and allowlisted.');
+if (50 !== $rates['per_page'] || 101 !== $rates['total'] || 3 !== $rates['pages'] || '12' !== $rates['rates'][0]['id'] || isset($rates['rates'][0]['secret'])) throw new RuntimeException('Tax rates were not bounded and allowlisted.');
+if (100 !== count($rates['rates'][0]['locations']) || 101 !== $rates['rates'][0]['location_count'] || ! $rates['rates'][0]['locations_truncated'] || 'postcode' !== $rates['rates'][0]['locations'][0]['type']) throw new RuntimeException('Tax rate city/postcode locations were not returned with a hard bound and truncation evidence.');
+$nextRates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500, 'page' => 2));
+if ('62' !== $nextRates['rates'][0]['id'] || 2 !== $nextRates['page']) throw new RuntimeException('Tax rate SQL pagination did not map page and offset correctly.');
 try {
     $adapter->taxRateList(array('tax_class' => 'not-a-real-class'));
     throw new RuntimeException('Unknown tax class was accepted.');
