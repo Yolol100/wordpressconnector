@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Json.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php';
@@ -15,7 +16,8 @@ class WC_Customer
     public function __construct(int $id) { $this->id = $id; }
     public function get_id(): int { return (int) $this->id; }
     public function get_is_paying_customer(): bool { return true; }
-    public function get_order_count(): int { return 4; }
+    public function get_order_count(): int { return in_array($this->id, array(18, 19), true) ? 0 : 4; }
+    public function get_role(): string { return array(17 => 'customer', 18 => 'administrator', 19 => 'subscriber', 20 => 'wholesale')[$this->id] ?? 'customer'; }
     public function get_total_spent(): string { return '125.00'; }
     public function get_email(): string { return 'private@example.test'; }
     public function get_first_name(): string { return 'Ada'; }
@@ -28,14 +30,14 @@ class WC_Shipping_Zone
     private $id;
     public function __construct(int $id = 4) { $this->id = $id; }
     public function get_id(): int { return (int) $this->id; }
-    public function get_zone_name(): string { return 'Netherlands'; }
+    public function get_zone_name(): string { return 0 === $this->id ? 'Rest of the world' : 'Netherlands'; }
     public function get_zone_order(): int { return 2; }
     public function get_zone_locations(): array { return array((object) array('code' => 'NL', 'type' => 'country')); }
 }
 class WC_Shipping_Zones
 {
     public static function get_shipping_zones(): array { return array(new WC_Shipping_Zone()); }
-    public static function get_zone(int $id) { return 4 === $id ? new WC_Shipping_Zone($id) : false; }
+    public static function get_zone(int $id) { return 0 === $id || 4 === $id ? new WC_Shipping_Zone($id) : false; }
 }
 class WC_Tax
 {
@@ -46,7 +48,8 @@ class WC_Tax
         return array((object) array('tax_rate_id' => '12', 'tax_rate_country' => 'NL', 'tax_rate' => '9.0000', 'tax_rate_name' => 'Reduced', 'secret' => 'must-not-leak'));
     }
 }
-function get_user_by(string $field, int $id) { return 17 === $id ? (object) array('ID' => $id, 'roles' => array('customer')) : (18 === $id ? (object) array('ID' => $id, 'roles' => array('administrator')) : false); }
+function get_user_by(string $field, int $id) { return in_array($id, array(17, 18, 19, 20), true) ? (object) array('ID' => $id, 'roles' => array('test-role')) : false; }
+function wc_get_product(int $id = 0) { return null; }
 function current_user_can(string $capability): bool { return 'manage_woocommerce' === $capability; }
 function sanitize_title(string $value): string { return strtolower(trim(preg_replace('/[^a-z0-9-]+/i', '-', $value), '-')); }
 
@@ -81,8 +84,12 @@ try {
 } catch (RuntimeException $expected) {
     if ('A WooCommerce customer account id is required.' !== $expected->getMessage()) throw $expected;
 }
+$subscriber = $adapter->customerGet(array('id' => 19));
+if (19 !== $subscriber['customer']['id']) throw new RuntimeException('Subscriber-role WooCommerce customer was rejected.');
+$customRole = $adapter->customerGet(array('id' => 20));
+if (20 !== $customRole['customer']['id']) throw new RuntimeException('Custom-role customer with WooCommerce order history was rejected.');
 $zones = $adapter->shippingZoneList();
-if ('NL' !== $zones['zones'][0]['locations'][0]['code'] || array_key_exists('methods', $zones['zones'][0])) throw new RuntimeException('Shipping zones must expose geography but no method settings.');
+if ('NL' !== $zones['zones'][0]['locations'][0]['code'] || array_key_exists('methods', $zones['zones'][0]) || 0 !== $zones['zones'][1]['id']) throw new RuntimeException('Shipping zones must include custom and default geography without method settings.');
 $zone = $adapter->shippingZoneGet(array('id' => 4));
 if ('Netherlands' !== $zone['zone']['name']) throw new RuntimeException('Shipping zone lookup failed.');
 try {
