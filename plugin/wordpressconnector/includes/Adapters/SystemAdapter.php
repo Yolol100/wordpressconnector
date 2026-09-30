@@ -23,7 +23,7 @@ final class SystemAdapter
         $registry->register('user.get', array($this, 'userGet'), $sensitive + array('capability' => 'list_users', 'description' => 'Read a WordPress user.'));
         $registry->register('user.create', array($this, 'userCreate'), $sensitive + array('mutation' => true, 'capability' => 'create_users', 'description' => 'Create a WordPress user with a server-generated password.'));
         $registry->register('user.update', array($this, 'userUpdate'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Update WordPress user profile fields and roles.'));
-        $registry->register('user.force_password_reset', array($this, 'userForcePasswordReset'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send the core password-reset email. Non-rollbackable.'));
+        $registry->register('user.force_password_reset', array($this, 'userForcePasswordReset'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'));
         $registry->register('user.delete', array($this, 'userDelete'), $sensitive + array('mutation' => true, 'capability' => 'delete_users', 'description' => 'Delete a WordPress user.'));
 
         $registry->register('role.list', array($this, 'roleList'), $privileged + array('capability' => 'promote_users', 'description' => 'List roles and capabilities.'));
