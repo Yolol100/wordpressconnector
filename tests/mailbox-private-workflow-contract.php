@@ -37,9 +37,9 @@ foreach ($required as $needle) {
 
 $forbidden = array(
     "actions/upload-artifact@v",
-    "cat \"$RUNNER_TEMP/mailbox-private/store.json\"",
-    "cat \"$RUNNER_TEMP/mailbox-private/result.json\"",
-    "tee \"$RUNNER_TEMP/mailbox-private",
+    'cat "$RUNNER_TEMP/mailbox-private/store.json"',
+    'cat "$RUNNER_TEMP/mailbox-private/result.json"',
+    'tee "$RUNNER_TEMP/mailbox-private',
     "OUTREACH_MAIL_PASSWORD",
     "OUTREACH_SMTP_PASSWORD",
     "OUTREACH_SMTP_SEND_ENABLED",
