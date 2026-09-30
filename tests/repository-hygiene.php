@@ -17,7 +17,7 @@ $allowedRootDirectories = array(
 );
 $rootItems = scandir($root) ?: array();
 foreach ($rootItems as $item) {
-    if (in_array($item, array('.', '..'), true)) {
+    if (in_array($item, array('.', '..', '.git'), true)) {
         continue;
     }
     if (is_dir($root . '/' . $item) && ! in_array($item, $allowedRootDirectories, true)) {
