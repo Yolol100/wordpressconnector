@@ -11,6 +11,8 @@ final class ContractAbility
     private array $meta;
     public static int $executions = 0;
     public static bool $large_result = false;
+    public static bool $repeated_result = false;
+    public static bool $throw_result = false;
     public function __construct(array $meta) { $this->meta = $meta; }
     public function get_meta(): array { return $this->meta; }
     public function get_label(): string { return 'Plugin ability'; }
@@ -18,7 +20,16 @@ final class ContractAbility
     public function get_category(): string { return 'test'; }
     public function get_input_schema(): array { return array('type' => 'object'); }
     public function get_output_schema(): array { return array('type' => 'object'); }
-    public function execute($input = null) { self::$executions++; return self::$large_result ? str_repeat('x', 270000) : array('received' => $input, 'token' => 'secret-value', 'nested' => (object) array('api_key' => 'private-key', 'visible' => 'safe')); }
+    public function execute($input = null) {
+        self::$executions++;
+        if (self::$throw_result) throw new RuntimeException('api_key=private-key upstream failure');
+        if (self::$large_result) return str_repeat('x', 270000);
+        if (self::$repeated_result) {
+            $dto = (object) array('visible' => 'safe');
+            return array('summary' => $dto, 'details' => $dto);
+        }
+        return array('received' => $input, 'token' => 'secret-value', 'nested' => (object) array('api_key' => 'private-key', 'visible' => 'safe'));
+    }
 }
 
 function wp_get_abilities(): array
@@ -66,11 +77,27 @@ $result = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-cont
 if (1 !== ContractAbility::$executions || 3 !== $result['result']['received']['limit']) {
     fwrite(STDERR, "Exposed read-only ability did not execute through its native API.\n"); exit(1);
 }
+$repeatedResult = null;
+ContractAbility::$repeated_result = true;
+$repeatedResult = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array());
+ContractAbility::$repeated_result = false;
+if ('safe' !== ($repeatedResult['result']['summary']['visible'] ?? null) || 'safe' !== ($repeatedResult['result']['details']['visible'] ?? null)) {
+    fwrite(STDERR, "Repeated non-circular ability objects were treated as circular.\n"); exit(1);
+}
 $largeResultRejected = false;
 ContractAbility::$large_result = true;
 try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $largeResultRejected = true; }
 ContractAbility::$large_result = false;
-if (! $largeResultRejected || 2 !== ContractAbility::$executions) { fwrite(STDERR, "Oversized read-only ability result was not bounded.\n"); exit(1); }
+if (! $largeResultRejected || 3 !== ContractAbility::$executions) { fwrite(STDERR, "Oversized read-only ability result was not bounded.\n"); exit(1); }
+$exceptionRejected = false;
+ContractAbility::$throw_result = true;
+try {
+    $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array());
+} catch (RuntimeException $expected) {
+    $exceptionRejected = 'WordPress Ability failed.' === $expected->getMessage();
+}
+ContractAbility::$throw_result = false;
+if (! $exceptionRejected || 4 !== ContractAbility::$executions) { fwrite(STDERR, "Ability exceptions were not replaced with a generic failure.\n"); exit(1); }
 if ('[redacted]' !== $result['result']['token'] || '[redacted]' !== $result['result']['nested']['api_key'] || 'safe' !== $result['result']['nested']['visible']) {
     fwrite(STDERR, "Sensitive values in read-only ability results were not recursively redacted.\n"); exit(1);
 }
@@ -79,7 +106,7 @@ try {
     fwrite(STDERR, "Mutating ability was executed by the read-only action.\n"); exit(1);
 } catch (RuntimeException $expected) {
 }
-if (2 !== ContractAbility::$executions) {
+if (4 !== ContractAbility::$executions) {
     fwrite(STDERR, "Blocked mutating ability still executed.\n"); exit(1);
 }
 echo "abilities catalog contract OK\n";
