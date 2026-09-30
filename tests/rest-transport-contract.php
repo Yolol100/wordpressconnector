@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
+$mailboxController = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/MailboxBridgeController.php');
 $assetStore = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $settings = file_get_contents($root . '/plugin/wordpressconnector/includes/Admin/Settings.php');
 $policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
 $oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php');
 $bootstrap = file_get_contents($root . '/plugin/wordpressconnector/wordpressconnector.php');
-foreach (array('controller'=>$controller,'asset store'=>$assetStore,'settings'=>$settings,'policy'=>$policy,'oidc'=>$oidc,'bootstrap'=>$bootstrap) as $name=>$contents) {
+foreach (array('controller'=>$controller,'mailbox controller'=>$mailboxController,'asset store'=>$assetStore,'settings'=>$settings,'policy'=>$policy,'oidc'=>$oidc,'bootstrap'=>$bootstrap) as $name=>$contents) {
     if (false === $contents) { fwrite(STDERR,"Unable to read REST {$name}.\n"); exit(1); }
 }
 $required = array(
@@ -53,11 +54,11 @@ foreach (array("private const ISSUER = 'https://token.actions.githubusercontent.
 foreach (array('is_uploaded_file($tmpName)','filesize($tmpName)','allowedFileType($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','realpath($root)','sys_get_temp_dir()','assertOutsideWebRoot') as $needle) {
     if (strpos($assetStore,$needle)===false) { fwrite(STDERR,"Missing REST asset security contract: {$needle}\n"); exit(1); }
 }
-if (strpos($controller,'__return_true')!==false) { fwrite(STDERR,"REST routes must not use __return_true.\n"); exit(1); }
+if (strpos($controller,'__return_true')!==false || strpos($mailboxController,'__return_true')!==false) { fwrite(STDERR,"REST routes must not use __return_true.\n"); exit(1); }
 foreach (array('eval(','shell_exec(','passthru(','proc_open(','popen(') as $primitive) {
-    if (strpos($controller,$primitive)!==false || strpos($assetStore,$primitive)!==false || strpos($oidc,$primitive)!==false) { fwrite(STDERR,"Forbidden execution primitive: {$primitive}\n"); exit(1); }
+    if (strpos($controller,$primitive)!==false || strpos($mailboxController,$primitive)!==false || strpos($assetStore,$primitive)!==false || strpos($oidc,$primitive)!==false) { fwrite(STDERR,"Forbidden execution primitive: {$primitive}\n"); exit(1); }
 }
-foreach (array("'includes/REST/Controller.php'","'includes/REST/AssetStore.php'","'includes/Security/GitHubOidc.php'") as $needle) {
+foreach (array("'includes/REST/Controller.php'","'includes/REST/MailboxBridgeController.php'","'includes/REST/AssetStore.php'","'includes/Security/GitHubOidc.php'","'includes/Runtime/MailboxBridgeStore.php'","'includes/Adapters/MailboxBridgeAdapter.php'") as $needle) {
     if (strpos($bootstrap,$needle)===false) { fwrite(STDERR,"Bootstrap missing dependency: {$needle}\n"); exit(1); }
 }
 echo "REST zero-config transport contract OK\n";
