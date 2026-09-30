@@ -1,7 +1,7 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-search-wp2shell-pages-20260930",
+  "request_id": "losh-ir-search-hacked-by-pages-20260930",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
@@ -10,6 +10,6 @@
     "status": "publish",
     "per_page": 100,
     "page": 1,
-    "search": "wp2shell"
+    "search": "Hacked by"
   }
 }
