@@ -187,7 +187,11 @@ final class Policy
     public static function assertOptionKeyAllowed(string $key): void
     {
         self::assertKeyAllowed($key);
-        if (in_array(strtolower($key), self::BLOCKED_OPTION_KEYS, true)) {
+        $normalized = strtolower($key);
+        if (
+            in_array($normalized, self::BLOCKED_OPTION_KEYS, true)
+            || 1 === preg_match('/^(?:_transient(?:_timeout)?_)?wpconnector_mailbox_/', $normalized)
+        ) {
             throw new RuntimeException('System-owned option must use its dedicated semantic action instead of generic option access.');
         }
     }
