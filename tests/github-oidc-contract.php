@@ -6,6 +6,7 @@ define('ABSPATH', __DIR__ . '/');
 define('HOUR_IN_SECONDS', 3600);
 $GLOBALS['wpconnector_transients'] = array();
 $GLOBALS['wpconnector_jwks'] = array();
+$GLOBALS['wpconnector_mailbox_main_sha'] = '53aaaa8b9a0d15bc25931f51dadc9951e85451b2';
 
 class WP_REST_Request
 {
@@ -16,7 +17,7 @@ class WP_REST_Request
 function rest_url($path = ''): string { return 'https://example.com/wp-json/' . ltrim((string) $path, '/'); }
 function get_transient($key) { return $GLOBALS['wpconnector_transients'][$key] ?? false; }
 function set_transient($key, $value, $ttl): bool { $GLOBALS['wpconnector_transients'][$key] = $value; return true; }
-function wp_safe_remote_get($url, $args = array()) { return array('response'=>array('code'=>200),'body'=>json_encode(array('keys'=>$GLOBALS['wpconnector_jwks']))); }
+function wp_safe_remote_get($url, $args = array()) { if (false !== strpos((string)$url,'/commits/main')) { return array('response'=>array('code'=>200),'body'=>json_encode(array('sha'=>$GLOBALS['wpconnector_mailbox_main_sha']))); } return array('response'=>array('code'=>200),'body'=>json_encode(array('keys'=>$GLOBALS['wpconnector_jwks']))); }
 function is_wp_error($value): bool { return false; }
 function wp_remote_retrieve_response_code($response): int { return (int)($response['response']['code'] ?? 0); }
 function wp_remote_retrieve_body($response): string { return (string)($response['body'] ?? ''); }
@@ -63,9 +64,11 @@ $mailboxClaims=array(
     'workflow_ref'=>'Yolol100/Leadscanner/.github/workflows/mailbox-execute.yml@refs/heads/main',
     'event_name'=>'issues',
     'runner_environment'=>'github-hosted',
+    'sha'=>$GLOBALS['wpconnector_mailbox_main_sha'],
 );
 $mailboxJwt=$token($mailboxClaims);
 if(1!==$auth->authenticateMailboxExecutor(new WP_REST_Request(array('x-webactueel-github-oidc'=>$mailboxJwt)))){fwrite(STDERR,"Valid mailbox executor token was not accepted.\n");exit(1);}
 try{$auth->authenticateMailboxExecutor(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array_merge($mailboxClaims,array('workflow_ref'=>'Yolol100/Leadscanner/.github/workflows/other.yml@refs/heads/main'))))));fwrite(STDERR,"Wrong mailbox workflow accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'workflow_ref'))throw $e;}
+try{$auth->authenticateMailboxExecutor(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array_merge($mailboxClaims,array('sha'=>'1111111111111111111111111111111111111111'))))));fwrite(STDERR,"Stale mailbox workflow SHA accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'sha'))throw $e;}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token($mailboxClaims))));fwrite(STDERR,"Mailbox executor token gained normal connector access.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'repository'))throw $e;}
 echo "github oidc contract OK\n";
