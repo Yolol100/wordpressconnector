@@ -92,7 +92,13 @@ final class AbilitiesAdapter
             $value = get_object_vars($value);
         }
         if (is_array($value)) {
-            foreach ($value as $key => $item) $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
+            foreach ($value as $key => $item) {
+                if (is_string($key)) {
+                    $budget['bytes'] += strlen($key);
+                    if ($budget['bytes'] > 262144) throw new \\RuntimeException('WordPress Ability result exceeds the output limit.');
+                }
+                $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
+            }
             return Policy::redact($value);
         }
         if (is_string($value)) {
