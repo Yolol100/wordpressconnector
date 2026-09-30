@@ -128,7 +128,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.attribute.delete` | mutation, privileged | Delete a global WooCommerce product attribute. |
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
 | `woocommerce.attribute.update` | mutation | Update a global WooCommerce product attribute. |
-| `woocommerce.customer.get` | privileged, sensitive | Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request. |
+| `woocommerce.customer.get` | privileged, sensitive | Read one WooCommerce customer summary with `manage_woocommerce`; contact and address data require explicit opt-in. Subscriber accounts and custom roles with order history are supported; sites may extend recognized roles with `wpc_connector_woocommerce_customer_roles`. |
 | `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary with `manage_woocommerce`; customer and address data require an explicit request, with line items capped at 50. |
 | `woocommerce.order.list` | privileged, sensitive | List bounded WooCommerce order summaries with `manage_woocommerce`; customer identifiers, contact data and line-item details are omitted. |
 | `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone and geographic locations without shipping method settings. |
