@@ -1,12 +1,12 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-search-coupdegrace-posts-20260930",
+  "request_id": "losh-ir-search-coupdegrace-pages-20260930",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "post",
+    "post_type": "page",
     "status": "publish",
     "search": "CoupDeGrace",
     "per_page": 100,
