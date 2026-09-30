@@ -1,0 +1,209 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "losh-ir-all-published-pages-20260930",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-30T11:09:05+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 8699,
+            "type": "page",
+            "status": "publish",
+            "title": "Hacked by CoupDeGrace",
+            "slug": "2577149f61ef-htm",
+            "permalink": "https://losh.nl/2577149f61ef-htm/"
+        },
+        {
+            "id": 8698,
+            "type": "page",
+            "status": "publish",
+            "title": "Hacked by CoupDeGrace",
+            "slug": "cf192504a9c0-htm",
+            "permalink": "https://losh.nl/cf192504a9c0-htm/"
+        },
+        {
+            "id": 8593,
+            "type": "page",
+            "status": "publish",
+            "title": "Ramadan menu",
+            "slug": "ramadan-menu",
+            "permalink": "https://losh.nl/ramadan-menu/"
+        },
+        {
+            "id": 8534,
+            "type": "page",
+            "status": "publish",
+            "title": "events by losh",
+            "slug": "events-by-losh",
+            "permalink": "https://losh.nl/events-by-losh/"
+        },
+        {
+            "id": 8520,
+            "type": "page",
+            "status": "publish",
+            "title": "Events",
+            "slug": "events",
+            "permalink": "https://losh.nl/events/"
+        },
+        {
+            "id": 8419,
+            "type": "page",
+            "status": "publish",
+            "title": "Iftar Den Haag",
+            "slug": "iftar-den-haag",
+            "permalink": "https://losh.nl/iftar-den-haag/"
+        },
+        {
+            "id": 8365,
+            "type": "page",
+            "status": "publish",
+            "title": "Mediterraan restaurant",
+            "slug": "mediterraan-restaurant",
+            "permalink": "https://losh.nl/mediterraan-restaurant/"
+        },
+        {
+            "id": 8350,
+            "type": "page",
+            "status": "publish",
+            "title": "Halal restaurant",
+            "slug": "halal-restaurant",
+            "permalink": "https://losh.nl/halal-restaurant/"
+        },
+        {
+            "id": 8340,
+            "type": "page",
+            "status": "publish",
+            "title": "Turks restaurant",
+            "slug": "turks-restaurant",
+            "permalink": "https://losh.nl/turks-restaurant/"
+        },
+        {
+            "id": 8325,
+            "type": "page",
+            "status": "publish",
+            "title": "Turks ontbijt",
+            "slug": "turks-ontbijt",
+            "permalink": "https://losh.nl/turks-ontbijt/"
+        },
+        {
+            "id": 8195,
+            "type": "page",
+            "status": "publish",
+            "title": "test",
+            "slug": "test-2",
+            "permalink": "https://losh.nl/test-2/"
+        },
+        {
+            "id": 8097,
+            "type": "page",
+            "status": "publish",
+            "title": "Menu English version",
+            "slug": "menu-english-version",
+            "permalink": "https://losh.nl/menu-english-version/"
+        },
+        {
+            "id": 7632,
+            "type": "page",
+            "status": "publish",
+            "title": "Tijden concept",
+            "slug": "tijden-concept",
+            "permalink": "https://losh.nl/tijden-concept/"
+        },
+        {
+            "id": 7564,
+            "type": "page",
+            "status": "publish",
+            "title": "Impressie",
+            "slug": "impressie",
+            "permalink": "https://losh.nl/impressie/"
+        },
+        {
+            "id": 7431,
+            "type": "page",
+            "status": "publish",
+            "title": "Menu",
+            "slug": "menu",
+            "permalink": "https://losh.nl/menu/"
+        },
+        {
+            "id": 6797,
+            "type": "page",
+            "status": "publish",
+            "title": "BEDANKT SOLLICITATIE",
+            "slug": "bedankt-sollicitatie",
+            "permalink": "https://losh.nl/bedankt-sollicitatie/"
+        },
+        {
+            "id": 6368,
+            "type": "page",
+            "status": "publish",
+            "title": "BEDANKT",
+            "slug": "bedankt",
+            "permalink": "https://losh.nl/bedankt/"
+        },
+        {
+            "id": 5363,
+            "type": "page",
+            "status": "publish",
+            "title": "Missie & Visie",
+            "slug": "missie-visie",
+            "permalink": "https://losh.nl/missie-visie/"
+        },
+        {
+            "id": 5341,
+            "type": "page",
+            "status": "publish",
+            "title": "Over ons",
+            "slug": "over-ons",
+            "permalink": "https://losh.nl/over-ons/"
+        },
+        {
+            "id": 5332,
+            "type": "page",
+            "status": "publish",
+            "title": "Huisregels",
+            "slug": "huisregels",
+            "permalink": "https://losh.nl/huisregels/"
+        },
+        {
+            "id": 5291,
+            "type": "page",
+            "status": "publish",
+            "title": "Groepen",
+            "slug": "groepen",
+            "permalink": "https://losh.nl/groepen/"
+        },
+        {
+            "id": 5273,
+            "type": "page",
+            "status": "publish",
+            "title": "Carrière",
+            "slug": "carriere",
+            "permalink": "https://losh.nl/carriere/"
+        },
+        {
+            "id": 4995,
+            "type": "page",
+            "status": "publish",
+            "title": "Contact",
+            "slug": "contact",
+            "permalink": "https://losh.nl/contact/"
+        },
+        {
+            "id": 2470,
+            "type": "page",
+            "status": "publish",
+            "title": "Home",
+            "slug": "home",
+            "permalink": "https://losh.nl/"
+        }
+    ],
+    "page": 1,
+    "per_page": 100,
+    "total": 24,
+    "pages": 1,
+    "readback_verified": null
+}
