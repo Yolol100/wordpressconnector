@@ -1,9 +1,14 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-connection-check-20260930",
-  "action": "connector.update.check",
+  "request_id": "losh-post-list-check-20260930",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 1,
+    "page": 1
+  }
 }
