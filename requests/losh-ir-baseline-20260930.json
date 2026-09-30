@@ -1,12 +1,15 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-contain-post8697-dryrun-20260930",
-  "action": "post.update",
+  "request_id": "losh-ir-search-coupdegrace-posts-20260930",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 8697,
-    "status": "draft"
+    "post_type": "post",
+    "status": "publish",
+    "search": "CoupDeGrace",
+    "per_page": 100,
+    "page": 1
   }
 }
