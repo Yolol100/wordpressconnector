@@ -9,7 +9,7 @@ The generic connector intentionally excludes:
 - arbitrary filesystem read/write/delete outside named media/deploy operations;
 - generic remote HTTP proxying;
 - passwords, salts, cookies, tokens, API keys or credential stores;
-- transactional order/refund/payment/subscription operations;
+- order/refund/payment/subscription writes, refunds and payment operations (read-only WooCommerce order summaries are supported, with personal data opt-in per order);
 - generic export of customer, patient, medical, intake or prescription records.
 
 If a future plugin owns data that is not covered by the existing adapters, add a named semantic adapter against that plugin's supported API and classify its security/privacy risk explicitly.
