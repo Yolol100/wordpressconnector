@@ -49,6 +49,7 @@ $expected = array(
     'user.get' => 'privileged, sensitive',
     'user.list' => 'privileged, sensitive',
     'user.update' => 'mutation, privileged, sensitive',
+    'user.force_password_reset' => 'mutation, privileged, sensitive',
 );
 
 $rows = array();
@@ -89,7 +90,7 @@ foreach (array('plugin.install', 'plugin.update', 'plugin.delete', 'theme.instal
     }
 }
 
-foreach (array('user.list', 'user.get', 'multisite.site.list') as $action) {
+foreach (array('user.list', 'user.get', 'user.force_password_reset', 'multisite.site.list') as $action) {
     if (! isset($registrationLines[$action]) || strpos($registrationLines[$action], '$sensitive') === false) {
         fwrite(STDERR, "Sensitive registration contract missing for {$action}.\n");
         exit(1);
