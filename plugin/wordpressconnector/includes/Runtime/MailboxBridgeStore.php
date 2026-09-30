@@ -77,9 +77,12 @@ final class MailboxBridgeStore
         return $record;
     }
 
-    public function putResult(string $requestId, array $result): array
+    public function putResult(string $requestId, array $result, string $expectedRequestHash): array
     {
         $this->assertRequestId($requestId);
+        if (! preg_match('/^[a-f0-9]{64}\\z/', $expectedRequestHash)) {
+            throw new RuntimeException('Mailbox request hash is invalid.');
+        }
         $encoded = $this->encodeBounded($result, self::MAX_RESULT_BYTES, 'Mailbox result');
         $token = $this->acquireStateLock($requestId);
         if ('' === $token) {
@@ -88,6 +91,10 @@ final class MailboxBridgeStore
 
         try {
             $request = $this->getRequest($requestId);
+            $currentRequestHash = isset($request['sha256']) ? (string) $request['sha256'] : '';
+            if (! hash_equals($currentRequestHash, $expectedRequestHash)) {
+                throw new RuntimeException('Mailbox request changed before result storage.');
+            }
             $key = $this->key(self::RESULT_PREFIX, $requestId);
             $existing = get_transient($key);
             $hash = hash('sha256', $encoded);
