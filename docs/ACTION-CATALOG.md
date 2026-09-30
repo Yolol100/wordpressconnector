@@ -148,6 +148,6 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a WooCommerce product variation. |
 | `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
-| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback; redact credential-shaped result fields. |
+| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback; redact credential-shaped fields and cap output at 10,000 values, 20 levels and 256 KiB. |
 | `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
 | `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |
