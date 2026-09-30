@@ -70,7 +70,8 @@ final class MailboxBridgeController
         }
         try {
             $id=(string)$request->get_param('request_id');
-            $stored=$this->store->putResult($id,$data);
+            $requestHash=strtolower((string)$request->get_header('x-webactueel-mailbox-request-sha256'));
+            $stored=$this->store->putResult($id,$data,$requestHash);
             return new \WP_REST_Response(array('ok'=>true,'stored'=>$stored),201);
         } catch (Throwable $error) {
             return new \WP_Error('wpconnector_mailbox_result_rejected',$error->getMessage(),array('status'=>400));
