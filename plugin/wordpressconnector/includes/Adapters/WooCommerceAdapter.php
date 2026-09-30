@@ -94,7 +94,7 @@ final class WooCommerceAdapter
         $id = isset($payload['id']) ? (int) $payload['id'] : 0;
         $user = $id > 0 ? get_user_by('id', $id) : false;
         if (! $user || ! isset($user->roles) || ! in_array('customer', (array) $user->roles, true)) throw new RuntimeException('A WooCommerce customer account id is required.');
-        $customer = new \\WC_Customer($id);
+        $customer = new \WC_Customer($id);
         if (! $customer->get_id()) throw new RuntimeException('WooCommerce customer not found.');
         $snapshot = array(
             'id' => (int) $customer->get_id(),
@@ -117,8 +117,8 @@ final class WooCommerceAdapter
         $this->assertWoo();
         if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_shipping_zones')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
         $zones = array();
-        foreach (\\WC_Shipping_Zones::get_shipping_zones() as $zone) {
-            if ($zone instanceof \\WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot($zone);
+        foreach (\WC_Shipping_Zones::get_shipping_zones() as $zone) {
+            if ($zone instanceof \WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot($zone);
         }
         return array('zones' => $zones);
     }
@@ -128,8 +128,8 @@ final class WooCommerceAdapter
         $this->assertWoo();
         $id = isset($payload['id']) ? (int) $payload['id'] : -1;
         if ($id < 0 || ! class_exists('WC_Shipping_Zones')) throw new RuntimeException('A valid shipping zone id is required.');
-        $zone = \\WC_Shipping_Zones::get_zone($id);
-        if (! $zone instanceof \\WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
+        $zone = \WC_Shipping_Zones::get_zone($id);
+        if (! $zone instanceof \WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
         $snapshot = $this->shippingZoneSnapshot($zone);
         return array('zone' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
     }
@@ -139,7 +139,7 @@ final class WooCommerceAdapter
         $this->assertWoo();
         if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_rate_classes')) throw new RuntimeException('WooCommerce tax class API is unavailable.');
         $classes = array();
-        foreach (\\WC_Tax::get_tax_rate_classes() as $class) {
+        foreach (\WC_Tax::get_tax_rate_classes() as $class) {
             if (is_object($class)) {
                 $classes[] = array('id' => isset($class->tax_rate_class_id) ? (int) $class->tax_rate_class_id : 0, 'name' => isset($class->name) ? (string) $class->name : '', 'slug' => isset($class->slug) ? (string) $class->slug : '');
             }
@@ -153,11 +153,11 @@ final class WooCommerceAdapter
         if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_rates_for_tax_class')) throw new RuntimeException('WooCommerce tax rate API is unavailable.');
         $class = isset($payload['tax_class']) ? sanitize_title((string) $payload['tax_class']) : '';
         $validClasses = array('' => true);
-        foreach (\\WC_Tax::get_tax_class_slugs() as $slug) $validClasses[(string) $slug] = true;
+        foreach (\WC_Tax::get_tax_class_slugs() as $slug) $validClasses[(string) $slug] = true;
         if (! isset($validClasses[$class])) throw new RuntimeException('Unknown WooCommerce tax class.');
         $limit = isset($payload['per_page']) ? max(1, min(100, (int) $payload['per_page'])) : 50;
         $page = isset($payload['page']) ? max(1, (int) $payload['page']) : 1;
-        $allRates = \\WC_Tax::get_rates_for_tax_class($class);
+        $allRates = \WC_Tax::get_rates_for_tax_class($class);
         $rates = is_array($allRates) ? array_values($allRates) : array();
         $items = array();
         foreach (array_slice($rates, ($page - 1) * $limit, $limit) as $rate) {
