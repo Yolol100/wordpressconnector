@@ -41,6 +41,10 @@ List/read/import/update attachment metadata and assign featured images, WooComme
 
 Explicit privileged actions cover users/roles, plugin/theme lifecycle, WordPress core updates, cron, rewrite/cache and multisite management. Software lifecycle actions require the system-update gate.
 
+## Plugin abilities
+
+The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes, including their schemas. On WordPress 6.9+, REST-exposed abilities can be previewed and invoked through their native input validation and permission callback. Invocation requires a dry-run, explicit confirmation, privileged access and `manage_options`. This extends coverage only for extensions that register REST-exposed abilities; it does not enable arbitrary plugin-code execution.
+
 ## State and extension contract
 
 Mutations support idempotency, locking, `expected_fingerprint`, site-scoped `expected_state_token`, readback and rollback. Other plugins may register semantic actions through `wpconnector_register_actions`; every extension must declare security metadata and use its owner's supported API/storage contract.
