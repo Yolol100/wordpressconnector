@@ -95,7 +95,7 @@ final class AbilitiesAdapter
             foreach ($value as $key => $item) {
                 if (is_string($key)) {
                     $budget['bytes'] += strlen($key);
-                    if ($budget['bytes'] > 262144) throw new \\RuntimeException('WordPress Ability result exceeds the output limit.');
+                    if ($budget['bytes'] > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
                 }
                 $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
             }
