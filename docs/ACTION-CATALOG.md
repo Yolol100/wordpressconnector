@@ -131,8 +131,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.customer.get` | privileged, sensitive | Read one WooCommerce customer summary with `manage_woocommerce`; contact and address data require explicit opt-in. Subscriber accounts and custom roles with order history are supported; sites may extend recognized roles with `wpc_connector_woocommerce_customer_roles`. |
 | `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary with `manage_woocommerce`; customer and address data require an explicit request, with line items capped at 50. |
 | `woocommerce.order.list` | privileged, sensitive | List bounded WooCommerce order summaries with `manage_woocommerce`; customer identifiers, contact data and line-item details are omitted. |
-| `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone and geographic locations without shipping method settings. |
-| `woocommerce.shipping_zone.list` | privileged | List WooCommerce shipping zones and geographic locations without shipping method settings. |
+| `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone with at most 100 geographic locations and truncation/count evidence; shipping method settings are omitted. |
+| `woocommerce.shipping_zone.list` | privileged | Paginate at most 50 WooCommerce shipping zones, including the default zone last, and cap each zone at 100 geographic locations with truncation/count evidence. |
 | `woocommerce.tax_class.list` | privileged | List WooCommerce tax classes. |
 | `woocommerce.tax_rate.list` | privileged | Paginate at most 50 WooCommerce tax rates per request; include up to 100 city/state/postcode locations per rate with truncation evidence. |
 | `woocommerce.coupon.create` | mutation, privileged | Create a WooCommerce coupon. |
