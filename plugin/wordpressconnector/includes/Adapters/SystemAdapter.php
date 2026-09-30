@@ -165,12 +165,28 @@ final class SystemAdapter
             \WP_Session_Tokens::get_instance($userId)->destroy_all();
         }
 
-        $mail = retrieve_password((string) $user->user_login);
+        $key = get_password_reset_key($user);
         $result['password_rotated'] = true;
         $result['sessions_revoked'] = true;
-        $result['reset_email_sent'] = ! is_wp_error($mail);
-        if (is_wp_error($mail)) {
-            $result['reset_email_error'] = sanitize_text_field($mail->get_error_message());
+        if (is_wp_error($key)) {
+            $result['reset_email_sent'] = false;
+            $result['reset_email_error'] = sanitize_text_field($key->get_error_message());
+            return $result;
+        }
+
+        $siteName = wp_specialchars_decode((string) get_option('blogname'), ENT_QUOTES);
+        $resetUrl = network_site_url(
+            'wp-login.php?action=rp&key=' . rawurlencode((string) $key) . '&login=' . rawurlencode((string) $user->user_login),
+            'login'
+        );
+        $subject = sprintf(__('[%s] Security password reset'), $siteName);
+        $message = sprintf(__('An administrator reset the password for your account on %s as a security measure.'), $siteName) . "\r\n\r\n";
+        $message .= __('All active sessions have been signed out. Set a new password using this link:') . "\r\n\r\n";
+        $message .= $resetUrl . "\r\n";
+
+        $result['reset_email_sent'] = (bool) wp_mail((string) $user->user_email, $subject, $message);
+        if (! $result['reset_email_sent']) {
+            $result['reset_email_error'] = 'WordPress mail transport rejected the reset notification.';
         }
 
         return $result;
