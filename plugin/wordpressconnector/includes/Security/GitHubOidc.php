@@ -15,11 +15,42 @@ final class GitHubOidc
     private const REPOSITORY_ID = '1341990468';
     private const REPOSITORY_OWNER_ID = '22932777';
     private const WORKFLOW_REF = 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main';
+    private const MAILBOX_REPOSITORY = 'Yolol100/Leadscanner';
+    private const MAILBOX_REPOSITORY_ID = '1334704263';
+    private const MAILBOX_WORKFLOW_REF = 'Yolol100/Leadscanner/.github/workflows/mailbox-execute.yml@refs/heads/main';
     private const CLOCK_SKEW = 60;
     private const MAX_TOKEN_AGE = 600;
     private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
 
     public function authenticate(\WP_REST_Request $request): int
+    {
+        return $this->authenticateExpected($request, array(
+            'repository' => self::REPOSITORY,
+            'repository_id' => self::REPOSITORY_ID,
+            'repository_owner_id' => self::REPOSITORY_OWNER_ID,
+            'ref' => 'refs/heads/main',
+            'workflow_ref' => self::WORKFLOW_REF,
+            'event_name' => 'workflow_dispatch',
+            'runner_environment' => 'github-hosted',
+        ), true);
+    }
+
+    public function authenticateMailboxExecutor(\WP_REST_Request $request): int
+    {
+        return $this->authenticateExpected($request, array(
+            'repository' => self::MAILBOX_REPOSITORY,
+            'repository_id' => self::MAILBOX_REPOSITORY_ID,
+            'repository_owner_id' => self::REPOSITORY_OWNER_ID,
+            'actor_id' => self::REPOSITORY_OWNER_ID,
+            'repository_visibility' => 'public',
+            'ref' => 'refs/heads/main',
+            'workflow_ref' => self::MAILBOX_WORKFLOW_REF,
+            'event_name' => 'issues',
+            'runner_environment' => 'github-hosted',
+        ), false);
+    }
+
+    private function authenticateExpected(\WP_REST_Request $request, array $expected, bool $setPolicyContext): int
     {
         $token = (string) $request->get_header(self::HEADER);
         if ('' === $token) {
@@ -52,10 +83,12 @@ final class GitHubOidc
             throw new RuntimeException('GitHub OIDC signature verification failed.');
         }
 
-        $this->assertClaims($claims);
+        $this->assertClaims($claims, $expected);
         $this->assertNotReplayed($claims);
 
-        Policy::setPublicRepositoryContext('public' === (string) $claims['repository_visibility']);
+        if ($setPolicyContext) {
+            Policy::setPublicRepositoryContext('public' === (string) $claims['repository_visibility']);
+        }
         return $this->administratorId($claims);
     }
 
@@ -64,7 +97,7 @@ final class GitHubOidc
         return rtrim((string) rest_url('webactueel-wordpress-connector/v1'), '/');
     }
 
-    private function assertClaims(array $claims): void
+    private function assertClaims(array $claims, array $expected): void
     {
         $now = time();
         if (self::ISSUER !== ($claims['iss'] ?? null)) {
@@ -84,15 +117,6 @@ final class GitHubOidc
             throw new RuntimeException('GitHub OIDC token is stale or has an invalid lifetime.');
         }
 
-        $expected = array(
-            'repository' => self::REPOSITORY,
-            'repository_id' => self::REPOSITORY_ID,
-            'repository_owner_id' => self::REPOSITORY_OWNER_ID,
-            'ref' => 'refs/heads/main',
-            'workflow_ref' => self::WORKFLOW_REF,
-            'event_name' => 'workflow_dispatch',
-            'runner_environment' => 'github-hosted',
-        );
         foreach ($expected as $name => $value) {
             if (! isset($claims[$name]) || ! is_scalar($claims[$name]) || ! hash_equals($value, (string) $claims[$name])) {
                 throw new RuntimeException('GitHub OIDC claim is not trusted: ' . $name . '.');
