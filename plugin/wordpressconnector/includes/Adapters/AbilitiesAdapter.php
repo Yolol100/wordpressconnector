@@ -76,21 +76,29 @@ final class AbilitiesAdapter
         if (function_exists('is_wp_error') && is_wp_error($result)) {
             throw new \RuntimeException('WordPress Ability failed.');
         }
-        return array('name' => $name, 'result' => $this->redactAbilityResult($result));
+        $budget = array('nodes' => 0, 'bytes' => 0);
+        $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
+        if (! is_string($encoded) || strlen($encoded) > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+        return array('name' => $name, 'result' => $safe);
     }
 
-    private function redactAbilityResult($value, int $depth = 0, ?\SplObjectStorage $seen = null)
+    private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
     {
-        if ($depth > 20) return '[maximum nesting omitted]';
+        if (++$budget['nodes'] > 10000 || $depth > 20) throw new \RuntimeException('WordPress Ability result exceeds the traversal limit.');
         if (is_object($value)) {
-            if (null === $seen) $seen = new \SplObjectStorage();
             if ($seen->contains($value)) return '[circular object omitted]';
             $seen->attach($value);
             $value = get_object_vars($value);
         }
         if (is_array($value)) {
-            foreach ($value as $key => $item) $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen);
+            foreach ($value as $key => $item) $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
             return Policy::redact($value);
+        }
+        if (is_string($value)) {
+            $budget['bytes'] += strlen($value);
+            if ($budget['bytes'] > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+            return $value;
         }
         return is_scalar($value) || null === $value ? $value : null;
     }
