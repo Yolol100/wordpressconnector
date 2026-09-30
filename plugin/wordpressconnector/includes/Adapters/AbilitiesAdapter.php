@@ -8,14 +8,6 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 
 final class AbilitiesAdapter
 {
-    private const PREFIXES = array(
-        'core/',
-        'acf/',
-        'yoast-seo/',
-        'woocommerce/product-',
-        'woocommerce/products-',
-    );
-
     public function register(Registry $registry): void
     {
         $registry->register('wordpress.abilities', array($this, 'catalog'), array(
@@ -44,7 +36,7 @@ final class AbilitiesAdapter
                 $name = method_exists($ability, 'get_name') ? (string) $ability->get_name() : '';
             }
 
-            if (! $this->allowedName($name) || ! $this->isExposed($ability)) {
+            if (! $this->isValidName($name) || ! $this->isExposed($ability)) {
                 continue;
             }
 
@@ -59,14 +51,10 @@ final class AbilitiesAdapter
         );
     }
 
-    private function allowedName(string $name): bool
+    private function isValidName(string $name): bool
     {
-        foreach (self::PREFIXES as $prefix) {
-            if (0 === strpos($name, $prefix)) {
-                return true;
-            }
-        }
-        return false;
+        // Discover public abilities from any installed plugin, but never execute them here.
+        return 1 === preg_match('/^[a-z0-9][a-z0-9._-]{0,99}\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*){0,10}$/iD', $name);
     }
 
     private function isExposed(object $ability): bool
