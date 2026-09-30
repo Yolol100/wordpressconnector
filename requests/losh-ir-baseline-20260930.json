@@ -1,116 +1,11 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-baseline-20260930-a",
-  "action": "connector.batch",
+  "request_id": "losh-ir-post8697-evidence-20260930",
+  "action": "post.get",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "operations": [
-      {
-        "action": "post.get",
-        "payload": {
-          "id": 8697
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "post",
-          "status": "publish",
-          "search": "CoupDeGrace",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "page",
-          "status": "publish",
-          "search": "CoupDeGrace",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "post",
-          "status": "publish",
-          "search": "Hacked",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "page",
-          "status": "publish",
-          "search": "Hacked",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "post",
-          "status": "publish",
-          "search": "ganteng",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "page",
-          "status": "publish",
-          "search": "ganteng",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "post",
-          "status": "publish",
-          "search": "wp2shell",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "page",
-          "status": "publish",
-          "search": "wp2shell",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "post",
-          "status": "publish",
-          "per_page": 100,
-          "page": 1
-        }
-      },
-      {
-        "action": "post.list",
-        "payload": {
-          "post_type": "page",
-          "status": "publish",
-          "per_page": 100,
-          "page": 1
-        }
-      }
-    ]
+    "id": 8697
   }
 }
