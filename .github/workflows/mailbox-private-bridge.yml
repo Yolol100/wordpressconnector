@@ -17,9 +17,6 @@ jobs:
       (startsWith(github.event.issue.title, '[mailbox-store]') ||
        startsWith(github.event.issue.title, '[mailbox-result]') ||
        startsWith(github.event.issue.title, '[mailbox-clear]'))
-    concurrency:
-      group: mailbox-private-${{ fromJSON(github.event.issue.body).request_id }}
-      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
@@ -140,7 +137,15 @@ jobs:
           print("MAILBOX_PRIVATE_STORE=green")
           PY
 
-          gh issue edit "$ISSUE_NUMBER" --body "{\"request_id\":\"$REQUEST_ID\"}"
+      - name: Redact private mailbox store issue
+        if: always() && startsWith(github.event.issue.title, '[mailbox-store]')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh issue edit "$ISSUE_NUMBER" --body '{"redacted":true}'
 
       - name: Read private mailbox result
         if: steps.request.outputs.mode == 'result'
