@@ -17,7 +17,6 @@ $required = array(
     "[mailbox-store]",
     "[mailbox-result]",
     "[mailbox-clear]",
-    'group: mailbox-private-${{ fromJSON(github.event.issue.body).request_id }}',
     'id-token: write',
     'issues: write',
     'GH_REPO: ${{ github.repository }}',
@@ -29,7 +28,8 @@ $required = array(
     'retention-days: 1',
     'isinstance(ttl, bool)',
     'not isinstance(ttl, int)',
-    'gh issue edit "$ISSUE_NUMBER" --body',
+    "if: always() && startsWith(github.event.issue.title, '[mailbox-store]')",
+    'gh issue edit "$ISSUE_NUMBER" --body \'{"redacted":true}\'',
     'unset token',
     'rm -rf "$RUNNER_TEMP/mailbox-private"',
 );
@@ -60,6 +60,11 @@ foreach ($forbidden as $needle) {
         fwrite(STDERR, "Forbidden private mailbox transport pattern: {$needle}\n");
         exit(1);
     }
+}
+
+if (false !== strpos($workflow, 'concurrency:')) {
+    fwrite(STDERR, "Private mailbox transport must not coalesce request commands with GitHub concurrency.\n");
+    exit(1);
 }
 
 if (substr_count($workflow, 'ACTIONS_ID_TOKEN_REQUEST_URL') !== 3) {
