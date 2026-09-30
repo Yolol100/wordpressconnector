@@ -52,6 +52,11 @@ $expected = array(
     'user.force_password_reset' => 'mutation, privileged, sensitive',
     'woocommerce.order.get' => 'privileged, sensitive',
     'woocommerce.order.list' => 'privileged, sensitive',
+    'woocommerce.customer.get' => 'privileged, sensitive',
+    'woocommerce.shipping_zone.get' => 'privileged',
+    'woocommerce.shipping_zone.list' => 'privileged',
+    'woocommerce.tax_class.list' => 'privileged',
+    'woocommerce.tax_rate.list' => 'privileged',
     'wordpress.ability.read' => 'privileged, sensitive',
 );
 
