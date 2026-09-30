@@ -32,30 +32,39 @@ final class MailboxBridgeStore
     {
         $this->validateRequest($requestId, $request);
         $ttl = max(60, min(self::MAX_TTL, $ttl));
-        $encoded = $this->encodeBounded($request, self::MAX_REQUEST_BYTES, 'Mailbox request');
-        $key = $this->key(self::REQUEST_PREFIX, $requestId);
-        $existing = get_transient($key);
-        $hash = hash('sha256', $encoded);
-        if (is_array($existing)) {
-            $existingHash = isset($existing['sha256']) ? (string) $existing['sha256'] : '';
-            if (! hash_equals($hash, $existingHash)) {
-                throw new RuntimeException('Mailbox request_id already exists with different content.');
+        $token = $this->acquireStateLock($requestId);
+        if ('' === $token) {
+            throw new RuntimeException('Mailbox request state is busy. Retry the request.');
+        }
+
+        try {
+            $encoded = $this->encodeBounded($request, self::MAX_REQUEST_BYTES, 'Mailbox request');
+            $key = $this->key(self::REQUEST_PREFIX, $requestId);
+            $existing = get_transient($key);
+            $hash = hash('sha256', $encoded);
+            if (is_array($existing)) {
+                $existingHash = isset($existing['sha256']) ? (string) $existing['sha256'] : '';
+                if (! hash_equals($hash, $existingHash)) {
+                    throw new RuntimeException('Mailbox request_id already exists with different content.');
+                }
+                return $this->publicRequestState($existing, false);
             }
-            return $this->publicRequestState($existing, false);
+            $now = time();
+            $record = array(
+                'request_id' => $requestId,
+                'request' => $request,
+                'sha256' => $hash,
+                'created_at' => $now,
+                'expires_at' => $now + $ttl,
+            );
+            if (! set_transient($key, $record, $ttl)) {
+                throw new RuntimeException('Mailbox request could not be stored.');
+            }
+            delete_transient($this->key(self::RESULT_PREFIX, $requestId));
+            return $this->publicRequestState($record, true);
+        } finally {
+            $this->releaseStateLock($requestId, $token);
         }
-        $now = time();
-        $record = array(
-            'request_id' => $requestId,
-            'request' => $request,
-            'sha256' => $hash,
-            'created_at' => $now,
-            'expires_at' => $now + $ttl,
-        );
-        if (! set_transient($key, $record, $ttl)) {
-            throw new RuntimeException('Mailbox request could not be stored.');
-        }
-        delete_transient($this->key(self::RESULT_PREFIX, $requestId));
-        return $this->publicRequestState($record, true);
     }
 
     public function getRequest(string $requestId): array
