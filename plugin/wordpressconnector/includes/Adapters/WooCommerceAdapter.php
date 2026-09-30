@@ -658,8 +658,17 @@ final class WooCommerceAdapter
         if ($itemIds) {
             $idPlaceholders = implode(',', array_fill(0, count($itemIds), '%d'));
             $query = $wpdb->prepare(
-                "SELECT order_item_id, meta_key, LEFT(meta_value, 64) AS meta_value FROM {$metaTable} WHERE order_item_id IN ({$idPlaceholders}) AND meta_key IN ('_product_id', '_variation_id', '_qty', '_line_subtotal', '_line_total') LIMIT %d",
-                ...array_merge(array_map('intval', $itemIds), array(250))
+                "SELECT itemmeta.order_item_id, itemmeta.meta_key, LEFT(itemmeta.meta_value, 64) AS meta_value
+                FROM {$metaTable} AS itemmeta
+                INNER JOIN (
+                    SELECT order_item_id, meta_key, MAX(meta_id) AS meta_id
+                    FROM {$metaTable}
+                    WHERE order_item_id IN ({$idPlaceholders})
+                      AND meta_key IN ('_product_id', '_variation_id', '_qty', '_line_subtotal', '_line_total')
+                    GROUP BY order_item_id, meta_key
+                ) AS latest ON latest.meta_id = itemmeta.meta_id
+                ORDER BY itemmeta.order_item_id ASC, itemmeta.meta_key ASC",
+                ...array_map('intval', $itemIds)
             );
             $metaRows = $wpdb->get_results($query);
             if (! is_array($metaRows)) throw new RuntimeException('WooCommerce order item values could not be read.');
