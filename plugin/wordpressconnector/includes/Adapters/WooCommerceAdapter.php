@@ -213,11 +213,10 @@ final class WooCommerceAdapter
         $locationCounts = array();
         if ($rateIds) {
             $placeholders = implode(',', array_fill(0, count($rateIds), '%d'));
-            $countQuery = $wpdb->prepare(
+            $countRows = $wpdb->get_results($wpdb->prepare(
                 "SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM {$locationsTable} WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
                 ...array_map('intval', $rateIds)
-            );
-            $countRows = $wpdb->get_results($countQuery);
+            ));
             if (! is_array($countRows)) throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
             foreach ($countRows as $countRow) {
                 if (is_object($countRow) && isset($countRow->tax_rate_id, $countRow->location_count)) $locationCounts[(int) $countRow->tax_rate_id] = (int) $countRow->location_count;
