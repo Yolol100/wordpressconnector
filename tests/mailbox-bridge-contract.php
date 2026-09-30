@@ -75,17 +75,17 @@ try {
 } catch (RuntimeException $e) {
 }
 $lockId = 'mailbox-lock-123456';
-$store->putRequest($lockId, array('action'=>'list_folders'), 300);
+$lockFirst = $store->putRequest($lockId, array('action'=>'list_folders'), 300);
 $lockKey = 'wpconnector_mailbox_lock_' . hash('sha256', $lockId);
 $GLOBALS['mailbox_bridge_options'][$lockKey] = json_encode(array('token'=>'other','created_at'=>time()));
 try {
-    $store->putResult($lockId, array('ok'=>true));
+    $store->putResult($lockId, array('ok'=>true), (string)$lockFirst['sha256']);
     fwrite(STDERR,"Concurrent mailbox result write was not blocked.\n"); exit(1);
 } catch (RuntimeException $e) {
     if (false === strpos($e->getMessage(),'busy')) { throw $e; }
 }
 unset($GLOBALS['mailbox_bridge_options'][$lockKey]);
-$result = $store->putResult($requestId, array('ok'=>true,'result'=>array('folders'=>array('INBOX'))));
+$result = $store->putResult($requestId, array('ok'=>true,'result'=>array('folders'=>array('INBOX'))), (string)$first['sha256']);
 if (empty($result['created'])) {
     fwrite(STDERR,"Mailbox result was not stored.\n"); exit(1);
 }
@@ -97,6 +97,17 @@ $store->clear($requestId);
 if (!empty($store->getResult($requestId)['ready'])) {
     fwrite(STDERR,"Mailbox bridge cleanup failed.\n"); exit(1);
 }
+$staleId = 'mailbox-stale-123456';
+$staleFirst = $store->putRequest($staleId, array('action'=>'list_folders'), 300);
+$store->clear($staleId);
+$staleSecond = $store->putRequest($staleId, array('action'=>'list_messages','folder'=>'INBOX'), 300);
+try {
+    $store->putResult($staleId, array('ok'=>true), (string)$staleFirst['sha256']);
+    fwrite(STDERR,"Stale mailbox result hash was accepted.\n"); exit(1);
+} catch (RuntimeException $e) {
+    if (false === strpos($e->getMessage(),'changed')) { throw $e; }
+}
+$store->clear($staleId);
 
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/MailboxBridgeAdapter.php');
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/MailboxBridgeController.php');
@@ -106,7 +117,7 @@ foreach (array('mailbox.bridge.request_put','mailbox.bridge.result_get','mailbox
         fwrite(STDERR,"Missing mailbox adapter contract: {$needle}\n"); exit(1);
     }
 }
-foreach (array('/mailbox/requests/','/mailbox/results/','authenticateMailboxExecutor','MAX_RESULT_BYTES = 4194304',"current_user_can('manage_options')",'is_object($shape)') as $needle) {
+foreach (array('/mailbox/requests/','/mailbox/results/','authenticateMailboxExecutor','MAX_RESULT_BYTES = 4194304',"current_user_can('manage_options')",'is_object($shape)',"get_header('x-webactueel-mailbox-request-sha256')") as $needle) {
     if (strpos($controller,$needle)===false) {
         fwrite(STDERR,"Missing mailbox REST contract: {$needle}\n"); exit(1);
     }
