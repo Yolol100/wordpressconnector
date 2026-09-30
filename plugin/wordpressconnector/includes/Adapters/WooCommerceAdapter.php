@@ -575,18 +575,9 @@ final class WooCommerceAdapter
 
     private function orderSnapshot(\WC_Order $order, bool $includePersonalData, bool $includeItems = true): array
     {
-        $items = array();
-        $allItems = $includeItems ? $order->get_items('line_item') : array();
-        foreach (array_slice($allItems, 0, 50) as $item) {
-            $items[] = array(
-                'product_id' => (int) $item->get_product_id(),
-                'variation_id' => (int) $item->get_variation_id(),
-                'name' => (string) $item->get_name(),
-                'quantity' => (int) $item->get_quantity(),
-                'subtotal' => (string) $item->get_subtotal(),
-                'total' => (string) $item->get_total(),
-            );
-        }
+        $itemDetails = $includeItems
+            ? $this->orderItemsSnapshot((int) $order->get_id())
+            : array('items' => array(), 'item_count' => 0, 'items_truncated' => false);
         $snapshot = array(
             'id' => (int) $order->get_id(),
             'status' => (string) $order->get_status(),
@@ -601,9 +592,9 @@ final class WooCommerceAdapter
             'shipping_method' => (string) $order->get_shipping_method(),
         );
         if ($includeItems) {
-            $snapshot['items'] = $items;
-            $snapshot['item_count'] = count($allItems);
-            $snapshot['items_truncated'] = count($allItems) > count($items);
+            $snapshot['items'] = $itemDetails['items'];
+            $snapshot['item_count'] = $itemDetails['item_count'];
+            $snapshot['items_truncated'] = $itemDetails['items_truncated'];
         }
         if ($includePersonalData) {
             $snapshot['customer_id'] = (int) $order->get_customer_id();
@@ -635,6 +626,64 @@ final class WooCommerceAdapter
         return $snapshot;
     }
 
+    private function orderItemsSnapshot(int $orderId): array
+    {
+        global $wpdb;
+        if (! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) {
+            throw new RuntimeException('WooCommerce order item storage is unavailable.');
+        }
+        $itemsTable = $wpdb->prefix . 'woocommerce_order_items';
+        $metaTable = $wpdb->prefix . 'woocommerce_order_itemmeta';
+        $totalValue = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$itemsTable} WHERE order_id = %d AND order_item_type = %s",
+            $orderId,
+            'line_item'
+        ));
+        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce order items could not be counted.');
+        $total = (int) $totalValue;
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT order_item_id, LEFT(order_item_name, 200) AS order_item_name FROM {$itemsTable} WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d",
+            $orderId,
+            'line_item',
+            51
+        ));
+        if (! is_array($rows)) throw new RuntimeException('WooCommerce order items could not be read.');
+        $truncated = $total > 50 || count($rows) > 50;
+        $rows = array_slice($rows, 0, 50);
+        $itemIds = array();
+        foreach ($rows as $row) {
+            if (is_object($row) && isset($row->order_item_id)) $itemIds[] = (int) $row->order_item_id;
+        }
+        $metaByItem = array();
+        if ($itemIds) {
+            $idPlaceholders = implode(',', array_fill(0, count($itemIds), '%d'));
+            $query = $wpdb->prepare(
+                "SELECT order_item_id, meta_key, LEFT(meta_value, 64) AS meta_value FROM {$metaTable} WHERE order_item_id IN ({$idPlaceholders}) AND meta_key IN ('_product_id', '_variation_id', '_qty', '_line_subtotal', '_line_total') LIMIT %d",
+                ...array_merge(array_map('intval', $itemIds), array(250))
+            );
+            $metaRows = $wpdb->get_results($query);
+            if (! is_array($metaRows)) throw new RuntimeException('WooCommerce order item values could not be read.');
+            foreach ($metaRows as $meta) {
+                if (is_object($meta) && isset($meta->order_item_id, $meta->meta_key, $meta->meta_value)) {
+                    $metaByItem[(int) $meta->order_item_id][(string) $meta->meta_key] = (string) $meta->meta_value;
+                }
+            }
+        }
+        $items = array();
+        foreach ($rows as $row) {
+            if (! is_object($row) || ! isset($row->order_item_id)) continue;
+            $meta = $metaByItem[(int) $row->order_item_id] ?? array();
+            $items[] = array(
+                'product_id' => isset($meta['_product_id']) ? (int) $meta['_product_id'] : 0,
+                'variation_id' => isset($meta['_variation_id']) ? (int) $meta['_variation_id'] : 0,
+                'name' => isset($row->order_item_name) ? (string) $row->order_item_name : '',
+                'quantity' => isset($meta['_qty']) ? (int) $meta['_qty'] : 0,
+                'subtotal' => isset($meta['_line_subtotal']) ? (string) $meta['_line_subtotal'] : '0',
+                'total' => isset($meta['_line_total']) ? (string) $meta['_line_total'] : '0',
+            );
+        }
+        return array('items' => $items, 'item_count' => $total, 'items_truncated' => $truncated);
+    }
     private function customerAddressSnapshot(array $address): array
     {
         $safe = array();
