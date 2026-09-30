@@ -27,7 +27,7 @@ Imports and connector mutations do not directly write `_elementor_data`.
 
 ## WooCommerce
 
-Products, variations, global attributes, taxonomies and coupons use WooCommerce CRUD APIs. Orders support bounded read-only summaries through WooCommerce's order query/CRUD APIs; billing and shipping personal data is omitted by default and can only be requested for an individual order. Order/refund/payment/subscription writes and generic customer exports remain outside the generic connector surface.
+Products, variations, global attributes, taxonomies and coupons use WooCommerce CRUD APIs. Orders support bounded read-only summaries through WooCommerce's order query/CRUD APIs; billing and shipping personal data is omitted by default and can only be requested for an individual order. One WooCommerce customer can be read by ID; contact and address data is omitted by default and requires an explicit per-customer request. Tax classes/rates and shipping zone locations are read-only; shipping method settings are excluded because plugins may place credentials or other secrets there. Order/refund/payment/subscription writes and bulk customer exports remain outside the generic connector surface.
 
 ## ACF
 
