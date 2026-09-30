@@ -68,13 +68,8 @@ final class AbilitiesAdapter
             throw new \RuntimeException('A valid namespace/ability name is required.');
         }
         $ability = wp_get_ability($name);
-        if (! is_object($ability) || ! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) {
+        if (! is_object($ability) || ! $this->isReadEligible($ability)) {
             throw new \RuntimeException('The requested REST-exposed WordPress Ability was not found.');
-        }
-        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
-        $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
-        if (true !== ($annotations['readonly'] ?? false) || true === ($annotations['destructive'] ?? false)) {
-            throw new \RuntimeException('Only abilities explicitly annotated as read-only can be used by this action.');
         }
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
         $result = $ability->execute($input);
@@ -111,6 +106,14 @@ final class AbilitiesAdapter
         return is_array($meta) && true === ($meta['show_in_rest'] ?? false);
     }
 
+    private function isReadEligible(object $ability): bool
+    {
+        if (! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
+        return true === ($annotations['readonly'] ?? false) && true !== ($annotations['destructive'] ?? false);
+    }
+
     private function isExposed(object $ability): bool
     {
         $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
@@ -140,7 +143,7 @@ final class AbilitiesAdapter
             'input_schema' => method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null,
             'output_schema' => method_exists($ability, 'get_output_schema') ? $ability->get_output_schema() : null,
             'annotations' => $annotations,
-            'execution_exposed' => false,
+            'execution_exposed' => $this->isReadEligible($ability),
         );
     }
 }
