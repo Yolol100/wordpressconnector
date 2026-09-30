@@ -58,7 +58,7 @@ Approved clients may still use WordPress-native authenticated REST sessions/Appl
 
 ## Main capabilities
 
-The connector covers posts/pages/CPTs, Gutenberg, Elementor, WooCommerce products/variations/attributes/coupons, ACF, Yoast SEO, media, menus, taxonomies, Additional CSS, plugin settings, verified plugin package delivery, bounded plugin/theme filesystem work, system administration actions and canonical connector self-update.
+The connector covers posts/pages/CPTs, Gutenberg, Elementor, WooCommerce products/variations/attributes/coupons, bounded order reads, per-customer reads, shipping-zone geography and tax-class/rate reads, ACF, Yoast SEO, media, menus, taxonomies, Additional CSS, plugin settings, verified plugin package delivery, bounded plugin/theme filesystem work, system administration actions and canonical connector self-update.
 
 `connector.discover` returns the site/runtime overview once a target site is authenticated. Elementor writes use Elementor document APIs rather than direct `_elementor_data` mutation.
 
