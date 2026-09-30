@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $GLOBALS['mailbox_bridge_transients'] = array();
+$GLOBALS['mailbox_bridge_options'] = array();
 
 if (! function_exists('set_transient')) {
     function set_transient($key, $value, $ttl): bool { $GLOBALS['mailbox_bridge_transients'][$key] = $value; return true; }
@@ -17,12 +18,48 @@ if (! function_exists('delete_transient')) {
 if (! function_exists('wp_json_encode')) {
     function wp_json_encode($value, $flags = 0) { return json_encode($value, $flags); }
 }
+if (! function_exists('add_option')) {
+    function add_option($key, $value, $deprecated = '', $autoload = false): bool {
+        if (array_key_exists($key, $GLOBALS['mailbox_bridge_options'])) { return false; }
+        $GLOBALS['mailbox_bridge_options'][$key] = $value; return true;
+    }
+}
+if (! function_exists('get_option')) {
+    function get_option($key, $default = false) { return $GLOBALS['mailbox_bridge_options'][$key] ?? $default; }
+}
+if (! function_exists('delete_option')) {
+    function delete_option($key): bool { unset($GLOBALS['mailbox_bridge_options'][$key]); return true; }
+}
+if (! function_exists('wp_cache_delete')) {
+    function wp_cache_delete($key, $group = ''): bool { return true; }
+}
+final class MailboxBridgeWpdb {
+    public string $options = 'wp_options';
+    public function update($table, $data, $where, $format = null, $whereFormat = null): int {
+        $key=(string)($where['option_name'] ?? '');
+        $expected=(string)($where['option_value'] ?? '');
+        if (!isset($GLOBALS['mailbox_bridge_options'][$key]) || $GLOBALS['mailbox_bridge_options'][$key] !== $expected) { return 0; }
+        $GLOBALS['mailbox_bridge_options'][$key]=(string)$data['option_value']; return 1;
+    }
+    public function delete($table, $where, $whereFormat = null): int {
+        $key=(string)($where['option_name'] ?? '');
+        $expected=(string)($where['option_value'] ?? '');
+        if (!isset($GLOBALS['mailbox_bridge_options'][$key]) || $GLOBALS['mailbox_bridge_options'][$key] !== $expected) { return 0; }
+        unset($GLOBALS['mailbox_bridge_options'][$key]); return 1;
+    }
+}
+$GLOBALS['wpdb'] = new MailboxBridgeWpdb();
 
 require_once $root . '/plugin/wordpressconnector/includes/Runtime/MailboxBridgeStore.php';
 
 use Webactueel\WordPressConnector\Runtime\MailboxBridgeStore;
 
 $store = new MailboxBridgeStore();
+try {
+    $store->validateRequestId('bad id');
+    fwrite(STDERR,"Malformed mailbox request_id passed validation.\n"); exit(1);
+} catch (RuntimeException $e) {
+}
 $requestId = 'mailbox-contract-123456';
 $first = $store->putRequest($requestId, array('action'=>'list_folders'), 300);
 if (empty($first['created']) || !preg_match('/^[a-f0-9]{64}$/', (string)$first['sha256'])) {
@@ -58,12 +95,12 @@ foreach (array('mailbox.bridge.request_put','mailbox.bridge.result_get','mailbox
         fwrite(STDERR,"Missing mailbox adapter contract: {$needle}\n"); exit(1);
     }
 }
-foreach (array('/mailbox/requests/','/mailbox/results/','authenticateMailboxExecutor','MAX_RESULT_BYTES = 4194304',"current_user_can('manage_options')") as $needle) {
+foreach (array('/mailbox/requests/','/mailbox/results/','authenticateMailboxExecutor','MAX_RESULT_BYTES = 4194304',"current_user_can('manage_options')",'is_object($shape)') as $needle) {
     if (strpos($controller,$needle)===false) {
         fwrite(STDERR,"Missing mailbox REST contract: {$needle}\n"); exit(1);
     }
 }
-foreach (array("MAILBOX_REPOSITORY = 'Yolol100/Leadscanner'","MAILBOX_REPOSITORY_ID = '1334704263'",'mailbox-execute.yml@refs/heads/main',"'event_name' => 'issues'","'repository_visibility' => 'public'") as $needle) {
+foreach (array("MAILBOX_REPOSITORY = 'Yolol100/Leadscanner'","MAILBOX_REPOSITORY_ID = '1334704263'",'mailbox-execute.yml@refs/heads/main',"'event_name' => 'issues'","'repository_visibility' => 'public'","'sha' => $this->mailboxMainSha()") as $needle) {
     if (strpos($oidc,$needle)===false) {
         fwrite(STDERR,"Missing mailbox OIDC boundary: {$needle}\n"); exit(1);
     }
