@@ -150,6 +150,7 @@ final class SystemAdapter
             'would_rotate_password' => true,
             'would_revoke_sessions' => true,
             'would_send_password_reset_email' => true,
+            'email_delivery_not_guaranteed' => true,
             'rollback_supported' => false,
             '_current_fingerprint' => Fingerprint::make($before),
         );
@@ -169,7 +170,7 @@ final class SystemAdapter
         $result['password_rotated'] = true;
         $result['sessions_revoked'] = true;
         if (is_wp_error($key)) {
-            $result['reset_email_sent'] = false;
+            $result['reset_email_accepted_by_wp_mail'] = false;
             $result['reset_email_error'] = sanitize_text_field($key->get_error_message());
             return $result;
         }
@@ -184,8 +185,8 @@ final class SystemAdapter
         $message .= __('All active sessions have been signed out. Set a new password using this link:') . "\r\n\r\n";
         $message .= $resetUrl . "\r\n";
 
-        $result['reset_email_sent'] = (bool) wp_mail((string) $user->user_email, $subject, $message);
-        if (! $result['reset_email_sent']) {
+        $result['reset_email_accepted_by_wp_mail'] = (bool) wp_mail((string) $user->user_email, $subject, $message);
+        if (! $result['reset_email_accepted_by_wp_mail']) {
             $result['reset_email_error'] = 'WordPress mail transport rejected the reset notification.';
         }
 
