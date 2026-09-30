@@ -1,8 +1,8 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-backend-read-20260930",
-  "action": "connector.discover",
+  "request_id": "losh-backend-post-list-20260930",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {}
