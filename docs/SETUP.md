@@ -53,9 +53,11 @@ Once a domain is known, the plugin can immediately prove it is installed via:
 
 GitHub cannot securely enumerate arbitrary unknown WordPress domains merely because this plugin is installed. Automatic “list every connected website” discovery requires a separate authenticated site registry/pairing service. The connector intentionally does not publish a global installation list or crawl the web to guess installations.
 
-## 4. Public repository restrictions
+## 4. Repository visibility and public-mode restrictions
 
-This repository is public, so request branches and GitHub Actions history are visible. Public runtime remains restricted to the explicit public-safe contract:
+This repository is currently private. The mailbox private-transport workflow is fail-closed and runs only while GitHub reports the repository itself as private.
+
+If repository visibility is ever changed to public, the mailbox private transport must remain unavailable and the normal public runtime remains restricted to the explicit public-safe contract:
 
 - `post.update` on existing published content;
 - post-targeted `acf.update`;
@@ -64,7 +66,7 @@ This repository is public, so request branches and GitHub Actions history are vi
 - `connector.update.check`;
 - guarded `connector.update.apply` using dry-run-first fingerprint protection.
 
-Sensitive actions stay blocked. Secret-like payload keys and `expected_state_token` are rejected. Full WordPress responses are never committed publicly.
+Sensitive actions stay blocked in public mode. Secret-like payload keys and `expected_state_token` are rejected. Full/private WordPress or mailbox responses must never be committed to a public branch, log, issue, artifact or receipt.
 
 Private/custom plugin ZIPs must not be placed on a public request branch. Request assets in a public repository are themselves public.
 
