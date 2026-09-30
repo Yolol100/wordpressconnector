@@ -44,6 +44,7 @@ final class MailboxBridgeAdapter
         $request = isset($payload['request']) && is_array($payload['request']) ? $payload['request'] : array();
         $ttl = isset($payload['ttl']) ? (int) $payload['ttl'] : 3600;
         $this->assertMailboxRequest($request);
+        $this->store->validateRequest($requestId, $request);
         if (! empty($context['dry_run'])) {
             return array('request_id'=>$requestId,'would_store'=>true,'ttl'=>max(60,min(86400,$ttl)));
         }
@@ -61,6 +62,7 @@ final class MailboxBridgeAdapter
     {
         $this->assertKeys($payload, array('request_id'));
         $requestId = isset($payload['request_id']) && is_string($payload['request_id']) ? $payload['request_id'] : '';
+        $this->store->validateRequestId($requestId);
         if (! empty($context['dry_run'])) { return array('request_id'=>$requestId,'would_clear'=>true); }
         $this->store->clear($requestId);
         return array('request_id'=>$requestId,'cleared'=>true);
