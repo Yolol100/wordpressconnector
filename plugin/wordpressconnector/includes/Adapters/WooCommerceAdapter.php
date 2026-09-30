@@ -16,6 +16,11 @@ final class WooCommerceAdapter
     {
         $registry->register('woocommerce.order.list', array($this, 'orderList'), array('privileged' => true, 'sensitive' => true, 'description' => 'List bounded WooCommerce order summaries without billing or shipping contact details.'));
         $registry->register('woocommerce.order.get', array($this, 'orderGet'), array('privileged' => true, 'sensitive' => true, 'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'));
+        $registry->register('woocommerce.customer.get', array($this, 'customerGet'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'));
+        $registry->register('woocommerce.shipping_zone.list', array($this, 'shippingZoneList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.'));
+        $registry->register('woocommerce.shipping_zone.get', array($this, 'shippingZoneGet'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'));
+        $registry->register('woocommerce.tax_class.list', array($this, 'taxClassList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce tax classes.'));
+        $registry->register('woocommerce.tax_rate.list', array($this, 'taxRateList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List bounded WooCommerce tax rates for a registered tax class.'));
         $registry->register('woocommerce.product.list', array($this, 'productList'), array('description' => 'List WooCommerce products through WooCommerce CRUD.'));
         $registry->register('woocommerce.product.get', array($this, 'productGet'), array('description' => 'Read a WooCommerce product.'));
         $registry->register('woocommerce.product.create', array($this, 'productCreate'), array('mutation' => true, 'description' => 'Create a WooCommerce product.'));
@@ -80,6 +85,85 @@ final class WooCommerceAdapter
         $includePersonalData = Input::bool($payload, 'include_personal_data', false);
         $snapshot = $this->orderSnapshot($order, $includePersonalData);
         return array('order' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
+    }
+
+    public function customerGet(array $payload): array
+    {
+        $this->assertWoo();
+        if (! class_exists('WC_Customer')) throw new RuntimeException('WooCommerce customer API is unavailable.');
+        $id = isset($payload['id']) ? (int) $payload['id'] : 0;
+        $user = $id > 0 ? get_user_by('id', $id) : false;
+        if (! $user || ! isset($user->roles) || ! in_array('customer', (array) $user->roles, true)) throw new RuntimeException('A WooCommerce customer account id is required.');
+        $customer = new \\WC_Customer($id);
+        if (! $customer->get_id()) throw new RuntimeException('WooCommerce customer not found.');
+        $snapshot = array(
+            'id' => (int) $customer->get_id(),
+            'is_paying_customer' => (bool) $customer->get_is_paying_customer(),
+            'order_count' => (int) $customer->get_order_count(),
+            'total_spent' => (string) $customer->get_total_spent(),
+        );
+        if (Input::bool($payload, 'include_personal_data', false)) {
+            $snapshot['email'] = (string) $customer->get_email();
+            $snapshot['first_name'] = (string) $customer->get_first_name();
+            $snapshot['last_name'] = (string) $customer->get_last_name();
+            $snapshot['billing'] = $this->customerAddressSnapshot($customer->get_billing());
+            $snapshot['shipping'] = $this->customerAddressSnapshot($customer->get_shipping());
+        }
+        return array('customer' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
+    }
+
+    public function shippingZoneList(): array
+    {
+        $this->assertWoo();
+        if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_shipping_zones')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
+        $zones = array();
+        foreach (\\WC_Shipping_Zones::get_shipping_zones() as $zone) {
+            if ($zone instanceof \\WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot($zone);
+        }
+        return array('zones' => $zones);
+    }
+
+    public function shippingZoneGet(array $payload): array
+    {
+        $this->assertWoo();
+        $id = isset($payload['id']) ? (int) $payload['id'] : -1;
+        if ($id < 0 || ! class_exists('WC_Shipping_Zones')) throw new RuntimeException('A valid shipping zone id is required.');
+        $zone = \\WC_Shipping_Zones::get_zone($id);
+        if (! $zone instanceof \\WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
+        $snapshot = $this->shippingZoneSnapshot($zone);
+        return array('zone' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
+    }
+
+    public function taxClassList(): array
+    {
+        $this->assertWoo();
+        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_rate_classes')) throw new RuntimeException('WooCommerce tax class API is unavailable.');
+        $classes = array();
+        foreach (\\WC_Tax::get_tax_rate_classes() as $class) {
+            if (is_object($class)) {
+                $classes[] = array('id' => isset($class->tax_rate_class_id) ? (int) $class->tax_rate_class_id : 0, 'name' => isset($class->name) ? (string) $class->name : '', 'slug' => isset($class->slug) ? (string) $class->slug : '');
+            }
+        }
+        return array('classes' => $classes, 'standard_class' => '');
+    }
+
+    public function taxRateList(array $payload): array
+    {
+        $this->assertWoo();
+        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_rates_for_tax_class')) throw new RuntimeException('WooCommerce tax rate API is unavailable.');
+        $class = isset($payload['tax_class']) ? sanitize_title((string) $payload['tax_class']) : '';
+        $validClasses = array('' => true);
+        foreach (\\WC_Tax::get_tax_class_slugs() as $slug) $validClasses[(string) $slug] = true;
+        if (! isset($validClasses[$class])) throw new RuntimeException('Unknown WooCommerce tax class.');
+        $limit = isset($payload['per_page']) ? max(1, min(100, (int) $payload['per_page'])) : 50;
+        $page = isset($payload['page']) ? max(1, (int) $payload['page']) : 1;
+        $allRates = \\WC_Tax::get_rates_for_tax_class($class);
+        $rates = is_array($allRates) ? array_values($allRates) : array();
+        $items = array();
+        foreach (array_slice($rates, ($page - 1) * $limit, $limit) as $rate) {
+            $items[] = $this->taxRateSnapshot($rate);
+        }
+        return array('tax_class' => $class, 'rates' => $items, 'page' => $page, 'per_page' => $limit, 'total' => count($rates), 'pages' => (int) ceil(count($rates) / $limit));
     }
 
     public function productList(array $payload): array
@@ -459,6 +543,46 @@ final class WooCommerceAdapter
                 'postcode' => (string) $order->get_shipping_postcode(),
                 'country' => (string) $order->get_shipping_country(),
             );
+        }
+        return $snapshot;
+    }
+
+    private function customerAddressSnapshot(array $address): array
+    {
+        $safe = array();
+        foreach (array('first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'email', 'phone') as $key) {
+            if (isset($address[$key]) && is_scalar($address[$key])) $safe[$key] = (string) $address[$key];
+        }
+        return $safe;
+    }
+
+    private function shippingZoneSnapshot(\WC_Shipping_Zone $zone): array
+    {
+        $locations = array();
+        foreach ($zone->get_zone_locations() as $location) {
+            if (is_object($location) && isset($location->code, $location->type)) {
+                $locations[] = array('code' => (string) $location->code, 'type' => (string) $location->type);
+            }
+        }
+        return array(
+            'id' => (int) $zone->get_id(),
+            'name' => (string) $zone->get_zone_name(),
+            'order' => (int) $zone->get_zone_order(),
+            'locations' => $locations,
+        );
+    }
+
+    private function taxRateSnapshot($rate): array
+    {
+        $values = is_object($rate) ? get_object_vars($rate) : (is_array($rate) ? $rate : array());
+        $fields = array(
+            'tax_rate_id' => 'id', 'tax_rate_country' => 'country', 'tax_rate_state' => 'state',
+            'tax_rate' => 'rate', 'tax_rate_name' => 'name', 'tax_rate_priority' => 'priority',
+            'tax_rate_compound' => 'compound', 'tax_rate_shipping' => 'shipping', 'tax_rate_order' => 'order',
+        );
+        $snapshot = array();
+        foreach ($fields as $source => $target) {
+            if (array_key_exists($source, $values) && is_scalar($values[$source])) $snapshot[$target] = $values[$source];
         }
         return $snapshot;
     }
