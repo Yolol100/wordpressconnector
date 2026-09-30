@@ -21,6 +21,7 @@ final class GitHubOidc
     private const CLOCK_SKEW = 60;
     private const MAX_TOKEN_AGE = 600;
     private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
+    private const MAILBOX_MAIN_SHA_TRANSIENT = 'wpconnector_mailbox_main_sha_v1';
 
     public function authenticate(\WP_REST_Request $request): int
     {
@@ -47,6 +48,7 @@ final class GitHubOidc
             'workflow_ref' => self::MAILBOX_WORKFLOW_REF,
             'event_name' => 'issues',
             'runner_environment' => 'github-hosted',
+            'sha' => $this->mailboxMainSha(),
         ), false);
     }
 
@@ -159,6 +161,43 @@ final class GitHubOidc
             throw new RuntimeException('No WordPress administrator is available for GitHub OIDC execution.');
         }
         return $userId;
+    }
+
+    private function mailboxMainSha(): string
+    {
+        $cached = get_transient(self::MAILBOX_MAIN_SHA_TRANSIENT);
+        if (is_string($cached) && preg_match('/^[a-f0-9]{40}\z/', $cached)) {
+            return $cached;
+        }
+
+        $response = wp_safe_remote_get('https://api.github.com/repos/Yolol100/Leadscanner/commits/main', array(
+            'timeout' => 5,
+            'redirection' => 0,
+            'sslverify' => true,
+            'headers' => array(
+                'Accept' => 'application/vnd.github+json',
+                'User-Agent' => 'Webactueel-WordPress-Connector',
+                'X-GitHub-Api-Version' => '2026-03-10',
+            ),
+        ));
+        if (is_wp_error($response) || 200 !== (int) wp_remote_retrieve_response_code($response)) {
+            throw new RuntimeException('Mailbox executor trusted revision could not be fetched.');
+        }
+        $body = (string) wp_remote_retrieve_body($response);
+        if ('' === $body || strlen($body) > 262144) {
+            throw new RuntimeException('Mailbox executor trusted revision response is invalid.');
+        }
+        try {
+            $decoded = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $error) {
+            throw new RuntimeException('Mailbox executor trusted revision response is invalid JSON.');
+        }
+        $sha = isset($decoded['sha']) && is_string($decoded['sha']) ? strtolower($decoded['sha']) : '';
+        if (! preg_match('/^[a-f0-9]{40}\z/', $sha)) {
+            throw new RuntimeException('Mailbox executor trusted revision is invalid.');
+        }
+        set_transient(self::MAILBOX_MAIN_SHA_TRANSIENT, $sha, 60);
+        return $sha;
     }
 
     private function publicKey(string $kid)
