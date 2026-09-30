@@ -74,6 +74,17 @@ try {
     fwrite(STDERR,"Conflicting mailbox request_id was accepted.\n"); exit(1);
 } catch (RuntimeException $e) {
 }
+$lockId = 'mailbox-lock-123456';
+$store->putRequest($lockId, array('action'=>'list_folders'), 300);
+$lockKey = 'wpconnector_mailbox_lock_' . hash('sha256', $lockId);
+$GLOBALS['mailbox_bridge_options'][$lockKey] = json_encode(array('token'=>'other','created_at'=>time()));
+try {
+    $store->putResult($lockId, array('ok'=>true));
+    fwrite(STDERR,"Concurrent mailbox result write was not blocked.\n"); exit(1);
+} catch (RuntimeException $e) {
+    if (false === strpos($e->getMessage(),'busy')) { throw $e; }
+}
+unset($GLOBALS['mailbox_bridge_options'][$lockKey]);
 $result = $store->putResult($requestId, array('ok'=>true,'result'=>array('folders'=>array('INBOX'))));
 if (empty($result['created'])) {
     fwrite(STDERR,"Mailbox result was not stored.\n"); exit(1);
