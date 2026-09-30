@@ -54,6 +54,9 @@ class WooOrderWpdbStub
     public function get_results(string $query): array
     {
         if (false !== strpos($query, 'woocommerce_order_itemmeta')) {
+            if (false === strpos($query, 'MAX(meta_id) AS meta_id') || false === strpos($query, 'GROUP BY order_item_id, meta_key') || false !== strpos($query, 'LIMIT 250')) {
+                throw new RuntimeException('Order item metadata must be bounded per item and key instead of by a global row limit.');
+            }
             $rows = array();
             for ($id=1; $id<=50; $id++) foreach (array('_product_id'=>'100','_variation_id'=>'0','_qty'=>'1','_line_subtotal'=>'1.00','_line_total'=>'1.00') as $key=>$value) $rows[]=(object) array('order_item_id'=>$id,'meta_key'=>$key,'meta_value'=>$value);
             return $rows;
