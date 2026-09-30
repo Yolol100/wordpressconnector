@@ -1,11 +1,12 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-post8697-evidence-20260930",
-  "action": "post.get",
+  "request_id": "losh-ir-contain-post8697-dryrun-20260930",
+  "action": "post.update",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 8697
+    "id": 8697,
+    "status": "draft"
   }
 }
