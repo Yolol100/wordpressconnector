@@ -1,9 +1,14 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-backend-post-list-20260930",
+  "request_id": "losh-backend-post-list-2-20260930",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 1,
+    "page": 1
+  }
 }
