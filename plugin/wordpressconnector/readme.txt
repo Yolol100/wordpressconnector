@@ -14,7 +14,7 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-Version 1.15.8 adds bounded WooCommerce customer, shipping-zone and tax catalog reads, with WooCommerce capability checks and sensitive-data opt-ins. Tax rates use paginated fixed queries with bounded city/state/postcode restrictions. Order summaries omit customer identifiers and line-item details by default, support bounded item detail for individual orders and accept both prefixed and unprefixed order statuses. REST-exposed read-only WordPress Ability results redact credential-shaped fields.
+Version 1.15.8 adds bounded WooCommerce customer, shipping-zone and tax catalog reads, with WooCommerce capability checks and sensitive-data opt-ins. Shipping zones and tax rates use paginated fixed queries and return bounded geographic restrictions with counts and truncation evidence. Order summaries omit customer identifiers and line-item details by default, support bounded item detail for individual orders and accept both prefixed and unprefixed order statuses. REST-exposed read-only WordPress Ability results redact credential-shaped fields.
 
 Version 1.15.7 adds a guarded emergency user-password reset action for incident response. It rotates the password server-side, revokes all sessions, creates a fresh reset key, sends a dedicated security reset link, never returns secret material, and remains blocked from public-repository runtime.
 
@@ -76,6 +76,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 
 = 1.15.8 =
 * Add bounded WooCommerce customer, shipping-zone and tax-class/tax-rate reads with explicit management capability requirements and bounded tax-rate location details.
+* Paginate shipping zones and cap each zone's geographic locations; include the default zone at the end of the list and reject noncanonical zone IDs.
 * Include the default shipping zone in zone discovery and support subscriber accounts plus customer roles with WooCommerce order history.
 * Keep order list summaries free of customer identifiers and line-item details; cap single-order line items at 50 and accept either WooCommerce order-status form.
 * Redact credential-shaped values from REST-exposed read-only WordPress Ability results.
