@@ -9,22 +9,25 @@ permissions:
   id-token: write
   issues: write
 
-concurrency:
-  group: mailbox-private-${{ github.event.issue.number }}
-  cancel-in-progress: false
-
 jobs:
   bridge:
     if: >-
+      github.event.repository.private == true &&
       github.event.issue.user.login == github.repository_owner &&
       (startsWith(github.event.issue.title, '[mailbox-store]') ||
        startsWith(github.event.issue.title, '[mailbox-result]') ||
        startsWith(github.event.issue.title, '[mailbox-clear]'))
+    concurrency:
+      group: mailbox-private-${{ fromJSON(github.event.issue.body).request_id }}
+      cancel-in-progress: false
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    env:
+      SITE_URL: https://andrewbaeten.nl
+      GH_REPO: ${{ github.repository }}
 
     steps:
-      - name: Resolve private mailbox command
+      - name: Resolve private mailbox transport command
         id: request
         env:
           EVENT_PATH: ${{ github.event_path }}
@@ -43,6 +46,10 @@ jobs:
           from pathlib import Path
 
           event = json.loads(Path(os.environ["EVENT_PATH"]).read_text(encoding="utf-8"))
+          repository = event.get("repository") or {}
+          if repository.get("private") is not True:
+              raise SystemExit("mailbox private transport requires a private repository")
+
           issue = event.get("issue") or {}
           title = str(issue.get("title") or "")
           body = str(issue.get("body") or "")
@@ -54,22 +61,22 @@ jobs:
           elif title.startswith("[mailbox-clear]"):
               mode = "clear"
           else:
-              raise SystemExit("unsupported mailbox command")
+              raise SystemExit("unsupported mailbox transport command")
 
           try:
               payload = json.loads(body)
-          except json.JSONDecodeError:
-              raise SystemExit("issue body must be valid JSON")
+          except json.JSONDecodeError as exc:
+              raise SystemExit(f"issue body must be valid JSON: {exc}")
           if not isinstance(payload, dict):
               raise SystemExit("issue body must be a JSON object")
 
-          request_id = str(payload.get("request_id") or "")
-          if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{7,99}", request_id):
+          request_id = payload.get("request_id")
+          if not isinstance(request_id, str) or not re.fullmatch(
+              r"[A-Za-z0-9][A-Za-z0-9._-]{7,99}", request_id
+          ):
               raise SystemExit("invalid request_id")
 
           root = Path(os.environ["RUNNER_TEMP"]) / "mailbox-private"
-          (root / "request-id.txt").write_text(request_id + "\n", encoding="ascii")
-          (root / "request-id.txt").chmod(0o600)
 
           if mode == "store":
               if set(payload) - {"request_id", "request", "ttl"}:
@@ -77,24 +84,16 @@ jobs:
               request = payload.get("request")
               if not isinstance(request, dict):
                   raise SystemExit("request must be a JSON object")
-              ttl = int(payload.get("ttl") or 3600)
+
+              if "ttl" in payload:
+                  ttl = payload["ttl"]
+                  if isinstance(ttl, bool) or not isinstance(ttl, int):
+                      raise SystemExit("ttl must be a JSON integer")
+              else:
+                  ttl = 3600
               if not 60 <= ttl <= 86400:
                   raise SystemExit("ttl must be 60-86400")
-              action = str(request.get("action") or "")
-              allowed = {
-                  "list_folders","list_messages","search","read","read_attachment",
-                  "read_attachment_chunk","read_body_chunk","thread","create_folder",
-                  "rename_folder","delete_folder","mark_read","mark_unread","flag",
-                  "unflag","copy","move","archive","trash","junk","delete",
-                  "create_draft","replace_draft","send","reply","reply_all","forward",
-                  "send_draft",
-              }
-              if action not in allowed:
-                  raise SystemExit("mailbox action is not allowed")
-              if action in {"send","reply","reply_all","forward","send_draft"} and request.get("confirm_send") is not True:
-                  raise SystemExit("send-like action requires confirm_send=true")
-              if action in {"delete","delete_folder","replace_draft"} and request.get("confirm") is not True:
-                  raise SystemExit("destructive action requires confirm=true")
+
               store = {"request": request, "ttl": ttl}
               encoded = json.dumps(store, ensure_ascii=False, separators=(",", ":"))
               if len(encoded.encode("utf-8")) > 300000:
@@ -108,41 +107,31 @@ jobs:
           with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as out:
               out.write(f"mode={mode}\n")
               out.write(f"request_id={request_id}\n")
-          print(f"MAILBOX_PRIVATE_REQUEST=green mode={mode}")
+          print(f"MAILBOX_PRIVATE_TRANSPORT=green mode={mode}")
           PY
 
-      - name: Obtain short-lived mailbox OIDC token
-        id: oidc
+      - name: Store private mailbox request
+        if: steps.request.outputs.mode == 'store'
         env:
-          SITE_URL: https://andrewbaeten.nl
+          REQUEST_ID: ${{ steps.request.outputs.request_id }}
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
         shell: bash
         run: |
           set -euo pipefail
+          root="$RUNNER_TEMP/mailbox-private"
           base="${SITE_URL%/}/wp-json/webactueel-mailbox-bridge/v1"
           audience=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$base")
           token_json=$(curl --silent --show-error             --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")
           token=$(TOKEN_JSON="$token_json" python3 -c 'import json,os; print(json.loads(os.environ["TOKEN_JSON"])["value"])')
           unset token_json
           echo "::add-mask::$token"
-          token_file="$RUNNER_TEMP/mailbox-private/oidc-token.txt"
-          printf '%s' "$token" > "$token_file"
-          chmod 600 "$token_file"
-          echo "base=$base" >> "$GITHUB_OUTPUT"
 
-      - name: Store private mailbox request
-        if: steps.request.outputs.mode == 'store'
-        env:
-          BASE: ${{ steps.oidc.outputs.base }}
-          REQUEST_ID: ${{ steps.request.outputs.request_id }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          root="$RUNNER_TEMP/mailbox-private"
-          token=$(cat "$root/oidc-token.txt")
           response="$root/store-response.json"
-          code=$(curl --silent --show-error --output "$response" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --header 'Accept: application/json'             --header 'Content-Type: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             --data-binary "@$root/store.json"             "$BASE/requests/$REQUEST_ID")
+          code=$(curl --silent --show-error --output "$response" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --header 'Accept: application/json'             --header 'Content-Type: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             --data-binary "@$root/store.json"             "$base/requests/$REQUEST_ID")
           unset token
           [[ "$code" == 201 ]]
+
           python3 - "$response" <<'PY'
           import json,sys
           payload=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -151,20 +140,28 @@ jobs:
           print("MAILBOX_PRIVATE_STORE=green")
           PY
 
+          gh issue edit "$ISSUE_NUMBER" --body "{\"request_id\":\"$REQUEST_ID\"}"
+
       - name: Read private mailbox result
         if: steps.request.outputs.mode == 'result'
         env:
-          BASE: ${{ steps.oidc.outputs.base }}
           REQUEST_ID: ${{ steps.request.outputs.request_id }}
         shell: bash
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/mailbox-private"
-          token=$(cat "$root/oidc-token.txt")
+          base="${SITE_URL%/}/wp-json/webactueel-mailbox-bridge/v1"
+          audience=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$base")
+          token_json=$(curl --silent --show-error             --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")
+          token=$(TOKEN_JSON="$token_json" python3 -c 'import json,os; print(json.loads(os.environ["TOKEN_JSON"])["value"])')
+          unset token_json
+          echo "::add-mask::$token"
+
           result="$root/result.json"
-          code=$(curl --silent --show-error --output "$result" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --header 'Accept: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             "$BASE/results/$REQUEST_ID")
+          code=$(curl --silent --show-error --output "$result" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --header 'Accept: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             "$base/results/$REQUEST_ID")
           unset token
           [[ "$code" == 200 ]]
+
           python3 - "$result" <<'PY'
           import json,sys
           payload=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -186,17 +183,23 @@ jobs:
       - name: Clear private mailbox state
         if: steps.request.outputs.mode == 'clear'
         env:
-          BASE: ${{ steps.oidc.outputs.base }}
           REQUEST_ID: ${{ steps.request.outputs.request_id }}
         shell: bash
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/mailbox-private"
-          token=$(cat "$root/oidc-token.txt")
+          base="${SITE_URL%/}/wp-json/webactueel-mailbox-bridge/v1"
+          audience=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$base")
+          token_json=$(curl --silent --show-error             --header "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${audience}")
+          token=$(TOKEN_JSON="$token_json" python3 -c 'import json,os; print(json.loads(os.environ["TOKEN_JSON"])["value"])')
+          unset token_json
+          echo "::add-mask::$token"
+
           response="$root/clear-response.json"
-          code=$(curl --silent --show-error --output "$response" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --request DELETE             --header 'Accept: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             "$BASE/state/$REQUEST_ID")
+          code=$(curl --silent --show-error --output "$response" --write-out '%{http_code}'             --connect-timeout 10 --max-time 60             --request DELETE             --header 'Accept: application/json'             --header "X-Webactueel-GitHub-OIDC: ${token}"             "$base/state/$REQUEST_ID")
           unset token
           [[ "$code" == 200 ]]
+
           python3 - "$response" <<'PY'
           import json,sys
           payload=json.load(open(sys.argv[1],encoding="utf-8"))
@@ -217,7 +220,7 @@ jobs:
           if [[ "$MODE" == result ]]; then
             message="Mailbox result is available as a private one-day workflow artifact."
           else
-            message="Mailbox ${MODE} command completed."
+            message="Mailbox transport command completed."
           fi
           gh issue comment "$ISSUE_NUMBER" --body "$message"
           gh issue close "$ISSUE_NUMBER" --reason completed
