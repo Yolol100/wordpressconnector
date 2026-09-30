@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.7
+Stable tag: 1.15.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.15.8 adds bounded WooCommerce customer, shipping-zone and tax catalog reads, with WooCommerce capability checks and sensitive-data opt-ins. Shipping zones and tax rates use paginated fixed queries and return bounded geographic restrictions with counts and truncation evidence. Order summaries omit customer identifiers and line-item details by default, validate sensitive identifiers strictly, and load at most 50 individual-order line items through the active WooCommerce data-store boundary with fail-closed fallback when bounded item-ID access is unavailable. REST-exposed read-only WordPress Ability results redact credential-shaped fields and are capped at 10,000 values, 20 levels and 256 KiB; Ability discovery is paginated to 10 descriptors per page, omits over-budget schemas and caps each page at 256 KiB.
 
 Version 1.15.7 adds a guarded emergency user-password reset action for incident response. It rotates the password server-side, revokes all sessions, creates a fresh reset key, sends a dedicated security reset link, never returns secret material, and remains blocked from public-repository runtime.
 
@@ -71,6 +73,14 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.8 =
+* Add bounded WooCommerce customer, shipping-zone and tax-class/tax-rate reads with explicit management capability requirements and bounded tax-rate location details.
+* Paginate shipping zones and cap each zone's geographic locations; include the default zone at the end of the list and reject noncanonical zone IDs.
+* Include the default shipping zone in zone discovery and support subscriber accounts plus customer roles with WooCommerce order history.
+* Keep order list summaries free of customer identifiers and line-item details; cap single-order line items at 50 and accept either WooCommerce order-status form.
+* Redact credential-shaped values from REST-exposed read-only WordPress Ability results.
+* Add isolated WooCommerce read contracts and keep the plugin header and stable tag aligned at 1.15.8.
 
 = 1.15.7 =
 * Add `user.force_password_reset` as a sensitive, privileged, confirmed mutation for incident response.
