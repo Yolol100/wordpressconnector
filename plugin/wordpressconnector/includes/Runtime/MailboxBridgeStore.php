@@ -10,6 +10,8 @@ final class MailboxBridgeStore
 {
     private const REQUEST_PREFIX = 'wpconnector_mailbox_request_';
     private const RESULT_PREFIX = 'wpconnector_mailbox_result_';
+    private const LOCK_PREFIX = 'wpconnector_mailbox_lock_';
+    private const LOCK_TTL = 60;
     private const DEFAULT_TTL = 3600;
     private const MAX_TTL = 86400;
     private const MAX_REQUEST_BYTES = 262144;
@@ -68,31 +70,42 @@ final class MailboxBridgeStore
 
     public function putResult(string $requestId, array $result): array
     {
-        $request = $this->getRequest($requestId);
+        $this->assertRequestId($requestId);
         $encoded = $this->encodeBounded($result, self::MAX_RESULT_BYTES, 'Mailbox result');
-        $existing = get_transient($this->key(self::RESULT_PREFIX, $requestId));
-        $hash = hash('sha256', $encoded);
-        if (is_array($existing)) {
-            $existingHash = isset($existing['sha256']) ? (string) $existing['sha256'] : '';
-            if (! hash_equals($hash, $existingHash)) {
-                throw new RuntimeException('Mailbox result already exists with different content.');
+        $token = $this->acquireStateLock($requestId);
+        if ('' === $token) {
+            throw new RuntimeException('Mailbox request state is busy. Retry the request.');
+        }
+
+        try {
+            $request = $this->getRequest($requestId);
+            $key = $this->key(self::RESULT_PREFIX, $requestId);
+            $existing = get_transient($key);
+            $hash = hash('sha256', $encoded);
+            if (is_array($existing)) {
+                $existingHash = isset($existing['sha256']) ? (string) $existing['sha256'] : '';
+                if (! hash_equals($hash, $existingHash)) {
+                    throw new RuntimeException('Mailbox result already exists with different content.');
+                }
+                return $this->publicResultState($existing, false);
             }
-            return $this->publicResultState($existing, false);
+            $now = time();
+            $expiresAt = max($now + 60, (int) ($request['expires_at'] ?? ($now + self::DEFAULT_TTL)));
+            $ttl = min(self::MAX_TTL, max(60, $expiresAt - $now));
+            $record = array(
+                'request_id' => $requestId,
+                'result' => $result,
+                'sha256' => $hash,
+                'created_at' => $now,
+                'expires_at' => $now + $ttl,
+            );
+            if (! set_transient($key, $record, $ttl)) {
+                throw new RuntimeException('Mailbox result could not be stored.');
+            }
+            return $this->publicResultState($record, true);
+        } finally {
+            $this->releaseStateLock($requestId, $token);
         }
-        $now = time();
-        $expiresAt = max($now + 60, (int) ($request['expires_at'] ?? ($now + self::DEFAULT_TTL)));
-        $ttl = min(self::MAX_TTL, max(60, $expiresAt - $now));
-        $record = array(
-            'request_id' => $requestId,
-            'result' => $result,
-            'sha256' => $hash,
-            'created_at' => $now,
-            'expires_at' => $now + $ttl,
-        );
-        if (! set_transient($this->key(self::RESULT_PREFIX, $requestId), $record, $ttl)) {
-            throw new RuntimeException('Mailbox result could not be stored.');
-        }
-        return $this->publicResultState($record, true);
     }
 
     public function getResult(string $requestId): array
@@ -115,12 +128,20 @@ final class MailboxBridgeStore
     public function clear(string $requestId): void
     {
         $this->assertRequestId($requestId);
-        $requestKey = $this->key(self::REQUEST_PREFIX, $requestId);
-        $resultKey = $this->key(self::RESULT_PREFIX, $requestId);
-        delete_transient($requestKey);
-        delete_transient($resultKey);
-        if (false !== get_transient($requestKey) || false !== get_transient($resultKey)) {
-            throw new RuntimeException('Mailbox bridge cleanup could not be verified.');
+        $token = $this->acquireStateLock($requestId);
+        if ('' === $token) {
+            throw new RuntimeException('Mailbox request state is busy. Retry the request.');
+        }
+        try {
+            $requestKey = $this->key(self::REQUEST_PREFIX, $requestId);
+            $resultKey = $this->key(self::RESULT_PREFIX, $requestId);
+            delete_transient($requestKey);
+            delete_transient($resultKey);
+            if (false !== get_transient($requestKey) || false !== get_transient($resultKey)) {
+                throw new RuntimeException('Mailbox bridge cleanup could not be verified.');
+            }
+        } finally {
+            $this->releaseStateLock($requestId, $token);
         }
     }
 
@@ -160,6 +181,59 @@ final class MailboxBridgeStore
     {
         if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
             throw new RuntimeException('Mailbox request_id is invalid.');
+        }
+    }
+
+    private function acquireStateLock(string $requestId): string
+    {
+        $key = self::LOCK_PREFIX . hash('sha256', $requestId);
+        $token = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
+        $value = wp_json_encode(array('token'=>$token,'created_at'=>time()));
+        if (! is_string($value)) {
+            return '';
+        }
+        if (add_option($key, $value, '', false)) {
+            return $token;
+        }
+
+        $existing = get_option($key, '');
+        $data = is_string($existing) ? json_decode($existing, true) : null;
+        if (! is_string($existing) || ! is_array($data) || time() - (int) ($data['created_at'] ?? time()) <= self::LOCK_TTL) {
+            return '';
+        }
+
+        global $wpdb;
+        $updated = $wpdb->update(
+            $wpdb->options,
+            array('option_value'=>$value),
+            array('option_name'=>$key,'option_value'=>$existing),
+            array('%s'),
+            array('%s','%s')
+        );
+        if (1 !== $updated) {
+            return '';
+        }
+        wp_cache_delete($key, 'options');
+        return $token;
+    }
+
+    private function releaseStateLock(string $requestId, string $token): void
+    {
+        $key = self::LOCK_PREFIX . hash('sha256', $requestId);
+        $existing = get_option($key, '');
+        $data = is_string($existing) ? json_decode($existing, true) : null;
+        if (! is_string($existing) || ! is_array($data) || ! hash_equals((string) ($data['token'] ?? ''), $token)) {
+            return;
+        }
+
+        global $wpdb;
+        $deleted = $wpdb->delete(
+            $wpdb->options,
+            array('option_name'=>$key,'option_value'=>$existing),
+            array('%s','%s')
+        );
+        if (1 === $deleted) {
+            wp_cache_delete($key, 'options');
         }
     }
 
