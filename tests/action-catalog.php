@@ -50,6 +50,8 @@ $expected = array(
     'user.list' => 'privileged, sensitive',
     'user.update' => 'mutation, privileged, sensitive',
     'user.force_password_reset' => 'mutation, privileged, sensitive',
+    'woocommerce.order.get' => 'privileged, sensitive',
+    'woocommerce.order.list' => 'privileged, sensitive',
 );
 
 $rows = array();
