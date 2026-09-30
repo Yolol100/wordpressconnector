@@ -74,6 +74,12 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 
 == Changelog ==
 
+= 1.15.8 =
+* Add bounded WooCommerce customer, shipping-zone and tax-class/tax-rate reads with explicit management capability requirements.
+* Include the default shipping zone in zone discovery and support subscriber accounts plus customer roles with WooCommerce order history.
+* Keep order list summaries free of customer identifiers and line-item details; cap single-order line items at 50 and accept either WooCommerce order-status form.
+* Add isolated WooCommerce read contracts and keep the plugin header and stable tag aligned at 1.15.8.
+
 = 1.15.7 =
 * Add `user.force_password_reset` as a sensitive, privileged, confirmed mutation for incident response.
 * Rotate the password server-side, revoke all sessions, generate a fresh reset key and send a dedicated security reset link without exposing password or reset-key material.
