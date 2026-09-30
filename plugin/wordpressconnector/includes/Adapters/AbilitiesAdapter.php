@@ -14,6 +14,12 @@ final class AbilitiesAdapter
             'privileged' => true,
             'description' => 'Discover exposed WordPress Abilities API entries and their schemas without executing them.',
         ));
+        $registry->register('wordpress.ability.read', array($this, 'readAbility'), array(
+            'privileged' => true,
+            'sensitive' => true,
+            'capability' => 'manage_options',
+            'description' => 'Read through a REST-exposed, explicitly read-only WordPress Ability and its native input validation and permission callback.',
+        ));
     }
 
     public function catalog(array $payload, array $context): array
@@ -51,10 +57,41 @@ final class AbilitiesAdapter
         );
     }
 
+    public function readAbility(array $payload, array $context): array
+    {
+        if (! function_exists('wp_get_ability')) {
+            throw new \RuntimeException('WordPress Abilities API is not available on this site.');
+        }
+        $name = isset($payload['name']) && is_string($payload['name']) ? $payload['name'] : '';
+        if (! $this->isValidName($name)) {
+            throw new \RuntimeException('A valid namespace/ability name is required.');
+        }
+        $ability = wp_get_ability($name);
+        if (! is_object($ability) || ! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) {
+            throw new \RuntimeException('The requested REST-exposed WordPress Ability was not found.');
+        }
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
+        if (true !== ($annotations['readonly'] ?? false) || true === ($annotations['destructive'] ?? false)) {
+            throw new \RuntimeException('Only abilities explicitly annotated as read-only can be used by this action.');
+        }
+        $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+        $result = $ability->execute($input);
+        if (function_exists('is_wp_error') && is_wp_error($result)) {
+            throw new \RuntimeException('WordPress Ability failed: ' . $result->get_error_message());
+        }
+        return array('name' => $name, 'result' => $result);
+    }
+
     private function isValidName(string $name): bool
     {
-        // Discover public abilities from any installed plugin, but never execute them here.
-        return 1 === preg_match('/^[a-z0-9][a-z0-9._-]{0,99}\/[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*){0,10}$/iD', $name);
+        return 1 === preg_match('/^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_-]*$/D', $name);
+    }
+
+    private function isRestExposed(object $ability): bool
+    {
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        return is_array($meta) && true === ($meta['show_in_rest'] ?? false);
     }
 
     private function isExposed(object $ability): bool
