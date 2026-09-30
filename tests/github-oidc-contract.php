@@ -53,4 +53,19 @@ $auth=new GitHubOidc();$jwt=$token();$userId=$auth->authenticate(new WP_REST_Req
 if(1!==$userId||!Policy::publicRepositoryContext()){fwrite(STDERR,"Valid GitHub OIDC token was not accepted.\n");exit(1);}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));fwrite(STDERR,"Replayed token accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'already used'))throw $e;}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array('aud'=>'https://evil.example/wp-json/webactueel-wordpress-connector/v1')))));fwrite(STDERR,"Wrong audience accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'audience'))throw $e;}
+$mailboxClaims=array(
+    'repository'=>'Yolol100/Leadscanner',
+    'repository_id'=>'1334704263',
+    'repository_owner_id'=>'22932777',
+    'actor_id'=>'22932777',
+    'repository_visibility'=>'public',
+    'ref'=>'refs/heads/main',
+    'workflow_ref'=>'Yolol100/Leadscanner/.github/workflows/mailbox-execute.yml@refs/heads/main',
+    'event_name'=>'issues',
+    'runner_environment'=>'github-hosted',
+);
+$mailboxJwt=$token($mailboxClaims);
+if(1!==$auth->authenticateMailboxExecutor(new WP_REST_Request(array('x-webactueel-github-oidc'=>$mailboxJwt)))){fwrite(STDERR,"Valid mailbox executor token was not accepted.\n");exit(1);}
+try{$auth->authenticateMailboxExecutor(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array_merge($mailboxClaims,array('workflow_ref'=>'Yolol100/Leadscanner/.github/workflows/other.yml@refs/heads/main'))))));fwrite(STDERR,"Wrong mailbox workflow accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'workflow_ref'))throw $e;}
+try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token($mailboxClaims))));fwrite(STDERR,"Mailbox executor token gained normal connector access.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'repository'))throw $e;}
 echo "github oidc contract OK\n";
