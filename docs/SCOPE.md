@@ -43,7 +43,7 @@ Explicit privileged actions cover users/roles, plugin/theme lifecycle, WordPress
 
 ## Plugin abilities
 
-The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes, including their schemas. On WordPress 6.9+, REST-exposed abilities can be previewed and invoked through their native input validation and permission callback. Invocation requires a dry-run, explicit confirmation, privileged access and `manage_options`. This extends coverage only for extensions that register REST-exposed abilities; it does not enable arbitrary plugin-code execution.
+The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes, including their schemas. On WordPress 6.9+, REST-exposed abilities explicitly annotated as read-only can be invoked through their native input validation and permission callback. Reading requires explicit confirmation, privileged access and `manage_options`. Mutating abilities are not run through this generic route.
 
 ## State and extension contract
 
