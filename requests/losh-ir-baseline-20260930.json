@@ -1,15 +1,9 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-search-hacked-pages-20260930",
-  "action": "post.list",
+  "request_id": "losh-ir-backend-inspect-20260930",
+  "action": "filesystem.inspect",
   "dry_run": true,
-  "confirm": false,
-  "payload": {
-    "post_type": "page",
-    "status": "publish",
-    "per_page": 100,
-    "page": 1,
-    "search": "Hacked"
-  }
+  "confirm": true,
+  "payload": {}
 }
