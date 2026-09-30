@@ -118,37 +118,56 @@ final class WooCommerceAdapter
         return array('customer' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
     }
 
-    public function shippingZoneList(): array
+    public function shippingZoneList(array $payload = array()): array
     {
+        global $wpdb;
         $this->assertWoo();
-        if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_shipping_zones')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
+        if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_zone') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
+        $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
+        $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
+        $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zones`';
+        $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE `zone_id` > %d", 0));
+        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce shipping zones could not be counted.');
+        $total = (int) $totalValue + 1;
+        $pages = max(1, (int) ceil($total / $limit));
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT `zone_id`, `zone_name`, `zone_order` FROM {$table} WHERE `zone_id` > 0 ORDER BY `zone_order` ASC, `zone_id` ASC LIMIT %d OFFSET %d",
+            $limit,
+            ($page - 1) * $limit
+        ));
+        if (! is_array($rows)) throw new RuntimeException('WooCommerce shipping zones could not be read.');
         $zones = array();
-        $seen = array();
-        foreach (\WC_Shipping_Zones::get_shipping_zones() as $zone) {
-            if ($zone instanceof \WC_Shipping_Zone) {
-                $snapshot = $this->shippingZoneSnapshot($zone);
-                $zones[] = $snapshot;
-                $seen[$snapshot['id']] = true;
+        foreach ($rows as $row) {
+            if (is_object($row) && isset($row->zone_id, $row->zone_name, $row->zone_order)) {
+                $zones[] = $this->shippingZoneSnapshot((int) $row->zone_id, (string) $row->zone_name, (int) $row->zone_order);
             }
         }
-        if (method_exists('WC_Shipping_Zones', 'get_zone')) {
+        if ($page === $pages && method_exists('WC_Shipping_Zones', 'get_zone')) {
             $defaultZone = \WC_Shipping_Zones::get_zone(0);
-            if ($defaultZone instanceof \WC_Shipping_Zone) {
-                $snapshot = $this->shippingZoneSnapshot($defaultZone);
-                if (! isset($seen[$snapshot['id']])) $zones[] = $snapshot;
-            }
+            if ($defaultZone instanceof \WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot(0, (string) $defaultZone->get_zone_name(), (int) $defaultZone->get_zone_order());
         }
-        return array('zones' => $zones);
+        return array('zones' => $zones, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => $pages);
     }
 
     public function shippingZoneGet(array $payload): array
     {
         $this->assertWoo();
-        $id = isset($payload['id']) ? (int) $payload['id'] : -1;
-        if ($id < 0 || ! class_exists('WC_Shipping_Zones')) throw new RuntimeException('A valid shipping zone id is required.');
-        $zone = \WC_Shipping_Zones::get_zone($id);
-        if (! $zone instanceof \WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
-        $snapshot = $this->shippingZoneSnapshot($zone);
+        $idValue = $payload['id'] ?? null;
+        if (! is_int($idValue) && (! is_string($idValue) || 1 !== preg_match('/^(0|[1-9][0-9]*)$/D', $idValue))) throw new RuntimeException('A valid shipping zone id is required.');
+        $validatedId = filter_var((string) $idValue, FILTER_VALIDATE_INT);
+        global $wpdb;
+        if (false === $validatedId || $validatedId < 0 || ! class_exists('WC_Shipping_Zones') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('A valid shipping zone id is required.');
+        $id = (int) $validatedId;
+        if (0 === $id) {
+            $zone = \WC_Shipping_Zones::get_zone(0);
+            if (! $zone instanceof \WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
+            $snapshot = $this->shippingZoneSnapshot(0, (string) $zone->get_zone_name(), (int) $zone->get_zone_order());
+        } else {
+            $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zones`';
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT `zone_id`, `zone_name`, `zone_order` FROM {$table} WHERE `zone_id` = %d LIMIT 1", $id));
+            if (! is_array($rows) || empty($rows[0]) || ! is_object($rows[0]) || ! isset($rows[0]->zone_id, $rows[0]->zone_name, $rows[0]->zone_order)) throw new RuntimeException('WooCommerce shipping zone not found.');
+            $snapshot = $this->shippingZoneSnapshot((int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order);
+        }
         return array('zone' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
     }
 
@@ -195,8 +214,12 @@ final class WooCommerceAdapter
         }
         $locationCounts = array();
         if ($rateIds) {
-            $idList = implode(',', array_map('intval', $rateIds));
-            $countRows = $wpdb->get_results("SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM {$locationsTable} WHERE `tax_rate_id` IN ({$idList}) GROUP BY `tax_rate_id`");
+            $placeholders = implode(',', array_fill(0, count($rateIds), '%d'));
+            $countQuery = $wpdb->prepare(
+                "SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM {$locationsTable} WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
+                ...array_map('intval', $rateIds)
+            );
+            $countRows = $wpdb->get_results($countQuery);
             if (! is_array($countRows)) throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
             foreach ($countRows as $countRow) {
                 if (is_object($countRow) && isset($countRow->tax_rate_id, $countRow->location_count)) $locationCounts[(int) $countRow->tax_rate_id] = (int) $countRow->location_count;
@@ -621,19 +644,37 @@ final class WooCommerceAdapter
         return $safe;
     }
 
-    private function shippingZoneSnapshot(\WC_Shipping_Zone $zone): array
+    private function shippingZoneSnapshot(int $zoneId, string $zoneName, int $zoneOrder): array
     {
+        global $wpdb;
         $locations = array();
-        foreach ($zone->get_zone_locations() as $location) {
-            if (is_object($location) && isset($location->code, $location->type)) {
-                $locations[] = array('code' => (string) $location->code, 'type' => (string) $location->type);
+        $locationCount = 0;
+        if ($zoneId > 0 && isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'prepare') && method_exists($wpdb, 'get_results') && method_exists($wpdb, 'get_var')) {
+            $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zone_locations`';
+            $countValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE `zone_id` = %d", $zoneId));
+            if (null === $countValue || false === $countValue) throw new RuntimeException('WooCommerce shipping zone locations could not be counted.');
+            $locationCount = (int) $countValue;
+            if ($locationCount > 0) {
+                $locationRows = $wpdb->get_results($wpdb->prepare(
+                    "SELECT `location_code`, `location_type` FROM {$table} WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
+                    $zoneId,
+                    100
+                ));
+                if (! is_array($locationRows)) throw new RuntimeException('WooCommerce shipping zone locations could not be read.');
+                foreach ($locationRows as $location) {
+                    if (is_object($location) && isset($location->location_code, $location->location_type)) {
+                        $locations[] = array('code' => (string) $location->location_code, 'type' => (string) $location->location_type);
+                    }
+                }
             }
         }
         return array(
-            'id' => (int) $zone->get_id(),
-            'name' => (string) $zone->get_zone_name(),
-            'order' => (int) $zone->get_zone_order(),
+            'id' => $zoneId,
+            'name' => $zoneName,
+            'order' => $zoneOrder,
             'locations' => $locations,
+            'location_count' => $locationCount,
+            'locations_truncated' => $locationCount > count($locations),
         );
     }
 
