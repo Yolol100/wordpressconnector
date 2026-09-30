@@ -14,8 +14,8 @@ final class WooCommerceAdapter
 {
     public function register(Registry $registry): void
     {
-        $registry->register('woocommerce.order.list', array($this, 'orderList'), array('privileged' => true, 'sensitive' => true, 'description' => 'List bounded WooCommerce order summaries without billing or shipping contact details.'));
-        $registry->register('woocommerce.order.get', array($this, 'orderGet'), array('privileged' => true, 'sensitive' => true, 'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'));
+        $registry->register('woocommerce.order.list', array($this, 'orderList'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'));
+        $registry->register('woocommerce.order.get', array($this, 'orderGet'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'));
         $registry->register('woocommerce.customer.get', array($this, 'customerGet'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'));
         $registry->register('woocommerce.shipping_zone.list', array($this, 'shippingZoneList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.'));
         $registry->register('woocommerce.shipping_zone.get', array($this, 'shippingZoneGet'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'));
@@ -49,6 +49,7 @@ final class WooCommerceAdapter
         $args = array('limit' => $limit, 'page' => $page, 'paginate' => true, 'return' => 'objects');
         if (isset($payload['status'])) {
             $status = sanitize_key((string) $payload['status']);
+            if (strpos($status, 'wc-') !== 0) $status = 'wc-' . $status;
             $statuses = function_exists('wc_get_order_statuses') ? wc_get_order_statuses() : array();
             if (! isset($statuses[$status])) throw new RuntimeException('Unknown WooCommerce order status.');
             $args['status'] = array($status);
@@ -62,7 +63,7 @@ final class WooCommerceAdapter
         $orders = is_object($query) && isset($query->orders) ? $query->orders : (array) $query;
         $items = array();
         foreach ($orders as $order) {
-            if ($order instanceof \WC_Order) $items[] = $this->orderSnapshot($order, false);
+            if ($order instanceof \WC_Order) $items[] = $this->orderSnapshot($order, false, false);
         }
         return array(
             'orders' => $items,
@@ -93,9 +94,14 @@ final class WooCommerceAdapter
         if (! class_exists('WC_Customer')) throw new RuntimeException('WooCommerce customer API is unavailable.');
         $id = isset($payload['id']) ? (int) $payload['id'] : 0;
         $user = $id > 0 ? get_user_by('id', $id) : false;
-        if (! $user || ! isset($user->roles) || ! in_array('customer', (array) $user->roles, true)) throw new RuntimeException('A WooCommerce customer account id is required.');
+        if (! $user) throw new RuntimeException('A WooCommerce customer account id is required.');
         $customer = new \WC_Customer($id);
         if (! $customer->get_id()) throw new RuntimeException('WooCommerce customer not found.');
+        $role = (string) $customer->get_role();
+        $customerRoles = function_exists('apply_filters') ? apply_filters('wpc_connector_woocommerce_customer_roles', array('customer', 'subscriber')) : array('customer', 'subscriber');
+        if (! is_array($customerRoles)) $customerRoles = array('customer', 'subscriber');
+        $hasOrderHistory = method_exists($customer, 'get_order_count') && (int) $customer->get_order_count() > 0;
+        if (! in_array($role, $customerRoles, true) && ! $hasOrderHistory) throw new RuntimeException('A WooCommerce customer account id is required.');
         $snapshot = array(
             'id' => (int) $customer->get_id(),
             'is_paying_customer' => (bool) $customer->get_is_paying_customer(),
@@ -117,8 +123,20 @@ final class WooCommerceAdapter
         $this->assertWoo();
         if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_shipping_zones')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
         $zones = array();
+        $seen = array();
         foreach (\WC_Shipping_Zones::get_shipping_zones() as $zone) {
-            if ($zone instanceof \WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot($zone);
+            if ($zone instanceof \WC_Shipping_Zone) {
+                $snapshot = $this->shippingZoneSnapshot($zone);
+                $zones[] = $snapshot;
+                $seen[$snapshot['id']] = true;
+            }
+        }
+        if (method_exists('WC_Shipping_Zones', 'get_zone')) {
+            $defaultZone = \WC_Shipping_Zones::get_zone(0);
+            if ($defaultZone instanceof \WC_Shipping_Zone) {
+                $snapshot = $this->shippingZoneSnapshot($defaultZone);
+                if (! isset($seen[$snapshot['id']])) $zones[] = $snapshot;
+            }
         }
         return array('zones' => $zones);
     }
@@ -490,10 +508,11 @@ final class WooCommerceAdapter
         if (array_key_exists('date_on_sale_to', $payload)) $variation->set_date_on_sale_to($payload['date_on_sale_to'] ?: null);
     }
 
-    private function orderSnapshot(\WC_Order $order, bool $includePersonalData): array
+    private function orderSnapshot(\WC_Order $order, bool $includePersonalData, bool $includeItems = true): array
     {
         $items = array();
-        foreach ($order->get_items('line_item') as $item) {
+        $allItems = $includeItems ? $order->get_items('line_item') : array();
+        foreach (array_slice($allItems, 0, 50) as $item) {
             $items[] = array(
                 'product_id' => (int) $item->get_product_id(),
                 'variation_id' => (int) $item->get_variation_id(),
@@ -513,12 +532,16 @@ final class WooCommerceAdapter
             'discount_total' => (string) $order->get_discount_total(),
             'date_created' => $this->dateValue($order->get_date_created()),
             'date_modified' => $this->dateValue($order->get_date_modified()),
-            'customer_id' => (int) $order->get_customer_id(),
             'payment_method' => (string) $order->get_payment_method(),
             'shipping_method' => (string) $order->get_shipping_method(),
-            'items' => $items,
         );
+        if ($includeItems) {
+            $snapshot['items'] = $items;
+            $snapshot['item_count'] = count($allItems);
+            $snapshot['items_truncated'] = count($allItems) > count($items);
+        }
         if ($includePersonalData) {
+            $snapshot['customer_id'] = (int) $order->get_customer_id();
             $snapshot['billing'] = array(
                 'first_name' => (string) $order->get_billing_first_name(),
                 'last_name' => (string) $order->get_billing_last_name(),
