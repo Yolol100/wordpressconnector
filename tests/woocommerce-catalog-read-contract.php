@@ -126,6 +126,14 @@ putenv('WPCONNECTOR_ALLOW_SENSITIVE=1');
 \Webactueel\WordPressConnector\Security\Policy::assertActionAllowed($customerDescriptor, false, true);
 $summary = $adapter->customerGet(array('id' => 17));
 if (isset($summary['customer']['email']) || isset($summary['customer']['billing'])) throw new RuntimeException('Customer personal data must be omitted by default.');
+foreach (array(true, 17.9, '17junk', '017') as $badCustomerId) {
+    try {
+        $adapter->customerGet(array('id' => $badCustomerId, 'include_personal_data' => true));
+        throw new RuntimeException('Malformed customer id was accepted.');
+    } catch (RuntimeException $expected) {
+        if ('A WooCommerce customer account id is required.' !== $expected->getMessage()) throw $expected;
+    }
+}
 $details = $adapter->customerGet(array('id' => 17, 'include_personal_data' => true));
 if ('private@example.test' !== $details['customer']['email'] || isset($details['customer']['billing']['secret'])) throw new RuntimeException('Customer detail output was not safely allowlisted.');
 try {
