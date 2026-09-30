@@ -36,7 +36,13 @@ class WC_Shipping_Zone
 }
 class WC_Shipping_Zones
 {
-    public static function get_shipping_zones(): array { return array(new WC_Shipping_Zone()); }
+    public static function get_shipping_zones(?array $zoneIds = null): array
+    {
+        if (empty($zoneIds)) return array();
+        $zones = array();
+        foreach ($zoneIds as $id) if (4 === (int) $id) $zones[$id] = new WC_Shipping_Zone((int) $id);
+        return $zones;
+    }
     public static function get_zone(int $id) { return 0 === $id || 4 === $id ? new WC_Shipping_Zone($id) : false; }
 }
 class WC_Tax
@@ -58,10 +64,27 @@ class WooTaxWpdbStub
     public function get_var(string $query)
     {
         if (false !== strpos($query, 'COUNT(*)') && false !== strpos($query, 'woocommerce_tax_rates')) return 101;
+        if (false !== strpos($query, 'COUNT(*)') && false !== strpos($query, 'woocommerce_shipping_zones')) return 1;
+        if (false !== strpos($query, 'COUNT(*)') && false !== strpos($query, 'woocommerce_shipping_zone_locations')) return 101;
         throw new RuntimeException('Unexpected tax scalar query: ' . $query);
     }
     public function get_results(string $query): array
     {
+        if (false !== strpos($query, 'SELECT `zone_id`, `zone_name`, `zone_order` FROM `wp_woocommerce_shipping_zones`') && false !== strpos($query, 'WHERE `zone_id` > 0')) {
+            preg_match('/LIMIT (\d+) OFFSET (\d+)/', $query, $matches);
+            if (empty($matches) || (int) $matches[1] > 50) throw new RuntimeException('Shipping zone list must be paginated.');
+            if ((int) $matches[2] > 0) return array();
+            return array((object) array('zone_id' => 4, 'zone_name' => 'Netherlands', 'zone_order' => 2));
+        }
+        if (false !== strpos($query, 'SELECT `zone_id`, `zone_name`, `zone_order` FROM `wp_woocommerce_shipping_zones`') && false !== strpos($query, 'WHERE `zone_id` =')) {
+            return false !== strpos($query, 'WHERE `zone_id` = 4') ? array((object) array('zone_id' => 4, 'zone_name' => 'Netherlands', 'zone_order' => 2)) : array();
+        }
+        if (false !== strpos($query, 'SELECT `location_code`, `location_type`') && false !== strpos($query, 'woocommerce_shipping_zone_locations')) {
+            if (false === strpos($query, 'LIMIT 100')) throw new RuntimeException('Shipping zone locations must have a hard result bound.');
+            $locations = array();
+            for ($i = 1; $i <= 100; $i++) $locations[] = (object) array('location_code' => '12345-' . (12345 + $i), 'location_type' => 'postcode');
+            return $locations;
+        }
         if (false !== strpos($query, 'SELECT `tax_rate_id`, `tax_rate_country`')) {
             if (false === strpos($query, 'LIMIT 50')) throw new RuntimeException('Tax rates must use bounded SQL pagination.');
             preg_match('/OFFSET (\d+)/', $query, $matches);
@@ -121,10 +144,21 @@ $subscriber = $adapter->customerGet(array('id' => 19));
 if (19 !== $subscriber['customer']['id']) throw new RuntimeException('Subscriber-role WooCommerce customer was rejected.');
 $customRole = $adapter->customerGet(array('id' => 20));
 if (20 !== $customRole['customer']['id']) throw new RuntimeException('Custom-role customer with WooCommerce order history was rejected.');
-$zones = $adapter->shippingZoneList();
-if ('NL' !== $zones['zones'][0]['locations'][0]['code'] || array_key_exists('methods', $zones['zones'][0]) || 0 !== $zones['zones'][1]['id']) throw new RuntimeException('Shipping zones must include custom and default geography without method settings.');
+$zones = $adapter->shippingZoneList(array('per_page' => 500));
+if (50 !== $zones['per_page'] || 2 !== $zones['total'] || 100 !== count($zones['zones'][0]['locations']) || 101 !== $zones['zones'][0]['location_count'] || ! $zones['zones'][0]['locations_truncated'] || array_key_exists('methods', $zones['zones'][0]) || 0 !== $zones['zones'][1]['id']) throw new RuntimeException('Shipping zones must be paginated, include the default zone and bound location details.');
+$firstZonePage = $adapter->shippingZoneList(array('per_page' => 1, 'page' => 1));
+$lastZonePage = $adapter->shippingZoneList(array('per_page' => 1, 'page' => 2));
+if (1 !== $firstZonePage['page'] || 2 !== $firstZonePage['pages'] || 4 !== $firstZonePage['zones'][0]['id'] || 0 !== $lastZonePage['zones'][0]['id']) throw new RuntimeException('Shipping zone pagination did not place the default zone at the end.');
 $zone = $adapter->shippingZoneGet(array('id' => 4));
 if ('Netherlands' !== $zone['zone']['name']) throw new RuntimeException('Shipping zone lookup failed.');
+$defaultZone = $adapter->shippingZoneGet(array('id' => '0'));
+if (0 !== $defaultZone['zone']['id']) throw new RuntimeException('The default shipping zone must be addressable with canonical zero.');
+try {
+    $adapter->shippingZoneGet(array('id' => 'unknown'));
+    throw new RuntimeException('Nonnumeric shipping zone id was accepted as the default zone.');
+} catch (RuntimeException $expected) {
+    if ('A valid shipping zone id is required.' !== $expected->getMessage()) throw $expected;
+}
 try {
     $adapter->shippingZoneGet(array('id' => 99));
     throw new RuntimeException('Unknown shipping zone id was accepted.');
