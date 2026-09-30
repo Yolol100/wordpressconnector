@@ -1,11 +1,15 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-page8699-evidence-20260930",
-  "action": "post.get",
+  "request_id": "losh-ir-search-wp2shell-posts-20260930",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 8699
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1,
+    "search": "wp2shell"
   }
 }
