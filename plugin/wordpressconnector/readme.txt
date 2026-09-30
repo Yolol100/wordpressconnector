@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.6
+Stable tag: 1.15.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.15.7 adds a guarded emergency user-password reset action for incident response. It rotates the password server-side, revokes all sessions, creates a fresh reset key, sends a dedicated security reset link, never returns secret material, and remains blocked from public-repository runtime.
 
 Version 1.15.6 makes Asset CleanUp cache verification version-tolerant by planting a short-lived `wpacu_css_*` sentinel transient and requiring Asset CleanUp's own cache-clear routine to remove it.
 
@@ -69,6 +71,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.7 =
+* Add `user.force_password_reset` as a sensitive, privileged, confirmed mutation for incident response.
+* Rotate the password server-side, revoke all sessions, generate a fresh reset key and send a dedicated security reset link without exposing password or reset-key material.
+* Keep the action blocked from public-repository runtime and cover the flow with a regression contract that forbids the normal `retrieve_password()` email path after rotation.
 
 = 1.15.6 =
 * Verify Asset CleanUp clearing with a short-lived `wpacu_css_*` sentinel transient removed by the provider-owned cache clear.
