@@ -15,9 +15,20 @@ final class MailboxBridgeStore
     private const MAX_REQUEST_BYTES = 262144;
     private const MAX_RESULT_BYTES = 4194304;
 
-    public function putRequest(string $requestId, array $request, int $ttl = self::DEFAULT_TTL): array
+    public function validateRequest(string $requestId, array $request): void
     {
         $this->assertRequestId($requestId);
+        $this->encodeBounded($request, self::MAX_REQUEST_BYTES, 'Mailbox request');
+    }
+
+    public function validateRequestId(string $requestId): void
+    {
+        $this->assertRequestId($requestId);
+    }
+
+    public function putRequest(string $requestId, array $request, int $ttl = self::DEFAULT_TTL): array
+    {
+        $this->validateRequest($requestId, $request);
         $ttl = max(60, min(self::MAX_TTL, $ttl));
         $encoded = $this->encodeBounded($request, self::MAX_REQUEST_BYTES, 'Mailbox request');
         $key = $this->key(self::REQUEST_PREFIX, $requestId);
@@ -104,8 +115,13 @@ final class MailboxBridgeStore
     public function clear(string $requestId): void
     {
         $this->assertRequestId($requestId);
-        delete_transient($this->key(self::REQUEST_PREFIX, $requestId));
-        delete_transient($this->key(self::RESULT_PREFIX, $requestId));
+        $requestKey = $this->key(self::REQUEST_PREFIX, $requestId);
+        $resultKey = $this->key(self::RESULT_PREFIX, $requestId);
+        delete_transient($requestKey);
+        delete_transient($resultKey);
+        if (false !== get_transient($requestKey) || false !== get_transient($resultKey)) {
+            throw new RuntimeException('Mailbox bridge cleanup could not be verified.');
+        }
     }
 
     private function publicRequestState(array $record, bool $created): array
