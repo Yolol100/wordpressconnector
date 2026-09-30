@@ -12,6 +12,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/Wo
 class WooCommerce {}
 class WC_Order
 {
+    public static bool $bounded_store_available = true;
     public function get_id(): int { return 81; }
     public function get_status(): string { return 'processing'; }
     public function get_currency(): string { return 'EUR'; }
@@ -25,6 +26,7 @@ class WC_Order
     public function get_payment_method(): string { return 'bank'; }
     public function get_shipping_method(): string { return 'flat_rate'; }
     public function get_items(string $type): array { throw new RuntimeException('Unbounded order item hydration must not be used.'); }
+    public function get_data_store() { return new WooOrderDataStoreStub(); }
     public function get_billing_first_name(): string { return 'Ada'; }
     public function get_billing_last_name(): string { return 'Example'; }
     public function get_billing_company(): string { return ''; }
@@ -46,26 +48,39 @@ class WC_Order
     public function get_shipping_postcode(): string { return '1234 AB'; }
     public function get_shipping_country(): string { return 'NL'; }
 }
+class WooOrderDataStoreStub
+{
+    public function has_callable(string $method): bool { return 'get_item_ids' === $method && WC_Order::$bounded_store_available; }
+    public function get_item_ids(WC_Order $order, ?string $type = null): array
+    {
+        if (! WC_Order::$bounded_store_available || 'line_item' !== $type || 81 !== $order->get_id()) {
+            throw new RuntimeException('Unexpected bounded order item query.');
+        }
+        return range(1, 51);
+    }
+}
+class WC_Order_Item_Product
+{
+    private int $id;
+    public function __construct(int $id) { $this->id = $id; }
+    public function get_order_id(): int { return 81; }
+    public function get_product_id(): int { return 99 + $this->id; }
+    public function get_variation_id(): int { return 0; }
+    public function get_name(): string { return 'Product ' . $this->id; }
+    public function get_quantity(): int { return 1; }
+    public function get_subtotal(): string { return '1.00'; }
+    public function get_total(): string { return '1.00'; }
+}
+class WC_Order_Factory
+{
+    public static function get_order_item(int $id) { return $id >= 1 && $id <= 51 ? new WC_Order_Item_Product($id) : false; }
+}
 class WooOrderWpdbStub
 {
     public string $prefix = 'wp_';
-    public function prepare(string $query, ...$args): string { return $query; }
-    public function get_var(string $query) { return 51; }
-    public function get_results(string $query): array
-    {
-        if (false !== strpos($query, 'woocommerce_order_itemmeta')) {
-            if (false === strpos($query, 'MAX(meta_id) AS meta_id') || false === strpos($query, 'GROUP BY order_item_id, meta_key') || false !== strpos($query, 'LIMIT 250')) {
-                throw new RuntimeException('Order item metadata must be bounded per item and key instead of by a global row limit.');
-            }
-            $rows = array();
-            for ($id=1; $id<=50; $id++) foreach (array('_product_id'=>'100','_variation_id'=>'0','_qty'=>'1','_line_subtotal'=>'1.00','_line_total'=>'1.00') as $key=>$value) $rows[]=(object) array('order_item_id'=>$id,'meta_key'=>$key,'meta_value'=>$value);
-            return $rows;
-        }
-        $rows = array();
-        for ($id=1; $id<=51; $id++) $rows[]=(object) array('order_item_id'=>$id,'order_item_name'=>'Product '.$id);
-        return $rows;
-    }
+    public function __call(string $name, array $arguments) { throw new RuntimeException('Direct WooCommerce order-item SQL must not be used.'); }
 }
+
 
 function wc_get_product(int $id = 0) { return null; }
 function wc_get_order(int $id) { return 81 === $id ? new WC_Order() : false; }
@@ -97,9 +112,33 @@ if (100 !== $list['per_page'] || isset($list['orders'][0]['billing']) || isset($
 }
 $listUnprefixedStatus = $adapter->orderList(array('per_page' => 25, 'page' => 3, 'customer_id' => 9, 'status' => 'processing'));
 if (isset($listUnprefixedStatus['orders'][0]['items'])) throw new RuntimeException('Order list must continue omitting line-item detail.');
+foreach (array(true, 9.5, '9junk', '09') as $badCustomerId) {
+    try {
+        $adapter->orderList(array('customer_id' => $badCustomerId));
+        throw new RuntimeException('Malformed order-list customer_id was accepted.');
+    } catch (RuntimeException $expected) {
+        if ('customer_id must be a positive integer.' !== $expected->getMessage()) throw $expected;
+    }
+}
+foreach (array(true, 81.5, '81junk', '081') as $badOrderId) {
+    try {
+        $adapter->orderGet(array('id' => $badOrderId));
+        throw new RuntimeException('Malformed order id was accepted.');
+    } catch (RuntimeException $expected) {
+        if ('A positive order id is required.' !== $expected->getMessage()) throw $expected;
+    }
+}
 $summary = $adapter->orderGet(array('id' => 81));
 if (isset($summary['order']['billing']) || isset($summary['order']['shipping']) || isset($summary['order']['customer_id'])) throw new RuntimeException('Order personal data must be omitted by default.');
 if (50 !== count($summary['order']['items']) || 51 !== $summary['order']['item_count'] || ! $summary['order']['items_truncated'] || 100 !== $summary['order']['items'][0]['product_id'] || 'Product 1' !== $summary['order']['items'][0]['name']) throw new RuntimeException('Order line items must be capped with truncation evidence.');
+WC_Order::$bounded_store_available = false;
+try {
+    $adapter->orderGet(array('id' => 81));
+    throw new RuntimeException('Order item reads without a bounded data-store API were accepted.');
+} catch (RuntimeException $expected) {
+    if ('WooCommerce bounded order item data store API is unavailable.' !== $expected->getMessage()) throw $expected;
+}
+WC_Order::$bounded_store_available = true;
 $detail = $adapter->orderGet(array('id' => 81, 'include_personal_data' => true));
 if ('private@example.test' !== $detail['order']['billing']['email']) throw new RuntimeException('Explicit per-order personal data request failed.');
 echo "WooCommerce order read contract OK\n";
