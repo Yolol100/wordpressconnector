@@ -55,9 +55,7 @@ final class WooCommerceAdapter
             $args['status'] = array($status);
         }
         if (isset($payload['customer_id'])) {
-            $customerId = (int) $payload['customer_id'];
-            if ($customerId < 1) throw new RuntimeException('customer_id must be a positive integer.');
-            $args['customer'] = $customerId;
+            $args['customer'] = $this->positiveIntegerId($payload['customer_id'], 'customer_id must be a positive integer.');
         }
         $query = wc_get_orders($args);
         $orders = is_object($query) && isset($query->orders) ? $query->orders : (array) $query;
@@ -79,7 +77,7 @@ final class WooCommerceAdapter
         $this->assertWoo();
         if (! function_exists('wc_get_order')) throw new RuntimeException('WooCommerce order API is unavailable.');
         Policy::assertReadablePostType('shop_order');
-        $id = isset($payload['id']) ? (int) $payload['id'] : 0;
+        $id = array_key_exists('id', $payload) ? $this->positiveIntegerId($payload['id'], 'A positive order id is required.') : 0;
         if ($id < 1) throw new RuntimeException('A positive order id is required.');
         $order = wc_get_order($id);
         if (! $order instanceof \WC_Order) throw new RuntimeException('WooCommerce order not found.');
@@ -92,7 +90,7 @@ final class WooCommerceAdapter
     {
         $this->assertWoo();
         if (! class_exists('WC_Customer')) throw new RuntimeException('WooCommerce customer API is unavailable.');
-        $id = isset($payload['id']) ? (int) $payload['id'] : 0;
+        $id = array_key_exists('id', $payload) ? $this->positiveIntegerId($payload['id'], 'A WooCommerce customer account id is required.') : 0;
         $user = $id > 0 ? get_user_by('id', $id) : false;
         if (! $user) throw new RuntimeException('A WooCommerce customer account id is required.');
         $customer = new \WC_Customer($id);
@@ -576,7 +574,7 @@ final class WooCommerceAdapter
     private function orderSnapshot(\WC_Order $order, bool $includePersonalData, bool $includeItems = true): array
     {
         $itemDetails = $includeItems
-            ? $this->orderItemsSnapshot((int) $order->get_id())
+            ? $this->orderItemsSnapshot($order)
             : array('items' => array(), 'item_count' => 0, 'items_truncated' => false);
         $snapshot = array(
             'id' => (int) $order->get_id(),
@@ -626,73 +624,87 @@ final class WooCommerceAdapter
         return $snapshot;
     }
 
-    private function orderItemsSnapshot(int $orderId): array
+    private function orderItemsSnapshot(\WC_Order $order): array
     {
-        global $wpdb;
-        if (! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) {
-            throw new RuntimeException('WooCommerce order item storage is unavailable.');
+        if (! method_exists($order, 'get_data_store')) {
+            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
         }
-        $itemsTable = $wpdb->prefix . 'woocommerce_order_items';
-        $metaTable = $wpdb->prefix . 'woocommerce_order_itemmeta';
-        $totalValue = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$itemsTable} WHERE order_id = %d AND order_item_type = %s",
-            $orderId,
-            'line_item'
-        ));
-        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce order items could not be counted.');
-        $total = (int) $totalValue;
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT order_item_id, LEFT(order_item_name, 200) AS order_item_name FROM {$itemsTable} WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d",
-            $orderId,
-            'line_item',
-            51
-        ));
-        if (! is_array($rows)) throw new RuntimeException('WooCommerce order items could not be read.');
-        $truncated = $total > 50 || count($rows) > 50;
-        $rows = array_slice($rows, 0, 50);
+
+        $dataStore = $order->get_data_store();
+        if (! is_object($dataStore) || ! method_exists($dataStore, 'has_callable') || ! $dataStore->has_callable('get_item_ids')) {
+            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
+        }
+
+        try {
+            $rawItemIds = $dataStore->get_item_ids($order, 'line_item');
+        } catch (\Throwable $error) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+        if (! is_array($rawItemIds)) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+
         $itemIds = array();
-        foreach ($rows as $row) {
-            if (is_object($row) && isset($row->order_item_id)) $itemIds[] = (int) $row->order_item_id;
-        }
-        $metaByItem = array();
-        if ($itemIds) {
-            $idPlaceholders = implode(',', array_fill(0, count($itemIds), '%d'));
-            $query = $wpdb->prepare(
-                "SELECT itemmeta.order_item_id, itemmeta.meta_key, LEFT(itemmeta.meta_value, 64) AS meta_value
-                FROM {$metaTable} AS itemmeta
-                INNER JOIN (
-                    SELECT order_item_id, meta_key, MAX(meta_id) AS meta_id
-                    FROM {$metaTable}
-                    WHERE order_item_id IN ({$idPlaceholders})
-                      AND meta_key IN ('_product_id', '_variation_id', '_qty', '_line_subtotal', '_line_total')
-                    GROUP BY order_item_id, meta_key
-                ) AS latest ON latest.meta_id = itemmeta.meta_id
-                ORDER BY itemmeta.order_item_id ASC, itemmeta.meta_key ASC",
-                ...array_map('intval', $itemIds)
-            );
-            $metaRows = $wpdb->get_results($query);
-            if (! is_array($metaRows)) throw new RuntimeException('WooCommerce order item values could not be read.');
-            foreach ($metaRows as $meta) {
-                if (is_object($meta) && isset($meta->order_item_id, $meta->meta_key, $meta->meta_value)) {
-                    $metaByItem[(int) $meta->order_item_id][(string) $meta->meta_key] = (string) $meta->meta_value;
-                }
+        foreach ($rawItemIds as $itemId) {
+            if (! is_int($itemId) && (! is_string($itemId) || 1 !== preg_match('/^[1-9][0-9]*$/D', $itemId))) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+            $validatedId = filter_var((string) $itemId, FILTER_VALIDATE_INT);
+            if (false === $validatedId || $validatedId < 1) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+            $itemIds[(int) $validatedId] = (int) $validatedId;
+            if (count($itemIds) > 10000) {
+                throw new RuntimeException('WooCommerce order item count exceeds the safety limit.');
             }
         }
+
+        $itemIds = array_values($itemIds);
+        sort($itemIds, SORT_NUMERIC);
+        $total = count($itemIds);
+        $truncated = $total > 50;
+        $selectedIds = array_slice($itemIds, 0, 50);
+
+        if ($selectedIds && ! class_exists('WC_Order_Factory')) {
+            throw new RuntimeException('WooCommerce order item factory is unavailable.');
+        }
+
         $items = array();
-        foreach ($rows as $row) {
-            if (! is_object($row) || ! isset($row->order_item_id)) continue;
-            $meta = $metaByItem[(int) $row->order_item_id] ?? array();
+        foreach ($selectedIds as $itemId) {
+            try {
+                $item = \WC_Order_Factory::get_order_item($itemId);
+            } catch (\Throwable $error) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+            if (! $item instanceof \WC_Order_Item_Product || (int) $item->get_order_id() !== (int) $order->get_id()) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+
             $items[] = array(
-                'product_id' => isset($meta['_product_id']) ? (int) $meta['_product_id'] : 0,
-                'variation_id' => isset($meta['_variation_id']) ? (int) $meta['_variation_id'] : 0,
-                'name' => isset($row->order_item_name) ? (string) $row->order_item_name : '',
-                'quantity' => isset($meta['_qty']) ? (int) $meta['_qty'] : 0,
-                'subtotal' => isset($meta['_line_subtotal']) ? (string) $meta['_line_subtotal'] : '0',
-                'total' => isset($meta['_line_total']) ? (string) $meta['_line_total'] : '0',
+                'product_id' => (int) $item->get_product_id(),
+                'variation_id' => (int) $item->get_variation_id(),
+                'name' => (string) $item->get_name(),
+                'quantity' => (int) $item->get_quantity(),
+                'subtotal' => (string) $item->get_subtotal(),
+                'total' => (string) $item->get_total(),
             );
         }
+
         return array('items' => $items, 'item_count' => $total, 'items_truncated' => $truncated);
     }
+
+    private function positiveIntegerId($value, string $message): int
+    {
+        if (! is_int($value) && (! is_string($value) || 1 !== preg_match('/^[1-9][0-9]*$/D', $value))) {
+            throw new RuntimeException($message);
+        }
+        $validated = filter_var((string) $value, FILTER_VALIDATE_INT);
+        if (false === $validated || $validated < 1) {
+            throw new RuntimeException($message);
+        }
+        return (int) $validated;
+    }
+
     private function customerAddressSnapshot(array $address): array
     {
         $safe = array();
