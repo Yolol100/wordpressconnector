@@ -56,6 +56,14 @@ final class MailboxBridgeController
         if (''===$body||strlen($body)>self::MAX_RESULT_BYTES) {
             return new \WP_Error('wpconnector_mailbox_result_size','Mailbox result is empty or exceeds 4 MiB.',array('status'=>413));
         }
+        try {
+            $shape=json_decode($body,false,32,JSON_THROW_ON_ERROR);
+        } catch (\JsonException $error) {
+            return new \WP_Error('wpconnector_mailbox_result_json','Mailbox result must be valid JSON.',array('status'=>400));
+        }
+        if (!is_object($shape)) {
+            return new \WP_Error('wpconnector_mailbox_result_json','Mailbox result must be a JSON object.',array('status'=>400));
+        }
         $data=$request->get_json_params();
         if (!is_array($data)) {
             return new \WP_Error('wpconnector_mailbox_result_json','Mailbox result must be a JSON object.',array('status'=>400));
