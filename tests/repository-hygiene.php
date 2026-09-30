@@ -3,6 +3,28 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+$allowedRootDirectories = array(
+    '.github',
+    'assets',
+    'docs',
+    'examples',
+    'plugin',
+    'receipts',
+    'requests',
+    'results',
+    'scripts',
+    'tests',
+);
+$rootItems = scandir($root) ?: array();
+foreach ($rootItems as $item) {
+    if (in_array($item, array('.', '..'), true)) {
+        continue;
+    }
+    if (is_dir($root . '/' . $item) && ! in_array($item, $allowedRootDirectories, true)) {
+        fwrite(STDERR, "Unexpected top-level directory on implementation tree: {$item}\n");
+        exit(1);
+    }
+}
 $forbidden = array(
     'bootstrap-manifest.json',
     '.github/workflows/bootstrap-materialize.yml',
