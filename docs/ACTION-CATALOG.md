@@ -134,7 +134,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone and geographic locations without shipping method settings. |
 | `woocommerce.shipping_zone.list` | privileged | List WooCommerce shipping zones and geographic locations without shipping method settings. |
 | `woocommerce.tax_class.list` | privileged | List WooCommerce tax classes. |
-| `woocommerce.tax_rate.list` | privileged | List bounded WooCommerce tax rates for a registered tax class. |
+| `woocommerce.tax_rate.list` | privileged | Paginate at most 50 WooCommerce tax rates per request; include up to 100 city/state/postcode locations per rate with truncation evidence. |
 | `woocommerce.coupon.create` | mutation, privileged | Create a WooCommerce coupon. |
 | `woocommerce.coupon.get` | privileged | Read a WooCommerce coupon. |
 | `woocommerce.coupon.list` | privileged | List WooCommerce coupons without customer/order data. |
@@ -148,6 +148,6 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a WooCommerce product variation. |
 | `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
-| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback. |
+| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback; redact credential-shaped result fields. |
 | `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
 | `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |
