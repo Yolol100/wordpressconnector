@@ -4,6 +4,7 @@
 
 - This repository is the canonical live WordPress/Elementor runtime bridge for Webactueel.
 - `webactueel-workflow` remains the controller for cross-domain routing and approvals; WordPress Connector owns only the technical WordPress runtime boundary.
+- A narrow controller-owned handoff exception is allowed when WordPress only stores bounded, short-lived opaque request/result envelopes for an exact authenticated executor. The connector must not contain the external domain's business logic, credentials, IMAP/SMTP/API execution, generic proxying or public payload transport.
 - The primary direct route is `approved client -> authenticated HTTPS REST -> WordPress Connector`.
 - The guarded GitHub runtime is zero-config: temporary same-repository request PR -> credential-free validation -> trusted `wordpress-zero-config-execute.yml` on `main` -> short-lived GitHub Actions OIDC -> authenticated HTTPS REST -> WordPress Connector -> private full result or sanitized public receipt.
 - GitHub transport must not require WordPress usernames, Application Passwords, repository target variables or connector checkboxes for normal use.
@@ -43,7 +44,8 @@ Preserve:
 - every third-party GitHub Action pinned to a full commit SHA;
 - release ZIP and SPDX SBOM built deterministically, reproducibly and attested against exact release bytes;
 - plugin-declared PHP support covered by CI rather than assumed;
-- uninstall removes plugin-owned settings, OIDC/transient runtime state, mutation locks, rollback snapshots and idempotency state;
+- uninstall removes plugin-owned settings, OIDC/transient runtime state, mutation locks, rollback snapshots, idempotency state and any controller-handoff state;
+- controller handoffs remain sensitive/privileged, TTL-bounded, exact-executor authenticated, stale-result protected and inaccessible through generic option/meta/file actions;
 - temporary migration or diagnostic workflows removed immediately after their one-time purpose is complete.
 
 ## Discovery boundary
