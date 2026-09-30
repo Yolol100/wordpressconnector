@@ -180,9 +180,11 @@ final class SystemAdapter
             'wp-login.php?action=rp&key=' . rawurlencode((string) $key) . '&login=' . rawurlencode((string) $user->user_login),
             'login'
         );
-        $subject = sprintf(__('[%s] Security password reset'), $siteName);
-        $message = sprintf(__('An administrator reset the password for your account on %s as a security measure.'), $siteName) . "\r\n\r\n";
-        $message .= __('All active sessions have been signed out. Set a new password using this link:') . "\r\n\r\n";
+        /* translators: %s: WordPress site name. */
+        $subject = sprintf(__('[%s] Security password reset', 'wordpressconnector'), $siteName);
+        /* translators: %s: WordPress site name. */
+        $message = sprintf(__('An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector'), $siteName) . "\r\n\r\n";
+        $message .= __('All active sessions have been signed out. Set a new password using this link:', 'wordpressconnector') . "\r\n\r\n";
         $message .= $resetUrl . "\r\n";
 
         $result['reset_email_accepted_by_wp_mail'] = (bool) wp_mail((string) $user->user_email, $subject, $message);
