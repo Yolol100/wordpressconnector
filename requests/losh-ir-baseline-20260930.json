@@ -1,12 +1,12 @@
 {
   "version": 1,
   "site_url": "https://losh.nl",
-  "request_id": "losh-ir-all-published-posts-20260930",
+  "request_id": "losh-ir-all-published-pages-20260930",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": "post",
+    "post_type": "page",
     "status": "publish",
     "per_page": 100,
     "page": 1
