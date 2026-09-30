@@ -33,7 +33,10 @@ final class AbilitiesAdapter
             );
         }
 
-        $result = array();
+        $perPage = $this->catalogPositiveInteger($payload['per_page'] ?? 10, 10, 'per_page');
+        $page = $this->catalogPositiveInteger($payload['page'] ?? 1, 100000, 'page');
+
+        $eligible = array();
         foreach ((array) wp_get_abilities() as $name => $ability) {
             if (! is_object($ability)) {
                 continue;
@@ -47,15 +50,33 @@ final class AbilitiesAdapter
                 continue;
             }
 
+            $eligible[$name] = $ability;
+        }
+
+        ksort($eligible, SORT_STRING);
+        $total = count($eligible);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $selected = array_slice($eligible, ($page - 1) * $perPage, $perPage, true);
+
+        $result = array();
+        foreach ($selected as $name => $ability) {
             $result[$name] = $this->descriptor($name, $ability);
         }
 
-        ksort($result, SORT_STRING);
-
-        return array(
+        $response = array(
             'available' => true,
             'abilities' => $result,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total' => $total,
+            'pages' => $pages,
         );
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($response) : json_encode($response);
+        if (! is_string($encoded) || strlen($encoded) > 262144) {
+            throw new \RuntimeException('WordPress Ability catalog page exceeds the output limit.');
+        }
+
+        return $response;
     }
 
     public function readAbility(array $payload, array $context): array
@@ -156,16 +177,118 @@ final class AbilitiesAdapter
         $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations'])
             ? $meta['annotations']
             : array();
+        $safeAnnotations = array();
+        foreach (array('readonly', 'destructive', 'idempotent') as $key) {
+            if (array_key_exists($key, $annotations) && (is_bool($annotations[$key]) || null === $annotations[$key])) {
+                $safeAnnotations[$key] = $annotations[$key];
+            }
+        }
+
+        list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
+            method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null
+        );
+        list($outputSchema, $outputSchemaOmitted) = $this->boundedCatalogValue(
+            method_exists($ability, 'get_output_schema') ? $ability->get_output_schema() : null
+        );
 
         return array(
             'name' => $name,
-            'label' => method_exists($ability, 'get_label') ? (string) $ability->get_label() : $name,
-            'description' => method_exists($ability, 'get_description') ? (string) $ability->get_description() : '',
-            'category' => method_exists($ability, 'get_category') ? (string) $ability->get_category() : '',
-            'input_schema' => method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null,
-            'output_schema' => method_exists($ability, 'get_output_schema') ? $ability->get_output_schema() : null,
-            'annotations' => $annotations,
+            'label' => $this->boundedCatalogText(method_exists($ability, 'get_label') ? (string) $ability->get_label() : $name, 512),
+            'description' => $this->boundedCatalogText(method_exists($ability, 'get_description') ? (string) $ability->get_description() : '', 4096),
+            'category' => $this->boundedCatalogText(method_exists($ability, 'get_category') ? (string) $ability->get_category() : '', 512),
+            'input_schema' => $inputSchema,
+            'input_schema_omitted' => $inputSchemaOmitted,
+            'output_schema' => $outputSchema,
+            'output_schema_omitted' => $outputSchemaOmitted,
+            'annotations' => $safeAnnotations,
             'execution_exposed' => $this->isReadEligible($ability),
         );
+    }
+
+    private function catalogPositiveInteger($value, int $max, string $field): int
+    {
+        if (! is_int($value) && (! is_string($value) || 1 !== preg_match('/^[1-9][0-9]*$/D', $value))) {
+            throw new \RuntimeException($field . ' must be a positive integer.');
+        }
+        $validated = filter_var((string) $value, FILTER_VALIDATE_INT);
+        if (false === $validated || $validated < 1) {
+            throw new \RuntimeException($field . ' must be a positive integer.');
+        }
+        return min($max, (int) $validated);
+    }
+
+    private function boundedCatalogText(string $value, int $maxBytes): string
+    {
+        if (strlen($value) <= $maxBytes) {
+            return $value;
+        }
+        if (function_exists('mb_strcut')) {
+            return mb_strcut($value, 0, $maxBytes, 'UTF-8');
+        }
+        $cut = $maxBytes;
+        while ($cut > 0 && isset($value[$cut]) && (ord($value[$cut]) & 0xC0) === 0x80) {
+            --$cut;
+        }
+        return substr($value, 0, $cut);
+    }
+
+    private function boundedCatalogValue($value): array
+    {
+        $budget = array('nodes' => 0, 'bytes' => 0);
+        try {
+            $safe = $this->boundedCatalogWalk($value, 0, new \SplObjectStorage(), $budget);
+        } catch (\RuntimeException $error) {
+            return array(null, true);
+        }
+
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
+        if (! is_string($encoded) || strlen($encoded) > 8192) {
+            return array(null, true);
+        }
+        return array($safe, false);
+    }
+
+    private function boundedCatalogWalk($value, int $depth, \SplObjectStorage $seen, array &$budget)
+    {
+        if (++$budget['nodes'] > 2000 || $depth > 12) {
+            throw new \RuntimeException('catalog value limit');
+        }
+
+        $object = null;
+        if (is_object($value)) {
+            if ($seen->contains($value)) {
+                return '[circular object omitted]';
+            }
+            $seen->attach($value);
+            $object = $value;
+            $value = get_object_vars($value);
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $key => $item) {
+                if (is_string($key)) {
+                    $budget['bytes'] += strlen($key);
+                }
+                if ($budget['bytes'] > 8192) {
+                    throw new \RuntimeException('catalog value limit');
+                }
+                $value[$key] = $this->boundedCatalogWalk($item, $depth + 1, $seen, $budget);
+            }
+            $value = Policy::redact($value);
+            if (null !== $object) {
+                $seen->detach($object);
+            }
+            return $value;
+        }
+
+        if (is_string($value)) {
+            $budget['bytes'] += strlen($value);
+            if ($budget['bytes'] > 8192) {
+                throw new \RuntimeException('catalog value limit');
+            }
+            return $value;
+        }
+
+        return is_scalar($value) || null === $value ? $value : null;
     }
 }
