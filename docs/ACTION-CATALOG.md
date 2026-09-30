@@ -119,6 +119,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `user.get` | privileged, sensitive | Read a WordPress user. |
 | `user.list` | privileged, sensitive | List WordPress users. |
 | `user.update` | mutation, privileged, sensitive | Update WordPress user profile fields and roles. |
+| `user.force_password_reset` | mutation, privileged, sensitive | Immediately rotate a WordPress user password, revoke active sessions and send the core password-reset email. Non-rollbackable. |
 | `woocommerce.attribute.create` | mutation | Create a global WooCommerce product attribute. |
 | `woocommerce.attribute.delete` | mutation, privileged | Delete a global WooCommerce product attribute. |
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
