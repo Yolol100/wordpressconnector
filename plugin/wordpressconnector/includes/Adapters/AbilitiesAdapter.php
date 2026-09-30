@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Adapters;
 
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Security\Policy;
 
 final class AbilitiesAdapter
 {
@@ -78,9 +79,25 @@ final class AbilitiesAdapter
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
         $result = $ability->execute($input);
         if (function_exists('is_wp_error') && is_wp_error($result)) {
-            throw new \RuntimeException('WordPress Ability failed: ' . $result->get_error_message());
+            throw new \RuntimeException('WordPress Ability failed.');
         }
-        return array('name' => $name, 'result' => $result);
+        return array('name' => $name, 'result' => $this->redactAbilityResult($result));
+    }
+
+    private function redactAbilityResult($value, int $depth = 0, ?\SplObjectStorage $seen = null)
+    {
+        if ($depth > 20) return '[maximum nesting omitted]';
+        if (is_object($value)) {
+            if (null === $seen) $seen = new \SplObjectStorage();
+            if ($seen->contains($value)) return '[circular object omitted]';
+            $seen->attach($value);
+            $value = get_object_vars($value);
+        }
+        if (is_array($value)) {
+            foreach ($value as $key => $item) $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen);
+            return Policy::redact($value);
+        }
+        return is_scalar($value) || null === $value ? $value : null;
     }
 
     private function isValidName(string $name): bool
