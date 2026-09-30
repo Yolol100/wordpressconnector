@@ -72,7 +72,11 @@ final class AbilitiesAdapter
             throw new \RuntimeException('The requested REST-exposed WordPress Ability was not found.');
         }
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
-        $result = $ability->execute($input);
+        try {
+            $result = $ability->execute($input);
+        } catch (\Throwable $error) {
+            throw new \RuntimeException('WordPress Ability failed.');
+        }
         if (function_exists('is_wp_error') && is_wp_error($result)) {
             throw new \RuntimeException('WordPress Ability failed.');
         }
@@ -86,9 +90,11 @@ final class AbilitiesAdapter
     private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
     {
         if (++$budget['nodes'] > 10000 || $depth > 20) throw new \RuntimeException('WordPress Ability result exceeds the traversal limit.');
+        $object = null;
         if (is_object($value)) {
             if ($seen->contains($value)) return '[circular object omitted]';
             $seen->attach($value);
+            $object = $value;
             $value = get_object_vars($value);
         }
         if (is_array($value)) {
@@ -99,7 +105,9 @@ final class AbilitiesAdapter
                 }
                 $value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
             }
-            return Policy::redact($value);
+            $value = Policy::redact($value);
+            if (null !== $object) $seen->detach($object);
+            return $value;
         }
         if (is_string($value)) {
             $budget['bytes'] += strlen($value);
