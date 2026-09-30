@@ -4,6 +4,19 @@
 
 WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients and the guarded GitHub runtime.
 
+**Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [Portfolio cases](https://andrewbaeten.nl/category/cases)
+
+## What it demonstrates
+
+| Area | Implementation |
+| --- | --- |
+| WordPress automation | Capability-gated REST actions across content, media, WooCommerce, ACF and site administration |
+| Authentication | Short-lived GitHub Actions OIDC plus standard authenticated WordPress REST clients |
+| Safety | Dry-run defaults, explicit confirmation, stale-state guards and bounded filesystem access |
+| Reliability | Idempotency, readback, rollback and exact target validation |
+| Security | HTTPS-only transport, strict JWT binding and sanitized public receipts |
+| Architecture | Direct connector transport kept separate from generic multi-repository orchestration |
+
 ## Zero-config GitHub connection
 
 From version 1.13.0, normal GitHub transport requires no repository secrets, no `WPCONNECTOR_SITE_URL` variable, no WordPress username, no Application Password and no WordPress settings checkboxes.
