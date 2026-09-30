@@ -37,7 +37,7 @@ Installation makes a site immediately recognizable once its domain is known, but
 
 ## Public vs private GitHub runtime
 
-This repository is currently public. Public runtime requests remain deliberately restricted and only sanitized receipts may be committed. Full/private WordPress results require a private transport surface; they must never be written to a public branch, log or receipt.
+This repository is currently private. If repository visibility changes in the future, public runtime requests remain deliberately restricted and only sanitized receipts may be committed. Full/private results require a private transport surface and must never be written to a public branch, log, issue, artifact or receipt.
 
 ## Direct HTTPS REST
 
