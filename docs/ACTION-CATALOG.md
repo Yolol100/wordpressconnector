@@ -124,6 +124,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.attribute.delete` | mutation, privileged | Delete a global WooCommerce product attribute. |
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
 | `woocommerce.attribute.update` | mutation | Update a global WooCommerce product attribute. |
+| `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary; personal data is omitted unless explicitly requested. |
+| `woocommerce.order.list` | privileged, sensitive | List bounded WooCommerce order summaries without billing or shipping contact details. |
 | `woocommerce.coupon.create` | mutation, privileged | Create a WooCommerce coupon. |
 | `woocommerce.coupon.get` | privileged | Read a WooCommerce coupon. |
 | `woocommerce.coupon.list` | privileged | List WooCommerce coupons without customer/order data. |
