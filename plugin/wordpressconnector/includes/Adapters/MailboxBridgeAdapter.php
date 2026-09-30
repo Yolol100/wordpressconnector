@@ -11,7 +11,7 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 final class MailboxBridgeAdapter
 {
     private const ACTIONS = array(
-        'list_folders','list_messages','search','read','read_attachment','thread',
+        'list_folders','list_messages','search','read','read_attachment','read_attachment_chunk','read_body_chunk','thread',
         'create_folder','rename_folder','delete_folder','mark_read','mark_unread','flag','unflag',
         'copy','move','archive','trash','junk','delete','create_draft','replace_draft',
         'send','reply','reply_all','forward','send_draft'
