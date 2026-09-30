@@ -112,6 +112,8 @@ $store->clear($staleId);
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/MailboxBridgeAdapter.php');
 $controller = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/MailboxBridgeController.php');
 $oidc = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php');
+$uninstall = file_get_contents($root . '/plugin/wordpressconnector/uninstall.php');
+$policy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
 foreach (array('mailbox.bridge.request_put','mailbox.bridge.result_get','mailbox.bridge.clear','confirm_send=true','Destructive mailbox requests require confirm=true') as $needle) {
     if (strpos($adapter,$needle)===false) {
         fwrite(STDERR,"Missing mailbox adapter contract: {$needle}\n"); exit(1);
@@ -126,6 +128,14 @@ foreach (array("MAILBOX_REPOSITORY = 'Yolol100/Leadscanner'","MAILBOX_REPOSITORY
     if (strpos($oidc,$needle)===false) {
         fwrite(STDERR,"Missing mailbox OIDC boundary: {$needle}\n"); exit(1);
     }
+}
+foreach (array('_transient_wpconnector_mailbox_request_','_transient_timeout_wpconnector_mailbox_request_','_transient_wpconnector_mailbox_result_','_transient_timeout_wpconnector_mailbox_result_','wpconnector_mailbox_lock_') as $needle) {
+    if (strpos($uninstall,$needle)===false) {
+        fwrite(STDERR,"Missing mailbox uninstall cleanup: {$needle}\n"); exit(1);
+    }
+}
+if (strpos($policy,'wpconnector_mailbox_')===false) {
+    fwrite(STDERR,"Mailbox option namespace is not reserved by policy.\n"); exit(1);
 }
 if (strpos($controller,'__return_true')!==false) {
     fwrite(STDERR,"Mailbox routes must not use __return_true.\n"); exit(1);
