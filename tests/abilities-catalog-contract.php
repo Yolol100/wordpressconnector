@@ -51,8 +51,8 @@ if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
 if (isset($catalog['abilities']['third-party-plugin/private-operation']) || isset($catalog['abilities']['invalid-name'])) {
     fwrite(STDERR, "Private or malformed ability leaked into the catalog.\n"); exit(1);
 }
-if (false !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed']) {
-    fwrite(STDERR, "Ability catalog unexpectedly exposes execution.\n"); exit(1);
+if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed'] || false !== $catalog['abilities']['third-party-plugin/mutating-operation']['execution_exposed']) {
+    fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
