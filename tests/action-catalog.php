@@ -52,7 +52,7 @@ $expected = array(
     'user.force_password_reset' => 'mutation, privileged, sensitive',
     'woocommerce.order.get' => 'privileged, sensitive',
     'woocommerce.order.list' => 'privileged, sensitive',
-    'wordpress.ability.run' => 'mutation, privileged, sensitive',
+    'wordpress.ability.read' => 'privileged, sensitive',
 );
 
 $rows = array();
