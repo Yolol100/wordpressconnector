@@ -55,7 +55,10 @@ This catalog is generated from the connector action registrations. Security labe
 | `media.list` | read-only | List media attachments. |
 | `media.regenerate` | mutation | Regenerate attachment metadata and image subsizes. |
 | `media.update` | mutation | Update attachment title, alt text, caption, description and parent. |
-| `mailbox.bridge.clear` | mutation, privileged, sensitive | Delete one temporary mailbox request and result. |\n| `mailbox.bridge.request_put` | mutation, privileged, sensitive | Store one bounded temporary mailbox request for the dedicated executor. |\n| `mailbox.bridge.result_get` | privileged, sensitive | Read one bounded temporary mailbox result. |\n| `maintenance.cache_capabilities` | privileged | Inspect bounded cache-maintenance availability for Elementor, WP Rocket and Asset CleanUp. |
+| `mailbox.bridge.clear` | mutation, privileged, sensitive | Delete one temporary mailbox request and result. |
+| `mailbox.bridge.request_put` | mutation, privileged, sensitive | Store one bounded temporary mailbox request for the dedicated executor. |
+| `mailbox.bridge.result_get` | privileged, sensitive | Read one bounded temporary mailbox result. |
+| `maintenance.cache_capabilities` | privileged | Inspect bounded cache-maintenance availability for Elementor, WP Rocket and Asset CleanUp. |
 | `maintenance.cache_flush` | mutation, privileged | Flush exactly one bounded cache layer: Elementor generated files/data, WP Rocket domain cache or Asset CleanUp CSS/JS cache metadata. |
 | `menu.create` | mutation | Create a classic navigation menu. |
 | `menu.delete` | mutation, privileged | Delete a classic navigation menu. |
