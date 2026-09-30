@@ -23,6 +23,7 @@ final class SystemAdapter
         $registry->register('user.get', array($this, 'userGet'), $sensitive + array('capability' => 'list_users', 'description' => 'Read a WordPress user.'));
         $registry->register('user.create', array($this, 'userCreate'), $sensitive + array('mutation' => true, 'capability' => 'create_users', 'description' => 'Create a WordPress user with a server-generated password.'));
         $registry->register('user.update', array($this, 'userUpdate'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Update WordPress user profile fields and roles.'));
+        $registry->register('user.force_password_reset', array($this, 'userForcePasswordReset'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'));
         $registry->register('user.delete', array($this, 'userDelete'), $sensitive + array('mutation' => true, 'capability' => 'delete_users', 'description' => 'Delete a WordPress user.'));
 
         $registry->register('role.list', array($this, 'roleList'), $privileged + array('capability' => 'promote_users', 'description' => 'List roles and capabilities.'));
@@ -131,6 +132,66 @@ final class SystemAdapter
         if (isset($payload['remove_roles'])) foreach ((array) $payload['remove_roles'] as $role) $user->remove_role(sanitize_key((string) $role));
         $result['after'] = $this->userSnapshot(get_user_by('id', $user->ID));
         $result['_rollback'] = array('action' => 'user.update', 'payload' => array('id' => (int) $user->ID, 'email' => $before['email'], 'display_name' => $before['display_name'], 'first_name' => $before['first_name'], 'last_name' => $before['last_name'], 'description' => $before['description'], 'url' => $before['url'], 'role' => $before['roles'][0] ?? 'subscriber'));
+        return $result;
+    }
+
+    public function userForcePasswordReset(array $payload, array $context): array
+    {
+        $user = $this->user($payload);
+        $userId = (int) $user->ID;
+        if (! current_user_can('edit_user', $userId)) {
+            throw new RuntimeException('Current user is not allowed to reset this user password.');
+        }
+
+        $before = $this->userSnapshot($user);
+        $result = array(
+            'user_id' => $userId,
+            'login' => (string) $user->user_login,
+            'would_rotate_password' => true,
+            'would_revoke_sessions' => true,
+            'would_send_password_reset_email' => true,
+            'email_delivery_not_guaranteed' => true,
+            'rollback_supported' => false,
+            '_current_fingerprint' => Fingerprint::make($before),
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+
+        $password = wp_generate_password(64, true, true);
+        wp_set_password($password, $userId);
+        unset($password);
+
+        if (class_exists('WP_Session_Tokens')) {
+            \WP_Session_Tokens::get_instance($userId)->destroy_all();
+        }
+
+        $key = get_password_reset_key($user);
+        $result['password_rotated'] = true;
+        $result['sessions_revoked'] = true;
+        if (is_wp_error($key)) {
+            $result['reset_email_accepted_by_wp_mail'] = false;
+            $result['reset_email_error'] = sanitize_text_field($key->get_error_message());
+            return $result;
+        }
+
+        $siteName = wp_specialchars_decode((string) get_option('blogname'), ENT_QUOTES);
+        $resetUrl = network_site_url(
+            'wp-login.php?action=rp&key=' . rawurlencode((string) $key) . '&login=' . rawurlencode((string) $user->user_login),
+            'login'
+        );
+        /* translators: %s: WordPress site name. */
+        $subject = sprintf(__('[%s] Security password reset', 'wordpressconnector'), $siteName);
+        /* translators: %s: WordPress site name. */
+        $message = sprintf(__('An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector'), $siteName) . "\r\n\r\n";
+        $message .= __('All active sessions have been signed out. Set a new password using this link:', 'wordpressconnector') . "\r\n\r\n";
+        $message .= $resetUrl . "\r\n";
+
+        $result['reset_email_accepted_by_wp_mail'] = (bool) wp_mail((string) $user->user_email, $subject, $message);
+        if (! $result['reset_email_accepted_by_wp_mail']) {
+            $result['reset_email_error'] = 'WordPress mail transport rejected the reset notification.';
+        }
+
         return $result;
     }
 
