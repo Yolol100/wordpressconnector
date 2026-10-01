@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "connector-update-apply-live-20261001-001",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "5530d5469ca9a4835f1c705a90932e525d2a671d69932396508dfc9386337458",
+  "payload": {}
+}
