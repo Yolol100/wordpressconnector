@@ -6,7 +6,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 
 `plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing action contract stays backwards compatible and no caller-controlled remote package URL is introduced.
 
-`plugin.install_package` is deliberately excluded from the public GitHub runtime allowlist. A ZIP committed to a public request branch is public data, so custom/private packages must use direct authenticated REST or a private repository transport.
+`plugin.install_package` may use the public GitHub runtime only for a package that is safe to publish. Public mode requires an exact package SHA, exact plugin identity, `overwrite:false`, `network_wide:false`, a boolean activation choice, and a preceding dry-run fingerprint before confirmation. A ZIP committed to a public request branch is public data, so confidential/custom packages must still use direct authenticated REST or a private repository transport.
 
 ## Preconditions
 
@@ -15,7 +15,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 - The WordPress user needs `install_plugins`; overwrite additionally needs `update_plugins`; activation needs `activate_plugins`; network activation needs `manage_network_plugins`.
 - PHP `ZipArchive` must be available.
 - Use staging first for a new or unproven package. Package install/overwrite is intentionally non-rollbackable.
-- Do not place a private/custom package under `assets/inbox/` on a public GitHub branch.
+- Do not place a confidential package under `assets/inbox/` on a public GitHub branch. Public runtime package installation is only for packages whose bytes may be public.
 
 ## Flow
 
@@ -83,6 +83,12 @@ After re-uploading the exact package, repeat the execute request with `dry_run:f
 ```
 
 The confirmed execute call also cleans its request assets after the attempt. If a retry is needed, upload the package again.
+
+## Public GitHub runtime
+
+For a public repository request branch, the package bytes and request JSON are public. The guarded public route therefore permits only new installs with `overwrite:false` and `network_wide:false`. It still verifies SHA-256, archive structure, plugin identity, WordPress capabilities and activation readback.
+
+The public dry-run writes only a sanitized receipt to GitHub. Use its `before_fingerprint` as `expected_fingerprint` on the confirmed request. Public requests may not publish `expected_state_token`. Because REST execution cleans request assets after each attempt, re-upload the exact ZIP on the confirmed request branch revision.
 
 ## Install versus overwrite
 
