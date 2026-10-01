@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "connector-update-apply-dry-20261001-001",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-01T11:29:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.15.9",
+    "to_version": "1.15.11",
+    "before_fingerprint": "5530d5469ca9a4835f1c705a90932e525d2a671d69932396508dfc9386337458",
+    "rollback_supported": false,
+    "readback_verified": null
+}
