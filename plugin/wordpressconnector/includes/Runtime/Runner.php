@@ -299,8 +299,12 @@ final class Runner
             throw new RuntimeException('Public plugin package install requires an exact expected_plugin file.');
         }
 
-        if (! array_key_exists('overwrite', $payload) || false !== $payload['overwrite']) {
-            throw new RuntimeException('Public plugin package install requires overwrite=false.');
+        if (! array_key_exists('overwrite', $payload) || ! is_bool($payload['overwrite'])) {
+            throw new RuntimeException('Public plugin package install requires an explicit boolean overwrite value.');
+        }
+        if (true === $payload['overwrite']
+            && ! hash_equals('webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expectedPlugin)) {
+            throw new RuntimeException('Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.');
         }
         if (! array_key_exists('network_wide', $payload) || false !== $payload['network_wide']) {
             throw new RuntimeException('Public plugin package install requires network_wide=false.');
