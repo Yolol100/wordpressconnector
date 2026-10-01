@@ -85,11 +85,32 @@ if (0 !== $status) {
     exit(1);
 }
 
+$overwriteDry = $dry;
+$overwriteDry['request_id'] = 'public-plugin-overwrite-dry-0001';
+$overwriteDry['payload']['overwrite'] = true;
+list($status, $output) = $run($validator, array($write('overwrite-dry-request', $overwriteDry)));
+if (0 !== $status) {
+    fwrite(STDERR, 'Guarded public Mailbox Bridge overwrite dry-run was rejected: ' . $output . "\n");
+    exit(1);
+}
+
+$overwriteLive = $overwriteDry;
+$overwriteLive['request_id'] = 'public-plugin-overwrite-live-0001';
+$overwriteLive['dry_run'] = false;
+$overwriteLive['confirm'] = true;
+$overwriteLive['expected_fingerprint'] = str_repeat('d', 64);
+list($status, $output) = $run($validator, array($write('overwrite-live-request', $overwriteLive)));
+if (0 !== $status) {
+    fwrite(STDERR, 'Guarded confirmed public Mailbox Bridge overwrite was rejected: ' . $output . "\n");
+    exit(1);
+}
+
 $bad = array();
 $case = $dry;
 $case['request_id'] = 'public-plugin-bad-0001';
 $case['payload']['overwrite'] = true;
-$bad['overwrite'] = $case;
+$case['payload']['expected_plugin'] = 'other-plugin/other-plugin.php';
+$bad['other-plugin-overwrite'] = $case;
 $case = $dry;
 $case['request_id'] = 'public-plugin-bad-0002';
 $case['payload']['network_wide'] = true;
@@ -142,7 +163,7 @@ Policy::setPublicRepositoryContext(false);
 foreach (array(
     "'plugin.install_package'",
     'assertPublicPluginInstallPayload',
-    "overwrite=false",
+    "Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.",
     "network_wide=false",
     "expected_fingerprint from the preceding dry-run",
     "public_repository_safe",
@@ -224,6 +245,99 @@ list($status, $output) = $run($receiptBuilder, array($write('live-receipt-reques
 $liveReceipt = is_file($liveReceiptPath) ? json_decode((string) file_get_contents($liveReceiptPath), true, 512, JSON_THROW_ON_ERROR) : array();
 if (0 !== $status || true !== ($liveReceipt['readback_verified'] ?? null) || ($liveReceipt['operation'] ?? '') !== 'installed') {
     fwrite(STDERR, 'Public plugin live receipt failed: ' . $output . "\n");
+    exit(1);
+}
+
+$overwriteDryResult = array(
+    'version' => 1,
+    'ok' => true,
+    'request_id' => $overwriteDry['request_id'],
+    'action' => 'plugin.install_package',
+    'dry_run' => true,
+    'data' => array(
+        'would_install_package' => array(
+            'source_path' => $overwriteDry['payload']['source_path'],
+            'sha256' => $overwriteDry['payload']['sha256'],
+            'bytes' => 23456,
+            'plugin_file' => $overwriteDry['payload']['expected_plugin'],
+            'plugin_name' => 'Mailbox Bridge',
+            'archive_entries' => 5,
+            'uncompressed_bytes' => 70000,
+            'overwrite' => true,
+            'activate' => true,
+            'network_wide' => false,
+        ),
+        'before' => array(
+            'file' => $overwriteDry['payload']['expected_plugin'],
+            'installed' => true,
+            'name' => 'Mailbox Bridge',
+            'version' => '0.1.0',
+            'active' => true,
+            'network_active' => false,
+        ),
+    ),
+);
+$overwriteDryReceiptPath = $tmp . '/overwrite-dry-receipt.json';
+list($status, $output) = $run($receiptBuilder, array(
+    $write('overwrite-dry-receipt-request', $overwriteDry),
+    $write('overwrite-dry-result', $overwriteDryResult),
+    $overwriteDryReceiptPath,
+));
+$overwriteDryReceipt = is_file($overwriteDryReceiptPath)
+    ? json_decode((string) file_get_contents($overwriteDryReceiptPath), true, 512, JSON_THROW_ON_ERROR)
+    : array();
+if (0 !== $status || true !== ($overwriteDryReceipt['package_verified'] ?? null) || true !== ($overwriteDryReceipt['overwrite'] ?? null) || empty($overwriteDryReceipt['already_installed'])) {
+    fwrite(STDERR, 'Public Mailbox Bridge overwrite dry-run receipt failed: ' . $output . "\n");
+    exit(1);
+}
+
+$overwriteLiveResult = array(
+    'version' => 1,
+    'ok' => true,
+    'request_id' => $overwriteLive['request_id'],
+    'action' => 'plugin.install_package',
+    'dry_run' => false,
+    'data' => array(
+        'operation' => 'updated',
+        'package' => array(
+            'source_path' => $overwriteLive['payload']['source_path'],
+            'sha256' => $overwriteLive['payload']['sha256'],
+            'bytes' => 23456,
+            'plugin_file' => $overwriteLive['payload']['expected_plugin'],
+            'overwrite' => true,
+            'activate' => true,
+            'network_wide' => false,
+        ),
+        'before' => array(
+            'file' => $overwriteLive['payload']['expected_plugin'],
+            'installed' => true,
+            'name' => 'Mailbox Bridge',
+            'version' => '0.1.0',
+            'active' => true,
+            'network_active' => false,
+        ),
+        'after' => array(
+            'file' => $overwriteLive['payload']['expected_plugin'],
+            'installed' => true,
+            'name' => 'Mailbox Bridge',
+            'version' => '0.1.1',
+            'active' => true,
+            'network_active' => false,
+        ),
+        'rollback_supported' => false,
+    ),
+);
+$overwriteLiveReceiptPath = $tmp . '/overwrite-live-receipt.json';
+list($status, $output) = $run($receiptBuilder, array(
+    $write('overwrite-live-receipt-request', $overwriteLive),
+    $write('overwrite-live-result', $overwriteLiveResult),
+    $overwriteLiveReceiptPath,
+));
+$overwriteLiveReceipt = is_file($overwriteLiveReceiptPath)
+    ? json_decode((string) file_get_contents($overwriteLiveReceiptPath), true, 512, JSON_THROW_ON_ERROR)
+    : array();
+if (0 !== $status || true !== ($overwriteLiveReceipt['readback_verified'] ?? null) || true !== ($overwriteLiveReceipt['overwrite'] ?? null) || ($overwriteLiveReceipt['operation'] ?? '') !== 'updated') {
+    fwrite(STDERR, 'Public Mailbox Bridge overwrite live receipt failed: ' . $output . "\n");
     exit(1);
 }
 

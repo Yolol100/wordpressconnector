@@ -270,7 +270,8 @@ if (! $ok) {
             $receipt['package_sha256'] = $expectedSha;
         }
         $receipt['activate_requested'] = true === ($payload['activate'] ?? null);
-        $receipt['overwrite'] = false;
+        $expectedOverwrite = true === ($payload['overwrite'] ?? null);
+        $receipt['overwrite'] = $expectedOverwrite;
         $receipt['network_wide'] = false;
         $receipt['rollback_supported'] = false;
 
@@ -288,7 +289,7 @@ if (! $ok) {
                 && $expectedPlugin !== ''
                 && hash_equals($expectedSha, $planSha)
                 && hash_equals($expectedPlugin, $planFile)
-                && false === ($plan['overwrite'] ?? null)
+                && $expectedOverwrite === ($plan['overwrite'] ?? null)
                 && false === ($plan['network_wide'] ?? null);
             if (isset($plan['bytes'])) {
                 $receipt['package_bytes'] = max(0, (int) $plan['bytes']);

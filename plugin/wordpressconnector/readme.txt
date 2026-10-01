@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.10
+Stable tag: 1.15.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -13,6 +13,8 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 == Description ==
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
+
+Version 1.15.11 allows guarded public overwrite only for the already-installed Webactueel Mailbox Bridge. The request remains checksum-, identity- and dry-run-fingerprint-gated, network-wide install remains forbidden, and all other public plugin overwrites remain blocked.
 
 Version 1.15.10 closes the remaining WooCommerce order-read compatibility gap with bounded stock CPT/HPOS item queries across pre-11.1 and current WooCommerce, declares HPOS compatibility, and makes ambiguous WordPress Ability annotations fail closed. CI now includes real MySQL-backed WordPress/WooCommerce runtime coverage for the supported storage paths.
 
@@ -77,6 +79,9 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.11 =
+* Allow guarded public overwrite only for `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php` with exact SHA/plugin identity and prior dry-run fingerprint; keep all other public plugin overwrites blocked.
 
 = 1.15.10 =
 * Bound core WooCommerce line-item reads with COUNT plus LIMIT 50 for both legacy CPT and HPOS stores, including WooCommerce releases before get_item_ids() existed.

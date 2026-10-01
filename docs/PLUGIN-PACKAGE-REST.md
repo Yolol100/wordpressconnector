@@ -6,7 +6,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 
 `plugin.install` remains the WordPress.org slug installer. `plugin.install_package` handles request-scoped ZIP packages so the existing action contract stays backwards compatible and no caller-controlled remote package URL is introduced.
 
-`plugin.install_package` may use the public GitHub runtime only for a package that is safe to publish. Public mode requires an exact package SHA, exact plugin identity, `overwrite:false`, `network_wide:false`, a boolean activation choice, and a preceding dry-run fingerprint before confirmation. A ZIP committed to a public request branch is public data, so confidential/custom packages must still use direct authenticated REST or a private repository transport.
+`plugin.install_package` may use the public GitHub runtime only for a package that is safe to publish. Public mode requires an exact package SHA, exact plugin identity, `network_wide:false`, a boolean activation choice, and a preceding dry-run fingerprint before confirmation. New installs require `overwrite:false`. The only public overwrite exception is the exact plugin identity `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php`; all other public overwrites remain blocked. A ZIP committed to a public request branch is public data, so confidential/custom packages must still use direct authenticated REST or a private repository transport.
 
 ## Preconditions
 
@@ -86,7 +86,7 @@ The confirmed execute call also cleans its request assets after the attempt. If 
 
 ## Public GitHub runtime
 
-For a public repository request branch, the package bytes and request JSON are public. The guarded public route therefore permits only new installs with `overwrite:false` and `network_wide:false`. It still verifies SHA-256, archive structure, plugin identity, WordPress capabilities and activation readback.
+For a public repository request branch, the package bytes and request JSON are public. The guarded public route permits new installs with `overwrite:false` and `network_wide:false`. It also permits `overwrite:true` only when `expected_plugin` is exactly `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php`; this narrow exception exists to update the already-public Mailbox Bridge without making generic public plugin replacement possible. SHA-256, archive structure, plugin identity, WordPress capabilities, stale-state fingerprint and activation readback remain mandatory.
 
 The public dry-run writes only a sanitized receipt to GitHub. Use its `before_fingerprint` as `expected_fingerprint` on the confirmed request. Public requests may not publish `expected_state_token`. Because REST execution cleans request assets after each attempt, re-upload the exact ZIP on the confirmed request branch revision.
 
