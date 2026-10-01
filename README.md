@@ -70,6 +70,6 @@ Run the canonical contract suite:
 bash scripts/run-contracts.sh
 ```
 
-Runtime acceptance still requires an isolated or staging WordPress installation. Static and controlled-runtime CI do not prove a production host.
+CI includes an isolated MySQL-backed WordPress/WooCommerce runtime matrix for the minimum WordPress baseline plus legacy/HPOS order storage on representative pre-11.1 and current WooCommerce releases. This still does not prove every production host, custom data store, WAF, cache layer or third-party plugin combination.
 
 See `docs/SETUP.md`, `docs/SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/SCOPE.md` and `docs/ACTION-CATALOG.md`.

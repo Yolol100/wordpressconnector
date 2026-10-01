@@ -43,8 +43,11 @@ final class ContractAbility
     }
 }
 
+$ability_catalog_overflow = false;
 function wp_get_abilities(): array
 {
+    global $ability_catalog_overflow;
+    if ($ability_catalog_overflow) return array_fill(0, 10001, null);
     $abilities = array(
         'third-party-plugin/reindex-content' => new ContractAbility(array(
             'public' => true,
@@ -55,6 +58,10 @@ function wp_get_abilities(): array
         'third-party-plugin/mutating-operation' => new ContractAbility(array(
             'show_in_rest' => true,
             'annotations' => array('readonly' => false, 'destructive' => true),
+        )),
+        'third-party-plugin/ambiguous-readonly' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'annotations' => array('readonly' => true),
         )),
         'invalid-name' => new ContractAbility(array('public' => true)),
     );
@@ -76,11 +83,11 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 14 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 15 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
-if (4 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+if (5 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
 }
 $catalogEncoded = json_encode($catalog);
@@ -96,13 +103,23 @@ try {
 } catch (RuntimeException $expected) {
     if ('per_page must be a positive integer.' !== $expected->getMessage()) throw $expected;
 }
+$ability_catalog_overflow = true;
+try {
+    $adapter->catalog(array(), array());
+    fwrite(STDERR, "Oversized Ability registry was accepted.\n"); exit(1);
+} catch (RuntimeException $expected) {
+    if ('WordPress Ability catalog exceeds the discovery limit.' !== $expected->getMessage()) throw $expected;
+}
+$ability_catalog_overflow = false;
 if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
     fwrite(STDERR, "Public third-party ability was not discovered.\n"); exit(1);
 }
 if (isset($catalog['abilities']['third-party-plugin/private-operation']) || isset($catalog['abilities']['invalid-name'])) {
     fwrite(STDERR, "Private or malformed ability leaked into the catalog.\n"); exit(1);
 }
-if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed'] || false !== $catalog['abilities']['third-party-plugin/mutating-operation']['execution_exposed']) {
+if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed'] ||
+    false !== $catalog['abilities']['third-party-plugin/mutating-operation']['execution_exposed'] ||
+    false !== $catalog['abilities']['third-party-plugin/ambiguous-readonly']['execution_exposed']) {
     fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
 
@@ -157,5 +174,13 @@ try {
 }
 if (6 !== ContractAbility::$executions) {
     fwrite(STDERR, "Blocked mutating ability still executed.\n"); exit(1);
+}
+try {
+    $adapter->readAbility(array('name' => 'third-party-plugin/ambiguous-readonly'), array());
+    fwrite(STDERR, "Ability without explicit destructive=false was executed.\n"); exit(1);
+} catch (RuntimeException $expected) {
+}
+if (6 !== ContractAbility::$executions) {
+    fwrite(STDERR, "Ambiguous Ability metadata still reached execute().\n"); exit(1);
 }
 echo "abilities catalog contract OK\n";

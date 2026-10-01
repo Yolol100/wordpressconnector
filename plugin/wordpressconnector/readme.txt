@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.9
+Stable tag: 1.15.10
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,7 +14,11 @@ Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST 
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
-Version 1.15.9 allows the existing plugin.install_package action through public GitHub runtime only for publishable ZIPs with exact SHA-256 and plugin identity, overwrite:false, network_wide:false, explicit activation intent and a required dry-run fingerprint before confirmation. Public receipts remain sanitized and private/confidential packages remain forbidden on public request branches.\n\nVersion 1.15.8 adds bounded WooCommerce customer, shipping-zone and tax catalog reads, with WooCommerce capability checks and sensitive-data opt-ins. Shipping zones and tax rates use paginated fixed queries and return bounded geographic restrictions with counts and truncation evidence. Order summaries omit customer identifiers and line-item details by default, validate sensitive identifiers strictly, and load at most 50 individual-order line items through the active WooCommerce data-store boundary with fail-closed fallback when bounded item-ID access is unavailable. REST-exposed read-only WordPress Ability results redact credential-shaped fields and are capped at 10,000 values, 20 levels and 256 KiB; Ability discovery is paginated to 10 descriptors per page, omits over-budget schemas and caps each page at 256 KiB.
+Version 1.15.10 closes the remaining WooCommerce order-read compatibility gap with bounded stock CPT/HPOS item queries across pre-11.1 and current WooCommerce, declares HPOS compatibility, and makes ambiguous WordPress Ability annotations fail closed. CI now includes real MySQL-backed WordPress/WooCommerce runtime coverage for the supported storage paths.
+
+Version 1.15.9 allows the existing plugin.install_package action through public GitHub runtime only for publishable ZIPs with exact SHA-256 and plugin identity, overwrite:false, network_wide:false, explicit activation intent and a required dry-run fingerprint before confirmation. Public receipts remain sanitized and private/confidential packages remain forbidden on public request branches.
+
+Version 1.15.8 adds bounded WooCommerce customer, shipping-zone and tax catalog reads, with WooCommerce capability checks and sensitive-data opt-ins. Shipping zones and tax rates use paginated fixed queries and return bounded geographic restrictions with counts and truncation evidence. Order summaries omit customer identifiers and line-item details by default, validate sensitive identifiers strictly, and load at most 50 individual-order line items through the active WooCommerce data-store boundary with fail-closed fallback when bounded item-ID access is unavailable. REST-exposed read-only WordPress Ability results redact credential-shaped fields and are capped at 10,000 values, 20 levels and 256 KiB; Ability discovery is paginated to 10 descriptors per page, omits over-budget schemas and caps each page at 256 KiB.
 
 Version 1.15.7 adds a guarded emergency user-password reset action for incident response. It rotates the password server-side, revokes all sessions, creates a fresh reset key, sends a dedicated security reset link, never returns secret material, and remains blocked from public-repository runtime.
 
@@ -73,6 +77,15 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.15.10 =
+* Bound core WooCommerce line-item reads with COUNT plus LIMIT 50 for both legacy CPT and HPOS stores, including WooCommerce releases before get_item_ids() existed.
+* Fail closed for unknown custom order data stores instead of bypassing their storage contract.
+* Declare HPOS compatibility and add MySQL-backed WordPress/WooCommerce runtime CI for legacy and HPOS modes.
+* Require WordPress Abilities to declare both readonly=true and destructive=false, and cap discovery at 10,000 registered abilities.
+
+= 1.15.9 =
+* Allow guarded public plugin package installation only for publishable, checksum-pinned packages with exact identity, no overwrite/network-wide install, explicit activation intent and prior dry-run fingerprint.
 
 = 1.15.8 =
 * Add bounded WooCommerce customer, shipping-zone and tax-class/tax-rate reads with explicit management capability requirements and bounded tax-rate location details.

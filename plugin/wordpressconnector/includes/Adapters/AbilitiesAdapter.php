@@ -36,8 +36,13 @@ final class AbilitiesAdapter
         $perPage = $this->catalogPositiveInteger($payload['per_page'] ?? 10, 10, 'per_page');
         $page = $this->catalogPositiveInteger($payload['page'] ?? 1, 100000, 'page');
 
+        $registered = (array) wp_get_abilities();
+        if (count($registered) > 10000) {
+            throw new \RuntimeException('WordPress Ability catalog exceeds the discovery limit.');
+        }
+
         $eligible = array();
-        foreach ((array) wp_get_abilities() as $name => $ability) {
+        foreach ($registered as $name => $ability) {
             if (! is_object($ability)) {
                 continue;
             }
@@ -154,7 +159,7 @@ final class AbilitiesAdapter
         if (! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) return false;
         $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
         $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
-        return true === ($annotations['readonly'] ?? false) && true !== ($annotations['destructive'] ?? false);
+        return true === ($annotations['readonly'] ?? false) && false === ($annotations['destructive'] ?? null);
     }
 
     private function isExposed(object $ability): bool

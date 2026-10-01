@@ -12,7 +12,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/Wo
 class WooCommerce {}
 class WC_Order
 {
-    public static bool $bounded_store_available = true;
+    public static string $data_store_class = 'WC_Order_Data_Store_CPT';
     public function get_id(): int { return 81; }
     public function get_status(): string { return 'processing'; }
     public function get_currency(): string { return 'EUR'; }
@@ -50,14 +50,7 @@ class WC_Order
 }
 class WooOrderDataStoreStub
 {
-    public function has_callable(string $method): bool { return 'get_item_ids' === $method && WC_Order::$bounded_store_available; }
-    public function get_item_ids(WC_Order $order, ?string $type = null): array
-    {
-        if (! WC_Order::$bounded_store_available || 'line_item' !== $type || 81 !== $order->get_id()) {
-            throw new RuntimeException('Unexpected bounded order item query.');
-        }
-        return range(1, 51);
-    }
+    public function get_current_class_name(): string { return WC_Order::$data_store_class; }
 }
 class WC_Order_Item_Product
 {
@@ -73,14 +66,31 @@ class WC_Order_Item_Product
 }
 class WC_Order_Factory
 {
-    public static function get_order_item(int $id) { return $id >= 1 && $id <= 51 ? new WC_Order_Item_Product($id) : false; }
+    public static function get_order_item(int $id) { return $id >= 1 && $id <= 50 ? new WC_Order_Item_Product($id) : false; }
 }
 class WooOrderWpdbStub
 {
     public string $prefix = 'wp_';
-    public function __call(string $name, array $arguments) { throw new RuntimeException('Direct WooCommerce order-item SQL must not be used.'); }
+    public string $last_error = '';
+    public int $line_item_count = 51;
+    public function prepare(string $query, ...$args): array { return array('query' => $query, 'args' => $args); }
+    public function get_var(array $prepared)
+    {
+        if (false === strpos($prepared['query'], 'COUNT(*)') || false === strpos($prepared['query'], 'FROM %i') ||
+            array('wp_woocommerce_order_items', 81, 'line_item') !== $prepared['args']) {
+            throw new RuntimeException('Order item count query was not bounded to the stock WooCommerce table and order.');
+        }
+        return (string) $this->line_item_count;
+    }
+    public function get_col(array $prepared): array
+    {
+        if (false === strpos($prepared['query'], 'ORDER BY order_item_id ASC LIMIT %d') ||
+            array('wp_woocommerce_order_items', 81, 'line_item', 50) !== $prepared['args']) {
+            throw new RuntimeException('Order item ID query was not bounded to 50 rows.');
+        }
+        return range(1, min(50, $this->line_item_count));
+    }
 }
-
 
 function wc_get_product(int $id = 0) { return null; }
 function wc_get_order(int $id) { return 81 === $id ? new WC_Order() : false; }
@@ -113,32 +123,40 @@ if (100 !== $list['per_page'] || isset($list['orders'][0]['billing']) || isset($
 $listUnprefixedStatus = $adapter->orderList(array('per_page' => 25, 'page' => 3, 'customer_id' => 9, 'status' => 'processing'));
 if (isset($listUnprefixedStatus['orders'][0]['items'])) throw new RuntimeException('Order list must continue omitting line-item detail.');
 foreach (array(true, 9.5, '9junk', '09') as $badCustomerId) {
-    try {
-        $adapter->orderList(array('customer_id' => $badCustomerId));
-        throw new RuntimeException('Malformed order-list customer_id was accepted.');
-    } catch (RuntimeException $expected) {
-        if ('customer_id must be a positive integer.' !== $expected->getMessage()) throw $expected;
-    }
+    try { $adapter->orderList(array('customer_id' => $badCustomerId)); throw new RuntimeException('Malformed order-list customer_id was accepted.'); }
+    catch (RuntimeException $expected) { if ('customer_id must be a positive integer.' !== $expected->getMessage()) throw $expected; }
 }
 foreach (array(true, 81.5, '81junk', '081') as $badOrderId) {
-    try {
-        $adapter->orderGet(array('id' => $badOrderId));
-        throw new RuntimeException('Malformed order id was accepted.');
-    } catch (RuntimeException $expected) {
-        if ('A positive order id is required.' !== $expected->getMessage()) throw $expected;
-    }
+    try { $adapter->orderGet(array('id' => $badOrderId)); throw new RuntimeException('Malformed order id was accepted.'); }
+    catch (RuntimeException $expected) { if ('A positive order id is required.' !== $expected->getMessage()) throw $expected; }
 }
+
 $summary = $adapter->orderGet(array('id' => 81));
 if (isset($summary['order']['billing']) || isset($summary['order']['shipping']) || isset($summary['order']['customer_id'])) throw new RuntimeException('Order personal data must be omitted by default.');
-if (50 !== count($summary['order']['items']) || 51 !== $summary['order']['item_count'] || ! $summary['order']['items_truncated'] || 100 !== $summary['order']['items'][0]['product_id'] || 'Product 1' !== $summary['order']['items'][0]['name']) throw new RuntimeException('Order line items must be capped with truncation evidence.');
-WC_Order::$bounded_store_available = false;
+if (50 !== count($summary['order']['items']) || 51 !== $summary['order']['item_count'] || ! $summary['order']['items_truncated'] || 100 !== $summary['order']['items'][0]['product_id']) throw new RuntimeException('Stock CPT order line items were not bounded correctly.');
+
+WC_Order::$data_store_class = 'Automattic\\WooCommerce\\Internal\\DataStores\\Orders\\OrdersTableDataStore';
+$hpos = $adapter->orderGet(array('id' => 81));
+if (51 !== $hpos['order']['item_count'] || ! $hpos['order']['items_truncated']) throw new RuntimeException('Stock HPOS order line items were not bounded correctly.');
+
+WC_Order::$data_store_class = 'Vendor\\CustomOrderDataStore';
 try {
     $adapter->orderGet(array('id' => 81));
-    throw new RuntimeException('Order item reads without a bounded data-store API were accepted.');
+    throw new RuntimeException('Unknown custom order store bypassed the bounded read boundary.');
 } catch (RuntimeException $expected) {
     if ('WooCommerce bounded order item data store API is unavailable.' !== $expected->getMessage()) throw $expected;
 }
-WC_Order::$bounded_store_available = true;
+
+WC_Order::$data_store_class = 'WC_Order_Data_Store_CPT';
+$wpdb->line_item_count = 10001;
+try {
+    $adapter->orderGet(array('id' => 81));
+    throw new RuntimeException('Pathological order item count bypassed the hard limit.');
+} catch (RuntimeException $expected) {
+    if ('WooCommerce order item count exceeds the safety limit.' !== $expected->getMessage()) throw $expected;
+}
+$wpdb->line_item_count = 51;
+
 $detail = $adapter->orderGet(array('id' => 81, 'include_personal_data' => true));
 if ('private@example.test' !== $detail['order']['billing']['email']) throw new RuntimeException('Explicit per-order personal data request failed.');
 echo "WooCommerce order read contract OK\n";

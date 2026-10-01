@@ -129,7 +129,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
 | `woocommerce.attribute.update` | mutation | Update a global WooCommerce product attribute. |
 | `woocommerce.customer.get` | privileged, sensitive | Read one WooCommerce customer summary with `manage_woocommerce`; contact and address data require explicit opt-in. Subscriber accounts and custom roles with order history are supported; sites may extend recognized roles with `wpc_connector_woocommerce_customer_roles`. |
-| `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary with `manage_woocommerce`; customer and address data require an explicit request, with up to 50 line items loaded through the active WooCommerce data-store boundary. The read fails closed when bounded item-ID access is unavailable. |
+| `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary with `manage_woocommerce`; customer/address data require explicit opt-in. Core CPT/HPOS stores use a bounded count plus at most 50 order-item IDs before WooCommerce hydration; unknown custom order stores fail closed. |
 | `woocommerce.order.list` | privileged, sensitive | List bounded WooCommerce order summaries with `manage_woocommerce`; customer identifiers, contact data and line-item details are omitted. |
 | `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone with at most 100 geographic locations and truncation/count evidence; shipping method settings are omitted. |
 | `woocommerce.shipping_zone.list` | privileged | Paginate at most 50 WooCommerce shipping zones, including the default zone last, and cap each zone at 100 geographic locations with truncation/count evidence. |
@@ -147,7 +147,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.get` | read-only | Read a WooCommerce product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a WooCommerce product variation. |
-| `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries without executing them; paginate at most 10 descriptors per page, omit over-budget schemas, and cap each response page at 256 KiB. |
-| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback; redact credential-shaped fields and cap output at 10,000 values, 20 levels and 256 KiB. |
+| `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries without executing them; reject registries above 10,000 entries, paginate at most 10 descriptors per page, omit over-budget schemas, and cap each response page at 256 KiB. |
+| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed WordPress Ability only when it explicitly declares `readonly=true` and `destructive=false`; native validation and permission callback still run, credential-shaped fields are redacted, and output is capped at 10,000 values, 20 levels and 256 KiB. |
 | `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
 | `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |
