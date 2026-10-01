@@ -139,12 +139,26 @@ jobs:
 
           request_id=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["request_id"];' "$root/request.json")
           site_url=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["site_url"];' "$root/request.json")
+          action=$(php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);echo $d["action"];' "$root/request.json")
+          stage_assets_only=false
+          if [[ "$public_mode" == true && "$action" == "transport.stage_assets" ]]; then
+            stage_assets_only=true
+            (( asset_count == 1 )) || { echo 'transport.stage_assets requires exactly one asset.' >&2; exit 1; }
+            for path in "${changed[@]}"; do
+              case "$path" in
+                assets/inbox/plugin-packages/*.zip|requests/*.json) ;;
+                receipts/*.json) ;;
+                *) echo "transport.stage_assets allows only one plugin-packages ZIP plus its request JSON: $path" >&2; exit 1 ;;
+              esac
+            done
+          fi
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);unset($d["site_url"]);file_put_contents($argv[2],json_encode($d,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n");' "$root/request.json" "$root/connector-request.json"
           echo "request_id=$request_id" >> "$GITHUB_OUTPUT"
           echo "site_url=$site_url" >> "$GITHUB_OUTPUT"
           echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
           echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
           echo "public_mode=$public_mode" >> "$GITHUB_OUTPUT"
+          echo "stage_assets_only=$stage_assets_only" >> "$GITHUB_OUTPUT"
 
       - name: Verify connector presence
         env:
@@ -233,7 +247,17 @@ jobs:
             | php -r '$d=json_decode(stream_get_contents(STDIN),true,512,JSON_THROW_ON_ERROR);echo (string)($d["head"]["sha"]??"");')
           [[ "$current_head" == "$EXPECTED_HEAD_SHA" ]] || { echo 'Request branch moved after validation; refusing execution.' >&2; exit 1; }
 
+      - name: Confirm staged assets without execution
+        if: steps.preflight.outputs.stage_assets_only == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(find "$RUNNER_TEMP/wpconnector/assets/inbox" -type f | wc -l | tr -d ' ')
+          [[ "$count" == "1" ]]
+          echo "WORDPRESS_ASSET_STAGE=green count=1"
+
       - name: Execute with short-lived GitHub OIDC
+        if: steps.preflight.outputs.stage_assets_only != 'true'
         id: execute
         continue-on-error: true
         env:
@@ -259,7 +283,7 @@ jobs:
           php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(($d["request_id"]??"")!==$argv[2])exit(1);' "$result" "$REQUEST_ID"
 
       - name: Build public receipt
-        if: always() && steps.preflight.outputs.public_mode == 'true'
+        if: always() && steps.preflight.outputs.public_mode == 'true' && steps.preflight.outputs.stage_assets_only != 'true'
         env:
           REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
         shell: bash
@@ -270,7 +294,7 @@ jobs:
           php "$RUNNER_TEMP/wpconnector/trusted/build-public-receipt.php" "$RUNNER_TEMP/wpconnector/connector-request.json" "$result" "$RUNNER_TEMP/wpconnector/receipts/${REQUEST_ID}.json"
 
       - name: Persist sanitized public receipt
-        if: always() && steps.preflight.outputs.public_mode == 'true'
+        if: always() && steps.preflight.outputs.public_mode == 'true' && steps.preflight.outputs.stage_assets_only != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REQUEST_ID: ${{ steps.preflight.outputs.request_id }}
