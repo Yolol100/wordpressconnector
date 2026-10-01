@@ -8,6 +8,12 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 
 `plugin.install_package` is deliberately excluded from the public GitHub runtime allowlist. A ZIP committed to a public request branch is public data, so custom/private packages must use direct authenticated REST or a private repository transport.
 
+## Public repository bootstrap staging
+
+When the repository is public, `plugin.install_package` remains blocked in GitHub runtime mode. A public request may use the workflow-only action `transport.stage_assets` to upload exactly one already-public ZIP under `assets/inbox/plugin-packages/` into the connector's private, non-webroot request inbox. The workflow does not execute the connector action, does not persist a result, and requires `dry_run:true`, `confirm:false`, an empty payload, and no state guards.
+
+Installation must then be performed through an independently authenticated WordPress administrator REST session using the same `request_id`. The dry-run consumes the staged asset, so re-upload the exact ZIP under a new request id before the confirmed install. This staging route must not be used for proprietary or confidential packages because the GitHub branch remains public.
+
 ## Preconditions
 
 - Use HTTPS and an authenticated WordPress administrator. A dedicated WordPress Application Password is the preferred REST credential.
