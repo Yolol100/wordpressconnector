@@ -41,6 +41,7 @@ final class Policy
         'code_snippets.patch',
         'maintenance.cache_capabilities',
         'maintenance.cache_flush',
+        'plugin.install_package',
     );
 
     private static ?bool $runtimePublicRepository = null;

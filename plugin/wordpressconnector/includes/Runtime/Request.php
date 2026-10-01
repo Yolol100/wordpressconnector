@@ -118,6 +118,7 @@ final class Request
                 'acf.schema.ensure_text_fields',
                 'elementor.patch_element',
                 'connector.update.apply',
+                'plugin.install_package',
             );
             if (! $dryRun && in_array($action, $fingerprintRequired, true) && null === $expectedFingerprint) {
                 throw new RuntimeException('Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.');

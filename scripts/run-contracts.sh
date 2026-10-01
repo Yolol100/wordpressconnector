@@ -11,6 +11,9 @@ find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n
 run_php tests/policy-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
+run_php tests/abilities-catalog-contract.php
+run_php tests/woocommerce-orders-read-contract.php
+run_php tests/woocommerce-catalog-read-contract.php
 run_php tests/user-password-reset-contract.php
 run_php tests/custom-css-contract.php
 run_php tests/code-snippets-contract.php
@@ -34,6 +37,7 @@ run_php tests/request-workflow-contract.php
 run_php tests/mailbox-private-workflow-contract.php
 run_php tests/execute-workflow-contract.php
 run_php tests/public-runtime-contract.php
+run_php tests/public-plugin-package-contract.php
 run_php tests/public-broad-actions-contract.php
 run_php tests/public-request-server-boundary-contract.php
 run_php tests/public-post-read-contract.php

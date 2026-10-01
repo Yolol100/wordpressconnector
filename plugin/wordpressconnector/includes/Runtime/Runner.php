@@ -242,6 +242,14 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('plugin.install_package' === $action) {
+            $this->assertPublicPluginInstallPayload($payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public plugin package install requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['public_repository_safe'] = true;
+            return $descriptor;
+        }
         if ('connector.rollback' === $action) {
             $requestId = isset($payload['request_id']) ? (string) $payload['request_id'] : '';
             if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId)) {
@@ -259,6 +267,47 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicPluginInstallPayload(array $payload): void
+    {
+        $allowed = array('source_path', 'sha256', 'expected_plugin', 'overwrite', 'activate', 'network_wide');
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, $allowed, true)) {
+                throw new RuntimeException('Public plugin package install contains unsupported payload key: ' . (string) $key);
+            }
+        }
+
+        $sourcePath = isset($payload['source_path']) && is_string($payload['source_path'])
+            ? str_replace('\\', '/', $payload['source_path'])
+            : '';
+        if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip\\z#', $sourcePath)) {
+            throw new RuntimeException('Public plugin package install requires source_path plugin-packages/<safe-name>.zip.');
+        }
+
+        $sha256 = isset($payload['sha256']) && is_string($payload['sha256'])
+            ? strtolower($payload['sha256'])
+            : '';
+        if (! preg_match('/^[a-f0-9]{64}\\z/', $sha256)) {
+            throw new RuntimeException('Public plugin package install requires an exact lowercase SHA-256 checksum.');
+        }
+
+        $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin'])
+            ? str_replace('\\', '/', $payload['expected_plugin'])
+            : '';
+        if (! preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php\\z/', $expectedPlugin)) {
+            throw new RuntimeException('Public plugin package install requires an exact expected_plugin file.');
+        }
+
+        if (! array_key_exists('overwrite', $payload) || false !== $payload['overwrite']) {
+            throw new RuntimeException('Public plugin package install requires overwrite=false.');
+        }
+        if (! array_key_exists('network_wide', $payload) || false !== $payload['network_wide']) {
+            throw new RuntimeException('Public plugin package install requires network_wide=false.');
+        }
+        if (! array_key_exists('activate', $payload) || ! is_bool($payload['activate'])) {
+            throw new RuntimeException('Public plugin package install requires an explicit boolean activate value.');
+        }
     }
 
     private function assertPublicCacheFlushPayload(array $payload): string

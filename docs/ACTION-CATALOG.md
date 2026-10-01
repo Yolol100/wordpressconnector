@@ -7,6 +7,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.delete` | mutation, privileged | Delete one or more ACF field values through delete_field(). |
 | `acf.field_groups` | privileged | List active ACF field groups and fields for discovery. |
 | `acf.get` | privileged | Read ACF values for a post, term, user or options target. |
+| `acf.portfolio_stats_update` | mutation, privileged | Update the eight portfolio-stat ACF text fields on one standard post with dry-run, stale-state protection and rollback. |
+| `acf.schema.ensure_text_fields` | mutation, privileged | Create a bounded set of new ACF text fields in an existing field group without altering existing fields. |
+| `acf.schema.remove_text_fields` | mutation, privileged | Remove exact ACF text fields created by a prior bounded schema ensure operation. |
 | `acf.update` | mutation, privileged | Update ACF values for a post, term, user or options target. |
 | `auto_image_attributes.inspect` | privileged | Read safe Auto Image Attributes upload and bulk-update settings. |
 | `auto_image_attributes.update` | mutation, privileged | Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback. |
@@ -86,6 +89,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.settings.inspect` | privileged | Read allowlisted settings through a plugin-owned API and return a state fingerprint. |
 | `plugin.settings.update` | mutation, privileged | Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback. |
 | `plugin.update` | mutation, privileged, system_update | Update one installed plugin. |
+| `portfolio.case_text_update` | mutation, privileged | Update portfolio intro content plus description fields on one standard post with stale-state protection and rollback. |
 | `post.create` | mutation | Create a post, page or custom post type object. |
 | `post.get` | read-only | Read one post object. |
 | `post.list` | read-only | List posts, pages or custom post types. |
@@ -124,6 +128,13 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.attribute.delete` | mutation, privileged | Delete a global WooCommerce product attribute. |
 | `woocommerce.attribute.list` | read-only | List global WooCommerce product attributes. |
 | `woocommerce.attribute.update` | mutation | Update a global WooCommerce product attribute. |
+| `woocommerce.customer.get` | privileged, sensitive | Read one WooCommerce customer summary with `manage_woocommerce`; contact and address data require explicit opt-in. Subscriber accounts and custom roles with order history are supported; sites may extend recognized roles with `wpc_connector_woocommerce_customer_roles`. |
+| `woocommerce.order.get` | privileged, sensitive | Read one WooCommerce order summary with `manage_woocommerce`; customer and address data require an explicit request, with up to 50 line items loaded through the active WooCommerce data-store boundary. The read fails closed when bounded item-ID access is unavailable. |
+| `woocommerce.order.list` | privileged, sensitive | List bounded WooCommerce order summaries with `manage_woocommerce`; customer identifiers, contact data and line-item details are omitted. |
+| `woocommerce.shipping_zone.get` | privileged | Read one WooCommerce shipping zone with at most 100 geographic locations and truncation/count evidence; shipping method settings are omitted. |
+| `woocommerce.shipping_zone.list` | privileged | Paginate at most 50 WooCommerce shipping zones, including the default zone last, and cap each zone at 100 geographic locations with truncation/count evidence. |
+| `woocommerce.tax_class.list` | privileged | List WooCommerce tax classes. |
+| `woocommerce.tax_rate.list` | privileged | Paginate at most 50 WooCommerce tax rates per request; include up to 100 city/state/postcode locations per rate with truncation evidence. |
 | `woocommerce.coupon.create` | mutation, privileged | Create a WooCommerce coupon. |
 | `woocommerce.coupon.get` | privileged | Read a WooCommerce coupon. |
 | `woocommerce.coupon.list` | privileged | List WooCommerce coupons without customer/order data. |
@@ -136,6 +147,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.variation.get` | read-only | Read a WooCommerce product variation. |
 | `woocommerce.variation.list` | read-only | List product variations. |
 | `woocommerce.variation.update` | mutation | Update a WooCommerce product variation. |
-| `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries and schemas without executing them. |
+| `wordpress.abilities` | privileged | Discover exposed WordPress Abilities API entries without executing them; paginate at most 10 descriptors per page, omit over-budget schemas, and cap each response page at 256 KiB. |
+| `wordpress.ability.read` | privileged, sensitive | Read through a REST-exposed, explicitly read-only WordPress Ability after native input validation and its permission callback; redact credential-shaped fields and cap output at 10,000 values, 20 levels and 256 KiB. |
 | `yoast.inspect` | privileged | Read supported Yoast SEO and Yoast SEO Premium post fields. |
 | `yoast.update` | mutation, privileged | Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support. |

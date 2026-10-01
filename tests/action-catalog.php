@@ -50,6 +50,18 @@ $expected = array(
     'user.list' => 'privileged, sensitive',
     'user.update' => 'mutation, privileged, sensitive',
     'user.force_password_reset' => 'mutation, privileged, sensitive',
+    'woocommerce.order.get' => 'privileged, sensitive',
+    'woocommerce.order.list' => 'privileged, sensitive',
+    'woocommerce.customer.get' => 'privileged, sensitive',
+    'woocommerce.shipping_zone.get' => 'privileged',
+    'woocommerce.shipping_zone.list' => 'privileged',
+    'woocommerce.tax_class.list' => 'privileged',
+    'woocommerce.tax_rate.list' => 'privileged',
+    'acf.portfolio_stats_update' => 'mutation, privileged',
+    'acf.schema.ensure_text_fields' => 'mutation, privileged',
+    'acf.schema.remove_text_fields' => 'mutation, privileged',
+    'portfolio.case_text_update' => 'mutation, privileged',
+    'wordpress.ability.read' => 'privileged, sensitive',
 );
 
 $rows = array();

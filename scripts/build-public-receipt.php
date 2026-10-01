@@ -260,7 +260,66 @@ if (! $ok) {
     $payload = isset($request['payload']) && is_array($request['payload']) ? $request['payload'] : array();
     $data = isset($result['data']) && is_array($result['data']) ? $result['data'] : array();
 
-    if ('portfolio.case_text_update' === $action) {
+    if ('plugin.install_package' === $action) {
+        $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin']) ? $payload['expected_plugin'] : '';
+        $expectedSha = isset($payload['sha256']) && is_string($payload['sha256']) ? strtolower($payload['sha256']) : '';
+        if (preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php$/D', $expectedPlugin)) {
+            $receipt['plugin_file'] = $expectedPlugin;
+        }
+        if (preg_match('/^[a-f0-9]{64}$/D', $expectedSha)) {
+            $receipt['package_sha256'] = $expectedSha;
+        }
+        $receipt['activate_requested'] = true === ($payload['activate'] ?? null);
+        $receipt['overwrite'] = false;
+        $receipt['network_wide'] = false;
+        $receipt['rollback_supported'] = false;
+
+        $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : null;
+        if (null !== $before) {
+            $receipt['before_fingerprint'] = $fingerprint($before);
+            $receipt['already_installed'] = ! empty($before['installed']);
+        }
+
+        if ($dryRun) {
+            $plan = isset($data['would_install_package']) && is_array($data['would_install_package']) ? $data['would_install_package'] : array();
+            $planSha = isset($plan['sha256']) ? strtolower((string) $plan['sha256']) : '';
+            $planFile = isset($plan['plugin_file']) ? (string) $plan['plugin_file'] : '';
+            $receipt['package_verified'] = $expectedSha !== ''
+                && $expectedPlugin !== ''
+                && hash_equals($expectedSha, $planSha)
+                && hash_equals($expectedPlugin, $planFile)
+                && false === ($plan['overwrite'] ?? null)
+                && false === ($plan['network_wide'] ?? null);
+            if (isset($plan['bytes'])) {
+                $receipt['package_bytes'] = max(0, (int) $plan['bytes']);
+            }
+            if (isset($plan['archive_entries'])) {
+                $receipt['archive_entries'] = max(0, (int) $plan['archive_entries']);
+            }
+            $receipt['readback_verified'] = null;
+        } else {
+            $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : null;
+            if (null !== $after) {
+                $receipt['after_fingerprint'] = $fingerprint($after);
+            }
+            $package = isset($data['package']) && is_array($data['package']) ? $data['package'] : array();
+            $actualSha = isset($package['sha256']) ? strtolower((string) $package['sha256']) : '';
+            $actualFile = isset($after['file']) ? (string) $after['file'] : '';
+            $activationOk = true === ($payload['activate'] ?? null)
+                ? ! empty($after['active'])
+                : empty($after['active']);
+            $receipt['operation'] = isset($data['operation']) && in_array((string) $data['operation'], array('installed','updated'), true)
+                ? (string) $data['operation']
+                : '';
+            $receipt['readback_verified'] = null !== $after
+                && ! empty($after['installed'])
+                && $expectedSha !== ''
+                && hash_equals($expectedSha, $actualSha)
+                && $expectedPlugin !== ''
+                && hash_equals($expectedPlugin, $actualFile)
+                && $activationOk;
+        }
+    } elseif ('portfolio.case_text_update' === $action) {
         $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : null;
         $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : null;
         $expected = array();
