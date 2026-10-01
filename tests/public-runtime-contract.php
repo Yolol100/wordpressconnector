@@ -124,6 +124,18 @@ if (0 !== $status) {
     exit(1);
 }
 
+$stageAssets = $base;
+$stageAssets['request_id'] = 'public-test-0007';
+$stageAssets['action'] = 'transport.stage_assets';
+$stageAssets['payload'] = array();
+$stageAssets['dry_run'] = true;
+$stageAssets['confirm'] = false;
+list($status) = $run($validator, array($writeJson('allowed-stage-assets.json', $stageAssets)));
+if (0 !== $status) {
+    fwrite(STDERR, "Allowed public transport.stage_assets was rejected.\n");
+    exit(1);
+}
+
 $forbiddenCases = array();
 
 $case = $base;
@@ -167,6 +179,22 @@ $case['request_id'] = 'public-test-1008';
 $case['action'] = 'plugin.install_package';
 $case['payload'] = array('source_path' => 'plugin-packages/private.zip');
 $forbiddenCases['private package through public runtime'] = $case;
+
+$case = $stageAssets;
+$case['request_id'] = 'public-test-1009';
+$case['payload'] = array('unexpected' => true);
+$forbiddenCases['asset staging payload'] = $case;
+
+$case = $stageAssets;
+$case['request_id'] = 'public-test-1010';
+$case['dry_run'] = false;
+$case['confirm'] = true;
+$forbiddenCases['asset staging live execution'] = $case;
+
+$case = $stageAssets;
+$case['request_id'] = 'public-test-1011';
+$case['expected_fingerprint'] = str_repeat('f', 64);
+$forbiddenCases['asset staging state guard'] = $case;
 
 foreach ($forbiddenCases as $label => $request) {
     list($status) = $run($validator, array($writeJson('forbidden-' . preg_replace('/[^a-z0-9]+/i', '-', $label) . '.json', $request)));
