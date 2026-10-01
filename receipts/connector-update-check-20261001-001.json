@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "connector-update-check-20261001-001",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-01T05:50:40+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "current_version": "1.15.6",
+    "latest_version": "1.15.9",
+    "update_available": true,
+    "readback_verified": null
+}
