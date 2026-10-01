@@ -3,7 +3,8 @@
   "site_url": "https://andrewbaeten.nl",
   "request_id": "connector-update-apply-20261001-001",
   "action": "connector.update.apply",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "abce902cc351a7cc661bca687cbfc228d8dac70881abe2a4e7cd350ea03a2fe0",
   "payload": {}
 }
