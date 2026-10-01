@@ -625,44 +625,8 @@ final class WooCommerceAdapter
 
     private function orderItemsSnapshot(\WC_Order $order): array
     {
-        if (! method_exists($order, 'get_data_store')) {
-            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
-        }
-
-        $dataStore = $order->get_data_store();
-        if (! is_object($dataStore) || ! method_exists($dataStore, 'has_callable') || ! $dataStore->has_callable('get_item_ids')) {
-            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
-        }
-
-        try {
-            $rawItemIds = $dataStore->get_item_ids($order, 'line_item');
-        } catch (\Throwable $error) {
-            throw new RuntimeException('WooCommerce order items could not be read.');
-        }
-        if (! is_array($rawItemIds)) {
-            throw new RuntimeException('WooCommerce order items could not be read.');
-        }
-
-        $itemIds = array();
-        foreach ($rawItemIds as $itemId) {
-            if (! is_int($itemId) && (! is_string($itemId) || 1 !== preg_match('/^[1-9][0-9]*$/D', $itemId))) {
-                throw new RuntimeException('WooCommerce order items could not be read.');
-            }
-            $validatedId = filter_var((string) $itemId, FILTER_VALIDATE_INT);
-            if (false === $validatedId || $validatedId < 1) {
-                throw new RuntimeException('WooCommerce order items could not be read.');
-            }
-            $itemIds[(int) $validatedId] = (int) $validatedId;
-            if (count($itemIds) > 10000) {
-                throw new RuntimeException('WooCommerce order item count exceeds the safety limit.');
-            }
-        }
-
-        $itemIds = array_values($itemIds);
-        sort($itemIds, SORT_NUMERIC);
-        $total = count($itemIds);
-        $truncated = $total > 50;
-        $selectedIds = array_slice($itemIds, 0, 50);
+        $selection = $this->boundedCoreOrderItemIds($order);
+        $selectedIds = $selection['ids'];
 
         if ($selectedIds && ! class_exists('WC_Order_Factory')) {
             throw new RuntimeException('WooCommerce order item factory is unavailable.');
@@ -689,7 +653,105 @@ final class WooCommerceAdapter
             );
         }
 
-        return array('items' => $items, 'item_count' => $total, 'items_truncated' => $truncated);
+        return array(
+            'items' => $items,
+            'item_count' => $selection['total'],
+            'items_truncated' => $selection['truncated'],
+        );
+    }
+
+    private function boundedCoreOrderItemIds(\WC_Order $order): array
+    {
+        if (! method_exists($order, 'get_data_store')) {
+            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
+        }
+
+        $dataStore = $order->get_data_store();
+        if (! is_object($dataStore) || ! method_exists($dataStore, 'get_current_class_name')) {
+            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
+        }
+
+        $dataStoreClass = ltrim((string) $dataStore->get_current_class_name(), '\\');
+        $coreDataStores = array(
+            'WC_Order_Data_Store_CPT',
+            'Automattic\\WooCommerce\\Internal\\DataStores\\Orders\\OrdersTableDataStore',
+        );
+        if (! in_array($dataStoreClass, $coreDataStores, true)) {
+            throw new RuntimeException('WooCommerce bounded order item data store API is unavailable.');
+        }
+
+        global $wpdb;
+        if (! is_object($wpdb) || ! isset($wpdb->prefix) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_var') || ! method_exists($wpdb, 'get_col')) {
+            throw new RuntimeException('WooCommerce bounded order item query API is unavailable.');
+        }
+
+        $orderId = (int) $order->get_id();
+        if ($orderId < 1) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+        $table = (string) $wpdb->prefix . 'woocommerce_order_items';
+
+        try {
+            $totalRaw = $wpdb->get_var($wpdb->prepare(
+                'SELECT COUNT(*) FROM %i WHERE order_id = %d AND order_item_type = %s',
+                $table,
+                $orderId,
+                'line_item'
+            ));
+        } catch (\Throwable $error) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+
+        if (! is_numeric($totalRaw) || (int) $totalRaw < 0) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+        $total = (int) $totalRaw;
+        if ($total > 10000) {
+            throw new RuntimeException('WooCommerce order item count exceeds the safety limit.');
+        }
+
+        if (0 === $total) {
+            return array('ids' => array(), 'total' => 0, 'truncated' => false);
+        }
+
+        try {
+            $rawItemIds = $wpdb->get_col($wpdb->prepare(
+                'SELECT order_item_id FROM %i WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d',
+                $table,
+                $orderId,
+                'line_item',
+                50
+            ));
+        } catch (\Throwable $error) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+
+        if (! is_array($rawItemIds) || (isset($wpdb->last_error) && '' !== (string) $wpdb->last_error)) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+
+        $itemIds = array();
+        foreach ($rawItemIds as $itemId) {
+            if (! is_int($itemId) && (! is_string($itemId) || 1 !== preg_match('/^[1-9][0-9]*$/D', $itemId))) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+            $validatedId = filter_var((string) $itemId, FILTER_VALIDATE_INT);
+            if (false === $validatedId || $validatedId < 1) {
+                throw new RuntimeException('WooCommerce order items could not be read.');
+            }
+            $itemIds[(int) $validatedId] = (int) $validatedId;
+        }
+
+        $itemIds = array_values($itemIds);
+        if (count($itemIds) !== min(50, $total)) {
+            throw new RuntimeException('WooCommerce order items could not be read.');
+        }
+
+        return array(
+            'ids' => $itemIds,
+            'total' => $total,
+            'truncated' => $total > 50,
+        );
     }
 
     private function positiveIntegerId($value, string $message): int
