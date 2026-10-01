@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "connector-update-apply-dry-20261001-001",
+  "action": "connector.update.apply",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
