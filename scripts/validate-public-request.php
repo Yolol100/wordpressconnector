@@ -44,6 +44,7 @@ $publicActions = array(
     'code_snippets.patch',
     'maintenance.cache_capabilities',
     'maintenance.cache_flush',
+    'transport.stage_assets',
 );
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
@@ -61,6 +62,30 @@ if ('connector.batch' === $action) {
     }
 }
 
+
+
+if ('transport.stage_assets' === $action) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    $confirm = ! empty($data['confirm']);
+
+    if ($payload) {
+        fwrite(STDERR, "transport.stage_assets requires an empty payload.\n");
+        exit(1);
+    }
+    if (! $dryRun || $confirm) {
+        fwrite(STDERR, "transport.stage_assets is staging-only and requires dry_run=true with confirm=false.\n");
+        exit(1);
+    }
+    if ((array_key_exists('expected_fingerprint', $data) && null !== $data['expected_fingerprint'])
+        || (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token'])) {
+        fwrite(STDERR, "transport.stage_assets does not accept state guards.\n");
+        exit(1);
+    }
+
+    echo 'public runtime request OK: transport.stage_assets' . PHP_EOL;
+    return;
+}
 
 if ('maintenance.cache_capabilities' === $action) {
     $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
