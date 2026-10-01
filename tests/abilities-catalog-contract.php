@@ -43,8 +43,11 @@ final class ContractAbility
     }
 }
 
+$ability_catalog_overflow = false;
 function wp_get_abilities(): array
 {
+    global $ability_catalog_overflow;
+    if ($ability_catalog_overflow) return array_fill(0, 10001, null);
     $abilities = array(
         'third-party-plugin/reindex-content' => new ContractAbility(array(
             'public' => true,
@@ -100,6 +103,14 @@ try {
 } catch (RuntimeException $expected) {
     if ('per_page must be a positive integer.' !== $expected->getMessage()) throw $expected;
 }
+$ability_catalog_overflow = true;
+try {
+    $adapter->catalog(array(), array());
+    fwrite(STDERR, "Oversized Ability registry was accepted.\n"); exit(1);
+} catch (RuntimeException $expected) {
+    if ('WordPress Ability catalog exceeds the discovery limit.' !== $expected->getMessage()) throw $expected;
+}
+$ability_catalog_overflow = false;
 if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
     fwrite(STDERR, "Public third-party ability was not discovered.\n"); exit(1);
 }
