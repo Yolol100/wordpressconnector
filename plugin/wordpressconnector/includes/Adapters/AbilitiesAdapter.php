@@ -36,8 +36,13 @@ final class AbilitiesAdapter
         $perPage = $this->catalogPositiveInteger($payload['per_page'] ?? 10, 10, 'per_page');
         $page = $this->catalogPositiveInteger($payload['page'] ?? 1, 100000, 'page');
 
+        $registered = (array) wp_get_abilities();
+        if (count($registered) > 10000) {
+            throw new \RuntimeException('WordPress Ability catalog exceeds the discovery limit.');
+        }
+
         $eligible = array();
-        foreach ((array) wp_get_abilities() as $name => $ability) {
+        foreach ($registered as $name => $ability) {
             if (! is_object($ability)) {
                 continue;
             }
