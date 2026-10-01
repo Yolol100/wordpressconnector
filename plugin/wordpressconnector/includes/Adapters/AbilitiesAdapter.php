@@ -154,7 +154,7 @@ final class AbilitiesAdapter
         if (! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) return false;
         $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
         $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
-        return true === ($annotations['readonly'] ?? false) && true !== ($annotations['destructive'] ?? false);
+        return true === ($annotations['readonly'] ?? false) && false === ($annotations['destructive'] ?? null);
     }
 
     private function isExposed(object $ability): bool
