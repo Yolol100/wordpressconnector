@@ -44,6 +44,7 @@ $publicActions = array(
     'code_snippets.patch',
     'maintenance.cache_capabilities',
     'maintenance.cache_flush',
+    'plugin.install_package',
 );
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
@@ -61,6 +62,76 @@ if ('connector.batch' === $action) {
     }
 }
 
+
+
+if ('plugin.install_package' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $allowedKeys = array('source_path','sha256','expected_plugin','overwrite','activate','network_wide');
+
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'Plugin package install payload has unsupported key: ' . (string) $key;
+        }
+    }
+
+    $sourcePath = isset($payload['source_path']) && is_string($payload['source_path']) ? $payload['source_path'] : '';
+    if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip$#D', $sourcePath)) {
+        $errors[] = 'Plugin package install requires source_path plugin-packages/<safe-name>.zip.';
+    }
+
+    $sha256 = isset($payload['sha256']) && is_string($payload['sha256']) ? $payload['sha256'] : '';
+    if (! preg_match('/^[a-f0-9]{64}$/D', $sha256)) {
+        $errors[] = 'Plugin package install requires an exact lowercase SHA-256 checksum.';
+    }
+
+    $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin']) ? $payload['expected_plugin'] : '';
+    if (! preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php$/D', $expectedPlugin)) {
+        $errors[] = 'Plugin package install requires an exact expected_plugin file.';
+    }
+
+    if (! array_key_exists('overwrite', $payload) || false !== $payload['overwrite']) {
+        $errors[] = 'Public plugin package install requires overwrite=false.';
+    }
+    if (! array_key_exists('network_wide', $payload) || false !== $payload['network_wide']) {
+        $errors[] = 'Public plugin package install requires network_wide=false.';
+    }
+    if (! array_key_exists('activate', $payload) || ! is_bool($payload['activate'])) {
+        $errors[] = 'Public plugin package install requires an explicit boolean activate value.';
+    }
+
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+    }
+
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if ($dryRun) {
+        if (! empty($data['confirm'])) {
+            $errors[] = 'Public plugin package dry-run requires confirm=false.';
+        }
+        if (array_key_exists('expected_fingerprint', $data) && null !== $data['expected_fingerprint']) {
+            $errors[] = 'Public plugin package dry-run must not include expected_fingerprint.';
+        }
+    } else {
+        if (empty($data['confirm'])) {
+            $errors[] = 'Confirmed public plugin package install requires confirm=true.';
+        }
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed public plugin package install requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+
+    if ($errors) {
+        foreach (array_values(array_unique($errors)) as $error) {
+            fwrite(STDERR, $error . "\n");
+        }
+        exit(1);
+    }
+
+    echo 'public runtime request OK: plugin.install_package' . PHP_EOL;
+    return;
+}
 
 if ('maintenance.cache_capabilities' === $action) {
     $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
