@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
