@@ -90,8 +90,11 @@ if ('plugin.install_package' === $action) {
         $errors[] = 'Plugin package install requires an exact expected_plugin file.';
     }
 
-    if (! array_key_exists('overwrite', $payload) || false !== $payload['overwrite']) {
-        $errors[] = 'Public plugin package install requires overwrite=false.';
+    if (! array_key_exists('overwrite', $payload) || ! is_bool($payload['overwrite'])) {
+        $errors[] = 'Public plugin package install requires an explicit boolean overwrite value.';
+    } elseif (true === $payload['overwrite']
+        && ! hash_equals('webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expectedPlugin)) {
+        $errors[] = 'Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.';
     }
     if (! array_key_exists('network_wide', $payload) || false !== $payload['network_wide']) {
         $errors[] = 'Public plugin package install requires network_wide=false.';
