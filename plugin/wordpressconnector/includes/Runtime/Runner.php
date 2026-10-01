@@ -279,7 +279,7 @@ final class Runner
         }
 
         $sourcePath = isset($payload['source_path']) && is_string($payload['source_path'])
-            ? str_replace('\\\\', '/', $payload['source_path'])
+            ? str_replace('\\', '/', $payload['source_path'])
             : '';
         if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip\\z#', $sourcePath)) {
             throw new RuntimeException('Public plugin package install requires source_path plugin-packages/<safe-name>.zip.');
@@ -293,7 +293,7 @@ final class Runner
         }
 
         $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin'])
-            ? str_replace('\\\\', '/', $payload['expected_plugin'])
+            ? str_replace('\\', '/', $payload['expected_plugin'])
             : '';
         if (! preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php\\z/', $expectedPlugin)) {
             throw new RuntimeException('Public plugin package install requires an exact expected_plugin file.');
