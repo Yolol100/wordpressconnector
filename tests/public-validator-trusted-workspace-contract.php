@@ -142,6 +142,15 @@ $assertAccepted($base('trusted-acf-groups-0001', 'acf.field_groups', array('post
 $assertAccepted($base('trusted-elementor-inspect-0001', 'elementor.inspect', array('id' => 4933)), 'elementor-inspect');
 $assertAccepted($base('trusted-elementor-patch-0001', 'elementor.patch_element', array('id' => 4933, 'element_id' => 'abc123', 'settings' => array('title' => 'Preview'))), 'elementor-patch-dry');
 $assertAccepted($base('trusted-rollback-0001', 'connector.rollback', array('request_id' => 'source-request-0001')), 'connector-rollback-dry');
+$assertAccepted($base('trusted-stage-assets-0001', 'transport.stage_assets', array(), true, false), 'transport-stage-assets');
+
+$stagePayload = $base('trusted-stage-assets-bad-0001', 'transport.stage_assets', array('unexpected' => true), true, false);
+$assertRejected($stagePayload, 'transport-stage-assets-payload');
+$stageLive = $base('trusted-stage-assets-bad-0002', 'transport.stage_assets', array(), false, true);
+$assertRejected($stageLive, 'transport-stage-assets-live');
+$stageGuard = $base('trusted-stage-assets-bad-0003', 'transport.stage_assets', array(), true, false);
+$stageGuard['expected_fingerprint'] = str_repeat('d', 64);
+$assertRejected($stageGuard, 'transport-stage-assets-state-guard');
 
 $assertRejected($base('trusted-unsafe-0001', 'plugin.install_package', array('source_path' => 'plugin-packages/private.zip')), 'unsafe-unconfirmed-action');
 $assertRejected($base('trusted-unsafe-0002', 'post.get', array('id' => 4933), false, true), 'post-get-live');
