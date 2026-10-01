@@ -159,6 +159,95 @@ jobs:
             late_escaping
             performant_wp_query_params
 
+  wordpress-runtime:
+    name: WordPress ${{ matrix.wordpress }} / WooCommerce ${{ matrix.woocommerce }} / ${{ matrix.storage }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - wordpress: '6.4.12'
+            woocommerce: 'none'
+            storage: 'core'
+            hpos: 'none'
+          - wordpress: '7.0.6'
+            woocommerce: '10.9.4'
+            storage: 'legacy'
+            hpos: 'no'
+          - wordpress: '7.0.6'
+            woocommerce: '10.9.4'
+            storage: 'hpos'
+            hpos: 'yes'
+          - wordpress: '7.1.2'
+            woocommerce: '11.1.2'
+            storage: 'legacy'
+            hpos: 'no'
+          - wordpress: '7.1.2'
+            woocommerce: '11.1.2'
+            storage: 'hpos'
+            hpos: 'yes'
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --user=root --password=root"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up PHP and WP-CLI
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: '8.2'
+          extensions: mysqli
+          coverage: none
+          tools: wp-cli:2.12.0
+
+      - name: Install WordPress runtime
+        shell: bash
+        env:
+          WP_VERSION: ${{ matrix.wordpress }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/wordpress"
+          wp core download --version="$WP_VERSION" --path="$root" --force
+          wp config create --path="$root" --dbname=wordpress --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
+          wp core install --path="$root" --url=http://wordpress.test --title='Connector Runtime' --admin_user=admin --admin_password='runtime-test-password' --admin_email=admin@example.test --skip-email
+          mkdir -p "$root/wp-content/plugins/wordpressconnector"
+          cp -a plugin/wordpressconnector/. "$root/wp-content/plugins/wordpressconnector/"
+          wp plugin activate wordpressconnector --path="$root"
+          wp plugin is-active wordpressconnector --path="$root"
+          wp eval 'if (!defined("WPCONNECTOR_VERSION")) { throw new RuntimeException("WordPress Connector did not bootstrap."); } echo WPCONNECTOR_VERSION . PHP_EOL;' --path="$root"
+
+      - name: Install and test WooCommerce runtime
+        if: matrix.woocommerce != 'none'
+        shell: bash
+        env:
+          WC_VERSION: ${{ matrix.woocommerce }}
+          HPOS: ${{ matrix.hpos }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/wordpress"
+          wp plugin install woocommerce --version="$WC_VERSION" --activate --path="$root"
+          wp option update woocommerce_custom_orders_table_data_sync_enabled yes --path="$root"
+          wp option update woocommerce_custom_orders_table_enabled "$HPOS" --path="$root"
+          WPC_RUNTIME_EXPECT_HPOS="$HPOS" \
+          WPCONNECTOR_ALLOW_PRIVILEGED=1 \
+          WPCONNECTOR_ALLOW_SENSITIVE=1 \
+            wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-woocommerce-runtime.php" --path="$root"
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
