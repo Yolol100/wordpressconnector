@@ -37,6 +37,7 @@ run_php tests/request-workflow-contract.php
 run_php tests/mailbox-private-workflow-contract.php
 run_php tests/execute-workflow-contract.php
 run_php tests/public-runtime-contract.php
+run_php tests/public-plugin-package-contract.php
 run_php tests/public-broad-actions-contract.php
 run_php tests/public-request-server-boundary-contract.php
 run_php tests/public-post-read-contract.php
