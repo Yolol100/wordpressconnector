@@ -27,7 +27,7 @@ Imports and connector mutations do not directly write `_elementor_data`.
 
 ## WooCommerce
 
-Products, variations, global attributes, taxonomies and coupons use WooCommerce CRUD APIs. Orders support bounded read-only summaries through WooCommerce's order query/CRUD APIs; billing and shipping personal data is omitted by default and can only be requested for an individual order. Individual order line items are loaded through the active WooCommerce order data-store boundary, capped at 50, and fail closed when the runtime cannot provide bounded item-ID access. One WooCommerce customer can be read by ID; contact and address data is omitted by default and requires an explicit per-customer request. Tax classes/rates and shipping zone locations are read-only; shipping method settings are excluded because plugins may place credentials or other secrets there. Order/refund/payment/subscription writes and bulk customer exports remain outside the generic connector surface.
+Products, variations, global attributes, taxonomies and coupons use WooCommerce CRUD APIs. Orders support bounded read-only summaries through WooCommerce's order query/CRUD APIs; billing and shipping personal data is omitted by default and can only be requested for an individual order. Individual order line items are capped at 50. For WooCommerce core CPT and HPOS stores, the connector reads a bounded count plus at most 50 IDs from WooCommerce's shared order-item table before hydrating items through WooCommerce; unknown custom order data stores fail closed instead of being bypassed. One WooCommerce customer can be read by ID; contact and address data is omitted by default and requires an explicit per-customer request. Tax classes/rates and shipping zone locations are read-only; shipping method settings are excluded because plugins may place credentials or other secrets there. Order/refund/payment/subscription writes and bulk customer exports remain outside the generic connector surface.
 
 ## ACF
 
@@ -43,7 +43,7 @@ Explicit privileged actions cover users/roles, plugin/theme lifecycle, WordPress
 
 ## Plugin abilities
 
-The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes in bounded pages of at most 10 descriptors. Oversized schemas are omitted rather than partially returned, and each catalog page is capped at 256 KiB. On WordPress 6.9+, REST-exposed abilities explicitly annotated as read-only can be invoked through their native input validation and permission callback. Reading requires explicit confirmation, privileged access and `manage_options`. Mutating abilities are not run through this generic route.
+The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes in bounded pages of at most 10 descriptors. Oversized schemas are omitted rather than partially returned, and each catalog page is capped at 256 KiB. On WordPress 6.9+, REST-exposed abilities can be invoked only when they explicitly declare both `readonly=true` and `destructive=false`; native input validation and the ability permission callback still run. Discovery fails closed above 10,000 registered abilities. Reading requires explicit confirmation, privileged access and `manage_options`. Mutating abilities are not run through this generic route.
 
 ## State and extension contract
 
