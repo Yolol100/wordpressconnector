@@ -1,0 +1,62 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ahrefs-batch4-retest-20260915-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T22:33:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b87963195f9e2741c4cc92bd14ea68f3b5cf807a0fafb7def9167a46d193c4fc",
+            "after_fingerprint": "b87963195f9e2741c4cc92bd14ea68f3b5cf807a0fafb7def9167a46d193c4fc"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "eacca8bcfb414de6b729a006dc7fadd12510a56f547b771069a0188e7e2bb6f8",
+            "after_fingerprint": "eacca8bcfb414de6b729a006dc7fadd12510a56f547b771069a0188e7e2bb6f8"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "343dc43cf260946f11d6fa4ec928936123f880f0c476910cddc05e6421a57823",
+            "after_fingerprint": "343dc43cf260946f11d6fa4ec928936123f880f0c476910cddc05e6421a57823"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "6fc4e5bd4ed3d8ed3507845f0f08d9b01db2612ba508b86d3e5d2a96bf0af1f4",
+            "after_fingerprint": "6fc4e5bd4ed3d8ed3507845f0f08d9b01db2612ba508b86d3e5d2a96bf0af1f4"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "be017243f137e5faeb3aa7a6db2fea1f8f087aa910d05dded43d9c1015145619",
+            "after_fingerprint": "be017243f137e5faeb3aa7a6db2fea1f8f087aa910d05dded43d9c1015145619"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "f1f7b5ad55bbc35bcbcc98ead7ef4587d7be349da45947eda1546f1d5a6d8035",
+            "after_fingerprint": "f1f7b5ad55bbc35bcbcc98ead7ef4587d7be349da45947eda1546f1d5a6d8035"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "783cdf4e1c44fa1b5ad25cfdbd50b9ce83532028336b50392b167afaa0eb23e4",
+            "after_fingerprint": "783cdf4e1c44fa1b5ad25cfdbd50b9ce83532028336b50392b167afaa0eb23e4"
+        }
+    ]
+}

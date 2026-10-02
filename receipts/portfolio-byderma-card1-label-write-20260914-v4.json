@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "portfolio-byderma-card1-label-write-20260914-v4",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T23:35:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "stale_target"
+}

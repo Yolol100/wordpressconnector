@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-gs-privechauffeur-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T21:58:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "38de51924e3b8115f95bbefd78eba6ba53067689c1b1c817aac6a56c722438a0",
+    "after_fingerprint": "e0bcfe1f9448c019d072d108dfa0c8a06de50a9958896dd4ddca6b6084786441",
+    "rollback_available": true
+}

@@ -1,0 +1,42 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch-3-intros-write-20260913-v4",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:29:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "6a8216465ce16ff18a10f53fcca3a4e110dde04db9444d28c94c8fe9a8f51e3b",
+            "after_fingerprint": "82b67076aa366fd908071c23b5dd74922d29a5572fc2b1aebb8ba1114c1edb66"
+        },
+        {
+            "index": 1,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "05f7c2e176e523cdbeb12b051ab3bf3e71cee5369c256d23508988b84e2934b2",
+            "after_fingerprint": "ae091ebb6f21623c7b5d5709159a376995d032a4c1fb3f76e34d3f0c172d8921"
+        },
+        {
+            "index": 2,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "a212d107a89eb5508f76eb4cf47af6e3ed1bbf0e2307e6c752451a3086199256",
+            "after_fingerprint": "37b0e74cee6816851d1b5aaf8aa79f53fa894134429868ed330c7f377b5a1ac6"
+        },
+        {
+            "index": 3,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "fa1eb65f72de8a8e186d12461128e793be48c9af7534eed24e1bf68a057e2476",
+            "after_fingerprint": "1e2376ca6ac88312a42eb73e8252d5b52b2ed38d680d77573389fcb6750d213e"
+        }
+    ],
+    "rollback_available": true
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-c10-media-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:46:00+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1397,
+        "type": "post",
+        "status": "publish",
+        "title": "C10media",
+        "slug": "c10media",
+        "permalink": "https://andrewbaeten.nl/c10media/",
+        "excerpt": "Full-service media platform organising out-of-home, digital, radio, television, print and cinema advertising around strategic advice, campaign examples and direct contact."
+    },
+    "post_fingerprint": "f97787b13b1136df95a411ec62fa6013005af9ff9c32ad13ed5b6c723135b051",
+    "readback_verified": null
+}

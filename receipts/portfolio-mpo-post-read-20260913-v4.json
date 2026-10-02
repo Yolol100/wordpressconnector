@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-mpo-post-read-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:08:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1390,
+        "type": "post",
+        "status": "publish",
+        "title": "Monitorpolitiekeontwikkeling",
+        "slug": "monitorpolitiekeontwikkeling",
+        "permalink": "https://andrewbaeten.nl/monitorpolitiekeontwikkeling/",
+        "excerpt": "Political-monitoring platform connecting research, reports, community signals and public updates with downloadable information, contact routes and supporter actions for MPO’s audience."
+    },
+    "post_fingerprint": "459fe791c4d4652fadb3fad13adb04d53747e7f81b3122eb917df7005c729299",
+    "readback_verified": null
+}

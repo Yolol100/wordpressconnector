@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-bedrijfspostadres-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:33:29+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1855,
+        "type": "post",
+        "status": "publish",
+        "title": "Bedrijfspostadres",
+        "slug": "bedrijfspostadres",
+        "permalink": "https://andrewbaeten.nl/bedrijfspostadres/",
+        "excerpt": "Bedrijfspostadres combines package comparison, location proof, a choice helper and a guided online application."
+    },
+    "post_fingerprint": "66b9aeb3eccdf56ea99084726c7e8422091f6b9788533c6ba06c943753566cc8",
+    "readback_verified": null
+}

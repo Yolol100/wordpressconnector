@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-byderma-intro-write-retry2-20260914-v4",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T00:09:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 4733,
+    "element_id": "e2100003",
+    "before_fingerprint": "85806d9511ce3e4ab7d87c650b12277e83b316c142f87320e7df53f45d25bad8",
+    "after_fingerprint": "5ab7c9e7467eb4dd1fab52aef2806c40b0c78906e718113cfbc9ba0b257ec034",
+    "rollback_available": true
+}

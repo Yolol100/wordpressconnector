@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-sodrive-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T20:28:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "06e57affa3c3ff940efa944472fc7e3501080807cc9c12ef8d0db7fa2a11253a",
+    "after_fingerprint": "98f831fa57634ba4dd722e75c66110ae9eeb45076e50104811ece410863b06f4",
+    "rollback_available": true
+}

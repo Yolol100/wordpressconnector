@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-superfruitmand-post-read-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:43:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1392,
+        "type": "post",
+        "status": "publish",
+        "title": "Superfruitmand",
+        "slug": "superfruitmand",
+        "permalink": "https://andrewbaeten.nl/superfruitmand/",
+        "excerpt": "Fresh-fruit webshop organising boxes, baskets, gifts and business ordering around visible stock, pricing, customer accounts and a straightforward cart journey."
+    },
+    "post_fingerprint": "3c43ea58e18024c645542c61fa3aefa53ccd25d029ab78b65a1fcd7e9bbe86ae",
+    "readback_verified": null
+}

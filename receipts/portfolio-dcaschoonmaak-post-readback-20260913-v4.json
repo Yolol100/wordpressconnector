@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-dcaschoonmaak-post-readback-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T12:39:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4116,
+        "type": "post",
+        "status": "publish",
+        "title": "Dcaschoonmaak",
+        "slug": "dcaschoonmaak",
+        "permalink": "https://andrewbaeten.nl/dcaschoonmaak/",
+        "excerpt": "Hotel-staffing site built around housekeeping roles, a working process, trust signals and personnel requests."
+    },
+    "post_fingerprint": "4900c8a566d3c608979c804476333282259e706d92a77e5b98a3f095a33aeea1",
+    "readback_verified": null
+}

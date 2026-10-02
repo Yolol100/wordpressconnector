@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-4155-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T15:30:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4155,
+        "type": "post",
+        "status": "publish",
+        "title": "Seo Shutterstock",
+        "slug": "seo-shutterstock",
+        "permalink": "https://andrewbaeten.nl/seo-shutterstock/",
+        "excerpt": "Page-production tool focused on licensed Shutterstock discovery, safe download and ACF field assignment."
+    },
+    "post_fingerprint": "8b651f617cd84ef67faf67ae94a800d6f32a0dc605359137d5aa3db2413cdd2b",
+    "readback_verified": null
+}

@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-mpo-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T21:49:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "8569d1bda8f6bd2d6903f8ae42f80f6750642b9b0986b23c58269003184fd26c",
+    "after_fingerprint": "f729b7e8c03a5025d70f557157864a7a101bcca93ca027c138ed2ff056210971",
+    "rollback_available": true
+}

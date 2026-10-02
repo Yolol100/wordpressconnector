@@ -1,0 +1,83 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-cards-batch-3-preview-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T13:35:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "1c969dd27dbb49027c017fb4d6ec222a0112baff499804662d74d55f0d590798"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "80445771bbb86b6636c125f0bd1e9b2f400a66ef73e797a005e0ecbd8ce78aa3",
+            "after_fingerprint": "1bd5e006d3ea55adcb6fee7ee706710970856413114bc27282c505fd7c067d3f"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "7db91f56b4ca5a89e6efcbfe4a01bbebfca99d6580d52e8c67fa2da572169daf",
+            "after_fingerprint": "d057b67db131dfb9b70cc6a067932e65e55630fc05713772877c5d9f5f8dfaf8"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "4b45d9139babfb650a6308af8ca24e107df4b2512bf6064cd7fc6ba04842edc9",
+            "after_fingerprint": "be0d8d996c129b36491e3a424fb35bf120c70bb9acc435cbd06fe674ca8bb074"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "de0458e70f7b0579e6e5b21c33e5e1d495c32a517dcd96cf8c1fa5c5750aa694",
+            "after_fingerprint": "15da3289ae361b3571cb8b0f3f0edb5d8fc6cd1b6b91b41a3316abeace44294f"
+        },
+        {
+            "index": 5,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "e456349f42c118e587001b46cac0fef39b90c563802db95c600a22de1f70150c",
+            "after_fingerprint": "908f53dee2e3db871fff02217aff039a528ee65a2d53a28c22ed81bd792e5cb2"
+        },
+        {
+            "index": 6,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "415b42a5ee9c85e7d0eaeeb39cdc7b85b073a18969eeddf072b610c2d23acb37",
+            "after_fingerprint": "a7e5a7a55212d473be5544d0f05ac316fec9b140bee295d7ea73a95a7ce5ca23"
+        },
+        {
+            "index": 7,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "edf7409d45acd4ddb28c6b5fa80d3634c0102c2b6282ba79ac2ff5f09906d46a",
+            "after_fingerprint": "2ad85578a45a82c455378b62ea088181afa289e15c26e8054c3726e8bf76ce6f"
+        },
+        {
+            "index": 8,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "b346aec4a6074202cc5c2d8853032bb1c5b47b3bfc1cc5c3e12be1cb86171744",
+            "after_fingerprint": "9062c552f71e90e1a4497479bc56cc3ceb1765218ca4de78ba971941160d0433"
+        },
+        {
+            "index": 9,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "366f3e35a14a6742abcf1060a6ce33d13dc70302bb69c69d05bda6baf9c6f97f"
+        }
+    ]
+}

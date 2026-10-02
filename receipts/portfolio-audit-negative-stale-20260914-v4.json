@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-negative-stale-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T17:29:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "1a87f75f6ad03cf4639dd7a98dcb1d1c24ffa2af8ddac8cf6678cb1301e35d74",
+            "after_fingerprint": "1a87f75f6ad03cf4639dd7a98dcb1d1c24ffa2af8ddac8cf6678cb1301e35d74"
+        }
+    ]
+}

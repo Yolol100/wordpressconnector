@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-brightlyn-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T13:42:17+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "edcce654f650862c9751a2a29a7425a21d47a18dae02b9ddaf6b8e3343c62039",
+    "after_fingerprint": "6e0b4b769f609f165b121eec155f113f5e481dee30547855608b0be46029bca2",
+    "rollback_available": true
+}

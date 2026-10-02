@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-boekhoudsnel-source-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T14:30:32+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1422,
+        "type": "post",
+        "status": "publish",
+        "title": "Boekhoudsnel",
+        "slug": "boekhoudsnel-bookkeeping-service-website",
+        "permalink": "https://andrewbaeten.nl/boekhoudsnel-bookkeeping-service-website/",
+        "excerpt": "Bookkeeping website explaining financial support without dense accounting language, helping entrepreneurs understand the service and move directly towards a first conversation."
+    },
+    "post_fingerprint": "ff9e4f03e99ca5fcea5c7645a346e7fed71f5187c67f0202f7263fc9e13a0e32",
+    "readback_verified": null
+}

@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-proline-afbouw-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T22:13:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "9d169dc6d99134e42bf8a30a0a3e807cd01a830876186f401c35b14810ed7302",
+    "after_fingerprint": "6ff5ec26309ae2eda01374a58b28a12b1f2137010af51b7e4ac6dc6040394a03",
+    "rollback_available": true
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-rhapsodyhealthcare-post-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T01:24:19+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4933,
+        "type": "post",
+        "status": "publish",
+        "title": "Rhapsodyhealthcare",
+        "slug": "rhapsodyhealthcare",
+        "permalink": "https://andrewbaeten.nl/rhapsodyhealthcare/",
+        "excerpt": "Healthcare platform organising care services, locations and registration routes so clients, families and referrers can quickly find relevant support and practical next steps."
+    },
+    "post_fingerprint": "9f5c15800d9377d5d9d7177d4c8b3633555785057bb195e5b17cea2a80e3afc9",
+    "readback_verified": null
+}

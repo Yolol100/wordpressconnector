@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-marcoverhuurt-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:58:54+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "c8335cd4be9793ceee38d67b2e5cfe1151b39c297fd4ce8eee7d1d983b7d2300",
+    "after_fingerprint": "d8f18630f7395a22b7f4cd4a2febf70db885b83c9faf28720f586760ac80b389",
+    "rollback_available": true
+}
