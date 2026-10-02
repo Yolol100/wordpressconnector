@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-cache-connector-1.15.4-dry-20260929",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-29T08:56:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.15.3",
+    "to_version": "1.15.4",
+    "before_fingerprint": "973b4555890877e3bf360efdebf0ce5f39f52f21576842dfe1217b332d972528",
+    "rollback_supported": false,
+    "readback_verified": null
+}

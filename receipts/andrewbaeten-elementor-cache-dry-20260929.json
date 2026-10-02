@@ -1,0 +1,17 @@
+{
+    "version": "4.3.2",
+    "ok": true,
+    "request_id": "andrewbaeten-elementor-cache-dry-20260929",
+    "action": "maintenance.cache_flush",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-29T05:24:10+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layer": "elementor",
+    "provider": "Elementor",
+    "rollback_supported": false,
+    "rebuild_mode": "regenerate_on_next_page_request",
+    "readback_verified": null,
+    "before_fingerprint": "5a11773a266a1ce5a6cb44cc05a742ca3b7e85fbd1d94847ed9a3740a6913bd7",
+    "would_flush": true
+}
