@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "mailbox-bridge-update-dry-20261002-001",
+  "action": "plugin.install_package",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "source_path": "plugin-packages/webactueel-mailbox-bridge.zip",
+    "sha256": "3d8c553520515b3e1e89f58370bba7e6af3bb306b1c91a8b4e30efb8bc7d0972",
+    "expected_plugin": "webactueel-mailbox-bridge/webactueel-mailbox-bridge.php",
+    "overwrite": true,
+    "activate": true,
+    "network_wide": false
+  }
+}
