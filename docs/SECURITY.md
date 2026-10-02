@@ -52,7 +52,7 @@ Persistent checkbox gates are removed from normal setup. Safety is enforced at t
 
 A public GitHub repository is not a private transport. Full WordPress results and sensitive data must not be committed to public request branches or emitted into public logs. Public runtime requests retain the explicit action allowlist and sanitized receipt builder.
 
-`plugin.install_package` and private/custom package bytes remain excluded from public GitHub runtime.
+`plugin.install_package` is allowed in public GitHub runtime only for publishable packages under the guarded package contract: exact SHA-256 and plugin identity, `network_wide=false`, explicit activation intent, and a preceding dry-run fingerprint before confirmation. New installs require `overwrite=false`; `overwrite=true` is restricted to the exact public Mailbox Bridge identity `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php`. Private/confidential package bytes remain excluded from public GitHub runtime.
 
 ## Token handling
 
