@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://losh.nl",
+  "request_id": "losh-ir-backend-inspect-private-20260930",
+  "action": "filesystem.inspect",
+  "dry_run": true,
+  "confirm": true,
+  "payload": {}
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "losh-ir-post8697-evidence-20260930",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-30T11:04:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 8697,
+        "type": "post",
+        "status": "publish",
+        "title": "Hacked by CoupDeGrace",
+        "slug": "cf192504a9c0-htm",
+        "permalink": "https://losh.nl/cf192504a9c0-htm/",
+        "excerpt": ""
+    },
+    "post_fingerprint": "882c5e7ea7653646e994c7d883936587a61b07bfed05a7c0ffde83276315387f",
+    "readback_verified": null
+}
