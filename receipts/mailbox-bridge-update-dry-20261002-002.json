@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "mailbox-bridge-update-dry-20261002-002",
+    "action": "plugin.install_package",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-02T09:52:05+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "plugin_file": "webactueel-mailbox-bridge/webactueel-mailbox-bridge.php",
+    "package_sha256": "8355c00d1d43c33bbb8f9f816ce9c41905984a09874f6e30520a46a87ee1ff7c",
+    "activate_requested": true,
+    "overwrite": true,
+    "network_wide": false,
+    "rollback_supported": false,
+    "before_fingerprint": "2fd16335f31ca56fd56fece46915c2b30658adc919e8fa56b19f84e4ce52bd65",
+    "already_installed": true,
+    "package_verified": true,
+    "package_bytes": 10591,
+    "archive_entries": 5,
+    "readback_verified": null
+}
