@@ -55,16 +55,17 @@ GitHub cannot securely enumerate arbitrary unknown WordPress domains merely beca
 
 ## 4. Repository visibility and public-mode restrictions
 
-This repository is currently private. The mailbox private-transport workflow is fail-closed and runs only while GitHub reports the repository itself as private.
+This repository is currently public. Private mailbox transport must remain on a separate private control plane; the public WordPress Connector runtime persists only sanitized receipts.
 
-If repository visibility is ever changed to public, the mailbox private transport must remain unavailable and the normal public runtime remains restricted to the explicit public-safe contract:
+The public runtime remains restricted to the explicit public-safe contract, including:
 
 - `post.update` on existing published content;
 - post-targeted `acf.update`;
 - `connector.batch` containing only those public content operations;
 - `connector.rollback`;
 - `connector.update.check`;
-- guarded `connector.update.apply` using dry-run-first fingerprint protection.
+- guarded `connector.update.apply` using dry-run-first fingerprint protection;
+- guarded `plugin.install_package` for publishable packages with exact SHA-256/plugin identity, `network_wide=false`, explicit activation intent and a preceding dry-run fingerprint; `overwrite=true` is restricted to `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php`.
 
 Sensitive actions stay blocked in public mode. Secret-like payload keys and `expected_state_token` are rejected. Full/private WordPress or mailbox responses must never be committed to a public branch, log, issue, artifact or receipt.
 
