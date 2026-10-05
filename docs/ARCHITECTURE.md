@@ -12,6 +12,12 @@ ChatGPT/GitHub request branch -> `wordpress-request.yml` credential-free guard -
 
 The untrusted request PR never receives production credentials. The trusted executor has no persistent WordPress credential either; it obtains short-lived OIDC tokens from GitHub for the exact WordPress audience.
 
+### 3. Native MCP
+
+Approved authenticated MCP client -> WordPress REST `/mcp` -> MCP envelope validation -> existing WordPress authorization -> bounded MCP tool facade -> the same semantic `Runtime\\Request` and `Runner` -> policy/capability checks -> adapter -> readback/result.
+
+MCP is transport only. It does not register a parallel WordPress action model, does not expose arbitrary REST/SQL/shell/filesystem primitives and does not weaken the existing mutation contract. The bounded tool facade first exposes discovery/action metadata, then routes requested semantic actions through the canonical Runner. Confirmed writes require an explicit stable connector `request_id` so client retries remain inside the existing idempotency model.
+
 ## Target selection
 
 `site_url` is part of the temporary GitHub request envelope. It is validated as canonical HTTPS and removed before the semantic request is passed to `Runtime\Request`.
