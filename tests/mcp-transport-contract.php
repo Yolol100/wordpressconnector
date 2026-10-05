@@ -170,6 +170,7 @@ namespace {
         'params' => array('_meta' => $modernMeta),
     ), $modernListHeaders));
     $modernTools = $modernList->get_data()['result'];
+    $assert('complete' === $modernTools['resultType'], 'Modern tools/list must carry resultType=complete.');
     $assert(300000 === $modernTools['ttlMs'] && 'private' === $modernTools['cacheScope'], 'Modern tools/list must carry bounded private cache hints.');
     $names = array_column($modernTools['tools'], 'name');
     $assert(array('wordpress_connector_actions', 'wordpress_connector_discover', 'wordpress_connector_execute') === $names, 'MCP tool surface must stay minimal and stable.');
