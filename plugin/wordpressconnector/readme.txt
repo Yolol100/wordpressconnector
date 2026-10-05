@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.15.11
+Stable tag: 1.16.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Zero-config controlled GitHub-to-WordPress bridge over authenticated HTTPS REST with optional local WP-CLI recovery.
+Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.16.0 adds a bounded authenticated MCP endpoint over the existing semantic action registry and Runner. It supports modern 2026-07-28 discovery plus the legacy 2025-11-25 initialize flow, exposes only action discovery, runtime discovery and semantic execution tools, defaults execution to dry-run and requires confirm=true plus an explicit stable request_id for real writes. MCP reuses the existing WordPress/OIDC authorization, capabilities, stale-state, idempotency, readback and rollback controls and adds no generic shell, SQL or unrestricted proxy primitive.
 
 WordPress Connector is the canonical single-plugin bridge for WordPress posts/pages/CPTs, Gutenberg, Elementor, WooCommerce, ACF, Yoast SEO, media, terms, menus, options, WordPress Additional CSS, controlled filesystem access and controlled system actions.
 
@@ -79,6 +81,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.16.0 =
+* Add an authenticated native MCP endpoint at /wp-json/webactueel-wordpress-connector/v1/mcp as a thin transport over the existing Registry and Runner.
+* Support MCP 2026-07-28 server/discover plus the legacy 2025-11-25 initialize flow with bounded tools/list and tools/call handling.
+* Expose only action discovery, runtime discovery and semantic connector execution; preserve WordPress/OIDC authorization and all existing policy/capability gates.
+* Keep MCP execution dry-run by default and require confirm=true plus an explicit stable request_id for real writes.
+* Add fail-closed modern header/metadata validation and controlled-runtime contract coverage.
 
 = 1.15.11 =
 * Allow guarded public overwrite only for `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php` with exact SHA/plugin identity and prior dry-run fingerprint; keep all other public plugin overwrites blocked.

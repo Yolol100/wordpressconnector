@@ -33,6 +33,7 @@ run_php tests/runtime-preflight-contract.php
 run_php tests/filesystem-control-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
+run_php tests/mcp-transport-contract.php
 run_php tests/request-workflow-contract.php
 run_php tests/mailbox-private-workflow-contract.php
 run_php tests/execute-workflow-contract.php

@@ -44,6 +44,19 @@ Persistent checkbox gates are removed from normal setup. Safety is enforced at t
 
 `WPCONNECTOR_ALLOW_*` constants/environment variables remain optional server-side emergency overrides. They default to enabled for zero-config normal operation and can be explicitly set false by an operator to stop a class of actions.
 
+## MCP transport
+
+The native MCP route reuses the existing REST authorization callback. It does not introduce anonymous access, a second credential store or a second semantic action implementation.
+
+- HTTPS and WordPress `manage_options` remain required through the existing authorization boundary.
+- GitHub OIDC remains available only under the same exact JWT claim verification used by REST.
+- Modern MCP envelope metadata and standard method/name headers are checked before tool execution.
+- The MCP facade exposes three bounded tools and routes execution through `Runtime\\Request` and `Runner`.
+- Dry-run remains the default. A non-dry-run MCP call requires both `confirm=true` and an explicit stable connector `request_id`.
+- Existing capability checks, sensitive/public-mode policy, stale-state guards, mutation locks, idempotency, readback, rollback and redaction remain authoritative.
+- MCP adds no arbitrary shell, SQL, PHP eval, unrestricted filesystem write or generic HTTP proxy.
+- Hosted account/site registries, OAuth brokerage, billing/quotas and background-job orchestration are outside this plugin's trust boundary.
+
 ## Public presence endpoint
 
 `/presence` is intentionally minimal and HTTPS-only. It exposes only that WordPress Connector is present, zero-config capable and expects GitHub OIDC. It does not expose users, site settings, secrets or content.

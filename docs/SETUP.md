@@ -7,6 +7,7 @@ Install and activate `plugin/wordpressconnector` on the target WordPress site. N
 The plugin immediately registers:
 
 - HTTPS REST routes under `/wp-json/webactueel-wordpress-connector/v1/`;
+- an authenticated MCP endpoint at `/wp-json/webactueel-wordpress-connector/v1/mcp`;
 - the semantic action registry;
 - an informational `Settings -> WordPress Connector` page;
 - optional WP-CLI commands.
@@ -98,7 +99,15 @@ The zero-config executor preserves request-scoped asset transport:
 
 Non-GitHub clients may still use normal WordPress authentication over HTTPS, including an authenticated WordPress session or Application Password where appropriate. GitHub OIDC only removes persistent credentials from the canonical GitHub runtime.
 
-## 8. Acceptance sequence
+## 8. Native MCP clients
+
+The MCP endpoint uses the same WordPress authentication boundary as the direct REST endpoints. It is not an anonymous pairing endpoint. Connect an approved client with an authenticated WordPress HTTPS session or Application Password where that client supports normal WordPress HTTP authentication.
+
+Modern MCP clients may use protocol revision `2026-07-28` with `server/discover`; the connector also retains the legacy `2025-11-25` initialize flow. The MCP facade exposes only connector action discovery, runtime discovery and semantic execution. It does not provide global site discovery, billing, quotas, hosted skills or background-job orchestration.
+
+For writes, use the same safe sequence as REST: discovery -> dry-run -> capture fingerprint/state -> confirmed call with a stable explicit `request_id` -> readback -> rollback when supported.
+
+## 9. Acceptance sequence
 
 1. Verify `/presence` on the target staging site.
 2. Run an authenticated `/health` through the GitHub OIDC route.

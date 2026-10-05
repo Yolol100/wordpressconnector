@@ -2,7 +2,7 @@
 
 > **Portfoliostatus:** actief ondersteunend · gecontroleerde WordPress automation bridge · geen clientcase
 
-WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients and the guarded GitHub runtime.
+WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients, native MCP clients and the guarded GitHub runtime.
 
 **Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [Portfolio cases](https://andrewbaeten.nl/category/cases)
 
@@ -11,7 +11,8 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 | Area | Implementation |
 | --- | --- |
 | WordPress automation | Capability-gated REST actions across content, media, WooCommerce, ACF and site administration |
-| Authentication | Short-lived GitHub Actions OIDC plus standard authenticated WordPress REST clients |
+| Authentication | Short-lived GitHub Actions OIDC plus standard authenticated WordPress REST/MCP clients |
+| AI transport | Native bounded MCP endpoint over the existing semantic action registry; no second business-logic layer |
 | Safety | Dry-run defaults, explicit confirmation, stale-state guards and bounded filesystem access |
 | Reliability | Idempotency, readback, rollback and exact target validation |
 | Security | HTTPS-only transport, strict JWT binding and sanitized public receipts |
@@ -42,6 +43,18 @@ This repository is currently public. Public runtime requests remain deliberately
 ## Direct HTTPS REST
 
 Approved clients may still use WordPress-native authenticated REST sessions/Application Passwords. GitHub OIDC is the credential-free path for the canonical GitHub runtime, not a replacement for WordPress authentication standards used by other clients.
+
+## Native MCP transport
+
+Version 1.16.0 adds an authenticated MCP endpoint at `/wp-json/webactueel-wordpress-connector/v1/mcp`. It is deliberately a thin transport over the existing Registry and Runner: MCP cannot bypass WordPress authentication, capabilities, dry-run, confirmation, stale-state guards, idempotency, readback or rollback.
+
+The endpoint supports modern MCP `2026-07-28` discovery plus the legacy `2025-11-25` initialize flow and exposes only three bounded tools:
+
+- `wordpress_connector_actions` — action/security catalog;
+- `wordpress_connector_discover` — authenticated runtime discovery;
+- `wordpress_connector_execute` — execute one existing semantic connector action.
+
+Real writes require `dry_run=false`, `confirm=true` and an explicit stable `request_id`. This repository does not add a hosted multi-site account registry, billing/usage quotas, shared cloud skills or a background-job SaaS layer; those remain separate control-plane concerns.
 
 ## Safety model
 
