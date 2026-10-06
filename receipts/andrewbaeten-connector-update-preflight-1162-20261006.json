@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-connector-update-preflight-1162-20261006",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T21:52:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.16.1",
+    "to_version": "1.16.2",
+    "before_fingerprint": "839695e127f9ddf24422e4ed1b125bf3e7e042804d635d380f36b8a67191407c",
+    "rollback_supported": false,
+    "readback_verified": null
+}
