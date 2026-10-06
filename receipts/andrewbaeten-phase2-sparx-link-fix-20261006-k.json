@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase2-sparx-link-fix-20261006-k",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-06T19:04:20+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 899,
+    "element_id": "c6e0e15",
+    "before_fingerprint": "936dddd72c0c7a6223b7e4f23930bb9cb02e98581bf3b92433dd7af7e8d92477",
+    "after_fingerprint": "49c04acc5a390fe13b05f16c90f4a57b8337f5d03447ddc8ce2301d004577b1c",
+    "rollback_available": true
+}
