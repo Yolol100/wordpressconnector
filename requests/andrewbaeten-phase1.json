@@ -1,10 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-restore-link-dryrun-20261006-x",
+  "request_id": "andrewbaeten-restore-link-fix-20261006-w",
   "action": "elementor.patch_element",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "expected_fingerprint": "1a3776c222cec37df650f1203709b6a4eaaac2325fdc2d3f677d7c7945a5b3cd",
   "payload": {
     "id": 899,
