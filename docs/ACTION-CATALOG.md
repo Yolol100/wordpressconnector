@@ -31,6 +31,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `core.update` | mutation, privileged, system_update | Update WordPress core. Non-rollbackable. |
 | `custom_css.inspect` | privileged | Read WordPress Additional CSS for one installed theme stylesheet. |
 | `custom_css.update` | mutation, privileged | Replace WordPress Additional CSS with stale-state protection, readback and rollback. |
+| `custom_css.patch` | mutation, privileged | Upsert or remove one named managed Additional CSS block while preserving unrelated CSS, with fingerprint, readback and rollback. |
 | `cron.delete` | mutation, privileged | Delete scheduled events for one hook. |
 | `cron.list` | privileged | List scheduled cron events. |
 | `cron.run` | mutation, privileged | Run one cron hook immediately. |
