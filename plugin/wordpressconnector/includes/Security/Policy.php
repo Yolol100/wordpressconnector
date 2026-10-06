@@ -41,6 +41,9 @@ final class Policy
         'code_snippets.patch',
         'maintenance.cache_capabilities',
         'maintenance.cache_flush',
+        'custom_css.inspect',
+        'custom_css.update',
+        'custom_css.patch',
         'plugin.install_package',
     );
 
