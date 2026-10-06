@@ -204,6 +204,16 @@ final class CacheMaintenanceAdapter
             throw new RuntimeException('Asset CleanUp cache verification marker is unavailable.');
         }
 
+        /*
+         * Asset CleanUp owns two completion signals after clearCache():
+         * - the wpacu_clear_cache_after action;
+         * - the <plugin-id>_last_clear_cache transient.
+         *
+         * Either signal proves the provider reached its completion boundary.
+         * Do not plant connector-owned sentinel transients: Asset CleanUp is
+         * not required to purge arbitrary transient names, which caused false
+         * negatives even when the provider flush completed successfully.
+         */
         $transient = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
         $before = get_transient($transient);
         $startedAt = time();
@@ -212,32 +222,20 @@ final class CacheMaintenanceAdapter
             $verifiedByHook = true;
         };
 
-        /*
-         * Asset CleanUp clears all transients whose names contain
-         * "_transient_wpacu_css_" / "_transient_wpacu_js_".
-         * Plant a short-lived sentinel in that exact namespace and require the
-         * provider-owned cache clear to remove it. This is stronger and more
-         * version-tolerant than relying only on optional completion hooks.
-         */
-        $sentinel = 'wpacu_css_wpconnector_verify_' . substr(hash('sha256', (string) microtime(true)), 0, 12);
-        set_transient($sentinel, '1', 30);
-
         add_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX, 0);
         try {
-            call_user_func(array($class, $method), false);
+            call_user_func(array($class, $method));
         } finally {
             remove_action('wpacu_clear_cache_after', $callback, PHP_INT_MAX);
         }
 
-        $sentinelCleared = false === get_transient($sentinel);
         $after = get_transient($transient);
         $beforeValue = is_numeric($before) ? (int) $before : 0;
         $afterValue = is_numeric($after) ? (int) $after : 0;
-        $legacyVerified = $verifiedByHook
-            && $afterValue >= ($startedAt - 1)
+        $timestampVerified = $afterValue >= ($startedAt - 1)
             && $afterValue >= $beforeValue;
 
-        return $sentinelCleared || $legacyVerified;
+        return $verifiedByHook || $timestampVerified;
     }
 
     private function ensureAssetCleanupClass(): string

@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.16.1
+Stable tag: 1.16.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,9 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.16.2 =
+* Fix Asset CleanUp cache-flush verification to rely on the plugin's own completion hook and last-clear transient instead of a connector-owned sentinel, preventing false-negative flush failures.
 
 = 1.16.1 =
 * Add guarded `custom_css.inspect` and managed `custom_css.patch` support to the public GitHub runtime while keeping full `custom_css.update` off the public allowlist.
