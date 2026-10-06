@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase3-fidelyaa-copy-dryrun-20261006-p",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:09:23+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 899,
+    "element_id": "439e5c1",
+    "before_fingerprint": "7a6e475479d47cc0fc43aab5b10c7cbc374c3c232e7e42217d6a9b07dfab6025",
+    "after_fingerprint": "2ce48ca245e7430031a9ccc1c22374a4220f59cd5de7e11deea9ea20e61f929e"
+}
