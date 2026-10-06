@@ -63,7 +63,7 @@ The native MCP route reuses the existing REST authorization callback. It does no
 
 ## Public repository mode
 
-A public GitHub repository is not a private transport. Full WordPress results and sensitive data must not be committed to public request branches or emitted into public logs. Public runtime requests retain the explicit action allowlist and sanitized receipt builder.
+A public GitHub repository is not a private transport. Full WordPress results and sensitive data must not be committed to public request branches or emitted into public logs. Public runtime requests retain the explicit action allowlist and sanitized receipt builder. Additional CSS public access is limited to the active theme: inspection receipts expose only hashes/byte counts, managed `custom_css.patch` writes require `edit_css`, dry-run fingerprint protection, exact readback and rollback, and full `custom_css.update` remains unavailable through public GitHub transport.
 
 `plugin.install_package` is allowed in public GitHub runtime only for publishable packages under the guarded package contract: exact SHA-256 and plugin identity, `network_wide=false`, explicit activation intent, and a preceding dry-run fingerprint before confirmation. New installs require `overwrite=false`; `overwrite=true` is restricted to the exact public Mailbox Bridge identity `webactueel-mailbox-bridge/webactueel-mailbox-bridge.php`. Private/confidential package bytes remain excluded from public GitHub runtime.
 

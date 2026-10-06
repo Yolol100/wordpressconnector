@@ -224,6 +224,20 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('custom_css.inspect' === $action) {
+            $this->assertPublicCustomCssPayload($payload, false);
+            $descriptor['privileged'] = false;
+            return $descriptor;
+        }
+        if ('custom_css.patch' === $action) {
+            $this->assertPublicCustomCssPayload($payload, true);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public custom_css.patch requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('maintenance.cache_flush' === $action) {
             $this->assertPublicCacheFlushPayload($payload);
             if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
@@ -267,6 +281,74 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicCustomCssPayload(array $payload, bool $patch): void
+    {
+        $allowed = $patch
+            ? array('stylesheet', 'patch_id', 'operation', 'css')
+            : array('stylesheet');
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, $allowed, true)) {
+                throw new RuntimeException('Public Additional CSS request contains unsupported payload key: ' . (string) $key);
+            }
+        }
+
+        $stylesheet = isset($payload['stylesheet']) ? sanitize_text_field((string) $payload['stylesheet']) : (string) get_stylesheet();
+        if ('' === $stylesheet || ! hash_equals((string) get_stylesheet(), $stylesheet)) {
+            throw new RuntimeException('Public Additional CSS actions may target only the active theme stylesheet.');
+        }
+
+        if (! $patch) {
+            return;
+        }
+
+        $patchId = isset($payload['patch_id']) && is_string($payload['patch_id']) ? $payload['patch_id'] : '';
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}\\z/', $patchId)) {
+            throw new RuntimeException('Public custom_css.patch requires a safe 3-64 character patch_id.');
+        }
+
+        $operation = isset($payload['operation']) && is_string($payload['operation']) ? strtolower($payload['operation']) : '';
+        if (! in_array($operation, array('upsert', 'remove'), true)) {
+            throw new RuntimeException('Public custom_css.patch operation must be upsert or remove.');
+        }
+
+        if ('remove' === $operation) {
+            if (array_key_exists('css', $payload)) {
+                throw new RuntimeException('Public custom_css.patch remove must not include css.');
+            }
+            return;
+        }
+
+        $css = isset($payload['css']) && is_string($payload['css']) ? $payload['css'] : '';
+        if ('' === trim($css) || strlen($css) > 65536) {
+            throw new RuntimeException('Public custom_css.patch css must be non-empty and at most 64 KiB.');
+        }
+        if (preg_match('/[\\x00-\\x08\\x0B\\x0E-\\x1F\\x7F]/', $css)) {
+            throw new RuntimeException('Public custom_css.patch css contains unsupported control characters.');
+        }
+        if (false !== stripos($css, '</style') || false !== stripos($css, 'wpconnector:')) {
+            throw new RuntimeException('Public custom_css.patch css contains a forbidden style boundary or connector marker.');
+        }
+    }
+
+    private function assertPublicCustomCssRollbackPayload(array $payload): void
+    {
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, array('stylesheet', 'css'), true)) {
+                throw new RuntimeException('Public Additional CSS rollback contains unsupported payload key: ' . (string) $key);
+            }
+        }
+        $stylesheet = isset($payload['stylesheet']) ? sanitize_text_field((string) $payload['stylesheet']) : '';
+        if ('' === $stylesheet || ! hash_equals((string) get_stylesheet(), $stylesheet)) {
+            throw new RuntimeException('Public Additional CSS rollback may target only the active theme stylesheet.');
+        }
+        if (! array_key_exists('css', $payload) || ! is_string($payload['css']) || strlen($payload['css']) > 524288) {
+            throw new RuntimeException('Public Additional CSS rollback css is invalid.');
+        }
+        if (false !== stripos($payload['css'], '</style')) {
+            throw new RuntimeException('Public Additional CSS rollback contains a forbidden style boundary.');
+        }
     }
 
     private function assertPublicPluginInstallPayload(array $payload): void
@@ -522,6 +604,7 @@ final class Runner
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
             'connector.batch' => array('connector.batch'),
             'code_snippets.patch' => array('code_snippets.restore_code'),
+            'custom_css.patch' => array('custom_css.update'),
         );
         if (! isset($allowed[$sourceAction]) || ! in_array($rollbackAction, $allowed[$sourceAction], true)) {
             throw new RuntimeException('Rollback snapshot is not eligible for the guarded public rollback route.');
@@ -536,6 +619,8 @@ final class Runner
             if ($snippetId <= 0 || null === $code || strlen($code) > 1048576 || ! preg_match('/^[a-f0-9]{64}\\z/', $expected)) {
                 throw new RuntimeException('Public Code Snippets rollback snapshot is invalid.');
             }
+        } elseif ('custom_css.patch' === $sourceAction) {
+            $this->assertPublicCustomCssRollbackPayload((array) ($rollback['payload'] ?? array()));
         } elseif ('portfolio.case_text_update' === $sourceAction) {
             $this->assertPublicPortfolioCaseTextPayload((array) ($rollback['payload'] ?? array()));
         } elseif ('acf.update' === $rollbackAction) {

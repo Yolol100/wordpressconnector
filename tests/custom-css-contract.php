@@ -26,6 +26,8 @@ if ($adapter === false || $plugin === false || $bootstrap === false) {
 $required = array(
     "register('custom_css.inspect'",
     "register('custom_css.update'",
+    "register('custom_css.patch'",
+    "'capability' => 'edit_css'",
     "'mutation' => true",
     "'privileged' => true",
     'wp_get_custom_css(',
@@ -34,6 +36,9 @@ $required = array(
     "'_current_fingerprint'",
     "'_rollback'",
     'MAX_CSS_BYTES',
+    'MAX_PATCH_BYTES',
+    'PATCH_PREFIX',
+    'applyPatch(',
 );
 
 foreach ($required as $needle) {

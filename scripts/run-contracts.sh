@@ -16,6 +16,7 @@ run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
 run_php tests/user-password-reset-contract.php
 run_php tests/custom-css-contract.php
+run_php tests/public-custom-css-contract.php
 run_php tests/code-snippets-contract.php
 run_php tests/cache-maintenance-contract.php
 run_php tests/elementor-inventory-contract.php

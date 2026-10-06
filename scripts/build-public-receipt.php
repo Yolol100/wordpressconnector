@@ -398,6 +398,31 @@ if (! $ok) {
         }
         $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? null));
         if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+    } elseif ('custom_css.inspect' === $action) {
+        $snapshot = isset($data['custom_css']) && is_array($data['custom_css']) ? $data['custom_css'] : array();
+        $css = isset($snapshot['css']) && is_string($snapshot['css']) ? $snapshot['css'] : '';
+        $receipt['stylesheet'] = substr((string) ($snapshot['stylesheet'] ?? ($payload['stylesheet'] ?? '')), 0, 191);
+        $receipt['css_bytes'] = strlen($css);
+        $receipt['css_sha256'] = hash('sha256', $css);
+        $stateFingerprint = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\\z/', $stateFingerprint)) $receipt['custom_css_fingerprint'] = $stateFingerprint;
+        $receipt['readback_verified'] = null;
+    } elseif ('custom_css.patch' === $action) {
+        $receipt['stylesheet'] = substr((string) (($data['after']['stylesheet'] ?? null) ?: ($data['before']['stylesheet'] ?? null) ?: ($payload['stylesheet'] ?? '')), 0, 191);
+        $receipt['patch_id'] = substr((string) ($data['patch_id'] ?? ($payload['patch_id'] ?? '')), 0, 64);
+        $receipt['operation'] = in_array((string) ($data['operation'] ?? ($payload['operation'] ?? '')), array('upsert','remove'), true)
+            ? (string) ($data['operation'] ?? ($payload['operation'] ?? ''))
+            : '';
+        $receipt['changed'] = ! empty($data['changed']);
+        foreach (array('before_css_bytes','after_css_bytes') as $field) {
+            if (isset($data[$field])) $receipt[$field] = max(0, (int) $data[$field]);
+        }
+        foreach (array('before_css_sha256','after_css_sha256') as $field) {
+            $value = isset($data[$field]) ? (string) $data[$field] : '';
+            if (preg_match('/^[a-f0-9]{64}\\z/', $value)) $receipt[$field] = $value;
+        }
+        $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? null));
+        if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
     } elseif ('post.get' === $action) {
         $post = isset($data['post']) && is_array($data['post']) ? $data['post'] : array();
         $receipt['post'] = $summarizePost($post, true);

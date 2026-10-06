@@ -47,7 +47,7 @@ $expectFailure(static fn()=>Policy::assertActionAllowed(array('privileged'=>true
 putenv('WPCONNECTOR_ALLOW_PRIVILEGED');
 
 Policy::setPublicRepositoryContext(true);
-$GLOBALS['wpconnector_test_caps']=array('update_plugins','manage_options');
+$GLOBALS['wpconnector_test_caps']=array('update_plugins','manage_options','edit_css');
 Policy::assertActionAllowed(array('name'=>'connector.update.apply','mutation'=>true,'privileged'=>true,'system_update'=>true,'public_repository_safe'=>true,'capability'=>'update_plugins'),false,true);
 $expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'acf.update','privileged'=>true),true,false),'unmarked public privileged action','public-repository mode');
 $expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'post.get','sensitive'=>true),true,true),'public sensitive action','Sensitive actions are blocked');
@@ -55,6 +55,9 @@ $expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'connector
 Policy::assertActionAllowed(array('name'=>'maintenance.cache_capabilities','privileged'=>true,'public_repository_safe'=>true,'capability'=>'manage_options'),true,false);
 Policy::assertActionAllowed(array('name'=>'maintenance.cache_flush','mutation'=>true,'privileged'=>false),false,true);
 Policy::assertActionAllowed(array('name'=>'code_snippets.patch','mutation'=>true,'privileged'=>false),false,true);
+Policy::assertActionAllowed(array('name'=>'custom_css.inspect','privileged'=>false,'capability'=>'edit_css'),true,false);
+Policy::assertActionAllowed(array('name'=>'custom_css.patch','mutation'=>true,'privileged'=>false,'capability'=>'edit_css'),false,true);
+$expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'custom_css.update','mutation'=>true,'privileged'=>false,'capability'=>'edit_css'),false,true),'full CSS replacement public action','not allowed in public-repository mode');
 $expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'code_snippets.restore_code','mutation'=>true,'privileged'=>false),false,true),'internal snippet restore public action','not allowed in public-repository mode');
 $expectFailure(static fn()=>Policy::assertActionAllowed(array('name'=>'post.trash','mutation'=>true),false,true),'non-allowlisted public action','not allowed in public-repository mode');
 Policy::setPublicRepositoryContext(false);
