@@ -1,11 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-cache-assetcleanup-live-20261006",
+  "request_id": "andrewbaeten-cache-assetcleanup-retry-dryrun-20261006",
   "action": "maintenance.cache_flush",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "92baccfedca65f2a7831e188e07095ad0f660a2dc90e2c30b8e0e5515e3189b0",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "layer": "asset_cleanup"
   }
