@@ -1,18 +1,16 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase3-after-fidelyaa-inspect-20261006-r",
-  "action": "elementor.inspect",
+  "request_id": "andrewbaeten-phase3-sparx-copy-dryrun-20261006-s",
+  "action": "elementor.patch_element",
   "dry_run": true,
   "confirm": false,
+  "expected_fingerprint": "3bedc47ab5f10924f6981aff4f4fb581eb756e3f50b7d28905bacb56dbb99faf",
   "payload": {
     "id": 899,
-    "element_ids": [
-      "bd1d44b",
-      "439e5c1",
-      "cac4df2",
-      "871bdb0",
-      "20ca8bb"
-    ]
+    "element_id": "cac4df2",
+    "settings": {
+      "editor": "Sparx Entertainment Agency presents DJs, live music, artists, special acts and event options through clear categories, responsive layouts and direct enquiry routes."
+    }
   }
 }
