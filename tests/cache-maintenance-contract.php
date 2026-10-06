@@ -27,7 +27,7 @@ foreach (array(
     "wpacu_clear_cache_after",
     "_last_clear_cache",
     "timestampVerified",
-    "return $verifiedByHook || $timestampVerified;",
+    'return $verifiedByHook || $timestampVerified;',
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
