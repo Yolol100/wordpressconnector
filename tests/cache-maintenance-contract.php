@@ -25,8 +25,9 @@ foreach (array(
     "clearCache",
     "clearAllCache",
     "wpacu_clear_cache_after",
-    "wpacu_css_wpconnector_verify_",
     "_last_clear_cache",
+    "timestampVerified",
+    "return $verifiedByHook || $timestampVerified;",
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
@@ -39,6 +40,7 @@ foreach (array(
     "unlink(",
     "rmdir(",
     "delete_transient(",
+    "set_transient(",
     "DELETE FROM",
 ) as $forbiddenNeedle) {
     if (false !== strpos($adapter, $forbiddenNeedle)) {
