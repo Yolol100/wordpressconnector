@@ -44,6 +44,8 @@ $publicActions = array(
     'code_snippets.patch',
     'maintenance.cache_capabilities',
     'maintenance.cache_flush',
+    'custom_css.inspect',
+    'custom_css.patch',
     'plugin.install_package',
 );
 if (! in_array($action, $publicActions, true)) {
@@ -133,6 +135,79 @@ if ('plugin.install_package' === $action) {
     }
 
     echo 'public runtime request OK: plugin.install_package' . PHP_EOL;
+    return;
+}
+
+if ('custom_css.inspect' === $action || 'custom_css.patch' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $allowedKeys = 'custom_css.inspect' === $action
+        ? array('stylesheet')
+        : array('stylesheet','patch_id','operation','css');
+
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowedKeys, true)) {
+            $errors[] = 'Public Additional CSS payload has unsupported key: ' . (string) $key;
+        }
+    }
+
+    if (isset($payload['stylesheet']) && (! is_string($payload['stylesheet']) || ! preg_match('/^[A-Za-z0-9._-]{1,191}$/D', $payload['stylesheet']))) {
+        $errors[] = 'Public Additional CSS stylesheet is invalid.';
+    }
+
+    if ('custom_css.patch' === $action) {
+        $patchId = isset($payload['patch_id']) && is_string($payload['patch_id']) ? $payload['patch_id'] : '';
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$/D', $patchId)) {
+            $errors[] = 'Public custom_css.patch requires a safe 3-64 character patch_id.';
+        }
+        $operation = isset($payload['operation']) && is_string($payload['operation']) ? strtolower($payload['operation']) : '';
+        if (! in_array($operation, array('upsert','remove'), true)) {
+            $errors[] = 'Public custom_css.patch operation must be upsert or remove.';
+        } elseif ('remove' === $operation) {
+            if (array_key_exists('css', $payload)) {
+                $errors[] = 'Public custom_css.patch remove must not include css.';
+            }
+        } else {
+            $css = isset($payload['css']) && is_string($payload['css']) ? $payload['css'] : '';
+            if ('' === trim($css) || strlen($css) > 65536) {
+                $errors[] = 'Public custom_css.patch css must be non-empty and at most 64 KiB.';
+            }
+            if (preg_match('/[\x00-\x08\x0B\x0E-\x1F\x7F]/', $css)) {
+                $errors[] = 'Public custom_css.patch css contains unsupported control characters.';
+            }
+            if (false !== stripos($css, '</style') || false !== stripos($css, 'wpconnector:')) {
+                $errors[] = 'Public custom_css.patch css contains a forbidden style boundary or connector marker.';
+            }
+        }
+    }
+
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be published in a public runtime request; use expected_fingerprint instead.';
+    }
+
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if ('custom_css.inspect' === $action) {
+        if (! $dryRun) {
+            $errors[] = 'custom_css.inspect must use dry_run=true in public GitHub runtime mode.';
+        }
+    } elseif (! $dryRun) {
+        if (empty($data['confirm'])) {
+            $errors[] = 'Public mutation requires confirm=true when dry_run=false.';
+        }
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed custom_css.patch requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+
+    if ($errors) {
+        foreach (array_values(array_unique($errors)) as $error) {
+            fwrite(STDERR, $error . "\n");
+        }
+        exit(1);
+    }
+
+    echo 'public runtime request OK: ' . $action . PHP_EOL;
     return;
 }
 
