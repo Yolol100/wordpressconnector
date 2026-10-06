@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-cache-wprocket-dryrun-20261006",
+    "action": "maintenance.cache_flush",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T20:22:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layer": "wp_rocket",
+    "provider": "WP Rocket",
+    "provider_version": "3.23.2.2",
+    "rollback_supported": false,
+    "rebuild_mode": "wp_rocket_preload_if_enabled",
+    "readback_verified": null,
+    "before_fingerprint": "4dfbe0f7b6720331081daba5efd18715858e6cf23586e49deb127509a454cb8a",
+    "would_flush": true
+}
