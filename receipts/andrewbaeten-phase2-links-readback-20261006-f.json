@@ -1,0 +1,70 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase2-links-readback-20261006-f",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T18:57:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "606fdc1639f5c1a74c3c5f4410cad59fec597aba5523e41491db4bb4d1138d12",
+    "post_id": 899,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.4",
+    "elements": [
+        {
+            "id": "4b7a6ec",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"e022881\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221332%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/wehear4u/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "b6abbce",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221321%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/rbmb-building-materials-webshop/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "c6e0e15",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221342%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/rbmb-building-materials-webshop/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
