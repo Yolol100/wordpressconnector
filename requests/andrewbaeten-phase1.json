@@ -1,21 +1,21 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase2-sparx-link-fix-20261006-k",
-  "action": "elementor.patch_element",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "4f5c91688325cda022cc96497961ce0bdfb94d5c58947ccbd824a5cea05b733c",
+  "request_id": "andrewbaeten-phase3-copy-inspect-20261006-l",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "id": 899,
-    "element_id": "c6e0e15",
-    "settings": {
-      "link": {
-        "url": "https://andrewbaeten.nl/sparxentertainmentagency/",
-        "is_external": "",
-        "nofollow": "",
-        "custom_attributes": ""
-      }
-    }
+    "element_ids": [
+      "bd1d44b",
+      "439e5c1",
+      "cac4df2",
+      "871bdb0",
+      "20ca8bb",
+      "4b7a6ec",
+      "b6abbce",
+      "c6e0e15"
+    ]
   }
 }
