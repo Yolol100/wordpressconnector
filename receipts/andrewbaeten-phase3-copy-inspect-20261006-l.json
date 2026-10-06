@@ -1,0 +1,110 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase3-copy-inspect-20261006-l",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:05:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "29eb8c7332df639277f67bcbf84d0688de8325c4e7c6c4cb4cabbb27e61968b8",
+    "post_id": 899,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.4",
+    "elements": [
+        {
+            "id": "bd1d44b",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "WeHear4U creates a calm, accessible online experience for people seeking care. The website presents treatment information clearly, reduces overwhelm, and guides visitors toward the right contact option with confidence."
+            }
+        },
+        {
+            "id": "4b7a6ec",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"e022881\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221332%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/wehear4u/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "439e5c1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Fidelyaa presents its business offering with clarity, confidence, and focus. The website improves content structure, guides visitors through key information, and uses responsive layouts with direct calls to action to make contact easier and more intuitive."
+            }
+        },
+        {
+            "id": "b6abbce",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221321%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/fidelyaa/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "871bdb0",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Sparxentertainment"
+            }
+        },
+        {
+            "id": "cac4df2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Sparx Entertainment Agency was redesigned to sharpen brand positioning, improve content flow, and simplify contact. With clear hierarchy, responsive design, and intuitive calls to action, the website helps visitors understand and engage."
+            }
+        },
+        {
+            "id": "c6e0e15",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221342%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/sparxentertainmentagency/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "20ca8bb",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "4+"
+            }
+        }
+    ],
+    "readback_verified": null
+}
