@@ -1,14 +1,21 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-restore-inspect-20261006-y",
-  "action": "elementor.inspect",
+  "request_id": "andrewbaeten-restore-link-dryrun-20261006-x",
+  "action": "elementor.patch_element",
   "dry_run": true,
   "confirm": false,
+  "expected_fingerprint": "1a3776c222cec37df650f1203709b6a4eaaac2325fdc2d3f677d7c7945a5b3cd",
   "payload": {
     "id": 899,
-    "element_ids": [
-      "4b7a6ec"
-    ]
+    "element_id": "4b7a6ec",
+    "settings": {
+      "link": {
+        "url": "https://andrewbaeten.nl/casareno-business-consultancy-website/",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+      }
+    }
   }
 }
