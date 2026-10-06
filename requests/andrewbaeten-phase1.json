@@ -1,11 +1,14 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase1-elementor-inspect-20261006-b",
-  "action": "elementor.inspect",
+  "request_id": "andrewbaeten-phase2-post-list-20261006-c",
+  "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "id": 899
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1
   }
 }
