@@ -1,10 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase2-sparx-link-dryrun-20261006-j",
+  "request_id": "andrewbaeten-phase2-sparx-link-fix-20261006-k",
   "action": "elementor.patch_element",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "expected_fingerprint": "4f5c91688325cda022cc96497961ce0bdfb94d5c58947ccbd824a5cea05b733c",
   "payload": {
     "id": 899,
