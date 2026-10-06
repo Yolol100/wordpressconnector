@@ -1,10 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase3-fidelyaa-copy-dryrun-20261006-p",
+  "request_id": "andrewbaeten-phase3-fidelyaa-copy-fix-20261006-q",
   "action": "elementor.patch_element",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "expected_fingerprint": "141360a51e2976946eefbb6d24aac9199765a8dcce70399bae7401e7511f0251",
   "payload": {
     "id": 899,
