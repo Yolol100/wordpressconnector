@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "andrewbaeten-assetcleanup-flush-live-1162-20261006",
+    "action": "maintenance.cache_flush",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-06T21:55:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
