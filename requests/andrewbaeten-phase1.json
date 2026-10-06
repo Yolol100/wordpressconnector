@@ -1,11 +1,14 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-rollback-20261006-z",
-  "action": "connector.rollback",
-  "dry_run": false,
-  "confirm": true,
+  "request_id": "andrewbaeten-restore-inspect-20261006-y",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
-    "request_id": "andrewbaeten-phase2-wehear4u-link-fix-20261006-e"
+    "id": 899,
+    "element_ids": [
+      "4b7a6ec"
+    ]
   }
 }
