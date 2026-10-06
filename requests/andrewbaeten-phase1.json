@@ -1,10 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase3-sparx-copy-dryrun-20261006-s",
+  "request_id": "andrewbaeten-phase3-sparx-copy-fix-20261006-t",
   "action": "elementor.patch_element",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
   "expected_fingerprint": "3bedc47ab5f10924f6981aff4f4fb581eb756e3f50b7d28905bacb56dbb99faf",
   "payload": {
     "id": 899,
