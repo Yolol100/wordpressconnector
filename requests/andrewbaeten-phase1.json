@@ -1,21 +1,16 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase2-wehear4u-link-fix-20261006-e",
-  "action": "elementor.patch_element",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "db8ac5225996a47d5c494a0bd714084e8b6693f5eabc9c16d33786beb1cf4f76",
+  "request_id": "andrewbaeten-phase2-links-readback-20261006-f",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "id": 899,
-    "element_id": "4b7a6ec",
-    "settings": {
-      "link": {
-        "url": "https://andrewbaeten.nl/wehear4u/",
-        "is_external": "",
-        "nofollow": "",
-        "custom_attributes": ""
-      }
-    }
+    "element_ids": [
+      "4b7a6ec",
+      "b6abbce",
+      "c6e0e15"
+    ]
   }
 }
