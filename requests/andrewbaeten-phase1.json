@@ -1,21 +1,16 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase3-copy-inspect-20261006-l",
-  "action": "elementor.inspect",
+  "request_id": "andrewbaeten-phase3-wehear-copy-dryrun-20261006-m",
+  "action": "elementor.patch_element",
   "dry_run": true,
   "confirm": false,
+  "expected_fingerprint": "29eb8c7332df639277f67bcbf84d0688de8325c4e7c6c4cb4cabbb27e61968b8",
   "payload": {
     "id": 899,
-    "element_ids": [
-      "bd1d44b",
-      "439e5c1",
-      "cac4df2",
-      "871bdb0",
-      "20ca8bb",
-      "4b7a6ec",
-      "b6abbce",
-      "c6e0e15"
-    ]
+    "element_id": "bd1d44b",
+    "settings": {
+      "editor": "WeHear4U presents its humanitarian hearing-care mission through a clear WordPress structure, with practical routes to donate hearing aids, support the work, become a collection point or learn more about the initiative in Kenya."
+    }
   }
 }
