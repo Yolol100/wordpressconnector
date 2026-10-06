@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-restore-link-dryrun-20261006-x",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:23:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 899,
+    "element_id": "4b7a6ec",
+    "before_fingerprint": "c8edb28ff8d3c94feedd026261a60b5e9ac5cab11a180a218a95c367500ad893",
+    "after_fingerprint": "097fa085011223362f9067e1842812e3341f6902587a3f1497930a7d304f22a4"
+}
