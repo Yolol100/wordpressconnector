@@ -1,10 +1,9 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-connector-update-live-1161-20261006b",
-  "action": "connector.update.apply",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "cf8af80077271596a3d430494a1036c3883b225c40ad8208129cab9072bf24bf",
+  "request_id": "andrewbaeten-connector-readback-1161-20261006b",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
   "payload": {}
 }
