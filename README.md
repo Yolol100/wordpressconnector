@@ -46,6 +46,8 @@ Approved clients may still use WordPress-native authenticated REST sessions/Appl
 
 ## Native MCP transport
 
+Version 1.16.1 adds guarded public-runtime Additional CSS inspection plus named managed CSS patches with dry-run fingerprinting, active-theme and `edit_css` gating, exact readback, rollback and sanitized public receipts. Full CSS replacement remains restricted to private/direct authenticated transports.
+
 Version 1.16.0 adds an authenticated MCP endpoint at `/wp-json/webactueel-wordpress-connector/v1/mcp`. It is deliberately a thin transport over the existing Registry and Runner: MCP cannot bypass WordPress authentication, capabilities, dry-run, confirmation, stale-state guards, idempotency, readback or rollback.
 
 The endpoint supports modern MCP `2026-07-28` discovery plus the legacy `2025-11-25` initialize flow and exposes only three bounded tools:
