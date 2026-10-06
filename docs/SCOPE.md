@@ -6,7 +6,7 @@ The connector covers the editable WordPress object model without becoming an unr
 
 Pages, posts, registered custom post types, revisions, trash/restore, registered metadata, taxonomies, classic menus, theme mods, comments, options, network options and WordPress Additional CSS.
 
-Additional CSS is handled through WordPress core `wp_get_custom_css()`, `wp_get_custom_css_post()` and `wp_update_custom_css_post()` APIs. The connector does not write theme stylesheets directly for this feature.
+Additional CSS is handled through WordPress core `wp_get_custom_css()`, `wp_get_custom_css_post()` and `wp_update_custom_css_post()` APIs. The connector does not write theme stylesheets directly for this feature. Public GitHub runtime may inspect only the active theme and may use `custom_css.patch` to upsert/remove one named managed block; full replacement stays on authenticated private/direct transports. Public receipts never include CSS bodies.
 
 ## Gutenberg
 
