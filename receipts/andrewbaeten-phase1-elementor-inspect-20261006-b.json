@@ -1,0 +1,445 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase1-elementor-inspect-20261006-b",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T18:53:19+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "db8ac5225996a47d5c494a0bd714084e8b6693f5eabc9c16d33786beb1cf4f76",
+    "post_id": 899,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.3",
+    "elements": [
+        {
+            "id": "0596f57",
+            "elType": "container"
+        },
+        {
+            "id": "34af37b",
+            "elType": "container"
+        },
+        {
+            "id": "a210ace",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "WORDPRESS · WOOCOMMERCE · ELEMENTOR · ACF"
+            }
+        },
+        {
+            "id": "1474f84",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Senior WordPress Developer"
+            }
+        },
+        {
+            "id": "67977ff",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "I build and improve WordPress &amp; WooCommerce websites that stay fast, editable and maintainable for agencies, growing businesses and in-house teams."
+            }
+        },
+        {
+            "id": "848d617",
+            "elType": "container"
+        },
+        {
+            "id": "2163ec1",
+            "elType": "container"
+        },
+        {
+            "id": "73ed963",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "90+"
+            }
+        },
+        {
+            "id": "a2b7032",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "WordPress projects"
+            }
+        },
+        {
+            "id": "8db956c",
+            "elType": "container"
+        },
+        {
+            "id": "d318f66",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "10+"
+            }
+        },
+        {
+            "id": "7625e48",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Years’ experience"
+            }
+        },
+        {
+            "id": "369dacd",
+            "elType": "container"
+        },
+        {
+            "id": "8a5cf94",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View selected work",
+                "link": {
+                    "url": "#cases",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "7f4bf58",
+            "elType": "container"
+        },
+        {
+            "id": "f31fc0f",
+            "elType": "container"
+        },
+        {
+            "id": "c5004c2",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Selected Work"
+            }
+        },
+        {
+            "id": "50b8a2b",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Selected WordPress case studies"
+            }
+        },
+        {
+            "id": "a16462e",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>A selection of my projects and cases, showing what I worked on, how it was built, and the practical problem each project solved.</p>"
+            }
+        },
+        {
+            "id": "adbbf56",
+            "elType": "container"
+        },
+        {
+            "id": "7ab35cb",
+            "elType": "container"
+        },
+        {
+            "id": "1e72000",
+            "elType": "container"
+        },
+        {
+            "id": "0948b6b",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Website"
+            }
+        },
+        {
+            "id": "eb81c0f",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Wehear4u"
+            }
+        },
+        {
+            "id": "bd1d44b",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "WeHear4U creates a calm, accessible online experience for people seeking care. The website presents treatment information clearly, reduces overwhelm, and guides visitors toward the right contact option with confidence."
+            }
+        },
+        {
+            "id": "4b7a6ec",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"e022881\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221332%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/casareno-business-consultancy-website/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "eaf7427",
+            "elType": "container"
+        },
+        {
+            "id": "347f20f",
+            "elType": "container"
+        },
+        {
+            "id": "84fa5ff",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Website"
+            }
+        },
+        {
+            "id": "caa7a67",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Fidelyaa"
+            }
+        },
+        {
+            "id": "439e5c1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Fidelyaa presents its business offering with clarity, confidence, and focus. The website improves content structure, guides visitors through key information, and uses responsive layouts with direct calls to action to make contact easier and more intuitive."
+            }
+        },
+        {
+            "id": "b6abbce",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221321%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/rbmb-building-materials-webshop/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "7e20bf1",
+            "elType": "container"
+        },
+        {
+            "id": "5036091",
+            "elType": "container"
+        },
+        {
+            "id": "a4cb863",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Website"
+            }
+        },
+        {
+            "id": "871bdb0",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Sparxentertainment"
+            }
+        },
+        {
+            "id": "cac4df2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Sparx Entertainment Agency was redesigned to sharpen brand positioning, improve content flow, and simplify contact. With clear hierarchy, responsive design, and intuitive calls to action, the website helps visitors understand and engage."
+            }
+        },
+        {
+            "id": "c6e0e15",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "View case study",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"689adaf\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22post%22%2C%22post_id%22%3A%221342%22%7D\"]"
+                },
+                "link": {
+                    "url": "https://andrewbaeten.nl/rbmb-building-materials-webshop/",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "731c665",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "More examples",
+                "__dynamic__": {
+                    "link": "[elementor-tag id=\"1d0d551\" name=\"internal-url\" settings=\"%7B%22type%22%3A%22taxonomy%22%2C%22taxonomy_id%22%3A%2229%22%7D\"]"
+                },
+                "link": {
+                    "url": "",
+                    "is_external": "",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        },
+        {
+            "id": "57703a5",
+            "elType": "container"
+        },
+        {
+            "id": "56741a5",
+            "elType": "container"
+        },
+        {
+            "id": "20ca8bb",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "4+"
+            }
+        },
+        {
+            "id": "176d476",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Core Skills"
+            }
+        },
+        {
+            "id": "71f169b",
+            "elType": "container"
+        },
+        {
+            "id": "4e0ee9e",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "SKILLS"
+            }
+        },
+        {
+            "id": "588838f",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "WordPress, front-end, UX and automation"
+            }
+        },
+        {
+            "id": "757bc5c",
+            "elType": "container"
+        },
+        {
+            "id": "5c1b116",
+            "elType": "container"
+        },
+        {
+            "id": "0a0fa24",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "WordPress & E-commerce"
+            }
+        },
+        {
+            "id": "3b9f58d",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>WordPress · WooCommerce · Elementor<br>Gutenberg · ACF · themes &amp; plugins.</p>"
+            }
+        },
+        {
+            "id": "77fe668",
+            "elType": "container"
+        },
+        {
+            "id": "1064287",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Front-end & UX/UI"
+            }
+        },
+        {
+            "id": "6737c02",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>HTML · CSS · JavaScript · PHP · responsive design · user flows.</p>"
+            }
+        },
+        {
+            "id": "d2b79ae",
+            "elType": "container"
+        },
+        {
+            "id": "2cd71d7",
+            "elType": "container"
+        },
+        {
+            "id": "53a0dfe",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "SEO, Performance & QA"
+            }
+        },
+        {
+            "id": "08eff8b",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>Technical SEO · Core Web Vitals · Lighthouse · Ahrefs · Playwright · axe-core.</p>"
+            }
+        },
+        {
+            "id": "0de36b2",
+            "elType": "container"
+        },
+        {
+            "id": "a8fdd0b",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "AI & Automation"
+            }
+        },
+        {
+            "id": "db1e4a8",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "<p>AI workflows · Git · GitHub · GitHub Actions · automated audits.</p>"
+            }
+        }
+    ],
+    "readback_verified": null
+}
