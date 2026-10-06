@@ -61,6 +61,8 @@ This repository is currently public. Private mailbox transport must remain on a 
 The public runtime remains restricted to the explicit public-safe contract, including:
 
 - `post.update` on existing published content;
+- `custom_css.inspect` for the active theme, with public receipts limited to hash/byte evidence;
+- guarded `custom_css.patch` for one named managed CSS block on the active theme, with dry-run fingerprint, readback and rollback;
 - post-targeted `acf.update`;
 - `connector.batch` containing only those public content operations;
 - `connector.rollback`;
