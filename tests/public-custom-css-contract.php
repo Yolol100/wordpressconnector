@@ -189,8 +189,8 @@ if (preg_match("/PUBLIC_REPOSITORY_ACTIONS[\\s\\S]*?'custom_css\.update'/", $pol
     exit(1);
 }
 foreach (array(
-    "if ('custom_css.inspect' === \\$action)",
-    "if ('custom_css.patch' === \\$action)",
+    "if ('custom_css.inspect' === " . '$action' . ")",
+    "if ('custom_css.patch' === " . '$action' . ")",
     "'custom_css.patch' => array('custom_css.update')",
 ) as $needle) {
     if (! str_contains($runner, $needle)) {
