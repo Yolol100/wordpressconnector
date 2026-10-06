@@ -1,16 +1,21 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase2-links-readback-20261006-f",
-  "action": "elementor.inspect",
+  "request_id": "andrewbaeten-phase2-fidelyaa-link-dryrun-20261006-g",
+  "action": "elementor.patch_element",
   "dry_run": true,
   "confirm": false,
+  "expected_fingerprint": "606fdc1639f5c1a74c3c5f4410cad59fec597aba5523e41491db4bb4d1138d12",
   "payload": {
     "id": 899,
-    "element_ids": [
-      "4b7a6ec",
-      "b6abbce",
-      "c6e0e15"
-    ]
+    "element_id": "b6abbce",
+    "settings": {
+      "link": {
+        "url": "https://andrewbaeten.nl/fidelyaa/",
+        "is_external": "",
+        "nofollow": "",
+        "custom_attributes": ""
+      }
+    }
   }
 }
