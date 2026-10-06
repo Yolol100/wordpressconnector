@@ -1,16 +1,18 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-phase3-fidelyaa-copy-fix-20261006-q",
-  "action": "elementor.patch_element",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "141360a51e2976946eefbb6d24aac9199765a8dcce70399bae7401e7511f0251",
+  "request_id": "andrewbaeten-phase3-after-fidelyaa-inspect-20261006-r",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "id": 899,
-    "element_id": "439e5c1",
-    "settings": {
-      "editor": "Fidelyaa presents strategic advice, analysis, process guidance, reintegration, activation and tender support through a clear responsive structure, with distinct service routes and direct contact options."
-    }
+    "element_ids": [
+      "bd1d44b",
+      "439e5c1",
+      "cac4df2",
+      "871bdb0",
+      "20ca8bb"
+    ]
   }
 }
