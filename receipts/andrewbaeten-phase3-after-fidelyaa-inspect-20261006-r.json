@@ -1,0 +1,59 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase3-after-fidelyaa-inspect-20261006-r",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:11:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "3bedc47ab5f10924f6981aff4f4fb581eb756e3f50b7d28905bacb56dbb99faf",
+    "post_id": 899,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.4",
+    "elements": [
+        {
+            "id": "bd1d44b",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "WeHear4U presents its humanitarian hearing-care mission through a clear WordPress structure, with practical routes to donate hearing aids, support the work, become a collection point or learn more about the initiative in Kenya."
+            }
+        },
+        {
+            "id": "439e5c1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Fidelyaa presents strategic advice, analysis, process guidance, reintegration, activation and tender support through a clear responsive structure, with distinct service routes and direct contact options."
+            }
+        },
+        {
+            "id": "871bdb0",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Sparxentertainment"
+            }
+        },
+        {
+            "id": "cac4df2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Sparx Entertainment Agency was redesigned to sharpen brand positioning, improve content flow, and simplify contact. With clear hierarchy, responsive design, and intuitive calls to action, the website helps visitors understand and engage."
+            }
+        },
+        {
+            "id": "20ca8bb",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "4+"
+            }
+        }
+    ],
+    "readback_verified": null
+}
