@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase3-wehear-copy-dryrun-20261006-m",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:06:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 899,
+    "element_id": "bd1d44b",
+    "before_fingerprint": "3c754205115c8d593be7cf468267ef92492152fbff58294709ab5169be85a240",
+    "after_fingerprint": "a6ecfc04d267cc1ad9c8948b9ba6c30c258577a89fc7d123d701ea68320c0e91"
+}
