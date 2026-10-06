@@ -1,0 +1,43 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-phase3-after-wehear-inspect-20261006-o",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T19:07:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "141360a51e2976946eefbb6d24aac9199765a8dcce70399bae7401e7511f0251",
+    "post_id": 899,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.4",
+    "elements": [
+        {
+            "id": "bd1d44b",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "WeHear4U presents its humanitarian hearing-care mission through a clear WordPress structure, with practical routes to donate hearing aids, support the work, become a collection point or learn more about the initiative in Kenya."
+            }
+        },
+        {
+            "id": "439e5c1",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Fidelyaa presents its business offering with clarity, confidence, and focus. The website improves content structure, guides visitors through key information, and uses responsive layouts with direct calls to action to make contact easier and more intuitive."
+            }
+        },
+        {
+            "id": "cac4df2",
+            "elType": "widget",
+            "widgetType": "text-editor",
+            "settings": {
+                "editor": "Sparx Entertainment Agency was redesigned to sharpen brand positioning, improve content flow, and simplify contact. With clear hierarchy, responsive design, and intuitive calls to action, the website helps visitors understand and engage."
+            }
+        }
+    ],
+    "readback_verified": null
+}
