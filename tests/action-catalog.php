@@ -19,6 +19,7 @@ $expected = array(
     'cron.schedule' => 'mutation, privileged',
     'custom_css.inspect' => 'privileged',
     'custom_css.update' => 'mutation, privileged',
+    'custom_css.patch' => 'mutation, privileged',
     'maintenance.cache_capabilities' => 'privileged',
     'maintenance.cache_flush' => 'mutation, privileged',
     'code_snippets.patch' => 'mutation, privileged',
