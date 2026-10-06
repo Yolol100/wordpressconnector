@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "andrewbaeten-cache-capabilities-20261006",
+  "action": "maintenance.cache_capabilities",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
