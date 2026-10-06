@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.16.0
+Stable tag: 1.16.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.16.1 adds guarded public GitHub-runtime access to WordPress Additional CSS without making full CSS replacement public. It introduces a managed `custom_css.patch` action that upserts or removes one named CSS block, requires dry-run fingerprint protection for live writes, preserves unrelated CSS, verifies exact readback and stores rollback. Public CSS inspection and mutation receipts expose only hashes, byte counts and patch metadata, never the CSS body. The action is restricted to the active theme stylesheet and the WordPress `edit_css` capability.
 
 Version 1.16.0 adds a bounded authenticated MCP endpoint over the existing semantic action registry and Runner. It supports modern 2026-07-28 discovery plus the legacy 2025-11-25 initialize flow, exposes only action discovery, runtime discovery and semantic execution tools, defaults execution to dry-run and requires confirm=true plus an explicit stable request_id for real writes. MCP reuses the existing WordPress/OIDC authorization, capabilities, stale-state, idempotency, readback and rollback controls and adds no generic shell, SQL or unrestricted proxy primitive.
 
@@ -81,6 +83,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.16.1 =
+* Add guarded `custom_css.inspect` and managed `custom_css.patch` support to the public GitHub runtime while keeping full `custom_css.update` off the public allowlist.
+* Restrict public CSS actions to the active theme and the WordPress `edit_css` capability.
+* Require dry-run fingerprint protection for confirmed CSS patch writes, exact readback and rollback.
+* Sanitize public CSS receipts to hashes, byte counts and patch metadata only; never persist CSS bodies.
+* Update the WordPress 7.1 runtime matrix to 7.1.3.
 
 = 1.16.0 =
 * Add an authenticated native MCP endpoint at /wp-json/webactueel-wordpress-connector/v1/mcp as a thin transport over the existing Registry and Runner.
