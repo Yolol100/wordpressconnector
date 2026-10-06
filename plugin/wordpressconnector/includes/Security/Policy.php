@@ -42,7 +42,6 @@ final class Policy
         'maintenance.cache_capabilities',
         'maintenance.cache_flush',
         'custom_css.inspect',
-        'custom_css.update',
         'custom_css.patch',
         'plugin.install_package',
     );
