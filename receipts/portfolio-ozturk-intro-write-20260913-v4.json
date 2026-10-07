@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ozturk-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T16:01:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "9090eb84251efa18c75b0314024898d822fc0a7728d2d07283b03d7a085a5fb4",
+    "after_fingerprint": "ff6f00d8653f3cbd3738835da7563d6073229268b7fef17e2c7de23da7100f1c",
+    "rollback_available": true
+}

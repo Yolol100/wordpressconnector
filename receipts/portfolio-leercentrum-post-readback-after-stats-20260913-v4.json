@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-leercentrum-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T18:08:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1417,
+        "type": "post",
+        "status": "publish",
+        "title": "Leercentrum",
+        "slug": "leercentrum",
+        "permalink": "https://andrewbaeten.nl/leercentrum/",
+        "excerpt": "Driving-school platform combining lesson packages, personal coaching, regional coverage, refresher training and a free trial lesson in one clear student journey."
+    },
+    "post_fingerprint": "e8c734a9a29ab52e9686babbfeeee4e24d8ef4fe1017860ae5417c7d04adcd40",
+    "readback_verified": null
+}

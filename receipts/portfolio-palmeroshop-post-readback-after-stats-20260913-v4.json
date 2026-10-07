@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-palmeroshop-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:47:29+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1431,
+        "type": "post",
+        "status": "publish",
+        "title": "Palmeroshop",
+        "slug": "palmeroshop",
+        "permalink": "https://andrewbaeten.nl/palmeroshop/",
+        "excerpt": "WordPress ecommerce site for massage and recovery products combining product browsing, education, FAQs, store policies and shopping routes."
+    },
+    "post_fingerprint": "ddf2f7dcbb30c3afbc92a5dde98a2db4b162997ae64d8eb144571aab98fda438",
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-envolt-source-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T14:29:34+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1427,
+        "type": "post",
+        "status": "publish",
+        "title": "Envolt",
+        "slug": "envolt",
+        "permalink": "https://andrewbaeten.nl/envolt/",
+        "excerpt": "Envolt connects electrical-service orientation with concise technical context and direct quotation access."
+    },
+    "post_fingerprint": "7944657135d2c70484b34ebd0cede4a0fb4ffc5a9c6c5266e76fddb2551b8b42",
+    "readback_verified": null
+}

@@ -1,0 +1,48 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch-6-stats-preview-20260913-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:41:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "e09e11d0ef49cd274c041588b59d0fd74114560135da9e1993cddad90e2ab6e2"
+        },
+        {
+            "index": 1,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "820d7bb804683bfb83717d00bb8b50eab2978aedaea7fa6998120f62afebed37"
+        },
+        {
+            "index": 2,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "43fc63a3919add827ff78539492cd53c435c178a8d90cfa1b0ac92f9c2baa9be"
+        },
+        {
+            "index": 3,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "4004d27c6d9975a9f6ef3efe09e5e9bdb831778b7e5793b7ef67425c20728b4b"
+        },
+        {
+            "index": 4,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+            "after_fingerprint": "411b699f1c77c3026955b59c0f82a8539a192e850ee757ed520c183417a2573c"
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-cards-batch-3-progress-probe-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T13:40:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "2e09638c6e19a84ffbd4eaffddbb522b31c34ec20c279e7d8e0cb19f215d1207",
+            "after_fingerprint": "32bc2c0f03288a21fd40b0ed129731368aa1dbf5997a4a52ae0161ea3adb41e2"
+        }
+    ]
+}

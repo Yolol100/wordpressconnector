@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-mdv-installaties-stats-write-20260914-v4",
+    "action": "acf.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T22:18:08+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "041c8d84bde0a033c9b75f05ccaf0f1a9f31eaa41221b7c7a3a1d86955596967",
+    "after_fingerprint": "231b3a1796c85aacbddc63a80f3f9be0cae3c383cfb88c2e943bf0b758487f3d",
+    "rollback_available": true
+}

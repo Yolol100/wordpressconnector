@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kroess-visser-post-read-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:46:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1391,
+        "type": "post",
+        "status": "publish",
+        "title": "Kroessvisser",
+        "slug": "kroessvisser",
+        "permalink": "https://andrewbaeten.nl/kroessvisser/",
+        "excerpt": "Accountancy platform organising financial services, tax support, payroll and business advice around clear service pages, trust information and direct consultation routes."
+    },
+    "post_fingerprint": "179b14ba7d9d6507dc51745a439d2d6b385ce1feaed580298a541e8077fba903",
+    "readback_verified": null
+}

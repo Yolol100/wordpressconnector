@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-bluecenter-post-read-after-stats-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:27:11+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1376,
+        "type": "post",
+        "status": "publish",
+        "title": "Bluecenter",
+        "slug": "bluecenter",
+        "permalink": "https://andrewbaeten.nl/bluecenter/",
+        "excerpt": "Beauty platform connecting treatment discovery, transparent pricing, personal advice and booking routes across facial care, PMU, massage, laser hair removal and health services."
+    },
+    "post_fingerprint": "8305be0104ccbeb70893998fb7027d7769179ea9179f7a4ae3af2402907f5bc9",
+    "readback_verified": null
+}

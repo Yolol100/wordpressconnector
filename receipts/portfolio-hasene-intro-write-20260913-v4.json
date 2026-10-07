@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-hasene-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T14:02:19+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "ae01f008fd07b5084a511983b3950419aa0c5ddfcb8c711c1b189373acb335e2",
+    "after_fingerprint": "ead2e9ac839145e9f67a574d32bc84f4037687db0a7e0001d28bf9ad8761e7de",
+    "rollback_available": true
+}

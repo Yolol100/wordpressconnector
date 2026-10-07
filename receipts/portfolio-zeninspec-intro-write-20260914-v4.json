@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-zeninspec-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T23:30:29+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "f18a168bd09ad042234bfc406a9bb5089f5966c8891f2114f85be39ff197df20",
+    "after_fingerprint": "ebad65283891c33a1afe2430b1f8303cdb3654da9e18260dec34553d74cf6cda",
+    "rollback_available": true
+}

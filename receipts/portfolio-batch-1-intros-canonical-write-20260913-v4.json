@@ -1,0 +1,49 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch-1-intros-canonical-write-20260913-v4",
+    "action": "connector.batch",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T12:40:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "68e684e1f84f7185e42efb4fc9f4524c2b339f4f5bcc8e039a84d7a9872ff876",
+            "after_fingerprint": "a9abe8bd6ec00b4b45fa5593ed4c29e2bc063760da72febc8e7f08bc23e76e7a"
+        },
+        {
+            "index": 1,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "a4a33378d2c0c4946084451df660785037cb88c68b224c099e6f648c630d5fac",
+            "after_fingerprint": "83f7f5204362880e095eeb2cbed52d0196326951c1227d63023ff4ad77ab97c9"
+        },
+        {
+            "index": 2,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "0b181272f6b1259d44190bd02c44fbe2e102ff6e31403845b917688b2a913efe",
+            "after_fingerprint": "78e71e00900a0e9a8549acffda812c9eae2da2e17f887a7b653e04f34b34a17f"
+        },
+        {
+            "index": 3,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "0272f89fca2075c405a8320b78d78816291a92fa8508e8062375330d856b6217",
+            "after_fingerprint": "f2d77b167e757cf0495a79a8ee83ccea872c044fb7198b9f1d8e52836ab9377b"
+        },
+        {
+            "index": 4,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "e4cf8800ef7a3d0e38669315ee7e314b012116b739bcc45ad89ce99359eee6d7",
+            "after_fingerprint": "77aedbebdabce2cb221737b0a9117d920a24ae8d40f635766325f432a2acc01a"
+        }
+    ],
+    "rollback_available": true
+}

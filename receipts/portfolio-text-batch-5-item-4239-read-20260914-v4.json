@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-4239-read-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T15:24:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4239,
+        "type": "post",
+        "status": "publish",
+        "title": "ACF image auto filler",
+        "slug": "acf-image-auto-filler",
+        "permalink": "https://andrewbaeten.nl/acf-image-auto-filler/",
+        "excerpt": "Preview-first WordPress image assignment with manual overrides, rollback safeguards and audit logging for supported ACF and featured-image fields."
+    },
+    "post_fingerprint": "d53e40da879e6dfdcfa8f740f38852cc399d8034b1f6049dba323c58b0757c39",
+    "readback_verified": null
+}

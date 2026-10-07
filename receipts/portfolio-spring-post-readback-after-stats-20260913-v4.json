@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-spring-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T13:20:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 3660,
+        "type": "post",
+        "status": "publish",
+        "title": "Spring architecten",
+        "slug": "spring-architecten",
+        "permalink": "https://andrewbaeten.nl/spring-architecten/",
+        "excerpt": "Architecture portfolio work focused on project-led layouts, large imagery, clear browsing and responsive presentation for Spring Architecten."
+    },
+    "post_fingerprint": "7f37e76335cc0e6a1e1690f2190ac321ce42112f9fefd04bef4c1e0da424c684",
+    "readback_verified": null
+}

@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-superfruitmand-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T21:44:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "91ab5820355a05380dc6c99dc6963be2a73d46cefbbd448a24630ea3b1d1d3c0",
+    "after_fingerprint": "5b78b6777b13ee9d9826c4482a4373344755e532e2147b1237088a30487fac8e",
+    "rollback_available": true
+}

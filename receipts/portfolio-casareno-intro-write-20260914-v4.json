@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-casareno-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T22:48:59+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "16a6e2d6f5aaa7edc938710b77b82cd64070f8e887e0b7b742112d58606f2b8e",
+    "after_fingerprint": "318ca201c9b4ce7b594ce1e068368bd3bee472b6ddda01b30b12027c786e862c",
+    "rollback_available": true
+}

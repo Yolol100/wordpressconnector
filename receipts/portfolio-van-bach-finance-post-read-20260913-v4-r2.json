@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-van-bach-finance-post-read-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:36:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1405,
+        "type": "post",
+        "status": "publish",
+        "title": "Vanbachfinance",
+        "slug": "vanbachfinance",
+        "permalink": "https://andrewbaeten.nl/vanbachfinance/",
+        "excerpt": "Finance platform combining bookkeeping, salary administration, tax services, transparent plans and practical advice with clear pricing and direct appointment access for entrepreneurs."
+    },
+    "post_fingerprint": "2eb87698bafd3ee921220f78dfd1eba845829a9567072885f600b95e4e870b1e",
+    "readback_verified": null
+}

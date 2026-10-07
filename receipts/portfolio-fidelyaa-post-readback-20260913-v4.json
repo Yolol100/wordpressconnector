@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-fidelyaa-post-readback-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T12:36:57+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1321,
+        "type": "post",
+        "status": "publish",
+        "title": "Fidelyaa",
+        "slug": "fidelyaa",
+        "permalink": "https://andrewbaeten.nl/fidelyaa/",
+        "excerpt": "Consultancy website that gives strategic advice and tender guidance a clear hierarchy, with supporting detail and contact options kept close to each service."
+    },
+    "post_fingerprint": "5e0500630dfaef5c7a977a83e14d625593ece5aaa5987ab9b7a322444c098479",
+    "readback_verified": null
+}

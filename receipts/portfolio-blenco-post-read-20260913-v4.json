@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-blenco-post-read-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T20:31:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1396,
+        "type": "post",
+        "status": "publish",
+        "title": "Blenco",
+        "slug": "blenco",
+        "permalink": "https://andrewbaeten.nl/blenco/",
+        "excerpt": "Custom window-decoration shop connecting product choice, colours, measurements, installation preferences and live pricing before customers add their configured item to the cart."
+    },
+    "post_fingerprint": "f9f20a0cc482aecd2871b106176ecb57bfd50b94d8b3d36ac193532ee9559fce",
+    "readback_verified": null
+}

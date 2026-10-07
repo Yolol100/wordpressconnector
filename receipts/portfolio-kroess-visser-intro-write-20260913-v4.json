@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-kroess-visser-intro-write-20260913-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T21:47:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "f92bdd2db56c2dfd853fac848b7bd81694aab659b92bfe9f92c19e14890b51c9",
+    "after_fingerprint": "d63e506710247b34a08dbebf10ba4a08f332dd8a16d9e932b919bb38a74a588a",
+    "rollback_available": true
+}

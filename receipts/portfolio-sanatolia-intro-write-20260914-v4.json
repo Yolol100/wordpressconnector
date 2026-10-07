@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-sanatolia-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T01:21:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "28115d00b01470997ff8f0f71aa6e7eee165f7eb63a38962e81dfc0e9be24c9b",
+    "after_fingerprint": "c922c8e5ae0021b252ec36566b3d4fac287b4a7d11464c414413ff5fc5a01bea",
+    "rollback_available": true
+}

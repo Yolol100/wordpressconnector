@@ -1,0 +1,25 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-schipholparkeren-post-list-20260914-v4",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T22:49:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 1371,
+            "type": "post",
+            "status": "publish",
+            "title": "Schipholparkeren",
+            "slug": "schipholparkeren",
+            "permalink": "https://andrewbaeten.nl/schipholparkeren/"
+        }
+    ],
+    "page": 1,
+    "per_page": 20,
+    "total": 1,
+    "pages": 1,
+    "readback_verified": null
+}

@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-batch70-post-get-1369-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T00:11:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1369,
+        "type": "post",
+        "status": "publish",
+        "title": "Koelcellenbouw",
+        "slug": "koelcellenbouw",
+        "permalink": "https://andrewbaeten.nl/koelcellenbouw/",
+        "excerpt": "B2B construction website explaining custom cold-room and freezer projects through focused service pages, project context and clear quotation routes for companies."
+    },
+    "post_fingerprint": "213079cb12f540f298b098a0691dfa60d2c51bb6cc890004504d6b92c4775b34",
+    "readback_verified": null
+}

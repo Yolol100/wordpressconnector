@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-werkenbijefe-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-14T01:18:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "ba36ec63db38ccf04976908ae37df70c5025ea9cd267b837261bfbf78f689843",
+    "after_fingerprint": "29c97dec3f1b07dfe855b47c7efc3ecf4b2b63891acaa29dc04b77453a996e2b",
+    "rollback_available": true
+}

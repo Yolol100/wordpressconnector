@@ -1,0 +1,27 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-final-sentinel-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T17:32:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "acf.update",
+            "readback_verified": true,
+            "before_fingerprint": "1a87f75f6ad03cf4639dd7a98dcb1d1c24ffa2af8ddac8cf6678cb1301e35d74",
+            "after_fingerprint": "1a87f75f6ad03cf4639dd7a98dcb1d1c24ffa2af8ddac8cf6678cb1301e35d74"
+        },
+        {
+            "index": 1,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "3bad8a17a8c33ea991be503a5b8c523acd382e638a05407f7a6a098d29ddc197",
+            "after_fingerprint": "3bad8a17a8c33ea991be503a5b8c523acd382e638a05407f7a6a098d29ddc197"
+        }
+    ]
+}

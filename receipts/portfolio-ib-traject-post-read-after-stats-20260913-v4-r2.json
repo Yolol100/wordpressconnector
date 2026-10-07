@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ib-traject-post-read-after-stats-20260913-v4-r2",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T21:50:29+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1384,
+        "type": "post",
+        "status": "publish",
+        "title": "Ibtraject",
+        "slug": "ibtraject",
+        "permalink": "https://andrewbaeten.nl/ibtraject/",
+        "excerpt": "Engineering platform connecting design, contracts, estimates, project guidance, participation and utility coordination with project examples and direct advice for public-space work."
+    },
+    "post_fingerprint": "ded7245ea5d3a4138705b408d3099114d3ff54ffc9c5dbacf1f0b8c09c55baeb",
+    "readback_verified": null
+}

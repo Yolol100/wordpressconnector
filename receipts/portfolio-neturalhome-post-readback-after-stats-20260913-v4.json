@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-neturalhome-post-readback-after-stats-20260913-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-13T14:00:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 1434,
+        "type": "post",
+        "status": "publish",
+        "title": "Neturalhome",
+        "slug": "neturalhome",
+        "permalink": "https://andrewbaeten.nl/neturalhome/",
+        "excerpt": "Interior and renovation site moving from sanitary, flooring and tile inspiration through project examples to showroom advice and quote access."
+    },
+    "post_fingerprint": "9796d2b4075de2d257eae666ae347836ecdc3d5541f002da0be40f1c54bbc86c",
+    "readback_verified": null
+}

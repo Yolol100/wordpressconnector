@@ -1,0 +1,83 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-audit-retest-batch-5-text-20260914-v4",
+    "action": "connector.batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T19:29:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "3bad8a17a8c33ea991be503a5b8c523acd382e638a05407f7a6a098d29ddc197",
+            "after_fingerprint": "3bad8a17a8c33ea991be503a5b8c523acd382e638a05407f7a6a098d29ddc197"
+        },
+        {
+            "index": 1,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "89d72479e6d172c4224d68982e6cf0258578a5bfb3ee62b14c1674cc1b41c279",
+            "after_fingerprint": "89d72479e6d172c4224d68982e6cf0258578a5bfb3ee62b14c1674cc1b41c279"
+        },
+        {
+            "index": 2,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "e93aed1cad2a1d2405bb7f60787df70ac176dfd3fdeedc0c34d61dcf5683c3e3",
+            "after_fingerprint": "e93aed1cad2a1d2405bb7f60787df70ac176dfd3fdeedc0c34d61dcf5683c3e3"
+        },
+        {
+            "index": 3,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "e8c77a0ba275fcac28370fcb3e9d39971a32ee1b6b0a3e49a8d2a89e95ede2f4",
+            "after_fingerprint": "e8c77a0ba275fcac28370fcb3e9d39971a32ee1b6b0a3e49a8d2a89e95ede2f4"
+        },
+        {
+            "index": 4,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "8548620e52b05f88f1851bfeda8466e94376c99e7330100d9e3b516470fa658b",
+            "after_fingerprint": "8548620e52b05f88f1851bfeda8466e94376c99e7330100d9e3b516470fa658b"
+        },
+        {
+            "index": 5,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "a8f011fd2cc7205bb992e83fe60da32e82f3d41badde61ffcf722fe55afd7fcc",
+            "after_fingerprint": "a8f011fd2cc7205bb992e83fe60da32e82f3d41badde61ffcf722fe55afd7fcc"
+        },
+        {
+            "index": 6,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "267c32f220daa6b5d32c58f2771741ac0299e8c07645ab455f453773f4f3109f",
+            "after_fingerprint": "267c32f220daa6b5d32c58f2771741ac0299e8c07645ab455f453773f4f3109f"
+        },
+        {
+            "index": 7,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "2a53d67faf34fd8c03a7bb59c3b0d369d9454afa9370be82fe2e13216836e86e",
+            "after_fingerprint": "2a53d67faf34fd8c03a7bb59c3b0d369d9454afa9370be82fe2e13216836e86e"
+        },
+        {
+            "index": 8,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "802f12fbcdae0873a7d1ae84f4d34e49bd34dfbc233cc39afcf43e908136f6f5",
+            "after_fingerprint": "802f12fbcdae0873a7d1ae84f4d34e49bd34dfbc233cc39afcf43e908136f6f5"
+        },
+        {
+            "index": 9,
+            "action": "post.update",
+            "readback_verified": true,
+            "before_fingerprint": "554dbc5a3dac8bdefada7594b06a28e1615b330f575ed9ab7a5143af4b19fda7",
+            "after_fingerprint": "554dbc5a3dac8bdefada7594b06a28e1615b330f575ed9ab7a5143af4b19fda7"
+        }
+    ]
+}

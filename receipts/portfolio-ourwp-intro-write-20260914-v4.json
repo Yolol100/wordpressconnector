@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-ourwp-intro-write-20260914-v4",
+    "action": "post.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-13T22:39:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "cfabf942191ff257ee9aa2700f88e62255145df7892afbbe64fcfd2e1f480cd5",
+    "after_fingerprint": "ca8b9eaad764fab156565c4ffd0dfe6ad14315a86ef2b4c9903f598652693a94",
+    "rollback_available": true
+}

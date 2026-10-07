@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "portfolio-text-batch-5-item-4096-read-retry-20260914-v4",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-09-14T16:09:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 4096,
+        "type": "post",
+        "status": "publish",
+        "title": "Content sync manager",
+        "slug": "content-sync-manager",
+        "permalink": "https://andrewbaeten.nl/content-sync-manager/",
+        "excerpt": "Administrator review workflow for round-tripping WordPress content, ACF data, SEO descriptions and media metadata with backups and an exact checked-preview gate."
+    },
+    "post_fingerprint": "9c3013f47d8169cfe6fbb2a3d25643a9d1e72b7860f6ecde2286f6a18038f158",
+    "readback_verified": null
+}
