@@ -57,7 +57,18 @@ function wp_get_abilities(): array
         'third-party-plugin/private-operation' => new ContractAbility(array()),
         'third-party-plugin/mutating-operation' => new ContractAbility(array(
             'show_in_rest' => true,
+            'mcp' => array('public' => false),
             'annotations' => array('readonly' => false, 'destructive' => true),
+        )),
+        'elementor/manage-global-variable' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'mcp' => array('public' => true),
+            'annotations' => array('readonly' => false, 'destructive' => false, 'idempotent' => false),
+        )),
+        'elementor/publish-document' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'mcp' => array('public' => true),
+            'annotations' => array('readonly' => false, 'destructive' => true, 'idempotent' => true),
         )),
         'third-party-plugin/ambiguous-readonly' => new ContractAbility(array(
             'show_in_rest' => true,
@@ -83,12 +94,24 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 15 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 17 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
-if (5 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+if (7 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
+}
+$elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
+if (2 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
+    || ! isset($elementorCatalog['abilities']['elementor/manage-global-variable'])
+    || ! isset($elementorCatalog['abilities']['elementor/publish-document'])) {
+    fwrite(STDERR, "Ability namespace filtering failed.\n"); exit(1);
+}
+try {
+    $adapter->catalog(array('namespace' => 'Bad/Namespace'), array());
+    fwrite(STDERR, "Malformed Ability namespace was accepted.\n"); exit(1);
+} catch (RuntimeException $expected) {
+    if ('namespace must be a valid Ability namespace.' !== $expected->getMessage()) throw $expected;
 }
 $catalogEncoded = json_encode($catalog);
 if (! is_string($catalogEncoded) || strlen($catalogEncoded) > 262144) {
@@ -122,12 +145,22 @@ if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execut
     false !== $catalog['abilities']['third-party-plugin/ambiguous-readonly']['execution_exposed']) {
     fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
+if (false !== $catalog['abilities']['third-party-plugin/mutating-operation']['mutation_execution_exposed']
+    || true !== $catalog['abilities']['elementor/manage-global-variable']['mutation_execution_exposed']
+    || true !== $catalog['abilities']['elementor/publish-document']['mutation_execution_exposed']
+    || 'wordpress.ability.execute' !== $catalog['abilities']['elementor/manage-global-variable']['connector_action']) {
+    fwrite(STDERR, "Ability mutation exposure or MCP enablement contract failed.\n"); exit(1);
+}
 
 $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
 $adapter->register($registry);
 $descriptor = $registry->descriptor('wordpress.ability.read');
 if ($descriptor['mutation'] || ! $descriptor['sensitive'] || ! $descriptor['privileged'] || 'manage_options' !== $descriptor['capability']) {
     fwrite(STDERR, "Read-only ability access is missing its security gates.\n"); exit(1);
+}
+$mutationDescriptor = $registry->descriptor('wordpress.ability.execute');
+if (! $mutationDescriptor['mutation'] || ! $mutationDescriptor['privileged'] || $mutationDescriptor['sensitive'] || 'manage_options' !== $mutationDescriptor['capability']) {
+    fwrite(STDERR, "Mutating ability access is missing its security gates.\n"); exit(1);
 }
 $result = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content', 'input' => array('limit' => 3)), array());
 if (1 !== ContractAbility::$executions || 3 !== $result['result']['received']['limit']) {
@@ -183,4 +216,38 @@ try {
 if (6 !== ContractAbility::$executions) {
     fwrite(STDERR, "Ambiguous Ability metadata still reached execute().\n"); exit(1);
 }
+
+$dryRun = $adapter->executeAbility(
+    array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#ffffff')),
+    array('dry_run' => true)
+);
+if (6 !== ContractAbility::$executions || empty($dryRun['would_execute']) || false !== $dryRun['rollback_supported']) {
+    fwrite(STDERR, "Mutating Ability dry-run executed provider code or returned unsafe metadata.\n"); exit(1);
+}
+
+$mutationResult = $adapter->executeAbility(
+    array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#ffffff')),
+    array('dry_run' => false)
+);
+if (7 !== ContractAbility::$executions || '#ffffff' !== $mutationResult['result']['received']['value']
+    || '[redacted]' !== $mutationResult['result']['token'] || false !== $mutationResult['rollback_supported']) {
+    fwrite(STDERR, "Mutating Ability execution or result hardening failed.\n"); exit(1);
+}
+
+$destructiveResult = $adapter->executeAbility(array('name' => 'elementor/publish-document'), array('dry_run' => false));
+if (8 !== ContractAbility::$executions || true !== $destructiveResult['annotations']['destructive']) {
+    fwrite(STDERR, "Destructive annotated Ability execution failed.\n"); exit(1);
+}
+
+foreach (array('third-party-plugin/mutating-operation', 'third-party-plugin/ambiguous-readonly', 'third-party-plugin/reindex-content') as $blockedAbility) {
+    try {
+        $adapter->executeAbility(array('name' => $blockedAbility), array('dry_run' => false));
+        fwrite(STDERR, "Ineligible Ability was executed by the mutation route: {$blockedAbility}\n"); exit(1);
+    } catch (RuntimeException $expected) {
+    }
+}
+if (8 !== ContractAbility::$executions) {
+    fwrite(STDERR, "Blocked mutation Ability still reached execute().\n"); exit(1);
+}
+
 echo "abilities catalog contract OK\n";
