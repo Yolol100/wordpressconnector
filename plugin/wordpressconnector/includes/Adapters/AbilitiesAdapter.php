@@ -25,7 +25,7 @@ final class AbilitiesAdapter
             'mutation' => true,
             'privileged' => true,
             'capability' => 'manage_options',
-            'description' => 'Execute one explicitly mutating, client-exposed Elementor Ability (elementor/* in the Elementor category) through its native schema validation, permission callback and provider guards. Dry-run never invokes the Ability.',
+            'description' => 'Execute one explicitly mutating, MCP-exposed native Elementor Core/Pro Ability after verified provider provenance; native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
         ));
     }
 

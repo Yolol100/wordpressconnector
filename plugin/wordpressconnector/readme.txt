@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Delegated reads/writes now require callback-source provenance inside the installed Elementor Core or Pro plugin root; slugs, categories and annotations alone do not establish trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and ambiguous provider failures become stored terminal failures so stable request-ID retries do not blindly execute again.
+Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Generic delegated reads remain available for client-exposed WordPress Abilities with explicit readonly=true and destructive=false annotations, native validation/permissions, and bounded redacted output. Delegated writes require explicit MCP exposure plus native Elementor Core/Pro callback provenance, an exact provider-ID match and an active canonical plugin root; slugs, categories and annotations alone do not establish mutation trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and provider failures after execution starts become stored terminal failures so stable request-ID retries do not blindly execute again.
 
 Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards.
 
@@ -89,7 +89,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.17.1 =
-* Require registered Ability callback provenance inside the installed Elementor Core/Pro plugin root before delegated read or write execution; third-party slug/category/annotation spoofing remains non-executable.
+* Keep generic delegated reads compatible with client-exposed WordPress Abilities that explicitly declare readonly=true and destructive=false, while requiring verified active Elementor Core/Pro callback provenance, native execute_guarded and an exact provider-ID match for delegated writes; third-party mutation spoofing remains non-executable.
 * Treat explicit `mcp.public=false` as an authoritative discovery/execution opt-out even when `show_in_rest=true`.
 * Convert completed over-budget Elementor mutations to bounded terminal successes and provider exceptions/`WP_Error` outcomes to stored terminal failures, preserving stable request-ID idempotency on retry.
 * Block delegated Ability mutations inside `connector.batch` because they have no Connector rollback/compensation guarantee.
