@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "vroom-connector-update-1172-dry-001",
+  "action": "connector.update.apply",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
