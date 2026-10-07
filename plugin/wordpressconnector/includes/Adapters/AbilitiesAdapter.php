@@ -155,9 +155,16 @@ final class AbilitiesAdapter
         try {
             $result = $ability->execute($input);
         } catch (\Throwable $error) {
+            if ($mutation) {
+                return $this->terminalMutationFailure($name, $annotations, null);
+            }
             throw new \RuntimeException('WordPress Ability failed.');
         }
         if (function_exists('is_wp_error') && is_wp_error($result)) {
+            if ($mutation) {
+                $errorCode = method_exists($result, 'get_error_code') ? (string) $result->get_error_code() : null;
+                return $this->terminalMutationFailure($name, $annotations, $errorCode);
+            }
             throw new \RuntimeException('WordPress Ability failed.');
         }
 
@@ -196,6 +203,24 @@ final class AbilitiesAdapter
             $response['result_omitted'] = false;
         }
         return $response;
+    }
+
+    private function terminalMutationFailure(string $name, array $annotations, ?string $providerErrorCode): array
+    {
+        $safeCode = null;
+        if (is_string($providerErrorCode) && 1 === preg_match('/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode)) {
+            $safeCode = $providerErrorCode;
+        }
+
+        return array(
+            'name' => $name,
+            'annotations' => $annotations,
+            'execution_may_have_started' => true,
+            'provider_error_code' => $safeCode,
+            'result' => null,
+            'result_omitted' => true,
+            '_terminal_error' => 'Elementor Ability execution ended with a terminal provider failure; this request_id will not execute again.',
+        );
     }
 
     private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
