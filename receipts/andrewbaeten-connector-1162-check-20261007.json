@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-connector-1162-check-20261007",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-07T00:10:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "current_version": "1.16.2",
+    "latest_version": "1.16.2",
+    "update_available": false,
+    "readback_verified": null
+}
