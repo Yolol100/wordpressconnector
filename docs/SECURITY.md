@@ -7,11 +7,11 @@ The GitHub runtime is zero-config but not unauthenticated. `wordpress-zero-confi
 - issuer `https://token.actions.githubusercontent.com`;
 - RS256 signature against GitHub JWKS;
 - audience equal to this site's connector REST namespace;
-- repository `Yolol100/wordpressconnector`;
-- immutable repository ID `1341990468`;
+- repository is exactly one trusted runtime: public `Yolol100/wordpressconnector` or private `Yolol100/Wordpress`;
+- immutable repository ID matches that runtime (`1341990468` public, `933904076` private);
 - immutable owner ID `22932777`;
 - ref `refs/heads/main`;
-- exact `wordpress-zero-config-execute.yml` workflow ref;
+- exact trusted workflow ref (`wordpress-zero-config-execute.yml` in the public repo, `wordpressconnector-zero-config-execute.yml` in the private control plane);
 - `workflow_dispatch` event;
 - GitHub-hosted runner;
 - validity window and one-time `jti` replay protection.
@@ -65,6 +65,10 @@ The native MCP route reuses the existing REST authorization callback. It does no
 ## Public presence endpoint
 
 `/presence` is intentionally minimal and HTTPS-only. It exposes only that WordPress Connector is present, zero-config capable and expects GitHub OIDC. It does not expose users, site settings, secrets or content.
+
+## Private control-plane mode
+
+The exact private `Yolol100/Wordpress` runtime is a separate trust boundary. Its OIDC token must identify repository ID `933904076`, owner ID `22932777`, `refs/heads/main`, the exact `wordpressconnector-zero-config-execute.yml` workflow, `workflow_dispatch`, GitHub-hosted runner and `repository_visibility=private`. In this mode the public action allowlist is not applied, so the full registered connector action catalog can be used. This does not bypass connector security: mutations still require confirmation, action capabilities remain authoritative, sensitive actions remain confirmation-gated, stale-state/idempotency rules stay active, and filesystem/package operations retain their own bounds.
 
 ## Public repository mode
 
