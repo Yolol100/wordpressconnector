@@ -109,7 +109,7 @@ final class AbilityMutationContractAbility
 
     public function __construct()
     {
-        $this->execute_callback = array(new \\Webactueel\\Tests\\Fixtures\\ElementorPlugin\\NativeMcpProvider(), 'execute');
+        $this->execute_callback = array(new \Webactueel\Tests\Fixtures\ElementorPlugin\NativeMcpProvider(), 'execute');
     }
 
     public function get_meta(): array
