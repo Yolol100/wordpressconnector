@@ -1,10 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-connector-1163-update-live-20261007",
-  "action": "connector.update.apply",
-  "dry_run": false,
-  "confirm": true,
-  "expected_fingerprint": "9d2fa02e6b1baa85923edb29c8df871da77419c7240a7f387b537c0f842a1663",
-  "payload": {}
+  "request_id": "andrewbaeten-assetcleanup-dryrun-1163-20261007",
+  "action": "maintenance.cache_flush",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "layer": "asset_cleanup"
+  }
 }
