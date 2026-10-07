@@ -33,7 +33,11 @@ final class Policy
         'acf.field_groups',
         'acf.schema.ensure_text_fields',
         'elementor.inspect',
+        'elementor.create_document',
+        'elementor.replace_document',
         'elementor.patch_element',
+        'media.import',
+        'post.trash',
         'connector.batch',
         'connector.rollback',
         'connector.update.check',
@@ -105,7 +109,8 @@ final class Policy
 
     public static function assertPublicActionTarget(string $action, array $payload): void
     {
-        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
+        $guarded = array('post.update', 'acf.update', 'elementor.inspect', 'elementor.patch_element', 'elementor.replace_document', 'post.trash');
+        if (! self::publicRepositoryContext() || ! in_array($action, $guarded, true)) {
             return;
         }
 
@@ -121,8 +126,62 @@ final class Policy
         if (! $post instanceof \WP_Post) {
             throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
-        $requiresEdit = in_array($action, array('post.update', 'acf.update', 'elementor.patch_element'), true);
+        if (in_array($action, array('elementor.inspect', 'elementor.patch_element', 'elementor.replace_document'), true)) {
+            self::assertPublicElementorTarget($post, 'elementor.inspect' !== $action);
+            return;
+        }
+
+        if ('post.trash' === $action) {
+            self::assertPublicDeletableTarget($post);
+            return;
+        }
+
+        $requiresEdit = in_array($action, array('post.update', 'acf.update'), true);
         self::assertPublicContentTarget($post, $requiresEdit);
+    }
+
+    public static function assertPublicElementorTarget(\\WP_Post $post, bool $requiresEdit = false): void
+    {
+        $type = (string) $post->post_type;
+        if ('elementor_library' === $type) {
+            $templateType = function_exists('get_post_meta') ? (string) get_post_meta((int) $post->ID, '_elementor_template_type', true) : '';
+            if ('publish' !== (string) $post->post_status || '' !== (string) $post->post_password || '' === $templateType) {
+                throw new RuntimeException('Only published Elementor library templates with a template type may be targeted in public-repository mode.');
+            }
+        } else {
+            self::assertPublicContentTarget($post, $requiresEdit);
+            return;
+        }
+
+        if ($requiresEdit && (! function_exists('current_user_can') || ! current_user_can('edit_post', (int) $post->ID))) {
+            throw new RuntimeException('Current user lacks permission to edit the public Elementor template.');
+        }
+    }
+
+    public static function assertPublicDeletableTarget(\\WP_Post $post): void
+    {
+        $type = (string) $post->post_type;
+        $allowedTypes = array('page', 'post', 'product', 'elementor_library', 'attachment');
+        if (! in_array($type, $allowedTypes, true)) {
+            throw new RuntimeException('Public trash is limited to pages, posts, products, Elementor templates and media attachments.');
+        }
+        self::assertReadablePostType($type);
+        if ('attachment' === $type) {
+            if ('inherit' !== (string) $post->post_status && 'publish' !== (string) $post->post_status) {
+                throw new RuntimeException('Only public media attachments may be moved to Trash.');
+            }
+        } elseif ('publish' !== (string) $post->post_status || '' !== (string) $post->post_password) {
+            throw new RuntimeException('Only published, non-password-protected public content may be moved to Trash.');
+        }
+        if ('elementor_library' === $type) {
+            $templateType = function_exists('get_post_meta') ? (string) get_post_meta((int) $post->ID, '_elementor_template_type', true) : '';
+            if ('' === $templateType) {
+                throw new RuntimeException('Only Elementor library templates with a template type may be moved to Trash.');
+            }
+        }
+        if (! function_exists('current_user_can') || ! current_user_can('delete_post', (int) $post->ID)) {
+            throw new RuntimeException('Current user lacks permission to delete the public connector target.');
+        }
     }
 
     public static function assertPublicContentTarget(\WP_Post $post, bool $requiresEdit = false): void
