@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "vroom-home-elementor-inspect-20261007-b",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-07T20:30:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "5b03a26702b37664ee912a5dfd6a073be4be9c98cb9a867a99c14c6620bf715f",
+    "post_id": 11,
+    "document_type": "wp-page",
+    "edit_mode": "",
+    "template_type": "",
+    "elementor_version": "",
+    "elements": [],
+    "readback_verified": null
+}
