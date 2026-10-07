@@ -246,6 +246,15 @@ final class Runner
 
     private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array
     {
+        if (in_array($action, array('elementor.create_document', 'elementor.replace_document', 'media.import', 'post.trash'), true)) {
+            $this->assertPublicContentMutationPayload($action, $payload);
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('acf.update' === $action) {
             $this->assertPublicAcfUpdatePayload($payload);
             $descriptor['privileged'] = false;
@@ -326,6 +335,90 @@ final class Runner
             return $descriptor;
         }
         return $descriptor;
+    }
+
+    private function assertPublicContentMutationPayload(string $action, array $payload): void
+    {
+        $allowed = array(
+            'elementor.create_document' => array('post_type', 'status', 'title', 'slug', 'content', 'data', 'page_settings', 'template_type', 'conditions', 'edit_mode'),
+            'elementor.replace_document' => array('id', 'data', 'page_settings', 'template_type', 'conditions', 'edit_mode'),
+            'media.import' => array('source_path', 'parent', 'title', 'alt', 'caption', 'description'),
+            'post.trash' => array('id'),
+        );
+        foreach (array_keys($payload) as $key) {
+            if (! in_array((string) $key, $allowed[$action], true)) {
+                throw new RuntimeException('Public ' . $action . ' contains unsupported payload key: ' . (string) $key);
+            }
+        }
+
+        if ('elementor.create_document' === $action) {
+            $type = isset($payload['post_type']) && is_string($payload['post_type']) ? sanitize_key($payload['post_type']) : 'page';
+            if (! in_array($type, array('page', 'post', 'product', 'elementor_library'), true)) {
+                throw new RuntimeException('Public Elementor creation is limited to page, post, product and elementor_library.');
+            }
+            $status = isset($payload['status']) && is_string($payload['status']) ? sanitize_key($payload['status']) : 'draft';
+            if (! in_array($status, array('draft', 'pending', 'publish'), true)) {
+                throw new RuntimeException('Public Elementor creation status must be draft, pending or publish.');
+            }
+            $this->assertPublicTextField($payload, 'title', 200);
+            $this->assertPublicTextField($payload, 'slug', 200);
+            if (isset($payload['content']) && (! is_string($payload['content']) || strlen($payload['content']) > 1048576)) {
+                throw new RuntimeException('Public Elementor content must be text no larger than 1 MiB.');
+            }
+            if ('elementor_library' === $type && (! isset($payload['template_type']) || ! is_string($payload['template_type']) || ! preg_match('/^[a-z0-9_-]{1,40}\\z/', $payload['template_type']))) {
+                throw new RuntimeException('Public Elementor library creation requires a safe template_type.');
+            }
+        } elseif ('elementor.replace_document' === $action) {
+            $this->assertPublicPositiveId($payload, 'id');
+            if (count($payload) < 2) {
+                throw new RuntimeException('Public Elementor replace requires document data or settings.');
+            }
+            if (isset($payload['template_type']) && (! is_string($payload['template_type']) || ! preg_match('/^[a-z0-9_-]{1,40}\\z/', $payload['template_type']))) {
+                throw new RuntimeException('Public Elementor template_type is invalid.');
+            }
+        } elseif ('media.import' === $action) {
+            $path = isset($payload['source_path']) && is_string($payload['source_path']) ? $payload['source_path'] : '';
+            if ('' === $path || strlen($path) > 180 || false !== strpos($path, '\\\\') || false !== strpos($path, '\\0') || preg_match('#(^/|(^|/)\\.\\.?(/|$)|[^A-Za-z0-9._/-])#', $path)) {
+                throw new RuntimeException('Public media.import source_path must be a safe relative request asset path.');
+            }
+            if (! preg_match('/\\.(png|jpe?g|webp|gif|avif)\\z/i', $path)) {
+                throw new RuntimeException('Public media.import supports PNG, JPEG, WebP, GIF and AVIF images only.');
+            }
+            if (isset($payload['parent'])) {
+                $this->assertPublicPositiveId($payload, 'parent');
+            }
+            foreach (array('title', 'alt', 'caption', 'description') as $field) {
+                $this->assertPublicTextField($payload, $field, 'description' === $field ? 2000 : 500);
+            }
+        } else {
+            $this->assertPublicPositiveId($payload, 'id');
+        }
+
+        foreach (array('data', 'page_settings', 'conditions') as $field) {
+            if (array_key_exists($field, $payload) && ! is_array($payload[$field])) {
+                throw new RuntimeException('Public ' . $action . ' ' . $field . ' must be a JSON object or array.');
+            }
+            if (isset($payload[$field]) && strlen((string) json_encode($payload[$field])) > 4194304) {
+                throw new RuntimeException('Public ' . $action . ' ' . $field . ' exceeds the 4 MiB limit.');
+            }
+        }
+    }
+
+    private function assertPublicPositiveId(array $payload, string $field): void
+    {
+        if (! isset($payload[$field]) || ! is_int($payload[$field]) || $payload[$field] <= 0) {
+            throw new RuntimeException('Public payload.' . $field . ' must be a positive integer.');
+        }
+    }
+
+    private function assertPublicTextField(array $payload, string $field, int $maxBytes): void
+    {
+        if (! array_key_exists($field, $payload)) {
+            return;
+        }
+        if (! is_string($payload[$field]) || strlen($payload[$field]) > $maxBytes || preg_match('/[\\x00-\\x08\\x0B\\x0E-\\x1F\\x7F]/', $payload[$field])) {
+            throw new RuntimeException('Public payload.' . $field . ' must be printable text within the size limit.');
+        }
     }
 
     private function assertPublicCustomCssPayload(array $payload, bool $patch): void
