@@ -11,9 +11,15 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 final class CacheMaintenanceAdapter
 {
     private const LAYERS = array('elementor', 'wp_rocket', 'asset_cleanup');
+    private const ASSET_CLEANUP_LOOPBACK_ACTION = 'wpconnector_asset_cleanup_flush';
+    private const ASSET_CLEANUP_TOKEN_PREFIX = 'wpconnector_ac_flush_';
+    private const ASSET_CLEANUP_TOKEN_TTL = 60;
 
     public function register(Registry $registry): void
     {
+        add_action('admin_post_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array($this, 'handleAssetCleanupLoopback'));
+        add_action('admin_post_nopriv_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array($this, 'handleAssetCleanupLoopback'));
+
         $registry->register('maintenance.cache_capabilities', array($this, 'capabilities'), array(
             'privileged' => true,
             'public_repository_safe' => true,
@@ -186,6 +192,109 @@ final class CacheMaintenanceAdapter
     }
 
     private function flushAssetCleanup(): bool
+    {
+        if (defined('REST_REQUEST') && REST_REQUEST) {
+            return $this->flushAssetCleanupViaLoopback();
+        }
+
+        return $this->flushAssetCleanupDirect();
+    }
+
+    private function flushAssetCleanupViaLoopback(): bool
+    {
+        $token = bin2hex(random_bytes(32));
+        $key = substr(hash('sha256', $token), 0, 32);
+        $transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
+        $digest = hash('sha256', $token);
+
+        if (! set_transient($transient, $digest, self::ASSET_CLEANUP_TOKEN_TTL)) {
+            throw new RuntimeException('Could not create the one-time Asset CleanUp loopback authorization.');
+        }
+
+        try {
+            $response = wp_remote_post(admin_url('admin-post.php'), array(
+                'timeout' => 30,
+                'redirection' => 0,
+                'blocking' => true,
+                'sslverify' => true,
+                'headers' => array(
+                    'Accept' => 'application/json',
+                    'Cache-Control' => 'no-store',
+                    'User-Agent' => 'Webactueel-WordPressConnector/asset-cleanup-loopback',
+                    'X-WPConnector-Cache-Key' => $key,
+                    'X-WPConnector-Cache-Token' => $token,
+                ),
+                'body' => array(
+                    'action' => self::ASSET_CLEANUP_LOOPBACK_ACTION,
+                ),
+            ));
+        } finally {
+            delete_transient($transient);
+        }
+
+        if (is_wp_error($response)) {
+            throw new RuntimeException('Asset CleanUp loopback request failed.');
+        }
+
+        if (200 !== (int) wp_remote_retrieve_response_code($response)) {
+            throw new RuntimeException('Asset CleanUp loopback returned an unsuccessful status.');
+        }
+
+        $decoded = json_decode((string) wp_remote_retrieve_body($response), true);
+        return is_array($decoded)
+            && true === ($decoded['success'] ?? false)
+            && true === ($decoded['data']['verified'] ?? false);
+    }
+
+    public function handleAssetCleanupLoopback(): void
+    {
+        if (! isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+            wp_send_json_error(array('code' => 'method_not_allowed'), 405);
+            return;
+        }
+
+        $key = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
+            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
+            : '';
+        $token = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
+            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
+            : '';
+
+        if (! preg_match('/^[a-f0-9]{32}\z/', $key) || ! preg_match('/^[a-f0-9]{64}\z/', $token)) {
+            wp_send_json_error(array('code' => 'invalid_authorization'), 403);
+            return;
+        }
+
+        $transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
+        $expected = get_transient($transient);
+        delete_transient($transient);
+
+        if (! is_string($expected) || ! hash_equals($expected, hash('sha256', $token))) {
+            wp_send_json_error(array('code' => 'invalid_authorization'), 403);
+            return;
+        }
+
+        try {
+            $verified = $this->flushAssetCleanupDirect();
+        } catch (\Throwable $error) {
+            wp_send_json_error(array('code' => 'asset_cleanup_flush_failed'), 500);
+            return;
+        }
+
+        if (! $verified) {
+            wp_send_json_error(array('code' => 'asset_cleanup_verification_failed'), 500);
+            return;
+        }
+
+        nocache_headers();
+        wp_send_json_success(array(
+            'verified' => true,
+            'provider' => 'Asset CleanUp',
+            'version' => defined('WPACU_PLUGIN_VERSION') ? (string) WPACU_PLUGIN_VERSION : '',
+        ));
+    }
+
+    private function flushAssetCleanupDirect(): bool
     {
         $class = $this->ensureAssetCleanupClass();
         $method = '';
