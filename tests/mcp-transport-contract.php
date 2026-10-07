@@ -129,7 +129,7 @@ namespace {
     $discoverData = $discover->get_data();
     $assert(200 === $discover->get_status(), 'Modern discovery must return HTTP 200.');
     $assert('complete' === $discoverData['result']['resultType'], 'Modern results must carry resultType=complete.');
-    $assert(array('2026-07-28') === $discoverData['result']['supportedVersions'], 'Modern discovery must advertise only the implemented modern revision.');
+    $assert(array('2026-07-28', '2025-11-25') === $discoverData['result']['supportedVersions'], 'Modern discovery must advertise both implemented protocol revisions.');
     $assert('webactueel-wordpress-connector' === $discoverData['result']['_meta']['io.modelcontextprotocol/serverInfo']['name'], 'Modern result must stamp server identity.');
 
     $badHeaders = $modernHeaders;
@@ -140,7 +140,58 @@ namespace {
         'method' => 'server/discover',
         'params' => array('_meta' => $modernMeta),
     ), $badHeaders));
-    $assert(400 === $bad->get_status() && -32020 === $bad->get_data()['error']['code'], 'Modern standard-header mismatch must fail closed.');
+    $assert(400 === $bad->get_status() && -32602 === $bad->get_data()['error']['code'], 'Modern standard-header mismatch must fail closed as invalid params.');
+
+    $unsupportedMeta = array(
+        'io.modelcontextprotocol/protocolVersion' => '2099-01-01',
+        'io.modelcontextprotocol/clientCapabilities' => array(),
+    );
+    $unsupported = $controller->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0',
+        'id' => 'unsupported-version',
+        'method' => 'tools/list',
+        'params' => array('_meta' => $unsupportedMeta),
+    ), array(
+        'MCP-Protocol-Version' => '2099-01-01',
+        'Mcp-Method' => 'tools/list',
+    )));
+    $unsupportedError = $unsupported->get_data()['error'];
+    $assert(400 === $unsupported->get_status()
+        && -32022 === $unsupportedError['code']
+        && '2099-01-01' === $unsupportedError['data']['requested']
+        && array('2026-07-28', '2025-11-25') === $unsupportedError['data']['supported'],
+        'Unsupported protocol versions must return the standard negotiation error and supported versions.');
+
+    $missingCapabilities = $controller->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0',
+        'id' => 'missing-capabilities',
+        'method' => 'tools/list',
+        'params' => array('_meta' => array(
+            'io.modelcontextprotocol/protocolVersion' => '2026-07-28',
+        )),
+    ), array(
+        'MCP-Protocol-Version' => '2026-07-28',
+        'Mcp-Method' => 'tools/list',
+    )));
+    $assert(400 === $missingCapabilities->get_status()
+        && -32602 === $missingCapabilities->get_data()['error']['code'],
+        'Modern requests missing clientCapabilities must fail as invalid params.');
+
+    $versionMismatch = $controller->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0',
+        'id' => 'version-mismatch',
+        'method' => 'tools/list',
+        'params' => array('_meta' => array(
+            'io.modelcontextprotocol/protocolVersion' => '2025-11-25',
+            'io.modelcontextprotocol/clientCapabilities' => array(),
+        )),
+    ), array(
+        'MCP-Protocol-Version' => '2026-07-28',
+        'Mcp-Method' => 'tools/list',
+    )));
+    $assert(400 === $versionMismatch->get_status()
+        && -32602 === $versionMismatch->get_data()['error']['code'],
+        'Header and per-request protocol versions must match.');
 
     $initialize = $controller->handle(new WP_REST_Request(array(
         'jsonrpc' => '2.0',
@@ -256,7 +307,7 @@ namespace {
         'method' => 'tools/call',
         'params' => array('name' => 'wordpress_connector_execute', 'arguments' => array(), '_meta' => $modernMeta),
     ), $wrongNameHeaders));
-    $assert(400 === $wrongName->get_status() && -32020 === $wrongName->get_data()['error']['code'], 'Mcp-Name mismatch must fail closed before tool execution.');
+    $assert(400 === $wrongName->get_status() && -32602 === $wrongName->get_data()['error']['code'], 'Mcp-Name mismatch must fail closed before tool execution.');
 
     $before = count($runner->calls);
     $notification = $controller->handle(new WP_REST_Request(array(
