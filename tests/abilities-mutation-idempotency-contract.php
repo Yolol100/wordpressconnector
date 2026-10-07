@@ -142,11 +142,15 @@ final class AbilityMutationContractAbility
 {
     public static int $executions = 0;
     public static bool $provider_error = false;
+    public static bool $pre_execution_error = false;
     protected $execute_callback;
 
     public function __construct()
     {
-        $this->execute_callback = array(new \Webactueel\Tests\Fixtures\ElementorPlugin\NativeMcpProvider(), 'execute');
+        $this->execute_callback = array(
+            new \Elementor\Modules\Mcp\Abilities\Contract_Native_Ability('elementor/manage-global-variable'),
+            'execute_guarded'
+        );
     }
 
     public function get_meta(): array
@@ -170,6 +174,11 @@ final class AbilityMutationContractAbility
 
     public function execute($input = null)
     {
+        if (self::$pre_execution_error) {
+            return new WP_Error('ability_invalid_permissions');
+        }
+
+        do_action('wp_before_execute_ability', 'elementor/manage-global-variable', $input, $this);
         ++self::$executions;
         if (self::$provider_error) {
             return new WP_Error('ability_invalid_output');
