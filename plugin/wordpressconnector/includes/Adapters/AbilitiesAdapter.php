@@ -260,16 +260,117 @@ final class AbilitiesAdapter
 
     private function isElementorMutationEligible(string $name, $ability): bool
     {
-        if (0 !== strpos($name, 'elementor/') || ! is_object($ability)) {
+        if (! is_object($ability) || ! $this->isElementorAbilityName($name)) {
             return false;
         }
 
-        $category = method_exists($ability, 'get_category') ? (string) $ability->get_category() : '';
-        if ('elementor' !== $category) {
+        if (! $this->isExplicitMcpPublic($ability) || ! $this->isMutationEligible($ability)) {
             return false;
         }
 
-        return $this->isMutationEligible($ability);
+        return $this->isTrustedElementorCallbackSource($ability);
+    }
+
+    private function isElementorAbilityName(string $name): bool
+    {
+        return 0 === strpos($name, 'elementor/') || 0 === strpos($name, 'elementor-pro/');
+    }
+
+    private function isExplicitMcpPublic(object $ability): bool
+    {
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        return is_array($meta)
+            && isset($meta['mcp'])
+            && is_array($meta['mcp'])
+            && true === ($meta['mcp']['public'] ?? false);
+    }
+
+    private function isTrustedElementorCallbackSource(object $ability): bool
+    {
+        $callback = $this->abilityExecuteCallback($ability);
+        $file = $this->callbackSourceFile($callback);
+        if (null === $file) {
+            return false;
+        }
+
+        foreach ($this->trustedElementorRoots() as $root) {
+            if ($this->pathWithinRoot($file, $root)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function abilityExecuteCallback(object $ability)
+    {
+        try {
+            $reflection = new \ReflectionObject($ability);
+            if (! $reflection->hasProperty('execute_callback')) {
+                return null;
+            }
+            $property = $reflection->getProperty('execute_callback');
+            if (method_exists($property, 'setAccessible')) {
+                $property->setAccessible(true);
+            }
+            return $property->getValue($ability);
+        } catch (\Throwable $error) {
+            return null;
+        }
+    }
+
+    private function callbackSourceFile($callback): ?string
+    {
+        try {
+            if (is_array($callback) && 2 === count($callback)) {
+                $reflection = new \ReflectionMethod($callback[0], (string) $callback[1]);
+            } elseif ($callback instanceof \Closure) {
+                $reflection = new \ReflectionFunction($callback);
+            } elseif (is_string($callback) && false !== strpos($callback, '::')) {
+                list($class, $method) = explode('::', $callback, 2);
+                $reflection = new \ReflectionMethod($class, $method);
+            } elseif (is_string($callback) && function_exists($callback)) {
+                $reflection = new \ReflectionFunction($callback);
+            } elseif (is_object($callback) && is_callable($callback)) {
+                $reflection = new \ReflectionMethod($callback, '__invoke');
+            } else {
+                return null;
+            }
+
+            $file = $reflection->getFileName();
+            if (! is_string($file) || '' === $file) {
+                return null;
+            }
+            $real = realpath($file);
+            return is_string($real) ? $real : null;
+        } catch (\Throwable $error) {
+            return null;
+        }
+    }
+
+    private function trustedElementorRoots(): array
+    {
+        $roots = array();
+        foreach (array('ELEMENTOR_PATH', 'ELEMENTOR_PRO_PATH') as $constant) {
+            if (! defined($constant)) {
+                continue;
+            }
+            $value = constant($constant);
+            if (! is_string($value) || '' === $value) {
+                continue;
+            }
+            $real = realpath($value);
+            if (is_string($real) && '' !== $real) {
+                $roots[] = $real;
+            }
+        }
+        return array_values(array_unique($roots));
+    }
+
+    private function pathWithinRoot(string $file, string $root): bool
+    {
+        $root = rtrim($root, DIRECTORY_SEPARATOR);
+        return $file === $root || 0 === strpos($file, $root . DIRECTORY_SEPARATOR);
     }
 
     private function isExecutionExposed(object $ability): bool
