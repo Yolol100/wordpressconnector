@@ -411,7 +411,7 @@ if (false !== ($availabilityFirst['ok'] ?? true)
 $availabilityRetry = $runner->run($availabilityRequest);
 if (true !== ($availabilityRetry['ok'] ?? false)
     || true !== ($availabilityRetry['data']['execution_completed'] ?? false)
-    || 7 !== AbilityMutationContractAbility::$executions) {
+    || 4 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Retry after Elementor availability rejection did not execute normally.\n");
     exit(1);
 }
