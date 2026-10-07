@@ -39,6 +39,7 @@ foreach (array(
     'post.trash' => array('id' => 4933),
     'plugin.update' => array('plugin' => 'example/example.php'),
     'filesystem.inspect' => array(),
+    'wordpress.ability.execute' => array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#ffffff')),
 ) as $action => $payload) {
     $request = $base;
     $request['request_id'] = 'public-broad-' . substr(hash('sha256', $action), 0, 12);
