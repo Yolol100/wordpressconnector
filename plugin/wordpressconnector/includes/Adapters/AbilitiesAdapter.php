@@ -19,7 +19,7 @@ final class AbilitiesAdapter
             'privileged' => true,
             'sensitive' => true,
             'capability' => 'manage_options',
-            'description' => 'Read through a REST-exposed, explicitly read-only WordPress Ability and its native input validation and permission callback.',
+            'description' => 'Read through an explicitly read-only, client-exposed native Elementor Ability after provider ownership verification; native validation and permission callbacks still run.',
         ));
         $registry->register('wordpress.ability.execute', array($this, 'executeAbility'), array(
             'mutation' => true,
@@ -143,7 +143,7 @@ final class AbilitiesAdapter
         $ability = wp_get_ability($name);
         $eligible = $mutation
             ? $this->isElementorMutationEligible($name, $ability)
-            : $this->isReadEligible($ability);
+            : $this->isElementorReadEligible($name, $ability);
         if (! is_object($ability) || ! $eligible) {
             throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
         }
@@ -269,11 +269,19 @@ final class AbilitiesAdapter
         return $value;
     }
 
-    private function isReadEligible($ability): bool
+    private function isElementorReadEligible(string $name, $ability): bool
     {
-        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isElementorAbilityName($name)) {
+            return false;
+        }
+        if (! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+            return false;
+        }
         $annotations = $this->safeAnnotations($ability);
-        return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
+        if (true !== ($annotations['readonly'] ?? null) || false !== ($annotations['destructive'] ?? null)) {
+            return false;
+        }
+        return $this->isTrustedElementorCallbackSource($ability);
     }
 
     private function isMutationEligible($ability): bool
@@ -444,7 +452,7 @@ final class AbilitiesAdapter
     private function descriptor(string $name, object $ability): array
     {
         $safeAnnotations = $this->safeAnnotations($ability);
-        $readEligible = $this->isReadEligible($ability);
+        $readEligible = $this->isElementorReadEligible($name, $ability);
         $mutationEligible = $this->isElementorMutationEligible($name, $ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
