@@ -155,12 +155,16 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 21 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 21 !== $catalog['total'] || 3 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
 if (10 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
+}
+$catalogPageThree = $adapter->catalog(array('per_page' => 10, 'page' => 3), array());
+if (1 !== count($catalogPageThree['abilities']) || 3 !== $catalogPageThree['page']) {
+    fwrite(STDERR, "Ability catalog third page failed.\n"); exit(1);
 }
 $elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
 if (5 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
