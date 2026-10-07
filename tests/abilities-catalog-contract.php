@@ -89,6 +89,12 @@ function wp_get_abilities(): array
             'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => false, 'idempotent' => false),
         ), array(new \Webactueel\Tests\Fixtures\ElementorPlugin\NativeMcpProvider(), 'execute')),
+        'elementor/list-posts' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'mcp' => array('public' => true),
+            'category' => 'elementor',
+            'annotations' => array('readonly' => true, 'destructive' => false, 'idempotent' => true),
+        ), array(new \Webactueel\Tests\Fixtures\ElementorPlugin\NativeMcpProvider(), 'execute')),
         'elementor/manage-global-variable' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
@@ -131,15 +137,16 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 19 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 20 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
-if (9 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+if (10 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
 }
 $elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
-if (3 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
+if (4 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
+    || ! isset($elementorCatalog['abilities']['elementor/list-posts'])
     || ! isset($elementorCatalog['abilities']['elementor/manage-global-variable'])
     || ! isset($elementorCatalog['abilities']['elementor/publish-document'])
     || ! isset($elementorCatalog['abilities']['elementor/spoofed-write'])) {
@@ -181,8 +188,9 @@ if (isset($catalog['abilities']['third-party-plugin/private-operation'])
     || isset($catalog['abilities']['invalid-name'])) {
     fwrite(STDERR, "Private, MCP-disabled, or malformed ability leaked into the catalog.\n"); exit(1);
 }
-if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed'] ||
-    false !== $catalog['abilities']['third-party-plugin/ambiguous-readonly']['execution_exposed']) {
+if (false !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed']
+    || true !== $catalog['abilities']['elementor/list-posts']['execution_exposed']
+    || false !== $catalog['abilities']['third-party-plugin/ambiguous-readonly']['execution_exposed']) {
     fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
 if (false !== $catalog['abilities']['third-party-plugin/public-mutating-operation']['mutation_execution_exposed']
@@ -205,36 +213,36 @@ $mutationDescriptor = $registry->descriptor('wordpress.ability.execute');
 if (! $mutationDescriptor['mutation'] || ! $mutationDescriptor['privileged'] || $mutationDescriptor['sensitive'] || 'manage_options' !== $mutationDescriptor['capability']) {
     fwrite(STDERR, "Mutating ability access is missing its security gates.\n"); exit(1);
 }
-$result = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content', 'input' => array('limit' => 3)), array());
+$result = $adapter->readAbility(array('name' => 'elementor/list-posts', 'input' => array('limit' => 3)), array());
 if (1 !== ContractAbility::$executions || 3 !== $result['result']['received']['limit']) {
     fwrite(STDERR, "Exposed read-only ability did not execute through its native API.\n"); exit(1);
 }
 $repeatedResult = null;
 ContractAbility::$repeated_result = true;
-$repeatedResult = $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array());
+$repeatedResult = $adapter->readAbility(array('name' => 'elementor/list-posts'), array());
 ContractAbility::$repeated_result = false;
 if ('safe' !== ($repeatedResult['result']['summary']['visible'] ?? null) || 'safe' !== ($repeatedResult['result']['details']['visible'] ?? null)) {
     fwrite(STDERR, "Repeated non-circular ability objects were treated as circular.\n"); exit(1);
 }
 $largeResultRejected = false;
 ContractAbility::$large_result = true;
-try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $largeResultRejected = true; }
+try { $adapter->readAbility(array('name' => 'elementor/list-posts'), array()); } catch (RuntimeException $expected) { $largeResultRejected = true; }
 ContractAbility::$large_result = false;
 if (! $largeResultRejected || 3 !== ContractAbility::$executions) { fwrite(STDERR, "Oversized read-only ability result was not bounded.\n"); exit(1); }
 $wideResultRejected = false;
 ContractAbility::$wide_result = true;
-try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $wideResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
+try { $adapter->readAbility(array('name' => 'elementor/list-posts'), array()); } catch (RuntimeException $expected) { $wideResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
 ContractAbility::$wide_result = false;
 if (! $wideResultRejected || 4 !== ContractAbility::$executions) { fwrite(STDERR, "High-node-count read-only ability result was not bounded.\n"); exit(1); }
 $deepResultRejected = false;
 ContractAbility::$deep_result = true;
-try { $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array()); } catch (RuntimeException $expected) { $deepResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
+try { $adapter->readAbility(array('name' => 'elementor/list-posts'), array()); } catch (RuntimeException $expected) { $deepResultRejected = 'WordPress Ability result exceeds the traversal limit.' === $expected->getMessage(); }
 ContractAbility::$deep_result = false;
 if (! $deepResultRejected || 5 !== ContractAbility::$executions) { fwrite(STDERR, "Deep read-only ability result was not bounded.\n"); exit(1); }
 $exceptionRejected = false;
 ContractAbility::$throw_result = true;
 try {
-    $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array());
+    $adapter->readAbility(array('name' => 'elementor/list-posts'), array());
 } catch (RuntimeException $expected) {
     $exceptionRejected = 'WordPress Ability failed.' === $expected->getMessage();
 }
@@ -242,6 +250,11 @@ ContractAbility::$throw_result = false;
 if (! $exceptionRejected || 6 !== ContractAbility::$executions) { fwrite(STDERR, "Ability exceptions were not replaced with a generic failure.\n"); exit(1); }
 if ('[redacted]' !== $result['result']['token'] || '[redacted]' !== $result['result']['nested']['api_key'] || 'safe' !== $result['result']['nested']['visible']) {
     fwrite(STDERR, "Sensitive values in read-only ability results were not recursively redacted.\n"); exit(1);
+}
+try {
+    $adapter->readAbility(array('name' => 'third-party-plugin/reindex-content'), array());
+    fwrite(STDERR, "Third-party readonly annotation was trusted without provider ownership.\n"); exit(1);
+} catch (RuntimeException $expected) {
 }
 try {
     $adapter->readAbility(array('name' => 'third-party-plugin/mutating-operation'), array());
