@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Delegated reads/writes now require callback-source provenance inside the installed Elementor Core or Pro plugin root; slugs, categories and annotations alone do not establish trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and ambiguous provider failures become stored terminal failures so stable request-ID retries do not blindly execute again.
+Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Generic read-only WordPress Abilities remain behind explicit readonly/non-destructive annotations plus the privileged/sensitive read gate. Delegated writes are restricted to native `elementor/*` providers whose real Elementor MCP base class and `execute_guarded` method come from active Core, whose concrete provider class comes from active Core/Pro, and whose provider ID matches the Ability name. Global path constants, slugs, categories and annotations alone do not establish mutation ownership. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, pre-execution validation/permission failures remain retryable, and outcomes after execution may have started are persisted so stable request-ID retries cannot blindly repeat a write.
 
 Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards.
 
@@ -89,11 +89,13 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.17.1 =
-* Require registered Ability callback provenance inside the installed Elementor Core/Pro plugin root before delegated read or write execution; third-party slug/category/annotation spoofing remains non-executable.
+* Preserve generic read-only WordPress Ability compatibility behind explicit `readonly=true`, `destructive=false`, privileged/sensitive gating and bounded/redacted output.
+* Authenticate delegated `elementor/*` mutations through the active Core/Pro plugin files plus the real Elementor MCP base class, native `execute_guarded` method, concrete provider source and exact provider-ID match; slugs, categories, annotations and global path constants alone cannot establish mutation ownership.
 * Treat explicit `mcp.public=false` as an authoritative discovery/execution opt-out even when `show_in_rest=true`.
-* Convert completed over-budget Elementor mutations to bounded terminal successes and provider exceptions/`WP_Error` outcomes to stored terminal failures, preserving stable request-ID idempotency on retry.
+* Keep WordPress validation/permission failures before `wp_before_execute_ability` retryable; once provider execution may have started, convert exceptions/`WP_Error` outcomes to stored terminal failures and completed over-budget responses to bounded terminal successes so stable request IDs cannot blindly re-execute.
 * Block delegated Ability mutations inside `connector.batch` because they have no Connector rollback/compensation guarantee.
-* Add real WordPress 6.9 Abilities and WordPress 7.1 + Elementor 4.3.4 controlled-runtime coverage, including native read, disposable create-page mutation/readback, spoof rejection and replay.
+* Add real WordPress 6.9 Abilities and WordPress 7.1.3 + Elementor 4.3.4 controlled-runtime coverage, including generic read compatibility, native read, disposable create-page mutation/readback, spoof rejection and replay.
+* Align MCP `2026-07-28` negotiation with the current spec by advertising both implemented revisions and returning the standard `-32022` unsupported-version error.
 * Keep delegated Ability writes blocked from public GitHub runtime and preserve native WordPress/Elementor validation, permissions and provider guards.
 
 = 1.17.0 =
