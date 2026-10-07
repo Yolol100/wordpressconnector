@@ -60,9 +60,15 @@ function wp_generate_uuid4(): string
     return sprintf('00000000-0000-4000-8000-%012d', $counter);
 }
 
+final class WP_Error
+{
+    private string $code;
+    public function __construct(string $code) { $this->code = $code; }
+    public function get_error_code(): string { return $this->code; }
+}
 function is_wp_error($value): bool
 {
-    return false;
+    return $value instanceof WP_Error;
 }
 
 final class AbilityMutationContractWpdb
@@ -98,6 +104,7 @@ $wpdb = new AbilityMutationContractWpdb();
 final class AbilityMutationContractAbility
 {
     public static int $executions = 0;
+    public static bool $provider_error = false;
     protected $execute_callback;
 
     public function __construct()
@@ -127,6 +134,9 @@ final class AbilityMutationContractAbility
     public function execute($input = null)
     {
         ++self::$executions;
+        if (self::$provider_error) {
+            return new WP_Error('ability_invalid_output');
+        }
         return str_repeat('x', 270000);
     }
 }
@@ -186,6 +196,81 @@ if (true !== ($second['ok'] ?? false)
     || true !== ($second['data']['idempotent_replay'] ?? false)
     || 1 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Retry after completed Ability mutation executed provider code again.\n");
+    exit(1);
+}
+
+AbilityMutationContractAbility::$provider_error = true;
+$errorRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-error-0002',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#000000'),
+    ),
+));
+$errorFirst = $runner->run($errorRequest);
+if (false !== ($errorFirst['ok'] ?? true)
+    || true !== ($errorFirst['meta']['terminal_mutation'] ?? false)
+    || 'ability_invalid_output' !== ($errorFirst['meta']['terminal_context']['provider_error_code'] ?? null)
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Provider WP_Error was not recorded as a terminal mutation outcome.\n");
+    exit(1);
+}
+$errorReplay = $runner->run($errorRequest);
+if (false !== ($errorReplay['ok'] ?? true)
+    || true !== ($errorReplay['meta']['idempotent_replay'] ?? false)
+    || true !== ($errorReplay['meta']['terminal_mutation'] ?? false)
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after terminal provider error executed the Ability again.\n");
+    exit(1);
+}
+
+$differentPayload = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-error-0002',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#111111'),
+    ),
+));
+$differentResult = $runner->run($differentPayload);
+if (false !== ($differentResult['ok'] ?? true)
+    || false === strpos((string) ($differentResult['error'] ?? ''), 'different mutation')
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "request_id reuse with a changed Ability payload did not fail closed.\n");
+    exit(1);
+}
+
+AbilityMutationContractAbility::$provider_error = false;
+$batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-batch-0003',
+    'action' => 'connector.batch',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'operations' => array(
+            array(
+                'action' => 'wordpress.ability.execute',
+                'payload' => array(
+                    'name' => 'elementor/manage-global-variable',
+                    'input' => array('value' => '#222222'),
+                ),
+            ),
+        ),
+    ),
+));
+$batchResult = $runner->run($batchRequest);
+if (false !== ($batchResult['ok'] ?? true)
+    || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
 
