@@ -1,9 +1,10 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-connector-1163-update-dryrun-20261007",
+  "request_id": "andrewbaeten-connector-1163-update-live-20261007",
   "action": "connector.update.apply",
-  "dry_run": true,
-  "confirm": false,
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "9d2fa02e6b1baa85923edb29c8df871da77419c7240a7f387b537c0f842a1663",
   "payload": {}
 }
