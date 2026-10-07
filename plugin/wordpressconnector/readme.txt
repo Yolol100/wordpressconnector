@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.1
+Stable tag: 1.17.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.2 adds an exact private GitHub OIDC control-plane trust path for `Yolol100/Wordpress`. The existing public `Yolol100/wordpressconnector` runtime remains restricted to its public-safe allowlist; the private control plane may use the full registered connector action catalog while preserving request confirmation, WordPress capabilities, idempotency, stale-state guards, readback/rollback and bounded asset transport.
 
 Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Generic delegated reads remain available for client-exposed WordPress Abilities with explicit readonly=true and destructive=false annotations, native validation/permissions, and bounded redacted output. Delegated writes require explicit MCP exposure plus native Elementor Core/Pro callback provenance, an exact provider-ID match and an active canonical plugin root; slugs, categories and annotations alone do not establish mutation trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and provider failures after execution starts become stored terminal failures so stable request-ID retries do not blindly execute again.
 
@@ -87,6 +89,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.2 =
+* Trust the exact private `Yolol100/Wordpress` GitHub OIDC executor in addition to the canonical public runtime.
+* Keep public-repository restrictions unchanged while private runtime execution can reach the full registered action catalog subject to normal connector security gates.
+* Add OIDC regression coverage for repository identity, workflow identity and visibility separation.
 
 = 1.17.1 =
 * Keep generic delegated reads compatible with client-exposed WordPress Abilities that explicitly declare readonly=true and destructive=false, while requiring verified active Elementor Core/Pro callback provenance, native execute_guarded and an exact provider-ID match for delegated writes; third-party mutation spoofing remains non-executable.
