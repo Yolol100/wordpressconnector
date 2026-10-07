@@ -33,6 +33,8 @@ Products, variations, global attributes, taxonomies and coupons use WooCommerce 
 
 Read/update/delete ACF values and inspect field groups through ACF APIs, preserving installed field identity and structure.
 
+Private/direct authenticated transports also support bounded schema creation for new field groups and new fields in existing groups. Supported schema field types are `text`, `textarea`, `number`, `email`, `url`, `image`, `relationship`, `group` and `repeater`, including nested sub fields up to the connector depth/count limits. Existing field groups are never rewritten through this route: ownership conflicts fail closed, confirmed writes use the normal connector stale-state/idempotency contract, exact readback is required, and rollback removes only schema that still matches the connector-created definition. These complex schema actions are not available through the public GitHub runtime.
+
 ## Media
 
 List/read/import/update attachment metadata and assign featured images, WooCommerce galleries, Custom Logo and Site Icon. REST asset uploads are bounded and request-scoped.
