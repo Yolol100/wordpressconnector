@@ -419,11 +419,11 @@ final class AbilitiesAdapter
             return false;
         }
 
-        if (true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false)) {
-            return true;
+        if (isset($meta['mcp']) && is_array($meta['mcp']) && array_key_exists('public', $meta['mcp'])) {
+            return true === $meta['mcp']['public'];
         }
 
-        return isset($meta['mcp']) && is_array($meta['mcp']) && true === ($meta['mcp']['public'] ?? false);
+        return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
     }
 
     private function safeAnnotations(object $ability): array
