@@ -170,6 +170,9 @@ final class AbilitiesAdapter
             }
         } catch (\Throwable $error) {
             if (! $mutation) {
+                if ($error instanceof \RuntimeException) {
+                    throw $error;
+                }
                 throw new \RuntimeException('WordPress Ability result exceeds the connector output limits.');
             }
 
