@@ -54,7 +54,11 @@ Once a domain is known, the plugin can immediately prove it is installed via:
 
 GitHub cannot securely enumerate arbitrary unknown WordPress domains merely because this plugin is installed. Automatic “list every connected website” discovery requires a separate authenticated site registry/pairing service. The connector intentionally does not publish a global installation list or crawl the web to guess installations.
 
-## 4. Repository visibility and public-mode restrictions
+## 4. Private full-action control plane
+
+For full connector administration use the private `Yolol100/Wordpress` repository with its trusted `wordpressconnector-request.yml` -> `wordpressconnector-zero-config-execute.yml` flow. Private request branches may use the full registered action catalog and may persist full `results/*.json`. This is still not an unrestricted shell: connector confirmation, WordPress capabilities, semantic payload validation, idempotency, stale-state protection, readback/rollback and filesystem/package guards remain enforced.
+
+## 5. Repository visibility and public-mode restrictions
 
 This repository is currently public. Private mailbox transport must remain on a separate private control plane; the public WordPress Connector runtime persists only sanitized receipts.
 
@@ -74,7 +78,7 @@ Sensitive actions stay blocked in public mode. Secret-like payload keys and `exp
 
 Private/custom plugin ZIPs must not be placed on a public request branch. Request assets in a public repository are themselves public.
 
-## 5. Request confirmation and safety
+## 6. Request confirmation and safety
 
 The plugin is operational immediately after activation, but this does not mean destructive actions execute without request controls:
 
@@ -87,7 +91,7 @@ The plugin is operational immediately after activation, but this does not mean d
 
 Optional `WPCONNECTOR_ALLOW_*` constants or environment variables can still disable writes, privileged actions, sensitive actions, system updates or filesystem writes server-side. These are emergency/hosting controls, not normal setup requirements.
 
-## 6. Assets
+## 7. Assets
 
 The zero-config executor preserves request-scoped asset transport:
 
@@ -97,11 +101,11 @@ The zero-config executor preserves request-scoped asset transport:
 - a fresh short-lived GitHub OIDC authentication is used for each authenticated asset request and for final execution;
 - WordPress cleans request assets after execution.
 
-## 7. Direct REST clients
+## 8. Direct REST clients
 
 Non-GitHub clients may still use normal WordPress authentication over HTTPS, including an authenticated WordPress session or Application Password where appropriate. GitHub OIDC only removes persistent credentials from the canonical GitHub runtime.
 
-## 8. Native MCP clients
+## 9. Native MCP clients
 
 The MCP endpoint uses the same WordPress authentication boundary as the direct REST endpoints. It is not an anonymous pairing endpoint. Connect an approved client with an authenticated WordPress HTTPS session or Application Password where that client supports normal WordPress HTTP authentication.
 
@@ -111,7 +115,7 @@ For provider-native WordPress Abilities, first run `wordpress.abilities`; add pa
 
 For dedicated connector writes, use the same safe sequence as REST: discovery -> dry-run -> capture fingerprint/state when supported -> confirmed call with a stable explicit `request_id` -> readback -> rollback when supported. Delegated Elementor Ability mutations cannot run inside `connector.batch` and do not claim connector rollback/fingerprint support; validate their target state with Elementor's read surface and appropriate QA. A completed Ability whose response is too large/deep becomes a bounded terminal success; a provider exception/`WP_Error` becomes a stored terminal failure so replay of that request ID does not blindly execute again.
 
-## 9. Acceptance sequence
+## 10. Acceptance sequence
 
 1. Verify `/presence` on the target staging site.
 2. Run an authenticated `/health` through the GitHub OIDC route.
