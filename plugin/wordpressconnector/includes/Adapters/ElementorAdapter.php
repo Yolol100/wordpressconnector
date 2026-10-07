@@ -26,7 +26,11 @@ final class ElementorAdapter
     public function inspect(array $payload): array
     {
         $post = $this->post($payload);
-        Policy::assertPostReadable($post);
+        if (Policy::publicRepositoryContext()) {
+            Policy::assertPublicElementorTarget($post, false);
+        } else {
+            Policy::assertPostReadable($post);
+        }
         $snapshot = $this->snapshot((int) $post->ID);
         return array('document' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
     }
@@ -38,6 +42,17 @@ final class ElementorAdapter
             throw new RuntimeException('Unknown post type: ' . $postType);
         }
         Policy::assertReadablePostType($postType);
+        if (Policy::publicRepositoryContext()) {
+            $allowedTypes = array('page', 'post', 'product', 'elementor_library');
+            if (! in_array($postType, $allowedTypes, true)) {
+                throw new RuntimeException('Public Elementor creation is limited to pages, posts, products and Elementor library templates.');
+            }
+            $postTypeObject = get_post_type_object($postType);
+            $createCapability = isset($postTypeObject->cap->create_posts) ? (string) $postTypeObject->cap->create_posts : 'edit_posts';
+            if (! function_exists('current_user_can') || ! current_user_can($createCapability)) {
+                throw new RuntimeException('Current user lacks permission to create this public content type.');
+            }
+        }
 
         $data = $this->normalizeData($payload['data'] ?? array());
         $pageSettings = isset($payload['page_settings']) && is_array($payload['page_settings']) ? $payload['page_settings'] : array();
@@ -48,6 +63,18 @@ final class ElementorAdapter
             'post_name' => isset($payload['slug']) ? sanitize_title((string) $payload['slug']) : '',
             'post_content' => isset($payload['content']) ? (string) $payload['content'] : '',
         );
+        if (Policy::publicRepositoryContext()) {
+            if (! in_array($postFields['post_status'], array('draft', 'pending', 'publish'), true)) {
+                throw new RuntimeException('Public Elementor documents may use only draft, pending or publish status.');
+            }
+            $postTypeObject = get_post_type_object($postType);
+            if ('publish' === $postFields['post_status'] && (! isset($postTypeObject->cap->publish_posts) || ! current_user_can((string) $postTypeObject->cap->publish_posts))) {
+                throw new RuntimeException('Current user lacks permission to publish this content type.');
+            }
+            if ('elementor_library' === $postType && empty($payload['template_type'])) {
+                throw new RuntimeException('Public Elementor library document creation requires template_type.');
+            }
+        }
 
         if (! empty($context['dry_run'])) {
             return array(
