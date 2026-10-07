@@ -1,6 +1,5 @@
 <?php
 
-declare(strict_types=1);
 
 if (! function_exists('wp_get_abilities') || ! class_exists('WP_Abilities_Registry') || ! class_exists('WP_Ability_Categories_Registry')) {
     echo "WordPress Abilities runtime unavailable; skipped.\n";
