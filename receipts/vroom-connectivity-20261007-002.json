@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "vroom-connectivity-20261007-002",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-07T19:39:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [],
+    "page": 1,
+    "per_page": 1,
+    "total": 0,
+    "pages": 0,
+    "readback_verified": null
+}
