@@ -133,6 +133,14 @@ try {
         throw new RuntimeException('Native Elementor create-page readback did not match the expected draft page.');
     }
 
+    $structure = $adapter->readAbility(
+        array('name' => 'elementor/get-page-structure', 'input' => array('post_id' => $postId)),
+        array()
+    );
+    if (! isset($structure['result']['elements']) || ! is_array($structure['result']['elements'])) {
+        throw new RuntimeException('Native Elementor page-structure readback failed after create-page.');
+    }
+
     $replay = $runner->run($request);
     if (true !== ($replay['ok'] ?? false)
         || true !== ($replay['data']['idempotent_replay'] ?? false)) {
