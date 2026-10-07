@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "vroom-connector-update-1172-dry-001",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-07T21:34:27+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.17.1",
+    "to_version": "1.17.2",
+    "before_fingerprint": "5ee0f7c5b99ba3803cb9522c16d335c0c4eb02481e8c56c8052cb8753330a386",
+    "rollback_supported": false,
+    "readback_verified": null
+}
