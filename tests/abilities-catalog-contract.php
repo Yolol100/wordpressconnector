@@ -254,7 +254,8 @@ ContractAbility::$large_result = false;
 if (9 !== ContractAbility::$executions
     || true !== ($terminalLargeResult['execution_completed'] ?? false)
     || true !== ($terminalLargeResult['result_omitted'] ?? false)
-    || null !== ($terminalLargeResult['result'] ?? 'missing')
+    || ! array_key_exists('result', $terminalLargeResult)
+    || null !== $terminalLargeResult['result']
     || false !== $terminalLargeResult['rollback_supported']) {
     fwrite(STDERR, "Completed mutating Ability with oversized output was not converted to a terminal bounded result.\n"); exit(1);
 }
@@ -265,7 +266,8 @@ ContractAbility::$deep_result = false;
 if (10 !== ContractAbility::$executions
     || true !== ($terminalDeepResult['execution_completed'] ?? false)
     || true !== ($terminalDeepResult['result_omitted'] ?? false)
-    || null !== ($terminalDeepResult['result'] ?? 'missing')) {
+    || ! array_key_exists('result', $terminalDeepResult)
+    || null !== $terminalDeepResult['result']) {
     fwrite(STDERR, "Completed mutating Ability with deep output was not converted to a terminal bounded result.\n"); exit(1);
 }
 
