@@ -224,16 +224,30 @@ final class AbilitiesAdapter
 
     private function isReadEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
         $annotations = $this->safeAnnotations($ability);
         return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
     }
 
     private function isMutationEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
         $annotations = $this->safeAnnotations($ability);
         return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
+    }
+
+    private function isExecutionExposed(object $ability): bool
+    {
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        if (! is_array($meta)) {
+            return false;
+        }
+
+        if (isset($meta['mcp']) && is_array($meta['mcp']) && array_key_exists('public', $meta['mcp'])) {
+            return true === $meta['mcp']['public'];
+        }
+
+        return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
     }
 
     private function isExposed(object $ability): bool
