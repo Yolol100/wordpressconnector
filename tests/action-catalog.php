@@ -62,6 +62,7 @@ $expected = array(
     'acf.schema.ensure_text_fields' => 'mutation, privileged',
     'acf.schema.remove_text_fields' => 'mutation, privileged',
     'portfolio.case_text_update' => 'mutation, privileged',
+    'wordpress.ability.execute' => 'mutation, privileged',
     'wordpress.ability.read' => 'privileged, sensitive',
 );
 
