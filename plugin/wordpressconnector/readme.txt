@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.0
+Stable tag: 1.17.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,9 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.0 adds guarded execution of client-exposed WordPress Abilities on private/direct authenticated transports. Discovery can be filtered by namespace, including `elementor`, so current and future native Elementor MCP/Atomic abilities can be reused without copying Elementor internals. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards. Foreign Ability mutations remain blocked from public GitHub runtime and do not claim connector rollback support.
+Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Delegated writes are limited to exposed `elementor/*` Abilities whose category is also `elementor`, preventing unrelated plugin Abilities from using the generic mutation route. If an Elementor Ability completes a write but returns an over-budget result, the connector returns a bounded terminal success so stable request-id retries do not execute the completed write again.
+
+Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards.
 
 Version 1.16.1 adds guarded public GitHub-runtime access to WordPress Additional CSS without making full CSS replacement public. It introduces a managed `custom_css.patch` action that upserts or removes one named CSS block, requires dry-run fingerprint protection for live writes, preserves unrelated CSS, verifies exact readback and stores rollback. Public CSS inspection and mutation receipts expose only hashes, byte counts and patch metadata, never the CSS body. The action is restricted to the active theme stylesheet and the WordPress `edit_css` capability.
 
@@ -85,6 +87,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.1 =
+* Restrict delegated Ability writes to exposed `elementor/*` Abilities whose category is `elementor`; arbitrary third-party mutating Abilities remain discovery-only and cannot bypass connector emergency policy classes.
+* Convert post-execution output-budget failures for completed Elementor Ability mutations into bounded terminal successes with `result_omitted=true`, preserving stable request-id idempotency on retry.
+* Add regression coverage for public third-party mutation rejection and retry-after-oversized-result behavior through the real Runner/ProcessedStore path.
+* Keep the action blocked from public GitHub runtime and preserve native WordPress/Elementor schema validation, permission checks and provider guards.
 
 = 1.17.0 =
 * Add `wordpress.ability.execute` for explicitly annotated, client-exposed mutating WordPress Abilities on private/direct authenticated transports.
