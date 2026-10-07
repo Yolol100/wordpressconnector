@@ -15,7 +15,7 @@ final class MediaAdapter
     {
         $registry->register('media.list', array($this, 'mediaList'), array('description' => 'List media attachments.'));
         $registry->register('media.get', array($this, 'mediaGet'), array('description' => 'Read one media attachment and metadata.'));
-        $registry->register('media.import', array($this, 'mediaImport'), array('mutation' => true, 'description' => 'Import a file from the trusted request asset root into the media library.'));
+        $registry->register('media.import', array($this, 'mediaImport'), array('mutation' => true, 'capability' => 'upload_files', 'description' => 'Import a file from the trusted request asset root into the media library.'));
         $registry->register('media.update', array($this, 'mediaUpdate'), array('mutation' => true, 'description' => 'Update attachment title, alt text, caption, description and parent.'));
         $registry->register('media.assign', array($this, 'mediaAssign'), array('mutation' => true, 'description' => 'Assign media as featured image, Woo gallery image, custom logo or site icon.'));
         $registry->register('media.regenerate', array($this, 'mediaRegenerate'), array('mutation' => true, 'description' => 'Regenerate attachment metadata and image subsizes.'));
