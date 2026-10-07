@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/fixtures/elementor-plugin/NativeMcpProvider.php';
+if (! defined('ELEMENTOR_PATH')) { define('ELEMENTOR_PATH', __DIR__ . '/fixtures/elementor-plugin/'); }
+
 $test_options = array();
 
 function wp_json_encode($value)
@@ -95,6 +98,12 @@ $wpdb = new AbilityMutationContractWpdb();
 final class AbilityMutationContractAbility
 {
     public static int $executions = 0;
+    protected $execute_callback;
+
+    public function __construct()
+    {
+        $this->execute_callback = array(new \\Webactueel\\Tests\\Fixtures\\ElementorPlugin\\NativeMcpProvider(), 'execute');
+    }
 
     public function get_meta(): array
     {
