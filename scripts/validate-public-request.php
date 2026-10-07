@@ -37,6 +37,10 @@ $publicActions = array(
     'acf.schema.ensure_text_fields',
     'elementor.inspect',
     'elementor.patch_element',
+    'elementor.create_document',
+    'elementor.replace_document',
+    'media.import',
+    'post.trash',
     'connector.batch',
     'connector.rollback',
     'connector.update.check',
@@ -440,6 +444,86 @@ if (! $dryRun) {
     $fingerprint = $data['expected_fingerprint'] ?? null;
     if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
         $errors[] = 'Confirmed acf.portfolio_stats_update requires expected_fingerprint from the preceding dry-run.';
+    }
+}
+
+if (in_array($action, array('elementor.create_document', 'elementor.replace_document', 'media.import', 'post.trash'), true)) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $allowed = array(
+        'elementor.create_document' => array('post_type','status','title','slug','content','data','page_settings','template_type','conditions','edit_mode'),
+        'elementor.replace_document' => array('id','data','page_settings','template_type','conditions','edit_mode'),
+        'media.import' => array('source_path','parent','title','alt','caption','description'),
+        'post.trash' => array('id'),
+    );
+    foreach (array_keys($payload) as $key) {
+        if (! in_array((string) $key, $allowed[$action], true)) {
+            $errors[] = $action . ' contains unsupported payload key: ' . (string) $key;
+        }
+    }
+    $positiveId = static function ($value): bool { return is_int($value) && $value > 0; };
+    if ('elementor.create_document' === $action) {
+        $type = isset($payload['post_type']) ? $payload['post_type'] : 'page';
+        if (! is_string($type) || ! in_array($type, array('page','post','product','elementor_library'), true)) {
+            $errors[] = 'elementor.create_document post_type must be page, post, product or elementor_library.';
+        }
+        $status = isset($payload['status']) ? $payload['status'] : 'draft';
+        if (! is_string($status) || ! in_array($status, array('draft','pending','publish'), true)) {
+            $errors[] = 'elementor.create_document status must be draft, pending or publish.';
+        }
+        if (isset($payload['title']) && (! is_string($payload['title']) || strlen($payload['title']) > 200)) {
+            $errors[] = 'elementor.create_document title must be text up to 200 bytes.';
+        }
+        if ('elementor_library' === $type && (! isset($payload['template_type']) || ! is_string($payload['template_type']) || ! preg_match('/^[a-z0-9_-]{1,40}$/D', $payload['template_type']))) {
+            $errors[] = 'elementor_library creation requires a safe template_type.';
+        }
+    } elseif ('elementor.replace_document' === $action || 'post.trash' === $action) {
+        if (! isset($payload['id']) || ! $positiveId($payload['id'])) {
+            $errors[] = $action . ' id must be a positive integer.';
+        }
+        if ('elementor.replace_document' === $action && count($payload) < 2) {
+            $errors[] = 'elementor.replace_document requires document data or settings.';
+        }
+    } else {
+        $path = isset($payload['source_path']) && is_string($payload['source_path']) ? $payload['source_path'] : '';
+        if ('' === $path || strlen($path) > 180 || preg_match('#(^/|(^|/)\.\.?(/|$)|[^A-Za-z0-9._/-])#', $path) || ! preg_match('/\.(png|jpe?g|webp|gif|avif)$/i', $path)) {
+            $errors[] = 'media.import source_path must be a safe relative path to a PNG, JPEG, WebP, GIF or AVIF image.';
+        }
+        if (isset($payload['parent']) && ! $positiveId($payload['parent'])) {
+            $errors[] = 'media.import parent must be a positive integer.';
+        }
+        foreach (array('title' => 500, 'alt' => 500, 'caption' => 500, 'description' => 2000) as $field => $limit) {
+            if (isset($payload[$field]) && (! is_string($payload[$field]) || strlen($payload[$field]) > $limit || preg_match('/[\x00-\x1F\x7F]/', $payload[$field]))) {
+                $errors[] = 'media.import ' . $field . ' is invalid or exceeds its size limit.';
+            }
+        }
+    }
+    foreach (array('data','page_settings','conditions') as $field) {
+        if (array_key_exists($field, $payload) && ! is_array($payload[$field])) {
+            $errors[] = $action . ' ' . $field . ' must be an object or array.';
+        }
+        if (isset($payload[$field]) && strlen((string) json_encode($payload[$field])) > 4194304) {
+            $errors[] = $action . ' ' . $field . ' exceeds 4 MiB.';
+        }
+    }
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'expected_state_token must not be used for public content mutations.';
+    }
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if ($dryRun) {
+        if (! empty($data['confirm'])) {
+            $errors[] = 'Public content mutation dry-run requires confirm=false.';
+        }
+        if (array_key_exists('expected_fingerprint', $data) && null !== $data['expected_fingerprint']) {
+            $errors[] = 'Public content mutation dry-run must not include expected_fingerprint.';
+        }
+    } else {
+        if (empty($data['confirm'])) {
+            $errors[] = 'Public content mutation requires confirm=true when dry_run=false.';
+        }
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Confirmed public content mutation requires expected_fingerprint from the preceding dry-run.';
+        }
     }
 }
 
