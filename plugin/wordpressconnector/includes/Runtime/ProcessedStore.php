@@ -12,7 +12,8 @@ final class ProcessedStore
 
     public function put(string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null): void
     {
-        update_option(self::key($requestId), array(
+        $key = self::key($requestId);
+        $record = array(
             'created_at' => time(),
             'state' => 'completed',
             'fingerprint' => $fingerprint,
@@ -20,7 +21,23 @@ final class ProcessedStore
             'result_hash' => $resultHash,
             'ok' => $ok,
             'terminal_error' => $ok ? null : $this->boundedTerminalError($terminalError),
-        ), false);
+        );
+        update_option($key, $record, false);
+
+        if ('wordpress.ability.execute' === $action) {
+            $stored = get_option($key, null);
+            if (! is_array($stored)
+                || 'completed' !== ($stored['state'] ?? null)
+                || ! isset($stored['fingerprint'])
+                || ! hash_equals((string) $stored['fingerprint'], $fingerprint)
+                || (string) ($stored['action'] ?? '') !== $action
+                || ! isset($stored['result_hash'])
+                || ! hash_equals((string) $stored['result_hash'], $resultHash)
+                || ! array_key_exists('ok', $stored)
+                || (bool) $stored['ok'] !== $ok) {
+                throw new \RuntimeException('Unable to persist the final Elementor Ability mutation outcome.');
+            }
+        }
     }
 
     public function get(string $requestId): ?array
