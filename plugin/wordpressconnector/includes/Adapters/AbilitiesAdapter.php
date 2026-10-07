@@ -156,8 +156,11 @@ final class AbilitiesAdapter
         $executionTracker = null;
 
         if ($mutation && function_exists('add_action') && function_exists('remove_action')) {
-            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility) use (&$executionStarted, $name, $ability): void {
-                if ($abilityName === $name && $executingAbility === $ability) {
+            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility = null) use (&$executionStarted, $name, $ability): void {
+                if ($abilityName !== $name) {
+                    return;
+                }
+                if (null === $executingAbility || $executingAbility === $ability) {
                     $executionStarted = true;
                 }
             };
