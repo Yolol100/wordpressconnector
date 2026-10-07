@@ -51,6 +51,18 @@ final class Runner
                     if (! isset($existing['fingerprint']) || ! hash_equals((string) $existing['fingerprint'], $requestFingerprint)) {
                         throw new RuntimeException('request_id was already used for a different mutation.');
                     }
+                    if ('started' === ($existing['state'] ?? null)) {
+                        return Result::failure(
+                            $request,
+                            'A previous Elementor Ability mutation reached the execution boundary but its final outcome is unknown. Automatic replay is blocked; perform target readback before issuing a new request_id.',
+                            array(
+                                'request_fingerprint' => $requestFingerprint,
+                                'idempotent_replay' => true,
+                                'mutation_outcome_unknown' => true,
+                                'terminal_mutation' => true,
+                            )
+                        );
+                    }
                     if (array_key_exists('ok', $existing) && false === $existing['ok']) {
                         return Result::failure(
                             $request,
@@ -72,6 +84,11 @@ final class Runner
             $context['confirm'] = $request->confirm();
             $context['request_id'] = $request->id();
             $context['registry'] = $this->registry;
+            if ('wordpress.ability.execute' === $request->action() && ! $request->dryRun()) {
+                $context['mark_mutation_started'] = function () use ($request, $requestFingerprint): void {
+                    $this->processed->putStarted($request->id(), $requestFingerprint, $request->action());
+                };
+            }
             $data = $this->executeWithStateGuards($request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken());
             if (isset($data['fingerprint']) && is_string($data['fingerprint']) && preg_match('/^[a-f0-9]{64}\z/', $data['fingerprint'])) {
                 $data['state_token'] = Fingerprint::siteTokenFromFingerprint($data['fingerprint']);
