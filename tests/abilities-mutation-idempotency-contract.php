@@ -345,7 +345,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 2 !== AbilityMutationContractAbility::$executions) {
+    || 3 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
