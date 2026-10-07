@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "vroom-connectivity-20261007-002",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "post",
+    "status": "publish",
+    "per_page": 1,
+    "page": 1
+  }
+}
