@@ -143,7 +143,7 @@ final class AbilitiesAdapter
         $ability = wp_get_ability($name);
         $eligible = $mutation
             ? $this->isElementorMutationEligible($name, $ability)
-            : $this->isElementorReadEligible($name, $ability);
+            : $this->isReadEligible($ability);
         if (! is_object($ability) || ! $eligible) {
             throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
         }
@@ -152,16 +152,33 @@ final class AbilitiesAdapter
 
     private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
     {
+        $executionStarted = false;
+        $executionTracker = null;
+
+        if ($mutation && function_exists('add_action') && function_exists('remove_action')) {
+            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility) use (&$executionStarted, $name, $ability): void {
+                if ($abilityName === $name && $executingAbility === $ability) {
+                    $executionStarted = true;
+                }
+            };
+            add_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX, 3);
+        }
+
         try {
             $result = $ability->execute($input);
         } catch (\Throwable $error) {
-            if ($mutation) {
+            if ($mutation && $executionStarted) {
                 return $this->terminalMutationFailure($name, $annotations, null);
             }
             throw new \RuntimeException('WordPress Ability failed.');
+        } finally {
+            if (null !== $executionTracker) {
+                remove_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX);
+            }
         }
+
         if (function_exists('is_wp_error') && is_wp_error($result)) {
-            if ($mutation) {
+            if ($mutation && $executionStarted) {
                 $errorCode = method_exists($result, 'get_error_code') ? (string) $result->get_error_code() : null;
                 return $this->terminalMutationFailure($name, $annotations, $errorCode);
             }
@@ -269,24 +286,20 @@ final class AbilitiesAdapter
         return $value;
     }
 
-    private function isElementorReadEligible(string $name, $ability): bool
+    private function isReadEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isElementorAbilityName($name)) {
-            return false;
-        }
-        if (! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
             return false;
         }
         $annotations = $this->safeAnnotations($ability);
-        if (true !== ($annotations['readonly'] ?? null) || false !== ($annotations['destructive'] ?? null)) {
-            return false;
-        }
-        return $this->isTrustedElementorCallbackSource($ability);
+        return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
     }
 
     private function isMutationEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+            return false;
+        }
         $annotations = $this->safeAnnotations($ability);
         return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
     }
@@ -301,7 +314,7 @@ final class AbilitiesAdapter
             return false;
         }
 
-        return $this->isTrustedElementorCallbackSource($ability);
+        return $this->isNativeElementorAbilityProvider($name, $ability);
     }
 
     private function isElementorAbilityName(string $name): bool
@@ -318,16 +331,37 @@ final class AbilitiesAdapter
             && true === ($meta['mcp']['public'] ?? false);
     }
 
-    private function isTrustedElementorCallbackSource(object $ability): bool
+    private function isNativeElementorAbilityProvider(string $name, object $ability): bool
     {
         $callback = $this->abilityExecuteCallback($ability);
-        $file = $this->callbackSourceFile($callback);
-        if (null === $file) {
+        if (! is_array($callback)
+            || 2 !== count($callback)
+            || ! is_object($callback[0])
+            || 'execute_guarded' !== (string) $callback[1]) {
             return false;
         }
 
-        foreach ($this->trustedElementorRoots() as $root) {
-            if ($this->pathWithinRoot($file, $root)) {
+        $provider = $callback[0];
+        if (! method_exists($provider, 'get_id') || $name !== (string) $provider->get_id()) {
+            return false;
+        }
+
+        try {
+            $providerFile = (new \ReflectionObject($provider))->getFileName();
+        } catch (\Throwable $error) {
+            return false;
+        }
+        if (! is_string($providerFile) || '' === $providerFile) {
+            return false;
+        }
+
+        $providerPath = realpath($providerFile);
+        if (false === $providerPath) {
+            return false;
+        }
+
+        foreach ($this->trustedElementorPluginRoots() as $root) {
+            if ($this->pathWithinRoot($providerPath, $root)) {
                 return true;
             }
         }
@@ -352,52 +386,39 @@ final class AbilitiesAdapter
         }
     }
 
-    private function callbackSourceFile($callback): ?string
+    private function trustedElementorPluginRoots(): array
     {
-        try {
-            if (is_array($callback) && 2 === count($callback)) {
-                $reflection = new \ReflectionMethod($callback[0], (string) $callback[1]);
-            } elseif ($callback instanceof \Closure) {
-                $reflection = new \ReflectionFunction($callback);
-            } elseif (is_string($callback) && false !== strpos($callback, '::')) {
-                list($class, $method) = explode('::', $callback, 2);
-                $reflection = new \ReflectionMethod($class, $method);
-            } elseif (is_string($callback) && function_exists($callback)) {
-                $reflection = new \ReflectionFunction($callback);
-            } elseif (is_object($callback) && is_callable($callback)) {
-                $reflection = new \ReflectionMethod($callback, '__invoke');
-            } else {
-                return null;
-            }
-
-            $file = $reflection->getFileName();
-            if (! is_string($file) || '' === $file) {
-                return null;
-            }
-            $real = realpath($file);
-            return is_string($real) ? $real : null;
-        } catch (\Throwable $error) {
-            return null;
+        if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_option')) {
+            return array();
         }
-    }
 
-    private function trustedElementorRoots(): array
-    {
+        $active = get_option('active_plugins', array());
+        $active = is_array($active) ? array_values($active) : array();
+
+        $networkActive = array();
+        if (function_exists('get_site_option')) {
+            $value = get_site_option('active_sitewide_plugins', array());
+            $networkActive = is_array($value) ? array_keys($value) : array();
+        }
+
         $roots = array();
-        foreach (array('ELEMENTOR_PATH', 'ELEMENTOR_PRO_PATH') as $constant) {
-            if (! defined($constant)) {
+        foreach (array('elementor/elementor.php', 'elementor-pro/elementor-pro.php') as $pluginFile) {
+            if (! in_array($pluginFile, $active, true) && ! in_array($pluginFile, $networkActive, true)) {
                 continue;
             }
-            $value = constant($constant);
-            if (! is_string($value) || '' === $value) {
+
+            $mainFile = realpath(rtrim((string) WP_PLUGIN_DIR, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $pluginFile));
+            if (false === $mainFile || ! is_file($mainFile)) {
                 continue;
             }
-            $real = realpath($value);
-            if (is_string($real) && '' !== $real) {
-                $roots[] = $real;
+
+            $root = realpath(dirname($mainFile));
+            if (false !== $root && ! in_array($root, $roots, true)) {
+                $roots[] = $root;
             }
         }
-        return array_values(array_unique($roots));
+
+        return $roots;
     }
 
     private function pathWithinRoot(string $file, string $root): bool
@@ -452,7 +473,7 @@ final class AbilitiesAdapter
     private function descriptor(string $name, object $ability): array
     {
         $safeAnnotations = $this->safeAnnotations($ability);
-        $readEligible = $this->isElementorReadEligible($name, $ability);
+        $readEligible = $this->isReadEligible($ability);
         $mutationEligible = $this->isElementorMutationEligible($name, $ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
