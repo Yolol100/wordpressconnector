@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-cache-capabilities-final-1163-20261007",
+    "action": "maintenance.cache_capabilities",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-07T00:57:31+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layers": {
+        "elementor": {
+            "provider": "Elementor",
+            "available": true,
+            "version": "4.3.4"
+        },
+        "wp_rocket": {
+            "provider": "WP Rocket",
+            "available": true,
+            "version": "3.23.2.2"
+        },
+        "asset_cleanup": {
+            "provider": "Asset CleanUp",
+            "available": true,
+            "version": "1.4.0.6"
+        }
+    },
+    "layers_fingerprint": "5386a6abd570c8495d107e7a77ac8e733dcee428bc74f69d3407d5627d571674",
+    "readback_verified": null
+}
