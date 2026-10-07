@@ -10,13 +10,15 @@ final class ProcessedStore
     private const LOCK_KEY = 'wpconnector_mutation_lock';
     private const LOCK_TTL = 600;
 
-    public function put(string $requestId, string $fingerprint, string $action, string $resultHash): void
+    public function put(string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null): void
     {
         update_option(self::key($requestId), array(
             'created_at' => time(),
             'fingerprint' => $fingerprint,
             'action' => $action,
             'result_hash' => $resultHash,
+            'ok' => $ok,
+            'terminal_error' => $ok ? null : $this->boundedTerminalError($terminalError),
         ), false);
     }
 
@@ -113,6 +115,15 @@ final class ProcessedStore
 
         wp_cache_delete(self::LOCK_KEY, 'options');
         return true;
+    }
+
+    private function boundedTerminalError(?string $message): string
+    {
+        $message = is_string($message) ? trim($message) : '';
+        if ('' === $message) {
+            return 'Completed mutation ended with a terminal execution failure.';
+        }
+        return strlen($message) > 500 ? substr($message, 0, 500) : $message;
     }
 
     private static function key(string $requestId): string

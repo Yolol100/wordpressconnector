@@ -12,6 +12,8 @@ run_php tests/policy-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
 run_php tests/abilities-catalog-contract.php
+run_php tests/abilities-provider-provenance-contract.php
+run_php tests/abilities-mutation-idempotency-contract.php
 run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
 run_php tests/user-password-reset-contract.php

@@ -6,11 +6,12 @@ WordPress Connector does not copy Elementor MCP business logic. It reuses the Wo
 
 Elementor's MCP implementation registers native `elementor/*` abilities through the WordPress Abilities API. Their execute callbacks retain Elementor's own schema handling, permission checks, Atomic/V4 gates, editor-sync/conflict guards and feature/license availability. Reimplementing those internals in WordPress Connector would create a second, drifting Elementor engine.
 
-WordPress Connector therefore adds a guarded generic mutation route:
+WordPress Connector therefore adds a generic guarded discovery/read bridge plus a bounded Elementor mutation route:
 
 - discover with `wordpress.abilities`, optionally `{"namespace":"elementor"}`;
-- read explicitly read-only abilities through `wordpress.ability.read`;
-- preview explicitly mutating abilities through `wordpress.ability.execute` with connector `dry_run=true`; this does not invoke provider code;
+- execute generic client-exposed WordPress reads only when the Ability explicitly declares `readonly=true` and `destructive=false`; native validation/permission callbacks remain authoritative and results stay bounded/redacted;
+- expose delegated Elementor mutation only when explicit mutating annotations, explicit MCP exposure and verified Core/Pro callback-source provenance checks pass;
+- preview eligible Elementor mutations through `wordpress.ability.execute` with connector `dry_run=true`; this does not invoke provider code;
 - execute with `dry_run=false`, `confirm=true` and a stable `request_id`;
 - keep the provider's native input validation, permission callback and execution guards authoritative.
 
@@ -33,12 +34,12 @@ Elementor Pro, add-ons or later releases may register additional abilities, incl
 ## Safety contract
 
 - The connector never treats discovery metadata as authorization.
-- Read execution requires explicit `readonly=true` and `destructive=false`.
-- Mutation execution requires explicit `readonly=false` and an explicit boolean `destructive`.
-- If the provider publishes `meta.mcp.public`, `false` blocks connector execution even when `show_in_rest=true`.
-- `wordpress.ability.execute` is privileged and is not in the public GitHub-runtime allowlist.
-- Connector mutation locking and request-id idempotency still apply.
-- Generic foreign Ability mutations report `rollback_supported=false`; no rollback or stale-state guarantee is invented.
+- Names, categories and annotations are metadata, not ownership proof for delegated writes. Mutation trust requires Elementor's native `execute_guarded` callback, an exact provider-ID/requested-Ability match and a callback source file beneath an active canonical Elementor Core or Elementor Pro root.
+- Read execution remains generic for client-exposed WordPress Abilities and requires explicit `readonly=true` and `destructive=false`; mutation requires explicit `readonly=false`, an explicit boolean `destructive` and explicit `mcp.public=true`.
+- If `meta.mcp.public` exists, only `true` is discoverable/executable; `false` is an authoritative opt-out even when `show_in_rest=true`.
+- `wordpress.ability.execute` is privileged, absent from the public GitHub-runtime allowlist, and forbidden inside `connector.batch` because delegated writes have no Connector compensation contract.
+- Connector mutation locking and request-id idempotency still apply. Delegated Elementor mutations report `rollback_supported=false`; no rollback or stale-state guarantee is invented.
+- A successful provider write whose result exceeds the traversal/size budget becomes a bounded terminal success with `result_omitted=true`. A provider exception or `WP_Error` becomes a bounded terminal failure recorded against the request ID, preventing blind retry.
 - Output remains recursively redacted and bounded by the connector transport limits.
 
 ## MCP client sequence
@@ -54,4 +55,4 @@ Through the existing `wordpress_connector_execute` MCP tool:
 
 ## Evidence boundary
 
-The bridge is deliberately future-compatible: newly registered Elementor abilities can appear without a WordPress Connector release. That is capability discovery, not a blanket compatibility claim. Core/Pro entitlement, Atomic/V4 availability, Loop support and frontend behavior still require target-runtime evidence.
+The bridge is deliberately capability-driven: newly registered Elementor abilities can be discovered without a WordPress Connector release. Generic read execution follows client exposure plus explicit read-only annotations; delegated Elementor mutation execution additionally requires trusted Core/Pro callback provenance. Controlled CI covers WordPress 6.9 Abilities and Elementor Core 4.3.4 MCP, including native discovery/read, a disposable create-page mutation, readback, spoof rejection and request-ID replay. Elementor Pro entitlement, Atomic/Loop specifics and frontend behavior still require target-runtime evidence.

@@ -19,13 +19,13 @@ final class AbilitiesAdapter
             'privileged' => true,
             'sensitive' => true,
             'capability' => 'manage_options',
-            'description' => 'Read through a REST-exposed, explicitly read-only WordPress Ability and its native input validation and permission callback.',
+            'description' => 'Read through an explicitly read-only, client-exposed WordPress Ability; native validation and permission callbacks still run, and mutation-capable abilities remain blocked from this route.',
         ));
         $registry->register('wordpress.ability.execute', array($this, 'executeAbility'), array(
             'mutation' => true,
             'privileged' => true,
             'capability' => 'manage_options',
-            'description' => 'Execute one explicitly mutating, client-exposed WordPress Ability through its native schema validation, permission callback and provider guards. Use namespace=elementor discovery to reach native Elementor MCP/Atomic capabilities. Dry-run never invokes the Ability.',
+            'description' => 'Execute one explicitly mutating, MCP-exposed native Elementor Core/Pro Ability after verified provider provenance; native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
         ));
     }
 
@@ -101,13 +101,14 @@ final class AbilitiesAdapter
     {
         list($name, $ability) = $this->resolveAbility($payload, false);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
-        return $this->executeAndSanitize($name, $ability, $input);
+        return $this->executeAndSanitize($name, $ability, $input, $this->safeAnnotations($ability), false);
     }
 
     public function executeAbility(array $payload, array $context): array
     {
         list($name, $ability) = $this->resolveAbility($payload, true);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+        $annotations = $this->safeAnnotations($ability);
 
         if (! empty($context['dry_run'])) {
             list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
@@ -116,7 +117,7 @@ final class AbilitiesAdapter
             return array(
                 'name' => $name,
                 'would_execute' => true,
-                'annotations' => $this->safeAnnotations($ability),
+                'annotations' => $annotations,
                 'input_schema' => $inputSchema,
                 'input_schema_omitted' => $inputSchemaOmitted,
                 'native_validation_on_confirm' => true,
@@ -125,7 +126,7 @@ final class AbilitiesAdapter
             );
         }
 
-        $result = $this->executeAndSanitize($name, $ability, $input);
+        $result = $this->executeAndSanitize($name, $ability, $input, $annotations, true);
         $result['rollback_supported'] = false;
         return $result;
     }
@@ -140,33 +141,153 @@ final class AbilitiesAdapter
             throw new \RuntimeException('A valid namespace/ability name is required.');
         }
         $ability = wp_get_ability($name);
-        $eligible = $mutation ? $this->isMutationEligible($ability) : $this->isReadEligible($ability);
+        $eligible = $mutation
+            ? $this->isElementorMutationEligible($name, $ability)
+            : $this->isReadEligible($ability);
         if (! is_object($ability) || ! $eligible) {
             throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
         }
         return array($name, $ability);
     }
 
-    private function executeAndSanitize(string $name, object $ability, $input): array
+    private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
     {
+        $executionStarted = false;
+        $providerPreExecutionRejected = false;
+        $executionTracker = null;
+        $guardTracker = null;
+        $provider = null;
+
+        if ($mutation) {
+            $callback = $this->abilityExecuteCallback($ability);
+            if (is_array($callback) && isset($callback[0]) && is_object($callback[0])) {
+                $provider = $callback[0];
+            }
+        }
+
+        if ($mutation && function_exists('add_action') && function_exists('remove_action')) {
+            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility = null) use (&$executionStarted, &$providerPreExecutionRejected, $name, $ability, $provider): void {
+                if ($abilityName !== $name) {
+                    return;
+                }
+                if (null !== $executingAbility && $executingAbility !== $ability) {
+                    return;
+                }
+
+                $executionStarted = true;
+                if (! is_object($provider) || ! method_exists($provider, 'is_available')) {
+                    return;
+                }
+
+                try {
+                    $availability = $provider->is_available();
+                    if (function_exists('is_wp_error') && is_wp_error($availability)) {
+                        $providerPreExecutionRejected = true;
+                    }
+                } catch (\Throwable $error) {
+                    $providerPreExecutionRejected = true;
+                }
+            };
+            add_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX, 3);
+        }
+
+        if ($mutation && function_exists('add_filter') && function_exists('remove_filter')) {
+            $guardTracker = static function ($guard) use (&$executionStarted, &$providerPreExecutionRejected) {
+                if ($executionStarted && function_exists('is_wp_error') && is_wp_error($guard)) {
+                    $providerPreExecutionRejected = true;
+                }
+                return $guard;
+            };
+            add_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX, 2);
+        }
+
         try {
             $result = $ability->execute($input);
         } catch (\Throwable $error) {
+            if ($mutation && $executionStarted && ! $providerPreExecutionRejected) {
+                return $this->terminalMutationFailure($name, $annotations, null);
+            }
             throw new \RuntimeException('WordPress Ability failed.');
+        } finally {
+            if (null !== $executionTracker) {
+                remove_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX);
+            }
+            if (null !== $guardTracker) {
+                remove_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX);
+            }
         }
+
         if (function_exists('is_wp_error') && is_wp_error($result)) {
+            if ($mutation && $executionStarted && ! $providerPreExecutionRejected) {
+                $errorCode = method_exists($result, 'get_error_code') ? (string) $result->get_error_code() : null;
+                return $this->terminalMutationFailure($name, $annotations, $errorCode);
+            }
             throw new \RuntimeException('WordPress Ability failed.');
         }
-        $budget = array('nodes' => 0, 'bytes' => 0);
-        $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
-        $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
-        if (! is_string($encoded) || strlen($encoded) > 262144) {
-            throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+
+        if ($mutation && is_array($result) && 'error' === ($result['status'] ?? null)) {
+            $errorCode = null;
+            foreach (array('code', 'error_code') as $key) {
+                if (isset($result[$key]) && (is_string($result[$key]) || is_int($result[$key]))) {
+                    $errorCode = (string) $result[$key];
+                    break;
+                }
+            }
+            return $this->terminalMutationFailure($name, $annotations, $errorCode);
         }
+
+        try {
+            $budget = array('nodes' => 0, 'bytes' => 0);
+            $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
+            $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
+            if (! is_string($encoded) || strlen($encoded) > 262144) {
+                throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+            }
+        } catch (\Throwable $error) {
+            if (! $mutation) {
+                if ($error instanceof \RuntimeException) {
+                    throw $error;
+                }
+                throw new \RuntimeException('WordPress Ability result exceeds the connector output limits.');
+            }
+
+            return array(
+                'name' => $name,
+                'annotations' => $annotations,
+                'execution_completed' => true,
+                'result' => null,
+                'result_omitted' => true,
+                'result_omission_reason' => 'Ability completed but its result exceeded connector output limits.',
+            );
+        }
+
+        $response = array(
+            'name' => $name,
+            'annotations' => $annotations,
+            'result' => $safe,
+        );
+        if ($mutation) {
+            $response['execution_completed'] = true;
+            $response['result_omitted'] = false;
+        }
+        return $response;
+    }
+
+    private function terminalMutationFailure(string $name, array $annotations, ?string $providerErrorCode): array
+    {
+        $safeCode = null;
+        if (is_string($providerErrorCode) && 1 === preg_match('/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode)) {
+            $safeCode = $providerErrorCode;
+        }
+
         return array(
             'name' => $name,
-            'annotations' => $this->safeAnnotations($ability),
-            'result' => $safe,
+            'annotations' => $annotations,
+            'execution_may_have_started' => true,
+            'provider_error_code' => $safeCode,
+            'result' => null,
+            'result_omitted' => true,
+            '_terminal_error' => 'Elementor Ability execution ended with a terminal provider failure; this request_id will not execute again.',
         );
     }
 
@@ -216,24 +337,145 @@ final class AbilitiesAdapter
         return $value;
     }
 
-    private function isRestExposed(object $ability): bool
-    {
-        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
-        return is_array($meta) && true === ($meta['show_in_rest'] ?? false);
-    }
-
     private function isReadEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+            return false;
+        }
         $annotations = $this->safeAnnotations($ability);
         return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
     }
 
     private function isMutationEligible($ability): bool
     {
-        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+            return false;
+        }
         $annotations = $this->safeAnnotations($ability);
         return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
+    }
+
+    private function isElementorMutationEligible(string $name, $ability): bool
+    {
+        if (! is_object($ability) || ! $this->isElementorAbilityName($name)) {
+            return false;
+        }
+
+        if (! $this->isExplicitMcpPublic($ability) || ! $this->isMutationEligible($ability)) {
+            return false;
+        }
+
+        return $this->isNativeElementorAbilityProvider($name, $ability);
+    }
+
+    private function isElementorAbilityName(string $name): bool
+    {
+        return 0 === strpos($name, 'elementor/') || 0 === strpos($name, 'elementor-pro/');
+    }
+
+    private function isExplicitMcpPublic(object $ability): bool
+    {
+        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
+        return is_array($meta)
+            && isset($meta['mcp'])
+            && is_array($meta['mcp'])
+            && true === ($meta['mcp']['public'] ?? false);
+    }
+
+    private function isNativeElementorAbilityProvider(string $name, object $ability): bool
+    {
+        $callback = $this->abilityExecuteCallback($ability);
+        if (! is_array($callback)
+            || 2 !== count($callback)
+            || ! is_object($callback[0])
+            || 'execute_guarded' !== (string) $callback[1]) {
+            return false;
+        }
+
+        $provider = $callback[0];
+        if (! method_exists($provider, 'get_id') || $name !== (string) $provider->get_id()) {
+            return false;
+        }
+
+        try {
+            $providerFile = (new \ReflectionObject($provider))->getFileName();
+        } catch (\Throwable $error) {
+            return false;
+        }
+        if (! is_string($providerFile) || '' === $providerFile) {
+            return false;
+        }
+
+        $providerPath = realpath($providerFile);
+        if (false === $providerPath) {
+            return false;
+        }
+
+        foreach ($this->trustedElementorPluginRoots() as $root) {
+            if ($this->pathWithinRoot($providerPath, $root)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function abilityExecuteCallback(object $ability)
+    {
+        try {
+            $reflection = new \ReflectionObject($ability);
+            if (! $reflection->hasProperty('execute_callback')) {
+                return null;
+            }
+            $property = $reflection->getProperty('execute_callback');
+            if (method_exists($property, 'setAccessible')) {
+                $property->setAccessible(true);
+            }
+            return $property->getValue($ability);
+        } catch (\Throwable $error) {
+            return null;
+        }
+    }
+
+    private function trustedElementorPluginRoots(): array
+    {
+        if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_option')) {
+            return array();
+        }
+
+        $active = get_option('active_plugins', array());
+        $active = is_array($active) ? array_values($active) : array();
+
+        $networkActive = array();
+        if (function_exists('get_site_option')) {
+            $value = get_site_option('active_sitewide_plugins', array());
+            $networkActive = is_array($value) ? array_keys($value) : array();
+        }
+
+        $roots = array();
+        foreach (array('elementor/elementor.php', 'elementor-pro/elementor-pro.php') as $pluginFile) {
+            if (! in_array($pluginFile, $active, true) && ! in_array($pluginFile, $networkActive, true)) {
+                continue;
+            }
+
+            $mainFile = realpath(rtrim((string) WP_PLUGIN_DIR, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $pluginFile));
+            if (false === $mainFile || ! is_file($mainFile)) {
+                continue;
+            }
+
+            $root = realpath(dirname($mainFile));
+            if (false !== $root && ! in_array($root, $roots, true)) {
+                $roots[] = $root;
+            }
+        }
+
+        return $roots;
+    }
+
+    private function pathWithinRoot(string $file, string $root): bool
+    {
+        $root = rtrim($root, DIRECTORY_SEPARATOR);
+        return $file === $root || 0 === strpos($file, $root . DIRECTORY_SEPARATOR);
     }
 
     private function isExecutionExposed(object $ability): bool
@@ -257,11 +499,11 @@ final class AbilitiesAdapter
             return false;
         }
 
-        if (true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false)) {
-            return true;
+        if (isset($meta['mcp']) && is_array($meta['mcp']) && array_key_exists('public', $meta['mcp'])) {
+            return true === $meta['mcp']['public'];
         }
 
-        return isset($meta['mcp']) && is_array($meta['mcp']) && true === ($meta['mcp']['public'] ?? false);
+        return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
     }
 
     private function safeAnnotations(object $ability): array
@@ -283,7 +525,7 @@ final class AbilitiesAdapter
     {
         $safeAnnotations = $this->safeAnnotations($ability);
         $readEligible = $this->isReadEligible($ability);
-        $mutationEligible = $this->isMutationEligible($ability);
+        $mutationEligible = $this->isElementorMutationEligible($name, $ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
             method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null

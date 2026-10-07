@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.0
+Stable tag: 1.17.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,9 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.0 adds guarded execution of client-exposed WordPress Abilities on private/direct authenticated transports. Discovery can be filtered by namespace, including `elementor`, so current and future native Elementor MCP/Atomic abilities can be reused without copying Elementor internals. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards. Foreign Ability mutations remain blocked from public GitHub runtime and do not claim connector rollback support.
+Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Generic delegated reads remain available for client-exposed WordPress Abilities with explicit readonly=true and destructive=false annotations, native validation/permissions, and bounded redacted output. Delegated writes require explicit MCP exposure plus native Elementor Core/Pro callback provenance, an exact provider-ID match and an active canonical plugin root; slugs, categories and annotations alone do not establish mutation trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and provider failures after execution starts become stored terminal failures so stable request-ID retries do not blindly execute again.
+
+Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards.
 
 Version 1.16.1 adds guarded public GitHub-runtime access to WordPress Additional CSS without making full CSS replacement public. It introduces a managed `custom_css.patch` action that upserts or removes one named CSS block, requires dry-run fingerprint protection for live writes, preserves unrelated CSS, verifies exact readback and stores rollback. Public CSS inspection and mutation receipts expose only hashes, byte counts and patch metadata, never the CSS body. The action is restricted to the active theme stylesheet and the WordPress `edit_css` capability.
 
@@ -85,6 +87,14 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.1 =
+* Keep generic delegated reads compatible with client-exposed WordPress Abilities that explicitly declare readonly=true and destructive=false, while requiring verified active Elementor Core/Pro callback provenance, native execute_guarded and an exact provider-ID match for delegated writes; third-party mutation spoofing remains non-executable.
+* Treat explicit `mcp.public=false` as an authoritative discovery/execution opt-out even when `show_in_rest=true`.
+* Convert completed over-budget Elementor mutations to bounded terminal successes and provider exceptions/`WP_Error` outcomes to stored terminal failures, preserving stable request-ID idempotency on retry.
+* Block delegated Ability mutations inside `connector.batch` because they have no Connector rollback/compensation guarantee.
+* Add real WordPress 6.9 Abilities and WordPress 7.1 + Elementor 4.3.4 controlled-runtime coverage, including native read, disposable create-page mutation/readback, spoof rejection and replay.
+* Keep delegated Ability writes blocked from public GitHub runtime and preserve native WordPress/Elementor validation, permissions and provider guards.
 
 = 1.17.0 =
 * Add `wordpress.ability.execute` for explicitly annotated, client-exposed mutating WordPress Abilities on private/direct authenticated transports.
