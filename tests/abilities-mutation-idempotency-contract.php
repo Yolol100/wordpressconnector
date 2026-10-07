@@ -142,6 +142,7 @@ final class AbilityMutationContractAbility
 {
     public static int $executions = 0;
     public static bool $provider_error = false;
+    public static bool $provider_throw = false;
     public static bool $pre_execution_error = false;
     protected $execute_callback;
 
@@ -182,6 +183,9 @@ final class AbilityMutationContractAbility
         ++self::$executions;
         if (self::$provider_error) {
             return new WP_Error('ability_invalid_output');
+        }
+        if (self::$provider_throw) {
+            throw new RuntimeException('secret=provider-throw-detail');
         }
         return str_repeat('x', 270000);
     }
@@ -324,6 +328,41 @@ if (true !== ($preflightRetry['ok'] ?? false)
     exit(1);
 }
 
+AbilityMutationContractAbility::$provider_throw = true;
+$throwRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-throw-0005',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#444444'),
+    ),
+));
+$throwFirst = $runner->run($throwRequest);
+if (false !== ($throwFirst['ok'] ?? true)
+    || true !== ($throwFirst['meta']['terminal_mutation'] ?? false)
+    || null !== ($throwFirst['meta']['terminal_context']['provider_error_code'] ?? null)
+    || false !== strpos((string) ($throwFirst['error'] ?? ''), 'provider-throw-detail')
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Provider exception after execution start was not recorded as a bounded terminal outcome.\n");
+    exit(1);
+}
+$throwReplay = $runner->run($throwRequest);
+if (false !== ($throwReplay['ok'] ?? true)
+    || true !== ($throwReplay['meta']['idempotent_replay'] ?? false)
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after terminal provider exception executed the Ability again.\n");
+    exit(1);
+}
+AbilityMutationContractAbility::$provider_throw = false;
+
+if (! empty($test_actions['wp_before_execute_ability'] ?? array())) {
+    fwrite(STDERR, "Ability execution tracker hook leaked after execution.\n");
+    exit(1);
+}
+
 $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
     'request_id' => 'ability-batch-0003',
@@ -345,7 +384,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 3 !== AbilityMutationContractAbility::$executions) {
+    || 4 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
