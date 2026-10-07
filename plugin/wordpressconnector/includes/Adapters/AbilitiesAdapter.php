@@ -101,7 +101,7 @@ final class AbilitiesAdapter
     {
         list($name, $ability) = $this->resolveAbility($payload, false);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
-        return $this->executeAndSanitize($name, $ability, $input, $this->safeAnnotations($ability), false);
+        return $this->executeAndSanitize($name, $ability, $input, $this->safeAnnotations($ability), false, null);
     }
 
     public function executeAbility(array $payload, array $context): array
@@ -126,7 +126,10 @@ final class AbilitiesAdapter
             );
         }
 
-        $result = $this->executeAndSanitize($name, $ability, $input, $annotations, true);
+        $markMutationStarted = isset($context['mark_mutation_started']) && is_callable($context['mark_mutation_started'])
+            ? $context['mark_mutation_started']
+            : null;
+        $result = $this->executeAndSanitize($name, $ability, $input, $annotations, true, $markMutationStarted);
         $result['rollback_supported'] = false;
         return $result;
     }
@@ -150,14 +153,17 @@ final class AbilitiesAdapter
         return array($name, $ability);
     }
 
-    private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
+    private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation, $markMutationStarted): array
     {
         $executionStarted = false;
         $executionTracker = null;
 
         if ($mutation && function_exists('add_action') && function_exists('remove_action')) {
-            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility) use (&$executionStarted, $name, $ability): void {
+            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility) use (&$executionStarted, $name, $ability, $markMutationStarted): void {
                 if ($abilityName === $name && $executingAbility === $ability) {
+                    if (is_callable($markMutationStarted)) {
+                        call_user_func($markMutationStarted);
+                    }
                     $executionStarted = true;
                 }
             };
