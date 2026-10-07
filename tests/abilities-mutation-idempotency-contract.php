@@ -294,6 +294,36 @@ if (false !== ($differentResult['ok'] ?? true)
 }
 
 AbilityMutationContractAbility::$provider_error = false;
+AbilityMutationContractAbility::$pre_execution_error = true;
+$preflightRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-preflight-0004',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#333333'),
+    ),
+));
+$preflightFirst = $runner->run($preflightRequest);
+if (false !== ($preflightFirst['ok'] ?? true)
+    || true === ($preflightFirst['meta']['terminal_mutation'] ?? false)
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Pre-execution Ability failure was incorrectly terminalized.\n");
+    exit(1);
+}
+
+AbilityMutationContractAbility::$pre_execution_error = false;
+$preflightRetry = $runner->run($preflightRequest);
+if (true !== ($preflightRetry['ok'] ?? false)
+    || true !== ($preflightRetry['data']['execution_completed'] ?? false)
+    || true !== ($preflightRetry['data']['result_omitted'] ?? false)
+    || 3 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after a pre-execution Ability failure did not execute normally.\n");
+    exit(1);
+}
+
 $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
     'request_id' => 'ability-batch-0003',
