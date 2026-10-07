@@ -7,6 +7,8 @@ require_once __DIR__ . '/fixtures/elementor-pro/modules/mcp/abilities/native-pro
 require_once __DIR__ . '/fixtures/untrusted/elementor-spoof-ability-fixture.php';
 
 if (! defined('WP_PLUGIN_DIR')) define('WP_PLUGIN_DIR', __DIR__ . '/fixtures');
+if (! defined('ELEMENTOR_PATH')) define('ELEMENTOR_PATH', __DIR__ . '/fixtures/untrusted/');
+if (! defined('ELEMENTOR_PRO_PATH')) define('ELEMENTOR_PRO_PATH', __DIR__ . '/fixtures/untrusted/');
 
 function get_option($name, $default = false)
 {
@@ -119,12 +121,12 @@ function wp_get_abilities(): array
             'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => true, 'idempotent' => true),
         ), array(new \Elementor\Modules\Mcp\Abilities\Contract_Native_Ability('elementor/publish-document'), 'execute_guarded')),
-        'elementor-pro/theme-builder-write' => new ContractAbility(array(
+        'elementor/theme-builder-write' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
-            'category' => 'elementor-pro',
+            'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => true, 'idempotent' => false),
-        ), array(new \ElementorPro\Modules\Mcp\Abilities\Contract_Pro_Ability('elementor-pro/theme-builder-write'), 'execute_guarded')),
+        ), array(new \ElementorPro\Modules\Mcp\Abilities\Contract_Pro_Ability('elementor/theme-builder-write'), 'execute_guarded')),
         'elementor/mismatched-provider' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
@@ -167,12 +169,13 @@ if (1 !== count($catalogPageThree['abilities']) || 3 !== $catalogPageThree['page
     fwrite(STDERR, "Ability catalog third page failed.\n"); exit(1);
 }
 $elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
-if (5 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
+if (6 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['namespace']
     || ! isset($elementorCatalog['abilities']['elementor/list-posts'])
     || ! isset($elementorCatalog['abilities']['elementor/manage-global-variable'])
     || ! isset($elementorCatalog['abilities']['elementor/publish-document'])
     || ! isset($elementorCatalog['abilities']['elementor/spoofed-write'])
-    || ! isset($elementorCatalog['abilities']['elementor/mismatched-provider'])) {
+    || ! isset($elementorCatalog['abilities']['elementor/mismatched-provider'])
+    || ! isset($elementorCatalog['abilities']['elementor/theme-builder-write'])) {
     fwrite(STDERR, "Ability namespace filtering failed.\n"); exit(1);
 }
 try {
@@ -221,9 +224,9 @@ if (false !== $catalog['abilities']['third-party-plugin/public-mutating-operatio
     || false !== $catalog['abilities']['elementor/mismatched-provider']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/manage-global-variable']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/publish-document']['mutation_execution_exposed']
-    || true !== $catalog['abilities']['elementor-pro/theme-builder-write']['mutation_execution_exposed']
+    || true !== $catalog['abilities']['elementor/theme-builder-write']['mutation_execution_exposed']
     || 'wordpress.ability.execute' !== $catalog['abilities']['elementor/manage-global-variable']['connector_action']
-    || 'wordpress.ability.execute' !== $catalog['abilities']['elementor-pro/theme-builder-write']['connector_action']) {
+    || 'wordpress.ability.execute' !== $catalog['abilities']['elementor/theme-builder-write']['connector_action']) {
     fwrite(STDERR, "Ability mutation exposure or MCP enablement contract failed.\n"); exit(1);
 }
 
@@ -318,7 +321,7 @@ if (9 !== ContractAbility::$executions || true !== $destructiveResult['annotatio
     fwrite(STDERR, "Destructive annotated Ability execution failed.\n"); exit(1);
 }
 
-$proResult = $adapter->executeAbility(array('name' => 'elementor-pro/theme-builder-write'), array('dry_run' => false));
+$proResult = $adapter->executeAbility(array('name' => 'elementor/theme-builder-write'), array('dry_run' => false));
 if (10 !== ContractAbility::$executions || true !== $proResult['annotations']['destructive']) {
     fwrite(STDERR, "Trusted Elementor Pro Ability execution failed.\n"); exit(1);
 }
