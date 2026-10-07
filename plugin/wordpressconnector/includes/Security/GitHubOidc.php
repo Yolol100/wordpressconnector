@@ -11,10 +11,19 @@ final class GitHubOidc
     private const HEADER = 'x-webactueel-github-oidc';
     private const ISSUER = 'https://token.actions.githubusercontent.com';
     private const JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
-    private const REPOSITORY = 'Yolol100/wordpressconnector';
-    private const REPOSITORY_ID = '1341990468';
     private const REPOSITORY_OWNER_ID = '22932777';
-    private const WORKFLOW_REF = 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main';
+    private const TRUSTED_RUNTIMES = array(
+        'Yolol100/wordpressconnector' => array(
+            'repository_id' => '1341990468',
+            'workflow_ref' => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
+            'visibility' => array('public'),
+        ),
+        'Yolol100/Wordpress' => array(
+            'repository_id' => '933904076',
+            'workflow_ref' => 'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+            'visibility' => array('private'),
+        ),
+    );
     private const CLOCK_SKEW = 60;
     private const MAX_TOKEN_AGE = 600;
     private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
@@ -84,12 +93,19 @@ final class GitHubOidc
             throw new RuntimeException('GitHub OIDC token is stale or has an invalid lifetime.');
         }
 
+        $repository = isset($claims['repository']) && is_string($claims['repository'])
+            ? $claims['repository']
+            : '';
+        if (! isset(self::TRUSTED_RUNTIMES[$repository])) {
+            throw new RuntimeException('GitHub OIDC repository is not trusted.');
+        }
+        $runtime = self::TRUSTED_RUNTIMES[$repository];
+
         $expected = array(
-            'repository' => self::REPOSITORY,
-            'repository_id' => self::REPOSITORY_ID,
+            'repository_id' => (string) $runtime['repository_id'],
             'repository_owner_id' => self::REPOSITORY_OWNER_ID,
             'ref' => 'refs/heads/main',
-            'workflow_ref' => self::WORKFLOW_REF,
+            'workflow_ref' => (string) $runtime['workflow_ref'],
             'event_name' => 'workflow_dispatch',
             'runner_environment' => 'github-hosted',
         );
@@ -102,8 +118,8 @@ final class GitHubOidc
         $visibility = isset($claims['repository_visibility']) && is_string($claims['repository_visibility'])
             ? $claims['repository_visibility']
             : '';
-        if (! in_array($visibility, array('public', 'private', 'internal'), true)) {
-            throw new RuntimeException('GitHub OIDC repository visibility claim is invalid.');
+        if (! in_array($visibility, (array) $runtime['visibility'], true)) {
+            throw new RuntimeException('GitHub OIDC repository visibility is not trusted for this runtime.');
         }
         if (! isset($claims['jti']) || ! is_string($claims['jti']) || '' === $claims['jti'] || strlen($claims['jti']) > 200) {
             throw new RuntimeException('GitHub OIDC token identifier is invalid.');
