@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.16.2
+Stable tag: 1.16.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -83,6 +83,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.16.3 =
+* Route Asset CleanUp cache purges from REST execution through a short-lived, single-use internal admin-post loopback so Asset CleanUp Lite loads in its supported non-REST context.
+* Protect the loopback with a 256-bit random bearer token stored only as a short-lived SHA-256 transient and consumed before execution.
+* Keep cache authorization in the connector policy while using Asset CleanUp's own clearCache completion signals for readback verification.
 
 = 1.16.2 =
 * Fix Asset CleanUp cache-flush verification to rely on the plugin's own completion hook and last-clear transient instead of a connector-owned sentinel, preventing false-negative flush failures.
