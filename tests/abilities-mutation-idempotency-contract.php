@@ -143,6 +143,7 @@ final class AbilityMutationContractAbility
     public static int $executions = 0;
     public static bool $provider_error = false;
     public static bool $pre_execution_error = false;
+    public static bool $legacy_hook = false;
     protected $execute_callback;
 
     public function __construct()
@@ -178,7 +179,11 @@ final class AbilityMutationContractAbility
             return new WP_Error('ability_invalid_permissions');
         }
 
-        do_action('wp_before_execute_ability', 'elementor/manage-global-variable', $input, $this);
+        if (self::$legacy_hook) {
+            do_action('wp_before_execute_ability', 'elementor/manage-global-variable', $input);
+        } else {
+            do_action('wp_before_execute_ability', 'elementor/manage-global-variable', $input, $this);
+        }
         ++self::$executions;
         if (self::$provider_error) {
             return new WP_Error('ability_invalid_output');
