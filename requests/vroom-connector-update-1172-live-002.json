@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "vroom-connector-update-1172-live-002",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "5ee0f7c5b99ba3803cb9522c16d335c0c4eb02481e8c56c8052cb8753330a386",
+  "payload": {}
+}
