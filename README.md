@@ -46,7 +46,7 @@ Approved clients may still use WordPress-native authenticated REST sessions/Appl
 
 ## Native MCP transport
 
-Version 1.17.1 hardens the native Ability bridge introduced in 1.17.0. Delegated writes are now limited to exposed `elementor/*` Abilities whose category is also `elementor`, so unrelated plugin Abilities cannot bypass connector-specific emergency policy classes. If an Elementor Ability completes a write but returns an over-budget result, the connector emits a bounded terminal success instead of a retryable failure, preserving request-id idempotency.
+Version 1.17.1 hardens the native Ability bridge introduced in 1.17.0. Delegated reads and writes execute only abilities whose actual callback source resolves inside the installed Elementor Core or Elementor Pro plugin root and whose MCP exposure/annotations permit the requested operation; names and categories are never treated as ownership proof. Explicit `mcp.public=false` is authoritative. Completed writes with over-budget output return a bounded terminal success, while ambiguous provider failures become terminal request-ID outcomes so retries cannot blindly repeat the mutation.
 
 Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Native provider schemas, permissions and guards remain authoritative, and connector dry-run never invokes mutating Ability code.
 
@@ -91,6 +91,6 @@ Run the canonical contract suite:
 bash scripts/run-contracts.sh
 ```
 
-CI includes an isolated MySQL-backed WordPress/WooCommerce runtime matrix for the minimum WordPress baseline plus legacy/HPOS order storage on representative pre-11.1 and current WooCommerce releases. This still does not prove every production host, custom data store, WAF, cache layer or third-party plugin combination.
+CI includes isolated MySQL-backed WordPress/WooCommerce runtimes, WordPress 6.9 Abilities API coverage, and a controlled WordPress 7.1 + Elementor 4.3.4 MCP runtime that exercises native ability discovery, trusted-provider checks, read execution, a disposable native create-page mutation, readback and same-request-ID replay. This still does not prove every production host, Elementor Pro entitlement, frontend render, custom data store, WAF, cache layer or third-party plugin combination.
 
 See `docs/SETUP.md`, `docs/SECURITY.md`, `docs/ARCHITECTURE.md`, `docs/SCOPE.md` and `docs/ACTION-CATALOG.md`.
