@@ -28,7 +28,43 @@ function update_option($name, $value, $autoload = false): bool
 function get_option($name, $default = false)
 {
     global $test_options;
+    if ('active_plugins' === (string) $name) {
+        return array('elementor/elementor.php');
+    }
     return array_key_exists((string) $name, $test_options) ? $test_options[(string) $name] : $default;
+}
+
+function get_site_option($name, $default = false)
+{
+    return $default;
+}
+
+function add_action($hook, $callback, $priority = 10, $acceptedArgs = 1): void
+{
+    global $test_actions;
+    $test_actions[(string) $hook][] = array($callback, (int) $priority, (int) $acceptedArgs);
+}
+
+function remove_action($hook, $callback, $priority = 10): bool
+{
+    global $test_actions;
+    $hook = (string) $hook;
+    if (empty($test_actions[$hook])) return false;
+    foreach ($test_actions[$hook] as $index => $entry) {
+        if ($entry[0] === $callback && $entry[1] === (int) $priority) {
+            unset($test_actions[$hook][$index]);
+            return true;
+        }
+    }
+    return false;
+}
+
+function do_action($hook, ...$args): void
+{
+    global $test_actions;
+    foreach ($test_actions[(string) $hook] ?? array() as $entry) {
+        call_user_func_array($entry[0], array_slice($args, 0, $entry[2]));
+    }
 }
 
 function add_option($name, $value, $deprecated = '', $autoload = false): bool
