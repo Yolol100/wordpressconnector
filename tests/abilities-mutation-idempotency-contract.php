@@ -329,6 +329,37 @@ if (true !== ($preflightRetry['ok'] ?? false)
     exit(1);
 }
 
+AbilityMutationContractAbility::$legacy_hook = true;
+AbilityMutationContractAbility::$provider_error = true;
+$legacyHookRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-legacy-hook-0005',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#444444'),
+    ),
+));
+$legacyHookFirst = $runner->run($legacyHookRequest);
+if (false !== ($legacyHookFirst['ok'] ?? true)
+    || true !== ($legacyHookFirst['meta']['terminal_mutation'] ?? false)
+    || 'ability_invalid_output' !== ($legacyHookFirst['meta']['terminal_context']['provider_error_code'] ?? null)
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "WordPress 6.9/7.0 two-argument execution hook did not mark a started mutation terminally.\n");
+    exit(1);
+}
+$legacyHookReplay = $runner->run($legacyHookRequest);
+if (false !== ($legacyHookReplay['ok'] ?? true)
+    || true !== ($legacyHookReplay['meta']['idempotent_replay'] ?? false)
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Legacy-hook retry executed the provider twice.\n");
+    exit(1);
+}
+AbilityMutationContractAbility::$legacy_hook = false;
+AbilityMutationContractAbility::$provider_error = false;
+
 $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
     'request_id' => 'ability-batch-0003',
@@ -350,7 +381,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 3 !== AbilityMutationContractAbility::$executions) {
+    || 4 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
