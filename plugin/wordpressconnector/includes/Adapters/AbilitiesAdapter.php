@@ -25,7 +25,7 @@ final class AbilitiesAdapter
             'mutation' => true,
             'privileged' => true,
             'capability' => 'manage_options',
-            'description' => 'Execute one explicitly mutating, client-exposed WordPress Ability through its native schema validation, permission callback and provider guards. Use namespace=elementor discovery to reach native Elementor MCP/Atomic capabilities. Dry-run never invokes the Ability.',
+            'description' => 'Execute one explicitly mutating, client-exposed Elementor Ability (elementor/* in the Elementor category) through its native schema validation, permission callback and provider guards. Dry-run never invokes the Ability.',
         ));
     }
 
