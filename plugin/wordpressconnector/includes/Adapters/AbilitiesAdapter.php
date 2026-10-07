@@ -21,6 +21,12 @@ final class AbilitiesAdapter
             'capability' => 'manage_options',
             'description' => 'Read through a REST-exposed, explicitly read-only WordPress Ability and its native input validation and permission callback.',
         ));
+        $registry->register('wordpress.ability.execute', array($this, 'executeAbility'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'capability' => 'manage_options',
+            'description' => 'Execute one explicitly mutating, client-exposed WordPress Ability through its native schema validation, permission callback and provider guards. Use namespace=elementor discovery to reach native Elementor MCP/Atomic capabilities. Dry-run never invokes the Ability.',
+        ));
     }
 
     public function catalog(array $payload, array $context): array
@@ -35,6 +41,7 @@ final class AbilitiesAdapter
 
         $perPage = $this->catalogPositiveInteger($payload['per_page'] ?? 10, 10, 'per_page');
         $page = $this->catalogPositiveInteger($payload['page'] ?? 1, 100000, 'page');
+        $namespace = $this->catalogNamespace($payload['namespace'] ?? null);
 
         $registered = (array) wp_get_abilities();
         if (count($registered) > 10000) {
@@ -52,6 +59,9 @@ final class AbilitiesAdapter
             }
 
             if (! $this->isValidName($name) || ! $this->isExposed($ability)) {
+                continue;
+            }
+            if (null !== $namespace && 0 !== strpos($name, $namespace . '/')) {
                 continue;
             }
 
@@ -76,6 +86,9 @@ final class AbilitiesAdapter
             'total' => $total,
             'pages' => $pages,
         );
+        if (null !== $namespace) {
+            $response['namespace'] = $namespace;
+        }
         $encoded = function_exists('wp_json_encode') ? wp_json_encode($response) : json_encode($response);
         if (! is_string($encoded) || strlen($encoded) > 262144) {
             throw new \RuntimeException('WordPress Ability catalog page exceeds the output limit.');
@@ -86,6 +99,39 @@ final class AbilitiesAdapter
 
     public function readAbility(array $payload, array $context): array
     {
+        list($name, $ability) = $this->resolveAbility($payload, false);
+        $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+        return $this->executeAndSanitize($name, $ability, $input);
+    }
+
+    public function executeAbility(array $payload, array $context): array
+    {
+        list($name, $ability) = $this->resolveAbility($payload, true);
+        $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+
+        if (! empty($context['dry_run'])) {
+            list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
+                method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null
+            );
+            return array(
+                'name' => $name,
+                'would_execute' => true,
+                'annotations' => $this->safeAnnotations($ability),
+                'input_schema' => $inputSchema,
+                'input_schema_omitted' => $inputSchemaOmitted,
+                'native_validation_on_confirm' => true,
+                'rollback_supported' => false,
+                'note' => 'Dry-run does not invoke the Ability. Native input validation, permission callbacks and provider-specific conflict guards run on confirmed execution.',
+            );
+        }
+
+        $result = $this->executeAndSanitize($name, $ability, $input);
+        $result['rollback_supported'] = false;
+        return $result;
+    }
+
+    private function resolveAbility(array $payload, bool $mutation): array
+    {
         if (! function_exists('wp_get_ability')) {
             throw new \RuntimeException('WordPress Abilities API is not available on this site.');
         }
@@ -94,10 +140,15 @@ final class AbilitiesAdapter
             throw new \RuntimeException('A valid namespace/ability name is required.');
         }
         $ability = wp_get_ability($name);
-        if (! is_object($ability) || ! $this->isReadEligible($ability)) {
-            throw new \RuntimeException('The requested REST-exposed WordPress Ability was not found.');
+        $eligible = $mutation ? $this->isMutationEligible($ability) : $this->isReadEligible($ability);
+        if (! is_object($ability) || ! $eligible) {
+            throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
         }
-        $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+        return array($name, $ability);
+    }
+
+    private function executeAndSanitize(string $name, object $ability, $input): array
+    {
         try {
             $result = $ability->execute($input);
         } catch (\Throwable $error) {
@@ -109,8 +160,14 @@ final class AbilitiesAdapter
         $budget = array('nodes' => 0, 'bytes' => 0);
         $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
         $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
-        if (! is_string($encoded) || strlen($encoded) > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
-        return array('name' => $name, 'result' => $safe);
+        if (! is_string($encoded) || strlen($encoded) > 262144) {
+            throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+        }
+        return array(
+            'name' => $name,
+            'annotations' => $this->safeAnnotations($ability),
+            'result' => $safe,
+        );
     }
 
     private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
@@ -148,18 +205,35 @@ final class AbilitiesAdapter
         return 1 === preg_match('/^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_-]*$/D', $name);
     }
 
+    private function catalogNamespace($value): ?string
+    {
+        if (null === $value || '' === $value) {
+            return null;
+        }
+        if (! is_string($value) || 1 !== preg_match('/^[a-z0-9][a-z0-9_-]*$/D', $value)) {
+            throw new \RuntimeException('namespace must be a valid Ability namespace.');
+        }
+        return $value;
+    }
+
     private function isRestExposed(object $ability): bool
     {
         $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
         return is_array($meta) && true === ($meta['show_in_rest'] ?? false);
     }
 
-    private function isReadEligible(object $ability): bool
+    private function isReadEligible($ability): bool
     {
-        if (! $this->isRestExposed($ability) || ! method_exists($ability, 'execute')) return false;
-        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
-        $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations']) ? $meta['annotations'] : array();
-        return true === ($annotations['readonly'] ?? false) && false === ($annotations['destructive'] ?? null);
+        if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        $annotations = $this->safeAnnotations($ability);
+        return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
+    }
+
+    private function isMutationEligible($ability): bool
+    {
+        if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) return false;
+        $annotations = $this->safeAnnotations($ability);
+        return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
     }
 
     private function isExposed(object $ability): bool
@@ -176,7 +250,7 @@ final class AbilitiesAdapter
         return isset($meta['mcp']) && is_array($meta['mcp']) && true === ($meta['mcp']['public'] ?? false);
     }
 
-    private function descriptor(string $name, object $ability): array
+    private function safeAnnotations(object $ability): array
     {
         $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
         $annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations'])
@@ -188,6 +262,14 @@ final class AbilitiesAdapter
                 $safeAnnotations[$key] = $annotations[$key];
             }
         }
+        return $safeAnnotations;
+    }
+
+    private function descriptor(string $name, object $ability): array
+    {
+        $safeAnnotations = $this->safeAnnotations($ability);
+        $readEligible = $this->isReadEligible($ability);
+        $mutationEligible = $this->isMutationEligible($ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
             method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null
@@ -206,7 +288,9 @@ final class AbilitiesAdapter
             'output_schema' => $outputSchema,
             'output_schema_omitted' => $outputSchemaOmitted,
             'annotations' => $safeAnnotations,
-            'execution_exposed' => $this->isReadEligible($ability),
+            'execution_exposed' => $readEligible,
+            'mutation_execution_exposed' => $mutationEligible,
+            'connector_action' => $readEligible ? 'wordpress.ability.read' : ($mutationEligible ? 'wordpress.ability.execute' : null),
         );
     }
 
