@@ -46,7 +46,7 @@ foreach (array(
     'deleteFieldTreeByKey',
     'acf_import_field_group',
     'acf_delete_field_group',
-    "'_rollback' => array(",
+    "['_rollback'] = array(",
     "'_current_fingerprint' => Fingerprint::make",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
