@@ -53,4 +53,34 @@ $auth=new GitHubOidc();$jwt=$token();$userId=$auth->authenticate(new WP_REST_Req
 if(1!==$userId||!Policy::publicRepositoryContext()){fwrite(STDERR,"Valid GitHub OIDC token was not accepted.\n");exit(1);}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));fwrite(STDERR,"Replayed token accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'already used'))throw $e;}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array('aud'=>'https://evil.example/wp-json/webactueel-wordpress-connector/v1')))));fwrite(STDERR,"Wrong audience accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'audience'))throw $e;}
+
+$privateJwt=$token(array(
+    'repository'=>'Yolol100/Wordpress',
+    'repository_id'=>'933904076',
+    'repository_visibility'=>'private',
+    'workflow_ref'=>'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+));
+$privateUserId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$privateJwt)));
+if(1!==$privateUserId||Policy::publicRepositoryContext()){fwrite(STDERR,"Trusted private control-plane token was not accepted as private runtime.\n");exit(1);}
+
+try{
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array(
+        'repository'=>'Yolol100/Wordpress',
+        'repository_id'=>'933904076',
+        'repository_visibility'=>'public',
+        'workflow_ref'=>'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+    )))));
+    fwrite(STDERR,"Private control-plane accepted public visibility.\n");exit(1);
+}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'visibility'))throw $e;}
+
+try{
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array(
+        'repository'=>'Yolol100/Other',
+        'repository_id'=>'999999999',
+        'repository_visibility'=>'private',
+        'workflow_ref'=>'Yolol100/Other/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+    )))));
+    fwrite(STDERR,"Untrusted repository token was accepted.\n");exit(1);
+}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'repository'))throw $e;}
+
 echo "github oidc contract OK\n";
