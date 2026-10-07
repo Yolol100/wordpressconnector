@@ -7,6 +7,8 @@ require_once __DIR__ . '/fixtures/elementor-pro/modules/mcp/abilities/native-pro
 require_once __DIR__ . '/fixtures/untrusted/elementor-spoof-ability-fixture.php';
 
 if (! defined('WP_PLUGIN_DIR')) define('WP_PLUGIN_DIR', __DIR__ . '/fixtures');
+if (! defined('ELEMENTOR_PATH')) define('ELEMENTOR_PATH', __DIR__ . '/fixtures/untrusted/');
+if (! defined('ELEMENTOR_PRO_PATH')) define('ELEMENTOR_PRO_PATH', __DIR__ . '/fixtures/untrusted/');
 
 function get_option($name, $default = false)
 {
