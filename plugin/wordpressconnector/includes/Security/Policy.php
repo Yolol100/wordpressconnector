@@ -140,7 +140,7 @@ final class Policy
         self::assertPublicContentTarget($post, $requiresEdit);
     }
 
-    public static function assertPublicElementorTarget(\\WP_Post $post, bool $requiresEdit = false): void
+    public static function assertPublicElementorTarget(\WP_Post $post, bool $requiresEdit = false): void
     {
         $type = (string) $post->post_type;
         if ('elementor_library' === $type) {
@@ -158,7 +158,7 @@ final class Policy
         }
     }
 
-    public static function assertPublicDeletableTarget(\\WP_Post $post): void
+    public static function assertPublicDeletableTarget(\WP_Post $post): void
     {
         $type = (string) $post->post_type;
         $allowedTypes = array('page', 'post', 'product', 'elementor_library', 'attachment');
