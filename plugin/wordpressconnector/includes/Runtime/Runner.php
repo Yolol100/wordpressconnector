@@ -51,6 +51,20 @@ final class Runner
                     if (! isset($existing['fingerprint']) || ! hash_equals((string) $existing['fingerprint'], $requestFingerprint)) {
                         throw new RuntimeException('request_id was already used for a different mutation.');
                     }
+                    if (array_key_exists('ok', $existing) && false === $existing['ok']) {
+                        return Result::failure(
+                            $request,
+                            isset($existing['terminal_error']) && is_string($existing['terminal_error'])
+                                ? $existing['terminal_error']
+                                : 'Completed mutation ended with a terminal execution failure.',
+                            array(
+                                'request_fingerprint' => $requestFingerprint,
+                                'idempotent_replay' => true,
+                                'original_result_hash' => $existing['result_hash'] ?? null,
+                                'terminal_mutation' => true,
+                            )
+                        );
+                    }
                     return Result::success($request, array('idempotent_replay' => true, 'original_result_hash' => $existing['result_hash'] ?? null), array('request_fingerprint' => $requestFingerprint));
                 }
             }
@@ -66,7 +80,16 @@ final class Runner
                 $data['current_state_token'] = Fingerprint::siteTokenFromFingerprint($data['_current_fingerprint']);
             }
             $rollback = isset($data['_rollback']) && is_array($data['_rollback']) ? $data['_rollback'] : null;
-            unset($data['_rollback'], $data['_current_fingerprint']);
+            $terminalError = isset($data['_terminal_error']) && is_string($data['_terminal_error'])
+                ? trim($data['_terminal_error'])
+                : '';
+            $terminalContext = array();
+            foreach (array('name', 'execution_may_have_started', 'provider_error_code') as $key) {
+                if (array_key_exists($key, $data)) {
+                    $terminalContext[$key] = $data[$key];
+                }
+            }
+            unset($data['_rollback'], $data['_current_fingerprint'], $data['_terminal_error']);
             if ($rollback && ! $request->dryRun() && ! empty($descriptor['mutation'])) {
                 $this->snapshots->put($request->id(), $rollback, array(
                     'source_action' => $request->action(),
@@ -74,9 +97,28 @@ final class Runner
                 ));
                 $data['rollback_request_id'] = $request->id();
             }
+            if ('' !== $terminalError) {
+                $result = Result::failure($request, $terminalError, array(
+                    'request_fingerprint' => $requestFingerprint,
+                    'terminal_mutation' => true,
+                    'terminal_context' => $terminalContext,
+                ));
+                if (! $request->dryRun() && ! empty($descriptor['mutation'])) {
+                    $this->processed->put(
+                        $request->id(),
+                        $requestFingerprint,
+                        $request->action(),
+                        Fingerprint::make($result),
+                        false,
+                        $terminalError
+                    );
+                }
+                return $result;
+            }
+
             $result = Result::success($request, $data, array('request_fingerprint' => $requestFingerprint));
             if (! $request->dryRun() && ! empty($descriptor['mutation'])) {
-                $this->processed->put($request->id(), $requestFingerprint, $request->action(), Fingerprint::make($result));
+                $this->processed->put($request->id(), $requestFingerprint, $request->action(), Fingerprint::make($result), true);
             }
             return $result;
         } catch (Throwable $error) {
@@ -109,6 +151,9 @@ final class Runner
                 $action = $operation['action'];
                 if (in_array($action, array('connector.batch', 'connector.rollback', 'connector.cleanup'), true)) {
                     throw new RuntimeException('Nested batch, rollback or cleanup operations are not allowed.');
+                }
+                if ('wordpress.ability.execute' === $action) {
+                    throw new RuntimeException('Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.');
                 }
                 $operationPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
                 $descriptor = $this->registry->descriptor($action);
