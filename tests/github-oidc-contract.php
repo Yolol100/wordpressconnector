@@ -62,6 +62,13 @@ $privateJwt=$token(array(
 ));
 $privateUserId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$privateJwt)));
 if(1!==$privateUserId||Policy::publicRepositoryContext()){fwrite(STDERR,"Trusted private control-plane token was not accepted as private runtime.\n");exit(1);}
+Policy::assertActionAllowed(array(
+    'name'=>'user.create',
+    'mutation'=>true,
+    'privileged'=>true,
+    'sensitive'=>true,
+    'capability'=>'manage_options',
+), false, true);
 
 try{
     $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array(
