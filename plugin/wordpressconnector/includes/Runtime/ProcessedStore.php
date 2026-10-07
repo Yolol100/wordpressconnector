@@ -14,6 +14,7 @@ final class ProcessedStore
     {
         update_option(self::key($requestId), array(
             'created_at' => time(),
+            'state' => 'completed',
             'fingerprint' => $fingerprint,
             'action' => $action,
             'result_hash' => $resultHash,
@@ -26,6 +27,41 @@ final class ProcessedStore
     {
         $value = get_option(self::key($requestId), null);
         return is_array($value) ? $value : null;
+    }
+
+    public function putStarted(string $requestId, string $fingerprint, string $action): void
+    {
+        $key = self::key($requestId);
+        $record = array(
+            'created_at' => time(),
+            'state' => 'started',
+            'fingerprint' => $fingerprint,
+            'action' => $action,
+            'result_hash' => null,
+            'ok' => null,
+            'terminal_error' => null,
+        );
+
+        if (! add_option($key, $record, '', false)) {
+            $existing = get_option($key, null);
+            if (! is_array($existing)
+                || 'started' !== ($existing['state'] ?? null)
+                || ! isset($existing['fingerprint'])
+                || ! hash_equals((string) $existing['fingerprint'], $fingerprint)
+                || (string) ($existing['action'] ?? '') !== $action) {
+                throw new \RuntimeException('Unable to persist the mutation execution marker.');
+            }
+            return;
+        }
+
+        $stored = get_option($key, null);
+        if (! is_array($stored)
+            || 'started' !== ($stored['state'] ?? null)
+            || ! isset($stored['fingerprint'])
+            || ! hash_equals((string) $stored['fingerprint'], $fingerprint)
+            || (string) ($stored['action'] ?? '') !== $action) {
+            throw new \RuntimeException('Unable to verify the mutation execution marker.');
+        }
     }
 
     public function acquireMutationLock(): string
