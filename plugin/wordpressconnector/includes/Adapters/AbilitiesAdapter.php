@@ -19,7 +19,7 @@ final class AbilitiesAdapter
             'privileged' => true,
             'sensitive' => true,
             'capability' => 'manage_options',
-            'description' => 'Read through an explicitly read-only, client-exposed native Elementor Ability after provider ownership verification; native validation and permission callbacks still run.',
+            'description' => 'Read through an explicitly read-only, client-exposed WordPress Ability; native validation and permission callbacks still run, and mutation-capable abilities remain blocked from this route.',
         ));
         $registry->register('wordpress.ability.execute', array($this, 'executeAbility'), array(
             'mutation' => true,
