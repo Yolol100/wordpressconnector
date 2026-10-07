@@ -28,6 +28,16 @@ foreach (array(
     "_last_clear_cache",
     "timestampVerified",
     'return $verifiedByHook || $timestampVerified;',
+    "flushAssetCleanupViaLoopback",
+    "handleAssetCleanupLoopback",
+    "admin_post_nopriv_",
+    "wp_remote_post(",
+    "random_bytes(",
+    "ASSET_CLEANUP_TOKEN_PREFIX",
+    "wpconnector_ac_flush_",
+    "X-WPConnector-Cache-Key",
+    "X-WPConnector-Cache-Token",
+    "hash_equals",
     "readback_verified",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
@@ -39,9 +49,10 @@ foreach (array(
 foreach (array(
     "unlink(",
     "rmdir(",
-    "delete_transient(",
-    "set_transient(",
+    "delete_transient(WPACU_PLUGIN_ID",
+    "set_transient(WPACU_PLUGIN_ID",
     "DELETE FROM",
+    "wpacu_css_wpconnector_verify_",
 ) as $forbiddenNeedle) {
     if (false !== strpos($adapter, $forbiddenNeedle)) {
         fwrite(STDERR, "Cache maintenance adapter contains forbidden direct Asset CleanUp cache mutation primitive: {$forbiddenNeedle}\n");
