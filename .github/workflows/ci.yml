@@ -231,6 +231,15 @@ jobs:
           wp plugin is-active wordpressconnector --path="$root"
           wp eval 'if (!defined("WPCONNECTOR_VERSION")) { throw new RuntimeException("WordPress Connector did not bootstrap."); } echo WPCONNECTOR_VERSION . PHP_EOL;' --path="$root"
 
+      - name: Test WordPress Abilities bridge runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/wordpress"
+          WPCONNECTOR_ALLOW_WRITES=1 \
+          WPCONNECTOR_ALLOW_PRIVILEGED=1 \
+            wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-abilities-runtime.php" --path="$root"
+
       - name: Install and test WooCommerce runtime
         if: matrix.woocommerce != 'none'
         shell: bash
