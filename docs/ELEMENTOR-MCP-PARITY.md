@@ -39,7 +39,7 @@ Elementor Pro, add-ons or later releases may register additional abilities, incl
 - If `meta.mcp.public` exists, only `true` is discoverable/executable; `false` is an authoritative opt-out even when `show_in_rest=true`.
 - `wordpress.ability.execute` is privileged, absent from the public GitHub-runtime allowlist, and forbidden inside `connector.batch` because delegated writes have no Connector compensation contract.
 - Connector mutation locking and request-id idempotency still apply. Delegated Elementor mutations report `rollback_supported=false`; no rollback or stale-state guarantee is invented.
-- A successful provider write whose result exceeds the traversal/size budget becomes a bounded terminal success with `result_omitted=true`. WordPress validation/permission failures before `wp_before_execute_ability` remain retryable. Once that hook proves provider execution is about to begin, a provider exception or `WP_Error` becomes a bounded terminal failure recorded against the request ID, preventing blind retry.
+- A successful provider write whose result exceeds the traversal/size budget becomes a bounded terminal success with `result_omitted=true`. WordPress validation/permission failures before `wp_before_execute_ability` remain retryable. At that hook the connector first persists and verifies a durable `started` marker. Once the marker exists, a provider exception or `WP_Error` becomes a bounded terminal failure recorded against the request ID. If execution is interrupted before a final result is persisted, the leftover marker becomes an unknown-outcome replay barrier rather than allowing the provider to run twice.
 - Output remains recursively redacted and bounded by the connector transport limits.
 
 ## MCP client sequence
