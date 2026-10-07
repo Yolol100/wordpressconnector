@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/fixtures/elementor-plugin/NativeMcpProvider.php';
-if (! defined('ELEMENTOR_PATH')) { define('ELEMENTOR_PATH', __DIR__ . '/fixtures/elementor-plugin/'); }
+require_once __DIR__ . '/fixtures/elementor/modules/mcp/abilities/native-ability-fixture.php';
+if (! defined('WP_PLUGIN_DIR')) { define('WP_PLUGIN_DIR', __DIR__ . '/fixtures'); }
 
 $test_options = array();
+$test_actions = array();
 
 function wp_json_encode($value)
 {
