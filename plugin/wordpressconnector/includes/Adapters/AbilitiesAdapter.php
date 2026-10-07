@@ -153,24 +153,58 @@ final class AbilitiesAdapter
     private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
     {
         $executionStarted = false;
+        $providerPreExecutionRejected = false;
         $executionTracker = null;
+        $guardTracker = null;
+        $provider = null;
+
+        if ($mutation) {
+            $callback = $this->abilityExecuteCallback($ability);
+            if (is_array($callback) && isset($callback[0]) && is_object($callback[0])) {
+                $provider = $callback[0];
+            }
+        }
 
         if ($mutation && function_exists('add_action') && function_exists('remove_action')) {
-            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility = null) use (&$executionStarted, $name, $ability): void {
+            $executionTracker = static function ($abilityName, $normalizedInput, $executingAbility = null) use (&$executionStarted, &$providerPreExecutionRejected, $name, $ability, $provider): void {
                 if ($abilityName !== $name) {
                     return;
                 }
-                if (null === $executingAbility || $executingAbility === $ability) {
-                    $executionStarted = true;
+                if (null !== $executingAbility && $executingAbility !== $ability) {
+                    return;
+                }
+
+                $executionStarted = true;
+                if (! is_object($provider) || ! method_exists($provider, 'is_available')) {
+                    return;
+                }
+
+                try {
+                    $availability = $provider->is_available();
+                    if (function_exists('is_wp_error') && is_wp_error($availability)) {
+                        $providerPreExecutionRejected = true;
+                    }
+                } catch (\Throwable $error) {
+                    $providerPreExecutionRejected = true;
                 }
             };
             add_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX, 3);
         }
 
+        if ($mutation && function_exists('add_filter') && function_exists('remove_filter')) {
+            $guardTracker = static function ($guard) use (&$executionStarted, &$providerPreExecutionRejected) {
+                if ($executionStarted && function_exists('is_wp_error') && is_wp_error($guard)) {
+                    $providerPreExecutionRejected = true;
+                }
+                return $guard;
+            };
+            add_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX, 2);
+        }
+
         try {
             $result = $ability->execute($input);
         } catch (\Throwable $error) {
-            if ($mutation && $executionStarted) {
+            if ($mutation && $executionStarted && ! $providerPreExecutionRejected) {
                 return $this->terminalMutationFailure($name, $annotations, null);
             }
             throw new \RuntimeException('WordPress Ability failed.');
@@ -178,14 +212,28 @@ final class AbilitiesAdapter
             if (null !== $executionTracker) {
                 remove_action('wp_before_execute_ability', $executionTracker, PHP_INT_MAX);
             }
+            if (null !== $guardTracker) {
+                remove_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX);
+            }
         }
 
         if (function_exists('is_wp_error') && is_wp_error($result)) {
-            if ($mutation && $executionStarted) {
+            if ($mutation && $executionStarted && ! $providerPreExecutionRejected) {
                 $errorCode = method_exists($result, 'get_error_code') ? (string) $result->get_error_code() : null;
                 return $this->terminalMutationFailure($name, $annotations, $errorCode);
             }
             throw new \RuntimeException('WordPress Ability failed.');
+        }
+
+        if ($mutation && is_array($result) && 'error' === ($result['status'] ?? null)) {
+            $errorCode = null;
+            foreach (array('code', 'error_code') as $key) {
+                if (isset($result[$key]) && (is_string($result[$key]) || is_int($result[$key]))) {
+                    $errorCode = (string) $result[$key];
+                    break;
+                }
+            }
+            return $this->terminalMutationFailure($name, $annotations, $errorCode);
         }
 
         try {

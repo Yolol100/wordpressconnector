@@ -7,6 +7,7 @@ if (! defined('WP_PLUGIN_DIR')) { define('WP_PLUGIN_DIR', __DIR__ . '/fixtures')
 
 $test_options = array();
 $test_actions = array();
+$test_filters = array();
 
 function wp_json_encode($value)
 {
@@ -65,6 +66,40 @@ function do_action($hook, ...$args): void
     foreach ($test_actions[(string) $hook] ?? array() as $entry) {
         call_user_func_array($entry[0], array_slice($args, 0, $entry[2]));
     }
+}
+
+function add_filter($hook, $callback, $priority = 10, $acceptedArgs = 1): void
+{
+    global $test_filters;
+    $test_filters[(string) $hook][] = array($callback, (int) $priority, (int) $acceptedArgs);
+}
+
+function remove_filter($hook, $callback, $priority = 10): bool
+{
+    global $test_filters;
+    $hook = (string) $hook;
+    if (empty($test_filters[$hook])) return false;
+    foreach ($test_filters[$hook] as $index => $entry) {
+        if ($entry[0] === $callback && $entry[1] === (int) $priority) {
+            unset($test_filters[$hook][$index]);
+            return true;
+        }
+    }
+    return false;
+}
+
+function apply_filters($hook, $value, ...$args)
+{
+    global $test_filters;
+    $entries = array_values($test_filters[(string) $hook] ?? array());
+    usort($entries, static function (array $a, array $b): int {
+        return $a[1] <=> $b[1];
+    });
+    foreach ($entries as $entry) {
+        $callArgs = array_merge(array($value), $args);
+        $value = call_user_func_array($entry[0], array_slice($callArgs, 0, $entry[2]));
+    }
+    return $value;
 }
 
 function add_option($name, $value, $deprecated = '', $autoload = false): bool
@@ -143,6 +178,9 @@ final class AbilityMutationContractAbility
     public static int $executions = 0;
     public static bool $provider_error = false;
     public static bool $pre_execution_error = false;
+    public static bool $guard_error = false;
+    public static bool $status_error = false;
+    public static bool $destructive = false;
     public static bool $legacy_hook = false;
     protected $execute_callback;
 
@@ -161,7 +199,7 @@ final class AbilityMutationContractAbility
             'mcp' => array('public' => true),
             'annotations' => array(
                 'readonly' => false,
-                'destructive' => false,
+                'destructive' => self::$destructive,
                 'idempotent' => false,
             ),
         );
@@ -184,9 +222,30 @@ final class AbilityMutationContractAbility
         } else {
             do_action('wp_before_execute_ability', 'elementor/manage-global-variable', $input, $this);
         }
+
+        $provider = $this->execute_callback[0];
+        $availability = $provider->is_available();
+        if (is_wp_error($availability)) {
+            return $availability;
+        }
+
+        if (self::$destructive) {
+            $guard = apply_filters(
+                'elementor/mcp/pre_execute_guard',
+                self::$guard_error ? new WP_Error('elementor_guard_blocked') : null,
+                $input
+            );
+            if (is_wp_error($guard)) {
+                return $guard;
+            }
+        }
+
         ++self::$executions;
         if (self::$provider_error) {
             return new WP_Error('ability_invalid_output');
+        }
+        if (self::$status_error) {
+            return array('status' => 'error', 'code' => 'elementor_provider_status');
         }
         return str_repeat('x', 270000);
     }
@@ -329,6 +388,93 @@ if (true !== ($preflightRetry['ok'] ?? false)
     exit(1);
 }
 
+\Elementor\Modules\Mcp\Abilities\Contract_Native_Ability::$available = false;
+$availabilityRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-availability-0005',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#555555'),
+    ),
+));
+$availabilityFirst = $runner->run($availabilityRequest);
+if (false !== ($availabilityFirst['ok'] ?? true)
+    || true === ($availabilityFirst['meta']['terminal_mutation'] ?? false)
+    || 3 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Elementor availability rejection was incorrectly terminalized.\n");
+    exit(1);
+}
+\Elementor\Modules\Mcp\Abilities\Contract_Native_Ability::$available = true;
+$availabilityRetry = $runner->run($availabilityRequest);
+if (true !== ($availabilityRetry['ok'] ?? false)
+    || true !== ($availabilityRetry['data']['execution_completed'] ?? false)
+    || 7 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after Elementor availability rejection did not execute normally.\n");
+    exit(1);
+}
+
+AbilityMutationContractAbility::$destructive = true;
+AbilityMutationContractAbility::$guard_error = true;
+$guardRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-guard-0006',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#666666'),
+    ),
+));
+$guardFirst = $runner->run($guardRequest);
+if (false !== ($guardFirst['ok'] ?? true)
+    || true === ($guardFirst['meta']['terminal_mutation'] ?? false)
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Elementor pre-execute guard rejection was incorrectly terminalized.\n");
+    exit(1);
+}
+AbilityMutationContractAbility::$guard_error = false;
+$guardRetry = $runner->run($guardRequest);
+if (true !== ($guardRetry['ok'] ?? false)
+    || true !== ($guardRetry['data']['execution_completed'] ?? false)
+    || 5 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after Elementor pre-execute guard rejection did not execute normally.\n");
+    exit(1);
+}
+AbilityMutationContractAbility::$destructive = false;
+
+AbilityMutationContractAbility::$status_error = true;
+$statusRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-status-error-0007',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#777777'),
+    ),
+));
+$statusFirst = $runner->run($statusRequest);
+if (false !== ($statusFirst['ok'] ?? true)
+    || true !== ($statusFirst['meta']['terminal_mutation'] ?? false)
+    || 'elementor_provider_status' !== ($statusFirst['meta']['terminal_context']['provider_error_code'] ?? null)
+    || 6 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Elementor status=error result was not recorded as a terminal failure.\n");
+    exit(1);
+}
+$statusReplay = $runner->run($statusRequest);
+if (false !== ($statusReplay['ok'] ?? true)
+    || true !== ($statusReplay['meta']['idempotent_replay'] ?? false)
+    || 6 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after Elementor status=error executed the provider again.\n");
+    exit(1);
+}
+AbilityMutationContractAbility::$status_error = false;
+
 AbilityMutationContractAbility::$legacy_hook = true;
 AbilityMutationContractAbility::$provider_error = true;
 $legacyHookRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
@@ -346,14 +492,14 @@ $legacyHookFirst = $runner->run($legacyHookRequest);
 if (false !== ($legacyHookFirst['ok'] ?? true)
     || true !== ($legacyHookFirst['meta']['terminal_mutation'] ?? false)
     || 'ability_invalid_output' !== ($legacyHookFirst['meta']['terminal_context']['provider_error_code'] ?? null)
-    || 4 !== AbilityMutationContractAbility::$executions) {
+    || 7 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "WordPress 6.9/7.0 two-argument execution hook did not mark a started mutation terminally.\n");
     exit(1);
 }
 $legacyHookReplay = $runner->run($legacyHookRequest);
 if (false !== ($legacyHookReplay['ok'] ?? true)
     || true !== ($legacyHookReplay['meta']['idempotent_replay'] ?? false)
-    || 4 !== AbilityMutationContractAbility::$executions) {
+    || 7 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Legacy-hook retry executed the provider twice.\n");
     exit(1);
 }
@@ -381,7 +527,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 4 !== AbilityMutationContractAbility::$executions) {
+    || 7 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
