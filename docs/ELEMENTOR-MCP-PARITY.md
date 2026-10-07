@@ -6,11 +6,12 @@ WordPress Connector does not copy Elementor MCP business logic. It reuses the Wo
 
 Elementor's MCP implementation registers native `elementor/*` abilities through the WordPress Abilities API. Their execute callbacks retain Elementor's own schema handling, permission checks, Atomic/V4 gates, editor-sync/conflict guards and feature/license availability. Reimplementing those internals in WordPress Connector would create a second, drifting Elementor engine.
 
-WordPress Connector therefore adds a guarded generic mutation route:
+WordPress Connector therefore adds a guarded discovery/read bridge plus a bounded Elementor mutation route:
 
 - discover with `wordpress.abilities`, optionally `{"namespace":"elementor"}`;
 - read explicitly read-only abilities through `wordpress.ability.read`;
-- preview explicitly mutating abilities through `wordpress.ability.execute` with connector `dry_run=true`; this does not invoke provider code;
+- expose delegated mutation only when the Ability name starts with `elementor/`, its category is `elementor`, its annotations explicitly mark it mutating, and its MCP exposure gate permits execution;
+- preview eligible Elementor mutations through `wordpress.ability.execute` with connector `dry_run=true`; this does not invoke provider code;
 - execute with `dry_run=false`, `confirm=true` and a stable `request_id`;
 - keep the provider's native input validation, permission callback and execution guards authoritative.
 
@@ -34,11 +35,12 @@ Elementor Pro, add-ons or later releases may register additional abilities, incl
 
 - The connector never treats discovery metadata as authorization.
 - Read execution requires explicit `readonly=true` and `destructive=false`.
-- Mutation execution requires explicit `readonly=false` and an explicit boolean `destructive`.
+- Mutation execution requires the `elementor/*` namespace, category `elementor`, explicit `readonly=false`, and an explicit boolean `destructive`.
 - If the provider publishes `meta.mcp.public`, `false` blocks connector execution even when `show_in_rest=true`.
 - `wordpress.ability.execute` is privileged and is not in the public GitHub-runtime allowlist.
 - Connector mutation locking and request-id idempotency still apply.
-- Generic foreign Ability mutations report `rollback_supported=false`; no rollback or stale-state guarantee is invented.
+- Delegated Elementor Ability mutations report `rollback_supported=false`; no rollback or stale-state guarantee is invented.
+- If a provider write completes but its result exceeds the connector traversal/size budget, the response becomes a bounded terminal success with `result_omitted=true`; the completed request can then be replayed idempotently without executing the provider again.
 - Output remains recursively redacted and bounded by the connector transport limits.
 
 ## MCP client sequence
