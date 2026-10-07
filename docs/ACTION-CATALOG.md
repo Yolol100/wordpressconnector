@@ -10,6 +10,10 @@ This catalog is generated from the connector action registrations. Security labe
 | `acf.portfolio_stats_update` | mutation, privileged | Update the eight portfolio-stat ACF text fields on one standard post with dry-run, stale-state protection and rollback. |
 | `acf.schema.ensure_text_fields` | mutation, privileged | Create a bounded set of new ACF text fields in an existing field group without altering existing fields. |
 | `acf.schema.remove_text_fields` | mutation, privileged | Remove exact ACF text fields created by a prior bounded schema ensure operation. |
+| `acf.schema.ensure_fields` | mutation, privileged | Create bounded complex ACF fields in an existing field group without altering existing fields. |
+| `acf.schema.remove_fields` | mutation, privileged | Remove exact complex ACF fields created by a prior bounded schema ensure operation. |
+| `acf.schema.create_field_group` | mutation, privileged | Create a new bounded ACF field group with nested fields and location rules. |
+| `acf.schema.delete_field_group` | mutation, privileged | Delete an exact connector-created ACF field group only when its schema still matches. |
 | `acf.update` | mutation, privileged | Update ACF values for a post, term, user or options target. |
 | `auto_image_attributes.inspect` | privileged | Read safe Auto Image Attributes upload and bulk-update settings. |
 | `auto_image_attributes.update` | mutation, privileged | Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback. |
