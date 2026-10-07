@@ -19,7 +19,7 @@ final class ContractAbility
     public function get_meta(): array { return $this->meta; }
     public function get_label(): string { return 'Plugin ability'; }
     public function get_description(): string { return 'Contract test ability'; }
-    public function get_category(): string { return 'test'; }
+    public function get_category(): string { return isset($this->meta['category']) ? (string) $this->meta['category'] : 'test'; }
     public function get_input_schema(): array {
         if (! empty($this->meta['large_schema'])) return array('type' => 'object', 'description' => str_repeat('x', 9000));
         return array('type' => 'object');
@@ -60,14 +60,22 @@ function wp_get_abilities(): array
             'mcp' => array('public' => false),
             'annotations' => array('readonly' => false, 'destructive' => true),
         )),
+        'third-party-plugin/public-mutating-operation' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'mcp' => array('public' => true),
+            'category' => 'plugin',
+            'annotations' => array('readonly' => false, 'destructive' => true),
+        )),
         'elementor/manage-global-variable' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
+            'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => false, 'idempotent' => false),
         )),
         'elementor/publish-document' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
+            'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => true, 'idempotent' => true),
         )),
         'third-party-plugin/ambiguous-readonly' => new ContractAbility(array(
@@ -94,11 +102,11 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 17 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 18 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
-if (7 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+if (8 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
 }
 $elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
@@ -146,6 +154,7 @@ if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execut
     fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
 if (false !== $catalog['abilities']['third-party-plugin/mutating-operation']['mutation_execution_exposed']
+    || false !== $catalog['abilities']['third-party-plugin/public-mutating-operation']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/manage-global-variable']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/publish-document']['mutation_execution_exposed']
     || 'wordpress.ability.execute' !== $catalog['abilities']['elementor/manage-global-variable']['connector_action']) {
@@ -239,14 +248,35 @@ if (8 !== ContractAbility::$executions || true !== $destructiveResult['annotatio
     fwrite(STDERR, "Destructive annotated Ability execution failed.\n"); exit(1);
 }
 
-foreach (array('third-party-plugin/mutating-operation', 'third-party-plugin/ambiguous-readonly', 'third-party-plugin/reindex-content') as $blockedAbility) {
+ContractAbility::$large_result = true;
+$terminalLargeResult = $adapter->executeAbility(array('name' => 'elementor/manage-global-variable'), array('dry_run' => false));
+ContractAbility::$large_result = false;
+if (9 !== ContractAbility::$executions
+    || true !== ($terminalLargeResult['execution_completed'] ?? false)
+    || true !== ($terminalLargeResult['result_omitted'] ?? false)
+    || null !== ($terminalLargeResult['result'] ?? 'missing')
+    || false !== $terminalLargeResult['rollback_supported']) {
+    fwrite(STDERR, "Completed mutating Ability with oversized output was not converted to a terminal bounded result.\n"); exit(1);
+}
+
+ContractAbility::$deep_result = true;
+$terminalDeepResult = $adapter->executeAbility(array('name' => 'elementor/manage-global-variable'), array('dry_run' => false));
+ContractAbility::$deep_result = false;
+if (10 !== ContractAbility::$executions
+    || true !== ($terminalDeepResult['execution_completed'] ?? false)
+    || true !== ($terminalDeepResult['result_omitted'] ?? false)
+    || null !== ($terminalDeepResult['result'] ?? 'missing')) {
+    fwrite(STDERR, "Completed mutating Ability with deep output was not converted to a terminal bounded result.\n"); exit(1);
+}
+
+foreach (array('third-party-plugin/mutating-operation', 'third-party-plugin/public-mutating-operation', 'third-party-plugin/ambiguous-readonly', 'third-party-plugin/reindex-content') as $blockedAbility) {
     try {
         $adapter->executeAbility(array('name' => $blockedAbility), array('dry_run' => false));
         fwrite(STDERR, "Ineligible Ability was executed by the mutation route: {$blockedAbility}\n"); exit(1);
     } catch (RuntimeException $expected) {
     }
 }
-if (8 !== ContractAbility::$executions) {
+if (10 !== ContractAbility::$executions) {
     fwrite(STDERR, "Blocked mutation Ability still reached execute().\n"); exit(1);
 }
 
