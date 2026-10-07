@@ -7,6 +7,7 @@ if (! defined('WP_PLUGIN_DIR')) { define('WP_PLUGIN_DIR', __DIR__ . '/fixtures')
 
 $test_options = array();
 $test_actions = array();
+$fail_processed_add = false;
 
 function wp_json_encode($value)
 {
@@ -69,8 +70,11 @@ function do_action($hook, ...$args): void
 
 function add_option($name, $value, $deprecated = '', $autoload = false): bool
 {
-    global $test_options;
+    global $test_options, $fail_processed_add;
     $name = (string) $name;
+    if ($fail_processed_add && 0 === strpos($name, 'wpconnector_processed_')) {
+        return false;
+    }
     if (array_key_exists($name, $test_options)) {
         return false;
     }
@@ -328,6 +332,13 @@ if (true !== ($preflightRetry['ok'] ?? false)
     exit(1);
 }
 
+$preflightKey = 'wpconnector_processed_' . hash('sha256', 'ability-preflight-0004');
+if (! isset($test_options[$preflightKey])
+    || 'completed' !== ($test_options[$preflightKey]['state'] ?? null)) {
+    fwrite(STDERR, "Successful retry did not replace the execution marker with a completed record.\n");
+    exit(1);
+}
+
 AbilityMutationContractAbility::$provider_throw = true;
 $throwRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
@@ -363,6 +374,66 @@ if (! empty($test_actions['wp_before_execute_ability'] ?? array())) {
     exit(1);
 }
 
+$fail_processed_add = true;
+$markerFailureRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-marker-0006',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#555555'),
+    ),
+));
+$markerFailure = $runner->run($markerFailureRequest);
+$markerFailureKey = 'wpconnector_processed_' . hash('sha256', 'ability-marker-0006');
+if (false !== ($markerFailure['ok'] ?? true)
+    || array_key_exists($markerFailureKey, $test_options)
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Ability executed even though its durable execution marker could not be persisted.\n");
+    exit(1);
+}
+
+$fail_processed_add = false;
+$markerRetry = $runner->run($markerFailureRequest);
+if (true !== ($markerRetry['ok'] ?? false)
+    || 5 !== AbilityMutationContractAbility::$executions
+    || 'completed' !== ($test_options[$markerFailureKey]['state'] ?? null)) {
+    fwrite(STDERR, "Retry after execution-marker persistence failure did not execute exactly once.\n");
+    exit(1);
+}
+
+$unknownPayload = array(
+    'name' => 'elementor/manage-global-variable',
+    'input' => array('value' => '#666666'),
+);
+$unknownFingerprint = \Webactueel\WordPressConnector\Support\Fingerprint::make(array(
+    'action' => 'wordpress.ability.execute',
+    'payload' => $unknownPayload,
+    'expected_fingerprint' => null,
+    'expected_state_token' => null,
+));
+$manualStore = new \Webactueel\WordPressConnector\Runtime\ProcessedStore();
+$manualStore->putStarted('ability-unknown-0007', $unknownFingerprint, 'wordpress.ability.execute');
+$unknownRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-unknown-0007',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => $unknownPayload,
+));
+$unknownReplay = $runner->run($unknownRequest);
+if (false !== ($unknownReplay['ok'] ?? true)
+    || true !== ($unknownReplay['meta']['idempotent_replay'] ?? false)
+    || true !== ($unknownReplay['meta']['mutation_outcome_unknown'] ?? false)
+    || true !== ($unknownReplay['meta']['terminal_mutation'] ?? false)
+    || 5 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Orphaned execution-boundary marker did not block automatic replay.\n");
+    exit(1);
+}
+
 $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
     'request_id' => 'ability-batch-0003',
@@ -384,7 +455,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 4 !== AbilityMutationContractAbility::$executions) {
+    || 5 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
