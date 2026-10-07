@@ -101,13 +101,14 @@ final class AbilitiesAdapter
     {
         list($name, $ability) = $this->resolveAbility($payload, false);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
-        return $this->executeAndSanitize($name, $ability, $input);
+        return $this->executeAndSanitize($name, $ability, $input, $this->safeAnnotations($ability), false);
     }
 
     public function executeAbility(array $payload, array $context): array
     {
         list($name, $ability) = $this->resolveAbility($payload, true);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
+        $annotations = $this->safeAnnotations($ability);
 
         if (! empty($context['dry_run'])) {
             list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
@@ -116,7 +117,7 @@ final class AbilitiesAdapter
             return array(
                 'name' => $name,
                 'would_execute' => true,
-                'annotations' => $this->safeAnnotations($ability),
+                'annotations' => $annotations,
                 'input_schema' => $inputSchema,
                 'input_schema_omitted' => $inputSchemaOmitted,
                 'native_validation_on_confirm' => true,
@@ -125,7 +126,7 @@ final class AbilitiesAdapter
             );
         }
 
-        $result = $this->executeAndSanitize($name, $ability, $input);
+        $result = $this->executeAndSanitize($name, $ability, $input, $annotations, true);
         $result['rollback_supported'] = false;
         return $result;
     }
@@ -140,14 +141,16 @@ final class AbilitiesAdapter
             throw new \RuntimeException('A valid namespace/ability name is required.');
         }
         $ability = wp_get_ability($name);
-        $eligible = $mutation ? $this->isMutationEligible($ability) : $this->isReadEligible($ability);
+        $eligible = $mutation
+            ? $this->isElementorMutationEligible($name, $ability)
+            : $this->isReadEligible($ability);
         if (! is_object($ability) || ! $eligible) {
             throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
         }
         return array($name, $ability);
     }
 
-    private function executeAndSanitize(string $name, object $ability, $input): array
+    private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
     {
         try {
             $result = $ability->execute($input);
@@ -157,16 +160,35 @@ final class AbilitiesAdapter
         if (function_exists('is_wp_error') && is_wp_error($result)) {
             throw new \RuntimeException('WordPress Ability failed.');
         }
-        $budget = array('nodes' => 0, 'bytes' => 0);
-        $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
-        $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
-        if (! is_string($encoded) || strlen($encoded) > 262144) {
-            throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+
+        try {
+            $budget = array('nodes' => 0, 'bytes' => 0);
+            $safe = $this->redactAbilityResult($result, 0, new \SplObjectStorage(), $budget);
+            $encoded = function_exists('wp_json_encode') ? wp_json_encode($safe) : json_encode($safe);
+            if (! is_string($encoded) || strlen($encoded) > 262144) {
+                throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+            }
+        } catch (\Throwable $error) {
+            if (! $mutation) {
+                throw new \RuntimeException('WordPress Ability result exceeds the connector output limits.');
+            }
+
+            return array(
+                'name' => $name,
+                'annotations' => $annotations,
+                'execution_completed' => true,
+                'result' => null,
+                'result_omitted' => true,
+                'result_omission_reason' => 'Ability completed but its result exceeded connector output limits.',
+            );
         }
+
         return array(
             'name' => $name,
-            'annotations' => $this->safeAnnotations($ability),
+            'annotations' => $annotations,
+            'execution_completed' => true,
             'result' => $safe,
+            'result_omitted' => false,
         );
     }
 
@@ -216,12 +238,6 @@ final class AbilitiesAdapter
         return $value;
     }
 
-    private function isRestExposed(object $ability): bool
-    {
-        $meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
-        return is_array($meta) && true === ($meta['show_in_rest'] ?? false);
-    }
-
     private function isReadEligible($ability): bool
     {
         if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
@@ -234,6 +250,20 @@ final class AbilitiesAdapter
         if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) return false;
         $annotations = $this->safeAnnotations($ability);
         return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
+    }
+
+    private function isElementorMutationEligible(string $name, $ability): bool
+    {
+        if (0 !== strpos($name, 'elementor/') || ! is_object($ability)) {
+            return false;
+        }
+
+        $category = method_exists($ability, 'get_category') ? (string) $ability->get_category() : '';
+        if ('elementor' !== $category) {
+            return false;
+        }
+
+        return $this->isMutationEligible($ability);
     }
 
     private function isExecutionExposed(object $ability): bool
@@ -283,7 +313,7 @@ final class AbilitiesAdapter
     {
         $safeAnnotations = $this->safeAnnotations($ability);
         $readEligible = $this->isReadEligible($ability);
-        $mutationEligible = $this->isMutationEligible($ability);
+        $mutationEligible = $this->isElementorMutationEligible($name, $ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
             method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null
