@@ -83,7 +83,7 @@ Real writes require `dry_run=false`, `confirm=true` and an explicit stable `requ
 
 ## Main capabilities
 
-The connector covers posts/pages/CPTs, Gutenberg, Elementor, WooCommerce products/variations/attributes/coupons, bounded order reads, per-customer reads, shipping-zone geography and tax-class/rate reads, ACF, Yoast SEO, media, menus, taxonomies, Additional CSS, plugin settings, verified plugin package delivery, bounded plugin/theme filesystem work, system administration actions and canonical connector self-update.
+The connector covers posts/pages/CPTs, Gutenberg, Elementor, WooCommerce products/variations/attributes/coupons, bounded order reads, per-customer reads, shipping-zone geography and tax-class/rate reads, ACF values plus guarded private/direct complex schema creation (new field groups, image/relationship/group/repeater fields and nested sub fields), Yoast SEO, media, menus, taxonomies, Additional CSS, plugin settings, verified plugin package delivery, bounded plugin/theme filesystem work, system administration actions and canonical connector self-update.
 
 `connector.discover` returns the site/runtime overview once a target site is authenticated. Elementor writes use Elementor document APIs rather than direct `_elementor_data` mutation. Native Elementor MCP capabilities are additionally surfaced through the WordPress Abilities bridge instead of duplicating Elementor's Atomic/V4 business logic.
 
