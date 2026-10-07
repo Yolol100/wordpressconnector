@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Delegated writes are limited to exposed `elementor/*` Abilities whose category is also `elementor`, preventing unrelated plugin Abilities from using the generic mutation route. If an Elementor Ability completes a write but returns an over-budget result, the connector returns a bounded terminal success so stable request-id retries do not execute the completed write again.
+Version 1.17.1 hardens the Ability bridge introduced in 1.17.0. Delegated reads/writes now require callback-source provenance inside the installed Elementor Core or Pro plugin root; slugs, categories and annotations alone do not establish trust. Explicit MCP opt-outs are authoritative, delegated writes cannot run inside connector.batch, completed over-budget results become bounded terminal successes, and ambiguous provider failures become stored terminal failures so stable request-ID retries do not blindly execute again.
 
 Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards.
 
@@ -89,10 +89,12 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.17.1 =
-* Restrict delegated Ability writes to exposed `elementor/*` Abilities whose category is `elementor`; arbitrary third-party mutating Abilities remain discovery-only and cannot bypass connector emergency policy classes.
-* Convert post-execution output-budget failures for completed Elementor Ability mutations into bounded terminal successes with `result_omitted=true`, preserving stable request-id idempotency on retry.
-* Add regression coverage for public third-party mutation rejection and retry-after-oversized-result behavior through the real Runner/ProcessedStore path.
-* Keep the action blocked from public GitHub runtime and preserve native WordPress/Elementor schema validation, permission checks and provider guards.
+* Require registered Ability callback provenance inside the installed Elementor Core/Pro plugin root before delegated read or write execution; third-party slug/category/annotation spoofing remains non-executable.
+* Treat explicit `mcp.public=false` as an authoritative discovery/execution opt-out even when `show_in_rest=true`.
+* Convert completed over-budget Elementor mutations to bounded terminal successes and provider exceptions/`WP_Error` outcomes to stored terminal failures, preserving stable request-ID idempotency on retry.
+* Block delegated Ability mutations inside `connector.batch` because they have no Connector rollback/compensation guarantee.
+* Add real WordPress 6.9 Abilities and WordPress 7.1 + Elementor 4.3.4 controlled-runtime coverage, including native read, disposable create-page mutation/readback, spoof rejection and replay.
+* Keep delegated Ability writes blocked from public GitHub runtime and preserve native WordPress/Elementor validation, permissions and provider guards.
 
 = 1.17.0 =
 * Add `wordpress.ability.execute` for explicitly annotated, client-exposed mutating WordPress Abilities on private/direct authenticated transports.
