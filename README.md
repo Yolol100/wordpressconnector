@@ -18,6 +18,10 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 | Security | HTTPS-only transport, strict JWT binding and sanitized public receipts |
 | Architecture | Direct connector transport kept separate from generic multi-repository orchestration |
 
+## Trusted private control plane
+
+Version 1.17.2 also trusts the exact private `Yolol100/Wordpress` GitHub Actions executor. Because that repository is private, requests and full results stay off the public connector repository and the connector does not apply the public action allowlist. All registered actions still pass their normal confirmation, capability, idempotency, stale-state, readback/rollback, filesystem and sensitive-action gates.
+
 ## Zero-config GitHub connection
 
 From version 1.13.0, normal GitHub transport requires no repository secrets, no `WPCONNECTOR_SITE_URL` variable, no WordPress username, no Application Password and no WordPress settings checkboxes.
