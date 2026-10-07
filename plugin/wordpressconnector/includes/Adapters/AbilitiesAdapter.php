@@ -186,13 +186,16 @@ final class AbilitiesAdapter
             );
         }
 
-        return array(
+        $response = array(
             'name' => $name,
             'annotations' => $annotations,
-            'execution_completed' => true,
             'result' => $safe,
-            'result_omitted' => false,
         );
+        if ($mutation) {
+            $response['execution_completed'] = true;
+            $response['result_omitted'] = false;
+        }
+        return $response;
     }
 
     private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
