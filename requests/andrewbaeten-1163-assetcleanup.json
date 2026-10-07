@@ -1,8 +1,8 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-connector-1163-check-20261007",
-  "action": "connector.update.check",
+  "request_id": "andrewbaeten-connector-1163-update-dryrun-20261007",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
   "payload": {}
