@@ -46,9 +46,11 @@ Approved clients may still use WordPress-native authenticated REST sessions/Appl
 
 ## Native MCP transport
 
-Version 1.17.0 adds guarded execution of client-exposed WordPress Abilities on private/direct authenticated transports. Ability discovery supports namespace filtering such as `elementor`; native provider schemas, permissions and guards remain authoritative. Connector dry-run never invokes mutating Ability code, and generic foreign Ability mutations do not claim connector rollback support.
+Version 1.17.1 hardens the native Ability bridge introduced in 1.17.0. Delegated writes are now limited to exposed `elementor/*` Abilities whose category is also `elementor`, so unrelated plugin Abilities cannot bypass connector-specific emergency policy classes. If an Elementor Ability completes a write but returns an over-budget result, the connector emits a bounded terminal success instead of a retryable failure, preserving request-id idempotency.
 
-For Elementor this closes the MCP capability gap without copying Elementor internals: the connector dynamically reuses exposed native `elementor/*` abilities for the installed runtime, including Atomic composition/element operations, global classes/variables, default styles, Components, interactions/resources, dynamic-tag resources, settings and publish flows when those abilities are actually available. Future/Pro capabilities such as Loops remain target-dependent and are exposed only when the installed Elementor stack registers them.
+Version 1.17.0 adds namespace-filtered WordPress Ability discovery and guarded Elementor Ability execution on private/direct authenticated transports. Native provider schemas, permissions and guards remain authoritative, and connector dry-run never invokes mutating Ability code.
+
+For Elementor this closes the MCP capability gap without copying Elementor internals: the connector dynamically reuses exposed native `elementor/*` abilities for the installed runtime, including Atomic composition/element operations, global classes/variables, default styles, Components, interactions/resources, dynamic-tag resources, settings and publish flows when those abilities are actually available. Future/Pro capabilities such as Loops remain target-dependent and are exposed only when the installed Elementor stack registers them under the same Ability contract.
 
 Version 1.16.1 adds guarded public-runtime Additional CSS inspection plus named managed CSS patches with dry-run fingerprinting, active-theme and `edit_css` gating, exact readback, rollback and sanitized public receipts. Full CSS replacement remains restricted to private/direct authenticated transports.
 
