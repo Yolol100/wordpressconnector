@@ -1,9 +1,11 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "andrewbaeten-connector-1162-check-20261007",
-  "action": "connector.update.check",
+  "request_id": "andrewbaeten-assetcleanup-dryrun-1162-20261007",
+  "action": "maintenance.cache_flush",
   "dry_run": true,
   "confirm": false,
-  "payload": {}
+  "payload": {
+    "layer": "asset_cleanup"
+  }
 }
