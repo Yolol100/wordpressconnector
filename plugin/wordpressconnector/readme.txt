@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.16.3
+Stable tag: 1.17.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.0 adds guarded execution of client-exposed WordPress Abilities on private/direct authenticated transports. Discovery can be filtered by namespace, including `elementor`, so current and future native Elementor MCP/Atomic abilities can be reused without copying Elementor internals. Mutating Ability dry-runs are metadata-only; live calls still require connector confirmation and a stable request ID plus native WordPress/Elementor validation, permissions and provider guards. Foreign Ability mutations remain blocked from public GitHub runtime and do not claim connector rollback support.
 
 Version 1.16.1 adds guarded public GitHub-runtime access to WordPress Additional CSS without making full CSS replacement public. It introduces a managed `custom_css.patch` action that upserts or removes one named CSS block, requires dry-run fingerprint protection for live writes, preserves unrelated CSS, verifies exact readback and stores rollback. Public CSS inspection and mutation receipts expose only hashes, byte counts and patch metadata, never the CSS body. The action is restricted to the active theme stylesheet and the WordPress `edit_css` capability.
 
@@ -83,6 +85,14 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.0 =
+* Add `wordpress.ability.execute` for explicitly annotated, client-exposed mutating WordPress Abilities on private/direct authenticated transports.
+* Add namespace-filtered Ability discovery so `elementor/*` can expose native Atomic/V4 capabilities without duplicating Elementor business logic.
+* Respect an explicit provider `mcp.public=false` execution gate even when the Ability is otherwise REST-exposed.
+* Keep mutating Ability dry-run metadata-only; real execution requires normal connector confirmation/idempotency plus native schema, permission and provider guards.
+* Keep generic Ability writes out of public GitHub runtime and report no fabricated rollback support.
+* Extend contract coverage for Elementor-like non-destructive and destructive Ability execution, namespace filtering, MCP disablement and output redaction.
 
 = 1.16.3 =
 * Route Asset CleanUp cache purges from REST execution through a short-lived, single-use internal admin-post loopback so Asset CleanUp Lite loads in its supported non-REST context.

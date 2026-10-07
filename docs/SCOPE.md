@@ -43,7 +43,13 @@ Explicit privileged actions cover users/roles, plugin/theme lifecycle, WordPress
 
 ## Plugin abilities
 
-The WordPress Abilities API catalog discovers exposed abilities from installed plugins and themes in bounded pages of at most 10 descriptors. Oversized schemas are omitted rather than partially returned, and each catalog page is capped at 256 KiB. On WordPress 6.9+, REST-exposed abilities can be invoked only when they explicitly declare both `readonly=true` and `destructive=false`; native input validation and the ability permission callback still run. Discovery fails closed above 10,000 registered abilities. Reading requires explicit confirmation, privileged access and `manage_options`. Mutating abilities are not run through this generic route.
+The WordPress Abilities API catalog discovers client-exposed abilities from installed plugins and themes in bounded pages of at most 10 descriptors. Optional `namespace` filtering lets clients request a focused provider catalog such as `elementor/*`. Oversized schemas are omitted rather than partially returned, each catalog page is capped at 256 KiB, and discovery fails closed above 10,000 registered abilities.
+
+Read execution remains limited to abilities that explicitly declare `readonly=true` and `destructive=false`. Mutating execution is available only to abilities that explicitly declare `readonly=false` and an explicit boolean `destructive` annotation. When a provider publishes an `mcp.public` switch, that switch is authoritative for connector execution; `mcp.public=false` remains discoverable when otherwise REST-exposed but cannot execute through the generic Ability route.
+
+`wordpress.ability.execute` is a private/direct authenticated mutation route. Connector dry-run reports eligibility/schema only and never invokes provider code. A real mutation still requires the normal connector write contract (`dry_run=false`, `confirm=true`, stable `request_id`), WordPress `manage_options`, the provider's native schema validation and permission callback, and any provider-specific guards. The generic bridge does not claim a rollback or stale-state fingerprint for foreign Ability mutations unless the provider itself supplies an equivalent contract. The action is intentionally absent from the public GitHub runtime allowlist.
+
+For Elementor, native `elementor/*` abilities are reused rather than reimplemented. On a target that registers and exposes them this includes the installed runtime's Atomic composition/element editing, global classes and variables, default styles, Components, interactions/resources, dynamic-tag resources, page settings, publishing and other Elementor MCP abilities. Elementor Pro or future Loop/Theme Builder abilities become available only when that installed target actually registers and exposes them; the connector does not invent unavailable capabilities.
 
 ## State and extension contract
 

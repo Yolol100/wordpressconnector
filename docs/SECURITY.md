@@ -54,6 +54,10 @@ The native MCP route reuses the existing REST authorization callback. It does no
 - The MCP facade exposes three bounded tools and routes execution through `Runtime\\Request` and `Runner`.
 - Dry-run remains the default. A non-dry-run MCP call requires both `confirm=true` and an explicit stable connector `request_id`.
 - Existing capability checks, sensitive/public-mode policy, stale-state guards, mutation locks, idempotency, readback, rollback and redaction remain authoritative.
+- `wordpress.ability.execute` is a privileged mutation action and is intentionally excluded from the public GitHub runtime allowlist.
+- Foreign mutating Abilities must explicitly declare `readonly=false` and a boolean `destructive` annotation. If a provider publishes `mcp.public`, execution also requires that flag to be true.
+- Ability dry-run is metadata-only and never calls the provider execute callback. Confirmed execution still passes through Connector confirmation/idempotency, then WordPress Ability input validation, permission checks and provider-specific guards.
+- Generic Ability mutations do not receive a fabricated rollback or stale-state guarantee. Their response reports `rollback_supported=false` unless a dedicated semantic adapter owns such evidence.
 - MCP adds no arbitrary shell, SQL, PHP eval, unrestricted filesystem write or generic HTTP proxy.
 - Hosted account/site registries, OAuth brokerage, billing/quotas and background-job orchestration are outside this plugin's trust boundary.
 

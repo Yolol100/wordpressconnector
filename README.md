@@ -46,6 +46,10 @@ Approved clients may still use WordPress-native authenticated REST sessions/Appl
 
 ## Native MCP transport
 
+Version 1.17.0 adds guarded execution of client-exposed WordPress Abilities on private/direct authenticated transports. Ability discovery supports namespace filtering such as `elementor`; native provider schemas, permissions and guards remain authoritative. Connector dry-run never invokes mutating Ability code, and generic foreign Ability mutations do not claim connector rollback support.
+
+For Elementor this closes the MCP capability gap without copying Elementor internals: the connector dynamically reuses exposed native `elementor/*` abilities for the installed runtime, including Atomic composition/element operations, global classes/variables, default styles, Components, interactions/resources, dynamic-tag resources, settings and publish flows when those abilities are actually available. Future/Pro capabilities such as Loops remain target-dependent and are exposed only when the installed Elementor stack registers them.
+
 Version 1.16.1 adds guarded public-runtime Additional CSS inspection plus named managed CSS patches with dry-run fingerprinting, active-theme and `edit_css` gating, exact readback, rollback and sanitized public receipts. Full CSS replacement remains restricted to private/direct authenticated transports.
 
 Version 1.16.0 adds an authenticated MCP endpoint at `/wp-json/webactueel-wordpress-connector/v1/mcp`. It is deliberately a thin transport over the existing Registry and Runner: MCP cannot bypass WordPress authentication, capabilities, dry-run, confirmation, stale-state guards, idempotency, readback or rollback.
@@ -75,7 +79,7 @@ Real writes require `dry_run=false`, `confirm=true` and an explicit stable `requ
 
 The connector covers posts/pages/CPTs, Gutenberg, Elementor, WooCommerce products/variations/attributes/coupons, bounded order reads, per-customer reads, shipping-zone geography and tax-class/rate reads, ACF, Yoast SEO, media, menus, taxonomies, Additional CSS, plugin settings, verified plugin package delivery, bounded plugin/theme filesystem work, system administration actions and canonical connector self-update.
 
-`connector.discover` returns the site/runtime overview once a target site is authenticated. Elementor writes use Elementor document APIs rather than direct `_elementor_data` mutation.
+`connector.discover` returns the site/runtime overview once a target site is authenticated. Elementor writes use Elementor document APIs rather than direct `_elementor_data` mutation. Native Elementor MCP capabilities are additionally surfaced through the WordPress Abilities bridge instead of duplicating Elementor's Atomic/V4 business logic.
 
 ## Validation
 

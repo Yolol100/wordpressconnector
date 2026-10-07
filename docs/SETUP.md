@@ -107,7 +107,9 @@ The MCP endpoint uses the same WordPress authentication boundary as the direct R
 
 Modern MCP clients may use protocol revision `2026-07-28` with `server/discover`; the connector also retains the legacy `2025-11-25` initialize flow. The MCP facade exposes only connector action discovery, runtime discovery and semantic execution. It does not provide global site discovery, billing, quotas, hosted skills or background-job orchestration.
 
-For writes, use the same safe sequence as REST: discovery -> dry-run -> capture fingerprint/state -> confirmed call with a stable explicit `request_id` -> readback -> rollback when supported.
+For provider-native WordPress Abilities, first run `wordpress.abilities`; add payload `{"namespace":"elementor"}` to focus on the installed Elementor MCP surface. Read-only abilities route through `wordpress.ability.read`. Explicitly mutating client-exposed abilities route through `wordpress.ability.execute`: preview with connector `dry_run=true`, then execute only with `dry_run=false`, `confirm=true` and a stable explicit `request_id`. Ability dry-run is metadata-only and does not invoke the provider callback.
+
+For dedicated connector writes, use the same safe sequence as REST: discovery -> dry-run -> capture fingerprint/state when supported -> confirmed call with a stable explicit `request_id` -> readback -> rollback when supported. Generic foreign Ability mutations do not claim connector rollback/fingerprint support; validate their target state with the provider's own read surface and appropriate QA.
 
 ## 9. Acceptance sequence
 
