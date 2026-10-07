@@ -32,6 +32,14 @@ $forbidden = array(
     '.github/workflows/wordpress-execute.yml',
     'schemas/request.schema.json',
     'schemas/result.schema.json',
+    '.github/workflows/doctorcura-audit-execute.yml',
+    '.github/workflows/doctorcura-audit-request.yml',
+    '.github/workflows/doctorcura-execute.yml',
+    '.github/workflows/doctorcura-request.yml',
+    '.github/workflows/mailbox-private-bridge.yml',
+    'scripts/doctorcura_eu_cleanup.py',
+    'scripts/doctorcura_phase3_editorial_cleanup.py',
+    'tests/mailbox-private-workflow-contract.php',
 );
 foreach ($forbidden as $path) {
     if (file_exists($root . '/' . $path)) { fwrite(STDERR,"Forbidden legacy/temporary residue: {$path}\n"); exit(1); }
