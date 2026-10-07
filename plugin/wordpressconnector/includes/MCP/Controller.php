@@ -80,6 +80,20 @@ final class Controller
             $params = $message['params'];
         }
 
+        $unsupportedVersion = $this->unsupportedRequestedVersion($request, $params);
+        if (null !== $unsupportedVersion) {
+            return $this->errorResponse(
+                $id,
+                -32022,
+                'Unsupported protocol version',
+                400,
+                array(
+                    'supported' => array(self::MODERN_VERSION, self::LEGACY_VERSION),
+                    'requested' => $unsupportedVersion,
+                )
+            );
+        }
+
         if ('notifications/initialized' === $method) {
             return new \WP_REST_Response(null, 202);
         }
@@ -93,12 +107,21 @@ final class Controller
             try {
                 $this->validateModernEnvelope($request, $method, $params);
             } catch (RuntimeException $error) {
-                return $this->errorResponse($id, -32020, $error->getMessage(), 400);
+                return $this->errorResponse($id, -32602, $error->getMessage(), 400);
             }
         } else {
             $headerVersion = (string) $request->get_header('mcp-protocol-version');
             if ('' !== $headerVersion && self::LEGACY_VERSION !== $headerVersion) {
-                return $this->errorResponse($id, -32600, 'Unsupported MCP protocol version.', 400);
+                return $this->errorResponse(
+                    $id,
+                    -32022,
+                    'Unsupported protocol version',
+                    400,
+                    array(
+                        'supported' => array(self::MODERN_VERSION, self::LEGACY_VERSION),
+                        'requested' => $headerVersion,
+                    )
+                );
             }
         }
 
@@ -144,6 +167,33 @@ final class Controller
         return self::MODERN_VERSION === (string) ($meta['io.modelcontextprotocol/protocolVersion'] ?? '');
     }
 
+    private function unsupportedRequestedVersion(\WP_REST_Request $request, array $params): ?string
+    {
+        $versions = array();
+
+        $headerVersion = (string) $request->get_header('mcp-protocol-version');
+        if ('' !== $headerVersion) {
+            $versions[] = $headerVersion;
+        }
+
+        $meta = isset($params['_meta']) && is_array($params['_meta']) ? $params['_meta'] : array();
+        $metaVersion = isset($meta['io.modelcontextprotocol/protocolVersion'])
+            && is_string($meta['io.modelcontextprotocol/protocolVersion'])
+            ? $meta['io.modelcontextprotocol/protocolVersion']
+            : '';
+        if ('' !== $metaVersion) {
+            $versions[] = $metaVersion;
+        }
+
+        foreach (array_unique($versions) as $version) {
+            if (! in_array($version, array(self::MODERN_VERSION, self::LEGACY_VERSION), true)) {
+                return $version;
+            }
+        }
+
+        return null;
+    }
+
     private function validateModernEnvelope(\WP_REST_Request $request, string $method, array $params): void
     {
         if (self::MODERN_VERSION !== (string) $request->get_header('mcp-protocol-version')) {
@@ -172,7 +222,7 @@ final class Controller
     private function discoverResult(): array
     {
         return array(
-            'supportedVersions' => array(self::MODERN_VERSION),
+            'supportedVersions' => array(self::MODERN_VERSION, self::LEGACY_VERSION),
             'capabilities' => array('tools' => array('listChanged' => false)),
             'instructions' => $this->instructions(),
             'ttlMs' => 300000,
@@ -362,12 +412,20 @@ final class Controller
         ), 200);
     }
 
-    private function errorResponse($id, int $code, string $message, int $status): \WP_REST_Response
+    private function errorResponse($id, int $code, string $message, int $status, ?array $data = null): \WP_REST_Response
     {
+        $error = array(
+            'code' => $code,
+            'message' => $this->boundedMessage($message),
+        );
+        if (null !== $data) {
+            $error['data'] = $data;
+        }
+
         return new \WP_REST_Response(array(
             'jsonrpc' => '2.0',
             'id' => $id,
-            'error' => array('code' => $code, 'message' => $this->boundedMessage($message)),
+            'error' => $error,
         ), $status);
     }
 
