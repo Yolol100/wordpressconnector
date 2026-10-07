@@ -19,13 +19,13 @@ final class AbilitiesAdapter
             'privileged' => true,
             'sensitive' => true,
             'capability' => 'manage_options',
-            'description' => 'Read through an explicitly read-only, client-exposed native Elementor Ability after provider ownership verification; native validation and permission callbacks still run.',
+            'description' => 'Read through an explicitly read-only, client-exposed WordPress Ability; native validation and permission callbacks still run and results remain bounded/redacted.',
         ));
         $registry->register('wordpress.ability.execute', array($this, 'executeAbility'), array(
             'mutation' => true,
             'privileged' => true,
             'capability' => 'manage_options',
-            'description' => 'Execute one explicitly mutating, client-exposed Elementor Ability (elementor/* in the Elementor category) through its native schema validation, permission callback and provider guards. Dry-run never invokes the Ability.',
+            'description' => 'Execute one explicitly mutating native Elementor Ability after verifying its provider against the active Elementor plugin code. Native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
         ));
     }
 
@@ -319,7 +319,7 @@ final class AbilitiesAdapter
 
     private function isElementorAbilityName(string $name): bool
     {
-        return 0 === strpos($name, 'elementor/') || 0 === strpos($name, 'elementor-pro/');
+        return 0 === strpos($name, 'elementor/');
     }
 
     private function isExplicitMcpPublic(object $ability): bool
@@ -333,6 +333,12 @@ final class AbilitiesAdapter
 
     private function isNativeElementorAbilityProvider(string $name, object $ability): bool
     {
+        $abstractClass = 'Elementor\\Modules\\Mcp\\Abilities\\Abstract_Ability';
+        $coreRoot = $this->activePluginRoot('elementor/elementor.php');
+        if (null === $coreRoot || ! class_exists($abstractClass)) {
+            return false;
+        }
+
         $callback = $this->abilityExecuteCallback($ability);
         if (! is_array($callback)
             || 2 !== count($callback)
@@ -342,26 +348,33 @@ final class AbilitiesAdapter
         }
 
         $provider = $callback[0];
-        if (! method_exists($provider, 'get_id') || $name !== (string) $provider->get_id()) {
+        if (! is_a($provider, $abstractClass)
+            || ! method_exists($provider, 'get_id')
+            || $name !== (string) $provider->get_id()) {
             return false;
         }
 
         try {
+            $abstractFile = (new \ReflectionClass($abstractClass))->getFileName();
+            $guardFile = (new \ReflectionMethod($provider, 'execute_guarded'))->getFileName();
             $providerFile = (new \ReflectionObject($provider))->getFileName();
         } catch (\Throwable $error) {
             return false;
         }
-        if (! is_string($providerFile) || '' === $providerFile) {
+
+        if (! $this->fileWithinRoot($abstractFile, $coreRoot)
+            || ! $this->fileWithinRoot($guardFile, $coreRoot)) {
             return false;
         }
 
-        $providerPath = realpath($providerFile);
-        if (false === $providerPath) {
-            return false;
+        $providerRoots = array($coreRoot);
+        $proRoot = $this->activePluginRoot('elementor-pro/elementor-pro.php');
+        if (null !== $proRoot) {
+            $providerRoots[] = $proRoot;
         }
 
-        foreach ($this->trustedElementorPluginRoots() as $root) {
-            if ($this->pathWithinRoot($providerPath, $root)) {
+        foreach ($providerRoots as $root) {
+            if ($this->fileWithinRoot($providerFile, $root)) {
                 return true;
             }
         }
@@ -386,10 +399,10 @@ final class AbilitiesAdapter
         }
     }
 
-    private function trustedElementorPluginRoots(): array
+    private function activePluginRoot(string $pluginFile): ?string
     {
         if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_option')) {
-            return array();
+            return null;
         }
 
         $active = get_option('active_plugins', array());
@@ -401,30 +414,36 @@ final class AbilitiesAdapter
             $networkActive = is_array($value) ? array_keys($value) : array();
         }
 
-        $roots = array();
-        foreach (array('elementor/elementor.php', 'elementor-pro/elementor-pro.php') as $pluginFile) {
-            if (! in_array($pluginFile, $active, true) && ! in_array($pluginFile, $networkActive, true)) {
-                continue;
-            }
-
-            $mainFile = realpath(rtrim((string) WP_PLUGIN_DIR, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $pluginFile));
-            if (false === $mainFile || ! is_file($mainFile)) {
-                continue;
-            }
-
-            $root = realpath(dirname($mainFile));
-            if (false !== $root && ! in_array($root, $roots, true)) {
-                $roots[] = $root;
-            }
+        if (! in_array($pluginFile, $active, true) && ! in_array($pluginFile, $networkActive, true)) {
+            return null;
         }
 
-        return $roots;
+        $mainFile = realpath(
+            rtrim((string) WP_PLUGIN_DIR, '/\\')
+            . DIRECTORY_SEPARATOR
+            . str_replace('/', DIRECTORY_SEPARATOR, $pluginFile)
+        );
+        if (false === $mainFile || ! is_file($mainFile)) {
+            return null;
+        }
+
+        $root = realpath(dirname($mainFile));
+        return false === $root ? null : $root;
     }
 
-    private function pathWithinRoot(string $file, string $root): bool
+    private function fileWithinRoot($file, string $root): bool
     {
+        if (! is_string($file) || '' === $file) {
+            return false;
+        }
+
+        $real = realpath($file);
+        if (false === $real) {
+            return false;
+        }
+
         $root = rtrim($root, DIRECTORY_SEPARATOR);
-        return $file === $root || 0 === strpos($file, $root . DIRECTORY_SEPARATOR);
+        return $real === $root || 0 === strpos($real, $root . DIRECTORY_SEPARATOR);
     }
 
     private function isExecutionExposed(object $ability): bool
