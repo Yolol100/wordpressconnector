@@ -83,6 +83,12 @@ function wp_get_abilities(): array
             'category' => 'elementor',
             'annotations' => array('readonly' => false, 'destructive' => true),
         ), array(new \Webactueel\Tests\Fixtures\ThirdPartyPlugin\SpoofedMcpProvider(), 'execute')),
+        'elementor/disabled-write' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'mcp' => array('public' => false),
+            'category' => 'elementor',
+            'annotations' => array('readonly' => false, 'destructive' => false, 'idempotent' => false),
+        ), array(new \Webactueel\Tests\Fixtures\ElementorPlugin\NativeMcpProvider(), 'execute')),
         'elementor/manage-global-variable' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => true),
@@ -125,11 +131,11 @@ function wp_get_ability(string $name)
 
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 $catalog = $adapter->catalog(array('per_page' => 50, 'page' => 1), array());
-if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 20 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
+if (10 !== $catalog['per_page'] || 1 !== $catalog['page'] || 19 !== $catalog['total'] || 2 !== $catalog['pages'] || 10 !== count($catalog['abilities'])) {
     fwrite(STDERR, "Ability catalog pagination bounds failed.\n"); exit(1);
 }
 $catalogPageTwo = $adapter->catalog(array('per_page' => 10, 'page' => 2), array());
-if (10 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
+if (9 !== count($catalogPageTwo['abilities']) || 2 !== $catalogPageTwo['page']) {
     fwrite(STDERR, "Ability catalog second page failed.\n"); exit(1);
 }
 $elementorCatalog = $adapter->catalog(array('namespace' => 'elementor', 'per_page' => 10, 'page' => 1), array());
@@ -169,16 +175,17 @@ $ability_catalog_overflow = false;
 if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
     fwrite(STDERR, "Public third-party ability was not discovered.\n"); exit(1);
 }
-if (isset($catalog['abilities']['third-party-plugin/private-operation']) || isset($catalog['abilities']['invalid-name'])) {
-    fwrite(STDERR, "Private or malformed ability leaked into the catalog.\n"); exit(1);
+if (isset($catalog['abilities']['third-party-plugin/private-operation'])
+    || isset($catalog['abilities']['third-party-plugin/mutating-operation'])
+    || isset($catalog['abilities']['elementor/disabled-write'])
+    || isset($catalog['abilities']['invalid-name'])) {
+    fwrite(STDERR, "Private, MCP-disabled, or malformed ability leaked into the catalog.\n"); exit(1);
 }
 if (true !== $catalog['abilities']['third-party-plugin/reindex-content']['execution_exposed'] ||
-    false !== $catalog['abilities']['third-party-plugin/mutating-operation']['execution_exposed'] ||
     false !== $catalog['abilities']['third-party-plugin/ambiguous-readonly']['execution_exposed']) {
     fwrite(STDERR, "Ability catalog eligibility does not match the read action.\n"); exit(1);
 }
-if (false !== $catalog['abilities']['third-party-plugin/mutating-operation']['mutation_execution_exposed']
-    || false !== $catalog['abilities']['third-party-plugin/public-mutating-operation']['mutation_execution_exposed']
+if (false !== $catalog['abilities']['third-party-plugin/public-mutating-operation']['mutation_execution_exposed']
     || false !== $catalog['abilities']['elementor/spoofed-write']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/manage-global-variable']['mutation_execution_exposed']
     || true !== $catalog['abilities']['elementor/publish-document']['mutation_execution_exposed']
@@ -303,7 +310,7 @@ if (11 !== ContractAbility::$executions
     fwrite(STDERR, "Completed mutating Ability with deep output was not converted to a terminal bounded result.\n"); exit(1);
 }
 
-foreach (array('third-party-plugin/mutating-operation', 'third-party-plugin/public-mutating-operation', 'elementor/spoofed-write', 'third-party-plugin/ambiguous-readonly', 'third-party-plugin/reindex-content') as $blockedAbility) {
+foreach (array('third-party-plugin/mutating-operation', 'third-party-plugin/public-mutating-operation', 'elementor/disabled-write', 'elementor/spoofed-write', 'third-party-plugin/ambiguous-readonly', 'third-party-plugin/reindex-content') as $blockedAbility) {
     try {
         $adapter->executeAbility(array('name' => $blockedAbility), array('dry_run' => false));
         fwrite(STDERR, "Ineligible Ability was executed by the mutation route: {$blockedAbility}\n"); exit(1);
