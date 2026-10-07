@@ -8,6 +8,7 @@ if (! defined('WP_PLUGIN_DIR')) { define('WP_PLUGIN_DIR', __DIR__ . '/fixtures')
 $test_options = array();
 $test_actions = array();
 $fail_processed_add = false;
+$fail_processed_update = false;
 
 function wp_json_encode($value)
 {
@@ -21,8 +22,15 @@ function current_user_can($capability): bool
 
 function update_option($name, $value, $autoload = false): bool
 {
-    global $test_options;
-    $test_options[(string) $name] = $value;
+    global $test_options, $fail_processed_update;
+    $name = (string) $name;
+    if ($fail_processed_update
+        && 0 === strpos($name, 'wpconnector_processed_')
+        && is_array($value)
+        && 'completed' === ($value['state'] ?? null)) {
+        return false;
+    }
+    $test_options[$name] = $value;
     return true;
 }
 
@@ -434,6 +442,37 @@ if (false !== ($unknownReplay['ok'] ?? true)
     exit(1);
 }
 
+$fail_processed_update = true;
+$finalizeRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1,
+    'request_id' => 'ability-finalize-0008',
+    'action' => 'wordpress.ability.execute',
+    'dry_run' => false,
+    'confirm' => true,
+    'payload' => array(
+        'name' => 'elementor/manage-global-variable',
+        'input' => array('value' => '#777777'),
+    ),
+));
+$finalizeFirst = $runner->run($finalizeRequest);
+$finalizeKey = 'wpconnector_processed_' . hash('sha256', 'ability-finalize-0008');
+if (false !== ($finalizeFirst['ok'] ?? true)
+    || 'started' !== ($test_options[$finalizeKey]['state'] ?? null)
+    || 6 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Final Ability outcome persistence failure was not left in a safe unknown state.\n");
+    exit(1);
+}
+
+$fail_processed_update = false;
+$finalizeReplay = $runner->run($finalizeRequest);
+if (false !== ($finalizeReplay['ok'] ?? true)
+    || true !== ($finalizeReplay['meta']['mutation_outcome_unknown'] ?? false)
+    || true !== ($finalizeReplay['meta']['idempotent_replay'] ?? false)
+    || 6 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Retry after final outcome persistence failure re-executed the provider.\n");
+    exit(1);
+}
+
 $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
     'version' => 1,
     'request_id' => 'ability-batch-0003',
@@ -455,7 +494,7 @@ $batchRequest = \Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
 $batchResult = $runner->run($batchRequest);
 if (false !== ($batchResult['ok'] ?? true)
     || false === strpos((string) ($batchResult['error'] ?? ''), 'not allowed inside connector.batch')
-    || 5 !== AbilityMutationContractAbility::$executions) {
+    || 6 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
 }
