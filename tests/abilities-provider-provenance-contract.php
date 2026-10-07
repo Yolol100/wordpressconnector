@@ -89,7 +89,8 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/Ab
 $adapter = new \Webactueel\WordPressConnector\Adapters\AbilitiesAdapter();
 
 $catalog = $adapter->catalog(array('namespace' => 'elementor'), array());
-if (true !== ($catalog['abilities']['elementor/network-write']['execution_exposed'] ?? false)
+if (! isset($catalog['abilities']['elementor/network-write'])
+    || false !== ($catalog['abilities']['elementor/network-write']['execution_exposed'] ?? true)
     || false !== ($catalog['abilities']['elementor/network-write']['mutation_execution_exposed'] ?? true)) {
     fwrite(STDERR, "Inactive Elementor unexpectedly received mutation trust.\n");
     exit(1);
