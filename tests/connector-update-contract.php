@@ -35,7 +35,12 @@ $adapterRequired = array(
     'getExternalAttributesIndex',
     '0xA000',
     "current_user_can('update_plugins')",
-    "overwrite_package' => true",
+    "'temp_backup' => $backup",
+    "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
+    "get_filesystem_method()",
+    "restore_verified=true",
+    "'external_restore_required' => true",
+    'restoreAfterReadbackFailure',
     'wp_clean_plugins_cache(true)',
     "rollback_supported' => false",
 );

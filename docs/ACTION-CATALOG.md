@@ -26,10 +26,11 @@ This catalog is generated from the connector action registrations. Security labe
 | `code_snippets.restore_code` | mutation, privileged | Internal rollback action that restores the previous code for a guarded Code Snippets patch. |
 | `connector.actions` | read-only | List registered actions and security metadata. |
 | `connector.batch` | mutation | Execute up to 25 connector operations with compensation on failure. |
+| `connector.read_batch` | read-only | Run 1-25 non-sensitive, non-mutating reads after preflighting every leaf; supports REST/MCP and the existing GitHub transport. |
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
 | `connector.discover` | read-only | Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities. |
 | `connector.update.check` | privileged | Check the canonical GitHub release for a newer verified WordPress Connector package. |
-| `connector.update.apply` | mutation, privileged, system_update | Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification. |
+| `connector.update.apply` | mutation, privileged, system_update | Verify the canonical release and apply via WordPress Core's temporary-backup update path; installation failures trigger Core restoration. Real updates require `payload.restore_verified=true` and fingerprint confirmation; post-success recovery still needs an independently tested backup. |
 | `connector.rollback` | mutation, privileged | Execute a stored rollback snapshot by request_id. |
 | `core.check_updates` | privileged | Check WordPress core updates. |
 | `core.update` | mutation, privileged, system_update | Update WordPress core. Non-rollbackable. |

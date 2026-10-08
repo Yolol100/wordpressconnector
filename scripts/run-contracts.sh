@@ -26,6 +26,9 @@ run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
 run_php tests/elementor-json-import-contract.php
 run_php tests/state-token-contract.php
+run_php tests/read-batch-contract.php
+run_php tests/diagnostics-contract.php
+run_php tests/connector-core-backup-runtime.php
 run_php tests/plugin-control-contract.php
 run_php tests/joinchat-settings-contract.php
 run_php tests/yoast-site-representation-contract.php

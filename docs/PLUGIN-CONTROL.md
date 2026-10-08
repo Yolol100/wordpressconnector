@@ -52,6 +52,10 @@ The adapter performs dry-run planning, validation, state fingerprinting, post-wr
 
 The installed Joinchat 6.4.x version has a bounded, non-secret profile for `plugin.settings.inspect` and `plugin.settings.update` (`plugin=joinchat`). Only 12 fields are accepted: `telephone`, `mobile_only`, `button_tip`, `button_delay`, `whatsapp_web`, `message_text`, `message_send`, `message_start`, `position`, `tracking`, `show_brand`, and `color`. Input is validated against the provider's 6.4.x field model. Existing plugin and Premium fields remain untouched; updates support dry-run, state fingerprints, readback and compensating rollback. Changes to custom CSS, campaign IDs, opt-in markup, privacy policy, analytics accounts and security gates remain unsupported.
 
+## Connector self-updates
+
+`connector.update.check` is read-only. `connector.update.apply` accepts only the optional boolean `restore_verified` field in dry-run. A real update requires `restore_verified=true` (owner attestation of an independently tested restore), `confirm=true`, a fresh fingerprint and the existing system-update capability gate. The verified ZIP is installed through WordPress Core's temporary-backup hooks; failed installations trigger Core recovery, and a version readback mismatch attempts recovery while the temporary backup still exists. Core temporary backups do **not** guarantee restoration after a fatal error detected on a later request. A production update without independent recovery evidence remains blocked.
+
 ## WP Rocket control
 
 The adapter uses WP Rocket's `get_rocket_option()` / `update_rocket_option()` functions and an explicit allowlist for cache, CSS/JS optimization, lazy loading, preload, CDN, WebP and purge interval settings. Unknown fields fail closed.
@@ -89,7 +93,7 @@ Filesystem actions intentionally have a narrower blast radius than the File Mana
 
 ## Fast-path execution and access diagnosis
 
-Call `plugin.settings.catalog` once per installed plugin inventory and reuse its proven action/profile mapping. Prefer one `connector.batch` (up to 25 supported operations) for independent, compatible reads, rather than one GitHub PR per page or setting. Writes still require their own fingerprints, confirmations, compensations, readbacks and permission gates; not every action may be batched safely.
+Call `plugin.settings.catalog` once per installed plugin inventory and reuse its proven action/profile mapping. Prefer `connector.read_batch` (1-25 read-only actions with complete permission preflight and no mutation gates) for independent reads in one direct REST/MCP request or single GitHub request. Keep `connector.batch` for confirmed writes that need compensation; never mix an unsupported read into a write batch. Writes still require their own fingerprints, confirmations, compensations, readbacks and permission gates; not every action may be batched safely.
 
 The zero-config GitHub executor intentionally has two trust-separated workflows: a credential-free request verifier and a trusted, short-lived OIDC executor. This boundary must not be collapsed just to reduce runner-start time. Presence probes retry **only** transient transport errors, HTTP 408, HTTP 429 and HTTP 5xx (at most three attempts per canonical/fallback route). Permanent 401/403, other 4xx, and malformed HTTP 200 presence responses fail fast. The standard `/wp-json/.../presence` route gets one `?rest_route=` fallback check; failure gives no permission to disable maintenance, WAF or authentication protections. An upstream block must be repaired by the site's administrator and independently retested.
 

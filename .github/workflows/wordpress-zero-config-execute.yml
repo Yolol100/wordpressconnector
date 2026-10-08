@@ -185,11 +185,17 @@ jobs:
               # check the WordPress rest_route fallback once below.
               if [[ "$code" == 401 || "$code" == 403 ]]; then
                 echo "Presence access denied (HTTP ${code}); check hosting/WAF and maintenance-plugin REST access; do not bypass authentication." >&2
+                echo "::error title=WordPress Connector access denied::HTTP ${code} on presence endpoint. Review hosting/WAF, maintenance REST rules and WordPress permissions; no authentication bypass." >&2
                 return 1
               fi
               # Retry only transient transport, throttling or server errors.
               # A 200 response with invalid presence JSON is not a connector.
               if [[ "$code" != 000 && "$code" != 408 && "$code" != 429 && ! "$code" =~ ^5[0-9][0-9]$ ]]; then
+                if [[ "$code" == 404 ]]; then
+                  echo "::error title=WordPress Connector route missing::HTTP 404. Verify plugin activation, REST route registration and rewrite rules." >&2
+                elif [[ "$code" == 200 ]]; then
+                  echo "::error title=WordPress Connector presence invalid::HTTP 200 did not return the expected presence JSON; check maintenance or caching interception." >&2
+                fi
                 return 1
               fi
               if (( attempt < 3 )); then
@@ -269,7 +275,19 @@ jobs:
             "$base/execute")
           unset oidc token_json
           [[ "$code" == 200 ]]
-          php -r '$d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR);if(($d["request_id"]??"")!==$argv[2])exit(1);' "$result" "$REQUEST_ID"
+          # HTTP 200 is only transport success. A semantic {"ok":false} must
+          # fail the job, while still allowing the separate result/receipt writeback.
+          php -r '
+            try { $d=json_decode(file_get_contents($argv[1]),true,512,JSON_THROW_ON_ERROR); }
+            catch (Throwable $error) { fwrite(STDERR,"::error title=Connector response invalid::Execution did not return valid JSON.\n"); exit(1); }
+            if (!is_array($d) || ($d["request_id"]??"")!==$argv[2]) { fwrite(STDERR,"::error title=Connector result mismatch::Request ID or response structure is invalid.\n"); exit(1); }
+            if (($d["ok"]??false)!==true) {
+              $code=(string)($d["meta"]["diagnostic"]["code"]??"unclassified");
+              if (!preg_match("/^[a-z_]{3,50}$/", $code)) $code="unclassified";
+              fwrite(STDERR,"::error title=WordPress operation failed::Connector diagnostic: {$code}. Inspect the stored result or sanitized receipt.\n");
+              exit(1);
+            }
+          ' "$result" "$REQUEST_ID"
 
       - name: Build public receipt
         if: always() && steps.preflight.outputs.public_mode == 'true'

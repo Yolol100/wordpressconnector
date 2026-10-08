@@ -9,6 +9,13 @@ use Throwable;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+if (! defined('ABSPATH')) {
+    exit;
+}
+
+// Keep isolated REST/MCP/CLI and contract harness entrypoints consistent.
+require_once __DIR__ . '/Diagnostics.php';
+
 final class Runner
 {
     private Registry $registry;
@@ -22,6 +29,7 @@ final class Runner
         $this->processed = $processed;
         $this->registry->register('connector.actions', array($this, 'actions'), array('description' => 'List registered actions and security metadata.'));
         $this->registry->register('connector.batch', array($this, 'batch'), array('mutation' => true, 'description' => 'Execute up to 25 connector operations with compensation on failure.'));
+        $this->registry->register('connector.read_batch', array($this, 'readBatch'), array('description' => 'Read up to 25 supported actions with one permission-checked request and no mutations.'));
         $this->registry->register('connector.rollback', array($this, 'rollback'), array('mutation' => true, 'privileged' => true, 'description' => 'Execute a stored rollback snapshot by request_id.'));
         $this->registry->register('connector.cleanup', array($this, 'cleanup'), array('mutation' => true, 'privileged' => true, 'description' => 'Delete expired idempotency and rollback state.'));
     }
@@ -62,6 +70,7 @@ final class Runner
                                 'idempotent_replay' => true,
                                 'original_result_hash' => $existing['result_hash'] ?? null,
                                 'terminal_mutation' => true,
+                                'diagnostic' => Diagnostics::classify((string) ($existing['terminal_error'] ?? ''), true),
                             )
                         );
                     }
@@ -102,6 +111,7 @@ final class Runner
                     'request_fingerprint' => $requestFingerprint,
                     'terminal_mutation' => true,
                     'terminal_context' => $terminalContext,
+                    'diagnostic' => Diagnostics::classify($terminalError, true),
                 ));
                 if (! $request->dryRun() && ! empty($descriptor['mutation'])) {
                     $this->processed->put(
@@ -122,7 +132,10 @@ final class Runner
             }
             return $result;
         } catch (Throwable $error) {
-            return Result::failure($request, $error->getMessage(), array('exception' => get_class($error)));
+            return Result::failure($request, $error->getMessage(), array(
+                'exception' => get_class($error),
+                'diagnostic' => Diagnostics::classify($error->getMessage(), isset($descriptor) && ! empty($descriptor['mutation']) && ! $request->dryRun()),
+            ));
         } finally {
             if ('' !== $lockToken) {
                 $this->processed->releaseMutationLock($lockToken);
@@ -133,6 +146,53 @@ final class Runner
     public function actions(array $payload, array $context): array
     {
         return array('actions' => $this->registry->catalog());
+    }
+
+    /**
+     * Single-roundtrip fast path for independent reads. Preflight every leaf
+     * before executing any to prevent a later unsafe action from partly running.
+     * Mutations, sensitive exports and nested actions are never eligible.
+     */
+    public function readBatch(array $payload, array $context): array
+    {
+        $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
+        if (!$operations || count($operations) > 25 || array_keys($payload) !== array('operations')) {
+            throw new RuntimeException('connector.read_batch requires 1-25 operations.');
+        }
+
+        $allowed = array();
+        foreach ($operations as $index => $operation) {
+            if (! is_array($operation) || ! isset($operation['action']) || ! is_string($operation['action'])
+                || ! isset($operation['payload']) || ! is_array($operation['payload'])
+                || array_diff(array_keys($operation), array('action', 'payload'))) {
+                throw new RuntimeException('Read batch operation at index ' . $index . ' is invalid.');
+            }
+            $action = $operation['action'];
+            if (in_array($action, array('connector.read_batch', 'connector.batch', 'connector.rollback', 'connector.cleanup'), true)
+                || 'wordpress.ability.execute' === $action) {
+                throw new RuntimeException('Nested and delegated actions are not allowed in connector.read_batch.');
+            }
+            $descriptor = $this->registry->descriptor($action);
+            if (! empty($descriptor['mutation']) || ! empty($descriptor['sensitive']) || ! empty($descriptor['system_update'])) {
+                throw new RuntimeException('Mutating, sensitive and system-update actions are not allowed in connector.read_batch.');
+            }
+            if (Policy::publicRepositoryContext()) {
+                $descriptor = $this->publicDescriptor($action, $operation['payload'], $descriptor, true, null);
+            }
+            Policy::assertActionAllowed($descriptor, true, false);
+            $allowed[] = array('action' => $action, 'payload' => $operation['payload']);
+        }
+
+        $results = array();
+        foreach ($allowed as $operation) {
+            $result = $this->registry->execute($operation['action'], $operation['payload'], array_merge($context, array(
+                'dry_run' => true,
+                'confirm' => false,
+            )));
+            unset($result['_rollback'], $result['_current_fingerprint']);
+            $results[] = array('action' => $operation['action'], 'result' => $result);
+        }
+        return array('operations' => $results);
     }
 
     public function batch(array $payload, array $context): array
@@ -149,7 +209,7 @@ final class Runner
                     throw new RuntimeException('Batch operation at index ' . $index . ' is invalid.');
                 }
                 $action = $operation['action'];
-                if (in_array($action, array('connector.batch', 'connector.rollback', 'connector.cleanup'), true)) {
+                if (in_array($action, array('connector.batch', 'connector.read_batch', 'connector.rollback', 'connector.cleanup'), true)) {
                     throw new RuntimeException('Nested batch, rollback or cleanup operations are not allowed.');
                 }
                 if ('wordpress.ability.execute' === $action) {

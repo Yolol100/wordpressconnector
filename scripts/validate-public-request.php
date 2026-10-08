@@ -38,6 +38,7 @@ $publicActions = array(
     'elementor.inspect',
     'elementor.patch_element',
     'connector.batch',
+    'connector.read_batch',
     'connector.rollback',
     'connector.update.check',
     'connector.update.apply',
@@ -51,6 +52,35 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+if ('connector.read_batch' === $action) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
+    $safeReads = array('post.list', 'post.get', 'acf.field_groups', 'elementor.inspect', 'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect');
+    if (array_keys($payload) !== array('operations') || ! $operations || count($operations) > 25) {
+        fwrite(STDERR, "Public read batch requires 1-25 operations.\n");
+        exit(1);
+    }
+    foreach ($operations as $index => $operation) {
+        $leaf = is_array($operation) && isset($operation['action']) && is_string($operation['action']) ? $operation['action'] : '';
+        if (! in_array($leaf, $safeReads, true) || ! isset($operation['payload']) || ! is_array($operation['payload'])
+            || array_diff(array_keys($operation), array('action', 'payload'))) {
+            fwrite(STDERR, 'Unsafe public read batch operation at index ' . $index . ".\n");
+            exit(1);
+        }
+    }
+}
+
+if ('connector.update.apply' === $action) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if (array_diff(array_keys($payload), array('restore_verified'))
+        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))
+        || (! $dryRun && true !== ($payload['restore_verified'] ?? false))) {
+        fwrite(STDERR, "Connector self-update requires restore_verified=true and no unsupported fields.\n");
+        exit(1);
+    }
 }
 
 if ('connector.batch' === $action) {
