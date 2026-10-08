@@ -52,6 +52,10 @@ The adapter performs dry-run planning, validation, state fingerprinting, post-wr
 
 The installed Joinchat 6.4.x version has a bounded, non-secret profile for `plugin.settings.inspect` and `plugin.settings.update` (`plugin=joinchat`). Only 12 fields are accepted: `telephone`, `mobile_only`, `button_tip`, `button_delay`, `whatsapp_web`, `message_text`, `message_send`, `message_start`, `position`, `tracking`, `show_brand`, and `color`. Input is validated against the provider's 6.4.x field model. Existing plugin and Premium fields remain untouched; updates support dry-run, state fingerprints, readback and compensating rollback. Changes to custom CSS, campaign IDs, opt-in markup, privacy policy, analytics accounts and security gates remain unsupported.
 
+## Connector self-updates
+
+`connector.update.check` is read-only. `connector.update.apply` accepts only the optional boolean `restore_verified` field in dry-run. A real update requires `restore_verified=true` (owner attestation of an independently tested restore), `confirm=true`, a fresh fingerprint and the existing system-update capability gate. The verified ZIP is installed through WordPress Core's temporary-backup hooks; failed installations trigger Core recovery, and a version readback mismatch attempts recovery while the temporary backup still exists. Core temporary backups do **not** guarantee restoration after a fatal error detected on a later request. A production update without independent recovery evidence remains blocked.
+
 ## WP Rocket control
 
 The adapter uses WP Rocket's `get_rocket_option()` / `update_rocket_option()` functions and an explicit allowlist for cache, CSS/JS optimization, lazy loading, preload, CDN, WebP and purge interval settings. Unknown fields fail closed.
