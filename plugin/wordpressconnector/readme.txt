@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.3
+Stable tag: 1.17.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.4 hardens complex ACF schema creation compensation. If a nested field creation fails after its parent or earlier sub fields were persisted, the connector now tracks the exact created field IDs, removes them in reverse order, verifies cleanup readback and reports compensation failure instead of leaving silent partial schema residue.
 
 Version 1.17.3 adds guarded private/direct ACF schema creation for new field groups and bounded complex fields, including image, relationship, group and repeater structures with nested sub fields. The new routes fail closed on existing ownership conflicts, enforce bounded schemas and location rules, require normal connector confirmation/stale-state handling, verify exact readback and retain rollback definitions. The existing public GitHub ACF text-schema route remains unchanged; complex schema mutation is not public.
 
@@ -91,6 +93,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.4 =
+* Track every persisted node during complex ACF field-tree creation so mid-tree failures can be compensated exactly.
+* Delete created nodes in reverse order, verify readback and surface compensation failures.
+* Add failure-injection runtime coverage proving no parent/subfield residue remains after a nested creation error.
 
 = 1.17.3 =
 * Add private/direct `acf.schema.ensure_fields` and `acf.schema.remove_fields` for bounded complex fields in existing field groups.

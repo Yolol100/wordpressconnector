@@ -28,6 +28,7 @@ $GLOBALS['acf_test_groups'] = array(
 );
 $GLOBALS['acf_test_fields'] = array();
 $GLOBALS['acf_test_next_id'] = 1000;
+$GLOBALS['acf_test_fail_key'] = '';
 
 function get_post($id)
 {
@@ -110,6 +111,9 @@ function acf_get_fields($parent): array
 function acf_update_field($field)
 {
     if (! is_array($field) || empty($field['key'])) {
+        return false;
+    }
+    if ((string) $field['key'] === (string) ($GLOBALS['acf_test_fail_key'] ?? '')) {
         return false;
     }
     if (empty($field['ID'])) {
@@ -287,6 +291,51 @@ if (($removed['removed'] ?? array()) !== array('field_heroimage123', 'field_deta
     || is_array(acf_get_field('field_item_image123'))) {
     fwrite(STDERR, "Complex ACF recursive removal failed.\n");
     exit(1);
+}
+
+$failurePayload = array(
+    'post_id' => 4470,
+    'group_key' => 'group_existing123',
+    'fields' => array(
+        array(
+            'key' => 'field_failure_parent123',
+            'name' => 'failure_parent',
+            'label' => 'Failure parent',
+            'type' => 'group',
+            'sub_fields' => array(
+                array(
+                    'key' => 'field_failure_child123',
+                    'name' => 'failure_child',
+                    'label' => 'Failure child',
+                    'type' => 'text',
+                ),
+                array(
+                    'key' => 'field_failure_trigger123',
+                    'name' => 'failure_trigger',
+                    'label' => 'Failure trigger',
+                    'type' => 'text',
+                ),
+            ),
+        ),
+    ),
+);
+$GLOBALS['acf_test_fail_key'] = 'field_failure_trigger123';
+$failedAsExpected = false;
+try {
+    $adapter->ensureFields($failurePayload, array('dry_run' => false));
+} catch (RuntimeException $error) {
+    $failedAsExpected = true;
+}
+$GLOBALS['acf_test_fail_key'] = '';
+if (! $failedAsExpected) {
+    fwrite(STDERR, "Complex ACF injected partial-create failure did not fail.\n");
+    exit(1);
+}
+foreach (array('field_failure_parent123', 'field_failure_child123', 'field_failure_trigger123') as $key) {
+    if (is_array(acf_get_field($key))) {
+        fwrite(STDERR, "Complex ACF partial-create compensation left residue: {$key}\n");
+        exit(1);
+    }
 }
 
 $groupPayload = array(

@@ -475,9 +475,10 @@ final class AcfAdapter
         }
 
         $created = array();
+        $createdNodes = array();
         try {
             foreach ($wouldCreate as $definition) {
-                $this->createFieldTree($definition, $groupId, $nextMenuOrder++);
+                $this->createFieldTree($definition, $groupId, $nextMenuOrder++, $createdNodes);
                 $created[] = $definition;
             }
             $after = array();
@@ -493,8 +494,13 @@ final class AcfAdapter
                 $after[$definition['key']] = $tree;
             }
         } catch (\Throwable $error) {
-            foreach (array_reverse($created) as $definition) {
-                $this->deleteFieldTreeByKey((string) $definition['key']);
+            $cleanupFailures = $this->cleanupCreatedFieldNodes($createdNodes);
+            if ($cleanupFailures) {
+                throw new RuntimeException(
+                    $error->getMessage() . ' Compensation failed for created ACF fields: ' . implode(', ', $cleanupFailures),
+                    0,
+                    $error
+                );
             }
             throw $error;
         }
@@ -1263,7 +1269,7 @@ final class AcfAdapter
         return $normalized;
     }
 
-    private function createFieldTree(array $definition, int $parentId, int $menuOrder): void
+    private function createFieldTree(array $definition, int $parentId, int $menuOrder, array &$createdNodes): void
     {
         $children = isset($definition['sub_fields']) && is_array($definition['sub_fields']) ? $definition['sub_fields'] : array();
         $field = $definition;
@@ -1282,9 +1288,40 @@ final class AcfAdapter
         if ($savedId <= 0) {
             throw new RuntimeException('ACF complex field creation returned no persistent ID: ' . $definition['key']);
         }
+        $createdNodes[] = array('key' => (string) $definition['key'], 'id' => $savedId);
         foreach (array_values($children) as $index => $child) {
-            $this->createFieldTree($child, $savedId, $index);
+            $this->createFieldTree($child, $savedId, $index, $createdNodes);
         }
+    }
+
+    private function cleanupCreatedFieldNodes(array $createdNodes): array
+    {
+        $failures = array();
+        foreach (array_reverse($createdNodes) as $node) {
+            $key = isset($node['key']) ? (string) $node['key'] : '';
+            $id = isset($node['id']) ? (int) $node['id'] : 0;
+            if ('' === $key || $id <= 0) {
+                $failures[] = '' !== $key ? $key : '(unknown)';
+                continue;
+            }
+            $field = acf_get_field($key);
+            if (! is_array($field)) {
+                continue;
+            }
+            if ((int) ($field['ID'] ?? 0) !== $id) {
+                $failures[] = $key;
+                continue;
+            }
+            if (false === acf_delete_field($id)) {
+                $failures[] = $key;
+                continue;
+            }
+            $readback = acf_get_field($key);
+            if (is_array($readback) && (int) ($readback['ID'] ?? 0) === $id) {
+                $failures[] = $key;
+            }
+        }
+        return array_values(array_unique($failures));
     }
 
     private function deleteFieldTreeByKey(string $key): void
