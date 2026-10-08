@@ -1,0 +1,19 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-assetcleanup-flush-dryrun-1162-20261006",
+    "action": "maintenance.cache_flush",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-06T21:54:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layer": "asset_cleanup",
+    "provider": "Asset CleanUp",
+    "provider_version": "1.4.0.6",
+    "rollback_supported": false,
+    "rebuild_mode": "regenerate_optimized_assets_on_next_eligible_request",
+    "json_cache_files_before": 0,
+    "readback_verified": null,
+    "before_fingerprint": "92baccfedca65f2a7831e188e07095ad0f660a2dc90e2c30b8e0e5515e3189b0",
+    "would_flush": true
+}
