@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+if (! defined('ABSPATH')) { define('ABSPATH', __DIR__ . '/'); }
+
 require_once __DIR__ . '/fixtures/elementor/modules/mcp/abilities/native-ability-fixture.php';
 if (! defined('WP_PLUGIN_DIR')) { define('WP_PLUGIN_DIR', __DIR__ . '/fixtures'); }
 
