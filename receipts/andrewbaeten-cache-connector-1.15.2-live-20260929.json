@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "andrewbaeten-cache-connector-1.15.2-live-20260929",
+    "action": "connector.update.apply",
+    "dry_run": false,
+    "completed_at_gmt": "2026-09-29T07:16:11+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "from_version": "1.15.1",
+    "to_version": "1.15.2",
+    "package_sha256": "d66f692b2b33e54cdd5eb073dc4eaf8a2a82079f792b98b9a353a5d1f4602760"
+}
