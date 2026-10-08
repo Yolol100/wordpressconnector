@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Runtime;
 
+if (! defined('ABSPATH')) {
+    exit;
+}
+
 /**
  * Deterministic, content-free error guidance. Never copies exception messages,
  * request payloads, credentials or URLs into diagnostic metadata.
