@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "mailbox-plugin-install-20261001-003",
+    "action": "plugin.install_package",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-01T05:55:54+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "plugin_file": "webactueel-mailbox-bridge/webactueel-mailbox-bridge.php",
+    "package_sha256": "ad352f31eb2303d09a82e189cc01254d81ed840540391cf5227b5bda402d3b38",
+    "activate_requested": true,
+    "overwrite": false,
+    "network_wide": false,
+    "rollback_supported": false,
+    "before_fingerprint": "d7070067ebc8c38028a8b8fc62ea4fe118fde3743ead142753b69b4697b38ae0",
+    "already_installed": false,
+    "after_fingerprint": "d1815b838ffaf6d056c27c8d383c0b4638f04a24009279ec9b6bbae798f91ba6",
+    "operation": "installed",
+    "readback_verified": true
+}
