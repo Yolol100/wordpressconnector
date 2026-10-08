@@ -63,6 +63,19 @@ final class ConnectorUpdateAdapter
         if (! current_user_can('update_plugins')) {
             throw new RuntimeException('Current user is not allowed to update plugins.');
         }
+        foreach (array_keys($payload) as $key) {
+            if ('restore_verified' !== $key) {
+                throw new RuntimeException('Connector self-update accepts only the restore_verified preflight field.');
+            }
+        }
+        if (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified'])) {
+            throw new RuntimeException('restore_verified must be boolean.');
+        }
+        // Core temp backups recover installation faults but cannot guarantee
+        // recovery from a fatal error first exposed by the next page load.
+        if (empty($context['dry_run']) && true !== ($payload['restore_verified'] ?? false)) {
+            throw new RuntimeException('Confirmed Connector self-update requires a tested external site restore and restore_verified=true.');
+        }
 
         $release = $this->release();
         $current = defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : '0.0.0';
@@ -84,6 +97,7 @@ final class ConnectorUpdateAdapter
             'github_asset_digest' => $release['package_digest'],
             'rollback_supported' => false,
             'installation_failure_recovery' => 'wordpress_core_temp_backup',
+            'external_restore_required' => true,
             'post_success_restore_guaranteed' => false,
         );
 
