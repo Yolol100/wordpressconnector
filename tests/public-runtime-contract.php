@@ -118,11 +118,22 @@ $updateConfirm['request_id'] = 'public-test-0006';
 $updateConfirm['dry_run'] = false;
 $updateConfirm['confirm'] = true;
 $updateConfirm['expected_fingerprint'] = str_repeat('c', 64);
+$updateConfirm['payload'] = array('restore_verified' => true);
 list($status) = $run($validator, array($writeJson('allowed-update-confirm.json', $updateConfirm)));
 if (0 !== $status) {
     fwrite(STDERR, "Allowed confirmed public connector.update.apply was rejected.\n");
     exit(1);
 }
+
+$updateUnsafe = $updateConfirm;
+$updateUnsafe['request_id'] = 'public-test-0007';
+$updateUnsafe['payload'] = array();
+list($status) = $run($validator, array($writeJson('blocked-update-no-restore.json', $updateUnsafe)));
+if (0 === $status) {
+    fwrite(STDERR, "Public connector self-update must reject unverified restore.\n");
+    exit(1);
+}
+
 
 $forbiddenCases = array();
 
