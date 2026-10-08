@@ -97,11 +97,17 @@ if (! $allowed['ok'] || $reads !== $start + 1) {
     throw new RuntimeException('Allowlisted public read failed.');
 }
 $start = $reads;
-$blocked = $run(array(
-    array('action' => 'post.list', 'payload' => array()),
-    array('action' => 'privileged.read', 'payload' => array()),
-));
-if ($blocked['ok'] || $reads !== $start) {
+$denied = false;
+try {
+    $blocked = $run(array(
+        array('action' => 'post.list', 'payload' => array()),
+        array('action' => 'privileged.read', 'payload' => array()),
+    ));
+    $denied = ! $blocked['ok'];
+} catch (RuntimeException $error) {
+    $denied = false !== strpos($error->getMessage(), 'Unsafe public read batch operation');
+}
+if (! $denied || $reads !== $start) {
     throw new RuntimeException('Public policy did not block read-batch leaf before any reads.');
 }
 Policy::setPublicRepositoryContext(false);
