@@ -110,7 +110,7 @@ $expectFailure(array('button_delay' => 100), 'integer between 0 and 30');
 $expectFailure(array('position' => 'top'), 'left or right');
 $expectFailure(array('color' => '#red'), 'RGB hex');
 $expectFailure(array('message_text' => str_repeat('x', 801)), 'length limit');
-$expectFailure(array('secret_token' => 'bad'), 'Setting key not allowed');
+$expectFailure(array('secret_token' => 'bad'), 'Secret-like keys cannot be read or written');
 
 $source = (string) file_get_contents($root . 'Adapters/PluginSettingsAdapter.php');
 foreach (array(
