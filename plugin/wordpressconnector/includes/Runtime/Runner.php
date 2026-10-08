@@ -9,6 +9,9 @@ use Throwable;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+// Keep isolated REST/MCP/CLI and contract harness entrypoints consistent.
+require_once __DIR__ . '/Diagnostics.php';
+
 final class Runner
 {
     private Registry $registry;
