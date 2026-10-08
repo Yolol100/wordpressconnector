@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.7 adds an explicitly non-mutating fast read batch (up to 25 independently authorized reads), safe structured error diagnostics, and a guarded Core temporary-backup path for Connector self-updates. An external tested restore remains required before production updates.
+Version 1.17.7 adds an explicitly non-mutating fast read batch (up to 25 independently authorized reads), safe structured error diagnostics, and a guarded Core temporary-backup path for Connector self-updates. A confirmed update requires `restore_verified=true`, an owner-tested external restore, and normal state/permission gates. WordPress Core's temporary-backup recovery is limited to install/readback failures and does not guarantee post-success rollback.
 
 
 Version 1.17.4 hardens complex ACF schema creation compensation. If a nested field creation fails after its parent or earlier sub fields were persisted, the connector now tracks the exact created field IDs, removes them in reverse order, verifies cleanup readback and reports compensation failure instead of leaving silent partial schema residue.
