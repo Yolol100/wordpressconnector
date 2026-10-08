@@ -181,7 +181,20 @@ jobs:
               bytes=$(wc -c < "$out" 2>/dev/null || echo 0)
               digest=$(sha256sum "$out" 2>/dev/null | awk '{print $1}' || echo unavailable)
               echo "Presence probe attempt ${attempt} failed (HTTP ${code:-transport-error}, ${bytes} bytes, sha256=${digest})." >&2
-              sleep "$attempt"
+              # A denied or invalid route cannot recover by immediate polling. Still
+              # check the WordPress rest_route fallback once below.
+              if [[ "$code" == 401 || "$code" == 403 ]]; then
+                echo "Presence access denied (HTTP ${code}); check hosting/WAF and maintenance-plugin REST access; do not bypass authentication." >&2
+                return 1
+              fi
+              # Retry only transient transport, throttling or server errors.
+              # A 200 response with invalid presence JSON is not a connector.
+              if [[ "$code" != 000 && "$code" != 408 && "$code" != 429 && ! "$code" =~ ^5[0-9][0-9]$ ]]; then
+                return 1
+              fi
+              if (( attempt < 3 )); then
+                sleep "$attempt"
+              fi
             done
             return 1
           }

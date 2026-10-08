@@ -39,28 +39,47 @@ final class PluginSettingsAdapter
         'cache_webp' => 'bool',
     );
 
+    private const JOINCHAT_FIELDS = array(
+        'telephone' => 'phone',
+        'mobile_only' => 'yes_no',
+        'button_tip' => 'short_text',
+        'button_delay' => 'delay',
+        'whatsapp_web' => 'yes_no',
+        'message_text' => 'message_text',
+        'message_send' => 'message_text',
+        'message_start' => 'short_text',
+        'position' => 'position',
+        'tracking' => 'yes_no',
+        'show_brand' => 'yes_no',
+        'color' => 'color',
+    );
+
     private const INTEGRATIONS = array(
         'acf-content-analysis-for-yoast-seo/yoast-acf-analysis.php' => array('id' => 'acf_yoast_analysis', 'mode' => 'covered_by_acf_and_yoast', 'actions' => array('acf.get', 'acf.update', 'yoast.inspect', 'yoast.update')),
         'acf-page-text-manager/acf-page-text-manager.php' => array('id' => 'acf_page_text_manager', 'mode' => 'project_specific', 'actions' => array('acf.get', 'acf.update')),
         'advanced-custom-fields/acf.php' => array('id' => 'acf', 'mode' => 'native_adapter', 'actions' => array('acf.field_groups', 'acf.get', 'acf.update')),
         'all-in-one-wp-migration/all-in-one-wp-migration.php' => array('id' => 'all_in_one_wp_migration', 'mode' => 'system_operation', 'actions' => array(), 'note' => 'Backup/import/export operations require a separate high-risk staging-first contract.'),
-        'wp-asset-clean-up/wpacu.php' => array('id' => 'asset_cleanup', 'mode' => 'version_bound', 'actions' => array(), 'note' => 'Asset unload rules require an installed-version contract plus browser regression readback.'),
+        'wp-asset-clean-up/wpacu.php' => array('id' => 'asset_cleanup', 'mode' => 'cache_only', 'actions' => array('maintenance.cache_capabilities', 'maintenance.cache_flush'), 'note' => 'Cache maintenance is supported; asset unload/settings writes require an installed-version and browser regression contract.'),
         'auto-image-attributes-from-filename-with-bulk-updater/iaff_image-attributes-from-filename.php' => array('id' => 'auto_image_attributes', 'mode' => 'native_allowlist', 'actions' => array('auto_image_attributes.inspect', 'auto_image_attributes.update', 'media.get', 'media.update')),
         'broken-link-checker/broken-link-checker.php' => array('id' => 'broken_link_checker', 'mode' => 'version_bound', 'actions' => array(), 'note' => 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.'),
         'code-snippets/code-snippets.php' => array('id' => 'code_snippets', 'mode' => 'bounded_exact_patch', 'actions' => array('code_snippets.patch'), 'note' => 'Arbitrary snippet creation/execution and full-source export remain blocked; one existing PHP snippet may be patched only through exact bounded replacements with fingerprint, readback and rollback.'),
         'content-sync-manager/content-sync-manager.php' => array('id' => 'content_sync_manager', 'mode' => 'project_specific', 'actions' => array()),
+        'classic-editor/classic-editor.php' => array('id' => 'classic_editor', 'mode' => 'core_editor_option', 'actions' => array(), 'note' => 'A dedicated editor-preference contract is required; no raw options are exposed.'),
         'duplicate-page/duplicatepage.php' => array('id' => 'duplicate_page', 'mode' => 'no_special_adapter_needed', 'actions' => array('post.get', 'post.create')),
         'elementor/elementor.php' => array('id' => 'elementor', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document')),
-        'elementor-pro-2/elementor-pro.php' => array('id' => 'elementor_pro', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document')),
+        'elementor-pro/elementor-pro.php' => array('id' => 'elementor_pro', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document', 'elementor.form_inspect', 'elementor.form_upsert')),
+        'elementor-pro-2/elementor-pro.php' => array('id' => 'elementor_pro', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document', 'elementor.form_inspect', 'elementor.form_upsert')), 
         'gtranslate/gtranslate.php' => array('id' => 'gtranslate', 'mode' => 'version_bound', 'actions' => array()),
         'imagify/imagify.php' => array('id' => 'imagify', 'mode' => 'wordpress_ability', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
-        'creame-whatsapp-me/joinchat.php' => array('id' => 'joinchat', 'mode' => 'version_bound', 'actions' => array()),
+        'creame-whatsapp-me/joinchat.php' => array('id' => 'joinchat', 'mode' => 'native_allowlist', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update'), 'note' => 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.'),
         'litespeed-cache/litespeed-cache.php' => array('id' => 'litespeed_cache', 'mode' => 'inactive_or_version_bound', 'actions' => array()),
         'loco-translate/loco.php' => array('id' => 'loco_translate', 'mode' => 'filesystem_bound', 'actions' => array(), 'note' => 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.'),
+        'redirection/redirection.php' => array('id' => 'redirection', 'mode' => 'provider_api_required', 'actions' => array(), 'note' => 'Redirect writes require a dedicated provider-owned API contract and redirect-loop validation.'),
+        'under-construction-page/under-construction.php' => array('id' => 'under_construction', 'mode' => 'maintenance_gate', 'actions' => array(), 'note' => 'Maintenance settings and public REST visibility require a dedicated security-reviewed contract; never bypass upstream HTTP 403.'),
         'really-simple-ssl/rlrsssl-really-simple-ssl.php' => array('id' => 'really_simple_security', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
         'google-site-kit/google-site-kit.php' => array('id' => 'site_kit', 'mode' => 'oauth_bound', 'actions' => array(), 'note' => 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.'),
         'wordfence/wordfence.php' => array('id' => 'wordfence', 'mode' => 'limited_stable_api', 'actions' => array(), 'note' => 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.'),
-        'wordpressconnector/wordpressconnector.php' => array('id' => 'wordpress_connector', 'mode' => 'canonical_bridge', 'actions' => array('connector.discover', 'connector.actions')),
+        'wordpressconnector/wordpressconnector.php' => array('id' => 'wordpress_connector', 'mode' => 'canonical_bridge', 'actions' => array('connector.discover', 'connector.actions', 'connector.update.check', 'connector.update.apply')), 
         'wp-file-manager/file_folder_manager.php' => array(
             'id' => 'wp_file_manager',
             'mode' => 'shared_filesystem_interface',
@@ -68,9 +87,9 @@ final class PluginSettingsAdapter
             'note' => 'WP File Manager remains the visual admin UI. The connector does not reuse its private AJAX/elFinder protocol; both operate on the same WordPress filesystem, with connector writes bounded to existing plugin/theme text files.',
         ),
         'wp-mail-smtp/wp_mail_smtp.php' => array('id' => 'wp_mail_smtp', 'mode' => 'secret_bound', 'actions' => array(), 'note' => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'),
-        'wp-rocket/wp-rocket.php' => array('id' => 'wp_rocket', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
-        'wordpress-seo/wp-seo.php' => array('id' => 'yoast', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update')),
-        'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update')),
+        'wp-rocket/wp-rocket.php' => array('id' => 'wp_rocket', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update', 'maintenance.cache_flush')), 
+        'wordpress-seo/wp-seo.php' => array('id' => 'yoast', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
+        'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
     );
 
     public function register(Registry $registry): void
@@ -114,7 +133,7 @@ final class PluginSettingsAdapter
 
         return array(
             'plugins' => $items,
-            'supported_setting_profiles' => array('wp_rocket', 'imagify', 'really_simple_security'),
+            'supported_setting_profiles' => array('wp_rocket', 'imagify', 'really_simple_security', 'joinchat'),
             'security' => array(
                 'raw_secret_export' => false,
                 'arbitrary_code_settings' => false,
@@ -188,7 +207,7 @@ final class PluginSettingsAdapter
     private function profile(array $payload): string
     {
         $plugin = isset($payload['plugin']) ? sanitize_key((string) $payload['plugin']) : '';
-        if (! in_array($plugin, array('wp_rocket', 'imagify', 'really_simple_security'), true)) {
+        if (! in_array($plugin, array('wp_rocket', 'imagify', 'really_simple_security', 'joinchat'), true)) {
             throw new RuntimeException('Unsupported plugin settings profile: ' . $plugin . '.');
         }
         return $plugin;
@@ -202,7 +221,7 @@ final class PluginSettingsAdapter
         if ('imagify' === $plugin) {
             return $this->readImagify();
         }
-        return $this->readReallySimpleSecurity();
+        return 'joinchat' === $plugin ? $this->readJoinchat() : $this->readReallySimpleSecurity();
     }
 
     private function writeProfile(string $plugin, array $updates): void
@@ -213,6 +232,10 @@ final class PluginSettingsAdapter
         }
         if ('imagify' === $plugin) {
             $this->writeImagify($updates);
+            return;
+        }
+        if ('joinchat' === $plugin) {
+            $this->writeJoinchat($updates);
             return;
         }
         $this->writeReallySimpleSecurity($updates);
@@ -235,6 +258,14 @@ final class PluginSettingsAdapter
                     throw new RuntimeException('Unsupported WP Rocket setting: ' . $key . '.');
                 }
                 $clean[$key] = $this->sanitizeWpRocketValue(self::WP_ROCKET_FIELDS[$key], $value);
+                continue;
+            }
+
+            if ('joinchat' === $plugin) {
+                if (! isset(self::JOINCHAT_FIELDS[$key])) {
+                    throw new RuntimeException('Unsupported Joinchat setting: ' . $key . '.');
+                }
+                $clean[$key] = $this->sanitizeJoinchatValue(self::JOINCHAT_FIELDS[$key], $value);
                 continue;
             }
 
@@ -301,6 +332,91 @@ final class PluginSettingsAdapter
             throw new RuntimeException('WordPress ability returned an unsupported result type: ' . $name . '.');
         }
         return Policy::redact($result);
+    }
+
+
+    private function readJoinchat(): array
+    {
+        if (! defined('JOINCHAT_VERSION') || ! preg_match('/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION) || ! function_exists('jc_common')) {
+            throw new RuntimeException('Joinchat settings require an active supported 6.4.x installation.');
+        }
+        $provider = jc_common();
+        if (! is_object($provider) || ! method_exists($provider, 'defaults')) {
+            throw new RuntimeException('Joinchat default settings API is not available.');
+        }
+        $defaults = $provider->defaults();
+        $stored = get_option('joinchat', array());
+        if (! is_array($defaults) || ! is_array($stored)) {
+            throw new RuntimeException('Joinchat settings are not an array.');
+        }
+        $effective = array_merge($defaults, $stored);
+        $settings = array();
+        foreach (self::JOINCHAT_FIELDS as $key => $type) {
+            if (array_key_exists($key, $effective)) {
+                $settings[$key] = $effective[$key];
+            }
+        }
+        return $settings;
+    }
+
+    private function writeJoinchat(array $updates): void
+    {
+        $stored = get_option('joinchat', array());
+        if (! is_array($stored)) {
+            throw new RuntimeException('Joinchat settings are not an array.');
+        }
+        // Preserve all unrelated provider, premium and translated settings.
+        update_option('joinchat', array_merge($stored, $updates));
+    }
+
+    private function sanitizeJoinchatValue(string $type, $value)
+    {
+        if ('yes_no' === $type) {
+            if (! is_string($value) || ! in_array($value, array('yes', 'no'), true)) {
+                throw new RuntimeException('Joinchat toggle must be yes or no.');
+            }
+            return $value;
+        }
+        if ('position' === $type) {
+            if (! is_string($value) || ! in_array($value, array('left', 'right'), true)) {
+                throw new RuntimeException('Joinchat position must be left or right.');
+            }
+            return $value;
+        }
+        if ('delay' === $type) {
+            if (! is_int($value) || $value < 0 || $value > 30) {
+                throw new RuntimeException('Joinchat button delay must be an integer between 0 and 30.');
+            }
+            return $value;
+        }
+        if ('phone' === $type) {
+            if (! is_string($value) || ! preg_match('/^\+?[0-9().\s-]+\z/', $value)) {
+                throw new RuntimeException('Joinchat telephone must contain only phone-number characters.');
+            }
+            $phone = preg_replace('/[^0-9]/', '', $value);
+            if (strlen($phone) < 8 || strlen($phone) > 15) {
+                throw new RuntimeException('Joinchat telephone must contain 8-15 digits.');
+            }
+            return $phone;
+        }
+        if ('color' === $type) {
+            if (! is_string($value) || ! preg_match('/^#[0-9a-f]{6}(?:\/(?:0|100))?\z/i', $value)) {
+                throw new RuntimeException('Joinchat color must be an RGB hex value with optional /0 or /100 contrast.');
+            }
+            return strtolower($value);
+        }
+        if ('short_text' === $type || 'message_text' === $type) {
+            $max = 'short_text' === $type ? 40 : 800;
+            if (! is_string($value) || strlen($value) > $max * 4) {
+                throw new RuntimeException('Joinchat message must be a bounded UTF-8 string.');
+            }
+            $clean = sanitize_text_field($value);
+            if (strlen($clean) > $max) {
+                throw new RuntimeException('Joinchat text exceeds the field length limit.');
+            }
+            return $clean;
+        }
+        throw new RuntimeException('Unsupported Joinchat value type.');
     }
 
     private function readReallySimpleSecurity(): array
