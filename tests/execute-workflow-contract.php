@@ -40,6 +40,7 @@ $required = array(
     'WordPress Connector presence invalid',
     'Connector diagnostic: {$code}',
     '($d["ok"]??false)!==true',
+    'WordPress operation failed',
     'if [[ "$code" == 401 || "$code" == 403 ]]; then',
     'if [[ "$code" != 000 && "$code" != 408 && "$code" != 429 && ! "$code" =~ ^5[0-9][0-9]$ ]]; then',
     'if (( attempt < 3 )); then',
