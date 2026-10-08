@@ -63,6 +63,7 @@ final class Runner
                                 'idempotent_replay' => true,
                                 'original_result_hash' => $existing['result_hash'] ?? null,
                                 'terminal_mutation' => true,
+                                'diagnostic' => Diagnostics::classify((string) ($existing['terminal_error'] ?? ''), true),
                             )
                         );
                     }
@@ -103,6 +104,7 @@ final class Runner
                     'request_fingerprint' => $requestFingerprint,
                     'terminal_mutation' => true,
                     'terminal_context' => $terminalContext,
+                    'diagnostic' => Diagnostics::classify($terminalError, true),
                 ));
                 if (! $request->dryRun() && ! empty($descriptor['mutation'])) {
                     $this->processed->put(
@@ -123,7 +125,10 @@ final class Runner
             }
             return $result;
         } catch (Throwable $error) {
-            return Result::failure($request, $error->getMessage(), array('exception' => get_class($error)));
+            return Result::failure($request, $error->getMessage(), array(
+                'exception' => get_class($error),
+                'diagnostic' => Diagnostics::classify($error->getMessage(), isset($descriptor) && ! empty($descriptor['mutation']) && ! $request->dryRun()),
+            ));
         } finally {
             if ('' !== $lockToken) {
                 $this->processed->releaseMutationLock($lockToken);
