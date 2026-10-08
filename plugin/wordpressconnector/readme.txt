@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.6
+Stable tag: 1.17.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.7 adds an explicitly non-mutating fast read batch (up to 25 independently authorized reads), safe structured error diagnostics, and a guarded Core temporary-backup path for Connector self-updates. An external tested restore remains required before production updates.
+
 
 Version 1.17.4 hardens complex ACF schema creation compensation. If a nested field creation fails after its parent or earlier sub fields were persisted, the connector now tracks the exact created field IDs, removes them in reverse order, verifies cleanup readback and reports compensation failure instead of leaving silent partial schema residue.
 
