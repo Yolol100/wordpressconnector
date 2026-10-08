@@ -35,6 +35,7 @@ final class Policy
         'elementor.inspect',
         'elementor.patch_element',
         'connector.batch',
+        'connector.read_batch',
         'connector.rollback',
         'connector.update.check',
         'connector.update.apply',
