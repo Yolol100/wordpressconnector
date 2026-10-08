@@ -26,7 +26,7 @@ The runner returns deterministic, non-sensitive `meta.diagnostic` codes and safe
 
 ## Connector self-update recovery
 
-The release digest and ZIP identity checks are unchanged. Replacing an installed plugin now uses WordPress Core's temporary-backup upgrade hooks, not the plain overwrite-install path. Core can restore the previous version on installation failure; a readback-version mismatch attempts Core restoration only while that backup exists and verifies the old version. This is **not** guaranteed recovery from a fatal error discovered on a later request. Production self-updates still require a verified external site backup and restore plan, and the response accurately reports `rollback_supported=false` for general post-success rollback.
+The release digest and ZIP identity checks are unchanged. Replacing an installed plugin now uses WordPress Core's temporary-backup upgrade hooks, not the plain overwrite-install path. Core can restore the previous version on installation failure; a readback-version mismatch attempts Core restoration only while that backup exists and verifies the old version. This is **not** guaranteed recovery from a fatal error discovered on a later request. Confirmed production self-updates explicitly require `payload.restore_verified=true` to attest that an external site backup **and its restore** have been tested, in addition to the existing authorization and fingerprint gates. Production self-updates still require a verified external site backup and restore plan, and the response accurately reports `rollback_supported=false` for general post-success rollback.
 
 ## Target selection
 
