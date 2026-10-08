@@ -35,6 +35,7 @@ $publicActions = array(
     'elementor.inspect',
     'elementor.patch_element',
     'connector.batch',
+    'connector.read_batch',
     'connector.rollback',
     'connector.update.check',
     'connector.update.apply',
@@ -347,8 +348,16 @@ if ('connector.rollback' === $action) {
     }
 }
 
-if (in_array($action, array('connector.update.check', 'connector.update.apply'), true) && $payload !== array()) {
-    $errors[] = $action . ' requires an empty payload in public GitHub runtime mode.';
+if ('connector.update.check' === $action && $payload !== array()) {
+    $errors[] = 'connector.update.check requires an empty payload in public GitHub runtime mode.';
+}
+if ('connector.update.apply' === $action) {
+    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    if (array_diff(array_keys($payload), array('restore_verified'))
+        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))
+        || (! $dryRun && true !== ($payload['restore_verified'] ?? false))) {
+        $errors[] = 'Confirmed connector.update.apply requires verified external restore and only supported fields.';
+    }
 }
 
 if ('connector.update.apply' === $action && isset($data['dry_run']) && false === $data['dry_run']) {
