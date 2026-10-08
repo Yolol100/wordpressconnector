@@ -46,6 +46,23 @@ final class YoastAdapter
             'privileged' => true,
             'description' => 'Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support.',
         ));
+        $registry->register('yoast.site_representation.inspect', array($this, 'inspectSiteRepresentation'), array(
+            'privileged' => true,
+            'capability' => 'manage_options',
+            'description' => 'Read allowlisted Yoast Organization name, logo and description fields.',
+        ));
+        $registry->register('yoast.site_representation.update', array($this, 'updateSiteRepresentation'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'capability' => 'manage_options',
+            'description' => 'Patch 1-3 allowlisted Yoast Organization fields using validated media ID with dry-run, readback and rollback.',
+        ));
+        $registry->register('yoast.site_representation.restore', array($this, 'restoreSiteRepresentation'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'capability' => 'manage_options',
+            'description' => 'Internal rollback only for a prior Yoast Organization change.',
+        ));
     }
 
     public function inspect(array $payload, array $context): array
@@ -193,4 +210,139 @@ final class YoastAdapter
 
         return sanitize_text_field($value);
     }
+
+    /**
+     * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
+     * The WordPress media library is the only accepted source for a logo.
+     */
+    public function inspectSiteRepresentation(array $payload = array(), array $context = array()): array
+    {
+        $fields = $this->siteRepresentationSnapshot();
+        return array('fields' => $fields, 'fingerprint' => Fingerprint::make($fields));
+    }
+
+    public function updateSiteRepresentation(array $payload, array $context): array
+    {
+        $updates = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
+        if (! $updates || count($updates) > 3) {
+            throw new RuntimeException('Site representation requires 1-3 allowlisted fields.');
+        }
+
+        $before = $this->siteRepresentationSnapshot();
+        if ('company' !== $before['company_or_person']) {
+            throw new RuntimeException('Site representation is not set to Organization in Yoast.');
+        }
+
+        $options = get_option('wpseo_titles', null);
+        $afterOptions = $options;
+        foreach ($updates as $key => $value) {
+            if ('logo_attachment_id' === $key) {
+                if (! is_int($value) || $value < 1) {
+                    throw new RuntimeException('Organization logo requires a positive WordPress media attachment ID.');
+                }
+                $attachment = get_post($value);
+                if (! $attachment instanceof \WP_Post || 'attachment' !== $attachment->post_type || ! wp_attachment_is_image($value)) {
+                    throw new RuntimeException('Organization logo must reference a WordPress image attachment.');
+                }
+                $meta = wp_get_attachment_metadata($value);
+                if (! is_array($meta) || (int) ($meta['width'] ?? 0) < 112 || (int) ($meta['height'] ?? 0) < 112) {
+                    throw new RuntimeException('Organization logo image must be at least 112x112 pixels.');
+                }
+                $url = wp_get_attachment_url($value);
+                if (! is_string($url) || 'https' !== strtolower((string) parse_url($url, PHP_URL_SCHEME))) {
+                    throw new RuntimeException('Organization logo must have a valid HTTPS media URL.');
+                }
+                $afterOptions['company_logo_id'] = $value;
+                $afterOptions['company_logo'] = esc_url_raw($url);
+                $afterOptions['company_logo_meta'] = false;
+            } elseif ('company_name' === $key || 'org_description' === $key) {
+                if (! is_string($value) || '' === trim($value) || strlen($value) > 500) {
+                    throw new RuntimeException('Organization text must be a nonempty string up to 500 bytes.');
+                }
+                $afterOptions['company_name' === $key ? 'company_name' : 'org-description'] = sanitize_text_field($value);
+            } else {
+                throw new RuntimeException('Unsupported site representation field: ' . (string) $key);
+            }
+        }
+
+        $after = $this->siteRepresentationFields($afterOptions);
+        $result = array(
+            'before' => $before,
+            'after' => $after,
+            '_current_fingerprint' => Fingerprint::make($before),
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+        update_option('wpseo_titles', $afterOptions);
+        $readback = $this->siteRepresentationSnapshot();
+        if (Fingerprint::make($readback) !== Fingerprint::make($after)) {
+            throw new RuntimeException('Yoast organization settings readback failed.');
+        }
+        $result['after'] = $readback;
+        $result['_rollback'] = array(
+            'action' => 'yoast.site_representation.restore',
+            'payload' => array(
+                'fields' => $before,
+                'expected_after_fingerprint' => Fingerprint::make($readback),
+            ),
+        );
+        return $result;
+    }
+
+    /**
+     * Internal compensation only. Direct requests must never overwrite an arbitrary snapshot.
+     */
+    public function restoreSiteRepresentation(array $payload, array $context): array
+    {
+        if (empty($context['rollback_mode'])) {
+            throw new RuntimeException('Organization settings restore is reserved for connector rollback.');
+        }
+        $before = $this->siteRepresentationSnapshot();
+        $expected = isset($payload['expected_after_fingerprint']) ? (string) $payload['expected_after_fingerprint'] : '';
+        if (! preg_match('/^[a-f0-9]{64}$/', $expected) || ! hash_equals($expected, Fingerprint::make($before))) {
+            throw new RuntimeException('Organization settings changed after update; rollback is unsafe.');
+        }
+        $fields = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
+        if (array_keys($fields) !== array_keys($before)) {
+            throw new RuntimeException('Organization rollback snapshot has unexpected fields.');
+        }
+        $options = get_option('wpseo_titles', null);
+        $options['company_or_person'] = $fields['company_or_person'];
+        $options['company_name'] = $fields['company_name'];
+        $options['company_logo'] = $fields['company_logo'];
+        $options['company_logo_id'] = $fields['company_logo_id'];
+        $options['company_logo_meta'] = $fields['company_logo_meta'];
+        $options['org-description'] = $fields['org_description'];
+        update_option('wpseo_titles', $options);
+        if (Fingerprint::make($this->siteRepresentationSnapshot()) !== Fingerprint::make($fields)) {
+            throw new RuntimeException('Yoast organization rollback readback failed.');
+        }
+        return array('restored' => true, 'fields' => $fields);
+    }
+
+    private function siteRepresentationSnapshot(): array
+    {
+        if (! defined('WPSEO_VERSION') && ! defined('YOAST_SEO_VERSION')) {
+            throw new RuntimeException('Yoast SEO is not active.');
+        }
+        $options = get_option('wpseo_titles', null);
+        if (! is_array($options)) {
+            throw new RuntimeException('Yoast SEO site representation options are not available.');
+        }
+        return $this->siteRepresentationFields($options);
+    }
+
+    private function siteRepresentationFields(array $options): array
+    {
+        return array(
+            'company_or_person' => (string) ($options['company_or_person'] ?? ''),
+            'company_name' => (string) ($options['company_name'] ?? ''),
+            'company_logo' => (string) ($options['company_logo'] ?? ''),
+            'company_logo_id' => (int) ($options['company_logo_id'] ?? 0),
+            'company_logo_meta' => $options['company_logo_meta'] ?? false,
+            'org_description' => (string) ($options['org-description'] ?? ''),
+        );
+    }
+
 }
