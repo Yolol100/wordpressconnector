@@ -83,6 +83,8 @@ final class ConnectorUpdateAdapter
             'sbom_asset' => self::SBOM_ASSET,
             'github_asset_digest' => $release['package_digest'],
             'rollback_supported' => false,
+            'installation_failure_recovery' => 'wordpress_core_temp_backup',
+            'post_success_restore_guaranteed' => false,
         );
 
         if (! empty($context['dry_run'])) {
@@ -123,23 +125,16 @@ final class ConnectorUpdateAdapter
                 throw new RuntimeException('Connector release package version does not match the release tag.');
             }
 
-            $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
-            $result = $upgrader->install($package, array('overwrite_package' => true));
-            if (is_wp_error($result)) {
-                throw new RuntimeException($result->get_error_message());
-            }
-            if (true !== $result) {
-                throw new RuntimeException('Connector release installation failed.');
-            }
-
+            // WordPress Core's temp-backup installer preserves the previous plugin on
+            // installation failure. Self-updates still require a tested external restore
+            // before production use because fatal errors can surface on the next request.
+            $installation = $this->installWithCoreBackup($package);
             wp_clean_plugins_cache(true);
             $plugins = get_plugins();
-            if (! isset($plugins[self::PLUGIN_FILE])) {
-                throw new RuntimeException('Connector update readback failed: plugin is missing after installation.');
-            }
             $installedVersion = isset($plugins[self::PLUGIN_FILE]['Version']) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
             if (! hash_equals($release['version'], $installedVersion)) {
-                throw new RuntimeException('Connector update readback failed: installed version does not match release version.');
+                $this->restoreAfterReadbackFailure($installation, $current);
+                throw new RuntimeException('Connector update readback failed: prior version restored; check the release package.');
             }
 
             return array(
@@ -157,6 +152,80 @@ final class ConnectorUpdateAdapter
             if (is_string($package) && file_exists($package)) {
                 @unlink($package);
             }
+        }
+    }
+
+    /**
+     * Use WP_Upgrader's native temporary backup contract, rather than
+     * Plugin_Upgrader::install(... overwrite_package => true), which has no
+     * hook_extra.temp_backup and cannot restore after an installation failure.
+     *
+     * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
+     */
+    private function installWithCoreBackup(string $package): array
+    {
+        if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_filesystem_method') || 'direct' !== get_filesystem_method()
+            || ! is_readable(WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE)
+            || ! method_exists(\Plugin_Upgrader::class, 'restore_temp_backup')) {
+            throw new RuntimeException('Connector update requires direct filesystem mode and WordPress Core temporary-backup support.');
+        }
+
+        $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
+        $backup = array('slug' => 'wordpressconnector', 'src' => WP_PLUGIN_DIR, 'dir' => 'plugins');
+
+        $upgrader->init();
+        $upgrader->upgrade_strings();
+        add_filter('upgrader_source_selection', array($upgrader, 'check_package'));
+        add_filter('upgrader_pre_install', array($upgrader, 'deactivate_plugin_before_upgrade'), 10, 2);
+        add_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10, 2);
+        add_filter('upgrader_post_install', array($upgrader, 'active_after'), 10, 2);
+        try {
+            $result = $upgrader->run(array(
+                'package' => $package,
+                'destination' => WP_PLUGIN_DIR,
+                'clear_destination' => true,
+                'abort_if_destination_exists' => false,
+                'clear_working' => true,
+                'hook_extra' => array(
+                    'plugin' => self::PLUGIN_FILE,
+                    'type' => 'plugin',
+                    'action' => 'update',
+                    'temp_backup' => $backup,
+                ),
+            ));
+        } finally {
+            remove_filter('upgrader_source_selection', array($upgrader, 'check_package'));
+            remove_filter('upgrader_pre_install', array($upgrader, 'deactivate_plugin_before_upgrade'), 10);
+            remove_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10);
+            remove_filter('upgrader_post_install', array($upgrader, 'active_after'), 10);
+        }
+
+        if (is_wp_error($result)) {
+            throw new RuntimeException('Connector installation failed; WordPress Core temporary-backup recovery was requested.');
+        }
+        if (! is_array($result)) {
+            throw new RuntimeException('Connector installation did not complete; verify WordPress Core backup recovery before retrying.');
+        }
+        return array('upgrader' => $upgrader, 'backup' => $backup);
+    }
+
+    private function restoreAfterReadbackFailure(array $installation, string $expectedVersion): void
+    {
+        $upgrader = $installation['upgrader'];
+        $backup = $installation['backup'];
+        // A failed readback must never turn into an unconditional directory
+        // deletion when the temporary backup has already disappeared.
+        global $wp_filesystem;
+        $path = trailingslashit(WP_CONTENT_DIR) . 'upgrade-temp-backup/plugins/wordpressconnector';
+        if (! is_object($wp_filesystem) || ! $wp_filesystem->is_dir($path)) {
+            throw new RuntimeException('Connector update readback failed; no recoverable temporary backup was found. Restore externally before retrying.');
+        }
+        $restored = $upgrader->restore_temp_backup(array($backup));
+        wp_clean_plugins_cache(true);
+        $plugins = get_plugins();
+        $version = isset($plugins[self::PLUGIN_FILE]['Version']) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
+        if (true !== $restored || ! hash_equals($expectedVersion, $version)) {
+            throw new RuntimeException('Connector update readback failed and automatic recovery was not verified. Restore externally before retrying.');
         }
     }
 
