@@ -1,8 +1,8 @@
 {
   "version": 1,
   "site_url": "https://vroomrijscholen.nl",
-  "request_id": "vroom-update-1177-check-20261009-0851",
-  "action": "connector.update.check",
+  "request_id": "vroom-update-1177-dry-20261009-0857",
+  "action": "connector.update.apply",
   "dry_run": true,
   "confirm": false,
   "payload": {}
