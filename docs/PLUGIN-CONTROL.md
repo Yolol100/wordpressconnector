@@ -19,7 +19,7 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 | ACF Page Text Manager | Project-specific ACF data | `acf.get`, `acf.update` |
 | Advanced Custom Fields | Native adapter | `acf.field_groups`, `acf.get`, `acf.update` |
 | All-in-One WP Migration and Backup | High-risk system operation | No generic import/export bridge; staging-first contract required |
-| Asset CleanUp | Cache maintenance only | `maintenance.cache_capabilities`, `maintenance.cache_flush`; unload rules/settings still require browser regression evidence |
+| Asset CleanUp | Stored-settings inspection; separate cache maintenance | `optimizer.settings.inspect` for verified 1.4.0.x stored values only; optimizer writes and older rollback snapshots blocked pending provider API verification. Independently scoped `maintenance.cache_capabilities` and `maintenance.cache_flush` retained. |
 | Auto Image Attributes | Native allowlist | `auto_image_attributes.inspect`, `auto_image_attributes.update`, `media.*` |
 | Broken Link Checker | Version-bound / mixed cloud-local state | Dedicated installed-version contract required before writes; no generic link deletion or cloud account access |
 | Code Snippets | Bounded exact-patch adapter | `code_snippets.patch` can modify one uniquely identified existing PHP snippet through 1-4 exact replacements with fingerprint, readback and rollback; arbitrary creation/execution and full-source public export remain blocked |
@@ -27,7 +27,7 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 | Classic Editor | Core editor preference | No settings write until a bounded editor-preference contract is proven |
 | Duplicate Page | No dedicated adapter required | Model with `post.get` + `post.create` |
 | Elementor / Elementor Pro | Native adapter | `elementor.capabilities`, `elementor.inspect`, `elementor.inventory`, `elementor.patch_element`, `elementor.replace_document`, `elementor.form_inspect`, `elementor.form_upsert` |
-| GTranslate | Version-bound | Dedicated contract required before settings writes |
+| GTranslate | Version-bound native allowlist | `gtranslate.settings.inspect`, `gtranslate.settings.update` for verified 5.0.x NL/EN settings |
 | Joinchat 6.4.x | Native bounded option profile | `plugin.settings.inspect`, `plugin.settings.update` with `plugin=joinchat` for validated phone, WhatsApp text, tracking, placement and simple button fields; no arbitrary option edits |
 | Imagify | WordPress Abilities API | `plugin.settings.inspect/update` profile `imagify`; API key is excluded |
 | LiteSpeed Cache | Version-bound | Do not tune simultaneously with another active cache layer without an explicit migration decision |
