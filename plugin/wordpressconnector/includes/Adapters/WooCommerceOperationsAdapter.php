@@ -47,7 +47,7 @@ final class WooCommerceOperationsAdapter
 
     public function lists(array $payload = array(), array $context = array()): array
     {
-        $this->assertKeys($payload, array('area', 'zone_id'));
+        $this->assertKeys($payload, array('area', 'zone_id', 'page', 'per_page'));
         $area = $payload['area'] ?? null;
         if (! is_string($area) || ! in_array($area, array(
             'shipping_zones','shipping_methods','tax_rates','payment_gateways'), true)) {
@@ -64,7 +64,14 @@ final class WooCommerceOperationsAdapter
         } elseif (array_key_exists('zone_id', $payload)) {
             throw new RuntimeException('Unexpected zone_id for WooCommerce operations inventory.');
         }
-        $response = $this->request('GET', $path);
+        $page = $payload['page'] ?? 1;
+        $perPage = $payload['per_page'] ?? 50;
+        if (! is_int($page) || $page < 1 || $page > 1000
+            || ! is_int($perPage) || $perPage < 1 || $perPage > 100) {
+            throw new RuntimeException('WooCommerce provider pagination is outside safe bounds.');
+        }
+        $query = $area === 'tax_rates' ? array('page' => $page, 'per_page' => $perPage) : array();
+        $response = $this->request('GET', $path, $query);
         if (count($response) > 150) {
             throw new RuntimeException('WooCommerce operations inventory exceeds limit.');
         }
@@ -81,7 +88,11 @@ final class WooCommerceOperationsAdapter
                 $out[] = $this->summarize($item, 'shipping_zone');
             }
         }
-        return array('area' => $area, 'items' => $out, 'count' => count($out));
+        return array(
+            'area' => $area, 'items' => $out, 'count' => count($out),
+            'page' => $page, 'per_page' => $perPage,
+            'has_more' => $area === 'tax_rates' && count($response) >= $perPage,
+        );
     }
 
     public function inspect(array $payload, array $context = array()): array
