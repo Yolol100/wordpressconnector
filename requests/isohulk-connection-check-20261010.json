@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-connection-check-20261010",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
