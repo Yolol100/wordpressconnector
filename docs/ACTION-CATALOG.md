@@ -147,6 +147,10 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.coupon.update` | mutation, privileged | Update a WooCommerce coupon. |
 | `woocommerce.product.create` | mutation | Create a WooCommerce product. |
 | `woocommerce.product.get` | read-only | Read a WooCommerce product. |
+| `woocommerce.operations.list` | privileged | Read bounded provider shipping zones/methods, tax rates and payment gateway summaries with credentials removed. |
+| `woocommerce.operations.inspect` | privileged | Inspect one provider shipping zone/method, tax rate, or gateway, redacting secrets. |
+| `woocommerce.operations.update` | mutation, privileged | High-risk provider-owned settings update with site-local gate, tested restore, exact fingerprint, readback and rollback. |
+| `woocommerce.operations.restore` | mutation, privileged | Internal fingerprint-protected rollback of high-risk WooCommerce provider settings. |
 | `woocommerce.settings.catalog` | privileged | Discover actual WooCommerce core REST settings groups and available admin tabs/subtabs without exposing credentials or setting values. |
 | `woocommerce.settings.inspect` | privileged | Bounded paged REST settings-group inspection; redact secrets and report per-field write eligibility. |
 | `woocommerce.settings.section.inspect` | privileged | Discover a WooCommerce admin tab's actual subtab fields, including plugin-defined fields, without disclosing sensitive options. |
