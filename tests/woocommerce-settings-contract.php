@@ -16,6 +16,7 @@ $GLOBALS['woocommerce_settings_options'] = array(
     ),
     'checkout' => array(
         'woocommerce_mollie_api_key' => array('id' => 'woocommerce_mollie_api_key', 'label' => 'Mollie key', 'type' => 'password', 'value' => 'SECRET_GATEWAY_KEY'),
+        'woocommerce_merchant_account' => array('id' => 'woocommerce_merchant_account', 'label' => 'Merchant account', 'type' => 'text', 'value' => 'HIDDEN_MERCHANT_ACCOUNT'),
     ),
 );
 $GLOBALS['woocommerce_settings_put_count'] = 0;
@@ -165,7 +166,10 @@ $expectError(static function () use ($registry) {
     $registry->execute('woocommerce.settings.section.inspect', array('tab'=>'products', 'section'=>'not_a_section'));
 }, 'not registered');
 $checkout = $registry->execute('woocommerce.settings.inspect', array('group'=>'checkout'));
-if ($checkout['fields'][0]['mode'] !== 'secret_blocked' || isset($checkout['fields'][0]['value'])) {
+if ($checkout['fields'][0]['mode'] !== 'secret_blocked' || isset($checkout['fields'][0]['value'])
+    || $checkout['fields'][1]['mode'] !== 'secret_blocked'
+    || isset($checkout['fields'][1]['value'])
+    || strpos(json_encode($checkout), 'HIDDEN_MERCHANT_ACCOUNT') !== false) {
     throw new RuntimeException('Payment credential exposure detected.');
 }
 $expectError(static function () use ($registry) {
