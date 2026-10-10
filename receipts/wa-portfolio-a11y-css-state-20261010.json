@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "wa-portfolio-a11y-css-state-20261010",
+    "action": "custom_css.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-10T15:24:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "stylesheet": "hello-elementor",
+    "css_bytes": 4554,
+    "css_sha256": "5d3fba9e4c4d76324458e3562dc6bbb675dfcd8504c497078c8d6d0720999eef",
+    "custom_css_fingerprint": "1952fe918d18841ae2de46831215fd3a7c48ec9b27c83d53839dda4bfc8920d4",
+    "readback_verified": null
+}
