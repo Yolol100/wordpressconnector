@@ -36,7 +36,7 @@ final class WooCommerceSettingsAdapter
         ),
     );
 
-    private const PRIVATE_PATTERN = '/(password|secret|token|auth|api[_-]?key|consumer|credential|private|license|webhook|smtp|recipient|authorization|client[_-]?id|client[_-]?secret|session)/i';
+    private const PRIVATE_PATTERN = '/(password|passwd|secret|token|auth|api[_-]?key|consumer|credential|private|license|webhook|smtp|recipient|authorization|client[_-]?id|client[_-]?secret|session|merchant|bank|iban|routing|account[_-]?(?:number|id|iban|key|owner)|user[_-]?name|username|access[_-]?key|signing|certificate|oauth|public[_-]?key)/i';
 
     private const CORE_GROUPS = array(
         'general', 'products', 'tax', 'shipping', 'checkout', 'account',
