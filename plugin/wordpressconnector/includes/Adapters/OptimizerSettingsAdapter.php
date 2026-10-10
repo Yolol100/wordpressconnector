@@ -48,7 +48,7 @@ final class OptimizerSettingsAdapter
         return array(
             'provider'=>$provider,
             'fields'=>$this->publicFields($provider,$state),
-            'write_scope'=>$provider==='asset_cleanup' ? 'disable_duplicate_optimizers_only' : 'image_display_options_only',
+            'write_scope'=>$provider==='asset_cleanup' ? 'read_only_provider_api_required' : 'image_display_options_only',
             'fingerprint'=>Fingerprint::make($state),
             'wp_rocket'=>$this->rocketSummary(),
             'effective_state_verified'=>$provider==='ewww',
@@ -81,10 +81,14 @@ final class OptimizerSettingsAdapter
             '_current_fingerprint'=>$fingerprint,
         );
         if(!empty($context['dry_run']))return $out;
-        // The canonical REST/MCP state token is verified by Runner and kept out
-        // of adapter payloads. Retain the raw fingerprint for direct callers.
-        if(empty($context['state_guard_verified']))
+        // Revalidate the snapshot used by Runner at the actual adapter baseline.
+        // Passing a boolean here would permit a change between preview and write.
+        if(isset($context['expected_prewrite_fingerprint']))
+            $this->expected($context['expected_prewrite_fingerprint'],$fingerprint);
+        else
             $this->expected($payload['expected_before_fingerprint']??null,$fingerprint);
+        if(isset($payload['expected_before_fingerprint']))
+            $this->expected($payload['expected_before_fingerprint'],$fingerprint);
         if($provider==='ewww' && ($old[$key]===null || !$this->ewwwStoredOptionExists($key))){
             throw new RuntimeException('EWWW option must exist before a guarded write.');
         }
@@ -126,6 +130,9 @@ final class OptimizerSettingsAdapter
         if(empty($context['rollback_mode']))throw new RuntimeException('Optimizer restoration is rollback-only.');
         $this->keys($payload,array('provider','field','exists','value','expected_after_fingerprint'));
         $provider=$this->provider($payload);
+        // Old rollback snapshots are not permission to bypass the provider API gate.
+        if($provider==='asset_cleanup')
+            throw new RuntimeException('Asset CleanUp rollback is blocked until provider API verification.');
         $key=$payload['field']??null;
         if(!is_string($key)||!$this->isWritable($provider,$key)
             ||!array_key_exists('exists',$payload)||!is_bool($payload['exists']))
@@ -180,20 +187,8 @@ final class OptimizerSettingsAdapter
 
     private function write(string $provider,array $state,string $key,$value,bool $exists=true): void
     {
-        if($provider==='asset_cleanup'){
-            if($exists)$state[$key]=$value;else unset($state[$key]);
-            $raw=get_option('wpassetcleanup_settings',null);
-            if(is_string($raw)){
-                if(!function_exists('wp_json_encode'))throw new RuntimeException('WP JSON serializer is unavailable.');
-                $encoded=wp_json_encode($state);
-                if(!is_string($encoded)||strlen($encoded)>250000)
-                    throw new RuntimeException('Asset CleanUp JSON exceeds write boundary.');
-                update_option('wpassetcleanup_settings',$encoded);
-            }else{
-                update_option('wpassetcleanup_settings',$state);
-            }
-            return;
-        }
+        if($provider==='asset_cleanup')
+            throw new RuntimeException('Asset CleanUp settings writes require a verified provider API.');
         if(!$exists)throw new RuntimeException('EWWW provider option removal is not supported.');
         if(!function_exists('ewww_image_optimizer_set_option'))
             throw new RuntimeException('EWWW provider option writer is unavailable.');
@@ -253,6 +248,7 @@ final class OptimizerSettingsAdapter
         if(function_exists('is_multisite')&&is_multisite()
             && function_exists('is_plugin_active_for_network')
             && is_plugin_active_for_network('ewww-image-optimizer/ewww-image-optimizer.php')
+            && !get_site_option('ewww_image_optimizer_allow_multisite_override')
             && (!function_exists('current_user_can')||!current_user_can('manage_network_options')))
             throw new RuntimeException('Network-active EWWW requires manage_network_options for writes.');
     }
