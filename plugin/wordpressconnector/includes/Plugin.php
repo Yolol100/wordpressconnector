@@ -21,6 +21,7 @@ use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\Adapters\GTranslateSettingsAdapter;
+use Webactueel\WordPressConnector\Adapters\OptimizerSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
@@ -72,6 +73,7 @@ final class Plugin
             new MediaAdapter(),
             new AutoImageAttributesAdapter(),
             new GTranslateSettingsAdapter(),
+            new OptimizerSettingsAdapter(),
             new PluginSettingsAdapter(),
             new CacheMaintenanceAdapter(),
             new CodeSnippetsAdapter(),
