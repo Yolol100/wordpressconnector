@@ -49,6 +49,9 @@ final class WooCommerceSettingsAdapter
         $registry->register('woocommerce.settings.inspect', array($this, 'inspect'), array_merge($read, array(
             'description' => 'Read one bounded WooCommerce settings group; redact secrets and mark non-allowlisted fields read-only.',
         )));
+        $registry->register('woocommerce.settings.section.inspect', array($this, 'inspectSection'), array_merge($read, array(
+            'description' => 'Inventory one installed WooCommerce admin tab/subtab, including plugin-owned fields, with secrets withheld.',
+        )));
         $registry->register('woocommerce.settings.update', array($this, 'update'), array_merge($write, array(
             'description' => 'Update one allowlisted WooCommerce setting through the official REST controller, with dry-run/readback/rollback.',
         )));
@@ -233,26 +236,103 @@ final class WooCommerceSettingsAdapter
         return array('restored' => true, 'group' => $group, 'id' => $id);
     }
 
-    private function adminNavigation(): array
+    public function inspectSection(array $payload, array $context = array()): array
+    {
+        $this->rejectExtra($payload, array('tab', 'section', 'offset', 'limit'));
+        $tab = $payload['tab'] ?? null;
+        $section = $payload['section'] ?? '';
+        if (! is_string($tab) || ! preg_match('/^[a-z0-9][a-z0-9_-]{0,63}$/D', $tab)
+            || ! is_string($section) || ! preg_match('/^[a-z0-9_-]{0,63}$/D', $section)) {
+            throw new RuntimeException('WooCommerce Settings tab/section requires canonical IDs.');
+        }
+        $offset = $this->boundedInt($payload['offset'] ?? 0, 0, 2000, 'offset');
+        $limit = $this->boundedInt($payload['limit'] ?? 25, 1, 50, 'limit');
+        $page = null;
+        foreach ($this->settingsPages() as $candidate) {
+            if (is_object($candidate) && method_exists($candidate, 'get_id')
+                && $candidate->get_id() === $tab) {
+                $page = $candidate;
+                break;
+            }
+        }
+        if (! is_object($page) || ! method_exists($page, 'get_sections')
+            || ! method_exists($page, 'get_settings_for_section')) {
+            throw new RuntimeException('WooCommerce Settings tab has no inspectable provider definitions.');
+        }
+        $sections = $page->get_sections();
+        if ('' !== $section && (! is_array($sections) || ! array_key_exists($section, $sections))) {
+            throw new RuntimeException('WooCommerce Settings subtab is not registered.');
+        }
+        try {
+            $definitions = $page->get_settings_for_section($section);
+        } catch (Throwable $error) {
+            throw new RuntimeException('WooCommerce settings provider did not expose this subtab.');
+        }
+        if (! is_array($definitions) || count($definitions) > 2000) {
+            throw new RuntimeException('WooCommerce Settings section definition is unavailable or too large.');
+        }
+        $fields = array();
+        foreach (array_slice($definitions, $offset, $limit) as $definition) {
+            if (! is_array($definition)) {
+                continue;
+            }
+            $id = isset($definition['id']) && is_scalar($definition['id']) ? (string) $definition['id'] : '';
+            $type = isset($definition['type']) && is_string($definition['type']) ? $definition['type'] : '';
+            // Structural headings are not editable controls.
+            $providerField = (bool) preg_match('/^woocommerce_[a-z0-9_]{1,100}$/D', $id);
+            $private = $this->isPrivate($id, $type);
+            $editable = $providerField && ! $private && $this->editable($tab, $id);
+            $entry = array(
+                'id' => $this->shortText($id),
+                'label' => $this->shortText($definition['title'] ?? $definition['label'] ?? ''),
+                'type' => $this->shortText($type),
+                'mode' => $private ? 'secret_blocked' : ($editable ? 'editable_via_rest' : 'read_only_provider_specific'),
+                'value_state' => $private ? 'withheld' : ($providerField ? 'visible_if_simple' : 'provider_value_withheld'),
+            );
+            if ($providerField && ! $private && ! in_array($type, array('title', 'sectionend', 'info', 'html'), true)) {
+                $stored = get_option($id, $definition['default'] ?? null);
+                $entry['value'] = $this->safeValue($stored);
+            }
+            $fields[] = $entry;
+        }
+        return array(
+            'tab' => $tab,
+            'section' => $section,
+            'source' => 'woocommerce_admin_settings_page',
+            'total' => count($definitions),
+            'offset' => $offset,
+            'limit' => $limit,
+            'has_more' => $offset + $limit < count($definitions),
+            'fields' => $fields,
+        );
+    }
+
+    private function settingsPages(): array
     {
         if (! class_exists('WC_Admin_Settings')) {
             if (! function_exists('WC') || ! is_object(WC()) || ! method_exists(WC(), 'plugin_path')) {
-                return array('available' => false, 'reason' => 'admin_settings_not_loaded');
+                throw new RuntimeException('WooCommerce admin Settings API is not loaded.');
             }
             $path = WC()->plugin_path() . '/includes/admin/class-wc-admin-settings.php';
             if (! is_readable($path)) {
-                return array('available' => false, 'reason' => 'admin_settings_not_available');
+                throw new RuntimeException('WooCommerce admin Settings API is unavailable.');
             }
             require_once $path;
         }
         if (! method_exists('WC_Admin_Settings', 'get_settings_pages')) {
-            return array('available' => false, 'reason' => 'admin_settings_unsupported');
+            throw new RuntimeException('WooCommerce admin Settings API is unsupported.');
         }
+        $pages = \WC_Admin_Settings::get_settings_pages();
+        if (! is_array($pages) || count($pages) > 50) {
+            throw new RuntimeException('WooCommerce admin Settings inventory is invalid.');
+        }
+        return $pages;
+    }
+
+    private function adminNavigation(): array
+    {
         try {
-            $pages = \WC_Admin_Settings::get_settings_pages();
-            if (! is_array($pages) || count($pages) > 50) {
-                return array('available' => false, 'reason' => 'admin_settings_inventory_invalid');
-            }
+            $pages = $this->settingsPages();
             $tabs = array();
             foreach ($pages as $page) {
                 if (! is_object($page) || ! method_exists($page, 'get_id')
