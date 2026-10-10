@@ -134,10 +134,14 @@ final class PluginSettingsAdapter
                     $integration['note'] = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
                 }
             } elseif ('wp-asset-clean-up/wpacu.php' === $file) {
-                if (! is_plugin_active($file) || ! preg_match('/^1\\.4\\.0\\.[0-9]+$/D', (string) ($data['Version'] ?? ''))) {
-                    $integration['mode'] = 'version_bound_unsupported';
+                if (! is_plugin_active($file)) {
+                    $integration['mode'] = 'inactive';
                     $integration['actions'] = array();
-                    $integration['note'] = 'Asset CleanUp controls require an active, verified 1.4.0.x provider.';
+                    $integration['note'] = 'Asset CleanUp is inactive.';
+                } elseif (! preg_match('/^1\\.4\\.0\\.[0-9]+$/D', (string) ($data['Version'] ?? ''))) {
+                    $integration['mode'] = 'optimizer_version_unsupported';
+                    $integration['actions'] = array('maintenance.cache_capabilities', 'maintenance.cache_flush');
+                    $integration['note'] = 'Optimizer inspection requires a verified 1.4.0.x provider; cache availability is checked independently.';
                 } else {
                     $integration['mode'] = 'inspect_only_provider_api_required';
                     $integration['actions'] = array('optimizer.settings.inspect', 'maintenance.cache_capabilities', 'maintenance.cache_flush');
