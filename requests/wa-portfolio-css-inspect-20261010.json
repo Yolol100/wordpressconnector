@@ -1,15 +1,14 @@
 {
   "version": 1,
   "site_url": "https://andrewbaeten.nl",
-  "request_id": "wa-portfolio-a11y-css-live-20261010",
+  "request_id": "wa-portfolio-a11y-css-extend-dry-20261010",
   "action": "custom_css.patch",
-  "dry_run": false,
-  "confirm": true,
+  "dry_run": true,
+  "confirm": false,
   "payload": {
     "stylesheet": "hello-elementor",
     "patch_id": "portfolio-home-contrast-20261010",
     "operation": "upsert",
-    "css": "body.home .elementor-element-a210ace > .elementor-heading-title.elementor-size-default,\nbody.home h1.elementor-heading-title,\nbody.home .elementor-element-67977ff > p,\nbody.home .elementor-element-73ed963 > h2,\nbody.home .elementor-element-a2b7032 > h3,\nbody.home .elementor-element-d318f66 > h2,\nbody.home .elementor-element-7625e48 > h3,\nbody.home .elementor-element-c5004c2 > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-50b8a2b > h2,\nbody.home .elementor-element-a16462e > p,\nbody.home .elementor-element-0948b6b > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-eb81c0f > h3,\nbody.home .elementor-element-bd1d44b,\nbody.home .elementor-element-84fa5ff > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-caa7a67 > h3,\nbody.home .elementor-element-439e5c1,\nbody.home .elementor-element-a4cb863 > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-871bdb0 > h3,\nbody.home .elementor-element-cac4df2,\nbody.home .elementor-element-20ca8bb > .elementor-heading-title.elementor-size-default {\n  color: #f4f4f4 !important;\n}\n"
-  },
-  "expected_fingerprint": "397b035325d5f13549fd9156bd7af73fa4f722b509d9959b788ae6d24fabdfbf"
+    "css": "body.home .elementor-element-a210ace > .elementor-heading-title.elementor-size-default,\nbody.home h1.elementor-heading-title,\nbody.home .elementor-element-67977ff > p,\nbody.home .elementor-element-73ed963 > h2,\nbody.home .elementor-element-a2b7032 > h3,\nbody.home .elementor-element-d318f66 > h2,\nbody.home .elementor-element-7625e48 > h3,\nbody.home .elementor-element-c5004c2 > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-50b8a2b > h2,\nbody.home .elementor-element-a16462e > p,\nbody.home .elementor-element-0948b6b > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-eb81c0f > h3,\nbody.home .elementor-element-bd1d44b,\nbody.home .elementor-element-84fa5ff > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-caa7a67 > h3,\nbody.home .elementor-element-439e5c1,\nbody.home .elementor-element-a4cb863 > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-871bdb0 > h3,\nbody.home .elementor-element-cac4df2,\nbody.home .elementor-element-20ca8bb > .elementor-heading-title.elementor-size-default {\n  color: #f4f4f4 !important;\n}\n\nbody.home .elementor-element-176d476 > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-4e0ee9e > .elementor-heading-title.elementor-size-default,\nbody.home .elementor-element-588838f > h2,\nbody.home .elementor-element-0a0fa24 > h3,\nbody.home .elementor-element-3b9f58d > p,\nbody.home .elementor-element-1064287 > h3,\nbody.home .elementor-element-6737c02 > p,\nbody.home .elementor-element-53a0dfe > h3,\nbody.home .elementor-element-08eff8b > p,\nbody.home .elementor-element-a8fdd0b > h3,\nbody.home .elementor-element-db1e4a8 > p {\n color: #f4f4f4 !important;\n}\n"
+  }
 }
