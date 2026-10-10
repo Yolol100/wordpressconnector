@@ -212,6 +212,8 @@ $expectError(static function () use ($registry) {
     $registry->execute('woocommerce.settings.update', array('group'=>'products', 'id'=>'woocommerce_weight_unit', 'value'=>'invalid'), array('dry_run'=>true));
 }, 'provider options');
 
+// The independently confirmed critical setting exercised two provider PUTs.
+$GLOBALS['woocommerce_settings_put_count'] = 0;
 $payload = array('group'=>'products', 'id'=>'woocommerce_weight_unit', 'value'=>'kg');
 $dry = $registry->execute('woocommerce.settings.update', $payload, array('dry_run'=>true));
 if ($dry['before'] !== 'lbs' || $dry['after'] !== 'kg'
