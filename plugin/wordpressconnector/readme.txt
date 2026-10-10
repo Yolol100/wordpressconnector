@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.7
+Stable tag: 1.17.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.8 adds capability-guarded global Yoast SEO snippet template read, bounded update and restore for homepage, pages, posts, WooCommerce products and product categories. Changes use a strict field allowlist, dry-run, exact readback and rollback, preserving unrelated provider options.
+
 
 Version 1.17.7 adds an explicitly non-mutating fast read batch (up to 25 independently authorized reads), safe structured error diagnostics, and a guarded Core temporary-backup path for Connector self-updates. A confirmed update requires `restore_verified=true`, an owner-tested external restore, and normal state/permission gates. WordPress Core's temporary-backup recovery is limited to install/readback failures and does not guarantee post-success rollback.
 
