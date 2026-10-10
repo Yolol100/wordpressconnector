@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.13
+Stable tag: 1.17.14
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.14 adds a version-bound GTranslate 5.0.x interface for Dutch/English language selection: default language, visible languages and browser-language detection. Protected by manage_options, exact state fingerprint, dry-run, provider readback and rollback; unrelated paid/translation/widget/domain options remain unchanged.
+
 
 Version 1.17.13 redacts merchant, bank and provider-specific WooCommerce values in settings inventories by default. Nested payment-gateway and shipping-method settings now expose only explicit safe fields; arbitrary extension values and credential-like settings cannot be read or updated through GitHub. Regression tests verify secret isolation and allowed shipping cost/rollback behavior.
 
