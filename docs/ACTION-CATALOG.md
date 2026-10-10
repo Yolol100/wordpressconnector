@@ -148,7 +148,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.product.create` | mutation | Create a WooCommerce product. |
 | `woocommerce.product.get` | read-only | Read a WooCommerce product. |
 | `woocommerce.settings.catalog` | privileged | Discover actual WooCommerce core REST settings groups and available admin tabs/subtabs without exposing credentials or setting values. |
-| `woocommerce.settings.inspect` | privileged | Bounded paged setting inspection; redact secrets and report per-field write eligibility. |
+| `woocommerce.settings.inspect` | privileged | Bounded paged REST settings-group inspection; redact secrets and report per-field write eligibility. |
+| `woocommerce.settings.section.inspect` | privileged | Discover a WooCommerce admin tab's actual subtab fields, including plugin-defined fields, without disclosing sensitive options. |
 | `woocommerce.settings.update` | mutation, privileged | Apply one allowlisted low-risk WooCommerce-owned setting through provider REST, with dry-run, readback, rollback. |
 | `woocommerce.settings.restore` | mutation, privileged | Internal rollback-only restore of one setting, fingerprint-guarded. |
 | `woocommerce.product.list` | read-only | List WooCommerce products through WooCommerce CRUD. |
