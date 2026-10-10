@@ -493,8 +493,8 @@ final class WooCommerceSettingsAdapter
 
     private function assertCriticalConfirmed(array $payload, string $fingerprint): void
     {
-        if (! empty($payload['critical_confirm']) && ! empty($payload['restore_verified'])
-            && $payload['critical_confirm'] === true && $payload['restore_verified'] === true
+        if (($payload['critical_confirm'] ?? null) === true
+            && ($payload['restore_verified'] ?? null) === true
             && defined('WPCONNECTOR_ALLOW_WOO_CRITICAL')
             && WPCONNECTOR_ALLOW_WOO_CRITICAL === true) {
             $expected = $payload['expected_before_fingerprint'] ?? null;
