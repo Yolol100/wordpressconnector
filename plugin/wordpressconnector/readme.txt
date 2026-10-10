@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.14
+Stable tag: 1.17.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.15 adds safe read of actual EWWW 8.8.x and Asset CleanUp 1.4.0.x performance settings, with bounded provider-specific changes. Asset CleanUp can only disable duplicate CSS/JS optimizations while WP Rocket owns Remove Unused CSS. EWWW allows guarded lazy-load, autoscale, and above-fold settings, with conflict prevention when WP Rocket already handles lazy-loading or image dimensions. One-field-at-a-time dry-run, exact state fingerprint, readback and rollback.
+
 
 Version 1.17.14 adds a version-bound GTranslate 5.0.x interface for Dutch/English language selection: default language, visible languages and browser-language detection. Protected by manage_options, exact state fingerprint, dry-run, provider readback and rollback; unrelated paid/translation/widget/domain options remain unchanged.
 
