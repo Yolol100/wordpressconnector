@@ -176,6 +176,11 @@ $method=array_merge($method,array('critical_confirm'=>true,'restore_verified'=>t
 $mWritten=$registry->execute('woocommerce.fulfillment.create',$method,array('dry_run'=>false));
 if($mWritten['created']['instance_id']!==9||$GLOBALS['fulfill']['methods'][3][9]['enabled'])
     throw new RuntimeException('New shipping method was enabled at checkout or missing.');
+$GLOBALS['fulfill']['methods'][3][9]['settings']=array('cost'=>array('value'=>'2.50'));
+$fail(static function()use($registry,$mWritten){
+    $registry->execute('woocommerce.fulfillment.restore_created',$mWritten['_rollback']['payload'],array('rollback_mode'=>true));
+},'changed');
+unset($GLOBALS['fulfill']['methods'][3][9]['settings']);
 $registry->execute('woocommerce.fulfillment.restore_created',$mWritten['_rollback']['payload'],array('rollback_mode'=>true));
 if(isset($GLOBALS['fulfill']['methods'][3][9]))throw new RuntimeException('New shipping method rollback failed.');
 
