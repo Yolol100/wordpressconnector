@@ -38,6 +38,16 @@ final class WooCommerceSettingsAdapter
 
     private const PRIVATE_PATTERN = '/(password|secret|token|auth|api[_-]?key|consumer|credential|private|license|webhook|smtp|recipient|authorization|client[_-]?id|client[_-]?secret|session)/i';
 
+    private const CORE_GROUPS = array(
+        'general', 'products', 'tax', 'shipping', 'checkout', 'account',
+        'email', 'advanced', 'integration', 'site_visibility', 'point_of_sale'
+    );
+
+    // Changing these settings can have irreversible effects that simply
+    // restoring a saved option cannot undo. They need dedicated workflows.
+    private const IRREVERSIBLE_PATTERN = '/(delete|remove|erase|wipe|purge|cleanup|retention|reset|sync|hpos|data_store|migrate|feature|webhook|key|token|secret|credential|auth|password|salt|customer_export|tracking|telemetry)/i';
+
+
     public function register(Registry $registry): void
     {
         $read = array('privileged' => true, 'capability' => 'manage_woocommerce');
@@ -121,7 +131,8 @@ final class WooCommerceSettingsAdapter
             }
             $private = $this->isPrivate($id, $type);
             $mode = $private ? 'secret_blocked'
-                : ($this->editable($group, $id) ? 'editable' : 'read_only_review_required');
+                : ($this->editable($group, $id) ? 'editable'
+                : ($this->criticalEditable($group, $id) ? 'editable_requires_critical_gate' : 'read_only_review_required'));
 
             $field = array(
                 'id' => $id,
@@ -151,10 +162,13 @@ final class WooCommerceSettingsAdapter
 
     public function update(array $payload, array $context): array
     {
-        $this->rejectExtra($payload, array('group', 'id', 'value'));
+        $this->rejectExtra($payload, array('group', 'id', 'value',
+            'critical_confirm', 'restore_verified', 'expected_before_fingerprint'));
         $group = $this->groupId($payload);
         $id = $this->settingId($payload);
-        if (! $this->editable($group, $id) || $this->isPrivate($id, '')) {
+        $lowRisk = $this->editable($group, $id);
+        $critical = ! $lowRisk && $this->criticalEditable($group, $id);
+        if ((! $lowRisk && ! $critical) || $this->isPrivate($id, '')) {
             throw new RuntimeException('WooCommerce setting requires a separate guarded provider workflow.');
         }
         if (! array_key_exists('value', $payload)) {
@@ -162,9 +176,15 @@ final class WooCommerceSettingsAdapter
         }
         $this->assertGroupExists($group);
         $before = $this->item($group, $id);
+        if ($this->isPrivate($id, (string) ($before['type'] ?? ''))) {
+            throw new RuntimeException('Private WooCommerce setting cannot be read or written through GitHub.');
+        }
         $desired = $this->validateValue($payload['value'], $before);
         $previous = $before['value'] ?? null;
         $fingerprint = $this->valueFingerprint($group, $id, $previous);
+        if ($critical && empty($context['dry_run'])) {
+            $this->assertCriticalConfirmed($payload, $fingerprint);
+        }
         $result = array(
             'group' => $group,
             'id' => $id,
@@ -214,7 +234,8 @@ final class WooCommerceSettingsAdapter
         $this->rejectExtra($payload, array('group', 'id', 'value', 'expected_after_fingerprint'));
         $group = $this->groupId($payload);
         $id = $this->settingId($payload);
-        if (! $this->editable($group, $id) || ! array_key_exists('value', $payload)) {
+        if ((! $this->editable($group, $id) && ! $this->criticalEditable($group, $id))
+            || $this->isPrivate($id, '') || ! array_key_exists('value', $payload)) {
             throw new RuntimeException('Unsafe WooCommerce setting rollback payload.');
         }
         $before = $this->item($group, $id);
@@ -417,7 +438,19 @@ final class WooCommerceSettingsAdapter
     private function validateValue($value, array $option)
     {
         $type = (string) ($option['type'] ?? '');
-        if (! is_string($value) || strlen($value) > 128) {
+        if ($type === 'multiselect') {
+            if (! is_array($value) || count($value) > 24 || ! isset($option['options'])
+                || ! is_array($option['options'])) {
+                throw new RuntimeException('WooCommerce multiselect requires provider-owned choices.');
+            }
+            foreach ($value as $entry) {
+                if (! is_string($entry) || ! array_key_exists($entry, $option['options'])) {
+                    throw new RuntimeException('WooCommerce multiselect contains an unsupported choice.');
+                }
+            }
+            return array_values(array_unique($value));
+        }
+        if (! is_string($value) || strlen($value) > 1200) {
             throw new RuntimeException('WooCommerce setting update expects a bounded string.');
         }
         if ('checkbox' === $type && ! in_array($value, array('yes', 'no'), true)) {
@@ -428,16 +461,50 @@ final class WooCommerceSettingsAdapter
                 || ! array_key_exists($value, $option['options']))) {
             throw new RuntimeException('WooCommerce selection does not match the provider options.');
         }
-        if ('number' === $type && ! preg_match('/^\d{1,3}$/D', $value)) {
-            throw new RuntimeException('WooCommerce numeric setting is outside the supported range.');
+        if ('number' === $type && ! preg_match('/^-?\\d{1,10}(?:\\.\\d{1,4})?$/D', $value)) {
+            throw new RuntimeException('WooCommerce numeric setting does not have a supported format.');
         }
-        if (! in_array($type, array('select', 'radio', 'checkbox', 'text', 'number'), true)) {
+        if ('email' === $type && (! function_exists('is_email') || ! is_email($value))) {
+            throw new RuntimeException('WooCommerce email must be a verified-format email address.');
+        }
+        if ('color' === $type && ! preg_match('/^#[0-9a-fA-F]{6}$/D', $value)) {
+            throw new RuntimeException('WooCommerce color requires six hex digits.');
+        }
+        if ('textarea' === $type && (strlen($value) > 1200 || preg_match('/[<>]/', $value))) {
+            throw new RuntimeException('WooCommerce textarea contains unsupported markup.');
+        }
+        if (! in_array($type, array('select','radio','checkbox','text','number','email','color','textarea'), true)) {
             throw new RuntimeException('WooCommerce setting type is not supported for automated changes.');
         }
-        if (in_array($type, array('text', 'number'), true) && preg_match('/[<>\r\n]/', $value)) {
+        if (in_array($type, array('text', 'number', 'email'), true) && preg_match('/[<>\\r\\n]/', $value)) {
             throw new RuntimeException('Unsafe WooCommerce text setting value.');
         }
         return $value;
+    }
+
+    private function criticalEditable(string $group, string $id): bool
+    {
+        $core = in_array($group, self::CORE_GROUPS, true)
+            || preg_match('/^email_[a-z0-9_-]{1,54}$/D', $group);
+        return $core && preg_match('/^woocommerce_[a-z0-9_]{1,100}$/D', $id)
+            && ! preg_match(self::IRREVERSIBLE_PATTERN, $id)
+            && ! $this->isPrivate($id, '');
+    }
+
+    private function assertCriticalConfirmed(array $payload, string $fingerprint): void
+    {
+        if (! empty($payload['critical_confirm']) && ! empty($payload['restore_verified'])
+            && $payload['critical_confirm'] === true && $payload['restore_verified'] === true
+            && defined('WPCONNECTOR_ALLOW_WOO_CRITICAL')
+            && WPCONNECTOR_ALLOW_WOO_CRITICAL === true) {
+            $expected = $payload['expected_before_fingerprint'] ?? null;
+            if (is_string($expected) && preg_match('/^[a-f0-9]{64}$/D', $expected)
+                && hash_equals($fingerprint, $expected)) {
+                return;
+            }
+            throw new RuntimeException('Critical WooCommerce setting requires matching dry-run fingerprint.');
+        }
+        throw new RuntimeException('Critical WooCommerce setting requires site-local enablement, tested restore, and explicit confirmation.');
     }
 
     private function valueFingerprint(string $group, string $id, $value): string
