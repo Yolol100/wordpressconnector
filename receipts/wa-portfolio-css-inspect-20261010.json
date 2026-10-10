@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "wa-portfolio-css-inspect-20261010",
+    "action": "custom_css.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-10T15:18:21+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "stylesheet": "hello-elementor",
+    "css_bytes": 3309,
+    "css_sha256": "c2ccfad6d6c1aff9a3fa6051bdd53bd2ecfbeb1400002170bdb948e8b47ea91b",
+    "custom_css_fingerprint": "397b035325d5f13549fd9156bd7af73fa4f722b509d9959b788ae6d24fabdfbf",
+    "readback_verified": null
+}
