@@ -35,6 +35,7 @@ run_php tests/connector-core-backup-runtime.php
 run_php tests/plugin-control-contract.php
 run_php tests/joinchat-settings-contract.php
 run_php tests/gtranslate-settings-contract.php
+run_php tests/optimizer-settings-contract.php
 run_php tests/yoast-site-representation-contract.php
 run_php tests/yoast-template-settings-contract.php
 run_php tests/plugin-package-contract.php
