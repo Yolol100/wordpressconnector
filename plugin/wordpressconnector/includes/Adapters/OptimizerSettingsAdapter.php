@@ -76,6 +76,9 @@ final class OptimizerSettingsAdapter
         );
         if(!empty($context['dry_run']))return $out;
         $this->expected($payload['expected_before_fingerprint']??null,$fingerprint);
+        if($provider==='ewww' && $old[$key]===null){
+            throw new RuntimeException('EWWW option must exist before a guarded write.');
+        }
         $previousExists=array_key_exists($key,$old);
         $previousValue=$previousExists?$old[$key]:null;
         try {
@@ -215,6 +218,7 @@ final class OptimizerSettingsAdapter
             if(preg_match('/^[0-6]$/D',$value))return $value;
             throw new RuntimeException('EWWW above-fold count must be between 0 and 6.');
         }
+        if($restore && $value==='')return $value;
         if($value!=='0'&&$value!=='1')throw new RuntimeException('EWWW toggle accepts only zero or one.');
         return $value;
     }
