@@ -104,6 +104,12 @@ foreach(array(
     if($result['count']!==$expected)throw new RuntimeException('Missing WooCommerce provider inventory.');
     if(strpos(json_encode($result),'HIDDEN_')!==false)throw new RuntimeException('Provider list leaked a secret.');
 }
+$page=$registry->execute('woocommerce.operations.list',array('area'=>'tax_rates','page'=>1,'per_page'=>1));
+if($page['count']!==1||!$page['has_more']||$page['page']!==1)
+    throw new RuntimeException('Tax rate pagination contract is incomplete.');
+$err(static function()use($registry){
+    $registry->execute('woocommerce.operations.list',array('area'=>'tax_rates','page'=>-1));
+},'outside safe bounds');
 $gateway=array('area'=>'payment_gateway','id'=>'mollie_wc_gateway_ideal');
 $found=$registry->execute('woocommerce.operations.inspect',$gateway);
 if($found['item']['settings']['api_key']['mode']!=='secret_blocked'||
