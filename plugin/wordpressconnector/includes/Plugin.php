@@ -25,6 +25,7 @@ use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceSettingsAdapter;
+use Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastTemplateSettingsAdapter;
 use Webactueel\WordPressConnector\Admin\ElementorJsonExport;
@@ -60,6 +61,7 @@ final class Plugin
             new ElementorFormsAdapter(),
             new WooCommerceAdapter(),
             new WooCommerceSettingsAdapter(),
+            new WooCommerceOperationsAdapter(),
             new AcfAdapter(),
             new PortfolioStatsAdapter(),
             new YoastAdapter(),
