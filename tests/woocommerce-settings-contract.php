@@ -25,6 +25,7 @@ function current_user_can($capability): bool
 {
     return in_array($capability, $GLOBALS['woocommerce_settings_user_caps'], true);
 }
+function get_option($id, $default = null) { return $GLOBALS['woocommerce_settings_options']['products'][$id]['value'] ?? $default; }
 function sanitize_text_field($value): string
 {
     return trim(strip_tags((string) $value));
@@ -54,6 +55,21 @@ class FakeSettingsPage
     public function get_id() { return $this->id; }
     public function get_label() { return $this->label; }
     public function get_sections() { return $this->sections; }
+    public function get_settings_for_section($section) {
+        if ($this->id !== 'products') return array();
+        if ($section === 'inventory') {
+            return array(
+                array('id'=>'stock_info', 'title'=>'Voorraad', 'type'=>'title'),
+                array('id'=>'woocommerce_manage_stock', 'title'=>'Voorraad beheren', 'type'=>'checkbox', 'default'=>'no'),
+                array('id'=>'stock_end', 'type'=>'sectionend'),
+            );
+        }
+        return array(
+            array('id'=>'product_info', 'title'=>'Producten', 'type'=>'title'),
+            array('id'=>'woocommerce_weight_unit', 'title'=>'Gewichtseenheid', 'type'=>'select', 'default'=>'kg'),
+            array('id'=>'woocommerce_api_secret', 'title'=>'Credential', 'type'=>'password', 'default'=>''),
+        );
+    }
 }
 class WC_Admin_Settings
 {
@@ -129,6 +145,21 @@ if ($general['total'] !== 3 || !$general['has_more'] || $general['fields'][0]['m
     || isset($general['fields'][1]['value']) || strpos(json_encode($general), 'DONT_EXPOSE') !== false) {
     throw new RuntimeException('Settings pagination, secret isolation or allowlist failed.');
 }
+$section = $registry->execute('woocommerce.settings.section.inspect', array('tab'=>'products', 'section'=>'inventory'));
+if ($section['total'] !== 3 || $section['fields'][1]['id'] !== 'woocommerce_manage_stock'
+    || $section['fields'][1]['mode'] !== 'read_only_provider_specific') {
+    throw new RuntimeException('WooCommerce product inventory subtab missing from provider inventory.');
+}
+$defaultSection = $registry->execute('woocommerce.settings.section.inspect', array('tab'=>'products', 'section'=>''));
+if ($defaultSection['fields'][1]['mode'] !== 'editable_via_rest'
+    || $defaultSection['fields'][1]['value'] !== 'lbs'
+    || $defaultSection['fields'][2]['mode'] !== 'secret_blocked'
+    || isset($defaultSection['fields'][2]['value'])) {
+    throw new RuntimeException('WooCommerce admin subtab readback leaked a secret or missed an editable field.');
+}
+$expectError(static function () use ($registry) {
+    $registry->execute('woocommerce.settings.section.inspect', array('tab'=>'products', 'section'=>'not_a_section'));
+}, 'not registered');
 $checkout = $registry->execute('woocommerce.settings.inspect', array('group'=>'checkout'));
 if ($checkout['fields'][0]['mode'] !== 'secret_blocked' || isset($checkout['fields'][0]['value'])) {
     throw new RuntimeException('Payment credential exposure detected.');
