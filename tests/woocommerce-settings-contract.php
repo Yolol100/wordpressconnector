@@ -139,6 +139,10 @@ if (count($catalog['groups']) !== 3 || !$catalog['admin_navigation']['available'
     || $catalog['admin_navigation']['tabs'][1]['provider'] !== 'extension_or_custom') {
     throw new RuntimeException('Settings group/tab/subtab inventory did not reflect provider data.');
 }
+$criticalInventory = $registry->execute('woocommerce.settings.inspect', array('group'=>'general', 'offset'=>2, 'limit'=>1));
+if ($criticalInventory['fields'][0]['mode'] !== 'editable_requires_critical_gate') {
+    throw new RuntimeException('Critical WooCommerce option was not marked as gated.');
+}
 $general = $registry->execute('woocommerce.settings.inspect', array('group'=>'general', 'offset'=>0, 'limit'=>2));
 if ($general['total'] !== 3 || !$general['has_more'] || $general['fields'][0]['mode'] !== 'editable'
     || $general['fields'][1]['mode'] !== 'secret_blocked'
@@ -176,9 +180,34 @@ $expectError(static function () use ($registry) {
 $expectError(static function () use ($registry) {
     $registry->execute('woocommerce.settings.update', array('group'=>'checkout', 'id'=>'woocommerce_mollie_api_key', 'value'=>'BAD'), array('dry_run'=>true));
 }, 'separate guarded provider');
-$expectError(static function () use ($registry) {
-    $registry->execute('woocommerce.settings.update', array('group'=>'general', 'id'=>'woocommerce_enable_coupons', 'value'=>'no'), array('dry_run'=>true));
-}, 'separate guarded provider');
+$criticalPayload = array('group'=>'general', 'id'=>'woocommerce_enable_coupons', 'value'=>'no');
+$criticalPreview = $registry->execute('woocommerce.settings.update', $criticalPayload, array('dry_run'=>true));
+if ($criticalPreview['before'] !== 'yes' || $criticalPreview['after'] !== 'no'
+    || $GLOBALS['woocommerce_settings_options']['general']['woocommerce_enable_coupons']['value'] !== 'yes') {
+    throw new RuntimeException('Critical setting preview did not preserve current values.');
+}
+$expectError(static function () use ($registry, $criticalPayload) {
+    $registry->execute('woocommerce.settings.update', $criticalPayload, array('dry_run'=>false));
+}, 'site-local enablement');
+define('WPCONNECTOR_ALLOW_WOO_CRITICAL', true);
+$expectError(static function () use ($registry, $criticalPayload) {
+    $registry->execute('woocommerce.settings.update', array_merge($criticalPayload, array(
+        'critical_confirm'=>true,'restore_verified'=>true,'expected_before_fingerprint'=>str_repeat('0',64)
+    )), array('dry_run'=>false));
+}, 'matching dry-run fingerprint');
+$criticalApplied = $registry->execute('woocommerce.settings.update', array_merge($criticalPayload, array(
+    'critical_confirm'=>true,'restore_verified'=>true,
+    'expected_before_fingerprint'=>$criticalPreview['_current_fingerprint']
+)), array('dry_run'=>false));
+if ($criticalApplied['after'] !== 'no' ||
+    $GLOBALS['woocommerce_settings_options']['general']['woocommerce_enable_coupons']['value'] !== 'no') {
+    throw new RuntimeException('Confirmed critical Woo setting was not applied.');
+}
+$registry->execute('woocommerce.settings.restore', $criticalApplied['_rollback']['payload'], array('rollback_mode'=>true));
+if ($GLOBALS['woocommerce_settings_options']['general']['woocommerce_enable_coupons']['value'] !== 'yes') {
+    throw new RuntimeException('Critical Woo setting rollback did not restore the prior value.');
+}
+
 $expectError(static function () use ($registry) {
     $registry->execute('woocommerce.settings.update', array('group'=>'products', 'id'=>'woocommerce_weight_unit', 'value'=>'invalid'), array('dry_run'=>true));
 }, 'provider options');
