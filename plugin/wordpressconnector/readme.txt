@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.8
+Stable tag: 1.17.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.9 advertises the guarded global Yoast snippet template actions in the installed-plugin capabilities catalog. No new permission surface.
+
 
 Version 1.17.8 adds capability-guarded global Yoast SEO snippet template read, bounded update and restore for homepage, pages, posts, WooCommerce products and product categories. Changes use a strict field allowlist, dry-run, exact readback and rollback, preserving unrelated provider options.
 
