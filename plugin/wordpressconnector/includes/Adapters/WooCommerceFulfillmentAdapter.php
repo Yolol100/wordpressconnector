@@ -112,19 +112,28 @@ final class WooCommerceFulfillmentAdapter
         $id=$type==='shipping_method'?($created['instance_id']??null):($created['id']??null);
         if(!is_int($id)||$id<1)throw new RuntimeException('WooCommerce provider creation returned no valid ID; inspect site state manually.');
         $resourcePath=$path.'/'.$id;
-        $current=$this->api('GET',$resourcePath);
-        if($type==='shipping_method' && ($current['enabled']??null)!==false){
-            // An unpriced method must not be automatically made available at checkout.
-            $this->api('PUT',$resourcePath,array('enabled'=>false));
+        try {
             $current=$this->api('GET',$resourcePath);
-            if(($current['enabled']??null)!==false)
-                throw new RuntimeException('New shipping method could not be disabled; immediate admin review required.');
-        }
-        if($type==='shipping_zone' && ($current['name']??'')!==$fields['name']){
-            throw new RuntimeException('Created shipping zone did not retain requested name.');
-        }
-        if($type==='tax_rate' && ($current['rate']??'')!==$fields['rate']){
-            throw new RuntimeException('Created tax rate did not retain requested rate.');
+            if($type==='shipping_method' && ($current['enabled']??null)!==false){
+                // Provider may ignore enabled=false on create: disable before reporting success.
+                $this->api('PUT',$resourcePath,array('enabled'=>false));
+                $current=$this->api('GET',$resourcePath);
+                if(($current['enabled']??null)!==false)
+                    throw new RuntimeException('New shipping method could not be disabled.');
+            }
+            if($type==='shipping_zone' && ($current['name']??'')!==$fields['name'])
+                throw new RuntimeException('Created shipping zone name was changed by the provider.');
+            if($type==='tax_rate' && ($current['rate']??'')!==$fields['rate'])
+                throw new RuntimeException('Created tax rate was changed by the provider.');
+        } catch(Throwable $error) {
+            try {
+                // This object has just been created by this request. Remove
+                // it immediately rather than leaving an unpriced method live.
+                $this->api('DELETE',$resourcePath,array('force'=>true));
+            } catch(Throwable $restoreError) {
+                throw new RuntimeException('WooCommerce provisioning failed; newly created resource recovery was not verified.');
+            }
+            throw new RuntimeException('WooCommerce provisioning readback failed; newly created resource removed.');
         }
         $snapshot=$this->resourceSnapshot($type,$current);
         $result['created']=$snapshot;
