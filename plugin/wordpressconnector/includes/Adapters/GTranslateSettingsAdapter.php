@@ -127,6 +127,11 @@ final class GTranslateSettingsAdapter
 
     private function version(): string
     {
+        // REST/MCP requests do not always bootstrap wp-admin plugin APIs.
+        if ((! function_exists('get_plugins') || ! function_exists('is_plugin_active'))
+            && defined('ABSPATH')) {
+            require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        }
         if (! function_exists('get_plugins') || ! function_exists('is_plugin_active')) {
             throw new RuntimeException('WordPress plugin inventory is unavailable.');
         }
