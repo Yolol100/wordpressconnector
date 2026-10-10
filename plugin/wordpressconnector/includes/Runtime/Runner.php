@@ -823,6 +823,9 @@ final class Runner
                 throw new RuntimeException('Stale target: expected_state_token does not match current site state.');
             }
         }
+        if (null !== $expectedFingerprint || null !== $expectedStateToken) {
+            $context['state_guard_verified'] = ! empty($context['dry_run']) ? false : true;
+        }
         return $this->registry->execute($action, $payload, $context);
     }
 }
