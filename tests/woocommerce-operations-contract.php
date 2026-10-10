@@ -23,6 +23,8 @@ $GLOBALS['woo_ops_store'] = array(
             'settings'=>array(
                 'title'=>array('id'=>'title','type'=>'text','value'=>'iDEAL'),
                 'api_key'=>array('id'=>'api_key','type'=>'password','value'=>'HIDDEN_MOLLIE_SECRET'),
+                'merchant_account'=>array('id'=>'merchant_account','type'=>'text','value'=>'HIDDEN_MERCHANT_ACCOUNT'),
+                'reference_code'=>array('id'=>'reference_code','type'=>'text','value'=>'HIDDEN_PROVIDER_REFERENCE'),
                 'live_mode'=>array('id'=>'live_mode','type'=>'checkbox','value'=>'no'),
             ),
         ),
@@ -114,8 +116,13 @@ $gateway=array('area'=>'payment_gateway','id'=>'mollie_wc_gateway_ideal');
 $found=$registry->execute('woocommerce.operations.inspect',$gateway);
 if($found['item']['settings']['api_key']['mode']!=='secret_blocked'||
     isset($found['item']['settings']['api_key']['value'])||
-    strpos(json_encode($found),'HIDDEN_MOLLIE_SECRET')!==false)
+    strpos(json_encode($found),'HIDDEN_MOLLIE_SECRET')!==false
+    || strpos(json_encode($found),'HIDDEN_MERCHANT_ACCOUNT')!==false
+    || strpos(json_encode($found),'HIDDEN_PROVIDER_REFERENCE')!==false)
     throw new RuntimeException('Payment gateway secret was exposed.');
+$err(static function()use($registry){$registry->execute('woocommerce.operations.update',array('area'=>'payment_gateway',
+    'id'=>'mollie_wc_gateway_ideal','fields'=>array('settings'=>array('merchant_account'=>'NEW'))),
+    array('dry_run'=>true));},'Protected');
 $err(static function()use($registry){$registry->execute('woocommerce.operations.inspect',
     array('area'=>'payment_gateway','id'=>'../../options'));},'Invalid');
 $err(static function()use($registry){$registry->execute('woocommerce.operations.inspect',
