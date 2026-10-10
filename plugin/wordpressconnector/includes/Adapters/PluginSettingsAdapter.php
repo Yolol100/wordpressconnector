@@ -126,6 +126,24 @@ final class PluginSettingsAdapter
                 'actions' => array(),
                 'note' => 'No safe plugin-specific write contract has been modeled yet.',
             );
+            // Only advertise optimizer controls that the installed provider can actually support.
+            if ('ewww-image-optimizer/ewww-image-optimizer.php' === $file) {
+                if (! is_plugin_active($file) || ! preg_match('/^8\\.8\\.[0-9]+$/D', (string) ($data['Version'] ?? ''))) {
+                    $integration['mode'] = 'version_bound_unsupported';
+                    $integration['actions'] = array();
+                    $integration['note'] = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
+                }
+            } elseif ('wp-asset-clean-up/wpacu.php' === $file) {
+                if (! is_plugin_active($file) || ! preg_match('/^1\\.4\\.0\\.[0-9]+$/D', (string) ($data['Version'] ?? ''))) {
+                    $integration['mode'] = 'version_bound_unsupported';
+                    $integration['actions'] = array();
+                    $integration['note'] = 'Asset CleanUp controls require an active, verified 1.4.0.x provider.';
+                } else {
+                    $integration['mode'] = 'inspect_only_provider_api_required';
+                    $integration['actions'] = array('optimizer.settings.inspect', 'maintenance.cache_capabilities', 'maintenance.cache_flush');
+                    $integration['note'] = 'Raw settings inspection is not effective-provider readback; optimizer writes are blocked pending provider API verification.';
+                }
+            }
             $items[] = array_merge(array(
                 'file' => (string) $file,
                 'name' => isset($data['Name']) ? (string) $data['Name'] : (string) $file,
