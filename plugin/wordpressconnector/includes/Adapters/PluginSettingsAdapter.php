@@ -88,8 +88,8 @@ final class PluginSettingsAdapter
         ),
         'wp-mail-smtp/wp_mail_smtp.php' => array('id' => 'wp_mail_smtp', 'mode' => 'secret_bound', 'actions' => array(), 'note' => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'),
         'wp-rocket/wp-rocket.php' => array('id' => 'wp_rocket', 'mode' => 'native_settings_api', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update', 'maintenance.cache_flush')), 
-        'wordpress-seo/wp-seo.php' => array('id' => 'yoast', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
-        'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
+        'wordpress-seo/wp-seo.php' => array('id' => 'yoast', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.templates.inspect', 'yoast.templates.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
+        'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.templates.inspect', 'yoast.templates.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')), 
     );
 
     public function register(Registry $registry): void
