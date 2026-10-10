@@ -118,6 +118,12 @@ $err(static function()use($registry){$registry->execute('woocommerce.operations.
     array('area'=>'payment_gateway','id'=>'mollie_wc_gateway_ideal',
         'fields'=>array('settings'=>array('api_key'=>'TESTKEY'))),array('dry_run'=>true));},'Protected');
 
+$err(static function()use($registry){
+    $registry->execute('woocommerce.operations.update',array(
+        'area'=>'payment_gateway','id'=>'mollie_wc_gateway_ideal',
+        'fields'=>array('settings'=>array('live_mode'=>'yes'))
+    ),array('dry_run'=>true));
+},'Protected');
 $tax=array('area'=>'tax_rate','id'=>5,'fields'=>array('rate'=>'9.0000'));
 $before=$registry->execute('woocommerce.operations.update',$tax,array('dry_run'=>true));
 if($before['requested']['rate']!=='9.0000'||$GLOBALS['woo_ops_put_count']!==0||
