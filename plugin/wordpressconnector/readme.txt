@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.11
+Stable tag: 1.17.12
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.12 adds critical-gated WooCommerce shipping zone/location, shipping method and tax-rate provisioning. Shipping location edits support exact JSON REST, dry-run and rollback, as do new zone/method/tax-rate creates with changed-state safeguards. New shipping methods are disabled by default. Tax creation has an additional site-only policy gate; no existing resources are deleted by normal actions.
+
 
 Version 1.17.11 widens provider REST support to all nonsecret WooCommerce core settings with opt-in critical server gate, exact state checks and rollback; adds provider-owned shipping zone, shipping method, tax-rate and payment gateway read/guarded-update actions, including Mollie gateway display settings where available. Payment activation requires a separate local gate and successful sandbox verification. Credentials, irreversible operations and live orders remain inaccessible through GitHub.
 
