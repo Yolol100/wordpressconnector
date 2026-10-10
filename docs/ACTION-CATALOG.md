@@ -147,6 +147,11 @@ This catalog is generated from the connector action registrations. Security labe
 | `woocommerce.coupon.update` | mutation, privileged | Update a WooCommerce coupon. |
 | `woocommerce.product.create` | mutation | Create a WooCommerce product. |
 | `woocommerce.product.get` | read-only | Read a WooCommerce product. |
+| `woocommerce.fulfillment.locations.inspect` | privileged | Read shipping zone country/state/postcode coverage through WooCommerce REST. |
+| `woocommerce.fulfillment.locations.update` | mutation, privileged | Update locations of one shipping zone with strict JSON, confirmed restore, fingerprint and rollback. |
+| `woocommerce.fulfillment.locations.restore` | mutation, privileged | Internal rollback-only shipping zone location restoration. |
+| `woocommerce.fulfillment.create` | mutation, privileged | Create a shipping zone/method or guarded tax rate with preflight and rollback checkpoint. |
+| `woocommerce.fulfillment.restore_created` | mutation, privileged | Internal guarded removal of a newly created resource with stale-state and dependency checks. |
 | `woocommerce.operations.list` | privileged | Read bounded provider shipping zones/methods, tax rates and payment gateway summaries with credentials removed. |
 | `woocommerce.operations.inspect` | privileged | Inspect one provider shipping zone/method, tax rate, or gateway, redacting secrets. |
 | `woocommerce.operations.update` | mutation, privileged | High-risk provider-owned settings update with site-local gate, tested restore, exact fingerprint, readback and rollback. |
