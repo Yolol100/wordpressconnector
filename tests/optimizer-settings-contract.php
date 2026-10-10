@@ -68,7 +68,7 @@ $r->register('test.optimizer_state_race',static function(array $payload,array $c
     if(!empty($context['dry_run']))$GLOBALS['options']['ewww_image_optimizer_ll_autoscale']='0';
     return $result;
 });
-$runnerClass=new ReflectionClass(\\Webactueel\\WordPressConnector\\Runtime\\Runner::class);
+$runnerClass=new ReflectionClass(\Webactueel\WordPressConnector\Runtime\Runner::class);
 $runner=$runnerClass->newInstanceWithoutConstructor();
 $runnerRegistry=$runnerClass->getProperty('registry');
 $runnerRegistry->setAccessible(true);
