@@ -259,7 +259,9 @@ final class WooCommerceOperationsAdapter
                 foreach ($value as $optionId => $desired) {
                     if (! is_string($optionId) || ! preg_match('/^[a-z0-9_\-]{1,100}$/D', $optionId)
                         || ! isset($before['settings'][$optionId])
-                        || $this->secret($optionId, (string) ($before['settings'][$optionId]['type'] ?? ''))) {
+                        || $this->secret($optionId, (string) ($before['settings'][$optionId]['type'] ?? ''))
+                        || ($area === 'payment_gateway'
+                            && preg_match('/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $optionId))) {
                         throw new RuntimeException('Protected WooCommerce provider credential or setting.');
                     }
                     $field = $before['settings'][$optionId];
