@@ -94,9 +94,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `gtranslate.settings.inspect` | privileged | Inspect a bounded nonsecret GTranslate 5.0.x language/settings snapshot. |
 | `gtranslate.settings.update` | mutation, privileged | Set Dutch/English language choices with strict provider/version checks, dry-run, readback and rollback. |
 | `gtranslate.settings.restore` | mutation, privileged | Internal stale-state protected restoration of earlier GTranslate language settings. |
-| `optimizer.settings.inspect` | privileged | Inspect EWWW 8.8.x and Asset CleanUp 1.4.0.x safe performance settings and WP Rocket conflict state; no private options. |
-| `optimizer.settings.update` | mutation, privileged | Change one allowlisted EWWW image-display option or disable one duplicate Asset CleanUp optimizer; strict dry-run, fingerprint and rollback. |
-| `optimizer.settings.restore` | mutation, privileged | Rollback-only guarded restoration of one EWWW/Asset CleanUp setting. |
+| `optimizer.settings.inspect` | privileged | Inspect provider-backed EWWW 8.8.x settings or stored-only Asset CleanUp 1.4.0.x settings; mark effective provider verification explicitly. |
+| `optimizer.settings.update` | mutation, privileged | Change one allowlisted EWWW 8.8.x display setting using provider APIs, confirmed fingerprint, readback and rollback. Asset CleanUp optimizer writes are blocked. |
+| `optimizer.settings.restore` | mutation, privileged | Rollback-only guarded EWWW settings restoration; legacy Asset CleanUp optimizer rollbacks are blocked. |
 | `plugin.settings.catalog` | privileged | List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets. |
 | `plugin.settings.inspect` | privileged | Read allowlisted settings through a plugin-owned API and return a state fingerprint. |
 | `plugin.settings.update` | mutation, privileged | Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback. |
