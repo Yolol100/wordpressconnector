@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://andrewbaeten.nl",
+  "request_id": "wa-portfolio-css-inspect-20261010",
+  "action": "custom_css.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
