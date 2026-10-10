@@ -25,7 +25,7 @@ final class WooCommerceOperationsAdapter
         'payment_gateway' => array('title', 'description', 'order', 'enabled', 'settings'),
     );
 
-    private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant[_-]?id|private[_-]?key|client[_-]?secret|authorization|webhook|private|license|smtp|auth)/i';
+    private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant|bank|iban|routing|account|user[_-]?name|username|access[_-]?key|public[_-]?key|private[_-]?key|client|signature|certificate|authorization|webhook|private|license|smtp|auth|oauth)/i';
 
     public function register(Registry $registry): void
     {
@@ -236,11 +236,13 @@ final class WooCommerceOperationsAdapter
                 }
                 $type = isset($setting['type']) && is_string($setting['type']) ? $setting['type'] : '';
                 $secret = $this->secret($id, $type);
+                $visible = ! $secret && $this->exposableSetting($area, $id);
                 $option = array(
                     'id' => $id, 'type' => substr($type,0,40),
-                    'mode' => $secret ? 'secret_blocked' : 'critical_requires_site_gate',
+                    'mode' => $secret ? 'secret_blocked'
+                        : ($visible ? 'critical_requires_site_gate' : 'provider_specific_read_only'),
                 );
-                if (! $secret && array_key_exists('value', $setting)) {
+                if ($visible && array_key_exists('value', $setting)) {
                     $option['value'] = $this->safePublicValue($setting['value']);
                 }
                 $options[$id] = $option;
@@ -271,6 +273,7 @@ final class WooCommerceOperationsAdapter
                     if (! is_string($optionId) || ! preg_match('/^[a-z0-9_\-]{1,100}$/D', $optionId)
                         || ! isset($before['settings'][$optionId])
                         || $this->secret($optionId, (string) ($before['settings'][$optionId]['type'] ?? ''))
+                        || ! $this->exposableSetting($area, $optionId)
                         || ($area === 'payment_gateway'
                             && preg_match('/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $optionId))) {
                         throw new RuntimeException('Protected WooCommerce provider credential or setting.');
@@ -376,6 +379,20 @@ final class WooCommerceOperationsAdapter
             return $value;
         }
         return '[complex_value_withheld]';
+    }
+
+    private function exposableSetting(string $area, string $id): bool
+    {
+        // Third-party plugins may store credentials under innocent-looking
+        // keys. Only provider-owned display fields are safe to echo to GitHub.
+        // Any additional field needs an explicit plugin/version contract.
+        if ('payment_gateway' === $area) {
+            return in_array($id, array('title', 'description', 'instructions'), true);
+        }
+        if ('shipping_method' === $area) {
+            return in_array($id, array('title', 'cost', 'tax_status', 'requires', 'min_amount', 'no_class_cost'), true);
+        }
+        return false;
     }
 
     private function secret(string $id, string $type): bool
