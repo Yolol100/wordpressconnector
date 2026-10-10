@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.15
+Stable tag: 1.17.16
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.15 adds safe read of actual EWWW 8.8.x and Asset CleanUp 1.4.0.x performance settings, with bounded provider-specific changes. Asset CleanUp can only disable duplicate CSS/JS optimizations while WP Rocket owns Remove Unused CSS. EWWW allows guarded lazy-load, autoscale, and above-fold settings, with conflict prevention when WP Rocket already handles lazy-loading or image dimensions. One-field-at-a-time dry-run, exact state fingerprint, readback and rollback.
+Version 1.17.16 provides guarded EWWW 8.8.x image-display settings via the plugin's own accessors, with multisite permission checks, dry-run, stale-state protection, readback and rollback. Asset CleanUp 1.4.0.x settings inspection reports stored values only, not verified effective provider state; optimizer writes and legacy optimizer rollback are blocked until a supported provider API is proven. Asset CleanUp cache-maintenance actions remain independent. WP Rocket keeps sole responsibility for Remove Unused CSS.
 
 
 Version 1.17.14 adds a version-bound GTranslate 5.0.x interface for Dutch/English language selection: default language, visible languages and browser-language detection. Protected by manage_options, exact state fingerprint, dry-run, provider readback and rollback; unrelated paid/translation/widget/domain options remain unchanged.
@@ -120,6 +120,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.17.16 =
+* Fail closed on Asset CleanUp optimizer writes until effective provider readback is verified.
+* Use EWWW provider-aware option accessors, guard network permissions and normalise boolean requests.
+* Correct optimizer capability advertisement and canonical REST/MCP state-token handoff.
+
+
 
 = 1.17.4 =
 * Track every persisted node during complex ACF field-tree creation so mid-tree failures can be compensated exactly.

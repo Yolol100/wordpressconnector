@@ -822,6 +822,7 @@ final class Runner
             if (null !== $expectedStateToken && ! hash_equals($expectedStateToken, Fingerprint::siteTokenFromFingerprint($current))) {
                 throw new RuntimeException('Stale target: expected_state_token does not match current site state.');
             }
+            $context['expected_prewrite_fingerprint'] = $current;
         }
         return $this->registry->execute($action, $payload, $context);
     }
