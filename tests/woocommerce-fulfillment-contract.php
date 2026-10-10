@@ -9,6 +9,7 @@ $GLOBALS['fulfill'] = array(
     'next_zone'=>4,'next_method'=>9,'next_tax'=>6,
 );
 $GLOBALS['fulfill_mutations']=0;
+$GLOBALS['fulfill_refuse_disable']=false;
 function sanitize_text_field($value): string{return trim(strip_tags((string)$value));}
 function wp_json_encode($value){return json_encode($value);}
 function current_user_can($capability): bool{return $capability==='manage_woocommerce';}
@@ -76,7 +77,10 @@ function rest_do_request($r){
                 return new FulfillResponse(200,array('instance_id'=>$id));
             }
             if($method==='PUT'){
-                foreach($r->params as $key=>$value)$store['methods'][$zone][$id][$key]=$value;
+                if(!($GLOBALS['fulfill_refuse_disable']===true
+                    && ($r->params['enabled']??null)===false)){
+                    foreach($r->params as $key=>$value)$store['methods'][$zone][$id][$key]=$value;
+                }
                 $GLOBALS['fulfill_mutations']++;
             }
             return new FulfillResponse(200,$store['methods'][$zone][$id]);
@@ -174,6 +178,18 @@ if($mWritten['created']['instance_id']!==9||$GLOBALS['fulfill']['methods'][3][9]
     throw new RuntimeException('New shipping method was enabled at checkout or missing.');
 $registry->execute('woocommerce.fulfillment.restore_created',$mWritten['_rollback']['payload'],array('rollback_mode'=>true));
 if(isset($GLOBALS['fulfill']['methods'][3][9]))throw new RuntimeException('New shipping method rollback failed.');
+
+$broken=array('type'=>'shipping_method','zone_id'=>3,'fields'=>array('method_id'=>'local_pickup'));
+$brokenPreview=$registry->execute('woocommerce.fulfillment.create',$broken,array('dry_run'=>true));
+$broken=array_merge($broken,array('critical_confirm'=>true,'restore_verified'=>true,
+    'expected_before_fingerprint'=>$brokenPreview['_current_fingerprint']));
+$GLOBALS['fulfill_refuse_disable']=true;
+$fail(static function()use($registry,$broken){
+    $registry->execute('woocommerce.fulfillment.create',$broken,array('dry_run'=>false));
+},'newly created resource removed');
+$GLOBALS['fulfill_refuse_disable']=false;
+if(isset($GLOBALS['fulfill']['methods'][3][10]))
+    throw new RuntimeException('Failed shipping method creation left a live method enabled.');
 
 $tax=array('type'=>'tax_rate','fields'=>array('country'=>'NL','rate'=>'9.0000','name'=>'BTW laag'));
 $tPrev=$registry->execute('woocommerce.fulfillment.create',$tax,array('dry_run'=>true));
