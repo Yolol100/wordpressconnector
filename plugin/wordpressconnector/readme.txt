@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.17.10 adds bounded WooCommerce settings-group and admin tab/subtab discovery, safe settings readback with secret redaction, and capability-guarded updates for a small explicit list of low-risk core display/product-review settings through WooCommerce's REST API. Payment, tax, shipping method, POS and third-party provider settings remain read-only or require dedicated staging-first controls. All writes include dry-run, readback and rollback.
+Version 1.17.10 adds bounded WooCommerce settings-group and admin tab/subtab discovery, paged admin subtab field inspection, safe settings readback with secret redaction, and capability-guarded updates for a small explicit list of low-risk core display/product-review settings through WooCommerce's REST API. Payment, tax, shipping method, POS and third-party provider settings remain read-only or require dedicated staging-first controls. All writes include dry-run, readback and rollback.
 
 
 Version 1.17.9 advertises the guarded global Yoast snippet template actions in the installed-plugin capabilities catalog. No new permission surface.
