@@ -261,9 +261,14 @@ final class WooCommerceFulfillmentAdapter
     {
         $keys=$type==='shipping_zone'?array('id','name','order')
             :($type==='shipping_method'?array('instance_id','method_id','order','enabled')
-            :array('id','country','state','rate','name','priority','compound','shipping','order','class'));
+            :array('id','country','state','postcode','city','rate','name','priority','compound','shipping','order','class'));
         $out=array();
         foreach($keys as $key)if(array_key_exists($key,$item))$out[$key]=$item[$key];
+        // Hash provider-specific settings so a later method edit invalidates
+        // rollback without exporting any credential or private configuration.
+        if($type==='shipping_method' && isset($item['settings']) && is_array($item['settings'])){
+            $out['settings_fingerprint']=Fingerprint::make($item['settings']);
+        }
         return $out;
     }
 
