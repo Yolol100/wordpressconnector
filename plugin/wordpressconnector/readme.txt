@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.16
+Stable tag: 1.17.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.17 adds a built-in, fixed WooCommerce catalogue-only preset for the already-installed Code Snippets provider. It exposes only inspect/ensure/guarded rollback, with no caller-controlled PHP, dry-run, exact readback and recovery. Purchasability, cart, classic checkout and WooCommerce Store API ordering are blocked while existing prices can display. Earlier connector actions and site VAT settings remain unchanged.
+
 
 Version 1.17.16 provides guarded EWWW 8.8.x image-display settings via the plugin's own accessors, with multisite permission checks, dry-run, stale-state protection, readback and rollback. Asset CleanUp 1.4.0.x settings inspection reports stored values only, not verified effective provider state; optimizer writes and legacy optimizer rollback are blocked until a supported provider API is proven. Asset CleanUp cache-maintenance actions remain independent. WP Rocket keeps sole responsibility for Remove Unused CSS.
 
