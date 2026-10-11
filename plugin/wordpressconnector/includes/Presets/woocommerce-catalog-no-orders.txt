@@ -19,8 +19,11 @@ if (! function_exists('wab_cog_store_api')) {
         }
         $method = strtoupper((string) $request->get_method());
         $route = (string) $request->get_route();
-        if (in_array($method, array('POST', 'PUT', 'PATCH'), true) &&
-            preg_match('~^/wc/store(?:/v[0-9]+)?/(?:cart/add-item|checkout)(?:/|$)~', $route)) {
+        // A checkout GET may create a draft order; cart/items and batch are alternate write routes.
+        $checkout = 1 === preg_match('~^/wc/store(?:/v[0-9]+)?/checkout(?:/|$)~', $route);
+        $cart_or_batch = 1 === preg_match('~^/wc/store(?:/v[0-9]+)?/(?:cart|batch)(?:/|$)~', $route);
+        if (($checkout && 'OPTIONS' !== $method) ||
+            ($cart_or_batch && in_array($method, array('POST', 'PUT', 'PATCH', 'DELETE'), true))) {
             return new \WP_Error('wab_catalog_only', 'Purchases are disabled on this catalogue.', array('status' => 403));
         }
         return $result;
