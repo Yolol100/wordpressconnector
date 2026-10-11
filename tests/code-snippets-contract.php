@@ -11,7 +11,7 @@ foreach (array(
     "register('code_snippets.catalog_only.inspect'",
     "register('code_snippets.catalog_only.ensure'",
     "register('code_snippets.catalog_only.undo'",
-    "register('code_snippets.patch'"
+    "register('code_snippets.patch'",
     "register('code_snippets.restore_code'",
     "match_code_contains",
     "substr_count",
