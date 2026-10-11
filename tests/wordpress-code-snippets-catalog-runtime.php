@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 // Executed by WP-CLI against an ephemeral CI WordPress + WooCommerce + Code Snippets installation.
 use Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter;
 
