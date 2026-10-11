@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.17
+Stable tag: 1.17.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.18 explicitly blocks alternate WooCommerce Store API cart/items and batch mutations, and checkout reads that can create draft orders, while preserving product/price read APIs and the guarded Code Snippets provider lifecycle. Existing classic checkout and product purchase guards remain in force. Regressions run against WooCommerce 11.2.1 and Code Snippets 3.10.2.
 
 Version 1.17.17 adds a built-in, fixed WooCommerce catalogue-only preset for the already-installed Code Snippets provider. It exposes only inspect/ensure/guarded rollback, with no caller-controlled PHP, dry-run, exact readback and recovery. Purchasability, cart, classic checkout and WooCommerce Store API ordering are blocked while existing prices can display. Earlier connector actions and site VAT settings remain unchanged.
 
