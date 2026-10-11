@@ -1,0 +1,86 @@
+// WAB_CATALOG_ONLY_2026. Canonical WooCommerce catalogue-only source; do not sell.
+if (! function_exists('wab_cog_enabled')) {
+    function wab_cog_enabled(): bool {
+        return class_exists('WooCommerce');
+    }
+}
+if (! function_exists('wab_cog_checkout_error')) {
+    function wab_cog_checkout_error(): void {
+        if (function_exists('wc_add_notice')) {
+            wc_add_notice('Ordering is disabled. This website is a product catalogue.', 'error');
+        }
+    }
+}
+if (! function_exists('wab_cog_store_api')) {
+    function wab_cog_store_api($result, $server, $request) {
+        if (! wab_cog_enabled() || ! is_object($request) ||
+            ! method_exists($request, 'get_method') || ! method_exists($request, 'get_route')) {
+            return $result;
+        }
+        $method = strtoupper((string) $request->get_method());
+        $route = (string) $request->get_route();
+        if (in_array($method, array('POST', 'PUT', 'PATCH'), true) &&
+            preg_match('~^/wc/store(?:/v[0-9]+)?/(?:cart/add-item|checkout)(?:/|$)~', $route)) {
+            return new \WP_Error('wab_catalog_only', 'Purchases are disabled on this catalogue.', array('status' => 403));
+        }
+        return $result;
+    }
+}
+if (! function_exists('wab_cog_price_html')) {
+    function wab_cog_price_html($html, $product): string {
+        return is_string($html) && '' !== trim($html)
+            ? $html
+            : '<span class="price-on-request">Price on request</span>';
+    }
+}
+if (! function_exists('wab_cog_remove_buttons')) {
+    function wab_cog_remove_buttons(): void {
+        remove_action('woocommerce_after_shop_loop_item', 'woocommerce_template_loop_add_to_cart', 10);
+        remove_action('woocommerce_single_variation', 'woocommerce_single_variation_add_to_cart_button', 20);
+    }
+}
+if (! function_exists('wab_cog_redirect_cart')) {
+    function wab_cog_redirect_cart(): void {
+        if (is_admin() || ! function_exists('is_cart') || ! function_exists('is_checkout')) {
+            return;
+        }
+        if (is_cart() || is_checkout()) {
+            $shop = function_exists('wc_get_page_permalink') ? wc_get_page_permalink('shop') : '';
+            wp_safe_redirect(is_string($shop) && '' !== $shop ? $shop : home_url('/'), 302);
+            exit;
+        }
+    }
+}
+if (! function_exists('wab_cog_styles')) {
+    function wab_cog_styles(): void {
+        wp_register_style('wab-catalog-only-buttons', false, array(), '1.0.0');
+        wp_enqueue_style('wab-catalog-only-buttons');
+        wp_add_inline_style('wab-catalog-only-buttons',
+            '.single_add_to_cart_button,.add_to_cart_button,.ajax_add_to_cart,' .
+            '.wc-block-components-product-button,.wc-block-grid__product-add-to-cart,' .
+            '.wp-block-woocommerce-product-button{display:none!important;}');
+    }
+}
+if (! function_exists('wab_cog_boot')) {
+    function wab_cog_boot(): void {
+        if (! wab_cog_enabled()) {
+            return;
+        }
+        add_filter('woocommerce_is_purchasable', '__return_false', PHP_INT_MAX, 2);
+        add_filter('woocommerce_variation_is_purchasable', '__return_false', PHP_INT_MAX, 2);
+        add_filter('woocommerce_add_to_cart_validation', '__return_false', PHP_INT_MAX, 6);
+        add_action('woocommerce_checkout_process', 'wab_cog_checkout_error', PHP_INT_MAX);
+        add_action('woocommerce_check_cart_items', 'wab_cog_checkout_error', PHP_INT_MAX);
+        add_filter('rest_pre_dispatch', 'wab_cog_store_api', PHP_INT_MAX, 3);
+        add_filter('woocommerce_get_price_html', 'wab_cog_price_html', 20, 2);
+        add_filter('woocommerce_get_availability_text', '__return_empty_string', 20, 2);
+        add_action('wp', 'wab_cog_remove_buttons', 20);
+        add_action('template_redirect', 'wab_cog_redirect_cart', 1);
+        add_action('wp_enqueue_scripts', 'wab_cog_styles', 20);
+    }
+}
+if (did_action('plugins_loaded')) {
+    wab_cog_boot();
+} else {
+    add_action('plugins_loaded', 'wab_cog_boot', 99);
+}
