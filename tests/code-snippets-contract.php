@@ -8,7 +8,10 @@ $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 
 foreach (array(
-    "register('code_snippets.patch'",
+    "register('code_snippets.catalog_only.inspect'",
+    "register('code_snippets.catalog_only.ensure'",
+    "register('code_snippets.catalog_only.undo'",
+    "register('code_snippets.patch'"
     "register('code_snippets.restore_code'",
     "match_code_contains",
     "substr_count",
@@ -23,9 +26,9 @@ foreach (array(
     }
 }
 
-foreach (array('execute_snippet(', 'save_snippet(', 'delete_snippet(', 'create_item(') as $needle) {
+foreach (array('execute_snippet(', 'create_item(', "\$payload['code']", "\$payload['snippet_code']") as $needle) {
     if (false !== strpos($adapter, $needle)) {
-        fwrite(STDERR, "Code Snippets adapter exposes a forbidden broad primitive: {$needle}\n");
+        fwrite(STDERR, "Code Snippets adapter exposes a forbidden broad or caller-code primitive: {$needle}\n");
         exit(1);
     }
 }
