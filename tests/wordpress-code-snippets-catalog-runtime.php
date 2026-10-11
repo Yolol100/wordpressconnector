@@ -51,7 +51,8 @@ if ('create' === $mode) {
     ) as $case) {
         $blocked = apply_filters('rest_pre_dispatch', null, rest_get_server(),
             new WP_REST_Request($case[0], $case[1]));
-        if (! is_wp_error($blocked) || 403 !== (int) $blocked->get_error_data()['status']) {
+        if (! is_wp_error($blocked) || 'wab_catalog_only' !== $blocked->get_error_code() ||
+            403 !== (int) $blocked->get_error_data()['status']) {
             throw new RuntimeException('WooCommerce Store API route was not blocked: ' . implode(' ', $case));
         }
     }
@@ -61,9 +62,11 @@ if ('create' === $mode) {
         array('GET', '/wc/store/v1/cart/items'),
         array('OPTIONS', '/wc/store/v1/checkout'),
     ) as $case) {
-        if (null !== apply_filters('rest_pre_dispatch', null, rest_get_server(),
-            new WP_REST_Request($case[0], $case[1]))) {
-            throw new RuntimeException('Safe Store API route was unexpectedly blocked: ' . implode(' ', $case));
+        $result = apply_filters('rest_pre_dispatch', null, rest_get_server(),
+            new WP_REST_Request($case[0], $case[1]));
+        // WordPress/WooCommerce may answer OPTIONS themselves; only our guard must abstain.
+        if (is_wp_error($result) && 'wab_catalog_only' === $result->get_error_code()) {
+            throw new RuntimeException('Safe Store API route was blocked by catalogue guard: ' . implode(' ', $case));
         }
     }
     if ('<span>€100</span>' !== apply_filters('woocommerce_get_price_html', '<span>€100</span>', null) ||
