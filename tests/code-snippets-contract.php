@@ -8,6 +8,9 @@ $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 
 foreach (array(
+    "register('code_snippets.catalog_only.inspect'",
+    "register('code_snippets.catalog_only.ensure'",
+    "register('code_snippets.catalog_only.undo'",
     "register('code_snippets.patch'",
     "register('code_snippets.restore_code'",
     "match_code_contains",
@@ -23,11 +26,24 @@ foreach (array(
     }
 }
 
-foreach (array('execute_snippet(', 'save_snippet(', 'delete_snippet(', 'create_item(') as $needle) {
+foreach (array('execute_snippet(', 'create_item(') as $needle) {
     if (false !== strpos($adapter, $needle)) {
-        fwrite(STDERR, "Code Snippets adapter exposes a forbidden broad primitive: {$needle}\n");
+        fwrite(STDERR, "Code Snippets adapter exposes a forbidden broad or caller-code primitive: {$needle}\n");
         exit(1);
     }
+}
+
+// The legacy restore_code action accepts stored code for rollback only.
+// Only the new managed creation path must reject untrusted request PHP.
+$guardStart = strpos($adapter, 'public function catalogOnlyEnsure(');
+$guardEnd = strpos($adapter, 'public function catalogOnlyUndo(');
+$ensureBody = $guardStart !== false && $guardEnd !== false ? substr($adapter, $guardStart, $guardEnd - $guardStart) : '';
+if ('' === $ensureBody ||
+    false !== strpos($ensureBody, "\$payload['code']") ||
+    false !== strpos($ensureBody, "\$payload['snippet_code']") ||
+    false === strpos($ensureBody, 'if ($payload)')) {
+    fwrite(STDERR, "Managed Code Snippets creation did not reject arbitrary caller PHP.\n");
+    exit(1);
 }
 
 $tmp = sys_get_temp_dir() . '/wpconnector-code-snippets-' . bin2hex(random_bytes(6));

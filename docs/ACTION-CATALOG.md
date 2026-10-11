@@ -22,6 +22,9 @@ This catalog is generated from the connector action registrations. Security labe
 | `comment.list` | privileged, sensitive | List comments including private author metadata. |
 | `comment.trash` | mutation, privileged, sensitive | Trash a comment. |
 | `comment.update` | mutation, privileged, sensitive | Update a comment. |
+| `code_snippets.catalog_only.inspect` | privileged | Inspect the provider-backed managed WooCommerce catalogue snippet without exposing PHP. |
+| `code_snippets.catalog_only.ensure` | mutation, privileged | Create and activate only the audited WooCommerce catalogue-only Code Snippets preset, with readback and rollback. |
+| `code_snippets.catalog_only.undo` | mutation, privileged | Internal rollback of the managed catalogue-only snippet guarded by exact code identity. |
 | `code_snippets.patch` | mutation, privileged | Patch one uniquely identified existing Code Snippets PHP snippet through exact bounded replacements with stale-state protection, readback and rollback. |
 | `code_snippets.restore_code` | mutation, privileged | Internal rollback action that restores the previous code for a guarded Code Snippets patch. |
 | `connector.actions` | read-only | List registered actions and security metadata. |
