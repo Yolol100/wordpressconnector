@@ -34,14 +34,40 @@ if ('create' === $mode) {
         true === apply_filters('woocommerce_add_to_cart_validation', true, 1, 1)) {
         throw new RuntimeException('Product/cart purchase prevention filter was not effective.');
     }
-    $req = new WP_REST_Request('POST', '/wc/store/v1/cart/add-item');
-    $blocked = apply_filters('rest_pre_dispatch', null, rest_get_server(), $req);
-    if (! is_wp_error($blocked) || 403 !== (int) $blocked->get_error_data()['status']) {
-        throw new RuntimeException('WooCommerce Store API add-to-cart bypass was not blocked.');
+    // Cover every documented alternate Store API order/cart entry, not only add-item.
+    foreach (array(
+        array('POST', '/wc/store/v1/cart/add-item'),
+        array('POST', '/wc/store/v1/cart/items'),
+        array('PUT', '/wc/store/v1/cart/items/example-key'),
+        array('DELETE', '/wc/store/v1/cart/items/example-key'),
+        array('POST', '/wc/store/v1/cart/update-item'),
+        array('POST', '/wc/store/v1/batch'),
+        array('POST', '/wc/store/cart/add-item'),
+        array('GET', '/wc/store/v1/checkout'),
+        array('HEAD', '/wc/store/v1/checkout'),
+        array('POST', '/wc/store/v1/checkout'),
+        array('PUT', '/wc/store/v1/checkout'),
+        array('POST', '/wc/store/v1/checkout/123'),
+    ) as $case) {
+        $blocked = apply_filters('rest_pre_dispatch', null, rest_get_server(),
+            new WP_REST_Request($case[0], $case[1]));
+        if (! is_wp_error($blocked) || 'wab_catalog_only' !== $blocked->get_error_code() ||
+            403 !== (int) $blocked->get_error_data()['status']) {
+            throw new RuntimeException('WooCommerce Store API route was not blocked: ' . implode(' ', $case));
+        }
     }
-    $reqCheckout = new WP_REST_Request('POST', '/wc/store/v1/checkout');
-    if (! is_wp_error(apply_filters('rest_pre_dispatch', null, rest_get_server(), $reqCheckout))) {
-        throw new RuntimeException('WooCommerce Store API checkout bypass was not blocked.');
+    foreach (array(
+        array('GET', '/wc/store/v1/products'),
+        array('GET', '/wc/store/v1/cart'),
+        array('GET', '/wc/store/v1/cart/items'),
+        array('OPTIONS', '/wc/store/v1/checkout'),
+    ) as $case) {
+        $result = apply_filters('rest_pre_dispatch', null, rest_get_server(),
+            new WP_REST_Request($case[0], $case[1]));
+        // WordPress/WooCommerce may answer OPTIONS themselves; only our guard must abstain.
+        if (is_wp_error($result) && 'wab_catalog_only' === $result->get_error_code()) {
+            throw new RuntimeException('Safe Store API route was blocked by catalogue guard: ' . implode(' ', $case));
+        }
     }
     if ('<span>€100</span>' !== apply_filters('woocommerce_get_price_html', '<span>€100</span>', null) ||
         false === strpos(apply_filters('woocommerce_get_price_html', '', null), 'Price on request')) {

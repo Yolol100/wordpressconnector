@@ -104,7 +104,7 @@ namespace {
         'woocommerce_is_purchasable', 'woocommerce_variation_is_purchasable',
         'woocommerce_add_to_cart_validation', 'woocommerce_checkout_process',
         'woocommerce_check_cart_items', 'rest_pre_dispatch',
-        'woocommerce_get_price_html', 'wc/store', 'cart/add-item',
+        'woocommerce_get_price_html', 'wc/store', '(?:cart|batch)', 'checkout',
         'woocommerce_after_shop_loop_item', 'woocommerce_single_variation',
     ) as $needle) {
         if (false === strpos($source, $needle) && 'wc/store' !== $needle) {
