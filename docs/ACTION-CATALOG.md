@@ -30,6 +30,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `connector.actions` | read-only | List registered actions and security metadata. |
 | `connector.batch` | mutation | Execute up to 25 connector operations with compensation on failure. |
 | `connector.read_batch` | read-only | Run 1-25 non-sensitive, non-mutating reads after preflighting every leaf; supports REST/MCP and the existing GitHub transport. |
+| `connector.rest_catalog` | privileged | Inventory bounded sanitized REST namespaces and route patterns with advertised HTTP methods. Does not dispatch endpoint or permission callbacks. Requires private, authenticated manage_options context. |
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
 | `connector.discover` | read-only | Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities. |
 | `connector.update.check` | privileged | Check the canonical GitHub release for a newer verified WordPress Connector package. |
