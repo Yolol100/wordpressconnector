@@ -1,0 +1,166 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-public-brand-readbatch-20261012-r9",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T17:28:05+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 13,
+                "type": "page",
+                "status": "publish",
+                "title": "Home",
+                "slug": "home",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "b383ac8a255554bc80334567c3e69e662dfb82222747e72191ea6409b9ed4068"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 15,
+                "type": "page",
+                "status": "publish",
+                "title": "Custom Solutions",
+                "slug": "custom-solutions",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/custom-solutions/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "f1c73f30d3271ef9a9ff8f5168162d78519075a534762b39398aec59a1ba9630"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 16,
+                "type": "page",
+                "status": "publish",
+                "title": "About Us",
+                "slug": "about-us",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "b493df6f5907ea86575de2909512a35931972e8dbeb9dae3cff58ad65a2496f8"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 17,
+                "type": "page",
+                "status": "publish",
+                "title": "Contact",
+                "slug": "contact",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/contact/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "ecf7e33b64881d67a994396bae3c25ee84026b25997c2caee3b070fa42bca1c3"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 252,
+                "type": "page",
+                "status": "publish",
+                "title": "Request a Quotation",
+                "slug": "request-a-quote",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "9c46bc73cb4331c6fd659ac07b5a1551d2302e567b755b402fb7992683a03af1"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 253,
+                "type": "page",
+                "status": "publish",
+                "title": "Thank You for Your Message",
+                "slug": "thank-you-message",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "0bf2364dd1b05e41f5ff3e5bfe7fa94403d35f7d5bb34c49d0b2a4f9335e656c"
+        },
+        {
+            "index": 6,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 253,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Message",
+                    "slug": "thank-you-message",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/"
+                },
+                {
+                    "id": 252,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Request a Quotation",
+                    "slug": "request-a-quote",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/"
+                },
+                {
+                    "id": 17,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Contact",
+                    "slug": "contact",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/contact/"
+                },
+                {
+                    "id": 16,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "About Us",
+                    "slug": "about-us",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/"
+                },
+                {
+                    "id": 15,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Custom Solutions",
+                    "slug": "custom-solutions",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/custom-solutions/"
+                },
+                {
+                    "id": 13,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Home",
+                    "slug": "home",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 50,
+            "total": 6,
+            "pages": 1
+        },
+        {
+            "index": 7,
+            "action": "post.list",
+            "items": [],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 50,
+            "total": 0,
+            "pages": 0
+        }
+    ],
+    "readback_verified": null
+}
