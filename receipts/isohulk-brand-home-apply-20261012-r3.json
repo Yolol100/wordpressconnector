@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-brand-home-apply-20261012-r3",
+    "action": "post.literal_replace",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T20:47:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 13,
+    "match_count": 1,
+    "before_fingerprint": "6e38c3bd84a31e13f6f0ce1f54b37892c00914ba662c60803b9bedb1b2c96683",
+    "before_content_sha256": "199b4d4a554aefde86480a947b2c38c49b17ce2f9d78f3a1530a0b584013ada8",
+    "after_content_sha256": "c48fad350a79c2bbc223362fad6803decc2ec30fb3e6b792c0abfd250dee9b09",
+    "readback_verified": true,
+    "rollback_available": true
+}
