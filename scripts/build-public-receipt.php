@@ -472,6 +472,18 @@ if (! $ok) {
         }
         $receipt['operations'] = $summaries;
         $receipt['readback_verified'] = null;
+    } elseif ('post.literal_replace' === $action) {
+        $receipt['post_id'] = isset($data['post_id']) ? (int) $data['post_id'] : (int) ($payload['id'] ?? 0);
+        $receipt['match_count'] = isset($data['match_count']) ? (int) $data['match_count'] : 0;
+        foreach (array('before_fingerprint','before_content_sha256','after_content_sha256') as $field) {
+            $value = isset($data[$field]) ? (string) $data[$field] : '';
+            if (preg_match('/^[a-f0-9]{64}$/D', $value)) $receipt[$field] = $value;
+        }
+        $receipt['readback_verified'] = $dryRun ? null
+            : (! empty($data['readback_verified'])
+                && $receipt['match_count'] === (int) ($payload['expected_matches'] ?? 0)
+                && isset($receipt['before_content_sha256'], $receipt['after_content_sha256']));
+        if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
     } elseif ('post.get' === $action) {
         $post = isset($data['post']) && is_array($data['post']) ? $data['post'] : array();
         $receipt['post'] = $summarizePost($post, true);
