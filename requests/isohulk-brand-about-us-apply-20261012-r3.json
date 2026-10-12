@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-brand-about-us-apply-20261012-r3",
+  "action": "post.literal_replace",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "6b5fa8666a3b8b819ac5c34537fafe1137b0b9b738468de2623812b63d9b2935",
+  "payload": {
+    "id": 16,
+    "find": "Tape Solutions",
+    "replace": "ISOHULK",
+    "expected_matches": 2
+  }
+}
