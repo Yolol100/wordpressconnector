@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-updater-preflight-20261012-v1182",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T18:18:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.18.0",
+    "to_version": "1.18.2",
+    "before_fingerprint": "ba1237ea5a399cef3e81b15ed79e2d35a33ffd8a85ec04ca34448ac99c1f6ca7",
+    "rollback_supported": false,
+    "readback_verified": null
+}
