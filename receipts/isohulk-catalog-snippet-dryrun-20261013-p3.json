@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-catalog-snippet-dryrun-20261013-p3",
+    "action": "code_snippets.patch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T22:29:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "snippet_id": 5,
+    "scope": "global",
+    "type": "php",
+    "priority": 10,
+    "active": true,
+    "replacement_count": 1,
+    "before_code_fingerprint": "8845c815ec689b432ce6e3837796e4e3a82465ea0ce69eca0afc84ebef35274f",
+    "after_code_fingerprint": "d14e3468c1dea1fe57025b2e3d74fa44eae8d07e85c30491b72289421644c492",
+    "before_fingerprint": "fb741f7827fb1997f352f7909ff2e033efd3a669cc249342fcfd5b2db67ddbe7",
+    "after_fingerprint": "a673e4d3fcd2a8a8e1aee9d86f26f593715a919f54fe44f9a666997c39c1df7a",
+    "readback_verified": null
+}
