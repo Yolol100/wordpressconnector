@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $validator = $root . '/scripts/validate-public-request.php';
+$baseValidator = $root . '/scripts/validate-request.php';
 $builder = $root . '/scripts/build-public-receipt.php';
 $tmp = sys_get_temp_dir() . '/wpc-public-plugin-audit-' . bin2hex(random_bytes(6));
 if (! mkdir($tmp, 0700, true) && ! is_dir($tmp)) {
@@ -25,9 +26,11 @@ $run = static function (string $script, array $arguments): array {
     exec($command . ' 2>&1', $output, $exitCode);
     return array($exitCode, implode("\n", $output));
 };
-$req = array('version'=>1,'site_url'=>'https://isohulk.example.test/',
+$req = array('version'=>1,'site_url'=>'https://isohulk.example.test',
     'request_id'=>'plugin-audit-transport-0001','action'=>'plugin.audit.inspect',
     'dry_run'=>true,'confirm'=>false,'payload'=>array());
+list($exit, $log) = $run($baseValidator, array($store('base-request', $req)));
+if ($exit !== 0) throw new RuntimeException('Canonical WordPress request rejected: ' . $log);
 list($exit, $log) = $run($validator, array($store('request', $req)));
 if ($exit !== 0) throw new RuntimeException('Safe read-only audit request rejected: ' . $log);
 $bad = array();
