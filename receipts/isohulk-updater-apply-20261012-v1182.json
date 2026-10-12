@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-updater-apply-20261012-v1182",
+    "action": "connector.update.apply",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T18:19:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "from_version": "1.18.0",
+    "to_version": "1.18.2",
+    "package_sha256": "9067f7f6c63909444d8cef7993421df8070fc9a200cd548b22f31032419ade58"
+}
