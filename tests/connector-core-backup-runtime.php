@@ -54,6 +54,7 @@ function remove_filter($name, $callback, $priority = 10) {
     $GLOBALS['filters_removed'][] = $name;
     return true;
 }
+function is_plugin_active($plugin): bool { return 'wordpressconnector/wordpressconnector.php' === $plugin; }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 function trailingslashit($path): string { return rtrim($path, '/') . '/'; }
 function wp_clean_plugins_cache($force = true): void {}
@@ -77,6 +78,9 @@ $restore = new ReflectionMethod($updater, 'restoreAfterReadbackFailure');
 $restore->setAccessible(true);
 
 $instance = $install->invoke($updater, '/tmp/already-verified-package.zip');
+if (in_array('upgrader_pre_install', $GLOBALS['filters_added'], true) && 1 !== count(array_filter($GLOBALS['filters_added'], static function($name){return $name === 'upgrader_pre_install';}))) {
+    throw new RuntimeException('REST self-update registered unexpected deactivation or duplicate pre-install callbacks.');
+}
 $args = $GLOBALS['fake_run_options'];
 if (! is_array($instance)
     || $GLOBALS['fake_run_count'] !== 1
@@ -85,8 +89,9 @@ if (! is_array($instance)
     || ($args['hook_extra']['temp_backup']['slug'] ?? null) !== 'wordpressconnector'
     || ($args['hook_extra']['temp_backup']['src'] ?? null) !== WP_PLUGIN_DIR
     || ($args['hook_extra']['temp_backup']['dir'] ?? null) !== 'plugins'
-    || count($GLOBALS['filters_added']) !== 4
-    || count($GLOBALS['filters_removed']) !== 4) {
+    || count($GLOBALS['filters_added']) !== 3
+    || count($GLOBALS['filters_removed']) !== 3
+    || in_array('upgrader_clear_destination', $GLOBALS['filters_added'], true)) {
     throw new RuntimeException('Safe updater did not request WordPress Core backup or clean up its hook scope.');
 }
 $restore->invoke($updater, $instance, '1.17.6');
