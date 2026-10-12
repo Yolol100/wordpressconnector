@@ -201,7 +201,10 @@ final class DiscoveryAdapter
                 }
             }
             if (null === $routeNamespace ||
-                (null !== $namespaceFilter && $namespaceFilter !== $routeNamespace)) {
+                (null !== $namespaceFilter && $namespaceFilter !== $routeNamespace) ||
+                $route === '/' . $routeNamespace ||
+                $route === '/' . $routeNamespace . '/') {
+                // WordPress generates namespace index routes; they are not plugin actions.
                 continue;
             }
             if (! is_array($endpoints)) {
