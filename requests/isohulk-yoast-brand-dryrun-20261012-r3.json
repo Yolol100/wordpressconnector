@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-yoast-brand-dryrun-20261012-r3",
+  "action": "yoast.site_representation.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "fields": {
+      "company_name": "ISOHULK"
+    }
+  }
+}
