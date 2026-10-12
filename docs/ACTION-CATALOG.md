@@ -115,6 +115,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `post.trash` | mutation | Move a post object to Trash. |
 | `post.update` | mutation | Update a post, page or custom post type object. |
 | `post.literal_replace` | mutation | Replace one bounded literal phrase on an existing published page; dry-run fingerprint, verified readback and site-local rollback. |
+| `site.identity.inspect` | privileged, public-safe | Read four nonsecret WordPress identity fields, requiring manage_options. |
+| `site.identity.update` | mutation, privileged, public-safe | Update approved site identity fields with dry-run fingerprint, readback, rollback and locale-pack checks. |
 | `rewrite.flush` | mutation, privileged | Flush rewrite rules. |
 | `role.create` | mutation, privileged | Create a WordPress role. |
 | `role.delete` | mutation, privileged | Delete a WordPress role. |
