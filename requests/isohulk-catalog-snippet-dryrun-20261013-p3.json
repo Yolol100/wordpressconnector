@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-catalog-snippet-dryrun-20261013-p3",
+  "action": "code_snippets.patch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "match_code_contains": "WAB_CATALOG_ONLY_2026",
+    "replacements": [
+      {
+        "find": "// WAB_CATALOG_ONLY_2026.",
+        "replace": "// WAB_CATALOG_ONLY_2026. READ-ONLY DIAGNOSTIC PREVIEW."
+      }
+    ]
+  }
+}
