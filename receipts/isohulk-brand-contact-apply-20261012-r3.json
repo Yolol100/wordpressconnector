@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-brand-contact-apply-20261012-r3",
+    "action": "post.literal_replace",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T20:48:44+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 17,
+    "match_count": 2,
+    "before_fingerprint": "e2299998f067d26250da7d7c74715e8bd721e895e00238d629f790ffdd7def3b",
+    "before_content_sha256": "229d290d9b0a69e48f02eed5f50b792cc0a2a5e0acd1c797ff10f4d2a89d0213",
+    "after_content_sha256": "b48d8ddc764f1284965aededc2dc47e0bfa8ae8a0c15960f3e312843820c0fa9",
+    "readback_verified": true,
+    "rollback_available": true
+}
