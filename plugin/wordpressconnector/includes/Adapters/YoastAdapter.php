@@ -48,12 +48,14 @@ final class YoastAdapter
         ));
         $registry->register('yoast.site_representation.inspect', array($this, 'inspectSiteRepresentation'), array(
             'privileged' => true,
+            'public_repository_safe' => true,
             'capability' => 'manage_options',
             'description' => 'Read allowlisted Yoast Organization name, logo and description fields.',
         ));
         $registry->register('yoast.site_representation.update', array($this, 'updateSiteRepresentation'), array(
             'mutation' => true,
             'privileged' => true,
+            'public_repository_safe' => true,
             'capability' => 'manage_options',
             'description' => 'Patch 1-3 allowlisted Yoast Organization fields using validated media ID with dry-run, readback and rollback.',
         ));
@@ -298,10 +300,14 @@ final class YoastAdapter
         if (empty($context['rollback_mode'])) {
             throw new RuntimeException('Organization settings restore is reserved for connector rollback.');
         }
+        if (! current_user_can('manage_options')) throw new RuntimeException('Organization restore requires manage_options.');
         $before = $this->siteRepresentationSnapshot();
         $expected = isset($payload['expected_after_fingerprint']) ? (string) $payload['expected_after_fingerprint'] : '';
         if (! preg_match('/^[a-f0-9]{64}$/', $expected) || ! hash_equals($expected, Fingerprint::make($before))) {
             throw new RuntimeException('Organization settings changed after update; rollback is unsafe.');
+        }
+        if (! empty($context['dry_run'])) {
+            return array('would_restore' => true, '_current_fingerprint' => Fingerprint::make($before));
         }
         $fields = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
         if (array_keys($fields) !== array_keys($before)) {

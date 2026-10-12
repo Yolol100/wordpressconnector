@@ -83,6 +83,9 @@ if($updated['fields']['incl_langs']!==array('nl','en')
 $throws(static function()use($reg,$apply){
     $reg->execute('gtranslate.settings.restore',$apply['_rollback']['payload']);
 },'rollback-only');
+$preview=$reg->execute('gtranslate.settings.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true,'dry_run'=>true));
+if (! preg_match('/^[a-f0-9]{64}$/D', (string) ($preview['_current_fingerprint'] ?? '')))
+    throw new RuntimeException('GTranslate rollback dry-run lacks a guarded fingerprint.');
 $restored=$reg->execute('gtranslate.settings.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true));
 if(!$restored['restored']||get_option('GTranslate')!==$original)
     throw new RuntimeException('GTranslate rollback did not recover all original options.');

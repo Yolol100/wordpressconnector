@@ -472,6 +472,84 @@ if (! $ok) {
         }
         $receipt['operations'] = $summaries;
         $receipt['readback_verified'] = null;
+    } elseif (in_array($action, array(
+        'gtranslate.settings.inspect','gtranslate.settings.update',
+        'yoast.site_representation.inspect','yoast.site_representation.update',
+    ), true)) {
+        $isGTranslate = 0 === strpos($action, 'gtranslate.');
+        $projectFields = static function ($value) use ($isGTranslate): array {
+            if (! is_array($value)) return array();
+            $out = array();
+            $keys = $isGTranslate
+                ? array('default_language','incl_langs','fincl_langs','detect_browser_language')
+                : array('company_or_person','company_name','org_description');
+            foreach ($keys as $key) {
+                if (! array_key_exists($key, $value)) continue;
+                $item = $value[$key];
+                if (is_string($item) && strlen($item) <= 500
+                    && ! preg_match('/[\x00-\x1F\x7F<>]/', $item)) {
+                    $out[$key] = $item;
+                } elseif ($isGTranslate && $key === 'detect_browser_language' && ($item === 0 || $item === 1)) {
+                    $out[$key] = $item;
+                } elseif ($isGTranslate && in_array($key, array('incl_langs','fincl_langs'), true)
+                    && is_array($item) && $item === array('nl','en')) {
+                    $out[$key] = $item;
+                }
+            }
+            return $out;
+        };
+        $isInspect = false !== strpos($action, '.inspect');
+        $after = $projectFields($isInspect ? ($data['fields'] ?? array()) : ($data['after'] ?? array()));
+        $receipt['fields'] = $after;
+        if ($isGTranslate && isset($data['version']) && is_scalar($data['version'])) {
+            $receipt['provider_version'] = substr((string) $data['version'], 0, 30);
+        }
+        if ($isInspect) {
+            $fp = isset($data['fingerprint']) ? (string) $data['fingerprint'] : '';
+            if (preg_match('/^[a-f0-9]{64}$/D', $fp)) $receipt['settings_fingerprint'] = $fp;
+            $receipt['readback_verified'] = null;
+        } else {
+            $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : array();
+            $beforeFp = $isGTranslate ? (string) ($data['before_fingerprint'] ?? '') : $fingerprint($before);
+            if (preg_match('/^[a-f0-9]{64}$/D', $beforeFp)) $receipt['before_fingerprint'] = $beforeFp;
+            if (isset($data['after']) && is_array($data['after'])) $receipt['after_fingerprint'] = $fingerprint($data['after']);
+            $expected = $projectFields($payload['fields'] ?? array());
+            $receipt['readback_verified'] = $dryRun ? null
+                : ($expected && count($expected) === count($payload['fields'] ?? array())
+                    && $containsRequested($expected, $after));
+            if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+        }
+    } elseif ('site.identity.inspect' === $action || 'site.identity.update' === $action) {
+        $keys = array('blogname','blogdescription','timezone_string','WPLANG');
+        $readFields = static function ($value) use ($keys): array {
+            $fields = array();
+            if (! is_array($value)) return $fields;
+            foreach ($keys as $key) {
+                if (array_key_exists($key, $value) && is_string($value[$key])
+                    && strlen($value[$key]) <= 240 && ! preg_match('/[\x00-\x1F\x7F<>]/', $value[$key])) {
+                    $fields[$key] = $value[$key];
+                }
+            }
+            return $fields;
+        };
+        if ('site.identity.inspect' === $action) {
+            $receipt['fields'] = $readFields($data['fields'] ?? array());
+            $fp = isset($data['fingerprint']) ? (string) $data['fingerprint'] : '';
+            if (preg_match('/^[a-f0-9]{64}$/D', $fp)) $receipt['settings_fingerprint'] = $fp;
+            $receipt['readback_verified'] = null;
+        } else {
+            $before = $readFields($data['before'] ?? array());
+            $after = $readFields($data['after'] ?? array());
+            $expected = $readFields($payload['fields'] ?? array());
+            $receipt['fields'] = $after;
+            if ($before) $receipt['before_fingerprint'] = $fingerprint($before);
+            if ($after) $receipt['after_fingerprint'] = $fingerprint($after);
+            $receipt['readback_verified'] = $dryRun ? null
+                : ($expected && count($expected) === count($payload['fields'] ?? array())
+                    && $containsRequested($expected, $after)
+                    && true === ($data['readback_verified'] ?? null));
+            if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+        }
     } elseif ('post.literal_replace' === $action) {
         $receipt['post_id'] = isset($data['post_id']) ? (int) $data['post_id'] : (int) ($payload['id'] ?? 0);
         $receipt['match_count'] = isset($data['match_count']) ? (int) $data['match_count'] : 0;
