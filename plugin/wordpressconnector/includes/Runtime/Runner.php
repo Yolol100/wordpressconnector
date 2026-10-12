@@ -306,6 +306,13 @@ final class Runner
 
     private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array
     {
+        if ('site.identity.update' === $action) {
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed site identity update requires expected_fingerprint from the preceding dry-run.');
+            }
+            return $descriptor;
+        }
+
         if ('post.literal_replace' === $action) {
             if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
                 throw new RuntimeException('Confirmed literal replacement requires expected_fingerprint from the preceding dry-run.');
@@ -713,6 +720,7 @@ final class Runner
             'portfolio.case_text_update' => array('portfolio.case_text_update'),
             'post.update' => array('post.update'),
             'post.literal_replace' => array('post.update'),
+            'site.identity.update' => array('site.identity.restore'),
             'elementor.patch_element' => array('elementor.replace_document'),
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
             'connector.batch' => array('connector.batch'),
