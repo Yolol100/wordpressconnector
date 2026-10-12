@@ -14,6 +14,11 @@ final class DiscoveryAdapter
         $registry->register('connector.discover', array($this, 'discover'), array(
             'description' => 'Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities.',
         ));
+        $registry->register('connector.rest_catalog', array($this, 'restCatalog'), array(
+            'privileged' => true,
+            'capability' => 'manage_options',
+            'description' => 'Discover bounded WordPress REST namespaces, route patterns and methods without calling endpoints.',
+        ));
     }
 
     public function discover(array $payload, array $context): array
@@ -108,6 +113,11 @@ final class DiscoveryAdapter
             'post_statuses' => get_post_stati(array(), 'objects'),
             'image_sizes' => $imageSizes,
             'builders' => $builders,
+            'rest_api_discovery' => array(
+                'available' => function_exists('rest_get_server'),
+                'action' => 'connector.rest_catalog',
+                'execution_enabled' => false,
+            ),
             'menus' => array(
                 'registered_locations' => get_registered_nav_menus(),
                 'assigned_locations' => get_nav_menu_locations(),
@@ -116,5 +126,157 @@ final class DiscoveryAdapter
             'public_repository_mode' => Policy::publicRepositoryContext(),
             'connector_mode' => 'single_canonical_bridge',
         );
+    }
+
+    /**
+     * Inspect only REST routing metadata. This is not an arbitrary REST proxy.
+     * Native rest_endpoints filters may run during get_routes() as in Core.
+     */
+    public function restCatalog(array $payload, array $context = array()): array
+    {
+        foreach (array_keys($payload) as $key) {
+            if (! in_array($key, array('namespace', 'page', 'per_page'), true)) {
+                throw new \RuntimeException('Unsupported REST discovery filter.');
+            }
+        }
+
+        $page = $this->restCatalogPositiveInteger($payload['page'] ?? 1, 10000, 'page');
+        $perPage = $this->restCatalogPositiveInteger($payload['per_page'] ?? 20, 25, 'per_page');
+        $namespaceFilter = $payload['namespace'] ?? null;
+        if (null !== $namespaceFilter &&
+            (! is_string($namespaceFilter) || strlen($namespaceFilter) > 120 ||
+             1 !== preg_match('~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $namespaceFilter))) {
+            throw new \RuntimeException('Invalid REST namespace filter.');
+        }
+
+        $result = array(
+            'available' => false,
+            'discovery_only' => true,
+            'execution_enabled' => false,
+            'page' => $page,
+            'per_page' => $perPage,
+            'pages' => 1,
+            'total' => 0,
+            'namespaces' => array(),
+            'routes' => array(),
+        );
+        if (! function_exists('rest_get_server')) {
+            return $result;
+        }
+
+        $server = rest_get_server();
+        if (! is_object($server) || ! method_exists($server, 'get_routes') ||
+            ! method_exists($server, 'get_namespaces')) {
+            return $result;
+        }
+        $registered = $server->get_routes();
+        $namespaces = $server->get_namespaces();
+        if (! is_array($registered) || ! is_array($namespaces) ||
+            count($registered) > 15000 || count($namespaces) > 15000) {
+            throw new \RuntimeException('REST discovery registry is invalid or exceeds the limit.');
+        }
+
+        $namespaces = array_values(array_filter($namespaces, static function ($name): bool {
+            return is_string($name) && strlen($name) <= 120 &&
+                1 === preg_match('~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $name);
+        }));
+        usort($namespaces, static function (string $a, string $b): int {
+            return strlen($b) <=> strlen($a);
+        });
+
+        $safeRoutes = array();
+        $visibleNamespaces = array();
+        foreach ($registered as $route => $endpoints) {
+            if (! is_string($route) || 1 !== preg_match('/^[\x21-\x7e]{1,240}$/D', $route) ||
+                preg_match('/[a-f0-9]{24,}/i', $route) ||
+                preg_match('~(?:^|[/._-])(?:auth|oauth|tokens?|secrets?|passwords?|credentials?|api[_-]?keys?|licenses?|payments?|gateways?|customers?|users?|orders?|refunds?|checkout|carts?|webhooks?|sessions?|submissions?|login|logout|private|logs?)(?:[/._-]|$)~i', $route) ||
+                preg_match('~(?:token|secret|password|credential)~i', $route)) {
+                continue;
+            }
+            $routeNamespace = null;
+            foreach ($namespaces as $name) {
+                if ($route === '/' . $name || 0 === strpos($route, '/' . $name . '/')) {
+                    $routeNamespace = $name;
+                    break;
+                }
+            }
+            if (null === $routeNamespace ||
+                (null !== $namespaceFilter && $namespaceFilter !== $routeNamespace)) {
+                continue;
+            }
+            if (! is_array($endpoints)) {
+                continue;
+            }
+
+            $verbs = array();
+            foreach ($endpoints as $endpoint) {
+                if (! is_array($endpoint) || ! isset($endpoint['methods'])) {
+                    continue;
+                }
+                $methods = $endpoint['methods'];
+                if (! is_array($methods)) {
+                    if (! is_string($methods)) {
+                        continue;
+                    }
+                    $methods = array($methods);
+                }
+                foreach ($methods as $key => $enabled) {
+                    if (is_string($key)) {
+                        if (! $enabled) {
+                            continue;
+                        }
+                        $method = $key;
+                    } else {
+                        $method = is_string($enabled) ? $enabled : '';
+                    }
+                    foreach (preg_split('/[\s,|]+/', strtoupper($method)) as $verb) {
+                        if (in_array($verb, array('GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'), true)) {
+                            $verbs[$verb] = true;
+                        }
+                    }
+                }
+            }
+            if (! $verbs) {
+                continue;
+            }
+            $methods = array_keys($verbs);
+            sort($methods, SORT_STRING);
+            $safeRoutes[] = array(
+                'namespace' => $routeNamespace,
+                'route_pattern' => $route,
+                'advertised_methods' => $methods,
+                'execution_enabled' => false,
+            );
+            $visibleNamespaces[$routeNamespace] = true;
+        }
+
+        usort($safeRoutes, static function (array $a, array $b): int {
+            return strcmp($a['route_pattern'], $b['route_pattern']);
+        });
+        $namespaceList = array_keys($visibleNamespaces);
+        sort($namespaceList, SORT_STRING);
+        $result['available'] = true;
+        $result['namespaces'] = $namespaceList;
+        $result['total'] = count($safeRoutes);
+        $result['pages'] = max(1, (int) ceil($result['total'] / $perPage));
+        $result['routes'] = array_slice($safeRoutes, ($page - 1) * $perPage, $perPage);
+        $encoded = function_exists('wp_json_encode') ? wp_json_encode($result) : json_encode($result);
+        if (! is_string($encoded) || strlen($encoded) > 131072) {
+            throw new \RuntimeException('REST discovery output exceeds its transport budget.');
+        }
+        return $result;
+    }
+
+    private function restCatalogPositiveInteger($value, int $maximum, string $field): int
+    {
+        if (! is_int($value) && (! is_string($value) ||
+            1 !== preg_match('/^[1-9][0-9]*$/D', $value))) {
+            throw new \RuntimeException($field . ' must be a positive integer.');
+        }
+        $number = (int) $value;
+        if ($number <= 0 || $number > $maximum) {
+            throw new \RuntimeException($field . ' exceeds the supported limit.');
+        }
+        return $number;
     }
 }
