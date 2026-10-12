@@ -52,6 +52,7 @@ final class GTranslateSettingsAdapter
         $preview = array(
             'before' => $before,
             'after' => $this->publicFields($afterRaw),
+            'before_fingerprint' => $fingerprint,
             '_current_fingerprint' => $fingerprint,
         );
         if (! empty($context['dry_run'])) return $preview;
