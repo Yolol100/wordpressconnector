@@ -184,7 +184,7 @@ final class PluginSettingsAdapter
             if ($active) {
                 try {
                     $checks = $this->auditNonsecretChecks($id, (string) ($plugin['mode'] ?? ''));
-                } catch (\\Throwable $error) {
+                } catch (\Throwable $error) {
                     // One provider failure must not erase the rest of the audit.
                     // Do not serialize the exception: provider errors may include secrets.
                     $checks = array('provider_probe' => 'error');
