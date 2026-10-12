@@ -41,6 +41,8 @@ $adapterRequired = array(
     "restore_verified must be boolean.",
     "'external_restore_required' => false",
     'restoreAfterReadbackFailure',
+    'is_plugin_active(self::PLUGIN_FILE)',
+    'activate_plugin(self::PLUGIN_FILE',
     'wp_clean_plugins_cache(true)',
     "rollback_supported' => false",
 );
@@ -49,6 +51,10 @@ foreach ($adapterRequired as $needle) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
+}
+
+if (preg_match('/add_filter\\(\\s*[\\x27\\x22]upgrader_pre_install[\\x27\\x22]\\s*,\\s*array\\(\\s*\\$upgrader\\s*,\\s*[\\x27\\x22]deactivate_plugin_before_upgrade[\\x27\\x22]/', $adapter)) {
+    throw new RuntimeException('REST self-update must never attach the browser-only deactivation filter.');
 }
 
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_remote_get(', 'wp_remote_request(') as $forbidden) {
