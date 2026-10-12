@@ -90,6 +90,49 @@ if ($exit !== 0 || ($variantReceipt['installed_count'] ?? null) !== 4
     || count($variantReceipt['plugins'] ?? array()) !== 4) {
     throw new RuntimeException('Multiple installations sharing a static adapter ID were lost: ' . $log);
 }
+$hostinger = $result;
+foreach (array(
+    'hostinger_ai' => 'restricted',
+    'hostinger_easy_onboarding' => 'inventory_only',
+    'hostinger_reach' => 'restricted',
+    'hostinger_tools' => 'restricted',
+) as $id => $coverage) {
+    $hostinger['data']['plugins'][] = array(
+        'id' => $id, 'active' => true, 'coverage' => $coverage, 'checks' => array(),
+    );
+}
+$hostinger['data']['installed_count'] = 7;
+$hostinger['data']['active_count'] = 6;
+list($exit, $log, $hostingerReceipt) = $runBuilder('hostinger-coverage', $hostinger);
+if ($exit !== 0 || ($hostingerReceipt['installed_count'] ?? null) !== 7
+    || ($hostingerReceipt['unmodeled_count'] ?? null) !== 1
+    || count($hostingerReceipt['plugins'] ?? array()) !== 7) {
+    throw new RuntimeException('Hostinger inventory was rejected or altered: ' . $log);
+}
+$hostingerNames = array_column($hostingerReceipt['plugins'], 'id');
+foreach (array('hostinger_ai','hostinger_easy_onboarding','hostinger_reach','hostinger_tools') as $id) {
+    if (! in_array($id, $hostingerNames, true)) {
+        throw new RuntimeException('Known Hostinger plugin missing from public inventory: ' . $id);
+    }
+}
+$joinchat = $result;
+$joinchat['data']['plugins'][] = array(
+    'id' => 'joinchat', 'active' => true, 'coverage' => 'registered',
+    'checks' => array('whatsapp_number' => 'missing'),
+);
+$joinchat['data']['installed_count'] = 4;
+$joinchat['data']['active_count'] = 3;
+$joinchat['data']['provider_checks_count'] = 2;
+list($exit, $log, $joinchatReceipt) = $runBuilder('joinchat-phone-enum', $joinchat);
+if ($exit !== 0 || ($joinchatReceipt['plugins'][3]['checks']['whatsapp_number'] ?? null) !== 'missing') {
+    throw new RuntimeException('Secret-free Joinchat number readiness was rejected: ' . $log);
+}
+$numberLeak = $joinchat;
+$numberLeak['data']['plugins'][3]['checks']['whatsapp_number'] = '+31612345678';
+list($exit) = $runBuilder('joinchat-phone-exfiltration', $numberLeak);
+if ($exit === 0) {
+    throw new RuntimeException('Public receipt accepted a raw WhatsApp number.');
+}
 foreach (array(
     'nested_secret' => static function (array &$x): void {
         $x['data']['plugins'][1]['checks']['smtp_password'] = 'DO-NOT-LEAK';
