@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-brand-thank-you-apply-20261012-r3",
+    "action": "post.literal_replace",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T20:48:49+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 253,
+    "match_count": 1,
+    "before_fingerprint": "5948f1446e8f32b5478f2592067b3a95f947ca27a7d9f3a9fb82d414e63e8d5b",
+    "before_content_sha256": "abf7cddbed6fcde2336f81c0b2f0498d9ab99fa9a35145274e73609b99c7d750",
+    "after_content_sha256": "e30936db2c84563a6083aff715b5a37a5b1be74966e8b753c1ddadbd9df7785e",
+    "readback_verified": true,
+    "rollback_available": true
+}
