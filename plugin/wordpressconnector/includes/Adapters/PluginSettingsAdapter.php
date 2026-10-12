@@ -104,6 +104,12 @@ final class PluginSettingsAdapter
             'privileged' => true,
             'description' => 'List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets.',
         ));
+        $registry->register('plugin.audit.inspect', array($this, 'audit'), array(
+            'privileged' => true,
+            'public_repository_safe' => true,
+            'capability' => 'manage_options',
+            'description' => 'Read-only inventory of every installed plugin and narrowly scoped nonsecret checks; no raw settings, passwords or versions are exported.',
+        ));
         $registry->register('plugin.settings.inspect', array($this, 'inspect'), array(
             'privileged' => true,
             'description' => 'Read allowlisted settings through a plugin-owned API and return a state fingerprint.',
@@ -113,6 +119,214 @@ final class PluginSettingsAdapter
             'privileged' => true,
             'description' => 'Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback.',
         ));
+    }
+
+    /**
+     * Inspect every installed plugin without exporting provider configuration.
+     *
+     * The existing catalog is the single source of plugin identity, presence,
+     * activation state, declared integration mode and registered capabilities.
+     * Only explicitly modeled nonsecret indicators are read below. Anything
+     * else remains inventory-only rather than pretending to be an audit pass.
+     */
+    public function audit(array $payload = array(), array $context = array()): array
+    {
+        if ($payload) {
+            throw new RuntimeException('Plugin audit accepts no arguments or arbitrary option keys.');
+        }
+        if (Policy::publicRepositoryContext()
+            && (empty($context['dry_run']) || ! empty($context['confirm']))) {
+            throw new RuntimeException('Public plugin audit is strictly read-only.');
+        }
+        if (! function_exists('current_user_can') || ! current_user_can('manage_options')) {
+            throw new RuntimeException('Plugin audit requires manage_options.');
+        }
+
+        $inventory = $this->catalog(array(), $context);
+        $installed = (array) ($inventory['plugins'] ?? array());
+        if (count($installed) > 150) {
+            throw new RuntimeException('Plugin inventory exceeds the bounded audit limit.');
+        }
+
+        $items = array();
+        $activeCount = 0;
+        $unknownCount = 0;
+        $checkedCount = 0;
+        $activeIds = array();
+        $indicators = array();
+        foreach ($installed as $plugin) {
+            $known = (string) ($plugin['mode'] ?? '') !== 'unmodeled';
+            $id = $known ? (string) ($plugin['id'] ?? '') : 'unmodeled_' . (++$unknownCount);
+            if (! preg_match('/^[a-z][a-z0-9_-]{1,79}\\z/', $id)) {
+                throw new RuntimeException('Plugin integration identifier is invalid.');
+            }
+            $active = true === ($plugin['active'] ?? null);
+            $activeCount += $active ? 1 : 0;
+            if ($active) {
+                $activeIds[$id] = true;
+            }
+
+            $registration = (string) ($plugin['registered_action_status'] ?? 'not_checked');
+            $coverage = !$known ? 'unmodeled'
+                : (empty($plugin['actions']) ? 'inventory_only'
+                    : ($registration === 'complete' ? 'registered'
+                        : ($registration === 'partial' ? 'partial' : 'not_checked')));
+            // Provider-version restrictions take precedence over generic action registration.
+            if ($known && in_array((string) ($plugin['mode'] ?? ''), array(
+                'version_bound_unsupported', 'optimizer_version_unsupported',
+                'security_provider_contract_needed', 'external_account_bound',
+                'secret_bound', 'filesystem_bound', 'system_operation',
+            ), true)) {
+                $coverage = 'restricted';
+            }
+
+            $checks = $active ? $this->auditNonsecretChecks($id, (string) ($plugin['mode'] ?? '')) : array();
+            if ($checks) {
+                ++$checkedCount;
+                $indicators[$id] = $checks;
+            }
+            $items[] = array(
+                'id' => $id,
+                'active' => $active,
+                'coverage' => $coverage,
+                'checks' => $checks,
+            );
+        }
+
+        // These indicators concern configuration only, not tested frontend behavior.
+        $lazyloadOverlap = 'unverified';
+        if (isset($activeIds['wp_rocket'], $activeIds['ewww_image_optimizer'])
+            && isset($indicators['wp_rocket']['image_lazyload'], $indicators['ewww_image_optimizer']['image_lazyload'])) {
+            $rocket = $indicators['wp_rocket']['image_lazyload'];
+            $ewww = $indicators['ewww_image_optimizer']['image_lazyload'];
+            if ('enabled' === $rocket && 'enabled' === $ewww) {
+                $lazyloadOverlap = 'possible_overlap';
+            } elseif (('enabled' === $rocket || 'disabled' === $rocket)
+                && ('enabled' === $ewww || 'disabled' === $ewww)) {
+                $lazyloadOverlap = 'no_overlap_observed';
+            }
+        }
+
+        return array(
+            'installed_count' => count($items),
+            'active_count' => $activeCount,
+            'inactive_count' => count($items) - $activeCount,
+            'unmodeled_count' => $unknownCount,
+            'provider_checks_count' => $checkedCount,
+            'plugins' => $items,
+            'image_lazyload_overlap' => $lazyloadOverlap,
+            'checkout_qa' => 'not_run',
+            'smtp_delivery_qa' => 'not_run',
+            'translation_browser_qa' => 'not_run',
+            'private_settings_exported' => false,
+        );
+    }
+
+    /**
+     * All keys and all values in these checks are fixed enumerations.
+     * Never return plugin-header text, unrestricted option data, credentials,
+     * SMTP addresses, firewall rules, payment settings or source file paths.
+     */
+    private function auditNonsecretChecks(string $id, string $mode): array
+    {
+        if (! function_exists('get_option')) {
+            return array();
+        }
+        if ('woocommerce' === $id) {
+            return array(
+                'guest_checkout' => $this->auditToggle(get_option('woocommerce_enable_guest_checkout', null)),
+                'stock_management' => $this->auditToggle(get_option('woocommerce_manage_stock', null)),
+                'cart_page' => $this->auditPageAssignment(get_option('woocommerce_cart_page_id', null)),
+                'checkout_page' => $this->auditPageAssignment(get_option('woocommerce_checkout_page_id', null)),
+            );
+        }
+        if ('gtranslate' === $id) {
+            $raw = get_option('GTranslate', null);
+            if (! is_array($raw)) {
+                return array('english_source' => 'unknown', 'nl_en_languages' => 'unknown');
+            }
+            $languages = $raw['incl_langs'] ?? null;
+            $fallback = $raw['fincl_langs'] ?? null;
+            return array(
+                'english_source' => ! isset($raw['default_language']) ? 'unknown'
+                    : ('en' === $raw['default_language'] ? 'matches' : 'mismatch'),
+                'nl_en_languages' => ! is_array($languages) || ! is_array($fallback) ? 'unknown'
+                    : ($languages === array('nl', 'en') && $fallback === array('nl', 'en') ? 'matches' : 'mismatch'),
+            );
+        }
+        if ('yoast' === $id || 'yoast_premium' === $id) {
+            $raw = get_option('wpseo_titles', null);
+            $title = get_option('blogname', null);
+            if (! is_array($raw)) {
+                return array('organization_name' => 'unknown', 'organization_description' => 'unknown', 'organization_logo' => 'unknown');
+            }
+            $company = $raw['company_name'] ?? null;
+            return array(
+                'organization_name' => ! is_string($title) || '' === trim($title) || ! is_string($company) || '' === trim($company)
+                    ? 'unknown' : (0 === strcasecmp(trim($title), trim($company)) ? 'matches' : 'mismatch'),
+                'organization_description' => $this->auditTextPresence($raw['org-description'] ?? null),
+                'organization_logo' => $this->auditPageAssignment($raw['company_logo_id'] ?? null),
+            );
+        }
+        if ('joinchat' === $id) {
+            $raw = get_option('joinchat', null);
+            if (! is_array($raw)) {
+                return array('button_tip_saved' => 'unknown', 'message_saved' => 'unknown');
+            }
+            // Saved values are not necessarily the effective default/translations.
+            return array(
+                'button_tip_saved' => $this->auditTextPresence($raw['button_tip'] ?? null),
+                'message_saved' => $this->auditTextPresence($raw['message_text'] ?? null),
+            );
+        }
+        if ('wp_rocket' === $id && function_exists('get_rocket_option')) {
+            return array(
+                'image_lazyload' => $this->auditToggle(get_rocket_option('lazyload', null)),
+                'remove_unused_css' => $this->auditToggle(get_rocket_option('remove_unused_css', null)),
+            );
+        }
+        if ('ewww_image_optimizer' === $id && 'guarded_settings' === $mode
+            && function_exists('ewww_image_optimizer_get_option')) {
+            return array(
+                'image_lazyload' => $this->auditToggle(ewww_image_optimizer_get_option('ewww_image_optimizer_lazy_load', null)),
+                'missing_dimensions' => $this->auditToggle(ewww_image_optimizer_get_option('ewww_image_optimizer_add_missing_dims', null)),
+            );
+        }
+        if ('asset_cleanup' === $id && 'inspect_only_provider_api_required' === $mode) {
+            // Stored settings are not proof of Asset CleanUp effective runtime settings.
+            $raw = get_option('wpassetcleanup_settings', null);
+            return array('settings_record' => null === $raw ? 'missing' : 'present', 'effective_settings' => 'unverified');
+        }
+        if ('wp_mail_smtp' === $id) {
+            // Never inspect, copy or hash the credential-containing option value.
+            $raw = get_option('wp_mail_smtp', null);
+            return array('settings_record' => is_array($raw) ? 'present' : 'unknown', 'delivery' => 'unverified');
+        }
+        return array();
+    }
+
+    private function auditToggle($value): string
+    {
+        if (in_array($value, array(true, 1, '1', 'yes', 'on'), true)) {
+            return 'enabled';
+        }
+        if (in_array($value, array(false, 0, '0', 'no', 'off'), true)) {
+            return 'disabled';
+        }
+        return 'unknown';
+    }
+
+    private function auditPageAssignment($value): string
+    {
+        if (is_int($value) || (is_string($value) && preg_match('/^[0-9]{1,10}\\z/', $value))) {
+            return (int) $value > 0 ? 'present' : 'missing';
+        }
+        return 'unknown';
+    }
+
+    private function auditTextPresence($value): string
+    {
+        return is_string($value) ? ('' === trim($value) ? 'missing' : 'present') : 'unknown';
     }
 
     public function catalog(array $payload = array(), array $context = array()): array
