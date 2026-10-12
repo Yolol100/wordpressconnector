@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-presence-plugin-audit-20261013-p3",
+  "action": "plugin.audit.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
