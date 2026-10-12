@@ -49,6 +49,7 @@ foreach ($bad as $index => $case) {
 $info = array(
     'installed_count' => 3,'active_count'=>2,'inactive_count'=>1,
     'unmodeled_count'=>1,'provider_checks_count'=>1,
+    'must_use_count'=>2,'dropin_count'=>1,
     'plugins'=>array(
         array('id'=>'woocommerce','active'=>true,'coverage'=>'partial',
             'checks'=>array('guest_checkout'=>'enabled','stock_management'=>'enabled','cart_page'=>'missing')),
@@ -71,7 +72,8 @@ $runBuilder = static function (string $name, array $result) use ($store,$run,$bu
 list($exit, $log, $receipt) = $runBuilder('safe', $result);
 if ($exit !== 0 || ($receipt['installed_count'] ?? null) !== 3
     || ($receipt['plugins'][0]['checks']['guest_checkout'] ?? null) !== 'enabled'
-    || ($receipt['private_settings_exported'] ?? null) !== false) {
+    || ($receipt['private_settings_exported'] ?? null) !== false
+    || ($receipt['must_use_count'] ?? -1) !== 2 || ($receipt['dropin_count'] ?? -1) !== 1) {
     throw new RuntimeException('Safe public plugin audit receipt failed: ' . $log);
 }
 $receiptJson = json_encode($receipt,JSON_THROW_ON_ERROR);
@@ -132,6 +134,26 @@ $numberLeak['data']['plugins'][3]['checks']['whatsapp_number'] = '+31612345678';
 list($exit) = $runBuilder('joinchat-phone-exfiltration', $numberLeak);
 if ($exit === 0) {
     throw new RuntimeException('Public receipt accepted a raw WhatsApp number.');
+}
+$unsafePluginPaths = $result;
+$unsafePluginPaths['data']['must_use_files'] = array('private-system-plugin.php');
+list($exit) = $runBuilder('special-plugin-file-leak', $unsafePluginPaths);
+if ($exit === 0) {
+    throw new RuntimeException('Must-use plugin filenames may not be published.');
+}
+$invalidSpecialCount = $result;
+$invalidSpecialCount['data']['dropin_count'] = 'object-cache.php';
+list($exit) = $runBuilder('special-plugin-path-count', $invalidSpecialCount);
+if ($exit === 0) {
+    throw new RuntimeException('Drop-in plugin filenames may not be published as counts.');
+}
+$unavailable = $result;
+$unavailable['data']['dropin_count'] = null;
+$unavailable['data']['must_use_count'] = null;
+list($exit, $log, $noCounts) = $runBuilder('special-plugin-unavailable', $unavailable);
+if ($exit !== 0 || ! array_key_exists('dropin_count', $noCounts) || $noCounts['dropin_count'] !== null
+    || ! array_key_exists('must_use_count', $noCounts) || $noCounts['must_use_count'] !== null) {
+    throw new RuntimeException('Unavailable WordPress core inventory must be reported as unknown: ' . $log);
 }
 foreach (array(
     'nested_secret' => static function (array &$x): void {
