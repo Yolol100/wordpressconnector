@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-site-name-apply-20261012-r3",
+    "action": "site.identity.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T20:43:40+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "ISOHULK",
+        "blogdescription": "Adhesive tapes and packaging materials",
+        "timezone_string": "Europe/Amsterdam",
+        "WPLANG": ""
+    },
+    "before_fingerprint": "19dcf7f44fe80b2975d64ecb49983d640ee7fdb38742cd70422286baba01d7db",
+    "after_fingerprint": "77f4cc721f19fcad19937b4e67f462ec9972ac22b1e57cd323e501b94e531d0c",
+    "readback_verified": true,
+    "rollback_available": true
+}
