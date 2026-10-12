@@ -68,7 +68,7 @@ final class PluginSettingsAdapter
         'wp-asset-clean-up/wpacu.php' => array('id' => 'asset_cleanup', 'mode' => 'guarded_settings', 'actions' => array('optimizer.settings.inspect', 'optimizer.settings.update', 'maintenance.cache_capabilities', 'maintenance.cache_flush'), 'note' => 'Cache maintenance is supported; asset unload/settings writes require an installed-version and browser regression contract.'),
         'auto-image-attributes-from-filename-with-bulk-updater/iaff_image-attributes-from-filename.php' => array('id' => 'auto_image_attributes', 'mode' => 'native_allowlist', 'actions' => array('auto_image_attributes.inspect', 'auto_image_attributes.update', 'media.get', 'media.update')),
         'broken-link-checker/broken-link-checker.php' => array('id' => 'broken_link_checker', 'mode' => 'version_bound', 'actions' => array(), 'note' => 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.'),
-        'code-snippets/code-snippets.php' => array('id' => 'code_snippets', 'mode' => 'bounded_exact_patch', 'actions' => array('code_snippets.patch'), 'note' => 'Arbitrary snippet creation/execution and full-source export remain blocked; one existing PHP snippet may be patched only through exact bounded replacements with fingerprint, readback and rollback.'),
+        'code-snippets/code-snippets.php' => array('id' => 'code_snippets', 'mode' => 'bounded_exact_patch_and_catalog_preset', 'actions' => array('code_snippets.patch', 'code_snippets.catalog_only.inspect', 'code_snippets.catalog_only.ensure', 'code_snippets.catalog_only.undo'), 'note' => 'Caller-supplied arbitrary PHP creation remains blocked. One fixed vetted WooCommerce catalogue-only preset supports inspection, guarded creation/activation and rollback; existing snippets support bounded exact replacements.'),
         'content-sync-manager/content-sync-manager.php' => array('id' => 'content_sync_manager', 'mode' => 'project_specific', 'actions' => array()),
         'classic-editor/classic-editor.php' => array('id' => 'classic_editor', 'mode' => 'core_editor_option', 'actions' => array(), 'note' => 'A dedicated editor-preference contract is required; no raw options are exposed.'),
         'duplicate-page/duplicatepage.php' => array('id' => 'duplicate_page', 'mode' => 'no_special_adapter_needed', 'actions' => array('post.get', 'post.create')),
@@ -118,6 +118,8 @@ final class PluginSettingsAdapter
     public function catalog(array $payload = array(), array $context = array()): array
     {
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $registeredActions = isset($context['registry']) && $context['registry'] instanceof Registry
+            ? $context['registry']->catalog() : null;
         $items = array();
         foreach (get_plugins() as $file => $data) {
             $integration = self::INTEGRATIONS[$file] ?? array(
@@ -148,12 +150,20 @@ final class PluginSettingsAdapter
                     $integration['note'] = 'Raw settings inspection is not effective-provider readback; optimizer writes are blocked pending provider API verification.';
                 }
             }
-            $items[] = array_merge(array(
+            $item = array_merge(array(
                 'file' => (string) $file,
                 'name' => isset($data['Name']) ? (string) $data['Name'] : (string) $file,
                 'version' => isset($data['Version']) ? (string) $data['Version'] : '',
                 'active' => is_plugin_active($file),
             ), $integration);
+            if (null !== $registeredActions) {
+                $missing = array_values(array_filter((array) $item['actions'], static function ($action) use ($registeredActions): bool {
+                    return ! is_string($action) || ! isset($registeredActions[$action]);
+                }));
+                $item['registered_action_status'] = ! $item['actions'] ? 'not_modeled' : ($missing ? 'partial' : 'complete');
+                $item['missing_registered_actions'] = $missing;
+            }
+            $items[] = $item;
         }
         usort($items, static function (array $a, array $b): int {
             return strcasecmp((string) $a['name'], (string) $b['name']);
