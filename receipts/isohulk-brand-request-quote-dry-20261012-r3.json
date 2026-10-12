@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-brand-request-quote-dry-20261012-r3",
+    "action": "post.literal_replace",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T20:44:57+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 252,
+    "match_count": 1,
+    "before_fingerprint": "8d329470a665140e9f98acd927926b89cce057fb9fa5d62a06552e112be14ed7",
+    "before_content_sha256": "39ab63d4f57c28b1ae4f617d2e28aa6b6c9c515b38411a3586532786bf9bc5d6",
+    "after_content_sha256": "9cc39b266b427cceae486316d89e7a368e5e972e44fad920c2174570f6f67aa1",
+    "readback_verified": null
+}
