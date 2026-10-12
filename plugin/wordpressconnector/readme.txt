@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.1
+Stable tag: 1.18.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.2 introduces an explicit, nonsecret site identity adapter for WordPress title, tagline, IANA timezone and installed English/Dutch locales via trusted GitHub OIDC and WordPress manage_options. All writes require a preflight fingerprint, strict field allowlist, readback and site-local rollback. Generic privileged option access remains blocked in public mode.
 
 Version 1.18.1 adds a narrow public-safe literal-phrase correction for existing published WordPress pages. Changes require an exact preview fingerprint, confirmed match count, edit permission, site-local rollback and sanitized public receipts. Private configuration and other public security restrictions are unchanged.
 
