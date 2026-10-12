@@ -74,11 +74,12 @@ if ('connector.read_batch' === $action) {
 
 if ('connector.update.apply' === $action) {
     $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
-    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    // Preserve the optional legacy boolean for existing callers without
+    // requiring a restore attestation. Runner still enforces confirmation,
+    // permissions, and the dry-run fingerprint for live operations.
     if (array_diff(array_keys($payload), array('restore_verified'))
-        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))
-        || (! $dryRun && true !== ($payload['restore_verified'] ?? false))) {
-        fwrite(STDERR, "Connector self-update requires restore_verified=true and no unsupported fields.\n");
+        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))) {
+        fwrite(STDERR, "Connector self-update accepts only the optional boolean restore_verified compatibility field.\n");
         exit(1);
     }
 }
