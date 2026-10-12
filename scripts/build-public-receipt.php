@@ -262,7 +262,8 @@ if (! $ok) {
 
     if ('plugin.audit.inspect' === $action) {
         $expectedKeys = array('installed_count', 'active_count', 'inactive_count',
-            'unmodeled_count', 'provider_checks_count', 'plugins',
+            'unmodeled_count', 'provider_checks_count', 'must_use_count',
+            'dropin_count', 'plugins',
             'image_lazyload_overlap', 'checkout_qa', 'smtp_delivery_qa',
             'translation_browser_qa', 'private_settings_exported');
         if (array_diff(array_keys($data), $expectedKeys)
@@ -350,6 +351,13 @@ if (! $ok) {
             if (($data[$qa] ?? null) !== 'not_run') {
                 throw new RuntimeException('Public audit cannot claim browser, email or checkout acceptance.');
             }
+        }
+        foreach (array('must_use_count', 'dropin_count') as $name) {
+            $value = $data[$name] ?? null;
+            if (null !== $value && (! is_int($value) || $value < 0 || $value > 150)) {
+                throw new RuntimeException('Invalid public WordPress special-plugin count.');
+            }
+            $receipt[$name] = $value;
         }
         $receipt['plugins'] = $publicPlugins;
         $receipt['image_lazyload_overlap'] = $overlap;
