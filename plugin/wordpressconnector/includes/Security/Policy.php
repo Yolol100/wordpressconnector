@@ -28,6 +28,7 @@ final class Policy
         'post.get',
         'post.update',
         'post.literal_replace',
+        'plugin.audit.inspect',
         'site.identity.inspect',
         'site.identity.update',
         'gtranslate.settings.inspect',
