@@ -46,8 +46,21 @@ $GLOBALS['audit_options'] = array(
     'wpassetcleanup_settings' => array('secret' => 'DO-NOT-LEAK-CACHE'),
 );
 $GLOBALS['audit_rocket_error'] = false;
+$GLOBALS['audit_special_plugin_error'] = false;
 $GLOBALS['audit_writes'] = 0;
 function get_plugins(): array { return $GLOBALS['audit_plugins']; }
+function get_mu_plugins(): array {
+    return array(
+        'hostinger-preview-domain.php' => array('Name'=>'Hostinger Preview Domain'),
+        'hostinger-auto-updates.php' => array('Name'=>'Hostinger Auto Updates'),
+    );
+}
+function get_dropins(): array {
+    if ($GLOBALS['audit_special_plugin_error']) {
+        throw new RuntimeException('PRIVATE-DROPIN-PATH-DO-NOT-LEAK');
+    }
+    return array('object-cache.php' => array('Name'=>'Hostinger object cache'));
+}
 function is_plugin_active($file): bool { return ! in_array($file, $GLOBALS['audit_inactive'], true); }
 function current_user_can($capability): bool { return $GLOBALS['audit_role'] === true && $capability === 'manage_options'; }
 function sanitize_key($value): string { return strtolower((string) preg_replace('/[^a-z0-9_-]/i', '', $value)); }
@@ -86,6 +99,7 @@ foreach ($report['plugins'] as $item) {
 }
 if ($report['installed_count'] !== 15 || $report['active_count'] !== 14
     || $report['inactive_count'] !== 1 || $report['unmodeled_count'] !== 1
+    || $report['must_use_count'] !== 2 || $report['dropin_count'] !== 1
     || $report['private_settings_exported'] !== false
     || $report['checkout_qa'] !== 'not_run' || $report['smtp_delivery_qa'] !== 'not_run') {
     throw new RuntimeException('All-plugin inventory totals or safeguards are incorrect.');
@@ -151,6 +165,14 @@ if (strpos(json_encode($validPhone, JSON_THROW_ON_ERROR), '+31 6 12345678') !== 
     throw new RuntimeException('Private Joinchat phone leaked in audit result.');
 }
 $GLOBALS['audit_options']['joinchat']['telephone'] = 'PRIVATE-PHONE';
+$GLOBALS['audit_special_plugin_error'] = true;
+$specialFailure = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+if (($specialFailure['dropin_count'] ?? 'not-null') !== null
+    || ($specialFailure['must_use_count'] ?? null) !== 2
+    || strpos(json_encode($specialFailure, JSON_THROW_ON_ERROR), 'PRIVATE-DROPIN-PATH') !== false) {
+    throw new RuntimeException('Unreachable special-plugin inventory did not fail safely.');
+}
+$GLOBALS['audit_special_plugin_error'] = false;
 $GLOBALS['audit_role'] = false;
 try {
     $adapter->audit(array(), array('dry_run' => true));
