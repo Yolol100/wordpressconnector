@@ -180,13 +180,23 @@ final class ConnectorUpdateAdapter
             throw new RuntimeException('Connector update requires direct filesystem mode and WordPress Core temporary-backup support.');
         }
 
+        // A self-update runs through REST, not through the normal wp-admin update
+        // screen. Record the active state before overwriting the files.
+        $wasActive = is_plugin_active(self::PLUGIN_FILE);
+        if (! $wasActive) {
+            throw new RuntimeException('Connector self-update requires an active Connector plugin.');
+        }
+
         $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
         $backup = array('slug' => 'wordpressconnector', 'src' => WP_PLUGIN_DIR, 'dir' => 'plugins');
 
         $upgrader->init();
         $upgrader->upgrade_strings();
         add_filter('upgrader_source_selection', array($upgrader, 'check_package'));
-        add_filter('upgrader_pre_install', array($upgrader, 'deactivate_plugin_before_upgrade'), 10, 2);
+        // Do not attach deactivate_plugin_before_upgrade here. WordPress Core
+        // uses that hook for browser-based upgrades, but our REST self-update
+        // has no browser reactivation step. Attaching it left the Connector
+        // inactive after a successful file-version readback.
         add_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10, 2);
         add_filter('upgrader_post_install', array($upgrader, 'active_after'), 10, 2);
         try {
@@ -205,7 +215,7 @@ final class ConnectorUpdateAdapter
             ));
         } finally {
             remove_filter('upgrader_source_selection', array($upgrader, 'check_package'));
-            remove_filter('upgrader_pre_install', array($upgrader, 'deactivate_plugin_before_upgrade'), 10);
+            // No deactivation callback was installed by this self-update.
             remove_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10);
             remove_filter('upgrader_post_install', array($upgrader, 'active_after'), 10);
         }
@@ -215,6 +225,14 @@ final class ConnectorUpdateAdapter
         }
         if (! is_array($result)) {
             throw new RuntimeException('Connector installation did not complete; verify WordPress Core backup recovery before retrying.');
+        }
+        if ($wasActive && ! is_plugin_active(self::PLUGIN_FILE)) {
+            // Preserve the activation state held before the guarded upgrade.
+            // Never report a successful install if REST routes will disappear.
+            $activation = activate_plugin(self::PLUGIN_FILE, '', false, true);
+            if (is_wp_error($activation) || ! is_plugin_active(self::PLUGIN_FILE)) {
+                throw new RuntimeException('Connector upgrade left the plugin inactive; reactivation failed. Manual WP Admin recovery is required.');
+            }
         }
         return array('upgrader' => $upgrader, 'backup' => $backup);
     }
