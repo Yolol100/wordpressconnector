@@ -222,6 +222,8 @@ final class PluginSettingsAdapter
 
         return array(
             'installed_count' => count($items),
+            'must_use_count' => $this->auditCorePluginCount('get_mu_plugins'),
+            'dropin_count' => $this->auditCorePluginCount('get_dropins'),
             'active_count' => $activeCount,
             'inactive_count' => count($items) - $activeCount,
             'unmodeled_count' => $unknownCount,
@@ -336,6 +338,23 @@ final class PluginSettingsAdapter
             return (int) $value > 0 ? 'present' : 'missing';
         }
         return 'unknown';
+    }
+
+    private function auditCorePluginCount(string $function): ?int
+    {
+        if (! in_array($function, array('get_mu_plugins', 'get_dropins'), true)
+            || ! function_exists($function)) {
+            return null;
+        }
+        try {
+            $plugins = $function();
+        } catch (\Throwable $error) {
+            return null;
+        }
+        if (! is_array($plugins) || count($plugins) > 150) {
+            return null;
+        }
+        return count($plugins);
     }
 
     private function auditPhonePresence($value): string
