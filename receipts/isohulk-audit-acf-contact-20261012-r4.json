@@ -1,0 +1,378 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-audit-acf-contact-20261012-r4",
+    "action": "acf.field_groups",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T20:59:52+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 17,
+    "field_groups": [
+        {
+            "key": "group_tps_093e7d5fdbaacfa92448",
+            "title": "TPS Pack | Contact content",
+            "fields": [
+                {
+                    "key": "field_tps_heading_bc4ca411307212716147",
+                    "name": "",
+                    "label": "Page introduction",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_f3800464c3b40cf1fdf117",
+                    "name": "tps_editor_f3800464c3b40cf1fdf117",
+                    "label": "Small heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_1073ef29ac0d517467016b",
+                    "name": "tps_editor_1073ef29ac0d517467016b",
+                    "label": "Heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_d70b463780869738adcc9b",
+                    "name": "tps_editor_d70b463780869738adcc9b",
+                    "label": "Introduction",
+                    "type": "textarea",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_52b82be3d0b21b0a61a3be",
+                    "name": "tps_editor_52b82be3d0b21b0a61a3be",
+                    "label": "Form shortcut button",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_b74ccbbb56c42b9bd3e32c",
+                    "name": "tps_editor_b74ccbbb56c42b9bd3e32c",
+                    "label": "Form reassurance",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_4d4feaac76e95bebc52999",
+                    "name": "tps_editor_4d4feaac76e95bebc52999",
+                    "label": "Illustration (theme asset)",
+                    "type": "select",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_8b22f62432dc056bbbee77",
+                    "name": "tps_editor_8b22f62432dc056bbbee77",
+                    "label": "Image alternative text",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_heading_3e7255476756b6ec44dc",
+                    "name": "",
+                    "label": "Section 1: Tape Solutions, Capelle aan den IJssel",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_18ef97e2f8b2daa4806a0b",
+                    "name": "tps_editor_18ef97e2f8b2daa4806a0b",
+                    "label": "Small heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_3ed94b3bcce6e8b473e9e1",
+                    "name": "tps_editor_3ed94b3bcce6e8b473e9e1",
+                    "label": "Heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_9b87fc0fa2ca8685997a00",
+                    "name": "tps_editor_9b87fc0fa2ca8685997a00",
+                    "label": "Paragraph 1",
+                    "type": "textarea",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_2ae380e5a9c2d39a16b7a4",
+                    "name": "tps_editor_2ae380e5a9c2d39a16b7a4",
+                    "label": "Paragraph 2",
+                    "type": "textarea",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_heading_3711ef566727a2708d4b",
+                    "name": "",
+                    "label": "Section 2: Make your enquiry easy to understand",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_249c45bcde6321db1957e5",
+                    "name": "tps_editor_249c45bcde6321db1957e5",
+                    "label": "Small heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_2eb54c6541d77075ab2416",
+                    "name": "tps_editor_2eb54c6541d77075ab2416",
+                    "label": "Heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_a5afd77a57d3e118d9f452",
+                    "name": "tps_editor_a5afd77a57d3e118d9f452",
+                    "label": "Paragraph 1",
+                    "type": "textarea",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_57259c0a8a40027d708b02",
+                    "name": "tps_editor_57259c0a8a40027d708b02",
+                    "label": "List item 1",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_33813d16adb18e5302f390",
+                    "name": "tps_editor_33813d16adb18e5302f390",
+                    "label": "List item 2",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_5d8abbb21443d4ed8376d5",
+                    "name": "tps_editor_5d8abbb21443d4ed8376d5",
+                    "label": "List item 3",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_heading_a7d0509f8c4dac3c29a9",
+                    "name": "",
+                    "label": "Call to action",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_1b66963078ce0ede87aab1",
+                    "name": "tps_editor_1b66963078ce0ede87aab1",
+                    "label": "Heading",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_dd2ae6adec17c9f0794db4",
+                    "name": "tps_editor_dd2ae6adec17c9f0794db4",
+                    "label": "Supporting text",
+                    "type": "textarea",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_db2d329df289cde29ae7b5",
+                    "name": "tps_editor_db2d329df289cde29ae7b5",
+                    "label": "Button label",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_heading_c28374609bdd6c60a87e",
+                    "name": "",
+                    "label": "Form text & assistance",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_accfbaba80c994280cd9aa",
+                    "name": "tps_editor_accfbaba80c994280cd9aa",
+                    "label": "Get in touch",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_be516087e3668e7f0feca2",
+                    "name": "tps_editor_be516087e3668e7f0feca2",
+                    "label": "Send us a message",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_d7739f1b0cb5059bf6907c",
+                    "name": "tps_editor_d7739f1b0cb5059bf6907c",
+                    "label": "Questions about materials, applications or working together? Send us a message",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_140b230765761a363684d2",
+                    "name": "tps_editor_140b230765761a363684d2",
+                    "label": "We could not process the form. Check your details and try again.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_ef8537238c8336e16acca4",
+                    "name": "tps_editor_ef8537238c8336e16acca4",
+                    "label": "An identical request was recently submitted. Check your email or contact us di",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_7749a8be7c3ef7fe110ec6",
+                    "name": "tps_editor_7749a8be7c3ef7fe110ec6",
+                    "label": "Several requests were submitted recently. Please try again in about 15 minutes",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_83e26bb151dd1e9bcce09a",
+                    "name": "tps_editor_83e26bb151dd1e9bcce09a",
+                    "label": "Website",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_c7f86d04b958a9c61828c9",
+                    "name": "tps_editor_c7f86d04b958a9c61828c9",
+                    "label": "Fields marked * are required.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_caa431801cf8cb5c855b77",
+                    "name": "tps_editor_caa431801cf8cb5c855b77",
+                    "label": "Name *",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_17fb89ad514b316c713fc0",
+                    "name": "tps_editor_17fb89ad514b316c713fc0",
+                    "label": "Email address *",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_053aeb2efc1ddf9c3ad123",
+                    "name": "tps_editor_053aeb2efc1ddf9c3ad123",
+                    "label": "Company (optional)",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_a39c9df1d0d051dbb752c0",
+                    "name": "tps_editor_a39c9df1d0d051dbb752c0",
+                    "label": "Phone number (optional)",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_9d810d16b4cba9e0095a5a",
+                    "name": "tps_editor_9d810d16b4cba9e0095a5a",
+                    "label": "Your message *",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_8f180b5c1e12a2abc7c5ca",
+                    "name": "tps_editor_8f180b5c1e12a2abc7c5ca",
+                    "label": "We use your details to process your message or request. Read our",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_a24912476ba3ecaacf8773",
+                    "name": "tps_editor_a24912476ba3ecaacf8773",
+                    "label": "privacy policy",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_25ee9f358cf5f98e20eab1",
+                    "name": "tps_editor_25ee9f358cf5f98e20eab1",
+                    "label": "Send message",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_232ad3363f1da987d5d855",
+                    "name": "tps_editor_232ad3363f1da987d5d855",
+                    "label": "How it works",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_8a73c8378a5ba9f0c31d0b",
+                    "name": "tps_editor_8a73c8378a5ba9f0c31d0b",
+                    "label": "We are here to help",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_d5d3cce264cd8939c8221c",
+                    "name": "tps_editor_d5d3cce264cd8939c8221c",
+                    "label": "Tell us your question",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_ef5e514a2dbe3fcaebdc18",
+                    "name": "tps_editor_ef5e514a2dbe3fcaebdc18",
+                    "label": "Share enough context to help us understand.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_b40843457ff1fea3b988da",
+                    "name": "tps_editor_b40843457ff1fea3b988da",
+                    "label": "We review your message",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_4fc07985338a3ebee4ec61",
+                    "name": "tps_editor_4fc07985338a3ebee4ec61",
+                    "label": "Your message is sent to the TPS Pack team.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_ae19f0c5bb27e32d33e7eb",
+                    "name": "tps_editor_ae19f0c5bb27e32d33e7eb",
+                    "label": "We will get in touch",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_61d17e04f8516549522989",
+                    "name": "tps_editor_61d17e04f8516549522989",
+                    "label": "To answer your question or ask for more details.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_f0e0161a11df8a73226804",
+                    "name": "tps_editor_f0e0161a11df8a73226804",
+                    "label": "After submission we will try to email you a confirmation.",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_tps_editor_7ec262226d8391b62b33ee",
+                    "name": "tps_editor_7ec262226d8391b62b33ee",
+                    "label": "Optional Media Library image override",
+                    "type": "image",
+                    "required": false
+                }
+            ]
+        }
+    ],
+    "schema_fingerprint": "8be017b507e7d8983f5dbf437f9a03c07ee7d24338442a28df82b21967c68bf6",
+    "readback_verified": null
+}
