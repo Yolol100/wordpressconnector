@@ -78,6 +78,10 @@ Sensitive actions stay blocked in public mode. Secret-like payload keys and `exp
 
 Private/custom plugin ZIPs must not be placed on a public request branch. Request assets in a public repository are themselves public.
 
+### Bounded site identity on public GitHub
+
+Authenticated owner/trusted-actor OIDC requests may read or update only `blogname`, `blogdescription`, `timezone_string` and `WPLANG` using `site.identity.inspect`/`site.identity.update`. The WordPress actor must still have `manage_options`. Writes require a site-state fingerprint from a prior dry-run; rollback remains site-local. Site identity fields must be plain text, a valid IANA timezone or a supported installed locale. This is not generic option access: `option.get`, `option.update`, Yoast and GTranslate administration remain blocked in public repository mode.
+
 ## 6. Request confirmation and safety
 
 The plugin is operational immediately after activation, but this does not mean destructive actions execute without request controls:
