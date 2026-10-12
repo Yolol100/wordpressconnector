@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 if (! function_exists('rest_get_server') || ! function_exists('register_rest_route')) {
     throw new RuntimeException('WordPress REST server unavailable.');
 }
