@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.3
+Stable tag: 1.18.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.4 adds a strictly read-only, administrator-gated audit of every installed plugin through the existing integration catalog. Known providers expose only narrowly allowlisted configuration indicators; unmodeled providers remain explicitly inventory-only. Public GitHub requests have an empty payload, require dry-run, and receive fully enumerated secret-free receipts. No arbitrary plugin options, payment secrets, SMTP credentials, login/security configuration, automatic writes or unsupported vendor APIs are exposed. Existing 1.18.3 update lifecycle protection is preserved.
 
 Version 1.18.3 fixes REST self-update lifecycle: it does not attach WordPress Core's browser-only deactivation hook, preserves the active plugin state, verifies activation, and attempts guarded reactivation if an external updater hook deactivated the plugin. A failed reactivation reports an error instead of claiming complete. This does not remotely reactivate a plugin already disabled on another site; use authenticated WP Admin recovery first.
 

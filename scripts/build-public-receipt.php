@@ -260,7 +260,104 @@ if (! $ok) {
     $payload = isset($request['payload']) && is_array($request['payload']) ? $request['payload'] : array();
     $data = isset($result['data']) && is_array($result['data']) ? $result['data'] : array();
 
-    if ('plugin.install_package' === $action) {
+    if ('plugin.audit.inspect' === $action) {
+        $expectedKeys = array('installed_count', 'active_count', 'inactive_count',
+            'unmodeled_count', 'provider_checks_count', 'plugins',
+            'image_lazyload_overlap', 'checkout_qa', 'smtp_delivery_qa',
+            'translation_browser_qa', 'private_settings_exported');
+        if (array_diff(array_keys($data), $expectedKeys)
+            || ! isset($data['plugins']) || ! is_array($data['plugins'])
+            || count($data['plugins']) > 150
+            || ($data['private_settings_exported'] ?? null) !== false) {
+            throw new RuntimeException('Public plugin audit result structure is not safe.');
+        }
+        $knownIds = array(
+            'acf_yoast_analysis','acf_page_text_manager','acf','aios',
+            'woocommerce','mollie','ewww_image_optimizer','aioseo_broken_link_checker',
+            'all_in_one_wp_migration','asset_cleanup','auto_image_attributes',
+            'broken_link_checker','code_snippets','content_sync_manager',
+            'classic_editor','duplicate_page','elementor','elementor_pro',
+            'gtranslate','imagify','joinchat','litespeed_cache','loco_translate',
+            'redirection','under_construction','really_simple_security','site_kit',
+            'wordfence','wordpress_connector','wp_file_manager','wp_mail_smtp',
+            'wp_rocket','yoast','yoast_premium',
+        );
+        $checkNames = array(
+            'guest_checkout','stock_management','cart_page','checkout_page',
+            'english_source','nl_en_languages','organization_name',
+            'organization_description','organization_logo','button_tip_saved',
+            'message_saved','image_lazyload','remove_unused_css','missing_dimensions',
+            'settings_record','effective_settings','delivery','provider_probe',
+        );
+        $checkValues = array('enabled','disabled','unknown','matches','mismatch',
+            'present','missing','unverified','error');
+        $coverageValues = array('registered','partial','not_checked',
+            'inventory_only','restricted','unmodeled');
+        $publicPlugins = array();
+        $activeCount = 0;
+        $unknownCount = 0;
+        $checkedCount = 0;
+        foreach ($data['plugins'] as $entry) {
+            if (! is_array($entry) || array_diff(array_keys($entry), array('id','active','coverage','checks'))
+                || ! is_string($entry['id'] ?? null)
+                || ! is_bool($entry['active'] ?? null)
+                || ! in_array($entry['coverage'] ?? null, $coverageValues, true)
+                || ! is_array($entry['checks'] ?? null)
+                || count($entry['checks']) > count($checkNames)) {
+                throw new RuntimeException('Unsafe public plugin inventory item.');
+            }
+            $id = $entry['id'];
+            $unknown = preg_match('/^unmodeled_[1-9][0-9]*\\z/', $id) === 1;
+            if (! $unknown && ! in_array($id, $knownIds, true)) {
+                throw new RuntimeException('Unrecognized plugin audit identifier.');
+            }
+            $checks = array();
+            foreach ($entry['checks'] as $check => $value) {
+                if (! in_array($check, $checkNames, true) || ! in_array($value, $checkValues, true)) {
+                    throw new RuntimeException('Unexpected public plugin audit check or value.');
+                }
+                $checks[$check] = $value;
+            }
+            $publicPlugins[] = array(
+                'id' => $id,
+                'active' => $entry['active'],
+                'coverage' => $entry['coverage'],
+                'checks' => $checks,
+            );
+            $activeCount += $entry['active'] ? 1 : 0;
+            $unknownCount += $unknown ? 1 : 0;
+            $checkedCount += $checks ? 1 : 0;
+        }
+        $installed = count($publicPlugins);
+        foreach (array(
+            'installed_count' => $installed,
+            'active_count' => $activeCount,
+            'inactive_count' => $installed - $activeCount,
+            'unmodeled_count' => $unknownCount,
+            'provider_checks_count' => $checkedCount,
+        ) as $name => $expected) {
+            if (! isset($data[$name]) || ! is_int($data[$name]) || $data[$name] !== $expected) {
+                throw new RuntimeException('Public plugin audit totals do not reconcile.');
+            }
+            $receipt[$name] = $expected;
+        }
+        $overlap = $data['image_lazyload_overlap'] ?? null;
+        if (! in_array($overlap, array('unverified','possible_overlap','no_overlap_observed'), true)) {
+            throw new RuntimeException('Unknown image optimization overlap status.');
+        }
+        foreach (array('checkout_qa','smtp_delivery_qa','translation_browser_qa') as $qa) {
+            if (($data[$qa] ?? null) !== 'not_run') {
+                throw new RuntimeException('Public audit cannot claim browser, email or checkout acceptance.');
+            }
+        }
+        $receipt['plugins'] = $publicPlugins;
+        $receipt['image_lazyload_overlap'] = $overlap;
+        $receipt['checkout_qa'] = 'not_run';
+        $receipt['smtp_delivery_qa'] = 'not_run';
+        $receipt['translation_browser_qa'] = 'not_run';
+        $receipt['private_settings_exported'] = false;
+        $receipt['readback_verified'] = null;
+    } elseif ('plugin.install_package' === $action) {
         $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin']) ? $payload['expected_plugin'] : '';
         $expectedSha = isset($payload['sha256']) && is_string($payload['sha256']) ? strtolower($payload['sha256']) : '';
         if (preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php$/D', $expectedPlugin)) {

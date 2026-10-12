@@ -31,6 +31,7 @@ $publicActions = array(
     'post.get',
     'post.update',
     'post.literal_replace',
+    'plugin.audit.inspect',
     'site.identity.inspect',
     'site.identity.update',
     'gtranslate.settings.inspect',
@@ -59,6 +60,36 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+// The full private integration catalog is intentionally NOT available in a
+// public repository. This read-only action publishes only enumerated flags.
+if ('plugin.audit.inspect' === $action) {
+    $errors = array();
+    $allowedRoot = array('version', 'site_url', 'request_id', 'action', 'payload', 'dry_run', 'confirm');
+    if (array_diff(array_keys($data), $allowedRoot)) {
+        $errors[] = 'Public plugin audit forbids extra request fields or state tokens.';
+    }
+    if (($data['version'] ?? null) !== 1
+        || ! isset($data['site_url']) || ! is_string($data['site_url'])
+        || ! filter_var($data['site_url'], FILTER_VALIDATE_URL)
+        || 'https' !== strtolower((string) parse_url($data['site_url'], PHP_URL_SCHEME))) {
+        $errors[] = 'Public plugin audit requires the versioned HTTPS site target.';
+    }
+    if (! isset($data['request_id']) || ! is_string($data['request_id'])
+        || ! preg_match('/^[a-zA-Z0-9][a-zA-Z0-9_-]{7,79}\\z/', $data['request_id'])) {
+        $errors[] = 'Public plugin audit requires a bounded request ID.';
+    }
+    if (! array_key_exists('payload', $data) || ! is_array($data['payload']) || $data['payload']
+        || ($data['dry_run'] ?? null) !== true || ($data['confirm'] ?? null) !== false) {
+        $errors[] = 'Public plugin audit must have an empty payload, dry_run=true and confirm=false.';
+    }
+    if ($errors) {
+        foreach ($errors as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: plugin.audit.inspect' . PHP_EOL;
+    return;
 }
 
 if (in_array($action, array(
