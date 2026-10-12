@@ -31,6 +31,8 @@ $publicActions = array(
     'post.get',
     'post.update',
     'post.literal_replace',
+    'site.identity.inspect',
+    'site.identity.update',
     'acf.update',
     'acf.portfolio_stats_update',
     'portfolio.case_text_update',
@@ -53,6 +55,65 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+if ('site.identity.inspect' === $action || 'site.identity.update' === $action) {
+    $errors = array();
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    if (isset($data['expected_state_token'])) {
+        $errors[] = 'Public site identity cannot include site state tokens.';
+    }
+    if ('site.identity.inspect' === $action) {
+        if ($payload || ($data['dry_run'] ?? null) !== true || ! empty($data['confirm'])
+            || isset($data['expected_fingerprint'])) {
+            $errors[] = 'Public site identity inspection is read-only with an empty payload.';
+        }
+    } else {
+        if (array_diff(array_keys($payload), array('fields'))) {
+            $errors[] = 'Public site identity accepts only fields.';
+        }
+        $fields = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
+        $allowed = array('blogname','blogdescription','timezone_string','WPLANG');
+        if (! $fields || count($fields) > 4 || array_keys($fields) === range(0, count($fields)-1)) {
+            $errors[] = 'Site identity must contain 1–4 selected fields.';
+        }
+        foreach ($fields as $key => $value) {
+            if (! in_array((string) $key, $allowed, true) || ! is_string($value)) {
+                $errors[] = 'Unsupported public site identity field or type.';
+                continue;
+            }
+            if ($key === 'blogname' || $key === 'blogdescription') {
+                $max = 'blogname' === $key ? 100 : 240;
+                if (trim($value) === '' || strlen($value) > $max || preg_match('/[\x00-\x1F\x7F<>]/', $value)) {
+                    $errors[] = 'Public site identity must be nonempty plain text.';
+                }
+            } elseif ($key === 'timezone_string' && ! in_array($value, timezone_identifiers_list(), true)) {
+                $errors[] = 'Public site identity timezone must be IANA.';
+            } elseif ($key === 'WPLANG' && ! in_array($value, array('en_GB','en_US','nl_NL'), true)) {
+                $errors[] = 'Public site identity locale is outside the allowlist.';
+            }
+        }
+        if (($data['dry_run'] ?? null) === true) {
+            if (! empty($data['confirm']) || isset($data['expected_fingerprint'])) {
+                $errors[] = 'Site identity dry-run cannot be confirmed.';
+            }
+        } elseif (($data['dry_run'] ?? null) === false) {
+            if (($data['confirm'] ?? null) !== true
+                || ! isset($data['expected_fingerprint'])
+                || ! is_string($data['expected_fingerprint'])
+                || ! preg_match('/^[a-f0-9]{64}$/D', $data['expected_fingerprint'])) {
+                $errors[] = 'Site identity write requires confirmed dry-run fingerprint.';
+            }
+        } else {
+            $errors[] = 'Site identity request must specify dry_run.';
+        }
+    }
+    if ($errors) {
+        foreach ($errors as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: ' . $action . PHP_EOL;
+    return;
 }
 
 if ('post.literal_replace' === $action) {
