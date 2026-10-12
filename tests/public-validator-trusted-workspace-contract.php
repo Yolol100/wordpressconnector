@@ -131,13 +131,21 @@ $assertRejected($portfolioMissingFingerprint, 'portfolio-live-missing-fingerprin
 
 $assertAccepted($base('trusted-update-check-0001', 'connector.update.check'), 'connector-update-check');
 $assertAccepted($base('trusted-update-apply-dry-0001', 'connector.update.apply'), 'connector-update-apply-dry');
-$updateLive = $base('trusted-update-apply-live-0001', 'connector.update.apply', array('restore_verified' => true), false, true);
+$updateLive = $base('trusted-update-apply-live-0001', 'connector.update.apply', array(), false, true);
 $updateLive['expected_fingerprint'] = str_repeat('b', 64);
-$assertAccepted($updateLive, 'connector-update-apply-live');
-$updateWithoutRestore = $updateLive;
-$updateWithoutRestore['request_id'] = 'trusted-update-unsafe-0001';
-$updateWithoutRestore['payload'] = array();
-$assertRejected($updateWithoutRestore, 'connector-update-unverified-restore');
+$assertAccepted($updateLive, 'connector-update-apply-live-without-external-restore');
+$updateLegacy = $updateLive;
+$updateLegacy['request_id'] = 'trusted-update-compat-0001';
+$updateLegacy['payload'] = array('restore_verified' => false);
+$assertAccepted($updateLegacy, 'connector-update-legacy-false-restore');
+$updateUnsafe = $updateLive;
+$updateUnsafe['request_id'] = 'trusted-update-unsafe-0001';
+$updateUnsafe['payload'] = array('restore_verified' => 'unverified');
+$assertRejected($updateUnsafe, 'connector-update-invalid-restore-field');
+$updateMissingFingerprint = $updateLive;
+$updateMissingFingerprint['request_id'] = 'trusted-update-unsafe-0002';
+unset($updateMissingFingerprint['expected_fingerprint']);
+$assertRejected($updateMissingFingerprint, 'connector-update-missing-fingerprint');
 
 $assertAccepted($base('trusted-post-get-0001', 'post.get', array('id' => 4933)), 'post-get');
 $assertAccepted($base('trusted-post-list-0001', 'post.list', array('post_type' => 'post', 'status' => 'publish', 'per_page' => 20, 'page' => 1)), 'post-list');
