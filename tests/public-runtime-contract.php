@@ -118,19 +118,28 @@ $updateConfirm['request_id'] = 'public-test-0006';
 $updateConfirm['dry_run'] = false;
 $updateConfirm['confirm'] = true;
 $updateConfirm['expected_fingerprint'] = str_repeat('c', 64);
-$updateConfirm['payload'] = array('restore_verified' => true);
+$updateConfirm['payload'] = array();
 list($status) = $run($validator, array($writeJson('allowed-update-confirm.json', $updateConfirm)));
 if (0 !== $status) {
-    fwrite(STDERR, "Allowed confirmed public connector.update.apply was rejected.\n");
+    fwrite(STDERR, "Confirmed public connector.update.apply without restore proof was rejected.\n");
+    exit(1);
+}
+
+$updateLegacy = $updateConfirm;
+$updateLegacy['request_id'] = 'public-test-0007';
+$updateLegacy['payload'] = array('restore_verified' => false);
+list($status) = $run($validator, array($writeJson('allowed-update-legacy.json', $updateLegacy)));
+if (0 !== $status) {
+    fwrite(STDERR, "Optional legacy false restore_verified must be accepted.\n");
     exit(1);
 }
 
 $updateUnsafe = $updateConfirm;
-$updateUnsafe['request_id'] = 'public-test-0007';
-$updateUnsafe['payload'] = array();
-list($status) = $run($validator, array($writeJson('blocked-update-no-restore.json', $updateUnsafe)));
+$updateUnsafe['request_id'] = 'public-test-0008';
+$updateUnsafe['payload'] = array('restore_verified' => 'unverified');
+list($status) = $run($validator, array($writeJson('blocked-update-invalid-legacy-field.json', $updateUnsafe)));
 if (0 === $status) {
-    fwrite(STDERR, "Public connector self-update must reject unverified restore.\n");
+    fwrite(STDERR, "Malformed legacy restore_verified must still be rejected.\n");
     exit(1);
 }
 
@@ -172,6 +181,11 @@ $case = $updateConfirm;
 $case['request_id'] = 'public-test-1007';
 unset($case['expected_fingerprint']);
 $forbiddenCases['confirmed self-update without fingerprint'] = $case;
+
+$case = $updateConfirm;
+$case['request_id'] = 'public-test-1009';
+$case['payload'] = array('package_url' => 'https://attacker.example/connector.zip');
+$forbiddenCases['self-update arbitrary package URL'] = $case;
 
 $case = $updateDryRun;
 $case['request_id'] = 'public-test-1008';

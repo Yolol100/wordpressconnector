@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.18
+Stable tag: 1.17.19
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.17.19 makes external restore attestation optional for the existing guarded Connector self-updater, at the site owner's request. The existing WordPress Core temporary backup remains required for install/readback failures, with GitHub release identity, checksum verification, plugin permissions, dry-run fingerprint, and confirmation unchanged. There is no guaranteed restore if a fatal error first appears after a successful update. Optional legacy restore_verified values remain accepted but do not gate updates.
 
 Version 1.17.18 explicitly blocks alternate WooCommerce Store API cart/items and batch mutations, and checkout reads that can create draft orders, while preserving product/price read APIs and the guarded Code Snippets provider lifecycle. Existing classic checkout and product purchase guards remain in force. Regressions run against WooCommerce 11.2.1 and Code Snippets 3.10.2.
 

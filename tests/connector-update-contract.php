@@ -38,8 +38,8 @@ $adapterRequired = array(
     "'temp_backup' => $backup",
     "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
     "get_filesystem_method()",
-    "restore_verified=true",
-    "'external_restore_required' => true",
+    "restore_verified must be boolean.",
+    "'external_restore_required' => false",
     'restoreAfterReadbackFailure',
     'wp_clean_plugins_cache(true)',
     "rollback_supported' => false",
@@ -56,6 +56,12 @@ foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_
         fwrite(STDERR, "Forbidden connector update primitive: {$forbidden}\n");
         exit(1);
     }
+}
+
+if (strpos($adapter, 'Confirmed Connector self-update requires a tested external site restore') !== false ||
+    strpos($adapter, "'external_restore_required' => true") !== false) {
+    fwrite(STDERR, "Connector updater still requires externally tested restore confirmation.\n");
+    exit(1);
 }
 
 if (substr_count($adapter, "'public_repository_safe' => true") !== 2) {
