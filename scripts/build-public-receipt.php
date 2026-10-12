@@ -297,7 +297,6 @@ if (! $ok) {
         $activeCount = 0;
         $unknownCount = 0;
         $checkedCount = 0;
-        $seen = array();
         foreach ($data['plugins'] as $entry) {
             if (! is_array($entry) || array_diff(array_keys($entry), array('id','active','coverage','checks'))
                 || ! is_string($entry['id'] ?? null)
@@ -309,11 +308,9 @@ if (! $ok) {
             }
             $id = $entry['id'];
             $unknown = preg_match('/^unmodeled_[1-9][0-9]*\\z/', $id) === 1;
-            if ((! $unknown && ! in_array($id, $knownIds, true))
-                || isset($seen[$id])) {
-                throw new RuntimeException('Unrecognized or duplicate plugin audit identifier.');
+            if (! $unknown && ! in_array($id, $knownIds, true)) {
+                throw new RuntimeException('Unrecognized plugin audit identifier.');
             }
-            $seen[$id] = true;
             $checks = array();
             foreach ($entry['checks'] as $check => $value) {
                 if (! in_array($check, $checkNames, true) || ! in_array($value, $checkValues, true)) {
