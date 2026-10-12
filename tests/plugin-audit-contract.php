@@ -167,7 +167,7 @@ if (strpos(json_encode($validPhone, JSON_THROW_ON_ERROR), '+31 6 12345678') !== 
 $GLOBALS['audit_options']['joinchat']['telephone'] = 'PRIVATE-PHONE';
 $GLOBALS['audit_special_plugin_error'] = true;
 $specialFailure = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
-if (($specialFailure['dropin_count'] ?? 'not-null') !== null
+if (! array_key_exists('dropin_count', $specialFailure) || $specialFailure['dropin_count'] !== null
     || ($specialFailure['must_use_count'] ?? null) !== 2
     || strpos(json_encode($specialFailure, JSON_THROW_ON_ERROR), 'PRIVATE-DROPIN-PATH') !== false) {
     throw new RuntimeException('Unreachable special-plugin inventory did not fail safely.');
