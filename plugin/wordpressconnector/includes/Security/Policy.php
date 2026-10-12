@@ -27,6 +27,7 @@ final class Policy
         'post.list',
         'post.get',
         'post.update',
+        'post.literal_replace',
         'acf.update',
         'acf.portfolio_stats_update',
         'portfolio.case_text_update',
@@ -106,7 +107,7 @@ final class Policy
 
     public static function assertPublicActionTarget(string $action, array $payload): void
     {
-        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
+        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
             return;
         }
 
@@ -122,7 +123,7 @@ final class Policy
         if (! $post instanceof \WP_Post) {
             throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
-        $requiresEdit = in_array($action, array('post.update', 'acf.update', 'elementor.patch_element'), true);
+        $requiresEdit = in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element'), true);
         self::assertPublicContentTarget($post, $requiresEdit);
     }
 
