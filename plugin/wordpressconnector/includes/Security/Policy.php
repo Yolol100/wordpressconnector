@@ -28,6 +28,8 @@ final class Policy
         'post.get',
         'post.update',
         'post.literal_replace',
+        'site.identity.inspect',
+        'site.identity.update',
         'acf.update',
         'acf.portfolio_stats_update',
         'portfolio.case_text_update',
