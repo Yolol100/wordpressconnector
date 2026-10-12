@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-brand-thank-you-dry-20261012-r3",
+  "action": "post.literal_replace",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 253,
+    "find": "Tape Solutions",
+    "replace": "ISOHULK"
+  }
+}
