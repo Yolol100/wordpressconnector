@@ -76,6 +76,10 @@ final class PluginSettingsAdapter
         'elementor-pro/elementor-pro.php' => array('id' => 'elementor_pro', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document', 'elementor.form_inspect', 'elementor.form_upsert')),
         'elementor-pro-2/elementor-pro.php' => array('id' => 'elementor_pro', 'mode' => 'native_adapter', 'actions' => array('elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document', 'elementor.form_inspect', 'elementor.form_upsert')), 
         'gtranslate/gtranslate.php' => array('id' => 'gtranslate', 'mode' => 'native_allowlist', 'actions' => array('gtranslate.settings.inspect', 'gtranslate.settings.update'), 'note' => 'Only GTranslate 5.0.x NL/EN language selection and browser detection; preserves unrelated premium, CSS and domain options.'),
+        'hostinger-ai-assistant/hostinger-ai-assistant.php' => array('id' => 'hostinger_ai', 'mode' => 'external_account_bound', 'actions' => array(), 'note' => 'Hostinger AI provider features, AI requests and account credentials require separately verified authenticated interfaces; audit is inventory-only.'),
+        'hostinger-easy-onboarding/hostinger-easy-onboarding.php' => array('id' => 'hostinger_easy_onboarding', 'mode' => 'onboarding_observation_only', 'actions' => array(), 'note' => 'Hostinger onboarding is detected only; readiness and vendor progress state cannot be inferred from plugin activation.'),
+        'hostinger-reach/hostinger-reach.php' => array('id' => 'hostinger_reach', 'mode' => 'external_account_bound', 'actions' => array(), 'note' => 'Hostinger Reach email-marketing integration requires a vendor account and consent-aware end-to-end verification. Never export contacts, tokens or campaign settings.'),
+        'hostinger/hostinger.php' => array('id' => 'hostinger_tools', 'mode' => 'security_provider_contract_needed', 'actions' => array(), 'note' => 'Hostinger Tools maintenance, cache, XML-RPC, HTTPS redirects and hosting service state are not safe to mutate without provider-backed inspection and lockout recovery.'),
         'imagify/imagify.php' => array('id' => 'imagify', 'mode' => 'wordpress_ability', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update')),
         'creame-whatsapp-me/joinchat.php' => array('id' => 'joinchat', 'mode' => 'native_allowlist', 'actions' => array('plugin.settings.inspect', 'plugin.settings.update'), 'note' => 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.'),
         'litespeed-cache/litespeed-cache.php' => array('id' => 'litespeed_cache', 'mode' => 'inactive_or_version_bound', 'actions' => array()),
@@ -286,6 +290,7 @@ final class PluginSettingsAdapter
             return array(
                 'button_tip_saved' => $this->auditTextPresence($raw['button_tip'] ?? null),
                 'message_saved' => $this->auditTextPresence($raw['message_text'] ?? null),
+                'whatsapp_number' => $this->auditPhonePresence($raw['telephone'] ?? null),
             );
         }
         if ('wp_rocket' === $id && function_exists('get_rocket_option')) {
@@ -331,6 +336,22 @@ final class PluginSettingsAdapter
             return (int) $value > 0 ? 'present' : 'missing';
         }
         return 'unknown';
+    }
+
+    private function auditPhonePresence($value): string
+    {
+        if (! is_string($value)) {
+            return null === $value ? 'missing' : 'unknown';
+        }
+        if ('' === trim($value)) {
+            return 'missing';
+        }
+        if (strlen($value) > 32 || preg_match('/[^0-9+() .-]/', $value)) {
+            return 'unknown';
+        }
+        $digits = preg_replace('/[^0-9]/', '', $value);
+        return is_string($digits) && strlen($digits) >= 8 && strlen($digits) <= 15
+            ? 'present' : 'unknown';
     }
 
     private function auditTextPresence($value): string
