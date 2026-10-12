@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-audit-final-locale-dryrun-20261012-b1",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "WPLANG": "en_GB"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
