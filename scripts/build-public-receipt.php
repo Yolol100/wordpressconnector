@@ -472,6 +472,37 @@ if (! $ok) {
         }
         $receipt['operations'] = $summaries;
         $receipt['readback_verified'] = null;
+    } elseif ('site.identity.inspect' === $action || 'site.identity.update' === $action) {
+        $keys = array('blogname','blogdescription','timezone_string','WPLANG');
+        $readFields = static function ($value) use ($keys): array {
+            $fields = array();
+            if (! is_array($value)) return $fields;
+            foreach ($keys as $key) {
+                if (array_key_exists($key, $value) && is_string($value[$key])
+                    && strlen($value[$key]) <= 240 && ! preg_match('/[\x00-\x1F\x7F<>]/', $value[$key])) {
+                    $fields[$key] = $value[$key];
+                }
+            }
+            return $fields;
+        };
+        if ('site.identity.inspect' === $action) {
+            $receipt['fields'] = $readFields($data['fields'] ?? array());
+            $fp = isset($data['fingerprint']) ? (string) $data['fingerprint'] : '';
+            if (preg_match('/^[a-f0-9]{64}$/D', $fp)) $receipt['settings_fingerprint'] = $fp;
+            $receipt['readback_verified'] = null;
+        } else {
+            $before = $readFields($data['before'] ?? array());
+            $after = $readFields($data['after'] ?? array());
+            $expected = $readFields($payload['fields'] ?? array());
+            $receipt['fields'] = $after;
+            if ($before) $receipt['before_fingerprint'] = $fingerprint($before);
+            if ($after) $receipt['after_fingerprint'] = $fingerprint($after);
+            $receipt['readback_verified'] = $dryRun ? null
+                : ($expected && count($expected) === count($payload['fields'] ?? array())
+                    && $containsRequested($expected, $after)
+                    && true === ($data['readback_verified'] ?? null));
+            if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+        }
     } elseif ('post.literal_replace' === $action) {
         $receipt['post_id'] = isset($data['post_id']) ? (int) $data['post_id'] : (int) ($payload['id'] ?? 0);
         $receipt['match_count'] = isset($data['match_count']) ? (int) $data['match_count'] : 0;
