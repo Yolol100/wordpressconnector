@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-public-brand-readbatch-20261012-r9",
+  "action": "connector.read_batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 13
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 15
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 16
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 17
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 252
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 253
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "search": "Tape Solutions",
+          "per_page": 50,
+          "page": 1
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "search": "Tape Solutions",
+          "per_page": 50,
+          "page": 1
+        }
+      }
+    ]
+  }
+}
