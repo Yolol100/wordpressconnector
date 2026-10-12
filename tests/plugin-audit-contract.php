@@ -41,6 +41,7 @@ $GLOBALS['audit_options'] = array(
     'wp_mail_smtp' => array('smtp' => array('password' => 'DO-NOT-LEAK-SMTP', 'host' => 'internal.private.local')),
     'wpassetcleanup_settings' => array('secret' => 'DO-NOT-LEAK-CACHE'),
 );
+$GLOBALS['audit_rocket_error'] = false;
 $GLOBALS['audit_writes'] = 0;
 function get_plugins(): array { return $GLOBALS['audit_plugins']; }
 function is_plugin_active($file): bool { return ! in_array($file, $GLOBALS['audit_inactive'], true); }
@@ -49,6 +50,7 @@ function sanitize_key($value): string { return strtolower((string) preg_replace(
 function get_option($name, $default = null) { return $GLOBALS['audit_options'][$name] ?? $default; }
 function update_option($name, $value): bool { ++$GLOBALS['audit_writes']; throw new RuntimeException('Audit may not write options.'); }
 function get_rocket_option($name, $default = null) {
+    if ($GLOBALS['audit_rocket_error']) throw new RuntimeException('SECRET-PROVIDER-EXCEPTION');
     return array('lazyload' => 0, 'remove_unused_css' => 1)[$name] ?? $default;
 }
 function ewww_image_optimizer_get_option($name, $default = null) {
@@ -126,6 +128,27 @@ try {
     if (strpos($error->getMessage(), 'requires manage_options') === false) throw $error;
 }
 $GLOBALS['audit_role'] = true;
+$GLOBALS['audit_rocket_error'] = true;
+$unreliable = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+foreach ($unreliable['plugins'] as $item) {
+    if ($item['id'] === 'wp_rocket' && ($item['checks']['provider_probe'] ?? null) !== 'error') {
+        throw new RuntimeException('Provider exception was not safely isolated.');
+    }
+}
+if (strpos(json_encode($unreliable, JSON_THROW_ON_ERROR), 'SECRET-PROVIDER-EXCEPTION') !== false) {
+    throw new RuntimeException('Provider exception details leaked into the public audit.');
+}
+$GLOBALS['audit_rocket_error'] = false;
+$GLOBALS['audit_plugins']['elementor-pro/elementor-pro.php'] = array('Name'=>'Elementor Pro','Version'=>'3.0');
+$GLOBALS['audit_plugins']['elementor-pro-2/elementor-pro.php'] = array('Name'=>'Elementor Pro Alternative','Version'=>'3.0');
+$duplicate = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+$variantCount = 0;
+foreach ($duplicate['plugins'] as $entry) {
+    if ($entry['id'] === 'elementor_pro') ++$variantCount;
+}
+if ($variantCount !== 2 || $duplicate['installed_count'] !== 13) {
+    throw new RuntimeException('Plugin variants must both be included in the inventory.');
+}
 $GLOBALS['audit_plugins']['ewww-image-optimizer/ewww-image-optimizer.php']['Version'] = '9.0.0';
 $unsupported = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
 foreach ($unsupported['plugins'] as $item) {
