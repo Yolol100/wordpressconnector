@@ -12,6 +12,8 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
+Version 1.18.2 additionally makes provider-owned GTranslate language fields and Yoast organization name/description available under the same trusted GitHub OIDC and manage_options checks. Strict public payloads, preflight fingerprints, sanitized receipts and guarded provider rollback remain mandatory. Arbitrary options, private vendor internals, logo changes and secret fields remain blocked.
+
 Version 1.18.2 introduces an explicit, nonsecret site identity adapter for WordPress title, tagline, IANA timezone and installed English/Dutch locales via trusted GitHub OIDC and WordPress manage_options. All writes require a preflight fingerprint, strict field allowlist, readback and site-local rollback. Generic privileged option access remains blocked in public mode.
 
 Version 1.18.1 adds a narrow public-safe literal-phrase correction for existing published WordPress pages. Changes require an exact preview fingerprint, confirmed match count, edit permission, site-local rollback and sanitized public receipts. Private configuration and other public security restrictions are unchanged.
