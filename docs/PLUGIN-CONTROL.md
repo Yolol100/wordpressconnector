@@ -22,7 +22,7 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 | Asset CleanUp | Stored-settings inspection; separate cache maintenance | `optimizer.settings.inspect` for verified 1.4.0.x stored values only; optimizer writes and older rollback snapshots blocked pending provider API verification. Independently scoped `maintenance.cache_capabilities` and `maintenance.cache_flush` retained. |
 | Auto Image Attributes | Native allowlist | `auto_image_attributes.inspect`, `auto_image_attributes.update`, `media.*` |
 | Broken Link Checker | Version-bound / mixed cloud-local state | Dedicated installed-version contract required before writes; no generic link deletion or cloud account access |
-| Code Snippets | Bounded exact-patch adapter | `code_snippets.patch` can modify one uniquely identified existing PHP snippet through 1-4 exact replacements with fingerprint, readback and rollback; arbitrary creation/execution and full-source public export remain blocked |
+| Code Snippets | Bounded exact patch + fixed catalogue preset | `code_snippets.patch` retains limited exact replacements. `code_snippets.catalog_only.inspect`, `.ensure` and `.undo` manage only the audited WooCommerce no-orders preset; arbitrary caller PHP and full-source public export remain blocked. |
 | Content Sync Manager | Project-specific | Dedicated contract required |
 | Classic Editor | Core editor preference | No settings write until a bounded editor-preference contract is proven |
 | Duplicate Page | No dedicated adapter required | Model with `post.get` + `post.create` |
@@ -54,7 +54,7 @@ The installed Joinchat 6.4.x version has a bounded, non-secret profile for `plug
 
 ## Connector self-updates
 
-`connector.update.check` is read-only. `connector.update.apply` accepts only the optional boolean `restore_verified` field in dry-run. A real update requires `restore_verified=true` (owner attestation of an independently tested restore), `confirm=true`, a fresh fingerprint and the existing system-update capability gate. The verified ZIP is installed through WordPress Core's temporary-backup hooks; failed installations trigger Core recovery, and a version readback mismatch attempts recovery while the temporary backup still exists. Core temporary backups do **not** guarantee restoration after a fatal error detected on a later request. A production update without independent recovery evidence remains blocked.
+`connector.update.check` is read-only. Since 1.17.19, `connector.update.apply` accepts an optional legacy boolean `restore_verified` but does not require an external restore attestation. A real update still requires `confirm=true`, a fresh fingerprint and the existing system-update capability gate. The verified ZIP uses WordPress Core's temporary-backup hooks; install/readback failures trigger recovery where possible. Core temporary backups do **not** guarantee recovery from a fatal error first appearing on a later request. An independently tested external restore remains recommended before significant updates.
 
 ## WP Rocket control
 
