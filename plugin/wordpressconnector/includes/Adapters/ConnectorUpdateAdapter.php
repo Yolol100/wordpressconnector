@@ -71,12 +71,9 @@ final class ConnectorUpdateAdapter
         if (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified'])) {
             throw new RuntimeException('restore_verified must be boolean.');
         }
-        // Core temp backups recover installation faults but cannot guarantee
-        // recovery from a fatal error first exposed by the next page load.
-        if (empty($context['dry_run']) && true !== ($payload['restore_verified'] ?? false)) {
-            throw new RuntimeException('Confirmed Connector self-update requires a tested external site restore and restore_verified=true.');
-        }
-
+        // Legacy callers may still provide restore_verified, but proof of an
+        // externally tested restore is no longer a prerequisite for self-updates.
+        // Core temporary backups only cover installation/readback failures.
         $release = $this->release();
         $current = defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : '0.0.0';
         if (! version_compare($release['version'], $current, '>')) {
@@ -97,7 +94,7 @@ final class ConnectorUpdateAdapter
             'github_asset_digest' => $release['package_digest'],
             'rollback_supported' => false,
             'installation_failure_recovery' => 'wordpress_core_temp_backup',
-            'external_restore_required' => true,
+            'external_restore_required' => false,
             'post_success_restore_guaranteed' => false,
         );
 
@@ -139,9 +136,8 @@ final class ConnectorUpdateAdapter
                 throw new RuntimeException('Connector release package version does not match the release tag.');
             }
 
-            // WordPress Core's temp-backup installer preserves the previous plugin on
-            // installation failure. Self-updates still require a tested external restore
-            // before production use because fatal errors can surface on the next request.
+            // WordPress Core can restore installation/readback failures via its temp
+            // backup. A later fatal error still has no guaranteed automatic recovery.
             $installation = $this->installWithCoreBackup($package);
             wp_clean_plugins_cache(true);
             $plugins = get_plugins();
