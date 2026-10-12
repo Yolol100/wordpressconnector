@@ -255,6 +255,14 @@ jobs:
           WPCONNECTOR_ALLOW_PRIVILEGED=1 \
             wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-abilities-runtime.php" --path="$root"
 
+      - name: Verify REST plugin capability discovery without endpoint calls
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/wordpress"
+          WPCONNECTOR_ALLOW_PRIVILEGED=1 \
+            wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-rest-discovery-runtime.php" --user=admin --path="$root"
+
       - name: Install and test Elementor MCP runtime
         if: matrix.elementor != 'none'
         shell: bash
