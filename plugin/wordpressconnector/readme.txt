@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.17.19
+Stable tag: 1.18.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.0 introduces private read-only discovery of WordPress REST namespaces, route patterns and advertised HTTP methods with bounded pagination and sensitive-route suppression. It also audits registration coverage for declared plugin integration actions and corrects existing Code Snippets and updater documentation. Discovery never grants automatic arbitrary plugin execution. Core connector safeguards, WordPress Abilities/MCP bridge and previous WooCommerce catalogue guards are unchanged.
 
 Version 1.17.19 makes external restore attestation optional for the existing guarded Connector self-updater, at the site owner's request. The existing WordPress Core temporary backup remains required for install/readback failures, with GitHub release identity, checksum verification, plugin permissions, dry-run fingerprint, and confirmation unchanged. There is no guaranteed restore if a fatal error first appears after a successful update. Optional legacy restore_verified values remain accepted but do not gate updates.
 
