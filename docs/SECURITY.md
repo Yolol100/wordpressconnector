@@ -60,6 +60,7 @@ The native MCP route reuses the existing REST authorization callback. It does no
 - Ability dry-run is metadata-only and never calls the provider execute callback. Confirmed execution still passes through Connector confirmation/idempotency, then WordPress Ability input validation, permission checks and provider-specific guards. Delegated Ability mutations are forbidden inside `connector.batch` because no Connector rollback/compensation contract exists for them.
 - Delegated Elementor Ability mutations do not receive a fabricated rollback or stale-state guarantee. Their response reports `rollback_supported=false`. A completed mutation with over-budget output becomes a bounded terminal success; a provider exception or `WP_Error` becomes a bounded terminal failure stored before replay, so the same request ID cannot blindly execute again.
 - MCP adds no arbitrary shell, SQL, PHP eval, unrestricted filesystem write or generic HTTP proxy.
+- `connector.rest_catalog` is a private authenticated administrator-only discovery action. It only returns bounded sanitized route patterns and HTTP methods, not endpoint arguments, credentials or callbacks, and never dispatches REST endpoint/permission callbacks. WordPress Core route filters may run while the registry is inspected. GET method presence does not prove an endpoint is safe to invoke.
 - Hosted account/site registries, OAuth brokerage, billing/quotas and background-job orchestration are outside this plugin's trust boundary.
 
 ## Public presence endpoint
