@@ -277,7 +277,8 @@ if (! $ok) {
             'all_in_one_wp_migration','asset_cleanup','auto_image_attributes',
             'broken_link_checker','code_snippets','content_sync_manager',
             'classic_editor','duplicate_page','elementor','elementor_pro',
-            'gtranslate','imagify','joinchat','litespeed_cache','loco_translate',
+            'gtranslate','hostinger_ai','hostinger_easy_onboarding','hostinger_reach',
+            'hostinger_tools','imagify','joinchat','litespeed_cache','loco_translate',
             'redirection','under_construction','really_simple_security','site_kit',
             'wordfence','wordpress_connector','wp_file_manager','wp_mail_smtp',
             'wp_rocket','yoast','yoast_premium',
@@ -286,7 +287,7 @@ if (! $ok) {
             'guest_checkout','stock_management','cart_page','checkout_page',
             'english_source','nl_en_languages','organization_name',
             'organization_description','organization_logo','button_tip_saved',
-            'message_saved','image_lazyload','remove_unused_css','missing_dimensions',
+            'message_saved','whatsapp_number','image_lazyload','remove_unused_css','missing_dimensions',
             'settings_record','effective_settings','delivery','provider_probe',
         );
         $checkValues = array('enabled','disabled','unknown','matches','mismatch',
