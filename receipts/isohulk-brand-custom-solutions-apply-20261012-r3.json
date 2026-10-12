@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-brand-custom-solutions-apply-20261012-r3",
+    "action": "post.literal_replace",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-12T20:48:36+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 15,
+    "match_count": 1,
+    "before_fingerprint": "12b5a5d5d69834c7aa6071ef0ddac483db30b9e17085ab5e4fabc830700fcbea",
+    "before_content_sha256": "2fe4700e6fbdc68d8d4f159252276a8c904d98165d58a5962bfff7230ab32c28",
+    "after_content_sha256": "79e0d66acb0ee288f6535d6b31b0d5905f00bb57d22874f505625c791836732d",
+    "readback_verified": true,
+    "rollback_available": true
+}
