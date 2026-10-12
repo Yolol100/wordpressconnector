@@ -117,6 +117,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `post.literal_replace` | mutation | Replace one bounded literal phrase on an existing published page; dry-run fingerprint, verified readback and site-local rollback. |
 | `site.identity.inspect` | privileged, public-safe | Read four nonsecret WordPress identity fields, requiring manage_options. |
 | `site.identity.update` | mutation, privileged, public-safe | Update approved site identity fields with dry-run fingerprint, readback, rollback and locale-pack checks. |
+| `gtranslate.settings.inspect` / `gtranslate.settings.update` | privileged, public-safe | Inspect or update only provider-supported Dutch/English language choices with manage_options, fingerprints, redacted receipts and rollback. |
+| `yoast.site_representation.inspect` / `yoast.site_representation.update` | privileged, public-safe | Inspect Yoast organization and patch only company_name/org_description via the guarded public runtime. Logos and arbitrary options remain blocked. |
 | `rewrite.flush` | mutation, privileged | Flush rewrite rules. |
 | `role.create` | mutation, privileged | Create a WordPress role. |
 | `role.delete` | mutation, privileged | Delete a WordPress role. |
