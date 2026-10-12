@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-exact-brand-phrase-20261012-r3",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "page",
+    "status": "publish",
+    "search": "\"Tape Solutions\"",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  }
+}
