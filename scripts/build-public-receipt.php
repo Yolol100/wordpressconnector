@@ -423,6 +423,55 @@ if (! $ok) {
         }
         $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? null));
         if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
+    } elseif ('connector.read_batch' === $action) {
+        // Public batch transport already permits only known non-sensitive read
+        // actions. Mirror the existing stand-alone public receipt projections,
+        // never the raw nested result (which can contain WordPress post content).
+        $requested = isset($payload['operations']) && is_array($payload['operations']) ? array_values($payload['operations']) : array();
+        $returned = isset($data['operations']) && is_array($data['operations']) ? array_values($data['operations']) : array();
+        if (! $requested || count($requested) > 25 || count($requested) !== count($returned)) {
+            throw new RuntimeException('Public read batch result count mismatch.');
+        }
+        $safeActions = array(
+            'post.list', 'post.get', 'acf.field_groups', 'elementor.inspect',
+            'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect',
+        );
+        $summaries = array();
+        foreach ($requested as $index => $requestOperation) {
+            $name = is_array($requestOperation) ? (string) ($requestOperation['action'] ?? '') : '';
+            $operation = isset($returned[$index]) && is_array($returned[$index]) ? $returned[$index] : array();
+            if (! in_array($name, $safeActions, true) || ($operation['action'] ?? null) !== $name
+                || ! isset($operation['result']) || ! is_array($operation['result'])) {
+                throw new RuntimeException('Public read batch result action mismatch.');
+            }
+            $leaf = $operation['result'];
+            $summary = array('index' => $index, 'action' => $name);
+            if ('post.get' === $name) {
+                $post = isset($leaf['post']) && is_array($leaf['post']) ? $leaf['post'] : array();
+                $summary['post'] = $summarizePost($post, true);
+                $postFingerprint = (string) ($leaf['fingerprint'] ?? '');
+                if (preg_match('/^[a-f0-9]{64}$/D', $postFingerprint)) {
+                    $summary['post_fingerprint'] = $postFingerprint;
+                }
+            } elseif ('post.list' === $name) {
+                $items = isset($leaf['items']) && is_array($leaf['items']) ? array_values($leaf['items']) : array();
+                $summary['items'] = array_map(static function ($post) use ($summarizePost): array {
+                    return $summarizePost(is_array($post) ? $post : array(), false);
+                }, array_slice($items, 0, 25));
+                $summary['items_truncated'] = count($items) > 25;
+                foreach (array('page', 'per_page', 'total', 'pages') as $field) {
+                    if (isset($leaf[$field])) $summary[$field] = max(0, (int) $leaf[$field]);
+                }
+            } else {
+                // Other safe read types return only a digest until a dedicated
+                // bounded public projection is available. Avoid raw settings,
+                // Elementor markup, ACF values, cache metadata, or CSS exports.
+                $summary['result_fingerprint'] = $fingerprint($leaf);
+            }
+            $summaries[] = $summary;
+        }
+        $receipt['operations'] = $summaries;
+        $receipt['readback_verified'] = null;
     } elseif ('post.get' === $action) {
         $post = isset($data['post']) && is_array($data['post']) ? $data['post'] : array();
         $receipt['post'] = $summarizePost($post, true);
