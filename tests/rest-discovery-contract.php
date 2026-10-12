@@ -18,6 +18,7 @@ $server = new ContractRestServer();
 $called = 0;
 $callback = static function () use (&$called): void { ++$called; };
 $server->routes = array(
+    '/fixture-plugin/v1' => array(array('methods' => 'GET')),
     '/fixture-plugin/v1/catalog' => array(array(
         'methods' => array('GET' => true, 'POST' => true),
         'callback' => $callback, 'permission_callback' => $callback,
