@@ -18,6 +18,7 @@ final class CoreAdapter
         $registry->register('post.get', array($this, 'postGet'), array('description' => 'Read one post object.'));
         $registry->register('post.create', array($this, 'postCreate'), array('mutation' => true, 'description' => 'Create a post, page or custom post type object.'));
         $registry->register('post.update', array($this, 'postUpdate'), array('mutation' => true, 'description' => 'Update a post, page or custom post type object.'));
+        $registry->register('post.literal_replace', array($this, 'postLiteralReplace'), array('mutation' => true, 'description' => 'Replace one literal phrase in an existing published page with bounded readback and rollback.'));
         $registry->register('post.trash', array($this, 'postTrash'), array('mutation' => true, 'description' => 'Move a post object to Trash.'));
         $registry->register('post.restore', array($this, 'postRestore'), array('mutation' => true, 'description' => 'Restore a trashed post object.'));
         $registry->register('post.revisions', array($this, 'postRevisions'), array('description' => 'List WordPress revisions for a post.'));
@@ -158,6 +159,73 @@ final class CoreAdapter
 
         $result['after'] = $this->postSnapshot(get_post((int) $updated));
         $result['_rollback'] = array('action' => 'post.update', 'payload' => $this->postRollbackPayload($before));
+        return $result;
+    }
+
+    /**
+     * Surgical public page copy correction. The caller never receives raw page
+     * content, and the original is held only in the site's rollback snapshot.
+     */
+    public function postLiteralReplace(array $payload, array $context): array
+    {
+        if (array_diff(array_keys($payload), array('id', 'find', 'replace', 'expected_matches'))) {
+            throw new RuntimeException('Literal replacement contains unsupported fields.');
+        }
+        $post = $this->requirePost($payload);
+        if ('page' !== (string) $post->post_type) {
+            throw new RuntimeException('Literal replacement is limited to existing pages.');
+        }
+        Policy::assertPublicContentTarget($post, true);
+        $find = isset($payload['find']) && is_string($payload['find']) ? $payload['find'] : '';
+        $replace = isset($payload['replace']) && is_string($payload['replace']) ? $payload['replace'] : '';
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $find)
+            || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $replace)
+            || hash_equals($find, $replace)) {
+            throw new RuntimeException('Literal replacement requires distinct, safe plain-text phrases.');
+        }
+        $expected = $payload['expected_matches'] ?? null;
+        if (null !== $expected && (! is_int($expected) || $expected < 1 || $expected > 25)) {
+            throw new RuntimeException('expected_matches must be an integer between 1 and 25.');
+        }
+        if (empty($context['dry_run']) && null === $expected) {
+            throw new RuntimeException('Confirmed literal replacement requires an exact expected_matches value.');
+        }
+        $original = (string) $post->post_content;
+        if (strlen($original) > 1048576) {
+            throw new RuntimeException('Page content exceeds the bounded replacement limit.');
+        }
+        $count = substr_count($original, $find);
+        if ($count < 1 || $count > 25 || (null !== $expected && $count !== $expected)) {
+            throw new RuntimeException('Literal match count is missing, changed or outside the safe range.');
+        }
+        $state = array('id' => (int) $post->ID, 'status' => (string) $post->post_status, 'content' => $original);
+        $beforeFingerprint = Fingerprint::make($state);
+        $next = str_replace($find, $replace, $original);
+        $result = array(
+            'post_id' => (int) $post->ID,
+            'match_count' => $count,
+            'before_content_sha256' => hash('sha256', $original),
+            'after_content_sha256' => hash('sha256', $next),
+            '_current_fingerprint' => $beforeFingerprint,
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+        $guard = isset($context['expected_prewrite_fingerprint']) ? (string) $context['expected_prewrite_fingerprint'] : '';
+        if ('' === $guard || ! hash_equals($guard, $beforeFingerprint)) {
+            throw new RuntimeException('Literal replacement must match the confirmed dry-run fingerprint.');
+        }
+        $updated = wp_update_post(wp_slash(array('ID' => (int) $post->ID, 'post_content' => $next)), true);
+        if (is_wp_error($updated)) {
+            throw new RuntimeException($updated->get_error_message());
+        }
+        $actual = get_post((int) $post->ID);
+        if (! $actual instanceof \WP_Post || (string) $actual->post_content !== $next) {
+            wp_update_post(wp_slash(array('ID' => (int) $post->ID, 'post_content' => $original)), true);
+            throw new RuntimeException('Literal replacement readback failed; prior content restore attempted.');
+        }
+        $result['readback_verified'] = true;
+        $result['_rollback'] = array('action' => 'post.update', 'payload' => array('id' => (int) $post->ID, 'content' => $original));
         return $result;
     }
 
