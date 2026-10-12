@@ -20,12 +20,12 @@ final class GTranslateSettingsAdapter
 
     public function register(Registry $registry): void
     {
-        $read = array('privileged' => true, 'capability' => 'manage_options');
+        $read = array('privileged' => true, 'public_repository_safe' => true, 'capability' => 'manage_options');
         $registry->register('gtranslate.settings.inspect', array($this, 'inspect'), $read);
         $registry->register('gtranslate.settings.update', array($this, 'update'),
             array_merge($read, array('mutation' => true)));
         $registry->register('gtranslate.settings.restore', array($this, 'restore'),
-            array_merge($read, array('mutation' => true)));
+            array('privileged' => true, 'capability' => 'manage_options', 'mutation' => true));
     }
 
     public function inspect(array $payload = array(), array $context = array()): array
@@ -94,6 +94,7 @@ final class GTranslateSettingsAdapter
     public function restore(array $payload, array $context): array
     {
         if (empty($context['rollback_mode'])) throw new RuntimeException('GTranslate restoration is rollback-only.');
+        if (! current_user_can('manage_options')) throw new RuntimeException('GTranslate restoration requires manage_options.');
         $this->assertKeys($payload, array('previous_fields', 'expected_after_fingerprint'));
         $raw = $this->settings();
         $this->expectedFingerprint($payload['expected_after_fingerprint'] ?? null, Fingerprint::make($raw));
@@ -117,7 +118,7 @@ final class GTranslateSettingsAdapter
                 $before[$key] = $entry['value'];
             }
         }
-        if (! empty($context['dry_run'])) return array('would_restore' => array_keys($entries));
+        if (! empty($context['dry_run'])) return array('would_restore' => array_keys($entries), '_current_fingerprint' => Fingerprint::make($raw));
         update_option('GTranslate', $before);
         if ($this->settings() !== $before) {
             throw new RuntimeException('GTranslate rollback readback does not match.');
