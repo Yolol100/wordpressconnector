@@ -262,7 +262,8 @@ if (! $ok) {
 
     if ('plugin.audit.inspect' === $action) {
         $expectedKeys = array('installed_count', 'active_count', 'inactive_count',
-            'unmodeled_count', 'provider_checks_count', 'plugins',
+            'unmodeled_count', 'provider_checks_count', 'must_use_count',
+            'dropin_count', 'plugins',
             'image_lazyload_overlap', 'checkout_qa', 'smtp_delivery_qa',
             'translation_browser_qa', 'private_settings_exported');
         if (array_diff(array_keys($data), $expectedKeys)
@@ -277,7 +278,8 @@ if (! $ok) {
             'all_in_one_wp_migration','asset_cleanup','auto_image_attributes',
             'broken_link_checker','code_snippets','content_sync_manager',
             'classic_editor','duplicate_page','elementor','elementor_pro',
-            'gtranslate','imagify','joinchat','litespeed_cache','loco_translate',
+            'gtranslate','hostinger_ai','hostinger_easy_onboarding','hostinger_reach',
+            'hostinger_tools','imagify','joinchat','litespeed_cache','loco_translate',
             'redirection','under_construction','really_simple_security','site_kit',
             'wordfence','wordpress_connector','wp_file_manager','wp_mail_smtp',
             'wp_rocket','yoast','yoast_premium',
@@ -286,7 +288,7 @@ if (! $ok) {
             'guest_checkout','stock_management','cart_page','checkout_page',
             'english_source','nl_en_languages','organization_name',
             'organization_description','organization_logo','button_tip_saved',
-            'message_saved','image_lazyload','remove_unused_css','missing_dimensions',
+            'message_saved','whatsapp_number','image_lazyload','remove_unused_css','missing_dimensions',
             'settings_record','effective_settings','delivery','provider_probe',
         );
         $checkValues = array('enabled','disabled','unknown','matches','mismatch',
@@ -349,6 +351,13 @@ if (! $ok) {
             if (($data[$qa] ?? null) !== 'not_run') {
                 throw new RuntimeException('Public audit cannot claim browser, email or checkout acceptance.');
             }
+        }
+        foreach (array('must_use_count', 'dropin_count') as $name) {
+            $value = $data[$name] ?? null;
+            if (null !== $value && (! is_int($value) || $value < 0 || $value > 150)) {
+                throw new RuntimeException('Invalid public WordPress special-plugin count.');
+            }
+            $receipt[$name] = $value;
         }
         $receipt['plugins'] = $publicPlugins;
         $receipt['image_lazyload_overlap'] = $overlap;

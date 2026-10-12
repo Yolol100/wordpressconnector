@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.4
+Stable tag: 1.18.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.5 recognizes the four actual Hostinger plugins (AI, Easy Onboarding, Reach and Tools) as distinct inventory entries with explicit provider-account and security boundaries. It also reports only a presence/absence/unknown state for the saved Joinchat WhatsApp phone number, never the number itself. Provider settings and account connections remain inaccessible through the public GitHub audit. WordPress must-use plugins and drop-ins are counted separately via Core APIs; their names and file paths are never exported, and an unavailable inventory is reported as unknown. No automatic plugin activation, migration, mail sending, checkout changes or provider writes are introduced.
 
 Version 1.18.4 adds a strictly read-only, administrator-gated audit of every installed plugin through the existing integration catalog. Known providers expose only narrowly allowlisted configuration indicators; unmodeled providers remain explicitly inventory-only. Public GitHub requests have an empty payload, require dry-run, and receive fully enumerated secret-free receipts. No arbitrary plugin options, payment secrets, SMTP credentials, login/security configuration, automatic writes or unsupported vendor APIs are exposed. Existing 1.18.3 update lifecycle protection is preserved.
 

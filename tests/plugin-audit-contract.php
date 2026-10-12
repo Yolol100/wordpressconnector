@@ -25,6 +25,10 @@ $GLOBALS['audit_plugins'] = array(
     'wp-asset-clean-up/wpacu.php' => array('Name' => 'Asset CleanUp', 'Version' => '1.4.0.6'),
     'wp-mail-smtp/wp_mail_smtp.php' => array('Name' => 'WP Mail SMTP', 'Version' => '4.0.0'),
     'all-in-one-wp-security-and-firewall/wp-security.php' => array('Name' => 'AIOS', 'Version' => '5.4'),
+    'hostinger-ai-assistant/hostinger-ai-assistant.php' => array('Name' => 'Hostinger AI', 'Version' => '3.1.3'),
+    'hostinger-easy-onboarding/hostinger-easy-onboarding.php' => array('Name' => 'Hostinger Easy Onboarding', 'Version' => '3.0.4'),
+    'hostinger-reach/hostinger-reach.php' => array('Name' => 'Hostinger Reach', 'Version' => '1.8.6'),
+    'hostinger/hostinger.php' => array('Name' => 'Hostinger Tools', 'Version' => '3.0.79'),
     'some-unknown-plugin/private.php' => array('Name' => 'Special Secret Plugin', 'Version' => 'SECRET-NO-LEAK'),
     'duplicate-page/duplicatepage.php' => array('Name' => 'Duplicate Page', 'Version' => '1.0'),
 );
@@ -42,8 +46,21 @@ $GLOBALS['audit_options'] = array(
     'wpassetcleanup_settings' => array('secret' => 'DO-NOT-LEAK-CACHE'),
 );
 $GLOBALS['audit_rocket_error'] = false;
+$GLOBALS['audit_special_plugin_error'] = false;
 $GLOBALS['audit_writes'] = 0;
 function get_plugins(): array { return $GLOBALS['audit_plugins']; }
+function get_mu_plugins(): array {
+    return array(
+        'hostinger-preview-domain.php' => array('Name'=>'Hostinger Preview Domain'),
+        'hostinger-auto-updates.php' => array('Name'=>'Hostinger Auto Updates'),
+    );
+}
+function get_dropins(): array {
+    if ($GLOBALS['audit_special_plugin_error']) {
+        throw new RuntimeException('PRIVATE-DROPIN-PATH-DO-NOT-LEAK');
+    }
+    return array('object-cache.php' => array('Name'=>'Hostinger object cache'));
+}
 function is_plugin_active($file): bool { return ! in_array($file, $GLOBALS['audit_inactive'], true); }
 function current_user_can($capability): bool { return $GLOBALS['audit_role'] === true && $capability === 'manage_options'; }
 function sanitize_key($value): string { return strtolower((string) preg_replace('/[^a-z0-9_-]/i', '', $value)); }
@@ -80,8 +97,9 @@ $indexed = array();
 foreach ($report['plugins'] as $item) {
     $indexed[$item['id']] = $item;
 }
-if ($report['installed_count'] !== 11 || $report['active_count'] !== 10
+if ($report['installed_count'] !== 15 || $report['active_count'] !== 14
     || $report['inactive_count'] !== 1 || $report['unmodeled_count'] !== 1
+    || $report['must_use_count'] !== 2 || $report['dropin_count'] !== 1
     || $report['private_settings_exported'] !== false
     || $report['checkout_qa'] !== 'not_run' || $report['smtp_delivery_qa'] !== 'not_run') {
     throw new RuntimeException('All-plugin inventory totals or safeguards are incorrect.');
@@ -94,6 +112,15 @@ if (($indexed['unmodeled_1']['coverage'] ?? null) !== 'unmodeled'
     || ($indexed['yoast']['checks']['organization_name'] ?? null) !== 'matches'
     || ($indexed['gtranslate']['checks']['nl_en_languages'] ?? null) !== 'matches'
     || ($indexed['joinchat']['checks']['message_saved'] ?? null) !== 'present'
+    || ($indexed['joinchat']['checks']['whatsapp_number'] ?? null) !== 'unknown'
+    || ($indexed['hostinger_ai']['coverage'] ?? null) !== 'restricted'
+    || ($indexed['hostinger_easy_onboarding']['coverage'] ?? null) !== 'inventory_only'
+    || ($indexed['hostinger_reach']['coverage'] ?? null) !== 'restricted'
+    || ($indexed['hostinger_tools']['coverage'] ?? null) !== 'restricted'
+    || ($indexed['hostinger_ai']['checks'] ?? null) !== array()
+    || ($indexed['hostinger_easy_onboarding']['checks'] ?? null) !== array()
+    || ($indexed['hostinger_reach']['checks'] ?? null) !== array()
+    || ($indexed['hostinger_tools']['checks'] ?? null) !== array()
     || ($indexed['wp_mail_smtp']['checks']['delivery'] ?? null) !== 'unverified'
     || ($indexed['ewww_image_optimizer']['checks']['image_lazyload'] ?? null) !== 'enabled'
     || ($indexed['wp_rocket']['checks']['image_lazyload'] ?? null) !== 'disabled'
@@ -120,6 +147,32 @@ foreach (array(
     }
     if (! $blocked) throw new RuntimeException('Unsafe plugin audit request was accepted.');
 }
+$GLOBALS['audit_options']['joinchat']['telephone'] = '';
+$missingPhone = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+foreach ($missingPhone['plugins'] as $item) {
+    if ($item['id'] === 'joinchat' && ($item['checks']['whatsapp_number'] ?? null) !== 'missing') {
+        throw new RuntimeException('Missing Joinchat number was not detected.');
+    }
+}
+$GLOBALS['audit_options']['joinchat']['telephone'] = '+31 6 12345678';
+$validPhone = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+foreach ($validPhone['plugins'] as $item) {
+    if ($item['id'] === 'joinchat' && ($item['checks']['whatsapp_number'] ?? null) !== 'present') {
+        throw new RuntimeException('Valid Joinchat number was not detected.');
+    }
+}
+if (strpos(json_encode($validPhone, JSON_THROW_ON_ERROR), '+31 6 12345678') !== false) {
+    throw new RuntimeException('Private Joinchat phone leaked in audit result.');
+}
+$GLOBALS['audit_options']['joinchat']['telephone'] = 'PRIVATE-PHONE';
+$GLOBALS['audit_special_plugin_error'] = true;
+$specialFailure = $adapter->audit(array(), array('dry_run' => true, 'registry' => $registry));
+if (! array_key_exists('dropin_count', $specialFailure) || $specialFailure['dropin_count'] !== null
+    || ($specialFailure['must_use_count'] ?? null) !== 2
+    || strpos(json_encode($specialFailure, JSON_THROW_ON_ERROR), 'PRIVATE-DROPIN-PATH') !== false) {
+    throw new RuntimeException('Unreachable special-plugin inventory did not fail safely.');
+}
+$GLOBALS['audit_special_plugin_error'] = false;
 $GLOBALS['audit_role'] = false;
 try {
     $adapter->audit(array(), array('dry_run' => true));
@@ -146,7 +199,7 @@ $variantCount = 0;
 foreach ($duplicate['plugins'] as $entry) {
     if ($entry['id'] === 'elementor_pro') ++$variantCount;
 }
-if ($variantCount !== 2 || $duplicate['installed_count'] !== 13) {
+if ($variantCount !== 2 || $duplicate['installed_count'] !== 17) {
     throw new RuntimeException('Plugin variants must both be included in the inventory.');
 }
 $GLOBALS['audit_plugins']['ewww-image-optimizer/ewww-image-optimizer.php']['Version'] = '9.0.0';
