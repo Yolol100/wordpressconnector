@@ -352,11 +352,11 @@ if ('connector.update.check' === $action && $payload !== array()) {
     $errors[] = 'connector.update.check requires an empty payload in public GitHub runtime mode.';
 }
 if ('connector.update.apply' === $action) {
-    $dryRun = ! array_key_exists('dry_run', $data) || true === $data['dry_run'];
+    // Backward-compatible optional boolean; independently tested external
+    // restore is not a prerequisite. Confirm/fingerprint checks remain below.
     if (array_diff(array_keys($payload), array('restore_verified'))
-        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))
-        || (! $dryRun && true !== ($payload['restore_verified'] ?? false))) {
-        $errors[] = 'Confirmed connector.update.apply requires verified external restore and only supported fields.';
+        || (isset($payload['restore_verified']) && ! is_bool($payload['restore_verified']))) {
+        $errors[] = 'connector.update.apply accepts only the optional restore_verified boolean.';
     }
 }
 
