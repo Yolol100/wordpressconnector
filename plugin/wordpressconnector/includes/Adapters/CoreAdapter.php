@@ -204,6 +204,7 @@ final class CoreAdapter
         $result = array(
             'post_id' => (int) $post->ID,
             'match_count' => $count,
+            'before_fingerprint' => $beforeFingerprint,
             'before_content_sha256' => hash('sha256', $original),
             'after_content_sha256' => hash('sha256', $next),
             '_current_fingerprint' => $beforeFingerprint,
