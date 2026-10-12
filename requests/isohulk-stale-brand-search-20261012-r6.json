@@ -1,15 +1,12 @@
 {
   "version": 1,
   "site_url": "https://isohulk.conceptwebactueel-6.nl",
-  "request_id": "isohulk-stale-brand-search-20261012-r6",
+  "request_id": "isohulk-stale-brand-search-pages-20261012-r6b",
   "action": "post.list",
   "dry_run": true,
   "confirm": false,
   "payload": {
-    "post_type": [
-      "page",
-      "product"
-    ],
+    "post_type": "page",
     "status": "publish",
     "search": "Tape Solutions",
     "per_page": 100,
