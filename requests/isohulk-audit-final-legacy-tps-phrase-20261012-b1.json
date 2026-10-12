@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-audit-final-legacy-tps-phrase-20261012-b1",
+  "action": "post.list",
+  "payload": {
+    "post_type": "page",
+    "status": "publish",
+    "search": "\"TPS Pack\"",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  },
+  "dry_run": true,
+  "confirm": false
+}
