@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-connector-version-20261013-p3",
+  "action": "connector.update.check",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
