@@ -152,4 +152,79 @@ foreach (array('LIST EXCERPT MUST NOT LEAK', 'LIST CONTENT MUST NOT LEAK') as $n
     }
 }
 
+
+$batch = $get;
+$batch['request_id'] = 'public-post-read-batch-001';
+$batch['action'] = 'connector.read_batch';
+$batch['payload'] = array('operations' => array(
+    array('action' => 'post.get', 'payload' => array('id' => 4470)),
+    array('action' => 'post.list', 'payload' => $list['payload']),
+));
+$batchRequest = $write('batch-receipt-request.json', $batch);
+list($status) = $run($validator, array($batchRequest));
+if (0 !== $status) {
+    fwrite(STDERR, "Existing safe public read_batch request was rejected.\n");
+    exit(1);
+}
+$batchResult = array(
+    'version' => 1,
+    'ok' => true,
+    'request_id' => $batch['request_id'],
+    'action' => 'connector.read_batch',
+    'dry_run' => true,
+    'data' => array('operations' => array(
+        array('action' => 'post.get', 'result' => $getResult['data']),
+        array('action' => 'post.list', 'result' => $listResult['data']),
+    )),
+);
+$batchResultPath = $write('batch-receipt-result.json', $batchResult);
+$batchReceiptPath = $tmp . '/batch-receipt.json';
+list($status) = $run($receiptBuilder, array($batchRequest, $batchResultPath, $batchReceiptPath));
+$batchRaw = is_file($batchReceiptPath) ? (string) file_get_contents($batchReceiptPath) : '';
+$batchReceipt = $batchRaw !== '' ? json_decode($batchRaw, true, 512, JSON_THROW_ON_ERROR) : array();
+$batchOperations = $batchReceipt['operations'] ?? array();
+if (0 !== $status || count($batchOperations) !== 2
+    || ($batchOperations[0]['action'] ?? '') !== 'post.get'
+    || ($batchOperations[0]['post']['id'] ?? 0) !== 4470
+    || ($batchOperations[0]['post_fingerprint'] ?? '') !== $fingerprint
+    || ($batchOperations[1]['action'] ?? '') !== 'post.list'
+    || ($batchOperations[1]['items'][0]['id'] ?? 0) !== 4470
+    || ($batchOperations[1]['total'] ?? 0) !== 1) {
+    fwrite(STDERR, "Public read_batch receipt lacks safe, ordered post projections.\n");
+    exit(1);
+}
+foreach (array(
+    'FULL CONTENT MUST NOT LEAK',
+    'LIST CONTENT MUST NOT LEAK',
+    'LIST EXCERPT MUST NOT LEAK',
+    'password_protected',
+) as $needle) {
+    if (str_contains($batchRaw, $needle)) {
+        fwrite(STDERR, "Public read_batch receipt disclosed unsupported raw post data.\n");
+        exit(1);
+    }
+}
+$badBatch = $batchResult;
+$badBatch['data']['operations'][1]['action'] = 'plugin.list';
+list($status) = $run($receiptBuilder, array($batchRequest, $write('bad-batch-result.json', $badBatch), $tmp . '/bad-batch-receipt.json'));
+if (0 === $status) {
+    fwrite(STDERR, "Public read_batch receipt accepted an unexpected leaf action.\n");
+    exit(1);
+}
+$badBatch = $batchResult;
+array_pop($badBatch['data']['operations']);
+list($status) = $run($receiptBuilder, array($batchRequest, $write('truncated-batch-result.json', $badBatch), $tmp . '/truncated-batch-receipt.json'));
+if (0 === $status) {
+    fwrite(STDERR, "Public read_batch receipt accepted an incomplete leaf result set.\n");
+    exit(1);
+}
+$badBatchRequest = $batch;
+$badBatchRequest['request_id'] = 'public-post-read-batch-unsafe-001';
+$badBatchRequest['payload']['operations'][1]['action'] = 'plugin.list';
+list($status) = $run($validator, array($write('bad-batch-request.json', $badBatchRequest)));
+if (0 === $status) {
+    fwrite(STDERR, "Public read_batch validator accepted a privileged leaf action.\n");
+    exit(1);
+}
+
 echo "public post read contract OK\n";
