@@ -60,6 +60,7 @@ run_php tests/public-broad-actions-contract.php
 run_php tests/public-request-server-boundary-contract.php
 run_php tests/public-post-read-contract.php
 run_php tests/public-post-update-target-contract.php
+run_php tests/public-post-literal-replace-contract.php
 run_php tests/public-elementor-runtime-contract.php
 run_php tests/public-elementor-target-boundary-contract.php
 run_php tests/public-acf-schema-contract.php
