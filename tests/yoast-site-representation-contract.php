@@ -99,6 +99,9 @@ $expectFailure(static function () use ($registry, $apply): void {
     $registry->execute('yoast.site_representation.restore', $apply['_rollback']['payload'], array('dry_run' => false));
 }, 'reserved for connector rollback');
 
+$preview = $registry->execute('yoast.site_representation.restore', $apply['_rollback']['payload'], array('rollback_mode' => true, 'dry_run' => true));
+if (! preg_match('/^[a-f0-9]{64}$/D', (string) ($preview['_current_fingerprint'] ?? '')))
+    throw new RuntimeException('Yoast rollback dry-run lacks stale-state protection.');
 $reverted = $registry->execute('yoast.site_representation.restore', $apply['_rollback']['payload'], array('rollback_mode' => true));
 if (! $reverted['restored'] || $GLOBALS['yoast_org_options']['company_logo_id'] !== 0 || $GLOBALS['yoast_org_options']['company_name'] !== 'Example Driving School' || $GLOBALS['yoast_org_options']['unrelated_theme_title'] !== 'Keep this unchanged') {
     throw new RuntimeException('Organization rollback failed to preserve existing option state.');
