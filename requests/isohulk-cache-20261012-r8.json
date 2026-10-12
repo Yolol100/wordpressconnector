@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-cache-20261012-r8",
+  "action": "maintenance.cache_capabilities",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
