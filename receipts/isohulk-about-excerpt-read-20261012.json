@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-about-excerpt-read-20261012",
+    "action": "post.get",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T17:20:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post": {
+        "id": 16,
+        "type": "page",
+        "status": "publish",
+        "title": "About Us",
+        "slug": "about-us",
+        "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/",
+        "excerpt": ""
+    },
+    "post_fingerprint": "b493df6f5907ea86575de2909512a35931972e8dbeb9dae3cff58ad65a2496f8",
+    "readback_verified": null
+}
