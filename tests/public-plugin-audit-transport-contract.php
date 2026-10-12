@@ -77,6 +77,16 @@ foreach (array('password','secret','PRIVATE-NAME','internal.domain') as $needle)
         throw new RuntimeException('Public plugin audit receipt leaked sensitive content.');
     }
 }
+$variants = $result;
+$variants['data']['plugins'][] = $variants['data']['plugins'][0];
+$variants['data']['installed_count'] = 4;
+$variants['data']['active_count'] = 3;
+$variants['data']['provider_checks_count'] = 2;
+list($exit, $log, $variantReceipt) = $runBuilder('repeated-registered-id', $variants);
+if ($exit !== 0 || ($variantReceipt['installed_count'] ?? null) !== 4
+    || count($variantReceipt['plugins'] ?? array()) !== 4) {
+    throw new RuntimeException('Multiple installations sharing a static adapter ID were lost: ' . $log);
+}
 foreach (array(
     'nested_secret' => static function (array &$x): void {
         $x['data']['plugins'][1]['checks']['smtp_password'] = 'DO-NOT-LEAK';
