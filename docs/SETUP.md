@@ -80,7 +80,7 @@ Private/custom plugin ZIPs must not be placed on a public request branch. Reques
 
 ### Bounded site identity on public GitHub
 
-Authenticated owner/trusted-actor OIDC requests may read or update only `blogname`, `blogdescription`, `timezone_string` and `WPLANG` using `site.identity.inspect`/`site.identity.update`. The WordPress actor must still have `manage_options`. Writes require a site-state fingerprint from a prior dry-run; rollback remains site-local. Site identity fields must be plain text, a valid IANA timezone or a supported installed locale. This is not generic option access: `option.get`, `option.update`, Yoast and GTranslate administration remain blocked in public repository mode.
+Authenticated owner/trusted-actor OIDC requests may read or update only `blogname`, `blogdescription`, `timezone_string` and `WPLANG` using `site.identity.inspect`/`site.identity.update`. The WordPress actor must still have `manage_options`. Writes require a site-state fingerprint from a prior dry-run; rollback remains site-local. Site identity fields must be plain text, a valid IANA timezone or a supported installed locale. This is not generic option access: `option.get` and `option.update` remain blocked. A separate provider-owned public-safe allowlist permits only GTranslate language settings and Yoast organization name/description (not logos, private options or secrets), always with WordPress `manage_options`, fingerprints, readback, rollback and sanitized public receipts.
 
 ## 6. Request confirmation and safety
 
