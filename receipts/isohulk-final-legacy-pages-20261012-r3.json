@@ -1,0 +1,33 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-final-legacy-pages-20261012-r3",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-12T20:50:34+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 13,
+            "type": "page",
+            "status": "publish",
+            "title": "Home",
+            "slug": "home",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/"
+        },
+        {
+            "id": 16,
+            "type": "page",
+            "status": "publish",
+            "title": "About Us",
+            "slug": "about-us",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/"
+        }
+    ],
+    "page": 1,
+    "per_page": 100,
+    "total": 2,
+    "pages": 1,
+    "readback_verified": null
+}
