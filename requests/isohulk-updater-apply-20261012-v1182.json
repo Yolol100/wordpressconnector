@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-updater-apply-20261012-v1182",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "ba1237ea5a399cef3e81b15ed79e2d35a33ffd8a85ec04ca34448ac99c1f6ca7",
+  "payload": {}
+}
