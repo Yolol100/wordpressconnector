@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-qa-published-products-20261012-r3",
+  "action": "post.list",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_type": "product",
+    "status": "publish",
+    "per_page": 100,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  }
+}
