@@ -30,6 +30,7 @@ $publicActions = array(
     'post.list',
     'post.get',
     'post.update',
+    'post.literal_replace',
     'acf.update',
     'acf.portfolio_stats_update',
     'portfolio.case_text_update',
@@ -52,6 +53,51 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+if ('post.literal_replace' === $action) {
+    $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
+    $errors = array();
+    if (array_diff(array_keys($payload), array('id','find','replace','expected_matches'))) {
+        $errors[] = 'Literal replacement accepts only id, find, replace and expected_matches.';
+    }
+    if (! isset($payload['id']) || ! is_int($payload['id']) || $payload['id'] <= 0) {
+        $errors[] = 'Literal replacement requires an existing positive page ID.';
+    }
+    $find = isset($payload['find']) && is_string($payload['find']) ? $payload['find'] : '';
+    $replace = isset($payload['replace']) && is_string($payload['replace']) ? $payload['replace'] : '';
+    if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $find)
+        || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $replace)
+        || $find === $replace) {
+        $errors[] = 'Literal replacement requires two distinct plain-text phrases.';
+    }
+    $expected = $payload['expected_matches'] ?? null;
+    if (null !== $expected && (! is_int($expected) || $expected < 1 || $expected > 25)) {
+        $errors[] = 'Literal replacement expected_matches must be 1-25.';
+    }
+    if (isset($data['expected_state_token'])) {
+        $errors[] = 'Public requests cannot use site state tokens.';
+    }
+    $dryRun = true === ($data['dry_run'] ?? true);
+    if ($dryRun) {
+        if (! empty($data['confirm']) || array_key_exists('expected_fingerprint', $data)) {
+            $errors[] = 'Literal replacement dry-run must not confirm or supply a fingerprint.';
+        }
+    } else {
+        if (true !== ($data['confirm'] ?? null) || null === $expected) {
+            $errors[] = 'Literal replacement requires confirmation and exact expected_matches.';
+        }
+        $fp = $data['expected_fingerprint'] ?? null;
+        if (! is_string($fp) || ! preg_match('/^[a-f0-9]{64}$/D', $fp)) {
+            $errors[] = 'Literal replacement requires expected_fingerprint from the preceding dry-run.';
+        }
+    }
+    if ($errors) {
+        foreach ($errors as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: post.literal_replace' . PHP_EOL;
+    return;
 }
 
 if ('connector.read_batch' === $action) {
