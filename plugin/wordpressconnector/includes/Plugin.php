@@ -25,6 +25,7 @@ use Webactueel\WordPressConnector\Adapters\OptimizerSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\PortfolioStatsAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
+use Webactueel\WordPressConnector\Adapters\SiteIdentityAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter;
@@ -81,6 +82,7 @@ final class Plugin
             new FilesystemAdapter(),
             new PluginPackageAdapter(),
             new ConnectorUpdateAdapter(),
+            new SiteIdentityAdapter(),
             new SystemAdapter(),
         );
 
