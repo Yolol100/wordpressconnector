@@ -145,6 +145,42 @@ $headerBad['payload']['changes'][0]['to']='https://haknes.nl/product/example/?se
 list($status) = $run($validator, array($writeJson('header-query-destination.json', $headerBad)));
 if (0 === $status) throw new RuntimeException('Header destination query accepted.');
 
+$headerDiag=$header;
+$headerDiag['action']='elementor.header_links.inspect';
+$headerDiag['request_id']='public-header-diagnostic-0001';
+$headerDiag['payload']=array('post_id'=>4190,'checks'=>array(
+    array('element_id'=>'792429c','from'=>'https://haknes.nl/?post_type=product&p=6550'),
+    array('element_id'=>'54d3984','from'=>'https://haknes.nl/?post_type=product&p=6687'),
+));
+list($status,$msg)=$run($validator,array($writeJson('header-diagnostic-preview.json',$headerDiag)));
+if(0!==$status)throw new RuntimeException('Read-only header diagnostic rejected: '.$msg);
+$invalidDiag=$headerDiag;$invalidDiag['dry_run']=false;$invalidDiag['confirm']=true;
+list($status)=$run($validator,array($writeJson('header-diagnostic-write.json',$invalidDiag)));
+if(0===$status)throw new RuntimeException('Mutating header diagnostic was accepted.');
+$invalidDiag=$headerDiag;$invalidDiag['payload']['checks'][1]['element_id']='792429c';
+list($status)=$run($validator,array($writeJson('header-diagnostic-duplicate.json',$invalidDiag)));
+if(0===$status)throw new RuntimeException('Header diagnostic duplicate widget IDs were accepted.');
+$invalidDiag=$headerDiag;$invalidDiag['payload']['checks'][0]['from']='https://not-haknes.example/foo';
+list($status)=$run($validator,array($writeJson('header-diagnostic-other-site.json',$invalidDiag)));
+if(0===$status)throw new RuntimeException('Header diagnostic accepted off-site URL.');
+$diagResult=array('version'=>1,'ok'=>true,'request_id'=>$headerDiag['request_id'],
+    'action'=>$headerDiag['action'],'dry_run'=>true,'data'=>array(
+        'post_id'=>4190,'eligible'=>false,'reason_code'=>'edit_post_denied',
+        'checks'=>array(array('element_id'=>'792429c','is_icon_list'=>true,'exact_url_matches'=>1,
+            'private_settings'=>'DO_NOT_EXPORT_SECRET')),
+        'full_template'=>'DO_NOT_EXPORT_SECRET',
+        'document_fingerprint'=>str_repeat('f',64)));
+$diagResultPath=$writeJson('header-diag-result.json',$diagResult);
+$diagRequestPath=$writeJson('header-diag-request.json',$headerDiag);
+$diagOut=$tmp.'/header-diagnostic-receipt.json';
+list($status,$msg)=$run($receiptBuilder,array($diagRequestPath,$diagResultPath,$diagOut));
+$receiptRaw=is_file($diagOut)?(string)file_get_contents($diagOut):'';
+$receipt=($receiptRaw!=='')?json_decode($receiptRaw,true,512,JSON_THROW_ON_ERROR):array();
+if(0!==$status || ($receipt['reason_code']??'')!=='edit_post_denied'
+    || ($receipt['checks'][0]['exact_url_matches']??null)!==1
+    || strpos($receiptRaw,'DO_NOT_EXPORT_SECRET')!==false)
+    throw new RuntimeException('Header diagnostics public receipt leaked template content: '.$msg);
+
 $forbidden = array();
 
 $case = $confirmedPatch;

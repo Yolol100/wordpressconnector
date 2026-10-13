@@ -314,6 +314,39 @@ final class Runner
 
     private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array
     {
+        if ('elementor.header_links.inspect' === $action) {
+            if (array_diff(array_keys($payload), array('post_id','checks'))
+                || ! is_int($payload['post_id'] ?? null) || $payload['post_id'] < 1) {
+                throw new RuntimeException('Header diagnostics require only a positive post_id and checks.');
+            }
+            $checks = $payload['checks'] ?? null;
+            if (! is_array($checks) || ! $checks || count($checks) > 4) {
+                throw new RuntimeException('Header diagnostics require 1-4 checks.');
+            }
+            $host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+            $seen = array();
+            foreach ($checks as $check) {
+                if (! is_array($check) || array_diff(array_keys($check), array('element_id','from'))) {
+                    throw new RuntimeException('Invalid header diagnostic check keys.');
+                }
+                $id = $check['element_id'] ?? null;
+                $url = $check['from'] ?? null;
+                if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{5,64}\\z/', $id)
+                    || isset($seen[$id]) || ! is_string($url) || strlen($url) > 500
+                    || ! filter_var($url, FILTER_VALIDATE_URL)
+                    || wp_parse_url($url, PHP_URL_SCHEME) !== 'https'
+                    || strtolower((string) wp_parse_url($url, PHP_URL_HOST)) !== $host) {
+                    throw new RuntimeException('Invalid header diagnostic widget or site URL.');
+                }
+                $seen[$id] = true;
+            }
+            if (! $dryRun) {
+                throw new RuntimeException('Header diagnostics are read-only.');
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if ('elementor.header_links.replace' === $action) {
             if (array_diff(array_keys($payload), array('post_id','changes'))
                 || ! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] < 1) {

@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.8
+Stable tag: 1.18.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -149,6 +149,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.18.9 =
+* Add a read-only, restricted Elementor header link preflight diagnostic with non-sensitive eligibility and exact-match counts.
+* Preserve existing authenticated permission checks and avoid exporting template settings or full document JSON in public GitHub receipts.
+
 
 = 1.18.8 =
 * Add guarded same-site Elementor header Icon List URL replacements with exact stale-state checks and provider readback.

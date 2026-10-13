@@ -22,6 +22,7 @@ final class ElementorAdapter
         $registry->register('elementor.patch_element', array($this, 'patchElement'), array('mutation' => true, 'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.'));
         $registry->register('elementor.regenerate', array($this, 'regenerate'), array('mutation' => true, 'description' => 'Clear Elementor generated CSS/files cache.'));
         $registry->register('elementor.header_links.replace', array($this, 'replaceHeaderLinks'), array('mutation' => true, 'capability' => 'edit_theme_options', 'description' => 'Replace exact same-site Icon List links in one published Elementor header.'));
+        $registry->register('elementor.header_links.inspect', array($this, 'inspectHeaderLinks'), array('description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.'));
     }
 
     public function inspect(array $payload): array
@@ -195,6 +196,68 @@ final class ElementorAdapter
         }
         $this->clearCache();
         return array('cleared' => true, 'rollback_supported' => false);
+    }
+
+    public function inspectHeaderLinks(array $payload): array
+    {
+        $id = isset($payload['post_id']) && is_int($payload['post_id']) ? $payload['post_id'] : 0;
+        $checks = isset($payload['checks']) && is_array($payload['checks']) ? $payload['checks'] : array();
+        if ($id < 1 || ! $checks || count($checks) > 4) {
+            throw new RuntimeException('Header diagnostics require an exact target and 1-4 checks.');
+        }
+        $seen = array();
+        foreach ($checks as $check) {
+            $elementId = is_array($check) ? ($check['element_id'] ?? null) : null;
+            $url = is_array($check) ? ($check['from'] ?? null) : null;
+            if (! is_array($check) || array_diff(array_keys($check), array('element_id','from'))
+                || ! is_string($elementId) || ! preg_match('/^[A-Za-z0-9_-]{5,64}\\z/', $elementId)
+                || isset($seen[$elementId]) || ! is_string($url)
+                || ! $this->sameSiteHeaderUrl($url, false)) {
+                throw new RuntimeException('Header diagnostic widget or URL is not allowed.');
+            }
+            $seen[$elementId] = true;
+        }
+        $post = get_post($id);
+        if (! $post instanceof \WP_Post || 'elementor_library' !== $post->post_type
+            || 'publish' !== $post->post_status || '' !== (string) $post->post_password) {
+            return array('post_id' => $id, 'eligible' => false, 'reason_code' => 'not_published_elementor_library', 'checks' => array());
+        }
+        $canEdit = current_user_can('edit_post', $id);
+        $snapshot = $this->snapshot($id);
+        if ('header' !== $snapshot['template_type']) {
+            return array('post_id' => $id, 'eligible' => false, 'reason_code' => 'not_header_template', 'checks' => array());
+        }
+        $matches = array();
+        foreach ($checks as $check) {
+            $elementId = $check['element_id'];
+            $matchesCount = 0;
+            $isIconList = false;
+            try {
+                $element =& $this->findElement($snapshot['data'], $elementId);
+                $isIconList = ($element['widgetType'] ?? '') === 'icon-list'
+                    && isset($element['settings']['icon_list']) && is_array($element['settings']['icon_list']);
+                if ($isIconList) {
+                    foreach ($element['settings']['icon_list'] as $item) {
+                        if (is_array($item) && ($item['link']['url'] ?? null) === $check['from']) ++$matchesCount;
+                    }
+                }
+                unset($element);
+            } catch (RuntimeException $error) {
+                // Missing Elementor ID is a bounded diagnostic, never a template export.
+            }
+            $matches[] = array('element_id'=>$elementId, 'is_icon_list'=>$isIconList, 'exact_url_matches'=>min(2,$matchesCount));
+        }
+        $eligible = $canEdit;
+        foreach ($matches as $match) {
+            $eligible = $eligible && $match['is_icon_list'] && 1 === $match['exact_url_matches'];
+        }
+        return array(
+            'post_id'=>$id,
+            'eligible'=>$eligible,
+            'reason_code'=>!$canEdit ? 'edit_post_denied' : (!$eligible ? 'widget_or_source_mismatch' : 'ready'),
+            'checks'=>$matches,
+            'document_fingerprint'=>Fingerprint::make($snapshot),
+        );
     }
 
     public function replaceHeaderLinks(array $payload, array $context): array
