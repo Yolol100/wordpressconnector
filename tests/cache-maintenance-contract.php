@@ -39,6 +39,10 @@ foreach (array(
     "X-WPConnector-Cache-Token",
     "hash_equals",
     "readback_verified",
+    "verification_scope",
+    "regenerate_requested",
+    "regenerate_invoked",
+    "generate_css()",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
         fwrite(STDERR, "Cache maintenance adapter contract is missing: {$needle}\n");
@@ -128,6 +132,33 @@ if (0 !== $status) {
     exit(1);
 }
 
+$regenerate = $dry;
+$regenerate['request_id'] = 'cache-regenerate-001';
+$regenerate['payload']['regenerate'] = true;
+list($status, $output) = $run($validator, array($write('regenerate.json', $regenerate)));
+if (0 !== $status) {
+    fwrite(STDERR, "Elementor regeneration dry-run was rejected: {$output}\n");
+    exit(1);
+}
+
+$badRegeneration = $regenerate;
+$badRegeneration['request_id'] = 'cache-regenerate-002';
+$badRegeneration['payload']['layer'] = 'wp_rocket';
+list($status) = $run($validator, array($write('bad-regenerate-layer.json', $badRegeneration)));
+if (0 === $status) {
+    fwrite(STDERR, "Regeneration unexpectedly allowed on WP Rocket.\n");
+    exit(1);
+}
+
+$badRegeneration = $regenerate;
+$badRegeneration['request_id'] = 'cache-regenerate-003';
+$badRegeneration['payload']['regenerate'] = 'true';
+list($status) = $run($validator, array($write('bad-regenerate-type.json', $badRegeneration)));
+if (0 === $status) {
+    fwrite(STDERR, "Non-boolean regeneration unexpectedly allowed.\n");
+    exit(1);
+}
+
 $bad = $dry;
 $bad['request_id'] = 'cache-flush-003';
 $bad['payload']['layer'] = 'everything';
@@ -186,6 +217,8 @@ $liveResultPath = $write('live-result.json', array(
         'provider' => 'Elementor',
         'version' => '3.30.0',
         'readback_verified' => true,
+        'regenerate_requested' => true,
+        'regenerate_invoked' => true,
         'rollback_supported' => false,
         'rebuild_mode' => 'regenerate_on_next_page_request',
         'private_state' => 'must-not-leak',
@@ -201,6 +234,9 @@ $receipt = json_decode((string) file_get_contents($liveReceiptPath), true, 512, 
 $raw = (string) file_get_contents($liveReceiptPath);
 if (
     true !== ($receipt['readback_verified'] ?? null) ||
+    true !== ($receipt['regenerate_invoked'] ?? null) ||
+    true !== ($receipt['regenerate_requested'] ?? null) ||
+    'provider_completion_only' !== ($receipt['verification_scope'] ?? '') ||
     'elementor' !== ($receipt['layer'] ?? '') ||
     '3.30.0' !== ($receipt['provider_version'] ?? '') ||
     1 !== ($receipt['version'] ?? null) ||
