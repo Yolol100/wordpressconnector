@@ -302,10 +302,20 @@ if ('connector.update.apply' === $action) {
 
 if ('connector.batch' === $action) {
     $operations = isset($data['payload']['operations']) && is_array($data['payload']['operations']) ? $data['payload']['operations'] : array();
+    $confirmedBatch = isset($data['dry_run']) && false === $data['dry_run'];
     foreach ($operations as $index => $operation) {
         $nestedAction = is_array($operation) && isset($operation['action']) ? (string) $operation['action'] : '';
         if (! in_array($nestedAction, array('post.update', 'acf.update'), true)) {
             fwrite(STDERR, 'Public connector.batch operation is not allowed at index ' . $index . ': ' . $nestedAction . "\n");
+            exit(1);
+        }
+        $fingerprint = is_array($operation) ? ($operation['expected_fingerprint'] ?? null) : null;
+        if ($confirmedBatch && null === $fingerprint) {
+            fwrite(STDERR, 'Confirmed public connector.batch requires expected_fingerprint at index ' . $index . ".\n");
+            exit(1);
+        }
+        if (null !== $fingerprint && (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint))) {
+            fwrite(STDERR, 'Invalid public batch expected_fingerprint at index ' . $index . ".\n");
             exit(1);
         }
     }
