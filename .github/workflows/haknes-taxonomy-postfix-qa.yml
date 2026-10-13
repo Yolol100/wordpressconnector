@@ -1,0 +1,51 @@
+name: Haknes temporary SEO live QA
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/haknes-taxonomy-postfix-qa.yml'
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify public taxonomy titles and Elementor CSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request, urllib.error, time
+          from html.parser import HTMLParser
+          class Meta(HTMLParser):
+              def __init__(self): super().__init__(); self.inside_title=False; self.title=''; self.canonical=''; self.og=''
+              def handle_starttag(self,t,a):
+                  d=dict(a)
+                  if t=='title':self.inside_title=True
+                  if t=='link' and d.get('rel','').lower()=='canonical':self.canonical=d.get('href','')
+                  if t=='meta' and d.get('property','').lower()=='og:url':self.og=d.get('content','')
+              def handle_endtag(self,t):
+                  if t=='title':self.inside_title=False
+              def handle_data(self,d):
+                  if self.inside_title:self.title+=d
+          targets=['/product-categorie/rund/','/product-categorie/ons-assortiment/page/2/','/category/blog/','/category/blog/page/3/','/winkel/page/3/','/product/wudy-worst/','/wp-content/uploads/elementor/css/post-4190.css']
+          failed=False
+          for path in targets:
+              req=urllib.request.Request('https://haknes.nl'+path,headers={'User-Agent':'Haknes-SEO-ReadOnly-QA/1.0'})
+              t=time.monotonic()
+              try:
+                  with urllib.request.urlopen(req,timeout=20) as r:
+                      status=r.status;ctype=r.headers.get('Content-Type','');data=r.read(350000)
+              except Exception as e:
+                  print('FETCH_FAIL',path,type(e).__name__,str(e)[:100],flush=True); failed=True;continue
+              time_ms=round((time.monotonic()-t)*1000)
+              title=''; canonical='';og=''
+              if 'text/html' in ctype:
+                  p=Meta();p.feed(data.decode('utf-8','replace'));title=p.title.strip();canonical=p.canonical;og=p.og
+              print('STATUS',path,status,'ms',time_ms,'title',repr(title),'canonical',canonical,'og',og,flush=True)
+              if status!=200:failed=True
+              if path.startswith('/category/blog/') and (not title.startswith('Blog') or 'Tips en recepten van Haknes' not in title):failed=True
+              if path.startswith('/product-categorie/') and ('Bestel nu bij Haknes' not in title or title.startswith('|')):failed=True
+          if failed: raise SystemExit('Postfix read-only QA did not meet all required conditions.')
+          PY
