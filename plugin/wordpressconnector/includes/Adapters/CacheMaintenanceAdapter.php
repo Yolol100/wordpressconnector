@@ -55,9 +55,24 @@ final class CacheMaintenanceAdapter
             throw new RuntimeException('maintenance.cache_flush requires layer: elementor, wp_rocket or asset_cleanup.');
         }
 
+        // Regeneration is an explicit Elementor-only operation. Never interpret
+        // strings or numbers as confirmation for this optional flag.
+        $regenerate = $payload['regenerate'] ?? false;
+        if (! is_bool($regenerate) || ($regenerate && 'elementor' !== $layer)) {
+            throw new RuntimeException('Cache regeneration must be a boolean and is supported only for Elementor.');
+        }
+
         $before = $this->layerState($layer);
         if (empty($before['available'])) {
             throw new RuntimeException('Requested cache layer is not available: ' . $layer . '.');
+        }
+
+        if ($regenerate) {
+            $plugin = class_exists('Elementor\\Plugin') ? \Elementor\Plugin::$instance : null;
+            $filesManager = is_object($plugin) && isset($plugin->files_manager) ? $plugin->files_manager : null;
+            if (! is_object($filesManager) || ! method_exists($filesManager, 'generate_css')) {
+                throw new RuntimeException('Elementor CSS regeneration API is unavailable.');
+            }
         }
 
         $result = array(
@@ -66,7 +81,10 @@ final class CacheMaintenanceAdapter
             'version' => $before['version'],
             'available' => true,
             'rollback_supported' => false,
-            'rebuild_mode' => $this->rebuildMode($layer),
+            'rebuild_mode' => $regenerate ? 'generate_css_after_clear' : $this->rebuildMode($layer),
+            'verification_scope' => 'provider_completion_only',
+            'regenerate_requested' => $regenerate,
+            'regenerate_invoked' => false,
             '_current_fingerprint' => Fingerprint::make($before),
         );
 
@@ -82,6 +100,12 @@ final class CacheMaintenanceAdapter
 
         if ('elementor' === $layer) {
             $result['readback_verified'] = $this->flushElementor();
+            if ($regenerate && true === $result['readback_verified']) {
+                // Elementor's own API regenerates files. Its return value is not
+                // proof that a particular public CSS URL is now reachable.
+                \Elementor\Plugin::$instance->files_manager->generate_css();
+                $result['regenerate_invoked'] = true;
+            }
         } elseif ('wp_rocket' === $layer) {
             $result['readback_verified'] = $this->flushWpRocket();
         } else {
