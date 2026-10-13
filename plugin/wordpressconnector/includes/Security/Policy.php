@@ -45,6 +45,7 @@ final class Policy
         'elementor.inspect',
         'elementor.patch_element',
         'elementor.header_links.replace',
+        'elementor.header_links.inspect',
         'connector.batch',
         'connector.read_batch',
         'connector.rollback',
