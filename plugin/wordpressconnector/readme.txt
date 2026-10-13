@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.6
+Stable tag: 1.18.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.7 blocks confirmed public batch mutations unless every nested operation has a valid expected fingerprint from its dry-run. Both the GitHub validator and WordPress runtime enforce this. Existing dry-run behavior and private-run boundaries are preserved.
+
 
 Version 1.18.6 adds guarded, opt-in Elementor CSS regeneration and accurate provider-completion reporting. GitHub and WordPress authorization, explicit confirmation, fingerprints and site-local privacy boundaries remain unchanged. Regeneration does not itself prove public CSS URLs are reachable; verify affected pages separately.
 
@@ -143,6 +146,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.18.7 =
+* Require exact per-operation SHA-256 fingerprints for confirmed public connector.batch writes, in transport validation and WordPress runtime.
+* Preserve private/direct batch behavior and the existing public dry-run.
+
 
 = 1.18.6 =
 * Add opt-in Elementor generated CSS regeneration after successful cache clear, with provider completion verification.

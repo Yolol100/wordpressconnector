@@ -216,6 +216,14 @@ final class Runner
                     throw new RuntimeException('Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.');
                 }
                 $operationPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
+                // The GitHub guard is not the sole trust boundary: direct
+                // authenticated public requests must enforce this per leaf.
+                if (Policy::publicRepositoryContext() && empty($context['dry_run'])) {
+                    $fingerprint = $operation['expected_fingerprint'] ?? null;
+                    if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint)) {
+                        throw new RuntimeException('Confirmed public batch operation requires expected_fingerprint at index ' . $index . '.');
+                    }
+                }
                 $descriptor = $this->registry->descriptor($action);
                 if (Policy::publicRepositoryContext()) {
                     $descriptor = $this->publicDescriptor($action, $operationPayload, $descriptor, ! empty($context['dry_run']), isset($operation['expected_fingerprint']) && is_string($operation['expected_fingerprint']) ? $operation['expected_fingerprint'] : null);
