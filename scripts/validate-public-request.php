@@ -38,6 +38,8 @@ $publicActions = array(
     'gtranslate.settings.update',
     'yoast.site_representation.inspect',
     'yoast.site_representation.update',
+    'yoast.templates.inspect',
+    'yoast.templates.update',
     'acf.update',
     'acf.portfolio_stats_update',
     'portfolio.case_text_update',
@@ -60,6 +62,52 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+// The public repository may inspect and repair only taxonomy title templates.
+// Never transport other Yoast options or private site configuration.
+if (in_array($action, array('yoast.templates.inspect', 'yoast.templates.update'), true)) {
+    $errors = array();
+    $read = 'yoast.templates.inspect' === $action;
+    $allowedRoot = array('version','site_url','request_id','action','payload','dry_run','confirm');
+    if (! $read) $allowedRoot[] = 'expected_fingerprint';
+    if (array_diff(array_keys($data), $allowedRoot)) $errors[] = 'Public Yoast taxonomy request has forbidden root keys.';
+    $payload = $data['payload'] ?? null;
+    if (! is_array($payload)) $errors[] = 'Public Yoast taxonomy payload must be an object.';
+    if ($read) {
+        if ($payload !== array() || ($data['dry_run'] ?? null) !== true || ($data['confirm'] ?? null) !== false) {
+            $errors[] = 'Yoast taxonomy inspection must be an empty dry-run.';
+        }
+    } else {
+        if (! is_array($payload) || array_diff(array_keys($payload), array('fields'))) $errors[] = 'Public Yoast title request accepts only fields.';
+        $fields = is_array($payload) ? ($payload['fields'] ?? null) : null;
+        if (! is_array($fields) || ! $fields || count($fields) > 2) {
+            $errors[] = 'Public Yoast taxonomy title request requires one or two fields.';
+        } else {
+            foreach ($fields as $key => $value) {
+                if (! in_array((string) $key, array('category_title','product_category_title'), true)
+                    || ! is_string($value) || strlen($value) < 15 || strlen($value) > 150
+                    || false === strpos($value, '%%term_title%%')
+                    || preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
+                    $errors[] = 'Public Yoast taxonomy title value is not allowed.';
+                }
+            }
+        }
+        if (($data['dry_run'] ?? null) === true) {
+            if (($data['confirm'] ?? null) !== false || array_key_exists('expected_fingerprint', $data)) $errors[] = 'Public Yoast title dry-run forbids confirmation and fingerprint.';
+        } elseif (($data['dry_run'] ?? null) === false) {
+            if (($data['confirm'] ?? null) !== true || ! is_string($data['expected_fingerprint'] ?? null)
+                || ! preg_match('/^[a-f0-9]{64}\\z/', $data['expected_fingerprint'])) {
+                $errors[] = 'Public Yoast title write requires confirmed dry-run fingerprint.';
+            }
+        } else $errors[] = 'Public Yoast title request requires explicit dry_run.';
+    }
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: ' . $action . PHP_EOL;
+    return;
 }
 
 // The full private integration catalog is intentionally NOT available in a
