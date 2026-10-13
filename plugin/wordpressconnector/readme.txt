@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.7
+Stable tag: 1.18.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.8 supports safely replacing exact redirected links in published Elementor headers and fixing only blog/product category SEO title templates through confirmed, fingerprint-guarded requests. Neither operation allows arbitrary private template exports or broad SEO setting writes.
+
 
 Version 1.18.7 blocks confirmed public batch mutations unless every nested operation has a valid expected fingerprint from its dry-run. Both the GitHub validator and WordPress runtime enforce this. Existing dry-run behavior and private-run boundaries are preserved.
 
@@ -146,6 +149,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.18.8 =
+* Add guarded same-site Elementor header Icon List URL replacements with exact stale-state checks and provider readback.
+* Add narrowly scoped public Yoast taxonomy-title inspection and updates for category and product category templates.
+* Maintain all OIDC, WordPress permission, preview, confirmation and privacy gates.
+
 
 = 1.18.7 =
 * Require exact per-operation SHA-256 fingerprints for confirmed public connector.batch writes, in transport validation and WordPress runtime.
