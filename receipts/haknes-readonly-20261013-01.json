@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "haknes-readonly-20261013-01",
+    "action": "site.identity.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-13T13:32:13+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "Haknes",
+        "blogdescription": "",
+        "timezone_string": "Europe/Amsterdam",
+        "WPLANG": "nl_NL"
+    },
+    "settings_fingerprint": "e39e4ff7407fc1e0f9de9c47a059fd03f4bccc43242e3d9e11df165d6b484ac1",
+    "readback_verified": null
+}
