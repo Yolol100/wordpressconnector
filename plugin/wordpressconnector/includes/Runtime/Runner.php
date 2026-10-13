@@ -314,6 +314,35 @@ final class Runner
 
     private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array
     {
+        if ('yoast.templates.inspect' === $action || 'yoast.templates.update' === $action) {
+            if ('yoast.templates.inspect' === $action) {
+                if ($payload) {
+                    throw new RuntimeException('Public Yoast templates inspection requires an empty payload.');
+                }
+            } else {
+                if (array_diff(array_keys($payload), array('fields'))) {
+                    throw new RuntimeException('Public Yoast template update accepts only fields.');
+                }
+                $fields = $payload['fields'] ?? null;
+                if (! is_array($fields) || ! $fields || count($fields) > 2) {
+                    throw new RuntimeException('Public Yoast templates require one or two taxonomy titles.');
+                }
+                foreach ($fields as $key => $value) {
+                    if (! in_array((string) $key, array('category_title', 'product_category_title'), true)
+                        || ! is_string($value) || strlen($value) > 150 || strlen($value) < 15
+                        || false === strpos($value, '%%term_title%%')
+                        || preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
+                        throw new RuntimeException('Public Yoast template field or value is not allowed.');
+                    }
+                }
+                if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
+                    throw new RuntimeException('Confirmed public Yoast templates require a dry-run fingerprint.');
+                }
+            }
+            $descriptor['privileged'] = false;
+            $descriptor['public_repository_safe'] = false;
+            return $descriptor;
+        }
         if (in_array($action, array('gtranslate.settings.update', 'yoast.site_representation.update'), true)) {
             if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
                 throw new RuntimeException('Confirmed public provider settings update requires expected_fingerprint from dry-run.');
