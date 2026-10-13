@@ -1,0 +1,57 @@
+name: Haknes temporary removed-header-links live QA
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/haknes-header-links-removed-qa.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify removed legacy URLs from anonymous live HTML
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error, re, html
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit, parse_qs
+          class Links(HTMLParser):
+              def __init__(self):
+                  super().__init__(); self.links=[]; self.tag_attrs=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if tag=='a': self.links.append(a.get('href',''))
+                  if a.get('data-id') in ('792429c','54d3984'): self.tag_attrs.append((tag,a.get('data-id'),a.get('class','')[:70]))
+          paths=['/','/winkel/page/3/','/product/wudy-worst/','/product-categorie/rund/','/category/blog/']
+          total=0; errors=0
+          for path in paths:
+              req=urllib.request.Request('https://haknes.nl'+path,headers={
+                  'User-Agent':'Haknes-ReadOnly-Link-QA/1.0', 'Cache-Control':'no-cache',
+                  'Accept':'text/html'
+              })
+              try:
+                  with urllib.request.urlopen(req,timeout=20) as r:
+                      status=r.status;content_type=r.headers.get('Content-Type','');body=r.read(900000).decode('utf-8','replace')
+              except Exception as e:
+                  print('FETCH_ERROR',path,type(e).__name__,str(e)[:120],flush=True);errors+=1;continue
+              p=Links();p.feed(body)
+              offenders=[]
+              for href in p.links:
+                  h=html.unescape(href)
+                  u=urlsplit(h);args=parse_qs(u.query)
+                  if args.get('p',[''])[0] in ('6550','6687') and args.get('post_type',[''])[0]=='product':
+                      offenders.append(h)
+              raw=sorted(set(re.findall(r'(?:post_type=product[^\\s"\\x27<>]{0,90}|p=(?:6550|6687)[^\\s"\\x27<>]{0,70})',body)))
+              total+=len(offenders)
+              print('RESULT',path,'http='+str(status),'content_type='+content_type.split(';')[0],
+                    'anchors='+str(len(p.links)),'bad_link_count='+str(len(offenders)),
+                    'old_link_examples='+repr(offenders[:4]),
+                    'matching_elementor_ids='+repr(p.tag_attrs[:8]),
+                    'html_legacy_tokens='+repr(raw[:7]),flush=True)
+              if status!=200 or 'text/html' not in content_type:errors+=1
+          print('SUMMARY','bad_links='+str(total),'fetch_or_http_errors='+str(errors),flush=True)
+          if total or errors:raise SystemExit(1)
+          PY
