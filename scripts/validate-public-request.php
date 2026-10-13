@@ -48,6 +48,7 @@ $publicActions = array(
     'elementor.inspect',
     'elementor.patch_element',
     'elementor.header_links.replace',
+    'elementor.header_links.inspect',
     'connector.batch',
     'connector.read_batch',
     'connector.rollback',
@@ -108,6 +109,48 @@ if (in_array($action, array('yoast.templates.inspect', 'yoast.templates.update')
         exit(1);
     }
     echo 'public runtime request OK: ' . $action . PHP_EOL;
+    return;
+}
+
+// Narrow read-only header eligibility check. Never export the template JSON.
+if ('elementor.header_links.inspect' === $action) {
+    $errors = array();
+    if (array_diff(array_keys($data), array('version','site_url','request_id','action','payload','dry_run','confirm'))
+        || ($data['dry_run'] ?? null) !== true || ($data['confirm'] ?? null) !== false) {
+        $errors[] = 'Header diagnostics are restricted to read-only dry-runs.';
+    }
+    $payload = $data['payload'] ?? null;
+    if (! is_array($payload) || array_diff(array_keys($payload), array('post_id','checks'))
+        || ! is_int($payload['post_id'] ?? null) || $payload['post_id'] < 1) {
+        $errors[] = 'Header diagnostic payload requires only positive post_id and checks.';
+    }
+    $checks = is_array($payload) ? ($payload['checks'] ?? null) : null;
+    $siteHost = strtolower((string) parse_url((string) ($data['site_url'] ?? ''), PHP_URL_HOST));
+    if (! is_array($checks) || ! $checks || count($checks) > 4) {
+        $errors[] = 'Header diagnostics require 1-4 checks.';
+    } else {
+        $ids = array();
+        foreach ($checks as $check) {
+            if (! is_array($check) || array_diff(array_keys($check), array('element_id','from'))) {
+                $errors[] = 'Header diagnostic has unsupported keys.';
+                continue;
+            }
+            $id = $check['element_id'] ?? null;
+            $url = $check['from'] ?? null;
+            if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{5,64}\\z/', $id)
+                || isset($ids[$id]) || ! is_string($url) || strlen($url) > 500
+                || ! filter_var($url, FILTER_VALIDATE_URL)
+                || parse_url($url, PHP_URL_SCHEME) !== 'https'
+                || strtolower((string) parse_url($url, PHP_URL_HOST)) !== $siteHost) {
+                $errors[] = 'Header diagnostic widget or URL is invalid.';
+            } else $ids[$id] = true;
+        }
+    }
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: elementor.header_links.inspect' . PHP_EOL;
     return;
 }
 
