@@ -56,3 +56,35 @@ jobs:
                   refs=sorted(set(re.findall(r'post-(?:65|50|4190|7)\\.css[^\\s"\\\']*',data.decode('utf8','replace'))))
                   if refs:print('CSS_REFS',path,refs[:12],flush=True)
           PY
+
+      - name: Inspect internal links and response header patterns
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,time
+          from urllib.parse import urlparse
+          from html.parser import HTMLParser
+          class Links(HTMLParser):
+              def __init__(self): super().__init__(); self.hrefs=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag=='a':
+                      a=dict(attrs); h=a.get('href','')
+                      if h:self.hrefs.append(h)
+          old=['/product/rundertong/','/product/himalaya-zout-fijn/','/product/kalkoendijen/','/hoe-halal-vlees-bewaren/','/product/haknes-runder-steak/','/hoe-halal-vlees-invriezen/','/kan-je-vlees-opnieuw-invriezen/','/hoe-halal-gehakt-invriezen/']
+          paths=['/','/winkel/page/3/','/product/wudy-worst/','/product-categorie/rund/']
+          for path in paths:
+              url='https://haknes.nl'+path
+              t=time.monotonic()
+              try:
+                  req=urllib.request.Request(url,headers={'User-Agent':'Haknes-ReadOnly-QA/1.0'})
+                  with urllib.request.urlopen(req,timeout=15) as r:
+                      header_ms=round(1000*(time.monotonic()-t))
+                      headers={k.lower():v for k,v in r.headers.items()}
+                      data=r.read(700000).decode('utf8','replace')
+              except Exception as e:print('LINK_SCAN_ERROR',path,type(e).__name__,str(e)[:120],flush=True);continue
+              links=Links();links.feed(data)
+              hits=sorted(set(h for h in links.hrefs for o in old if urlparse(h).path.rstrip('/')==o.rstrip('/')))
+              print('HEADERS',path,'ttfb_proxy_ms='+str(header_ms),'cache_control='+headers.get('cache-control',''),'rocket_cache='+headers.get('x-rocket-cache',''),'litespeed='+headers.get('x-litespeed-cache',''),'server='+headers.get('server',''),flush=True)
+              print('LINKS',path,'total='+str(len(links.hrefs)),'old_redirect_urls='+repr(hits),flush=True)
+          PY
