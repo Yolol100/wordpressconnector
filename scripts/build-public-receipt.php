@@ -475,6 +475,7 @@ if (! $ok) {
         $receipt['verification_scope'] = 'provider_completion_only';
         $receipt['regenerate_requested'] = 'elementor' === $layer && true === ($data['regenerate_requested'] ?? false);
         $receipt['regenerate_invoked'] = ! $dryRun && 'elementor' === $layer && true === ($data['regenerate_invoked'] ?? false);
+        $receipt['regeneration_verified'] = $dryRun ? null : ('elementor' === $layer && true === ($data['regeneration_verified'] ?? false));
         if (isset($data['rebuild_mode']) && is_scalar($data['rebuild_mode'])) {
             $receipt['rebuild_mode'] = substr((string) $data['rebuild_mode'], 0, 100);
         }
