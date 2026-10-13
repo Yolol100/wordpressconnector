@@ -255,6 +255,7 @@ final class ElementorAdapter
             'post_id' => $id,
             'changes' => $results,
             'readback_verified' => null,
+            'before_fingerprint' => Fingerprint::make($before),
             '_current_fingerprint' => Fingerprint::make($before),
         );
         if (! empty($context['dry_run'])) {
