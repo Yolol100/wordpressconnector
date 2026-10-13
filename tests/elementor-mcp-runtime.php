@@ -165,4 +165,20 @@ try {
     }
 }
 
-echo 'Elementor MCP controlled runtime OK (Elementor ' . ELEMENTOR_VERSION . ', WordPress ' . get_bloginfo('version') . ").\n";
+// Verify the installed Elementor provider actually finishes the guarded CSS
+// regeneration. Contract-string tests alone cannot prove this runtime hook.
+$cache = new \Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter();
+$preview = $cache->flush(array('layer' => 'elementor', 'regenerate' => true), array('dry_run' => true));
+if (true !== ($preview['would_flush'] ?? null)
+    || true === ($preview['regenerate_invoked'] ?? null)
+    || null !== ($preview['regeneration_verified'] ?? null)) {
+    throw new RuntimeException('Elementor cache regeneration preflight unexpectedly mutated provider state.');
+}
+$regenerated = $cache->flush(array('layer' => 'elementor', 'regenerate' => true), array('dry_run' => false));
+if (true !== ($regenerated['readback_verified'] ?? null)
+    || true !== ($regenerated['regenerate_invoked'] ?? null)
+    || true !== ($regenerated['regeneration_verified'] ?? null)) {
+    throw new RuntimeException('Elementor did not signal completed CSS regeneration.');
+}
+
+echo 'Elementor MCP and CSS regeneration runtime OK (Elementor ' . ELEMENTOR_VERSION . ', WordPress ' . get_bloginfo('version') . ").\n";
