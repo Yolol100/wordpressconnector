@@ -525,7 +525,7 @@ final class Runner
     private function assertPublicCacheFlushPayload(array $payload): string
     {
         foreach (array_keys($payload) as $key) {
-            if ('layer' !== (string) $key) {
+            if (! in_array((string) $key, array('layer', 'regenerate'), true)) {
                 throw new RuntimeException('Public cache flush contains unsupported payload key: ' . (string) $key);
             }
         }
@@ -538,7 +538,12 @@ final class Runner
             throw new RuntimeException('Public cache flush requires layer: elementor, wp_rocket or asset_cleanup.');
         }
 
-        $preview = $this->registry->execute('maintenance.cache_flush', array('layer' => $layer), array(
+        $regenerate = $payload['regenerate'] ?? false;
+        if (! is_bool($regenerate) || ($regenerate && 'elementor' !== $layer)) {
+            throw new RuntimeException('Public cache regeneration must be boolean and Elementor-only.');
+        }
+
+        $preview = $this->registry->execute('maintenance.cache_flush', array('layer' => $layer, 'regenerate' => $regenerate), array(
             'dry_run' => true,
             'confirm' => true,
             'public_validation' => true,
