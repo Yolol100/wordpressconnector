@@ -538,7 +538,7 @@ final class Runner
             throw new RuntimeException('Public cache flush requires layer: elementor, wp_rocket or asset_cleanup.');
         }
 
-        $regenerate = $payload['regenerate'] ?? false;
+        $regenerate = array_key_exists('regenerate', $payload) ? $payload['regenerate'] : false;
         if (! is_bool($regenerate) || ($regenerate && 'elementor' !== $layer)) {
             throw new RuntimeException('Public cache regeneration must be boolean and Elementor-only.');
         }
