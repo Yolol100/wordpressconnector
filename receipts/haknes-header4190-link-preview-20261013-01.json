@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "haknes-header4190-link-preview-20261013-01",
+    "action": "elementor.header_links.replace",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-13T16:20:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
