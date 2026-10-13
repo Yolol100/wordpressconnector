@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "haknes-cache-retry-purge-20261013-01",
+    "action": "maintenance.cache_flush",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-13T16:31:10+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layer": "wp_rocket",
+    "provider": "WP Rocket",
+    "provider_version": "3.23.2.2",
+    "rollback_supported": false,
+    "verification_scope": "provider_completion_only",
+    "regenerate_requested": false,
+    "regenerate_invoked": false,
+    "regeneration_verified": false,
+    "rebuild_mode": "wp_rocket_preload_if_enabled",
+    "readback_verified": true
+}
