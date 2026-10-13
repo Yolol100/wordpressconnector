@@ -55,3 +55,40 @@ jobs:
           print('SUMMARY','bad_links='+str(total),'fetch_or_http_errors='+str(errors),flush=True)
           if total or errors:raise SystemExit(1)
           PY
+
+      - name: Compare cache-bypassed HTML and identify link rendering context
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, html, re
+          from urllib.parse import urlsplit,parse_qs
+          from html.parser import HTMLParser
+          class Links(HTMLParser):
+              def __init__(self): super().__init__();self.matches=[]
+              def handle_starttag(self,tag,attrs):
+                  if tag!='a':return
+                  a=dict(attrs);href=html.unescape(a.get('href',''));p=urlsplit(href);q=parse_qs(p.query)
+                  if q.get('post_type',[''])[0]=='product' and q.get('p',[''])[0] in ('6550','6687'):
+                      self.matches.append((q['p'][0],href,a.get('class','')[:110]))
+          for path in ['/','/winkel/page/3/']:
+              for extra in ['',('?' if '?' not in path else '&')+'haknes_readonly_cachecheck=20261013_1903']:
+                  url='https://haknes.nl'+path+extra
+                  req=urllib.request.Request(url,headers={'User-Agent':'Haknes-ReadOnly-Link-QA/1.0','Cache-Control':'no-cache, no-store','Pragma':'no-cache'})
+                  try:
+                      with urllib.request.urlopen(req,timeout=20) as r:
+                          status=r.status;headers={k.lower():v for k,v in r.headers.items()};data=r.read(950000).decode('utf8','replace')
+                  except Exception as e:
+                      print('BYPASS_ERROR',path,extra,type(e).__name__,str(e)[:120],flush=True);continue
+                  p=Links();p.feed(data)
+                  print('BYPASS',path,'query='+repr(extra),'http='+str(status),'links='+repr(p.matches),'server='+headers.get('server',''),
+                      'x-cache='+headers.get('x-cache',''),'x-hcdn-cache-status='+headers.get('x-hcdn-cache-status',''),
+                      'cache-control='+headers.get('cache-control',''),'age='+headers.get('age',''),flush=True)
+                  for match in p.matches[:2]:
+                      needle='p='+match[0]
+                      i=data.find(needle)
+                      if i>=0:
+                          # Only public HTML around exact legacy href; no headers or credentials
+                          snippet=re.sub(r'\\s+',' ',data[max(0,i-250):i+180])
+                          print('LINK_CONTEXT',match[0],repr(snippet[:430]),flush=True)
+          PY
