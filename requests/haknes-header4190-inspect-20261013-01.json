@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-header4190-inspect-20261013-01",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4190,
+    "element_ids": [
+      "792429c",
+      "54d3984"
+    ]
+  }
+}
