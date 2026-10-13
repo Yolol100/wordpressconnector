@@ -470,6 +470,11 @@ if (! $ok) {
         $receipt['provider'] = substr((string) ($data['provider'] ?? ''), 0, 80);
         $receipt['provider_version'] = substr((string) ($data['version'] ?? ''), 0, 40);
         $receipt['rollback_supported'] = false;
+        // A provider completion signal does not prove that all CSS URLs have
+        // returned HTTP 200. Keep that distinction visible to API clients.
+        $receipt['verification_scope'] = 'provider_completion_only';
+        $receipt['regenerate_requested'] = 'elementor' === $layer && true === ($data['regenerate_requested'] ?? false);
+        $receipt['regenerate_invoked'] = ! $dryRun && 'elementor' === $layer && true === ($data['regenerate_invoked'] ?? false);
         if (isset($data['rebuild_mode']) && is_scalar($data['rebuild_mode'])) {
             $receipt['rebuild_mode'] = substr((string) $data['rebuild_mode'], 0, 100);
         }
