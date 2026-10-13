@@ -85,6 +85,7 @@ final class CacheMaintenanceAdapter
             'verification_scope' => 'provider_completion_only',
             'regenerate_requested' => $regenerate,
             'regenerate_invoked' => false,
+            'regeneration_verified' => null,
             '_current_fingerprint' => Fingerprint::make($before),
         );
 
@@ -103,8 +104,23 @@ final class CacheMaintenanceAdapter
             if ($regenerate && true === $result['readback_verified']) {
                 // Elementor's own API regenerates files. Its return value is not
                 // proof that a particular public CSS URL is now reachable.
-                \Elementor\Plugin::$instance->files_manager->generate_css();
+                // A provider event confirms the generator reached its completion
+                // boundary. It does not prove that frontend CSS URLs return HTTP 200.
+                $regenerated = false;
+                $callback = static function () use (&$regenerated): void {
+                    $regenerated = true;
+                };
+                add_action('elementor/core/files/after_generate_css', $callback, PHP_INT_MAX, 0);
+                try {
+                    \Elementor\Plugin::$instance->files_manager->generate_css();
+                } finally {
+                    remove_action('elementor/core/files/after_generate_css', $callback, PHP_INT_MAX);
+                }
                 $result['regenerate_invoked'] = true;
+                $result['regeneration_verified'] = $regenerated;
+                if (! $regenerated) {
+                    throw new RuntimeException('Elementor CSS regeneration completion was not verified.');
+                }
             }
         } elseif ('wp_rocket' === $layer) {
             $result['readback_verified'] = $this->flushWpRocket();
