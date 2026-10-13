@@ -58,3 +58,47 @@ jobs:
               print('CONNECTOR_PRESENCE_ERROR',type(e).__name__,str(e)[:120],flush=True)
           if failed: raise SystemExit('Postfix read-only QA did not meet all required conditions.')
           PY
+
+      - name: Diagnose blog title cache and taxonomy metadata
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request, urllib.error, json, re
+          from html.parser import HTMLParser
+          class Title(HTMLParser):
+              def __init__(self): super().__init__();self.in_title=False;self.done=False;self.value=''
+              def handle_starttag(self,tag,attrs):
+                  if tag=='title' and not self.done:self.in_title=True;self.done=True
+              def handle_endtag(self,tag):
+                  if tag=='title':self.in_title=False
+              def handle_data(self,data):
+                  if self.in_title:self.value+=data
+          targets=['https://haknes.nl/category/blog/',
+              'https://haknes.nl/category/blog/?haknes_readonly_cachecheck=1',
+              'https://haknes.nl/category/blog/page/3/',
+              'https://haknes.nl/wp-json/wp/v2/categories?slug=blog',
+              'https://haknes.nl/wp-json/yoast/v1/get_head?url=https%3A%2F%2Fhaknes.nl%2Fcategory%2Fblog%2F']
+          for url in targets:
+              req=urllib.request.Request(url,headers={'User-Agent':'Haknes-ReadOnly-QA/1.0','Cache-Control':'no-cache'})
+              try:
+                  with urllib.request.urlopen(req,timeout=15) as r:
+                      code=r.status;headers=dict(r.headers);body=r.read(250000).decode('utf8','replace')
+              except Exception as e:
+                  print('DIAG_ERROR',url,type(e).__name__,str(e)[:130],flush=True);continue
+              h={k.lower():v for k,v in headers.items()}
+              print('DIAG',url,'status='+str(code),'content_type='+h.get('content-type',''),
+                  'age='+h.get('age',''),'cache_control='+h.get('cache-control',''),
+                  'rocket='+h.get('x-rocket-cache',''),'server='+h.get('server',''),flush=True)
+              if 'text/html' in h.get('content-type',''):
+                  p=Title();p.feed(body)
+                  print('DIAG_TITLE',url,repr(p.value.strip()[:145]),flush=True)
+              if 'json' in h.get('content-type',''):
+                  try:
+                      d=json.loads(body)
+                      if isinstance(d,list):
+                          print('DIAG_TAXONOMY',[(x.get('id'),x.get('slug'),x.get('name'),x.get('yoast_head_json',{}).get('title')) for x in d[:3]],flush=True)
+                      elif isinstance(d,dict):
+                          print('DIAG_YOAST_HEAD',d.get('status'),(d.get('json') or {}).get('title'),flush=True)
+                  except Exception as e: print('DIAG_JSON_ERROR',type(e).__name__,str(e)[:100],flush=True)
+          PY
