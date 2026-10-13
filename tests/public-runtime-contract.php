@@ -93,6 +93,39 @@ if (0 !== $status) {
     exit(1);
 }
 
+// A confirmed public batch may not silently skip stale-state checks for
+// any leaf, even when the outer request has confirm=true.
+$confirmedBatch = $batch;
+$confirmedBatch['request_id'] = 'public-test-batch-confirmed-missing';
+$confirmedBatch['dry_run'] = false;
+$confirmedBatch['confirm'] = true;
+list($status) = $run($validator, array($writeJson('batch-confirmed-missing.json', $confirmedBatch)));
+if (0 === $status) {
+    fwrite(STDERR, "Confirmed public batch accepted missing leaf fingerprints.\n");
+    exit(1);
+}
+
+$confirmedBatch['payload']['operations'][0]['expected_fingerprint'] = str_repeat('a', 64);
+list($status) = $run($validator, array($writeJson('batch-confirmed-partial.json', $confirmedBatch)));
+if (0 === $status) {
+    fwrite(STDERR, "Confirmed public batch accepted a partial fingerprint set.\n");
+    exit(1);
+}
+
+$confirmedBatch['payload']['operations'][1]['expected_fingerprint'] = str_repeat('b', 64);
+list($status) = $run($validator, array($writeJson('batch-confirmed-guarded.json', $confirmedBatch)));
+if (0 !== $status) {
+    fwrite(STDERR, "Fully fingerprinted public batch was rejected.\n");
+    exit(1);
+}
+
+$confirmedBatch['payload']['operations'][1]['expected_fingerprint'] = 'not-a-fingerprint';
+list($status) = $run($validator, array($writeJson('batch-confirmed-malformed.json', $confirmedBatch)));
+if (0 === $status) {
+    fwrite(STDERR, "Malformed public batch fingerprint was accepted.\n");
+    exit(1);
+}
+
 $updateCheck = $base;
 $updateCheck['request_id'] = 'public-test-0004';
 $updateCheck['action'] = 'connector.update.check';
