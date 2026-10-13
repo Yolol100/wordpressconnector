@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "haknes-yoast-taxonomy-inspect-20261013-01",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-13T16:20:27+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%title%% %%sep%% Bestel nu",
+        "product_category_title": "%%title%% %%sep%% Bestel nu"
+    },
+    "before_fingerprint": "51e4398fcc04461aeab3aca185e2e6bee33d6bcea69f24feea847ccf2a5bd500",
+    "readback_verified": null
+}
