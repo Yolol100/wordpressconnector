@@ -4,6 +4,8 @@
 
 The GitHub runtime transport may contain reusable validators and workflows on `main`, but production request payloads, generated full WordPress results, client exports, credentials, private runtime state and date-stamped debugging residue must never be merged into the implementation branch.
 
+Target-, client- or project-specific executors, migration helpers and one-time cleanup scripts do not belong on canonical `main`. Keep them on temporary request branches or in the dedicated private/project control-plane repository, and remove them once their bounded purpose is complete.
+
 Runtime request PRs are temporary transport branches only. They must be same-repository and repository-owner/configured-trusted-actor controlled, and they must be closed without merge after result collection.
 
 Private repositories may contain the intended `requests/*.json`, bounded `assets/inbox/*` files and generated full `results/*.json` on the temporary runtime branch.

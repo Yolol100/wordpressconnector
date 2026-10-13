@@ -14,8 +14,6 @@ if (! is_file($validatorSource) || ! is_file($legacySource)) {
 $workflowPaths = array(
     '.github/workflows/wordpress-request.yml',
     '.github/workflows/wordpress-zero-config-execute.yml',
-    '.github/workflows/doctorcura-request.yml',
-    '.github/workflows/doctorcura-execute.yml',
 );
 foreach ($workflowPaths as $relative) {
     $workflow = (string) file_get_contents($root . '/' . $relative);
