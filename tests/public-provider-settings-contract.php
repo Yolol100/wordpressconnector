@@ -31,6 +31,47 @@ foreach(array(
     list($code,$message)=$run($validator,array($store('safe-'.str_replace('.','-',$action),$req)));
     if($code!==0)throw new RuntimeException('Valid public provider request failed: '.$action.' '.$message);
 }
+$titles=$base;
+$titles['action']='yoast.templates.inspect';
+$titles['request_id']='yoast-titles-read-001';
+list($code,$message)=$run($validator,array($store('title-inspect',$titles)));
+if($code!==0)throw new RuntimeException('Scoped Yoast title inspection rejected: '.$message);
+$titles['action']='yoast.templates.update';
+$titles['request_id']='yoast-titles-preview-001';
+$titles['payload']=array('fields'=>array(
+    'category_title'=>'%%term_title%% %%page%% | Bestel nu bij Haknes',
+    'product_category_title'=>'%%term_title%% %%page%% | Bestel nu bij Haknes'));
+list($code,$message)=$run($validator,array($store('title-preview',$titles)));
+if($code!==0)throw new RuntimeException('Scoped Yoast title update dry-run rejected: '.$message);
+$titles['dry_run']=false;$titles['confirm']=true;$titles['request_id']='yoast-titles-write-001';
+list($code)=$run($validator,array($store('title-missing-fingerprint',$titles)));
+if($code===0)throw new RuntimeException('Yoast taxonomy title write without fingerprint accepted.');
+$titles['expected_fingerprint']=str_repeat('a',64);
+list($code,$message)=$run($validator,array($store('title-confirmed',$titles)));
+if($code!==0)throw new RuntimeException('Confirmed Yoast title update rejected: '.$message);
+$titles['payload']['fields']=array('page_title'=>'%%term_title%% %%page%% | Bestel nu bij Haknes');
+list($code)=$run($validator,array($store('title-forbidden-field',$titles)));
+if($code===0)throw new RuntimeException('Unscoped Yoast title update accepted.');
+$titles['payload']['fields']=array('category_title'=>'Blank category title');
+list($code)=$run($validator,array($store('title-no-term-variable',$titles)));
+if($code===0)throw new RuntimeException('Yoast template without term variable accepted.');
+
+$receiptReq=$base;$receiptReq['action']='yoast.templates.inspect';
+$receiptReq['request_id']='yoast-titles-receipt-001';
+$result=array('version'=>1,'ok'=>true,'request_id'=>$receiptReq['request_id'],
+    'action'=>'yoast.templates.inspect','dry_run'=>true,'data'=>array(
+        'fields'=>array('category_title'=>'%%term_title%% | Haknes',
+            'product_category_title'=>'%%term_title%% | Haknes',
+            'unrelated_secret'=>'DO_NOT_EXPORT_SECRET'),
+        'fingerprint'=>str_repeat('b',64)));
+$receiptOut=$tmp.'/taxonomy-receipt.json';
+list($code,$message)=$run($receiptBuilder,array(
+    $store('title-receipt-request',$receiptReq),$store('title-receipt-result',$result),$receiptOut));
+$raw=is_file($receiptOut)?file_get_contents($receiptOut):'';
+if($code!==0 || strpos($raw,'DO_NOT_EXPORT_SECRET')!==false ||
+    strpos($raw,'product_category_title')===false ||
+    strpos($raw,'unrelated_secret')!==false)throw new RuntimeException('Yoast taxonomy receipt leaked unsafe settings: '.$message);
+
 $badCases=array();
 $bad=$base;$bad['action']='gtranslate.settings.update';
 $bad['payload']=array('fields'=>array('custom_domains_data'=>'private'));
