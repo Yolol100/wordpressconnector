@@ -741,6 +741,22 @@ if (! $ok) {
         $receipt['before_fingerprint'] = $fingerprint($before);
         $receipt['after_fingerprint'] = $fingerprint($after);
         $receipt['readback_verified'] = $dryRun ? null : $containsRequested($requested, $after);
+    } elseif ('elementor.header_links.inspect' === $action) {
+        $receipt['post_id'] = (int) ($data['post_id'] ?? 0);
+        $receipt['eligible'] = true === ($data['eligible'] ?? false);
+        $reason = (string) ($data['reason_code'] ?? '');
+        $receipt['reason_code'] = in_array($reason, array('ready','edit_post_denied','widget_or_source_mismatch','not_header_template','not_published_elementor_library'), true) ? $reason : 'unknown';
+        $checks = isset($data['checks']) && is_array($data['checks']) ? $data['checks'] : array();
+        $receipt['checks'] = array_values(array_map(static function (array $check): array {
+            return array(
+                'element_id' => substr((string) ($check['element_id'] ?? ''),0,64),
+                'is_icon_list' => true === ($check['is_icon_list'] ?? false),
+                'exact_url_matches' => min(2,max(0,(int) ($check['exact_url_matches'] ?? 0))),
+            );
+        }, array_slice(array_filter($checks,'is_array'),0,4)));
+        $fp = (string) ($data['document_fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\\z/', $fp)) $receipt['document_fingerprint'] = $fp;
+        $receipt['readback_verified'] = null;
     } elseif ('elementor.header_links.replace' === $action) {
         $receipt['post_id'] = (int) ($data['post_id'] ?? 0);
         $changes = isset($data['changes']) && is_array($data['changes']) ? $data['changes'] : array();
