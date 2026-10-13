@@ -101,6 +101,15 @@ jobs:
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
 
+      - name: Upload PR installer candidate for verification
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wordpressconnector-pr736-installer
+          path: ${{ runner.temp }}/wordpressconnector-a.zip
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
