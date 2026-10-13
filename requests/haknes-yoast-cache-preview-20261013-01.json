@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-yoast-cache-preview-20261013-01",
+  "action": "maintenance.cache_flush",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "layer": "wp_rocket"
+  }
+}
