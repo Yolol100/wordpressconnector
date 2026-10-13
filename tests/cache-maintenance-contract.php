@@ -42,6 +42,8 @@ foreach (array(
     "verification_scope",
     "regenerate_requested",
     "regenerate_invoked",
+    "regeneration_verified",
+    "elementor/core/files/after_generate_css",
     "generate_css()",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
@@ -219,6 +221,7 @@ $liveResultPath = $write('live-result.json', array(
         'readback_verified' => true,
         'regenerate_requested' => true,
         'regenerate_invoked' => true,
+        'regeneration_verified' => true,
         'rollback_supported' => false,
         'rebuild_mode' => 'regenerate_on_next_page_request',
         'private_state' => 'must-not-leak',
@@ -235,6 +238,7 @@ $raw = (string) file_get_contents($liveReceiptPath);
 if (
     true !== ($receipt['readback_verified'] ?? null) ||
     true !== ($receipt['regenerate_invoked'] ?? null) ||
+    true !== ($receipt['regeneration_verified'] ?? null) ||
     true !== ($receipt['regenerate_requested'] ?? null) ||
     'provider_completion_only' !== ($receipt['verification_scope'] ?? '') ||
     'elementor' !== ($receipt['layer'] ?? '') ||
