@@ -44,6 +44,7 @@ final class Policy
         'acf.schema.ensure_text_fields',
         'elementor.inspect',
         'elementor.patch_element',
+        'elementor.header_links.replace',
         'connector.batch',
         'connector.read_batch',
         'connector.rollback',
