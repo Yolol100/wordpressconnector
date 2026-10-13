@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-header-reversed-check-20261013-01",
+  "action": "elementor.header_links.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4190,
+    "checks": [
+      {
+        "element_id": "792429c",
+        "from": "https://haknes.nl/?p=6550&post_type=product"
+      },
+      {
+        "element_id": "54d3984",
+        "from": "https://haknes.nl/?p=6687&post_type=product"
+      }
+    ]
+  }
+}
