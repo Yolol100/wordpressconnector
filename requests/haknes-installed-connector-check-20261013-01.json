@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-installed-connector-check-20261013-01",
+  "action": "maintenance.cache_capabilities",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
