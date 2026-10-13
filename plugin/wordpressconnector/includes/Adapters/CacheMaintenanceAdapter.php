@@ -57,7 +57,7 @@ final class CacheMaintenanceAdapter
 
         // Regeneration is an explicit Elementor-only operation. Never interpret
         // strings or numbers as confirmation for this optional flag.
-        $regenerate = $payload['regenerate'] ?? false;
+        $regenerate = array_key_exists('regenerate', $payload) ? $payload['regenerate'] : false;
         if (! is_bool($regenerate) || ($regenerate && 'elementor' !== $layer)) {
             throw new RuntimeException('Cache regeneration must be a boolean and is supported only for Elementor.');
         }
