@@ -87,4 +87,6 @@ jobs:
               hits=sorted(set(h for h in links.hrefs for o in old if urlparse(h).path.rstrip('/')==o.rstrip('/')))
               print('HEADERS',path,'ttfb_proxy_ms='+str(header_ms),'cache_control='+headers.get('cache-control',''),'rocket_cache='+headers.get('x-rocket-cache',''),'litespeed='+headers.get('x-litespeed-cache',''),'server='+headers.get('server',''),flush=True)
               print('LINKS',path,'total='+str(len(links.hrefs)),'old_redirect_urls='+repr(hits),flush=True)
+              suspect=sorted(set(h for h in links.hrefs if ('haknes.nl' in h or h.startswith('/')) and (h.startswith('http://') or 'www.haknes.nl' in h or '?p=' in h or 'post_type=product' in h)))
+              print('SUSPECT_LINKS',path,'count='+str(len(suspect)),'examples='+repr(suspect[:22]),flush=True)
           PY
