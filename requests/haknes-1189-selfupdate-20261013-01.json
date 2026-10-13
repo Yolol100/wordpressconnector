@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-1189-selfupdate-20261013-01",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "4e82ed5312f9698ec26524b279ef30c59083ab8715d810500562c3ed2374a8a6",
+  "payload": {}
+}
