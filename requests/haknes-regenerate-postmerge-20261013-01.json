@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-regenerate-postmerge-20261013-01",
+  "action": "maintenance.cache_flush",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "layer": "elementor",
+    "regenerate": true
+  }
+}
