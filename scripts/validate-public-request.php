@@ -477,7 +477,7 @@ if ('maintenance.cache_flush' === $action) {
     $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();
 
     foreach (array_keys($payload) as $key) {
-        if ('layer' !== (string) $key) {
+        if (! in_array((string) $key, array('layer', 'regenerate'), true)) {
             $errors[] = 'Cache flush payload has unsupported key: ' . (string) $key;
         }
     }
@@ -485,6 +485,11 @@ if ('maintenance.cache_flush' === $action) {
     $layer = isset($payload['layer']) && is_string($payload['layer']) ? $payload['layer'] : '';
     if (! in_array($layer, array('elementor','wp_rocket','asset_cleanup'), true)) {
         $errors[] = 'Cache flush layer must be elementor, wp_rocket or asset_cleanup.';
+    }
+    if (array_key_exists('regenerate', $payload)) {
+        if (! is_bool($payload['regenerate']) || ('elementor' !== $layer && true === $payload['regenerate'])) {
+            $errors[] = 'Cache regeneration must be boolean and is supported only for Elementor.';
+        }
     }
 
     if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
