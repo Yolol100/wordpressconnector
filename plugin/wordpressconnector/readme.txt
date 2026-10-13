@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.5
+Stable tag: 1.18.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.18.6 adds guarded, opt-in Elementor CSS regeneration and accurate provider-completion reporting. GitHub and WordPress authorization, explicit confirmation, fingerprints and site-local privacy boundaries remain unchanged. Regeneration does not itself prove public CSS URLs are reachable; verify affected pages separately.
 
 Version 1.18.5 recognizes the four actual Hostinger plugins (AI, Easy Onboarding, Reach and Tools) as distinct inventory entries with explicit provider-account and security boundaries. It also reports only a presence/absence/unknown state for the saved Joinchat WhatsApp phone number, never the number itself. Provider settings and account connections remain inaccessible through the public GitHub audit. WordPress must-use plugins and drop-ins are counted separately via Core APIs; their names and file paths are never exported, and an unavailable inventory is reported as unknown. No automatic plugin activation, migration, mail sending, checkout changes or provider writes are introduced.
 
@@ -141,6 +143,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.18.6 =
+* Add opt-in Elementor generated CSS regeneration after successful cache clear, with provider completion verification.
+* Clarify provider-only cache readback and retain all authentication, approval and stale-state checks.
+* Validate regeneration as an Elementor-only boolean in public transport and runtime.
+
 
 = 1.17.16 =
 * Fail closed on Asset CleanUp optimizer writes until effective provider readback is verified.
