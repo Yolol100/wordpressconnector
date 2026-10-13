@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "haknes-1189-update-preview-20261013-01",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-13T16:55:44+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.18.8",
+    "to_version": "1.18.9",
+    "before_fingerprint": "4e82ed5312f9698ec26524b279ef30c59083ab8715d810500562c3ed2374a8a6",
+    "rollback_supported": false,
+    "readback_verified": null
+}
