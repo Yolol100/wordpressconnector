@@ -30,6 +30,13 @@ $expectFail(static function()use($policy,$descriptor){
 $GLOBALS['tps_caps'][]='manage_options';
 $policy::assertActionAllowed($descriptor,false,true);
 $before=$registry->execute('yoast.templates.inspect',array());
+$policy::setPublicRepositoryContext(true);
+$publicTitles=$registry->execute('yoast.templates.inspect',array());
+if(array_keys($publicTitles['fields'])!==array('category_title','product_category_title')
+    || $publicTitles['fingerprint']!==$before['fingerprint']) {
+    throw new RuntimeException('Public Yoast template inspect leaked unrelated fields or changed stale-state fingerprint.');
+}
+$policy::setPublicRepositoryContext(false);
 if($before['fields']['page_title']!=='Old %%title%%'||
     $before['fields']['product_description']!==null)throw new RuntimeException('Baseline wrong.');
 $changes=array('page_title'=>'%%title%% %%sep%% %%sitename%%',
