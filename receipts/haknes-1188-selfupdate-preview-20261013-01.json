@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "haknes-1188-selfupdate-preview-20261013-01",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-13T16:18:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.18.7",
+    "to_version": "1.18.8",
+    "before_fingerprint": "671bbc091ed2c4429a79dae7c317fa1f7d5c6ef87bb9af77750bb43706ad3c70",
+    "rollback_supported": false,
+    "readback_verified": null
+}
