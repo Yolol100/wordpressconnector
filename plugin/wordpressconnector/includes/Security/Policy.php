@@ -35,6 +35,8 @@ final class Policy
         'gtranslate.settings.update',
         'yoast.site_representation.inspect',
         'yoast.site_representation.update',
+        'yoast.templates.inspect',
+        'yoast.templates.update',
         'acf.update',
         'acf.portfolio_stats_update',
         'portfolio.case_text_update',
