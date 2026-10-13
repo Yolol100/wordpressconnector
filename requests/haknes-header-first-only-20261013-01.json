@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-header-first-only-20261013-01",
+  "action": "elementor.header_links.replace",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "post_id": 4190,
+    "changes": [
+      {
+        "element_id": "792429c",
+        "from": "https://haknes.nl/?post_type=product&p=6550",
+        "to": "https://haknes.nl/product-categorie/ons-assortiment/"
+      }
+    ]
+  }
+}
