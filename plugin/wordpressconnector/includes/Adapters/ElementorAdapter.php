@@ -21,6 +21,7 @@ final class ElementorAdapter
         $registry->register('elementor.replace_document', array($this, 'replaceDocument'), array('mutation' => true, 'description' => 'Replace Elementor elements/settings through the Elementor document API.'));
         $registry->register('elementor.patch_element', array($this, 'patchElement'), array('mutation' => true, 'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.'));
         $registry->register('elementor.regenerate', array($this, 'regenerate'), array('mutation' => true, 'description' => 'Clear Elementor generated CSS/files cache.'));
+        $registry->register('elementor.header_links.replace', array($this, 'replaceHeaderLinks'), array('mutation' => true, 'capability' => 'edit_theme_options', 'description' => 'Replace exact same-site Icon List links in one published Elementor header.'));
     }
 
     public function inspect(array $payload): array
@@ -194,6 +195,95 @@ final class ElementorAdapter
         }
         $this->clearCache();
         return array('cleared' => true, 'rollback_supported' => false);
+    }
+
+    public function replaceHeaderLinks(array $payload, array $context): array
+    {
+        $id = isset($payload['post_id']) && is_int($payload['post_id']) ? $payload['post_id'] : 0;
+        $post = $id > 0 ? get_post($id) : null;
+        if (! $post instanceof \WP_Post || 'elementor_library' !== $post->post_type
+            || 'publish' !== $post->post_status || '' !== (string) $post->post_password
+            || ! current_user_can('edit_post', $id)) {
+            throw new RuntimeException('Elementor header target is unavailable or not editable.');
+        }
+        $before = $this->snapshot($id);
+        if ('header' !== $before['template_type']) {
+            throw new RuntimeException('Only an existing published Elementor header template may be repaired.');
+        }
+        $changes = $payload['changes'] ?? null;
+        if (! is_array($changes) || ! $changes || count($changes) > 4) {
+            throw new RuntimeException('Header link repair requires one to four exact link replacements.');
+        }
+
+        $data = $before['data'];
+        $results = array();
+        $seen = array();
+        foreach ($changes as $change) {
+            if (! is_array($change) || array_diff(array_keys($change), array('element_id','from','to'))) {
+                throw new RuntimeException('Invalid Elementor header link replacement keys.');
+            }
+            $elementId = $change['element_id'] ?? '';
+            $from = $change['from'] ?? null;
+            $to = $change['to'] ?? null;
+            if (! is_string($elementId) || ! preg_match('/^[A-Za-z0-9_-]{5,64}\\z/', $elementId)
+                || isset($seen[$elementId]) || ! is_string($from) || ! is_string($to)
+                || $from === $to || ! $this->sameSiteHeaderUrl($from, false)
+                || ! $this->sameSiteHeaderUrl($to, true)) {
+                throw new RuntimeException('Header link target, source or destination is not allowed.');
+            }
+            $seen[$elementId] = true;
+            $element =& $this->findElement($data, $elementId);
+            if (($element['widgetType'] ?? '') !== 'icon-list'
+                || ! isset($element['settings']['icon_list'])
+                || ! is_array($element['settings']['icon_list'])) {
+                throw new RuntimeException('Header link target is not an Icon List widget.');
+            }
+            $matches = 0;
+            foreach ($element['settings']['icon_list'] as &$item) {
+                if (is_array($item) && isset($item['link']['url']) && $item['link']['url'] === $from) {
+                    $item['link']['url'] = $to;
+                    ++$matches;
+                }
+            }
+            unset($item, $element);
+            if (1 !== $matches) {
+                throw new RuntimeException('Header link source URL must appear exactly once in the requested widget.');
+            }
+            $results[] = array('element_id' => $elementId, 'from' => $from, 'to' => $to);
+        }
+        $result = array(
+            'post_id' => $id,
+            'changes' => $results,
+            'readback_verified' => null,
+            'before_fingerprint' => Fingerprint::make($before),
+            '_current_fingerprint' => Fingerprint::make($before),
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+        $after = $this->applyExistingDocumentMutation(
+            $id, array(), $data, $before['page_settings'], $before
+        );
+        $result['readback_verified'] = true;
+        $result['after_fingerprint'] = Fingerprint::make($after);
+        return $result;
+    }
+
+    private function sameSiteHeaderUrl(string $url, bool $destination): bool
+    {
+        if (strlen($url) > 500 || ! filter_var($url, FILTER_VALIDATE_URL)) {
+            return false;
+        }
+        $parts = wp_parse_url($url);
+        $home = wp_parse_url(home_url('/'));
+        if (! is_array($parts) || ! is_array($home)
+            || ($parts['scheme'] ?? '') !== 'https'
+            || strtolower((string) ($parts['host'] ?? '')) !== strtolower((string) ($home['host'] ?? ''))
+            || isset($parts['user']) || isset($parts['pass'])
+            || ! isset($parts['path']) || 0 !== strpos((string) $parts['path'], '/')) {
+            return false;
+        }
+        return ! $destination || (! isset($parts['query']) && ! isset($parts['fragment']));
     }
 
     private function post(array $payload): \WP_Post

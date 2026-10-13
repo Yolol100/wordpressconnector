@@ -4,6 +4,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Security\Policy;
 /** Allowlisted global Yoast snippet templates, not arbitrary options. */
 final class YoastTemplateSettingsAdapter {
     private const KEYS = array(
@@ -11,6 +12,7 @@ final class YoastTemplateSettingsAdapter {
         'page_title'=>'title-page','page_description'=>'metadesc-page',
         'post_title'=>'title-post','post_description'=>'metadesc-post',
         'product_title'=>'title-product','product_description'=>'metadesc-product',
+        'category_title'=>'title-tax-category',
         'product_category_title'=>'title-tax-product_cat',
         'product_category_description'=>'metadesc-tax-product_cat');
     public function register(Registry $registry): void {
@@ -21,6 +23,9 @@ final class YoastTemplateSettingsAdapter {
     }
     public function inspect(array $payload=array(),array $context=array()): array {
         $fields=$this->snapshot();
+        if (Policy::publicRepositoryContext()) {
+            return array('fields'=>array_intersect_key($fields,array_flip(array('category_title','product_category_title'))),'fingerprint'=>Fingerprint::make($fields));
+        }
         return array('fields'=>$fields,'fingerprint'=>Fingerprint::make($fields));
     }
     public function update(array $payload,array $context): array {
@@ -32,7 +37,14 @@ final class YoastTemplateSettingsAdapter {
         foreach($changes as $key=>$value)$options[self::KEYS[$key]]=$value;
         update_option('wpseo_titles',$options);
         $verified=$this->snapshot();
-        if($verified!==$after)throw new RuntimeException('Yoast template readback mismatch.');
+        if($verified!==$after){
+            foreach($changes as $key=>$value){
+                if(null===$before[$key])unset($options[self::KEYS[$key]]);
+                else $options[self::KEYS[$key]]=$before[$key];
+            }
+            update_option('wpseo_titles',$options);
+            throw new RuntimeException('Yoast template readback mismatch; requested fields restored.');
+        }
         $result['after']=$verified;
         $result['_rollback']=array('action'=>'yoast.templates.restore','payload'=>array(
             'fields'=>array_intersect_key($before,$changes),

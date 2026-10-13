@@ -38,6 +38,8 @@ $publicActions = array(
     'gtranslate.settings.update',
     'yoast.site_representation.inspect',
     'yoast.site_representation.update',
+    'yoast.templates.inspect',
+    'yoast.templates.update',
     'acf.update',
     'acf.portfolio_stats_update',
     'portfolio.case_text_update',
@@ -45,6 +47,7 @@ $publicActions = array(
     'acf.schema.ensure_text_fields',
     'elementor.inspect',
     'elementor.patch_element',
+    'elementor.header_links.replace',
     'connector.batch',
     'connector.read_batch',
     'connector.rollback',
@@ -60,6 +63,113 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+// The public repository may inspect and repair only taxonomy title templates.
+// Never transport other Yoast options or private site configuration.
+if (in_array($action, array('yoast.templates.inspect', 'yoast.templates.update'), true)) {
+    $errors = array();
+    $read = 'yoast.templates.inspect' === $action;
+    $allowedRoot = array('version','site_url','request_id','action','payload','dry_run','confirm');
+    if (! $read) $allowedRoot[] = 'expected_fingerprint';
+    if (array_diff(array_keys($data), $allowedRoot)) $errors[] = 'Public Yoast taxonomy request has forbidden root keys.';
+    $payload = $data['payload'] ?? null;
+    if (! is_array($payload)) $errors[] = 'Public Yoast taxonomy payload must be an object.';
+    if ($read) {
+        if ($payload !== array() || ($data['dry_run'] ?? null) !== true || ($data['confirm'] ?? null) !== false) {
+            $errors[] = 'Yoast taxonomy inspection must be an empty dry-run.';
+        }
+    } else {
+        if (! is_array($payload) || array_diff(array_keys($payload), array('fields'))) $errors[] = 'Public Yoast title request accepts only fields.';
+        $fields = is_array($payload) ? ($payload['fields'] ?? null) : null;
+        if (! is_array($fields) || ! $fields || count($fields) > 2) {
+            $errors[] = 'Public Yoast taxonomy title request requires one or two fields.';
+        } else {
+            foreach ($fields as $key => $value) {
+                if (! in_array((string) $key, array('category_title','product_category_title'), true)
+                    || ! is_string($value) || strlen($value) < 15 || strlen($value) > 150
+                    || false === strpos($value, '%%term_title%%')
+                    || preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
+                    $errors[] = 'Public Yoast taxonomy title value is not allowed.';
+                }
+            }
+        }
+        if (($data['dry_run'] ?? null) === true) {
+            if (($data['confirm'] ?? null) !== false || array_key_exists('expected_fingerprint', $data)) $errors[] = 'Public Yoast title dry-run forbids confirmation and fingerprint.';
+        } elseif (($data['dry_run'] ?? null) === false) {
+            if (($data['confirm'] ?? null) !== true || ! is_string($data['expected_fingerprint'] ?? null)
+                || ! preg_match('/^[a-f0-9]{64}\\z/', $data['expected_fingerprint'])) {
+                $errors[] = 'Public Yoast title write requires confirmed dry-run fingerprint.';
+            }
+        } else $errors[] = 'Public Yoast title request requires explicit dry_run.';
+    }
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: ' . $action . PHP_EOL;
+    return;
+}
+
+// Controlled edits to a published Elementor header: exact HTTPS link replacements
+// only, never arbitrary template contents or bulk settings.
+if ('elementor.header_links.replace' === $action) {
+    $errors = array();
+    $allowedRoot = array('version','site_url','request_id','action','payload','dry_run','confirm','expected_fingerprint');
+    if (array_diff(array_keys($data), $allowedRoot) || array_key_exists('expected_state_token', $data)) {
+        $errors[] = 'Public Elementor header request has forbidden root fields.';
+    }
+    $payload = $data['payload'] ?? null;
+    if (! is_array($payload) || array_diff(array_keys($payload), array('post_id','changes'))) {
+        $errors[] = 'Header repair accepts only post_id and changes.';
+    }
+    if (! is_array($payload) || ! is_int($payload['post_id'] ?? null) || $payload['post_id'] < 1) {
+        $errors[] = 'Header repair requires a positive post_id.';
+    }
+    $changes = is_array($payload) ? ($payload['changes'] ?? null) : null;
+    if (! is_array($changes) || ! $changes || count($changes) > 4) {
+        $errors[] = 'Header repair requires 1-4 exact link replacements.';
+    } else {
+        $siteHost = strtolower((string) parse_url((string) ($data['site_url'] ?? ''), PHP_URL_HOST));
+        $seen = array();
+        foreach ($changes as $change) {
+            if (! is_array($change) || array_diff(array_keys($change), array('element_id','from','to'))) {
+                $errors[] = 'Header repair change has forbidden keys.';
+                continue;
+            }
+            $elementId = $change['element_id'] ?? null;
+            if (! is_string($elementId) || ! preg_match('/^[a-zA-Z0-9_-]{5,64}\\z/', $elementId)
+                || isset($seen[$elementId])) {
+                $errors[] = 'Invalid or duplicate header widget ID.';
+            } else $seen[$elementId] = true;
+            foreach (array('from','to') as $field) {
+                $url = $change[$field] ?? null;
+                if (! is_string($url) || strlen($url) > 500 || ! filter_var($url, FILTER_VALIDATE_URL)
+                    || parse_url($url, PHP_URL_SCHEME) !== 'https'
+                    || strtolower((string) parse_url($url, PHP_URL_HOST)) !== $siteHost
+                    || ($field === 'to' && (null !== parse_url($url, PHP_URL_QUERY) || null !== parse_url($url, PHP_URL_FRAGMENT)))) {
+                    $errors[] = 'Header URL must be same-site HTTPS, with no destination query or fragment.';
+                }
+            }
+            if (($change['from'] ?? null) === ($change['to'] ?? null)) $errors[] = 'Header link must change to a different URL.';
+        }
+    }
+    if (($data['dry_run'] ?? null) === true) {
+        if (($data['confirm'] ?? null) !== false || array_key_exists('expected_fingerprint', $data)) {
+            $errors[] = 'Header dry-run cannot carry confirmation fingerprint.';
+        }
+    } elseif (($data['dry_run'] ?? null) === false) {
+        if (($data['confirm'] ?? null) !== true || ! is_string($data['expected_fingerprint'] ?? null)
+            || ! preg_match('/^[a-f0-9]{64}\\z/', $data['expected_fingerprint'])) {
+            $errors[] = 'Header write requires confirmation and fresh dry-run fingerprint.';
+        }
+    } else $errors[] = 'Header repair requires explicit dry_run.';
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: elementor.header_links.replace' . PHP_EOL;
+    return;
 }
 
 // The full private integration catalog is intentionally NOT available in a

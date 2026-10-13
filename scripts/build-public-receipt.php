@@ -727,6 +727,33 @@ if (! $ok) {
             $receipt['after_fingerprint'] = $fingerprint($after);
             if (! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
         }
+    } elseif ('yoast.templates.inspect' === $action) {
+        $fields = isset($data['fields']) && is_array($data['fields']) ? $data['fields'] : array();
+        $receipt['taxonomy_titles'] = array_intersect_key($fields, array_flip(array('category_title','product_category_title')));
+        $fp = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\\z/', $fp)) $receipt['before_fingerprint'] = $fp;
+        $receipt['readback_verified'] = null;
+    } elseif ('yoast.templates.update' === $action) {
+        $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : array();
+        $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : array();
+        $requested = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
+        $receipt['updated_keys'] = array_values(array_intersect(array_keys($requested), array('category_title','product_category_title')));
+        $receipt['before_fingerprint'] = $fingerprint($before);
+        $receipt['after_fingerprint'] = $fingerprint($after);
+        $receipt['readback_verified'] = $dryRun ? null : $containsRequested($requested, $after);
+    } elseif ('elementor.header_links.replace' === $action) {
+        $receipt['post_id'] = (int) ($data['post_id'] ?? 0);
+        $changes = isset($data['changes']) && is_array($data['changes']) ? $data['changes'] : array();
+        $receipt['element_ids'] = array_values(array_filter(array_map(static function ($change): string {
+            return is_array($change) ? substr((string) ($change['element_id'] ?? ''), 0, 64) : '';
+        }, array_slice($changes, 0, 4)), static function (string $id): bool {
+            return (bool) preg_match('/^[a-zA-Z0-9_-]{5,64}\\z/', $id);
+        }));
+        $beforeFp = (string) ($data['before_fingerprint'] ?? '');
+        $afterFp = (string) ($data['after_fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\\z/', $beforeFp)) $receipt['before_fingerprint'] = $beforeFp;
+        if (preg_match('/^[a-f0-9]{64}\\z/', $afterFp)) $receipt['after_fingerprint'] = $afterFp;
+        $receipt['readback_verified'] = $dryRun ? null : (true === ($data['readback_verified'] ?? false));
     } elseif ('elementor.inspect' === $action) {
         $document = isset($data['document']) && is_array($data['document']) ? $data['document'] : array();
         $documentFingerprint = (string) ($data['fingerprint'] ?? '');
