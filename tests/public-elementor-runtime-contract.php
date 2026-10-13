@@ -107,6 +107,44 @@ if (0 !== $status) {
     exit(1);
 }
 
+$header = array(
+    'version' => 1, 'site_url' => 'https://haknes.nl',
+    'request_id' => 'public-header-link-0001',
+    'action' => 'elementor.header_links.replace',
+    'dry_run' => true, 'confirm' => false,
+    'payload' => array('post_id' => 4190, 'changes' => array(
+        array('element_id'=>'792429c',
+            'from'=>'https://haknes.nl/?post_type=product&p=6550',
+            'to'=>'https://haknes.nl/product-categorie/ons-assortiment/'),
+        array('element_id'=>'54d3984',
+            'from'=>'https://haknes.nl/?post_type=product&p=6687',
+            'to'=>'https://haknes.nl/product/paprika-poeder-zoet/'),
+    )),
+);
+list($status, $msg) = $run($validator, array($writeJson('header-preview.json', $header)));
+if (0 !== $status) throw new RuntimeException('Bounded Elementor header preview was rejected: '.$msg);
+$headerWrite = $header;
+$headerWrite['request_id'] = 'public-header-link-0002';
+$headerWrite['dry_run'] = false; $headerWrite['confirm'] = true;
+$headerWrite['expected_fingerprint'] = str_repeat('a',64);
+list($status, $msg) = $run($validator, array($writeJson('header-write.json', $headerWrite)));
+if (0 !== $status) throw new RuntimeException('Fingerprint-confirmed Elementor header repair was rejected: '.$msg);
+$headerBad = $headerWrite;unset($headerBad['expected_fingerprint']);
+list($status) = $run($validator, array($writeJson('header-no-fingerprint.json', $headerBad)));
+if (0 === $status) throw new RuntimeException('Confirmed header write without fingerprint accepted.');
+$headerBad = $headerWrite;
+$headerBad['payload']['changes'][0]['to'] = 'https://other.example/product/';
+list($status) = $run($validator, array($writeJson('header-offsite-url.json', $headerBad)));
+if (0 === $status) throw new RuntimeException('Off-site Elementor header replacement accepted.');
+$headerBad = $headerWrite;
+$headerBad['payload']['changes'][1]['element_id']='792429c';
+list($status) = $run($validator, array($writeJson('header-duplicate-widget.json', $headerBad)));
+if (0 === $status) throw new RuntimeException('Duplicate widget IDs accepted.');
+$headerBad = $headerWrite;
+$headerBad['payload']['changes'][0]['to']='https://haknes.nl/product/example/?secret=1';
+list($status) = $run($validator, array($writeJson('header-query-destination.json', $headerBad)));
+if (0 === $status) throw new RuntimeException('Header destination query accepted.');
+
 $forbidden = array();
 
 $case = $confirmedPatch;
