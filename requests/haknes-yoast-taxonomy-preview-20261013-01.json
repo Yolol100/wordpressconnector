@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://haknes.nl",
+  "request_id": "haknes-yoast-taxonomy-preview-20261013-01",
+  "action": "yoast.templates.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% | Tips en recepten van Haknes",
+      "product_category_title": "%%term_title%% %%page%% | Bestel nu bij Haknes"
+    }
+  }
+}
