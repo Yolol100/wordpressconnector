@@ -19,10 +19,10 @@ jobs:
           import urllib.request, urllib.error, time
           from html.parser import HTMLParser
           class Meta(HTMLParser):
-              def __init__(self): super().__init__(); self.inside_title=False; self.title=''; self.canonical=''; self.og=''
+              def __init__(self): super().__init__(); self.inside_title=False; self.seen_title=False; self.title=''; self.canonical=''; self.og=''
               def handle_starttag(self,t,a):
                   d=dict(a)
-                  if t=='title':self.inside_title=True
+                  if t=='title' and not self.seen_title:self.inside_title=True;self.seen_title=True
                   if t=='link' and d.get('rel','').lower()=='canonical':self.canonical=d.get('href','')
                   if t=='meta' and d.get('property','').lower()=='og:url':self.og=d.get('content','')
               def handle_endtag(self,t):
@@ -47,5 +47,14 @@ jobs:
               if status!=200:failed=True
               if path.startswith('/category/blog/') and (not title.startswith('Blog') or 'Tips en recepten van Haknes' not in title):failed=True
               if path.startswith('/product-categorie/') and ('Bestel nu bij Haknes' not in title or title.startswith('|')):failed=True
+          endpoint='https://haknes.nl/wp-json/webactueel-wordpress-connector/v1/presence'
+          try:
+              with urllib.request.urlopen(urllib.request.Request(endpoint,headers={'User-Agent':'Haknes-SEO-ReadOnly-QA/1.0'}),timeout=15) as r:
+                  status=r.status; data=r.read(3000)
+              import json
+              obj=json.loads(data.decode('utf8'))
+              print('CONNECTOR_PRESENCE',status,'bytes',len(data),'json',isinstance(obj,dict),'keys',sorted(obj.keys())[:8],flush=True)
+          except Exception as e:
+              print('CONNECTOR_PRESENCE_ERROR',type(e).__name__,str(e)[:120],flush=True)
           if failed: raise SystemExit('Postfix read-only QA did not meet all required conditions.')
           PY
