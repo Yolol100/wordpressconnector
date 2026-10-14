@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-cache-speed-capabilities",
+  "action": "maintenance.cache_capabilities",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
