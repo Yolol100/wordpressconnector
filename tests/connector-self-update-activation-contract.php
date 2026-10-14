@@ -24,6 +24,14 @@ class Plugin_Upgrader
     public function active_after($response, $payload) { return $response; }
     public function restore_temp_backup($backup) { return true; }
     public function run($arguments): array {
+        // Simulate Core calling upgrader_pre_download for the already verified
+        // local ZIP used by connector.update.apply, not only installation hooks.
+        foreach ($GLOBALS['hooks']['upgrader_pre_download'] ?? array() as $entry) {
+            $reply = $entry['handler'](false, $arguments['package'], $this, $arguments['hook_extra']);
+            if (false !== $reply) {
+                throw new RuntimeException('Native download hook blocked verified REST self-update ZIP.');
+            }
+        }
         $before = $GLOBALS['hooks']['upgrader_pre_install'] ?? array();
         foreach ($before as $entry) {
             $entry['handler'](true, $arguments['hook_extra']);
@@ -68,12 +76,18 @@ register_shutdown_function(static function() use($dir) {
 });
 require_once dirname(__DIR__).'/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 $adapter = new Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
+add_filter('upgrader_pre_download', array($adapter, 'verifiedNativeDownload'), 10, 4);
 $method=new ReflectionMethod($adapter,'installWithCoreBackup');
 $method->setAccessible(true);
 $run=static function()use($method,$adapter) {
     return $method->invoke($adapter, '/tmp/test-safe-canonical-package.zip');
 };
 $wasActive=$run();
+$verifiedPath = new ReflectionProperty($adapter, 'verifiedSelfUpdatePackagePath');
+$verifiedPath->setAccessible(true);
+if (null !== $verifiedPath->getValue($adapter)) {
+    throw new RuntimeException('REST self-update verification state leaked after Core upgrade.');
+}
 if (! is_plugin_active('wordpressconnector/wordpressconnector.php')
     || $GLOBALS['reactivation_attempts']!==0
     || !isset($wasActive['upgrader'])) {

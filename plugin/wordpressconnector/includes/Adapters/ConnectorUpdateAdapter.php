@@ -15,9 +15,12 @@ final class ConnectorUpdateAdapter
     private const CHECKSUM_ASSET = 'wordpressconnector.zip.sha256';
     private const SBOM_ASSET = 'wordpressconnector.spdx.json';
     private const PLUGIN_FILE = 'wordpressconnector/wordpressconnector.php';
+    private const UPDATE_URI = 'https://github.com/Yolol100/wordpressconnector';
     private const MAX_PACKAGE_BYTES = 20971520;
     private const MAX_UNCOMPRESSED_BYTES = 104857600;
     private const MAX_ENTRIES = 2500;
+    // Only the already verified local ZIP for the current guarded REST self-update.
+    private $verifiedSelfUpdatePackagePath = null;
 
     public function register(Registry $registry): void
     {
@@ -35,6 +38,97 @@ final class ConnectorUpdateAdapter
             'capability' => 'update_plugins',
             'description' => 'Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification.',
         ));
+        // WordPress Core owns the dashboard upgrade; the existing adapter still
+        // owns release identity, checksum and archive verification.
+        if (function_exists('add_filter')) {
+            add_filter('update_plugins_github.com', array($this, 'nativeUpdateOffer'), 10, 4);
+            add_filter('upgrader_pre_download', array($this, 'verifiedNativeDownload'), 10, 4);
+        }
+    }
+
+    /**
+     * Offer only this plugin's canonical release to WordPress's native updater.
+     * Other plugins using GitHub's update hostname must remain untouched.
+     *
+     * @param array|false $update
+     * @return array|false
+     */
+    public function nativeUpdateOffer($update, array $pluginData, string $pluginFile, array $locales)
+    {
+        if (self::PLUGIN_FILE !== $pluginFile || self::UPDATE_URI !== ($pluginData['UpdateURI'] ?? '')) {
+            return $update;
+        }
+
+        try {
+            $release = $this->release();
+            $installed = isset($pluginData['Version']) ? (string) $pluginData['Version'] : '';
+            if ('' === $installed || ! version_compare($release['version'], $installed, '>')) {
+                return false;
+            }
+
+            return array(
+                'id' => self::UPDATE_URI,
+                'slug' => 'wordpressconnector',
+                'version' => $release['version'],
+                'url' => self::UPDATE_URI . '/releases/tag/' . $release['tag'],
+                'package' => $release['package_url'],
+                'requires_php' => '7.4',
+                'autoupdate' => false,
+            );
+        } catch (\Throwable $error) {
+            // A missing or invalid canonical release must never create an update offer.
+            return false;
+        }
+    }
+
+    /**
+     * WordPress checksums are not verified by Core for third-party packages.
+     * Intercept only our own update and pass a verified temporary ZIP to Core.
+     *
+     * @param false|string|\WP_Error $reply
+     * @param mixed $upgrader
+     * @return false|string|\WP_Error
+     */
+    public function verifiedNativeDownload($reply, string $package, $upgrader, array $hookExtra)
+    {
+        // Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
+        // while a single-plugin upgrade also provides "type" and "action".
+        // Accept both documented shapes, but never an explicitly conflicting
+        // type or action: every connector ZIP must pass integrity verification.
+        if (self::PLUGIN_FILE !== ($hookExtra['plugin'] ?? '')
+            || (isset($hookExtra['type']) && 'plugin' !== $hookExtra['type'])
+            || (isset($hookExtra['action']) && 'update' !== $hookExtra['action'])) {
+            return $reply;
+        }
+
+        if (false !== $reply) {
+            if (is_wp_error($reply)) {
+                return $reply;
+            }
+            return new \WP_Error('wordpressconnector_update_source', 'WordPress Connector requires its verified canonical release package.');
+        }
+
+        // The guarded REST self-updater already validated this exact local ZIP.
+        // Let Core use it as a local path; do not force a second remote download.
+        // Every ordinary single/bulk dashboard update still verifies the release.
+        if (null !== $this->verifiedSelfUpdatePackagePath
+            && hash_equals($this->verifiedSelfUpdatePackagePath, $package)) {
+            return false;
+        }
+
+        try {
+            $release = $this->release();
+            $installed = defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : '';
+            if ('' === $installed || ! version_compare($release['version'], $installed, '>')
+                || ! hash_equals($release['package_url'], $package)) {
+                throw new RuntimeException('The offered connector package is stale or not canonical.');
+            }
+
+            return $this->downloadVerifiedPackage($release);
+        } catch (\Throwable $error) {
+            // Core aborts before replacing any plugin file when given WP_Error.
+            return new \WP_Error('wordpressconnector_update_integrity', 'WordPress Connector could not verify this update. No files were changed.');
+        }
     }
 
     public function check(array $payload = array(), array $context = array()): array
@@ -105,36 +199,13 @@ final class ConnectorUpdateAdapter
             );
         }
 
-        $expectedSha256 = $this->checksum($release['checksum_url'], $release['checksum_digest']);
-        if (! hash_equals('sha256:' . $expectedSha256, $release['package_digest'])) {
-            throw new RuntimeException('GitHub package asset digest does not match the canonical checksum asset.');
-        }
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-        $package = download_url($release['package_url'], 30);
-        if (is_wp_error($package)) {
-            throw new RuntimeException($package->get_error_message());
-        }
-
+        $package = $this->downloadVerifiedPackage($release);
         try {
-            $size = filesize($package);
-            if (false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES) {
-                throw new RuntimeException('Connector release package is empty or exceeds the 20 MiB limit.');
-            }
-            $actualSha256 = hash_file('sha256', $package);
-            if (! is_string($actualSha256) || ! hash_equals($expectedSha256, strtolower($actualSha256)) || ! hash_equals($release['package_digest'], 'sha256:' . strtolower($actualSha256))) {
-                throw new RuntimeException('Connector release package SHA-256 verification failed.');
-            }
-
-            $packageInfo = $this->inspectPackage($package);
-            if (! hash_equals(self::PLUGIN_FILE, $packageInfo['plugin_file'])) {
-                throw new RuntimeException('Connector release package identity is invalid.');
-            }
-            if (! hash_equals($release['version'], $packageInfo['version'])) {
-                throw new RuntimeException('Connector release package version does not match the release tag.');
-            }
+            $actualSha256 = substr($release['package_digest'], 7);
 
             // WordPress Core can restore installation/readback failures via its temp
             // backup. A later fatal error still has no guaranteed automatic recovery.
@@ -199,6 +270,7 @@ final class ConnectorUpdateAdapter
         // inactive after a successful file-version readback.
         add_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10, 2);
         add_filter('upgrader_post_install', array($upgrader, 'active_after'), 10, 2);
+        $this->verifiedSelfUpdatePackagePath = $package;
         try {
             $result = $upgrader->run(array(
                 'package' => $package,
@@ -214,6 +286,7 @@ final class ConnectorUpdateAdapter
                 ),
             ));
         } finally {
+            $this->verifiedSelfUpdatePackagePath = null;
             remove_filter('upgrader_source_selection', array($upgrader, 'check_package'));
             // No deactivation callback was installed by this self-update.
             remove_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10);
@@ -330,6 +403,52 @@ final class ConnectorUpdateAdapter
             'package_digest' => $packageDigest,
             'checksum_digest' => $checksumDigest,
         );
+    }
+
+    /**
+     * Shared verification for REST self-update and the native Plugins screen.
+     * Returns a temporary ZIP owned by the caller. Never trust a ZIP merely
+     * because it was downloaded from GitHub over HTTPS.
+     */
+    private function downloadVerifiedPackage(array $release): string
+    {
+        $expectedSha256 = $this->checksum($release['checksum_url'], $release['checksum_digest']);
+        if (! hash_equals('sha256:' . $expectedSha256, $release['package_digest'])) {
+            throw new RuntimeException('GitHub package asset digest does not match the canonical checksum asset.');
+        }
+
+        if (! function_exists('download_url')) {
+            require_once ABSPATH . 'wp-admin/includes/file.php';
+        }
+        $package = download_url($release['package_url'], 30);
+        if (is_wp_error($package)) {
+            throw new RuntimeException($package->get_error_message());
+        }
+
+        try {
+            $size = filesize($package);
+            if (false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES) {
+                throw new RuntimeException('Connector release package is empty or exceeds the 20 MiB limit.');
+            }
+            $actualSha256 = hash_file('sha256', $package);
+            if (! is_string($actualSha256) || ! hash_equals($expectedSha256, strtolower($actualSha256))
+                || ! hash_equals($release['package_digest'], 'sha256:' . strtolower($actualSha256))) {
+                throw new RuntimeException('Connector release package SHA-256 verification failed.');
+            }
+
+            $packageInfo = $this->inspectPackage($package);
+            if (! hash_equals(self::PLUGIN_FILE, $packageInfo['plugin_file'])
+                || ! hash_equals($release['version'], $packageInfo['version'])) {
+                throw new RuntimeException('Connector release ZIP identity or version does not match the published release.');
+            }
+
+            return $package;
+        } catch (\Throwable $error) {
+            if (is_string($package) && file_exists($package)) {
+                @unlink($package);
+            }
+            throw $error;
+        }
     }
 
     private function checksum(string $url, string $expectedAssetDigest): string
