@@ -1,5 +1,27 @@
 <?php
 declare(strict_types=1);
+final class MockYoastTitlesOption
+{
+    public function get_defaults(): array
+    {
+        return array_fill_keys(array(
+            'title-page', 'metadesc-tax-category', 'title-archive-wpseo',
+            'open_graph_frontpage_title', 'social-description-tax-post_tag',
+            'metadesc-product', 'breadcrumbs-home', 'breadcrumbs-sep',
+        ), '');
+    }
+    public function is_disabled(string $key): bool
+    {
+        return $key === ($GLOBALS['tps_disabled'] ?? '');
+    }
+}
+final class WPSEO_Options
+{
+    public static function get_option_instance(string $option)
+    {
+        return $option === 'wpseo_titles' ? new MockYoastTitlesOption() : false;
+    }
+}
 $GLOBALS['tps_options']=array('wpseo_titles'=>array(
     'title-page'=>'Old %%title%%','metadesc-tax-category'=>'Previous %%term_title%% summary',
     'title-archive-wpseo'=>'Old dated %%date%% posts','open_graph_frontpage_title'=>'Old social identity',
@@ -82,6 +104,14 @@ if($after['fields']!==$before['fields']||
 $expectFail(static function()use($registry,$apply){
     $registry->execute('yoast.templates.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true));
 },'changed since write');
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('tag_description'=>'Unsupported in fixture')),array('dry_run'=>true));
+},'does not recognize the requested template field');
+$GLOBALS['tps_disabled']='title-page';
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('page_title'=>'Blocked by network')),array('dry_run'=>true));
+},'disabled by network/site policy');
+$GLOBALS['tps_disabled']='';
 foreach(array(
     array('fields'=>array('wpseo_titles'=>'x'),'error'=>'Unsupported'),
     array('fields'=>array('page_title'=>array('x')),'error'=>'Unsupported'),
