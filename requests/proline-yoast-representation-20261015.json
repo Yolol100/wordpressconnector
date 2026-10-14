@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-yoast-representation-20261015",
+  "action": "yoast.site_representation.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
