@@ -154,7 +154,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.19.1 =
-* Add the allowlisted Yoast category archive meta-description template (`metadesc-tax-category`) to the existing, privately authorized template inspect/update/restore interface.
+* Expand the existing privately authorized Yoast text-template allowlist: category/tag archive descriptions, author/date/search/404 titles and descriptions, and content-type/taxonomy/social metadata templates based on documented Yoast option names. Do not expose credentials or broad arbitrary settings.
 * Test private read/dry-run/write/rollback and ensure the public GitHub route still exposes only the two permitted taxonomy title fields.
 * Keep role checks, confirmation, fingerprints and existing plugin action boundaries unchanged.
 
