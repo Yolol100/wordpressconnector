@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-site-identity-20261015",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
