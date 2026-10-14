@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.18.9
+Stable tag: 1.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.0 integrates canonical verified GitHub Releases with the native WordPress Plugins > Update Now workflow. The existing dry-run gated REST self-updater remains available; third-party plugins and public/private connector policies are unchanged. Downloaded update ZIPs retain the current release checksum and package-identity checks; an invalid package prevents Core from starting an upgrade.
+
 
 Version 1.18.8 supports safely replacing exact redirected links in published Elementor headers and fixing only blog/product category SEO title templates through confirmed, fingerprint-guarded requests. Neither operation allows arbitrary private template exports or broad SEO setting writes.
 
@@ -149,6 +152,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.0 =
+* Register a native WordPress Update URI and release-response hook for WordPress Connector only.
+* Verify canonical GitHub ZIP checksums, release digest, package identity and version before native Core plugin upgrades.
+* Reuse existing verified-package code for both native and connector self-updates; preserve WordPress Core temporary-backup behavior and manual update intent.
+
 
 = 1.18.9 =
 * Add a read-only, restricted Elementor header link preflight diagnostic with non-sensitive eligibility and exact-match counts.
