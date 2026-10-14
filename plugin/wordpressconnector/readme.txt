@@ -154,7 +154,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.19.1 =
-* Expand the existing privately authorized Yoast text-template allowlist: category/tag archive descriptions, author/date/search/404 titles and descriptions, and content-type/taxonomy/social metadata templates based on documented Yoast option names. Do not expose credentials or broad arbitrary settings.
+* Expand the existing privately authorized Yoast text-template allowlist: category/tag archive descriptions, author/date/search/404 titles and descriptions, and content-type/taxonomy/social metadata templates and bounded breadcrumb labels based on documented Yoast option names. Do not expose credentials or broad arbitrary settings.
 * Test private read/dry-run/write/rollback and ensure the public GitHub route still exposes only the two permitted taxonomy title fields.
 * Add an explicitly private-only typed Yoast feature/advanced-toggle adapter, limiting writes to one option group and requiring acknowledgement for sitemap/indexability/Schema changes; provider readback and guarded rollback remain mandatory.
 * Keep role checks, confirmation, fingerprints and existing plugin action boundaries unchanged.
