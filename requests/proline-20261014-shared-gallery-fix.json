@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-shared-gallery-fix",
+  "action": "elementor.patch_element",
+  "payload": {
+    "id": 2214,
+    "element_id": "0d0e133",
+    "settings": {
+      "slides": {
+        "0": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/12/latex-spuiten-den-haag-renovatiewoning.jpg"
+          }
+        },
+        "5": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/12/latex-spuiten-amsterdam-zolderruimte.jpg"
+          }
+        },
+        "6": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/12/latex-spuiten-utrecht-renovatie-muur.jpg"
+          }
+        }
+      }
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "0f4834c88587d5475c65f6c7e58f5399a682bf9324fbe2eafc11f2fafc06d6de"
+}
