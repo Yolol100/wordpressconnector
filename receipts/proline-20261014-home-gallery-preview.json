@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-home-gallery-preview",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T10:47:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 177,
+    "element_id": "0c504ba",
+    "before_fingerprint": "0c15822cff30c6c5ab6de45e08413a79bd23c9f3f9a6453cf75662fa6e160e9f",
+    "after_fingerprint": "5508ba07a89ba23b85130a96ea1cc278814b8782093f8c85efd7512dfe3d1fc2"
+}
