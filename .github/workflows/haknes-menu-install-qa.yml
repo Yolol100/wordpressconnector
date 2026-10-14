@@ -1,0 +1,70 @@
+name: Haknes temporary menu post-install read-only QA
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/haknes-menu-install-qa.yml'
+permissions:
+  contents: read
+jobs:
+  menu-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Inspect live public pages and product menu links
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error,time,html,re
+          from html.parser import HTMLParser
+          from urllib.parse import urlsplit,parse_qs
+          class Audit(HTMLParser):
+              def __init__(self):
+                  super().__init__();self.stack=[];self.links=[];self.seen_ids=set();self.menus=0;self.old_containers=0;self.active=None;self.menuitem_n=0
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs); cl=a.get('class','');id=a.get('data-id','')
+                  if id in ('792429c','54d3984'): self.seen_ids.add(id)
+                  if 'wa-dpcm7-menu' in cl.split():self.menus+=1
+                  if 'old-static-product-menu' in cl.split():self.old_containers+=1
+                  if tag=='a':
+                      self.active={'href':html.unescape(a.get('href','')),'text':'','classes':cl,'ancestors':[(t,d.get('class','')[:90],d.get('data-id','')) for t,d in self.stack[-7:]]}
+                  if tag not in ('br','img','input','link','meta','hr','source','path','use','wbr','area','base'):self.stack.append((tag,a))
+              def handle_data(self,data):
+                  if self.active:self.active['text']+=data
+              def handle_endtag(self,tag):
+                  if tag=='a' and self.active:
+                      self.active['text']=' '.join(self.active['text'].split());self.links.append(self.active);self.active=None
+                  for i in range(len(self.stack)-1,-1,-1):
+                      if self.stack[i][0]==tag:self.stack=self.stack[:i];break
+          samples=['/','/winkel/page/3/','/product-categorie/rund/','/product/wudy-worst/','/category/blog/']
+          total_old=0;missing=0;total_menus=0
+          for path in samples:
+              target='https://haknes.nl'+path
+              request=urllib.request.Request(target,headers={'User-Agent':'Haknes-post-snippet-readonly-QA/1.0','Cache-Control':'no-cache','Accept':'text/html'})
+              start=time.monotonic()
+              try:
+                  with urllib.request.urlopen(request,timeout=24) as r: status=r.status;ctype=r.headers.get('Content-Type','');page=r.read(1400000).decode('utf-8','replace');headers=dict(r.headers)
+              except Exception as e:
+                  print('FETCH_ERROR',path,type(e).__name__,str(e)[:130],flush=True);missing+=1;continue
+              parser=Audit();parser.feed(page)
+              old=[]
+              for item in parser.links:
+                  qs=parse_qs(urlsplit(item['href']).query)
+                  if qs.get('post_type',[''])[0]=='product' and qs.get('p',[''])[0] in ('6550','6687'):old.append(item)
+              total_old+=len(old);total_menus+=parser.menus
+              print('PAGE',path,'http',status,'ttfb_approx_ms',round((time.monotonic()-start)*1000),
+                    'menu_elements',parser.menus,'old_static_containers',parser.old_containers,
+                    'old_product_links',len(old),'elementor_ids',sorted(parser.seen_ids),'total_anchor_links',len(parser.links),flush=True)
+              for item in old:
+                  print('OLD_LINK',path,'label',repr(item['text'][:75]),'href',item['href'][:170],
+                       'parents',repr(item['ancestors'][-5:]),flush=True)
+              if path=='/':
+                  for label in ['Maïskip','Paprika poeder gerookt','Wudy Worst','Rundertong']:
+                      hits=[(x['text'],x['href']) for x in parser.links if label.lower() in x['text'].lower()][:7]
+                      print('PRODUCT_LINK',label,repr(hits),flush=True)
+                  print('SOURCE_MARKERS', 'dynamic_menu_markup',bool(re.search(r'class=["\\'][^"\\']*wa-dpcm7-menu\\b',page)),
+                       'hide_rule_present',bool(re.search(r'\\.old-static-product-menu\\s*\\{',page)),
+                       'shortcode_literal', '[wa_product_category_menu]' in page, flush=True)
+          print('TOTAL','pages_ok',len(samples)-missing,'pages_expected',len(samples),'old_product_links',total_old,'dynamic_menu_elements',total_menus,flush=True)
+          if missing:raise SystemExit('Some pages unavailable')
+          PY
