@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-home-hidden-h1-preview",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T11:14:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 177,
+    "element_id": "398f6a1",
+    "before_fingerprint": "994a9438d1d51f8139e29bb449d3ec6ea5f238ce08b607aa8957027de1401918",
+    "after_fingerprint": "cc7dd5e43044ffe061a03d94cba7c69fe76b54f54520758c879a11f49049cc55"
+}
