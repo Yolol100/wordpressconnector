@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-home-hidden-h1-fix",
+  "action": "elementor.patch_element",
+  "payload": {
+    "id": 177,
+    "element_id": "398f6a1",
+    "settings": {
+      "header_size": "h2"
+    }
+  },
+  "expected_fingerprint": "81f450320b1baf9120b8b74fb0e0a07cd4344c17505ad1e19c0fd30d35d3e48a",
+  "dry_run": false,
+  "confirm": true
+}
