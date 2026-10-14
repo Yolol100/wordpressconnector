@@ -89,9 +89,13 @@ final class ConnectorUpdateAdapter
      */
     public function verifiedNativeDownload($reply, string $package, $upgrader, array $hookExtra)
     {
+        // Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
+        // while a single-plugin upgrade also provides "type" and "action".
+        // Accept both documented shapes, but never an explicitly conflicting
+        // type or action: every connector ZIP must pass integrity verification.
         if (self::PLUGIN_FILE !== ($hookExtra['plugin'] ?? '')
-            || 'plugin' !== ($hookExtra['type'] ?? '')
-            || 'update' !== ($hookExtra['action'] ?? '')) {
+            || (isset($hookExtra['type']) && 'plugin' !== $hookExtra['type'])
+            || (isset($hookExtra['action']) && 'update' !== $hookExtra['action'])) {
             return $reply;
         }
 
