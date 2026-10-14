@@ -1,0 +1,24 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-template-inspect",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T10:42:30+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "0f4834c88587d5475c65f6c7e58f5399a682bf9324fbe2eafc11f2fafc06d6de",
+    "post_id": 2214,
+    "document_type": "single-page",
+    "edit_mode": "builder",
+    "template_type": "single-page",
+    "elementor_version": "4.1.2",
+    "elements": [
+        {
+            "id": "0d0e133",
+            "elType": "widget",
+            "widgetType": "media-carousel"
+        }
+    ],
+    "readback_verified": null
+}
