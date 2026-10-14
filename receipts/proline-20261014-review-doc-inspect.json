@@ -1,0 +1,55 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-review-doc-inspect",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T10:42:36+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "289731db5b00f935a42eeb15e0217ea6f3cddcd378c2f9c0fb98f268771b882e",
+    "post_id": 512,
+    "document_type": "container",
+    "edit_mode": "builder",
+    "template_type": "container",
+    "elementor_version": "4.1.1",
+    "elements": [
+        {
+            "id": "721ca838",
+            "elType": "container"
+        },
+        {
+            "id": "6794adaa",
+            "elType": "container"
+        },
+        {
+            "id": "25e3db88",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Onze reviews"
+            }
+        },
+        {
+            "id": "fec6b09",
+            "elType": "widget",
+            "widgetType": "shortcode"
+        },
+        {
+            "id": "5a0a1ba",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "Bekijk alle reviews",
+                "__dynamic__": [],
+                "link": {
+                    "url": "https://www.google.com/search?sca_esv=d0d359b5ee50896e&rlz=1C1ONGR_nlNL984NL984&sxsrf=ANbL-n7ZruiJiO2KFjKcmBtNhLrS1GbMIg:1780933125000&q=Proline+Afbouw&si=AL3DRZEsmMGCryMMFSHJ3StBhOdZ2-6yYkXd_doETEE1OR-qOZw4sEXteRwa_iyWYQjMgvWa_fbLAXSWWnPMuiRtTmqrDmh2OVqZW7vfEVDY8W_G-GTfgqI%3D&uds=ALYpb_mM1P_6lpjjfowRxWEKPgkkqbwy9cYqNpBwnjzrwZ73hVtAVWFxkNHnQylupJK-IMLLckH_d1BZsUoFWUc_qu6DPbGg42pzNUWxvX5eDzu7pwMmv5E&sa=X&ved=2ahUKEwiR76Ly_PeUAxXHr1YBHTBXHtwQ3PALegQIGRAE&biw=1536&bih=730&dpr=1.25",
+                    "is_external": "on",
+                    "nofollow": "",
+                    "custom_attributes": ""
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
