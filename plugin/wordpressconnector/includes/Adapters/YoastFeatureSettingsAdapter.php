@@ -176,9 +176,12 @@ final class YoastFeatureSettingsAdapter
             }
         }
         update_option($group, $options);
-        if (array_intersect_key($this->snapshot(), $previous) !== $previous) {
-            update_option($group, $oldOptions);
-            throw new RuntimeException('Yoast feature rollback readback mismatch.');
+        $restored = $this->snapshot();
+        foreach ($previous as $name => $value) {
+            if ($restored[$name] !== $value) {
+                update_option($group, $oldOptions);
+                throw new RuntimeException('Yoast feature rollback readback mismatch.');
+            }
         }
         return array('restored' => true, 'fields' => array_keys($previous));
     }
