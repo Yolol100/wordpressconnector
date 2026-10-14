@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-seo-phase1-inspect-20261014",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 177
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 512
+        }
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 177,
+          "element_ids": [
+            "0c504ba"
+          ]
+        }
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 512,
+          "element_ids": [
+            "0d0e133"
+          ]
+        }
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
