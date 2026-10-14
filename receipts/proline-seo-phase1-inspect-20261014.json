@@ -1,0 +1,56 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-seo-phase1-inspect-20261014",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T10:38:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 177,
+                "type": "page",
+                "status": "publish",
+                "title": "Home",
+                "slug": "home",
+                "permalink": "https://prolineafbouw.nl/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "2bfa0dc63c949361015a854bb16b7e3c66993fc68a94cca8da9295e5f8aa334f"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 512,
+                "type": "elementor_library",
+                "status": "publish",
+                "title": "Reviews",
+                "slug": "reviews",
+                "permalink": "https://prolineafbouw.nl/?elementor_library=reviews",
+                "excerpt": ""
+            },
+            "post_fingerprint": "22e149fab22cea764417c4a4fdec4b99d19057a3b1831ba7bd77bb507e88d265"
+        },
+        {
+            "index": 2,
+            "action": "elementor.inspect",
+            "result_fingerprint": "98bd9092db4b9d196b89cb4931d6ce912a2433612e80444b046e2c36e527bcfd"
+        },
+        {
+            "index": 3,
+            "action": "elementor.inspect",
+            "result_fingerprint": "86c5daa4960e81cf5327a545155a8a7c60a30f81db7f819d9e0fd13f238fe6d3"
+        },
+        {
+            "index": 4,
+            "action": "maintenance.cache_capabilities",
+            "result_fingerprint": "cd4331f13723f3ef7f41158d1d893fdaf4587938176bca1409d1e4ef4e0d111c"
+        }
+    ],
+    "readback_verified": null
+}
