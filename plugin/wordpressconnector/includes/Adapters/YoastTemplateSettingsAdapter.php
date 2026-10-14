@@ -12,7 +12,7 @@ final class YoastTemplateSettingsAdapter {
         'page_title'=>'title-page','page_description'=>'metadesc-page',
         'post_title'=>'title-post','post_description'=>'metadesc-post',
         'product_title'=>'title-product','product_description'=>'metadesc-product',
-        'category_title'=>'title-tax-category',
+        'category_title'=>'title-tax-category','category_description'=>'metadesc-tax-category',
         'product_category_title'=>'title-tax-product_cat',
         'product_category_description'=>'metadesc-tax-product_cat');
     public function register(Registry $registry): void {
