@@ -22,6 +22,12 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 
 Version 1.17.2 added an exact-identity **private-only** trust rule for the `Yolol100/Wordpress` GitHub Actions executor: its signed OIDC claim must report `repository_visibility=private` in addition to the pinned repository ID and workflow. **Live repository visibility on 2026-10-14 is public**, so this private execution route is **not available** in the current repository state. Do not assume private transport from its name, bypass the visibility check, or write full/private site results to public branches, logs, artifacts or PRs. The public WordPress runtime workflow also rejects full result files. The private-only exception to public action restrictions applies only if the repository truly becomes private and all original OIDC and request security gates pass; confirmation, capability, idempotency, stale-state, readback/rollback, filesystem and sensitive-action gates remain mandatory. See `plugin/wordpressconnector/includes/Security/GitHubOidc.php` and `tests/github-oidc-contract.php` for the fail-closed contract.
 
+## Native WordPress update notifications
+
+Starting with release 1.19.0, the plugin declares a canonical GitHub `Update URI` and offers newer, validated releases to WordPress Core through the native **Plugins → Update Now** flow. Only this plugin's updates are handled. The Core upgrader receives a temporary ZIP after the existing trusted GitHub release, SHA-256 and archive identity checks succeed; invalid or unavailable releases fail closed.
+
+The existing guarded `connector.update.check` and `connector.update.apply` actions remain independent for already-installed older versions. **An installation still on 1.18.9 (`Update URI: false`) requires one supervised upgrade to 1.19.0 before native dashboard notices are enabled.** Manual site backups and a tested restore are recommended; WordPress Core's temporary backup protects only supported installation failures, not defects after a successful update.
+
 ## Zero-config GitHub connection
 
 From version 1.13.0, normal GitHub transport requires no repository secrets, no `WPCONNECTOR_SITE_URL` variable, no WordPress username, no Application Password and no WordPress settings checkboxes.
