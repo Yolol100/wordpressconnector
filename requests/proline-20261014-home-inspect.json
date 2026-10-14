@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-home-inspect",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 177,
+    "element_ids": [
+      "0c504ba"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
