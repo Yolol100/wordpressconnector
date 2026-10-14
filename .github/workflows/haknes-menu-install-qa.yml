@@ -218,3 +218,50 @@ jobs:
             }finally{await browser.close()}
           })().catch(e=>{console.error('INTERACTIVE_FATAL',String(e));process.exit(1)});
           JS
+
+      - name: Exercise mobile category submenu without modifying site
+        shell: bash
+        run: |
+          node - <<'JS'
+          const { chromium } = require('./designchecker/node_modules/playwright');
+          (async()=>{
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try{
+              const page=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+              await page.goto('https://haknes.nl/',{waitUntil:'domcontentloaded',timeout:50000});
+              await page.waitForTimeout(700);
+              const state=()=>page.evaluate(()=>{
+                const g=(s)=>{let x=document.querySelector(s);if(!x)return null;const r=x.getBoundingClientRect(),st=getComputedStyle(x);return {w:Math.round(r.width),h:Math.round(r.height),display:st.display}};
+                return {
+                  menu:g('nav.wa-dpcm7-menu'),
+                  old_widget_maiskip:g('.elementor-element-792429c'),
+                  old_widget_paprika:g('.elementor-element-54d3984'),
+                  nav_wrapper:g('.e-n-menu-wrapper'),
+                  count_visible_menu_buttons:[...document.querySelectorAll('button.e-n-menu-dropdown-icon')].filter(x=>{const r=x.getBoundingClientRect();return r.width>0}).length
+                };
+              });
+              console.log('MOBILE_START',JSON.stringify(await state()));
+              const mainToggle=page.locator('.elementor-menu-toggle:visible,button[aria-label*="menu" i]:visible').first();
+              if(await mainToggle.count()){
+                await mainToggle.click({timeout:6000});
+                await page.waitForTimeout(550);
+                console.log('MOBILE_ROOT_OPEN',JSON.stringify(await state()));
+              }
+              const buttons=page.locator('button.e-n-menu-dropdown-icon:visible');
+              const count=await buttons.count();
+              console.log('MOBILE_SUBMENU_BUTTONS',count);
+              for(let i=0;i<Math.min(count,6);i++){
+                try{
+                  const b=buttons.nth(i);
+                  const parent=await b.evaluate(e=>e.closest('.e-n-menu-item')?.innerText?.slice(0,70)||e.parentElement?.innerText?.slice(0,70));
+                  console.log('MOBILE_SUBMENU_CANDIDATE',i,JSON.stringify(parent));
+                  if(!String(parent).toLowerCase().includes('ons assortiment'))continue;
+                  await b.click({timeout:7000});await page.waitForTimeout(600);
+                  console.log('MOBILE_AFTER_ASSORTIMENT_OPEN',JSON.stringify(await state()));
+                  break;
+                }catch(e){console.log('MOBILE_SUBMENU_ERROR',i,String(e).slice(0,140));}
+              }
+              await page.close();
+            }finally{await browser.close()}
+          })().catch(e=>{console.error('MOBILE_FATAL',String(e));process.exit(1)});
+          JS
