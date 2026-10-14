@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-loopitem-heading-preflight-20261014",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 4799,
+    "element_ids": [
+      "c5ba20a"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
