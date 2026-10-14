@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.0
+Stable tag: 1.19.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,6 +152,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.1 =
+* Expand the existing privately authorized Yoast text-template allowlist: category/tag archive descriptions, author/date/search/404 titles and descriptions, and content-type/taxonomy/social metadata templates and bounded breadcrumb labels based on documented Yoast option names. Do not expose credentials or broad arbitrary settings.
+* Test private read/dry-run/write/rollback and ensure the public GitHub route still exposes only the two permitted taxonomy title fields.
+* Add an explicitly private-only typed Yoast feature/advanced-toggle adapter, limiting writes to one option group and requiring acknowledgement for sitemap/indexability/Schema changes; provider readback and guarded rollback remain mandatory.
+* Keep role checks, confirmation, fingerprints and existing plugin action boundaries unchanged.
+
 
 = 1.19.0 =
 * Register a native WordPress Update URI and release-response hook for WordPress Connector only.

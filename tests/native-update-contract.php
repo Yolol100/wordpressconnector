@@ -15,7 +15,7 @@ namespace Webactueel\WordPressConnector\Runtime {
 
 namespace {
     $GLOBALS['native_hooks'] = array();
-    $GLOBALS['test_release_version'] = '1.19.1';
+    $GLOBALS['test_release_version'] = '0.0.0';
     $GLOBALS['test_release_status'] = 200;
     $GLOBALS['release_calls'] = 0;
     $GLOBALS['download_calls'] = 0;
@@ -67,6 +67,10 @@ namespace {
         throw new \RuntimeException('Native Update URI or plugin version missing.');
     }
     define('WPCONNECTOR_VERSION', $version[1]);
+    $newVersionParts = explode('.', $version[1]);
+    $newVersionParts[2] = (string) ((int) $newVersionParts[2] + 1);
+    $newerVersion = implode('.', $newVersionParts);
+    $GLOBALS['test_release_version'] = $newerVersion;
     require_once $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
     $adapter = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
     $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
@@ -83,10 +87,10 @@ namespace {
 
     $uri = 'https://github.com/Yolol100/wordpressconnector';
     $plugin = 'wordpressconnector/wordpressconnector.php';
-    $meta = array('UpdateURI' => $uri, 'Version' => '1.19.0');
+    $meta = array('UpdateURI' => $uri, 'Version' => $version[1]);
     $update = $adapter->nativeUpdateOffer(false, $meta, $plugin, array('nl_NL'));
-    if (! is_array($update) || $update['version'] !== '1.19.1' || $update['slug'] !== 'wordpressconnector'
-        || ! isset($update['package']) || false === strpos($update['package'], '/v1.19.1/wordpressconnector.zip')
+    if (! is_array($update) || $update['version'] !== $newerVersion || $update['slug'] !== 'wordpressconnector'
+        || ! isset($update['package']) || false === strpos($update['package'], '/v' . $newerVersion . '/wordpressconnector.zip')
         || $update['autoupdate'] !== false) {
         throw new \RuntimeException('Canonical native update was not offered.');
     }
@@ -96,7 +100,7 @@ namespace {
         || $calls !== $GLOBALS['release_calls']) {
         throw new \RuntimeException('Native updater affected an unrelated plugin.');
     }
-    if (false !== $adapter->nativeUpdateOffer(false, array('UpdateURI' => $uri, 'Version' => '1.19.1'), $plugin, array())) {
+    if (false !== $adapter->nativeUpdateOffer(false, array('UpdateURI' => $uri, 'Version' => $newerVersion), $plugin, array())) {
         throw new \RuntimeException('Native updater offered equal version.');
     }
     $GLOBALS['test_release_version'] = '1.18.9';
@@ -107,7 +111,7 @@ namespace {
     if (false !== $adapter->nativeUpdateOffer(false, $meta, $plugin, array())) {
         throw new \RuntimeException('Failed release source did not fail closed.');
     }
-    $GLOBALS['test_release_version'] = '1.19.1';
+    $GLOBALS['test_release_version'] = $newerVersion;
     $GLOBALS['test_release_status'] = 200;
 
     $hook = array('plugin' => $plugin, 'type' => 'plugin', 'action' => 'update');

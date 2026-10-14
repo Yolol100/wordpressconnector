@@ -1,7 +1,32 @@
 <?php
 declare(strict_types=1);
+final class MockYoastTitlesOption
+{
+    public function get_defaults(): array
+    {
+        return array_fill_keys(array(
+            'title-page', 'metadesc-tax-category', 'title-archive-wpseo',
+            'open_graph_frontpage_title', 'social-description-tax-post_tag',
+            'metadesc-product', 'breadcrumbs-home', 'breadcrumbs-sep',
+        ), '');
+    }
+    public function is_disabled(string $key): bool
+    {
+        return $key === ($GLOBALS['tps_disabled'] ?? '');
+    }
+}
+final class WPSEO_Options
+{
+    public static function get_option_instance(string $option)
+    {
+        return $option === 'wpseo_titles' ? new MockYoastTitlesOption() : false;
+    }
+}
 $GLOBALS['tps_options']=array('wpseo_titles'=>array(
-    'title-page'=>'Old %%title%%','company_name'=>'Tape Solutions','other_key'=>'preserve'));
+    'title-page'=>'Old %%title%%','metadesc-tax-category'=>'Previous %%term_title%% summary',
+    'title-archive-wpseo'=>'Old dated %%date%% posts','open_graph_frontpage_title'=>'Old social identity',
+    'breadcrumbs-home'=>'Home', 'breadcrumbs-sep'=>'»',
+    'social-description-tax-post_tag'=>'Prior tag social summary','company_name'=>'Tape Solutions','other_key'=>'preserve'));
 $GLOBALS['tps_caps']=array();
 function get_option($key,$default=null){return $GLOBALS['tps_options'][$key]??$default;}
 function update_option($key,$value){$GLOBALS['tps_options'][$key]=$value;return true;}
@@ -38,8 +63,21 @@ if(array_keys($publicTitles['fields'])!==array('category_title','product_categor
 }
 $policy::setPublicRepositoryContext(false);
 if($before['fields']['page_title']!=='Old %%title%%'||
+    $before['fields']['category_description']!=='Previous %%term_title%% summary'||
+    $before['fields']['date_archive_title']!=='Old dated %%date%% posts'||
+    $before['fields']['home_social_title']!=='Old social identity'||
+    $before['fields']['breadcrumb_home_label']!=='Home'||
+    $before['fields']['breadcrumb_separator']!=='»'||
+    $before['fields']['tag_social_description']!=='Prior tag social summary'||
+    !array_key_exists('search_results_title',$before['fields'])||
+    !array_key_exists('author_social_title',$before['fields'])||
     $before['fields']['product_description']!==null)throw new RuntimeException('Baseline wrong.');
 $changes=array('page_title'=>'%%title%% %%sep%% %%sitename%%',
+    'category_description'=>'%%term_title%%: informatie en nieuws van %%sitename%%',
+    'date_archive_title'=>'%%date%% %%sep%% %%sitename%%',
+    'home_social_title'=>'Proline: %%sitename%%',
+    'breadcrumb_home_label'=>'Begin', 'breadcrumb_separator'=>'›',
+    'tag_social_description'=>'Bekijk %%term_title%% op %%sitename%%',
     'product_description'=>'%%excerpt%%');
 $preview=$registry->execute('yoast.templates.update',array('fields'=>$changes),array('dry_run'=>true));
 if($preview['after']['page_title']!==$changes['page_title']||
@@ -47,6 +85,12 @@ if($preview['after']['page_title']!==$changes['page_title']||
     throw new RuntimeException('Dry-run changed state.');
 $apply=$registry->execute('yoast.templates.update',array('fields'=>$changes),array('dry_run'=>false));
 if($GLOBALS['tps_options']['wpseo_titles']['other_key']!=='preserve'||
+    $registry->execute('yoast.templates.inspect',array())['fields']['category_description']!==$changes['category_description']||
+    $registry->execute('yoast.templates.inspect',array())['fields']['date_archive_title']!==$changes['date_archive_title']||
+    $registry->execute('yoast.templates.inspect',array())['fields']['home_social_title']!==$changes['home_social_title']||
+    $registry->execute('yoast.templates.inspect',array())['fields']['breadcrumb_home_label']!==$changes['breadcrumb_home_label']||
+    $registry->execute('yoast.templates.inspect',array())['fields']['breadcrumb_separator']!==$changes['breadcrumb_separator']||
+    $registry->execute('yoast.templates.inspect',array())['fields']['tag_social_description']!==$changes['tag_social_description']||
     $registry->execute('yoast.templates.inspect',array())['fields']['product_description']!=='%%excerpt%%')
     throw new RuntimeException('Unrelated option changed or write missing.');
 $expectFail(static function()use($registry,$apply){
@@ -60,11 +104,24 @@ if($after['fields']!==$before['fields']||
 $expectFail(static function()use($registry,$apply){
     $registry->execute('yoast.templates.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true));
 },'changed since write');
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('tag_description'=>'Unsupported in fixture')),array('dry_run'=>true));
+},'does not recognize the requested template field');
+$GLOBALS['tps_disabled']='title-page';
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('page_title'=>'Blocked by network')),array('dry_run'=>true));
+},'disabled by network/site policy');
+$GLOBALS['tps_disabled']='';
 foreach(array(
     array('fields'=>array('wpseo_titles'=>'x'),'error'=>'Unsupported'),
     array('fields'=>array('page_title'=>array('x')),'error'=>'Unsupported'),
     array('fields'=>array('page_title'=>''),'error'=>'Invalid template'),
     array('fields'=>array('home_description'=>str_repeat('x',321)),'error'=>'Invalid template'),
+    array('fields'=>array('category_description'=>str_repeat('x',321)),'error'=>'Invalid template'),
+    array('fields'=>array('tag_social_description'=>str_repeat('x',321)),'error'=>'Invalid template'),
+    array('fields'=>array('date_archive_title'=>array('unexpected')),'error'=>'Unsupported'),
+    array('fields'=>array('breadcrumb_separator'=>str_repeat('x',21)),'error'=>'Invalid template'),
+    array('fields'=>array('breadcrumb_home_label'=>str_repeat('x',121)),'error'=>'Invalid template'),
 ) as $case){
     $expected=$case['error'];
     $expectFail(static function()use($registry,$case){
