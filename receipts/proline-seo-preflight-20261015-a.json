@@ -1,0 +1,28 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-seo-preflight-20261015-a",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T22:09:07+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "connector.update.check",
+            "result_fingerprint": "d711fcae10156559418b89ab813a584d94a4058ce452be48bc5386606bc9ecce"
+        },
+        {
+            "index": 1,
+            "action": "elementor.inspect",
+            "result_fingerprint": "40e301c227411274302c228fd22543f1a9549257e335583deb9a56171c3b1f3d"
+        },
+        {
+            "index": 2,
+            "action": "elementor.inspect",
+            "result_fingerprint": "859d40fbacd3110318c0222842f7603817b8291d13d8c89e23e2085be0bec44b"
+        }
+    ],
+    "readback_verified": null
+}
