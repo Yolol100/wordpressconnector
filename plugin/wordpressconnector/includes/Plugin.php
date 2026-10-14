@@ -32,6 +32,7 @@ use Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastTemplateSettingsAdapter;
+use Webactueel\WordPressConnector\Adapters\YoastFeatureSettingsAdapter;
 use Webactueel\WordPressConnector\Admin\ElementorJsonExport;
 use Webactueel\WordPressConnector\Admin\ElementorJsonImport;
 use Webactueel\WordPressConnector\Admin\Settings;
@@ -71,6 +72,7 @@ final class Plugin
             new PortfolioStatsAdapter(),
             new YoastAdapter(),
             new YoastTemplateSettingsAdapter(),
+            new YoastFeatureSettingsAdapter(),
             new MediaAdapter(),
             new AutoImageAttributesAdapter(),
             new GTranslateSettingsAdapter(),
