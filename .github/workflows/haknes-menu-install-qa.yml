@@ -62,8 +62,8 @@ jobs:
                   for label in ['Maïskip','Paprika poeder gerookt','Wudy Worst','Rundertong']:
                       hits=[(x['text'],x['href']) for x in parser.links if label.lower() in x['text'].lower()][:7]
                       print('PRODUCT_LINK',label,repr(hits),flush=True)
-                  print('SOURCE_MARKERS', 'dynamic_menu_markup',bool(re.search(r'class=["\\'][^"\\']*wa-dpcm7-menu\\b',page)),
-                       'hide_rule_present',bool(re.search(r'\\.old-static-product-menu\\s*\\{',page)),
+                  print('SOURCE_MARKERS', 'dynamic_menu_markup','wa-dpcm7-menu' in page,
+                       'hide_rule_present','.old-static-product-menu' in page,
                        'shortcode_literal', '[wa_product_category_menu]' in page, flush=True)
           print('TOTAL','pages_ok',len(samples)-missing,'pages_expected',len(samples),'old_product_links',total_old,'dynamic_menu_elements',total_menus,flush=True)
           if missing:raise SystemExit('Some pages unavailable')
