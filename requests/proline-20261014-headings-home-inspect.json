@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-headings-home-inspect",
+  "action": "elementor.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 177,
+    "element_ids": [
+      "398f6a1",
+      "d137630"
+    ]
+  }
+}
