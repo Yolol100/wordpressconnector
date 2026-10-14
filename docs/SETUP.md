@@ -12,6 +12,12 @@ The plugin immediately registers:
 - an informational `Settings -> WordPress Connector` page;
 - optional WP-CLI commands.
 
+## Native Plugins-screen updates (1.19.0+)
+
+After the one-time upgrade from 1.18.9 (which declares `Update URI: false`), WordPress Core checks the canonical GitHub release via the plugin's `Update URI` response filter. An administrator sees **Plugins > Update Now** when the latest validated release is newer. The existing SHA-256 and plugin ZIP identity verification run again before Core receives the update package. Other GitHub plugins are not intercepted.
+
+Do not confuse this ordinary WordPress dashboard upgrade with the guarded `connector.update.apply` REST action. Both share trusted package verification; WordPress's temporary backup is not a general rollback after a successful installation. Take and test an external backup before a first production upgrade. Automatic background updates are not enabled by this change.
+
 ## 2. Zero-config GitHub runtime
 
 A runtime request includes the target site itself:
@@ -56,7 +62,7 @@ GitHub cannot securely enumerate arbitrary unknown WordPress domains merely beca
 
 ## 4. Private full-action control plane
 
-For full connector administration use the private `Yolol100/Wordpress` repository with its trusted `wordpressconnector-request.yml` -> `wordpressconnector-zero-config-execute.yml` flow. Private request branches may use the full registered action catalog and may persist full `results/*.json`. This is still not an unrestricted shell: connector confirmation, WordPress capabilities, semantic payload validation, idempotency, stale-state protection, readback/rollback and filesystem/package guards remain enforced.
+For full connector administration a separately verified **private** `Yolol100/Wordpress` repository is required with its trusted `wordpressconnector-request.yml` -> `wordpressconnector-zero-config-execute.yml` flow. Private request branches may use the full registered action catalog and may persist full `results/*.json`. This is still not an unrestricted shell: connector confirmation, WordPress capabilities, semantic payload validation, idempotency, stale-state protection, readback/rollback and filesystem/package guards remain enforced.
 
 ## 5. Repository visibility and public-mode restrictions
 
