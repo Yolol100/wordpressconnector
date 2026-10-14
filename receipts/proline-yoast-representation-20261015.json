@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-yoast-representation-20261015",
+    "action": "yoast.site_representation.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T22:13:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "company_or_person": "company",
+        "company_name": "Prolineafbouw",
+        "org_description": ""
+    },
+    "settings_fingerprint": "80c73bfc14d472ab2f40d4db710a1b8a133aa368f1ebbcf7b5f50bf9349addcd",
+    "readback_verified": null
+}
