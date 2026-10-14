@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-category-pagination-preview",
+  "action": "yoast.templates.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% %%sep%% Proline Afbouw"
+    }
+  }
+}
