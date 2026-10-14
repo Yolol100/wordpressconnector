@@ -13,6 +13,18 @@ final class YoastTemplateSettingsAdapter {
         'post_title'=>'title-post','post_description'=>'metadesc-post',
         'product_title'=>'title-product','product_description'=>'metadesc-product',
         'category_title'=>'title-tax-category','category_description'=>'metadesc-tax-category',
+        'tag_title'=>'title-tax-post_tag','tag_description'=>'metadesc-tax-post_tag',
+        'author_title'=>'title-author-wpseo','author_description'=>'metadesc-author-wpseo',
+        'date_archive_title'=>'title-archive-wpseo','date_archive_description'=>'metadesc-archive-wpseo',
+        'search_results_title'=>'title-search-wpseo','not_found_title'=>'title-404-wpseo',
+        'home_social_title'=>'open_graph_frontpage_title','home_social_description'=>'open_graph_frontpage_desc',
+        'post_social_title'=>'social-title-post','post_social_description'=>'social-description-post',
+        'page_social_title'=>'social-title-page','page_social_description'=>'social-description-page',
+        'product_social_title'=>'social-title-product','product_social_description'=>'social-description-product',
+        'category_social_title'=>'social-title-tax-category','category_social_description'=>'social-description-tax-category',
+        'tag_social_title'=>'social-title-tax-post_tag','tag_social_description'=>'social-description-tax-post_tag',
+        'author_social_title'=>'social-title-author-wpseo','author_social_description'=>'social-description-author-wpseo',
+        'date_archive_social_title'=>'social-title-archive-wpseo','date_archive_social_description'=>'social-description-archive-wpseo',
         'product_category_title'=>'title-tax-product_cat',
         'product_category_description'=>'metadesc-tax-product_cat');
     public function register(Registry $registry): void {
