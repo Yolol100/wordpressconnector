@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-siteaudit-preflight-20261014",
+  "action": "plugin.audit.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
