@@ -20,7 +20,7 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 
 ## Trusted private control plane
 
-Version 1.17.2 also trusts the exact private `Yolol100/Wordpress` GitHub Actions executor. Because that repository is private, requests and full results stay off the public connector repository and the connector does not apply the public action allowlist. All registered actions still pass their normal confirmation, capability, idempotency, stale-state, readback/rollback, filesystem and sensitive-action gates.
+Version 1.17.2 added an exact-identity **private-only** trust rule for the `Yolol100/Wordpress` GitHub Actions executor: its signed OIDC claim must report `repository_visibility=private` in addition to the pinned repository ID and workflow. **Live repository visibility on 2026-10-14 is public**, so this private execution route is **not available** in the current repository state. Do not assume private transport from its name, bypass the visibility check, or write full/private site results to public branches, logs, artifacts or PRs. The public WordPress runtime workflow also rejects full result files. The private-only exception to public action restrictions applies only if the repository truly becomes private and all original OIDC and request security gates pass; confirmation, capability, idempotency, stale-state, readback/rollback, filesystem and sensitive-action gates remain mandatory. See `plugin/wordpressconnector/includes/Security/GitHubOidc.php` and `tests/github-oidc-contract.php` for the fail-closed contract.
 
 ## Zero-config GitHub connection
 
