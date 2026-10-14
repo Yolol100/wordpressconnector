@@ -19,6 +19,8 @@ final class ConnectorUpdateAdapter
     private const MAX_PACKAGE_BYTES = 20971520;
     private const MAX_UNCOMPRESSED_BYTES = 104857600;
     private const MAX_ENTRIES = 2500;
+    // Only the already verified local ZIP for the current guarded REST self-update.
+    private $verifiedSelfUpdatePackagePath = null;
 
     public function register(Registry $registry): void
     {
@@ -104,6 +106,14 @@ final class ConnectorUpdateAdapter
                 return $reply;
             }
             return new \WP_Error('wordpressconnector_update_source', 'WordPress Connector requires its verified canonical release package.');
+        }
+
+        // The guarded REST self-updater already validated this exact local ZIP.
+        // Let Core use it as a local path; do not force a second remote download.
+        // Every ordinary single/bulk dashboard update still verifies the release.
+        if (null !== $this->verifiedSelfUpdatePackagePath
+            && hash_equals($this->verifiedSelfUpdatePackagePath, $package)) {
+            return false;
         }
 
         try {
@@ -260,6 +270,7 @@ final class ConnectorUpdateAdapter
         // inactive after a successful file-version readback.
         add_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10, 2);
         add_filter('upgrader_post_install', array($upgrader, 'active_after'), 10, 2);
+        $this->verifiedSelfUpdatePackagePath = $package;
         try {
             $result = $upgrader->run(array(
                 'package' => $package,
@@ -275,6 +286,7 @@ final class ConnectorUpdateAdapter
                 ),
             ));
         } finally {
+            $this->verifiedSelfUpdatePackagePath = null;
             remove_filter('upgrader_source_selection', array($upgrader, 'check_package'));
             // No deactivation callback was installed by this self-update.
             remove_filter('upgrader_pre_install', array($upgrader, 'active_before'), 10);
