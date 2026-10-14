@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-seo-preflight-20261015-a",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 4799,
+          "element_ids": [
+            "c5ba20a"
+          ]
+        }
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 4797,
+          "element_ids": [
+            "2235386"
+          ]
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
