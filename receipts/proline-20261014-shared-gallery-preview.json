@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-shared-gallery-preview",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T10:47:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 2214,
+    "element_id": "0d0e133",
+    "before_fingerprint": "09615b052c60c304c72b8702d98439bdd5d89360869c111c4648178e31745b37",
+    "after_fingerprint": "687d73ba25050c4ef893044599ef59293fe9857ebb6a6d78b373cc99dd313803"
+}
