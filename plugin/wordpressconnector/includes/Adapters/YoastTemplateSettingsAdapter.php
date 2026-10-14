@@ -45,6 +45,7 @@ final class YoastTemplateSettingsAdapter {
     }
     public function update(array $payload,array $context): array {
         $changes=$this->validateFields($payload['fields']??null,false);
+        $this->assertProviderSupportsFields($changes);
         $before=$this->snapshot();$after=array_replace($before,$changes);
         $result=array('before'=>$before,'after'=>$after,'_current_fingerprint'=>Fingerprint::make($before));
         if(!empty($context['dry_run']))return $result;
@@ -109,6 +110,32 @@ final class YoastTemplateSettingsAdapter {
         }
         return $clean;
     }
+    private function assertProviderSupportsFields(array $changes): void {
+        if (Policy::publicRepositoryContext()) {
+            // Existing public taxonomy-title contract has its own stricter validator.
+            return;
+        }
+        if (!class_exists('WPSEO_Options') || !method_exists('WPSEO_Options','get_option_instance')) {
+            throw new RuntimeException('Yoast option schema API is unavailable.');
+        }
+        $instance=\WPSEO_Options::get_option_instance('wpseo_titles');
+        if (!is_object($instance) || !method_exists($instance,'get_defaults')) {
+            throw new RuntimeException('Installed Yoast version has no verified titles schema.');
+        }
+        $defaults=$instance->get_defaults();
+        if (!is_array($defaults)) {
+            throw new RuntimeException('Installed Yoast titles schema was invalid.');
+        }
+        foreach ($changes as $key=>$value) {
+            if (!array_key_exists(self::KEYS[$key],$defaults)) {
+                throw new RuntimeException('Installed Yoast does not recognize the requested template field.');
+            }
+            if (method_exists($instance,'is_disabled') && $instance->is_disabled(self::KEYS[$key])) {
+                throw new RuntimeException('The requested Yoast field is disabled by network/site policy.');
+            }
+        }
+    }
+
     private function options(): array {
         $value=get_option('wpseo_titles',null);
         if(!is_array($value))throw new RuntimeException('Yoast settings unavailable.');
