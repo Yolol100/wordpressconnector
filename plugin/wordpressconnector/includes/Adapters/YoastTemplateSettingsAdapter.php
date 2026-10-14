@@ -25,6 +25,9 @@ final class YoastTemplateSettingsAdapter {
         'tag_social_title'=>'social-title-tax-post_tag','tag_social_description'=>'social-description-tax-post_tag',
         'author_social_title'=>'social-title-author-wpseo','author_social_description'=>'social-description-author-wpseo',
         'date_archive_social_title'=>'social-title-archive-wpseo','date_archive_social_description'=>'social-description-archive-wpseo',
+        'breadcrumb_home_label'=>'breadcrumbs-home','breadcrumb_separator'=>'breadcrumbs-sep',
+        'breadcrumb_prefix'=>'breadcrumbs-prefix','breadcrumb_archive_prefix'=>'breadcrumbs-archiveprefix',
+        'breadcrumb_search_prefix'=>'breadcrumbs-searchprefix','breadcrumb_404_label'=>'breadcrumbs-404crumb',
         'product_category_title'=>'title-tax-product_cat',
         'product_category_description'=>'metadesc-tax-product_cat');
     public function register(Registry $registry): void {
@@ -90,7 +93,13 @@ final class YoastTemplateSettingsAdapter {
                 (!is_string($value)&&!($restore&&$value===null)))
                 throw new RuntimeException('Unsupported Yoast template field.');
             if($value!==null){
-                if(strlen($value)>(strpos($key,'description')!==false?320:190)||
+                $maxBytes = (strpos($key,'description')!==false ? 320 : 190);
+                if ($key === 'breadcrumb_separator') {
+                    $maxBytes = 20;
+                } elseif (strpos($key, 'breadcrumb_') === 0) {
+                    $maxBytes = 120;
+                }
+                if(strlen($value)>$maxBytes||
                     (!$restore&&trim($value)===''))
                     throw new RuntimeException('Invalid template length.');
                 $value=$restore?$value:sanitize_text_field($value);
