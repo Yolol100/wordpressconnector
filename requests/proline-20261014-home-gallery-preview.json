@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-home-gallery-preview",
+  "action": "elementor.patch_element",
+  "dry_run": true,
+  "confirm": false,
+  "expected_fingerprint": "b76ce17381cdbcb8d3716cd056f8039cba680dcda620f2f995938417fdb3cc2f",
+  "payload": {
+    "id": 177,
+    "element_id": "0c504ba",
+    "settings": {
+      "slides": {
+        "1": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/01/schilderwerk-binnen-buiten-proline-afbouw.jpg"
+          }
+        },
+        "24": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/01/binnenschilderwerk-groene-muur-lichte-kamer.jpg"
+          }
+        },
+        "29": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/01/latex-spuiten-wand-trap-afplakken-proline-afbouw.jpg"
+          }
+        },
+        "32": {
+          "image": {
+            "url": "https://prolineafbouw.nl/wp-content/uploads/2025/01/latex-spuiten-binnenmuur-strakke-afwerking-proline-afbouw.jpg"
+          }
+        }
+      }
+    }
+  }
+}
