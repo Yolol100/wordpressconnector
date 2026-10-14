@@ -126,5 +126,23 @@ namespace {
         throw new \RuntimeException('Verified-download failure did not stop the update.');
     }
 
-    echo "native plugin update offers, isolation and integrity failure gates OK\n";
+    // WordPress Plugin_Upgrader::bulk_upgrade() omits type/action in hook_extra.
+    // The connector still MUST verify its own ZIP before the bulk installer runs.
+    $bulkHook = array('plugin' => $plugin, 'temp_backup' => array('slug' => 'wordpressconnector'));
+    if (! is_wp_error($adapter->verifiedNativeDownload(false, 'https://evil.example/package.zip', null, $bulkHook))
+        || 1 !== $GLOBALS['download_calls']) {
+        throw new \RuntimeException('Bulk update skipped the connector package authenticity check.');
+    }
+    if (! is_wp_error($adapter->verifiedNativeDownload(false, $update['package'], null, $bulkHook))
+        || 2 !== $GLOBALS['download_calls']) {
+        throw new \RuntimeException('Bulk updater bypassed the verified ZIP download or failed open.');
+    }
+    foreach (array(array('type' => 'theme'), array('action' => 'install')) as $conflict) {
+        if (false !== $adapter->verifiedNativeDownload(false, $update['package'], null, array_merge($bulkHook, $conflict))
+            || 2 !== $GLOBALS['download_calls']) {
+            throw new \RuntimeException('Conflicting update target incorrectly accepted.');
+        }
+    }
+
+    echo "native plugin update offers, single and bulk verified download gates OK\n";
 }
