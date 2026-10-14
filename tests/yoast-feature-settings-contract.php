@@ -4,6 +4,33 @@ declare(strict_types=1);
 
 define('WPSEO_VERSION', '28.7');
 
+final class YoastFeatureFakeSchema
+{
+    private $group;
+    public function __construct(string $group) { $this->group = $group; }
+    public function get_defaults(): array
+    {
+        if ($this->group === 'wpseo') {
+            return array_fill_keys(array(
+                'keyword_analysis_active', 'content_analysis_active', 'enable_xml_sitemap',
+                'enable_schema', 'enable_headless_rest_endpoints', 'enable_enhanced_slack_sharing',
+                'enable_admin_bar_menu',
+            ), true);
+        }
+        if ($this->group === 'wpseo_titles') {
+            return array_fill_keys(array('breadcrumbs-enable', 'breadcrumbs-boldlast', 'noindex-post'), true);
+        }
+        return array();
+    }
+}
+final class WPSEO_Options
+{
+    public static function get_option_instance(string $group): YoastFeatureFakeSchema
+    {
+        return new YoastFeatureFakeSchema($group);
+    }
+}
+
 $GLOBALS['feature_opts'] = array(
     'wpseo' => array(
         'keyword_analysis_active' => true,
@@ -171,6 +198,12 @@ foreach (array(
         $registry->execute('yoast.features.update', $bad, array('dry_run' => true));
     }, isset($bad['arbitrary']) ? 'accepts only fields' : 'Unsupported Yoast feature field or value');
 }
+
+$fail(static function () use ($registry): void {
+    $registry->execute('yoast.features.update', array(
+        'fields' => array('wincher_integration_enabled' => false),
+    ), array('dry_run' => true));
+}, 'does not recognize the requested feature');
 
 $GLOBALS['simulate_feature_rejection'] = true;
 $schemaChange = array('fields' => array('schema_enabled' => false), 'risk_acknowledged' => true);
