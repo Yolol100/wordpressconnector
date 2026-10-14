@@ -18,6 +18,14 @@ After the one-time upgrade from 1.18.9 (which declares `Update URI: false`), Wor
 
 Do not confuse this ordinary WordPress dashboard upgrade with the guarded `connector.update.apply` REST action. Both share trusted package verification; WordPress's temporary backup is not a general rollback after a successful installation. Take and test an external backup before a first production upgrade. Automatic background updates are not enabled by this change.
 
+## Yoast SEO templates and secure transport
+
+The existing `yoast.templates.inspect`, `yoast.templates.update` and rollback action use an explicit, bounded field map rather than arbitrary `wpseo_titles` option access. Version 1.19.1 adds the privately authorized `category_description` field mapped to Yoast's `metadesc-tax-category` option. Current per-post `yoast.inspect` / `yoast.update` remain restricted to the already supported SEO fields.
+
+**Public GitHub runtime does not offer arbitrary Yoast settings.** Its `yoast.templates.inspect` result includes only `category_title` and `product_category_title`, and the public request validator accepts updates to exactly those title fields. In particular `category_description` is intentionally not available through the public transport. Do not relax `Policy` or the public request/receipt guards to reach other settings.
+
+To manage the full allowlisted template map, use a separately authenticated, authorized **private** Connector REST/MCP surface and require WordPress `manage_options`, a dry-run, exact stale-state fingerprint, write confirmation, readback and rollback evidence. Yoast's `/wp-json/yoast/v1/get_head` API is read-only, useful for verifying generated metadata after a change, not for saving options. The official WordPress Abilities API (WordPress 6.9+) and MCP Adapter are an optional future integration route, **not installed or enabled by this release**.
+
 ## 2. Zero-config GitHub runtime
 
 A runtime request includes the target site itself:
