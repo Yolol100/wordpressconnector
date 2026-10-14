@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 $GLOBALS['tps_options']=array('wpseo_titles'=>array(
-    'title-page'=>'Old %%title%%','company_name'=>'Tape Solutions','other_key'=>'preserve'));
+    'title-page'=>'Old %%title%%','metadesc-tax-category'=>'Previous %%term_title%% summary', 'company_name'=>'Tape Solutions','other_key'=>'preserve'));
 $GLOBALS['tps_caps']=array();
 function get_option($key,$default=null){return $GLOBALS['tps_options'][$key]??$default;}
 function update_option($key,$value){$GLOBALS['tps_options'][$key]=$value;return true;}
@@ -38,8 +38,10 @@ if(array_keys($publicTitles['fields'])!==array('category_title','product_categor
 }
 $policy::setPublicRepositoryContext(false);
 if($before['fields']['page_title']!=='Old %%title%%'||
+    $before['fields']['category_description']!=='Previous %%term_title%% summary'||
     $before['fields']['product_description']!==null)throw new RuntimeException('Baseline wrong.');
 $changes=array('page_title'=>'%%title%% %%sep%% %%sitename%%',
+    'category_description'=>'%%term_title%%: informatie en nieuws van %%sitename%%',
     'product_description'=>'%%excerpt%%');
 $preview=$registry->execute('yoast.templates.update',array('fields'=>$changes),array('dry_run'=>true));
 if($preview['after']['page_title']!==$changes['page_title']||
@@ -47,6 +49,7 @@ if($preview['after']['page_title']!==$changes['page_title']||
     throw new RuntimeException('Dry-run changed state.');
 $apply=$registry->execute('yoast.templates.update',array('fields'=>$changes),array('dry_run'=>false));
 if($GLOBALS['tps_options']['wpseo_titles']['other_key']!=='preserve'||
+    $registry->execute('yoast.templates.inspect',array())['fields']['category_description']!==$changes['category_description']||
     $registry->execute('yoast.templates.inspect',array())['fields']['product_description']!=='%%excerpt%%')
     throw new RuntimeException('Unrelated option changed or write missing.');
 $expectFail(static function()use($registry,$apply){
@@ -65,6 +68,7 @@ foreach(array(
     array('fields'=>array('page_title'=>array('x')),'error'=>'Unsupported'),
     array('fields'=>array('page_title'=>''),'error'=>'Invalid template'),
     array('fields'=>array('home_description'=>str_repeat('x',321)),'error'=>'Invalid template'),
+    array('fields'=>array('category_description'=>str_repeat('x',321)),'error'=>'Invalid template'),
 ) as $case){
     $expected=$case['error'];
     $expectFail(static function()use($registry,$case){
