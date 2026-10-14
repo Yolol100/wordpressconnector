@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-site-identity-20261015",
+    "action": "site.identity.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T22:13:36+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "Prolineafbouw",
+        "blogdescription": "",
+        "timezone_string": "",
+        "WPLANG": "nl_NL"
+    },
+    "settings_fingerprint": "c1cd4ab39ebf7efdf51ba61176c2727f167a99962520b07d0d065f28a9cc9ad8",
+    "readback_verified": null
+}
