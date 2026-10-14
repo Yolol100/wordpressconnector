@@ -121,6 +121,25 @@ if ($registry->execute('yoast.features.inspect', array())['fingerprint'] !== $be
     throw new \RuntimeException('Yoast feature rollback did not restore the initial state.');
 }
 
+// Caller field order must not affect a verified rollback.
+$reversed = $registry->execute('yoast.features.update', array(
+    'fields' => array('slack_sharing_enabled' => false, 'seo_analysis_enabled' => false),
+), array('dry_run' => false));
+$registry->execute('yoast.features.restore', $reversed['_rollback']['payload'], array('rollback_mode' => true));
+if ($registry->execute('yoast.features.inspect', array())['fingerprint'] !== $before['fingerprint']) {
+    throw new \RuntimeException('Yoast feature rollback depends incorrectly on field order.');
+}
+
+$absentBefore = $registry->execute('yoast.features.inspect', array())['fields']['admin_bar_enabled'];
+if ($absentBefore !== null) {
+    throw new \RuntimeException('Expected an absent boolean field for rollback test.');
+}
+$created = $registry->execute('yoast.features.update', array('fields' => array('admin_bar_enabled' => false)), array('dry_run' => false));
+$registry->execute('yoast.features.restore', $created['_rollback']['payload'], array('rollback_mode' => true));
+if (array_key_exists('enable_admin_bar_menu', $GLOBALS['feature_opts']['wpseo'])) {
+    throw new \RuntimeException('Yoast feature rollback did not remove the previously absent option.');
+}
+
 $highImpact = array('fields' => array('xml_sitemaps_enabled' => false));
 $preview = $registry->execute('yoast.features.update', $highImpact, array('dry_run' => true));
 if (! $preview['requires_risk_acknowledgement']
