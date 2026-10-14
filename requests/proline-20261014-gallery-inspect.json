@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-gallery-inspect",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 512,
+    "element_ids": [
+      "0d0e133"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
