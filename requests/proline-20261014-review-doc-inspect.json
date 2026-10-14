@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-review-doc-inspect",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 512
+  },
+  "dry_run": true,
+  "confirm": false
+}
