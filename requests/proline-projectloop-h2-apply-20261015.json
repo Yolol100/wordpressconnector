@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-projectloop-h2-apply-20261015",
+  "action": "elementor.patch_element",
+  "payload": {
+    "id": 4799,
+    "element_id": "c5ba20a",
+    "settings": {
+      "header_size": "h2"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "cc59448b1bf720faee602efa4e027e8d14fae8319eeb083b8a5c36709abebef7"
+}
