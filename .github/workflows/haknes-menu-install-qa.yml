@@ -165,3 +165,56 @@ jobs:
             } finally{await browser.close();}
           })().catch(e=>{console.error('BROWSER_FATAL',String(e));process.exit(1);});
           JS
+
+      - name: Test actual dropdown triggers and mobile menu opening
+        shell: bash
+        run: |
+          node - <<'JS'
+          const { chromium } = require('./designchecker/node_modules/playwright');
+          (async () => {
+            const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+            try {
+              for (const [mode,width,height] of [['desktop',1366,850],['mobile',390,844]]) {
+                const page=await browser.newPage({viewport:{width,height},isMobile:mode==='mobile',hasTouch:mode==='mobile'});
+                await page.goto('https://haknes.nl/',{waitUntil:'domcontentloaded',timeout:50000});
+                await page.waitForTimeout(800);
+                const state=async()=>await page.evaluate(()=>{
+                  const a=document.querySelector('nav.wa-dpcm7-menu');
+                  const w=document.querySelector('.elementor-element-792429c');
+                  const p=document.querySelector('.elementor-element-54d3984');
+                  const v=(e)=>{if(!e)return null;const r=e.getBoundingClientRect();return {w:Math.round(r.width),h:Math.round(r.height),display:getComputedStyle(e).display}};
+                  const hiddenChain=[];let el=a;
+                  while(el&&hiddenChain.length<10){const r=el.getBoundingClientRect(),st=getComputedStyle(el);if(st.display==='none'||r.width===0)hiddenChain.push({tag:el.tagName,cls:String(el.className).slice(0,100),display:st.display,width:Math.round(r.width)});el=el.parentElement;}
+                  return {dynamic:v(a),mobile_widget1:v(w),mobile_widget2:v(p),hidden_chain:hiddenChain};
+                });
+                const triggers=await page.evaluate(()=>{
+                  return [...document.querySelectorAll('a,button,[role="button"]')].filter(el=>String(el.textContent).toLowerCase().includes('ons assortiment')).slice(0,10).map(e=>{
+                    const r=e.getBoundingClientRect();return {tag:e.tagName,text:e.textContent.trim().slice(0,75),class:e.className,href:e.getAttribute('href'),width:Math.round(r.width),height:Math.round(r.height),parent:String(e.parentElement?.className).slice(0,80)};
+                  });
+                });
+                console.log('INTERACTIVE_INITIAL',mode,JSON.stringify(await state()));
+                console.log('TRIGGERS',mode,JSON.stringify(triggers));
+                const cs=page.locator('a,button,[role="button"]').filter({hasText:/Ons assortiment/i});
+                const n=Math.min(await cs.count(),9);
+                for(let i=0;i<n;i++){
+                  try {
+                    const target=cs.nth(i);
+                    if(!await target.isVisible())continue;
+                    await target.hover({timeout:3500});await page.waitForTimeout(350);
+                    const info=await state();console.log('AFTER_TRIGGER_HOVER',mode,'idx',i,JSON.stringify(info));
+                    if(info.dynamic?.w>120)break;
+                  }catch(e){console.log('TRIGGER_ERROR',mode,i,String(e).slice(0,150));}
+                }
+                if(mode==='mobile'){
+                  const toggle=page.locator('.elementor-menu-toggle:visible,button[aria-label*="menu" i]:visible').first();
+                  console.log('MOBILE_TOGGLE_COUNT',await page.locator('.elementor-menu-toggle:visible,button[aria-label*="menu" i]:visible').count());
+                  if(await toggle.count()){
+                    try {await toggle.click({timeout:5000});await page.waitForTimeout(500);console.log('MOBILE_AFTER_TOGGLE',JSON.stringify(await state()));}
+                    catch(e){console.log('MOBILE_TOGGLE_ERROR',String(e).slice(0,200));}
+                  }
+                }
+                await page.close();
+              }
+            }finally{await browser.close()}
+          })().catch(e=>{console.error('INTERACTIVE_FATAL',String(e));process.exit(1)});
+          JS
