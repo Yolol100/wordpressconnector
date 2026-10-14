@@ -98,6 +98,7 @@ final class YoastFeatureSettingsAdapter
             throw new RuntimeException('risk_acknowledged must be boolean.');
         }
         $group = $this->singleGroup($fields);
+        $this->assertProviderSupportsFields($group, $fields);
         $before = $this->snapshot();
         $after = array_replace($before, $fields);
         $highImpact = array_values(array_intersect(array_keys($fields), array_keys(self::HIGH_IMPACT)));
@@ -184,6 +185,30 @@ final class YoastFeatureSettingsAdapter
             }
         }
         return array('restored' => true, 'fields' => array_keys($previous));
+    }
+
+    /**
+     * Feature toggles are only meaningful when the installed Yoast version
+     * recognizes their exact option keys. Never create phantom settings.
+     */
+    private function assertProviderSupportsFields(string $group, array $fields): void
+    {
+        if (! class_exists('WPSEO_Options') || ! method_exists('WPSEO_Options', 'get_option_instance')) {
+            throw new RuntimeException('Yoast option schema API is unavailable.');
+        }
+        $provider = \WPSEO_Options::get_option_instance($group);
+        if (! is_object($provider) || ! method_exists($provider, 'get_defaults')) {
+            throw new RuntimeException('Installed Yoast version has no verified option schema for this group.');
+        }
+        $defaults = $provider->get_defaults();
+        if (! is_array($defaults)) {
+            throw new RuntimeException('Installed Yoast option schema was not an array.');
+        }
+        foreach ($fields as $name => $value) {
+            if (! array_key_exists(self::FIELDS[$name][1], $defaults)) {
+                throw new RuntimeException('Installed Yoast version does not recognize the requested feature.');
+            }
+        }
     }
 
     private function singleGroup(array $fields): string
