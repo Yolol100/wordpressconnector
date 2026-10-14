@@ -23,13 +23,15 @@ Version 1.9.0 additionally closes the remaining repository parity gaps:
 
 `Yolol100/Elementorconnector` can be removed after all of these are true:
 
-1. WordPress Connector 1.9.0+ is installed on every site that previously used Elementorconnector.
+1. WordPress Connector 1.9.1+ is installed on every site that previously used Elementorconnector.
 2. Read-only capability checks pass.
 3. A representative Elementor create/replace/readback test passes on staging.
 4. A rollback test passes.
 5. Page/Post import create + replace pass.
 6. Saved Template import/export passes.
-7. Theme Builder site-parts export passes where Elementor Pro is used.
-8. No active WordPress site still has the legacy Elementor JSON Bridge enabled.
+7. Bulk Elementor JSON ZIP export for Pages, Posts, and Saved Templates is verified, including `manifest.json` and configured limits.
+8. Theme Builder site-parts export passes where Elementor Pro is used.
+9. No active WordPress site still has the legacy Elementor JSON Bridge enabled.
+10. Active Skills, controller callsites and CI no longer require the legacy repository, and owner/Website QA acceptance plus rollback evidence are recorded.
 
 `Yolol100/elementorjson` must remain; it is the separate QA/evidence layer.
