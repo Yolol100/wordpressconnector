@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "proline-projectloop-h2-apply-20261015",
+    "action": "elementor.patch_element",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-14T22:13:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
