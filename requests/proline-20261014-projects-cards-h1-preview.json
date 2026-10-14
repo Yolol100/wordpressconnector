@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-projects-cards-h1-preview",
+  "action": "elementor.patch_element",
+  "dry_run": true,
+  "confirm": false,
+  "expected_fingerprint": "6130ffa94d20f491a2bd794cacd81d842e16c5661aa31435ee2bfb4024dbb150",
+  "payload": {
+    "id": 4799,
+    "element_id": "c5ba20a",
+    "settings": {
+      "header_size": "h2"
+    }
+  }
+}
