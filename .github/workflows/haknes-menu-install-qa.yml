@@ -68,3 +68,100 @@ jobs:
           print('TOTAL','pages_ok',len(samples)-missing,'pages_expected',len(samples),'old_product_links',total_old,'dynamic_menu_elements',total_menus,flush=True)
           if missing:raise SystemExit('Some pages unavailable')
           PY
+
+      - name: Check actual product destinations and redirect behavior
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import urllib.request,urllib.error,time
+          targets=[
+              'https://haknes.nl/?post_type=product&p=6550',
+              'https://haknes.nl/?post_type=product&p=6687',
+              'https://haknes.nl/product/maiskip-2/',
+              'https://haknes.nl/product/wudy-worst/',
+              'https://haknes.nl/product/runder-tong/',
+              'https://haknes.nl/winkelwagen/',
+          ]
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self,req,fp,code,msg,headers,newurl):return None
+          client=urllib.request.build_opener(NoRedirect())
+          for url in targets:
+              req=urllib.request.Request(url,headers={'User-Agent':'Haknes-readonly-postsnippet-link-QA/1.0'})
+              start=time.monotonic()
+              try:
+                  with client.open(req,timeout=20) as r:
+                      status=r.status;location=r.headers.get('Location','');content_type=r.headers.get('Content-Type','')
+              except urllib.error.HTTPError as e:
+                  status=e.code;location=e.headers.get('Location','');content_type=e.headers.get('Content-Type','')
+              except Exception as e:
+                  print('DESTINATION_ERROR',url,type(e).__name__,str(e)[:130],flush=True);continue
+              print('DESTINATION',url,'http',status,'location',location,'type',content_type.split(';')[0],'elapsed_ms',round((time.monotonic()-start)*1000),flush=True)
+          PY
+      - name: Checkout pinned read-only browser QA adapter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Yolol100/Designchecker
+          ref: 54cb8becc5c15bf3d65e76b7c4b10e18f9e67a27
+          path: designchecker
+          persist-credentials: false
+      - name: Set up Node 22
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+      - name: Install locked browser dependencies
+        run: npm ci --prefix designchecker --ignore-scripts --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - name: Install Chromium
+        run: node designchecker/node_modules/playwright/cli.js install chromium
+      - name: Inspect desktop and mobile rendered menu with Chromium
+        shell: bash
+        run: |
+          node - <<'JS'
+          const { chromium } = require('./designchecker/node_modules/playwright');
+          (async () => {
+            const browser = await chromium.launch({headless:true,args:['--no-sandbox']});
+            try {
+              for (const {mode,width,height} of [
+                {mode:'desktop',width:1366,height:850},
+                {mode:'mobile',width:390,height:844}
+              ]) {
+                const page=await browser.newPage({viewport:{width,height},isMobile:mode==='mobile',hasTouch:mode==='mobile'});
+                const response=await page.goto('https://haknes.nl/',{waitUntil:'domcontentloaded',timeout:45000});
+                await page.waitForTimeout(1400);
+                let result=await page.evaluate(() => {
+                  const info=(selector)=>{
+                    const el=document.querySelector(selector);
+                    if(!el)return {present:false};
+                    const st=window.getComputedStyle(el),rect=el.getBoundingClientRect();
+                    return {present:true,display:st.display,visibility:st.visibility,rect_width:Math.round(rect.width),rect_height:Math.round(rect.height),link_count:el.querySelectorAll('a[href]').length};
+                  };
+                  return {
+                    url:location.href,
+                    dynamic_menu_count:document.querySelectorAll('nav.wa-dpcm7-menu').length,
+                    dynamic:info('nav.wa-dpcm7-menu'),
+                    old_maiskip_widget:info('.elementor-element-792429c'),
+                    old_paprika_widget:info('.elementor-element-54d3984'),
+                    old_maiskip_href:document.querySelector('.elementor-element-792429c a[href*="6550"]')?.getAttribute('href')||'',
+                    old_paprika_href:document.querySelector('.elementor-element-54d3984 a[href*="6687"]')?.getAttribute('href')||'',
+                  };
+                });
+                console.log('BROWSER',mode,'status',response?.status(),'initial',JSON.stringify(result));
+                if(mode==='desktop') {
+                  try {
+                    const open=page.getByText('Ons assortiment',{exact:true}).first();
+                    if(await open.count()) {await open.hover({timeout:7000});await page.waitForTimeout(700);}
+                  } catch(e) {console.log('BROWSER_HOVER_UNAVAILABLE',String(e).slice(0,120));}
+                  const result2=await page.evaluate(()=>{
+                    const el=document.querySelector('nav.wa-dpcm7-menu');
+                    if(!el)return {present:false};
+                    const r=el.getBoundingClientRect(),s=getComputedStyle(el);
+                    return {display:s.display,visibility:s.visibility,width:Math.round(r.width),height:Math.round(r.height),links:el.querySelectorAll('a[href]').length};
+                  });
+                  console.log('BROWSER_DESKTOP_AFTER_HOVER',JSON.stringify(result2));
+                }
+                await page.close();
+              }
+            } finally{await browser.close();}
+          })().catch(e=>{console.error('BROWSER_FATAL',String(e));process.exit(1);});
+          JS
