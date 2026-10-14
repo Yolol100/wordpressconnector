@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://prolineafbouw.nl",
+  "request_id": "proline-20261014-yoast-category-fix",
+  "action": "yoast.templates.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "0bcfaee760d4d6fc0f14ec219c8a388f1e41c19b842504b888f750386d827342",
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%sep%% Proline Afbouw"
+    }
+  }
+}
