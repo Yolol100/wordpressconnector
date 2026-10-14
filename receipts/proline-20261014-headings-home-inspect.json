@@ -1,0 +1,37 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-headings-home-inspect",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-14T11:12:51+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "81f450320b1baf9120b8b74fb0e0a07cd4344c17505ad1e19c0fd30d35d3e48a",
+    "post_id": 177,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.5",
+    "elements": [
+        {
+            "id": "398f6a1",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Hoogwaardige schilderwerk, latex spuiten, en metal stud plafond- en wandoplossingen",
+                "__dynamic__": []
+            }
+        },
+        {
+            "id": "d137630",
+            "elType": "widget",
+            "widgetType": "heading",
+            "settings": {
+                "title": "Hoogwaardige schilderwerk latex spuiten en  metal stud plafond en wandoplossingen",
+                "__dynamic__": []
+            }
+        }
+    ],
+    "readback_verified": null
+}
