@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "proline-20261014-yoast-category-fix",
+    "action": "yoast.templates.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-14T10:44:38+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "updated_keys": [
+        "category_title"
+    ],
+    "before_fingerprint": "0bcfaee760d4d6fc0f14ec219c8a388f1e41c19b842504b888f750386d827342",
+    "after_fingerprint": "ca51077d2d9f485fa49039ee57b3da17b1403072a47c93c6011a073a967aedb7",
+    "readback_verified": true
+}
