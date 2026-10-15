@@ -1,0 +1,81 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-product-sample-list-20261015-9ac1",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T20:30:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 11022,
+            "type": "product",
+            "status": "publish",
+            "title": "Sothys Lip Balm – Baume Lèvres | Tonkaboon & Cacao",
+            "slug": "sothys-lip-balm-baume-levres-tonkaboon-cacao",
+            "permalink": "https://byderma.nl/product/sothys-lip-balm-baume-levres-tonkaboon-cacao/"
+        },
+        {
+            "id": 11019,
+            "type": "product",
+            "status": "publish",
+            "title": "Sothys Body Elixir – Élixir Nourrissant Corps | Tonkaboon & Cacao",
+            "slug": "sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao",
+            "permalink": "https://byderma.nl/product/sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao/"
+        },
+        {
+            "id": 11006,
+            "type": "product",
+            "status": "publish",
+            "title": "Sothys Cleansing Balm – Baume Démaquillant Visage & Yeux | Tonkaboon & Cacao",
+            "slug": "sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao",
+            "permalink": "https://byderma.nl/product/sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao/"
+        },
+        {
+            "id": 10931,
+            "type": "product",
+            "status": "publish",
+            "title": "Anti Hair Loss Serum - 10x 6ml",
+            "slug": "anti-hair-loss-serum-10x-6ml",
+            "permalink": "https://byderma.nl/product/anti-hair-loss-serum-10x-6ml/"
+        },
+        {
+            "id": 10921,
+            "type": "product",
+            "status": "publish",
+            "title": "Anti Hair Loss Tonic - 200ml",
+            "slug": "anti-hair-loss-tonic-200ml",
+            "permalink": "https://byderma.nl/product/anti-hair-loss-tonic-200ml/"
+        },
+        {
+            "id": 10916,
+            "type": "product",
+            "status": "publish",
+            "title": "Anti Hair Loss Shampoo - 400ml",
+            "slug": "anti-hair-loss-shampoo-400ml",
+            "permalink": "https://byderma.nl/product/anti-hair-loss-shampoo-400ml/"
+        },
+        {
+            "id": 10892,
+            "type": "product",
+            "status": "publish",
+            "title": "Anti Hair Loss Conditioner - 400ml",
+            "slug": "anti-hair-loss-conditioner-400ml",
+            "permalink": "https://byderma.nl/product/anti-hair-loss-conditioner-400ml/"
+        },
+        {
+            "id": 10353,
+            "type": "product",
+            "status": "publish",
+            "title": "Beauty Pillow® - Chocolate Brown",
+            "slug": "beauty-pillow-chocolate-brown",
+            "permalink": "https://byderma.nl/product/beauty-pillow-chocolate-brown/"
+        }
+    ],
+    "page": 1,
+    "per_page": 8,
+    "total": 119,
+    "pages": 15,
+    "readback_verified": null
+}
