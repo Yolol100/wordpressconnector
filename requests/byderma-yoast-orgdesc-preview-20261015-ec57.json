@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-yoast-orgdesc-preview-20261015-ec57",
+  "action": "yoast.site_representation.update",
+  "payload": {
+    "fields": {
+      "org_description": "Byderma biedt beautybehandelingen en een webshop met huidverzorgings- en beautyproducten."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
