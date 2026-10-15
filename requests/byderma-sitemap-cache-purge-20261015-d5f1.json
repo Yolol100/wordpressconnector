@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-sitemap-cache-purge-20261015-d5f1",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket"
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "4dfbe0f7b6720331081daba5efd18715858e6cf23586e49deb127509a454cb8a"
+}
