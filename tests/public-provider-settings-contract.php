@@ -55,6 +55,17 @@ if($code===0)throw new RuntimeException('Unscoped Yoast title update accepted.')
 $titles['payload']['fields']=array('category_title'=>'Blank category title');
 list($code)=$run($validator,array($store('title-no-term-variable',$titles)));
 if($code===0)throw new RuntimeException('Yoast template without term variable accepted.');
+$titles['payload']['fields']=array(
+    'product_title'=>'%%title%% %%sep%% Byderma',
+    'product_description'=>'%%excerpt%% %%sep%% Byderma');
+list($code,$message)=$run($validator,array($store('product-template-confirmed',$titles)));
+if($code!==0)throw new RuntimeException('Public product template request rejected: '.$message);
+$titles['payload']['fields']=array('product_description'=>'Generic description without product data');
+list($code)=$run($validator,array($store('product-template-missing-excerpt',$titles)));
+if($code===0)throw new RuntimeException('Product description without excerpt variable accepted.');
+$titles['payload']['fields']=array('product_title'=>'Generic title without product data');
+list($code)=$run($validator,array($store('product-template-missing-title',$titles)));
+if($code===0)throw new RuntimeException('Product title without title variable accepted.');
 
 $receiptReq=$base;$receiptReq['action']='yoast.templates.inspect';
 $receiptReq['request_id']='yoast-titles-receipt-001';
@@ -62,6 +73,8 @@ $result=array('version'=>1,'ok'=>true,'request_id'=>$receiptReq['request_id'],
     'action'=>'yoast.templates.inspect','dry_run'=>true,'data'=>array(
         'fields'=>array('category_title'=>'%%term_title%% | Haknes',
             'product_category_title'=>'%%term_title%% | Haknes',
+            'product_title'=>'%%title%% %%sep%% Byderma',
+            'product_description'=>'%%excerpt%% %%sep%% Byderma',
             'unrelated_secret'=>'DO_NOT_EXPORT_SECRET'),
         'fingerprint'=>str_repeat('b',64)));
 $receiptOut=$tmp.'/taxonomy-receipt.json';
@@ -70,6 +83,8 @@ list($code,$message)=$run($receiptBuilder,array(
 $raw=is_file($receiptOut)?file_get_contents($receiptOut):'';
 if($code!==0 || strpos($raw,'DO_NOT_EXPORT_SECRET')!==false ||
     strpos($raw,'product_category_title')===false ||
+    strpos($raw,'product_templates')===false ||
+    strpos($raw,'%%excerpt%%')===false ||
     strpos($raw,'unrelated_secret')!==false)throw new RuntimeException('Yoast taxonomy receipt leaked unsafe settings: '.$message);
 
 $badCases=array();

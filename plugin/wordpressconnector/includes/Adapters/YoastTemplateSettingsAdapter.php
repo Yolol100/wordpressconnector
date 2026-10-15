@@ -39,7 +39,7 @@ final class YoastTemplateSettingsAdapter {
     public function inspect(array $payload=array(),array $context=array()): array {
         $fields=$this->snapshot();
         if (Policy::publicRepositoryContext()) {
-            return array('fields'=>array_intersect_key($fields,array_flip(array('category_title','product_category_title'))),'fingerprint'=>Fingerprint::make($fields));
+            return array('fields'=>array_intersect_key($fields,array_flip(array('category_title','product_category_title','product_title','product_description'))),'fingerprint'=>Fingerprint::make($fields));
         }
         return array('fields'=>$fields,'fingerprint'=>Fingerprint::make($fields));
     }
@@ -112,7 +112,20 @@ final class YoastTemplateSettingsAdapter {
     }
     private function assertProviderSupportsFields(array $changes): void {
         if (Policy::publicRepositoryContext()) {
-            // Existing public taxonomy-title contract has its own stricter validator.
+            // Public GitHub requests are deliberately narrower than the private
+            // Yoast template manager. Recheck on the WordPress server as well
+            // as in the repository's request validator.
+            foreach ($changes as $key => $value) {
+                if (! in_array($key, array('category_title', 'product_category_title',
+                    'product_title', 'product_description'), true)) {
+                    throw new RuntimeException('Public Yoast template field is not allowed.');
+                }
+                $token = in_array($key, array('category_title','product_category_title'), true)
+                    ? '%%term_title%%' : ($key === 'product_title' ? '%%title%%' : '%%excerpt%%');
+                if (! is_string($value) || false === strpos($value, $token)) {
+                    throw new RuntimeException('Public Yoast template requires its content-specific variable.');
+                }
+            }
             return;
         }
         if (!class_exists('WPSEO_Options') || !method_exists('WPSEO_Options','get_option_instance')) {

@@ -57,10 +57,23 @@ $policy::assertActionAllowed($descriptor,false,true);
 $before=$registry->execute('yoast.templates.inspect',array());
 $policy::setPublicRepositoryContext(true);
 $publicTitles=$registry->execute('yoast.templates.inspect',array());
-if(array_keys($publicTitles['fields'])!==array('category_title','product_category_title')
+if(count($publicTitles['fields'])!==4 || array_diff(array_keys($publicTitles['fields']),array('category_title','product_category_title','product_title','product_description'))
     || $publicTitles['fingerprint']!==$before['fingerprint']) {
     throw new RuntimeException('Public Yoast template inspect leaked unrelated fields or changed stale-state fingerprint.');
 }
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('page_title'=>'Other Yoast settings')),array('dry_run'=>true));
+},'Public Yoast template field is not allowed.');
+$expectFail(static function()use($registry){
+    $registry->execute('yoast.templates.update',array('fields'=>array('product_title'=>'Missing product title variable')),array('dry_run'=>true));
+},'content-specific variable.');
+$publicPreview=$registry->execute('yoast.templates.update',array('fields'=>array(
+    'product_title'=>'%%title%% %%sep%% Byderma',
+    'product_description'=>'%%excerpt%% %%sep%% Byderma',
+)),array('dry_run'=>true));
+if($publicPreview['after']['product_title']!=='%%title%% %%sep%% Byderma' ||
+    $GLOBALS['tps_options']['wpseo_titles']['other_key']!=='preserve')
+    throw new RuntimeException('Public Yoast product template dry-run failed.');
 $policy::setPublicRepositoryContext(false);
 if($before['fields']['page_title']!=='Old %%title%%'||
     $before['fields']['category_description']!=='Previous %%term_title%% summary'||
