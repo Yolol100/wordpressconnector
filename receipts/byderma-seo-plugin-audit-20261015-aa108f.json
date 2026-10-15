@@ -1,0 +1,253 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-seo-plugin-audit-20261015-aa108f",
+    "action": "plugin.audit.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T18:48:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "installed_count": 35,
+    "active_count": 34,
+    "inactive_count": 1,
+    "unmodeled_count": 18,
+    "provider_checks_count": 5,
+    "must_use_count": 4,
+    "dropin_count": 1,
+    "plugins": [
+        {
+            "id": "acf_yoast_analysis",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "acf",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_1",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_2",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "asset_cleanup",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "settings_record": "present",
+                "effective_settings": "unverified"
+            }
+        },
+        {
+            "id": "auto_image_attributes",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_3",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "code_snippets",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "duplicate_page",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "elementor",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "elementor_pro",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_4",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_5",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_6",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_7",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_8",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "gtranslate",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "english_source": "mismatch",
+                "nl_en_languages": "mismatch"
+            }
+        },
+        {
+            "id": "imagify",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_9",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "loco_translate",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "mollie",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_10",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_11",
+            "active": false,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_12",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_13",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_14",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "really_simple_security",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_15",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_16",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "unmodeled_17",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "woocommerce",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "guest_checkout": "enabled",
+                "stock_management": "enabled",
+                "cart_page": "present",
+                "checkout_page": "present"
+            }
+        },
+        {
+            "id": "wordpress_connector",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "wp_rocket",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "image_lazyload": "disabled",
+                "remove_unused_css": "enabled"
+            }
+        },
+        {
+            "id": "unmodeled_18",
+            "active": true,
+            "coverage": "unmodeled",
+            "checks": []
+        },
+        {
+            "id": "yoast",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "organization_name": "matches",
+                "organization_description": "missing",
+                "organization_logo": "present"
+            }
+        }
+    ],
+    "image_lazyload_overlap": "unverified",
+    "checkout_qa": "not_run",
+    "smtp_delivery_qa": "not_run",
+    "translation_browser_qa": "not_run",
+    "private_settings_exported": false,
+    "readback_verified": null
+}
