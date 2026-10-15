@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-plugin-stack-20261015-d810",
+  "action": "plugin.audit.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
