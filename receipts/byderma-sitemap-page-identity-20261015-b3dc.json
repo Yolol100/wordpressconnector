@@ -1,0 +1,97 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-sitemap-page-identity-20261015-b3dc",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T21:41:50+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 3614,
+                "type": "page",
+                "status": "publish",
+                "title": "Winkelwagen",
+                "slug": "winkelwagen",
+                "permalink": "https://byderma.nl/winkelwagen/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "d26095ad0b6293d7541d6dd00aece39451ccf0731c76ae9ba96e1ac9cca05953"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 3664,
+                "type": "page",
+                "status": "publish",
+                "title": "Checkout",
+                "slug": "checkout",
+                "permalink": "https://byderma.nl/checkout/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "915c983b793d9a77eb378722bf779c5b215c2a84d217eb6bed8dd44668c83624"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 3709,
+                "type": "page",
+                "status": "publish",
+                "title": "Bedankt afrekenen",
+                "slug": "bedankt-afrekenen",
+                "permalink": "https://byderma.nl/bedankt-afrekenen/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "0f634291bc8844899fdbd963f97ba4dec741329db8805a2907eb2a699a2c08c8"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 3792,
+                "type": "page",
+                "status": "publish",
+                "title": "Mijn account",
+                "slug": "mijn-account",
+                "permalink": "https://byderma.nl/mijn-account/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "414841de2a1ab6898520da09b78f21c9e04325c34f5f7cd0f908520f0b7c76ef"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 9752,
+                "type": "page",
+                "status": "publish",
+                "title": "Afrekenen",
+                "slug": "afrekenen",
+                "permalink": "https://byderma.nl/afrekenen/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "cd60835ce3c2b2d212e570795524e35e5b136b411bd2f431fad0e90df0bc4248"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 10051,
+                "type": "page",
+                "status": "publish",
+                "title": "test2",
+                "slug": "test2",
+                "permalink": "https://byderma.nl/test2/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "e7170a2075757e6375fa4fd470bd96e9c983f08d1c44cbbafdda5718cbbe3288"
+        }
+    ],
+    "readback_verified": null
+}
