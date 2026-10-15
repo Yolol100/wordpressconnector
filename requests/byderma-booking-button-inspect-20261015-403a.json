@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-booking-button-inspect-20261015-403a",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 5322,
+    "element_ids": [
+      "0bda4ad"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
