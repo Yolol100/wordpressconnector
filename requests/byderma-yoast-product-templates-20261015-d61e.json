@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-yoast-product-templates-20261015-d61e",
+  "action": "yoast.templates.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
