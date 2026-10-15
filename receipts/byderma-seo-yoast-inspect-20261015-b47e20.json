@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-seo-yoast-inspect-20261015-b47e20",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T18:40:02+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%title%% %%sep%% Beautybehandelingen & Webshop %%sep%% Maak nu een afspraak",
+        "product_category_title": "%%title%% %%sep%% Beautybehandelingen & Webshop %%sep%% Maak nu een afspraak"
+    },
+    "before_fingerprint": "523310b9d5d91d945a059ee57322c792445aaf4489dcee8b1685cdf2f7d4aef8",
+    "readback_verified": null
+}
