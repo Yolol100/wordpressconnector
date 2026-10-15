@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-gtranslate-language-20261015-7a12",
+  "action": "gtranslate.settings.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
