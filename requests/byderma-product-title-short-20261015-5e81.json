@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-product-title-short-20261015-5e81",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "product_title": "%%title%% %%sep%% Byderma"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "c9218626e2a6eda73bc6a7046c89ab6f4f3a485869eee56fb22eb71851bf86ef"
+}
