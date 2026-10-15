@@ -77,7 +77,7 @@ $policy::setPublicRepositoryContext(false);
 
 $fail = static function (callable $action, string $phrase): void {
     try { $action(); } catch (RuntimeException $error) {
-        if (strpos($error->getMessage(), $phrase) !== false) {
+        if ($phrase === '' || strpos($error->getMessage(), $phrase) !== false) {
             return;
         }
         throw new RuntimeException('Unexpected error: ' . $error->getMessage());
