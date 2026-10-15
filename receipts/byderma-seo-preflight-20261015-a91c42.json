@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-seo-preflight-20261015-a91c42",
+    "action": "site.identity.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T18:38:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "Byderma",
+        "blogdescription": "",
+        "timezone_string": "Europe/Amsterdam",
+        "WPLANG": "nl_NL"
+    },
+    "settings_fingerprint": "25981d5f7a0e84a8dc87e3267e0ec3c3f040152db5f25bdbe36cbf4e934ae25f",
+    "readback_verified": null
+}
