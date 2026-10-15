@@ -71,7 +71,10 @@ final class YoastNativeAbilitiesAdapter
 
     public function capabilities(array $payload = array(), array $context = array()): array
     {
-        $this->assertPrivate();
+        if (Policy::publicRepositoryContext() || ! function_exists('current_user_can')
+            || ! current_user_can('manage_options')) {
+            throw new RuntimeException('Private Yoast capability discovery requires manage_options.');
+        }
         $available = function_exists('wp_get_ability') &&
             (defined('WPSEO_VERSION') || defined('YOAST_SEO_VERSION'));
         $actions = array();
@@ -92,6 +95,9 @@ final class YoastNativeAbilitiesAdapter
     public function scores(array $payload, array $context = array()): array
     {
         $this->assertPrivate();
+        if (! function_exists('current_user_can') || ! current_user_can('wpseo_manage_options')) {
+            throw new RuntimeException('Yoast analysis scores require wpseo_manage_options.');
+        }
         $kind = isset($payload['kind']) ? (string) $payload['kind'] : '';
         if (! in_array($kind, array('seo_scores', 'readability_scores', 'inclusive_language_scores'), true)) {
             throw new RuntimeException('Unsupported Yoast analysis kind.');
@@ -115,6 +121,9 @@ final class YoastNativeAbilitiesAdapter
             'post_id' => $id,
             'fields' => $this->snapshot($data),
             'rendered' => $this->renderedFields($data),
+            'analysis' => array_intersect_key($data, array_flip(array(
+                'focus_keyphrase', 'seo_score', 'readability_score', 'inclusive_language_score',
+            ))),
             'fingerprint' => Fingerprint::make($this->snapshot($data)),
         );
     }
