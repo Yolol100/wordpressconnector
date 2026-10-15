@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-wprocket-purge-preview-20261015-9e4c2b",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket"
+  },
+  "dry_run": true,
+  "confirm": false
+}
