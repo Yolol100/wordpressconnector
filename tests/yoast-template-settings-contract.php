@@ -57,7 +57,7 @@ $policy::assertActionAllowed($descriptor,false,true);
 $before=$registry->execute('yoast.templates.inspect',array());
 $policy::setPublicRepositoryContext(true);
 $publicTitles=$registry->execute('yoast.templates.inspect',array());
-if(array_keys($publicTitles['fields'])!==array('category_title','product_category_title','product_title','product_description')
+if(count($publicTitles['fields'])!==4 || array_diff(array_keys($publicTitles['fields']),array('category_title','product_category_title','product_title','product_description'))
     || $publicTitles['fingerprint']!==$before['fingerprint']) {
     throw new RuntimeException('Public Yoast template inspect leaked unrelated fields or changed stale-state fingerprint.');
 }
