@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-product-sample-list-20261015-9ac1",
+  "action": "post.list",
+  "payload": {
+    "post_type": "product",
+    "status": "publish",
+    "per_page": 8,
+    "page": 1,
+    "orderby": "ID",
+    "order": "DESC"
+  },
+  "dry_run": true,
+  "confirm": false
+}
