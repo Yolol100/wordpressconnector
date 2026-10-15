@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-cache-capabilities-20261015-6b40a2",
+    "action": "maintenance.cache_capabilities",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T18:57:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layers": {
+        "elementor": {
+            "provider": "Elementor",
+            "available": true,
+            "version": "4.3.5"
+        },
+        "wp_rocket": {
+            "provider": "WP Rocket",
+            "available": true,
+            "version": "3.23.2.2"
+        },
+        "asset_cleanup": {
+            "provider": "Asset CleanUp",
+            "available": true,
+            "version": "1.4.0.6"
+        }
+    },
+    "layers_fingerprint": "fb899bf0bb2b8f35496f9bbcd573e09472ec5c8790731cc2bc0d6878856c847c",
+    "readback_verified": null
+}
