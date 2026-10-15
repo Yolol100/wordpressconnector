@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-sitemap-page-identity-20261015-b3dc",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3614
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3664
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3709
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3792
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 9752
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10051
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
