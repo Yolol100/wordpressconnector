@@ -398,13 +398,21 @@ final class Runner
                     throw new RuntimeException('Public Yoast template update accepts only fields.');
                 }
                 $fields = $payload['fields'] ?? null;
-                if (! is_array($fields) || ! $fields || count($fields) > 2) {
-                    throw new RuntimeException('Public Yoast templates require one or two taxonomy titles.');
+                $allowedVariables = array(
+                    'category_title' => '%%term_title%%',
+                    'product_category_title' => '%%term_title%%',
+                    'product_title' => '%%title%%',
+                    'product_description' => '%%excerpt%%',
+                );
+                if (! is_array($fields) || ! $fields || count($fields) > count($allowedVariables)) {
+                    throw new RuntimeException('Public Yoast templates require one to four allowlisted fields.');
                 }
                 foreach ($fields as $key => $value) {
-                    if (! in_array((string) $key, array('category_title', 'product_category_title'), true)
-                        || ! is_string($value) || strlen($value) > 150 || strlen($value) < 15
-                        || false === strpos($value, '%%term_title%%')
+                    $requiredVariable = is_string($key) && array_key_exists($key, $allowedVariables)
+                        ? $allowedVariables[$key] : null;
+                    if (null === $requiredVariable || ! is_string($value)
+                        || strlen($value) > 150 || strlen($value) < 10
+                        || false === strpos($value, $requiredVariable)
                         || preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
                         throw new RuntimeException('Public Yoast template field or value is not allowed.');
                     }
