@@ -1,5 +1,5 @@
 <?php
-declare(strict_types=1);
+// wp eval-file executes this in an eval context; strict_types cannot be declared.
 
 // Executed inside an isolated WP-CLI WordPress + official Yoast SEO runtime.
 // No network actions, paid providers, WooCommerce products or site settings.
