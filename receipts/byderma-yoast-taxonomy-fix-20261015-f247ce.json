@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-yoast-taxonomy-fix-20261015-f247ce",
+    "action": "yoast.templates.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-15T18:43:52+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "updated_keys": [
+        "category_title",
+        "product_category_title"
+    ],
+    "before_fingerprint": "523310b9d5d91d945a059ee57322c792445aaf4489dcee8b1685cdf2f7d4aef8",
+    "after_fingerprint": "c9218626e2a6eda73bc6a7046c89ab6f4f3a485869eee56fb22eb71851bf86ef",
+    "readback_verified": true
+}
