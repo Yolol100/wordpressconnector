@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-gtranslate-language-20261015-7a12",
+    "action": "gtranslate.settings.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T21:43:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "default_language": "nl",
+        "fincl_langs": [
+            "nl",
+            "en"
+        ],
+        "detect_browser_language": 1
+    },
+    "provider_version": "5.0.1",
+    "settings_fingerprint": "2900bdf4fbf949b057e0c20cecea56b376b0f05976eb211f7b245cbbde439e75",
+    "readback_verified": null
+}
