@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-seo-retry-after-timeout-20261015-f861",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T21:04:23+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%term_title%% %%page%% %%sep%% Byderma",
+        "product_category_title": "%%term_title%% %%page%% %%sep%% Byderma"
+    },
+    "product_templates": {
+        "product_title": "%%title%% %%sep%% Byderma",
+        "product_description": "%%title%% %%sep%% Ontdek luxe beautybehandelingen. %%sep%% Shop jouw favoriete producten bij Byderma. %%sep%% Boek eenvoudig online of bestel direct in onze webshop."
+    },
+    "before_fingerprint": "12f33167922cddc8126afa18706dbbcb61c29c9d53b5d1c426867328b9819f5e",
+    "readback_verified": null
+}
