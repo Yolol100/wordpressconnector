@@ -1,0 +1,31 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-booking-button-inspect-20261015-403a",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T19:20:28+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "887dc9d33175266814218014f96bfd1fe1c3e548357af056a7b2fd328bdd093d",
+    "post_id": 5322,
+    "document_type": "single-post",
+    "edit_mode": "builder",
+    "template_type": "single-post",
+    "elementor_version": "3.28.4",
+    "elements": [
+        {
+            "id": "0bda4ad",
+            "elType": "widget",
+            "widgetType": "button",
+            "settings": {
+                "text": "Klik hier",
+                "__dynamic__": {
+                    "text": "[elementor-tag id=\"721dbd4\" name=\"acf-text\" settings=\"%7B%22key%22%3A%22field_67d7f2db9f499%3Aknop_titel%22%7D\"]",
+                    "link": "[elementor-tag id=\"1379bce\" name=\"acf-url\" settings=\"%7B%22key%22%3A%22field_67d7f2f19f49a%3Aknop_link%22%7D\"]"
+                }
+            }
+        }
+    ],
+    "readback_verified": null
+}
