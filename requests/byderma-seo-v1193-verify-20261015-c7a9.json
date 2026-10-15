@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-seo-v1193-verify-20261015-c7a9",
+  "action": "connector.update.check",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
