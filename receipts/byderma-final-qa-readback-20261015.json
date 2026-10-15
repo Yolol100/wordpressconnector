@@ -1,0 +1,79 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-final-qa-readback-20261015",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T21:22:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "connector.update.check",
+            "result_fingerprint": "a42791265b864cd83f6136b60ba57f5ab1dea1556eec490e6c26236eecbac628"
+        },
+        {
+            "index": 1,
+            "action": "elementor.inspect",
+            "result_fingerprint": "a69d1a87fa04d7fcb78a73606968975541df27d455324a85886aa9590d236be3"
+        },
+        {
+            "index": 2,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 11022,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Sothys Lip Balm – Baume Lèvres | Tonkaboon & Cacao",
+                    "slug": "sothys-lip-balm-baume-levres-tonkaboon-cacao",
+                    "permalink": "https://byderma.nl/product/sothys-lip-balm-baume-levres-tonkaboon-cacao/"
+                },
+                {
+                    "id": 11019,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Sothys Body Elixir – Élixir Nourrissant Corps | Tonkaboon & Cacao",
+                    "slug": "sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao",
+                    "permalink": "https://byderma.nl/product/sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao/"
+                },
+                {
+                    "id": 11006,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Sothys Cleansing Balm – Baume Démaquillant Visage & Yeux | Tonkaboon & Cacao",
+                    "slug": "sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao",
+                    "permalink": "https://byderma.nl/product/sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao/"
+                },
+                {
+                    "id": 10931,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Anti Hair Loss Serum - 10x 6ml",
+                    "slug": "anti-hair-loss-serum-10x-6ml",
+                    "permalink": "https://byderma.nl/product/anti-hair-loss-serum-10x-6ml/"
+                },
+                {
+                    "id": 10921,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Anti Hair Loss Tonic - 200ml",
+                    "slug": "anti-hair-loss-tonic-200ml",
+                    "permalink": "https://byderma.nl/product/anti-hair-loss-tonic-200ml/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 5,
+            "total": 119,
+            "pages": 24
+        },
+        {
+            "index": 3,
+            "action": "maintenance.cache_capabilities",
+            "result_fingerprint": "de0e21ee260beb5def1f2fca2827b0895a266a0944fadabd28c3a8e3e6236608"
+        }
+    ],
+    "readback_verified": null
+}
