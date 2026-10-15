@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-final-qa-readback-20261015",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 7883,
+          "element_ids": [
+            "1a94f14"
+          ]
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "per_page": 5,
+          "page": 1,
+          "orderby": "ID",
+          "order": "DESC"
+        }
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
