@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-seo-cache-dryrun-20261015-a6fc",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket"
+  },
+  "dry_run": true,
+  "confirm": false
+}
