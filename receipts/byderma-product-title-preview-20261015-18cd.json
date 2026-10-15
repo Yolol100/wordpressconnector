@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "byderma-product-title-preview-20261015-18cd",
+    "action": "yoast.templates.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T20:33:15+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "connector_error"
+}
