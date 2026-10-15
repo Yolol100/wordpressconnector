@@ -7,9 +7,15 @@ use Webactueel\WordPressConnector\Adapters\YoastNativeAbilitiesAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
-if (! function_exists('wp_get_ability') ||
-    ! defined('WPSEO_VERSION') ||
-    ! current_user_can('wpseo_edit_advanced_metadata')) {
+$nativeChecks = array(
+    'wp_abilities_api' => function_exists('wp_get_ability'),
+    'yoast_active' => defined('WPSEO_VERSION'),
+    'advanced_metadata_capability' => current_user_can('wpseo_edit_advanced_metadata'),
+);
+foreach ($nativeChecks as $name => $available) {
+    echo 'Yoast native preflight ' . $name . ': ' . ($available ? 'available' : 'unavailable') . PHP_EOL;
+}
+if (in_array(false, $nativeChecks, true)) {
     throw new RuntimeException('Official Yoast Abilities or required capabilities are unavailable.');
 }
 if (! is_object(wp_get_ability('yoast-seo/get-post-seo-data')) ||
