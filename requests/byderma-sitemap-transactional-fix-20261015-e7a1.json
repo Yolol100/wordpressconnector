@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-sitemap-transactional-fix-20261015-e7a1",
+  "action": "elementor.patch_element",
+  "payload": {
+    "id": 7883,
+    "element_id": "1a94f14",
+    "settings": {
+      "sitemap_exclude": [
+        "manual_selection"
+      ],
+      "sitemap_exclude_ids": [
+        3614,
+        3664,
+        3709,
+        3792,
+        7876,
+        7877,
+        7878,
+        9752,
+        10051
+      ]
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "260bea99672d4b7a9e17fd60463ef6c04ab500663407224c3ff17d440685c916"
+}
