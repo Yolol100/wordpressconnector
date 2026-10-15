@@ -255,6 +255,18 @@ jobs:
           WPCONNECTOR_ALLOW_PRIVILEGED=1 \
             wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-abilities-runtime.php" --path="$root"
 
+      - name: Test native Yoast SEO 28.7 Abilities with WordPress
+        if: matrix.storage == 'abilities'
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/wordpress"
+          wp plugin install wordpress-seo --version=28.7 --activate --path="$root"
+          wp plugin is-active wordpress-seo --path="$root"
+          WPCONNECTOR_ALLOW_PRIVILEGED=1 \
+          WPCONNECTOR_ALLOW_WRITES=1 \
+            wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-yoast-native-runtime.php" --user=admin --path="$root"
+
       - name: Verify REST plugin capability discovery without endpoint calls
         shell: bash
         run: |
