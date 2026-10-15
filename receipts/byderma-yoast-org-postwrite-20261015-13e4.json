@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-yoast-org-postwrite-20261015-13e4",
+    "action": "yoast.site_representation.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T21:47:42+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "company_or_person": "company",
+        "company_name": "Byderma",
+        "org_description": "Byderma biedt beautybehandelingen en een webshop met huidverzorgings- en beautyproducten."
+    },
+    "settings_fingerprint": "9f796e0abd9d58e55477f749e36d901684c17267707c50498613341b21a65517",
+    "readback_verified": null
+}
