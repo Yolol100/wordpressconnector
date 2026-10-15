@@ -263,6 +263,10 @@ jobs:
           root="$RUNNER_TEMP/wordpress"
           wp plugin install wordpress-seo --version=28.7 --activate --path="$root"
           wp plugin is-active wordpress-seo --path="$root"
+          # Disposable sandbox: grant explicit Yoast roles for native Ability
+          # permission checks. Never change role capabilities on a live site.
+          wp cap add administrator wpseo_edit_advanced_metadata --path="$root"
+          wp cap add administrator wpseo_manage_options --path="$root"
           WPCONNECTOR_ALLOW_PRIVILEGED=1 \
           WPCONNECTOR_ALLOW_WRITES=1 \
             wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-yoast-native-runtime.php" --user=admin --path="$root"
