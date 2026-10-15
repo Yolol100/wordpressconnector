@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-yoast1192-version-20261015-4fa725",
+  "action": "connector.update.check",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
