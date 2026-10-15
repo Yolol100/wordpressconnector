@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.2
+Stable tag: 1.19.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -152,6 +152,10 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.3 =
+Fix the public Yoast product SEO title/description template execution gate to match the four-field GitHub validator and Yoast adapter. Preserve read-only inspection, explicit dry-run fingerprint, scope-limited writes and rollback safeguards. Add a direct runtime boundary regression test across supported PHP versions.
+
 
 = 1.19.2 =
 Expand Yoast SEO integration with private guarded WordPress Abilities for metadata and analysis on supported versions (WP >=6.9, Yoast >=28.6). The public GitHub OIDC route can now inspect/patch strictly allowlisted global product SEO title and description templates, in addition to taxonomy titles. Permissions, dry-run fingerprint, rollback/readback and private/public transport boundaries remain in place. Premium and license-gated Yoast features are not automatically exposed.
