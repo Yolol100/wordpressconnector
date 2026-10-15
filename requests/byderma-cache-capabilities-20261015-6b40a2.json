@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-cache-capabilities-20261015-6b40a2",
+  "action": "maintenance.cache_capabilities",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
