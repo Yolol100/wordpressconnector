@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-sitemap-exclusions-preview-20261015-51ac",
+  "action": "elementor.patch_element",
+  "payload": {
+    "id": 7883,
+    "element_id": "1a94f14",
+    "settings": {
+      "sitemap_exclude": [
+        "manual_selection"
+      ],
+      "sitemap_exclude_ids": [
+        7876,
+        7877,
+        7878
+      ]
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
