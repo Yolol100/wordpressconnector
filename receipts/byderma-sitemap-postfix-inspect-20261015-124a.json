@@ -1,0 +1,24 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-sitemap-postfix-inspect-20261015-124a",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T19:22:52+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "260bea99672d4b7a9e17fd60463ef6c04ab500663407224c3ff17d440685c916",
+    "post_id": 7883,
+    "document_type": "wp-page",
+    "edit_mode": "builder",
+    "template_type": "wp-page",
+    "elementor_version": "4.3.5",
+    "elements": [
+        {
+            "id": "1a94f14",
+            "elType": "widget",
+            "widgetType": "sitemap"
+        }
+    ],
+    "readback_verified": null
+}
