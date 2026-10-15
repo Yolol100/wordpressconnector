@@ -1,0 +1,83 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-product-excerpt-content-20261015-c2b7",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T20:31:48+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 11006,
+                "type": "product",
+                "status": "publish",
+                "title": "Sothys Cleansing Balm – Baume Démaquillant Visage & Yeux | Tonkaboon & Cacao",
+                "slug": "sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao",
+                "permalink": "https://byderma.nl/product/sothys-cleansing-balm-baume-demaquillant-visage-yeux-tonkaboon-cacao/",
+                "excerpt": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"78\" data-end=\"170\">LIMITED EDITION · FÈVE TONKA – CACAO</p>\r\n<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"78\" data-end=\"170\"><strong data-start=\"78\" data-end=\"170\">Een rijke reinigingsbalsem met Macadamia-olie en biologische, fairtrade sheaboter dat make-up laat wegsmelten en je huid zijdezacht achterlaat.</strong></p>\r\n<p data-start=\"172\" data-end=\"419\">De <strong data-start=\"175\" data-end=\"218\">Sothys Baume Démaquillant Visage &amp; Yeux</strong> is een heerlijk smeltende cleansing balm voor het gezicht en de ogen. De rijke balsemtextuur verwijdert (waterproof)make-up en onzuiverheden op milde wijze en laat de huid schoon, soepel en comfortabel aanvoelen.</p>\r\n<p data-start=\"421\" data-end=\"592\">De warme geur van <stron…"
+            },
+            "post_fingerprint": "9a022397243020e0508315c378c573c4a36fcdee58fb81e18dfeb7f8035b9296"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 10921,
+                "type": "product",
+                "status": "publish",
+                "title": "Anti Hair Loss Tonic - 200ml",
+                "slug": "anti-hair-loss-tonic-200ml",
+                "permalink": "https://byderma.nl/product/anti-hair-loss-tonic-200ml/",
+                "excerpt": "<span style=\"color: #bdac96;\">200ml</span>\r\n\r\nDeze leave-in tonic is ontwikkeld voor dagelijkse stimulatie van de hoofdhuid. De lichte formule trekt snel in, verfrist direct en ondersteunt de natuurlijke haargroeicyclus. Regelmatig gebruik helpt haaruitval zichtbaar te verminderen en versterkt het haar vanaf de wortel, zonder het haar vet of zwaar te maken.\r\n\r\n&nbsp;\r\n<ul>\r\n \t<li data-start=\"1875\" data-end=\"1915\">\r\n<p data-start=\"1877\" data-end=\"1915\">Stimuleert de hoofdhuid actief</p>\r\n</li>\r\n \t<li data-start=\"1916\" data-end=\"1958\">\r\n<p data-start=\"1918\" data-end=\"1958\">Ondersteunt haarversterking vanaf de wortel</p>\r\n</li>\r\n \t<li data-start=\"1959\" data-end=\"1987\">\r\n<p data-start=\"1961\" data-end=\"1987\">Kan dagelijks gebruikt worden</p>\r\n</li>\r\n \t<li data-start=\"1959\" data-end=\"1987\">\r\n<p …"
+            },
+            "post_fingerprint": "b6186bcddc684a8f0aede3d68bbe874d9ead1e87be338d55cce995f9e1d1aef2"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 10353,
+                "type": "product",
+                "status": "publish",
+                "title": "Beauty Pillow® - Chocolate Brown",
+                "slug": "beauty-pillow-chocolate-brown",
+                "permalink": "https://byderma.nl/product/beauty-pillow-chocolate-brown/",
+                "excerpt": "<span style=\"color: #bdac96;\">60x70</span>\r\n\r\n<strong>Een klein detail met een groot verschil voor je huid &amp; haar</strong>\r\n\r\nSlaap is jouw meest onderschatte beauty-ritueel. De Beauty Pillow tilt dat ritueel naar een hoger niveau met zijdezacht satijn dat je huid en haar zichtbaar verzorgt. Geen pluis, geen vouwen — alleen een uitgeruste, frisse uitstraling bij het ontwaken. Een klein detail, een groots effect. Perfect voor wie het allerbeste uit haar nachtrust wil halen.\r\n\r\n<strong data-start=\"505\" data-end=\"543\">Gratis personalisatie t.w.v. €6,95</strong><br data-start=\"543\" data-end=\"546\" />Voeg een naam of initialen toe voor een extra persoonlijk tintje.<br data-start=\"611\" data-end=\"614\" />Schrijf de naam <em data-start=\"630\" data-end=\"637\">exact</em> zoals je deze geborduurd…"
+            },
+            "post_fingerprint": "705c0c2f63d49c0dd28ab33a7c0b53f0898b69fde54ed11d80e12da26dd78e96"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 11019,
+                "type": "product",
+                "status": "publish",
+                "title": "Sothys Body Elixir – Élixir Nourrissant Corps | Tonkaboon & Cacao",
+                "slug": "sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao",
+                "permalink": "https://byderma.nl/product/sothys-body-elixir-elixir-nourrissant-corps-tonkaboon-cacao/",
+                "excerpt": "<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"19\" data-end=\"136\">LIMITED EDITION · FÈVE TONKA – CACAO</p>\r\n<p class=\"PDq2pG_selectionAnchorContainer\" data-start=\"19\" data-end=\"136\"><strong data-start=\"19\" data-end=\"136\">Een voedende body elixir die je huid omhult met zachtheid</strong></p>\r\n<p data-start=\"138\" data-end=\"353\">De <strong data-start=\"141\" data-end=\"176\">Sothys Élixir Nourrissant Corps</strong> is een limited edition lichaamsverzorging met een heerlijk rijke, zijdezachte textuur. De formule voedt de huid en laat haar soepel, comfortabel en prachtig verzorgd aanvoelen.</p>\r\n<p data-start=\"355\" data-end=\"557\">De warme combinatie van <strong data-start=\"379\" data-end=\"400\">tonkaboon &amp; cacao</strong> maakt het aanbrengen extra bijzonder: zacht, cosy en verfijnd. …"
+            },
+            "post_fingerprint": "4926825e607b79ca63c9f6594e1656ac50af1ebbbfc6e23045ddb91cfc7a5a45"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 10916,
+                "type": "product",
+                "status": "publish",
+                "title": "Anti Hair Loss Shampoo - 400ml",
+                "slug": "anti-hair-loss-shampoo-400ml",
+                "permalink": "https://byderma.nl/product/anti-hair-loss-shampoo-400ml/",
+                "excerpt": "<span style=\"color: #bdac96;\">400ml</span>\r\n\r\nDeze shampoo helpt haaruitval verminderen en brengt de hoofdhuid opnieuw in balans. De formule reinigt mild maar effectief, stimuleert de haarwortels en ondersteunt een gezonde haargroei.\r\n\r\n&nbsp;\r\n<ul>\r\n \t<li data-start=\"1875\" data-end=\"1915\">\r\n<p data-start=\"1877\" data-end=\"1915\">Reinigt zonder de hoofdhuid uit te drogen</p>\r\n</li>\r\n \t<li data-start=\"1916\" data-end=\"1958\">\r\n<p data-start=\"1918\" data-end=\"1958\">Activeert de haarwortels</p>\r\n</li>\r\n \t<li data-start=\"1959\" data-end=\"1987\">\r\n<p data-start=\"1961\" data-end=\"1987\">Ondersteunt een gezonde haargroei</p>\r\n</li>\r\n \t<li data-start=\"1988\" data-end=\"2028\">\r\n<p data-start=\"1990\" data-end=\"2028\">Geeft het haar een voller en sterker gevoel</p>\r\n</li>\r\n</ul>\r\n&nbsp;\r\n<p data-start=\"1154\" data…"
+            },
+            "post_fingerprint": "cb0d0acea103786de97cf1da69c2f0d1ee1fc63d38dfe684a32640383b1bd493"
+        }
+    ],
+    "readback_verified": null
+}
