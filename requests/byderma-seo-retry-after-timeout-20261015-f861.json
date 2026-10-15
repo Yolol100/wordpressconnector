@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-seo-retry-after-timeout-20261015-f861",
+  "action": "yoast.templates.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
