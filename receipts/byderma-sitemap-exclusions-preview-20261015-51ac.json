@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-sitemap-exclusions-preview-20261015-51ac",
+    "action": "elementor.patch_element",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-15T19:16:17+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "post_id": 7883,
+    "element_id": "1a94f14",
+    "before_fingerprint": "3bfbbd5ede7605da496662571f935a7519c1ecc79b6531dec4dda41b6f48dac2",
+    "after_fingerprint": "7733e96b7a36ffde94217777bbbe9160177a8e2508e1917d74b669619575bc0d"
+}
