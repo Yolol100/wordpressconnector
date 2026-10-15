@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-seo-live-regression-20261015-cc71",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 11006
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10921
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10353
+        }
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "id": 7883,
+          "element_ids": [
+            "1a94f14"
+          ]
+        }
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
