@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-product-excerpt-content-20261015-c2b7",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 11006
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10921
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10353
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 11019
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 10916
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
