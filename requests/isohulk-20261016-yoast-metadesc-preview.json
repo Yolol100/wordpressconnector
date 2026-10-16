@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-20261016-yoast-metadesc-preview",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "product_description": "%%excerpt%%"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
