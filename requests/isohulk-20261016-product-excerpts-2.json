@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-20261016-product-excerpts-2",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 51
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 50
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 49
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 48
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 47
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 46
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 45
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 44
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 43
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 42
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 41
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 40
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 39
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 38
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 37
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 36
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 35
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 34
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 33
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 32
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 31
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 30
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 29
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 28
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 27
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
