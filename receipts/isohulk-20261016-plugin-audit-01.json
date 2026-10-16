@@ -1,0 +1,170 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-20261016-plugin-audit-01",
+    "action": "plugin.audit.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-16T16:28:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "installed_count": 20,
+    "active_count": 20,
+    "inactive_count": 0,
+    "unmodeled_count": 0,
+    "provider_checks_count": 7,
+    "must_use_count": 2,
+    "dropin_count": 1,
+    "plugins": [
+        {
+            "id": "acf_yoast_analysis",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "acf",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "aios",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "all_in_one_wp_migration",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "asset_cleanup",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "settings_record": "present",
+                "effective_settings": "unverified"
+            }
+        },
+        {
+            "id": "auto_image_attributes",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "aioseo_broken_link_checker",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "code_snippets",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "duplicate_page",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "ewww_image_optimizer",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "gtranslate",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "english_source": "matches",
+                "nl_en_languages": "matches"
+            }
+        },
+        {
+            "id": "joinchat",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "button_tip_saved": "present",
+                "message_saved": "present",
+                "whatsapp_number": "missing"
+            }
+        },
+        {
+            "id": "loco_translate",
+            "active": true,
+            "coverage": "restricted",
+            "checks": []
+        },
+        {
+            "id": "mollie",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "woocommerce",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "guest_checkout": "enabled",
+                "stock_management": "enabled",
+                "cart_page": "missing",
+                "checkout_page": "missing"
+            }
+        },
+        {
+            "id": "wordpress_connector",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "wp_file_manager",
+            "active": true,
+            "coverage": "registered",
+            "checks": []
+        },
+        {
+            "id": "wp_mail_smtp",
+            "active": true,
+            "coverage": "restricted",
+            "checks": {
+                "settings_record": "present",
+                "delivery": "unverified"
+            }
+        },
+        {
+            "id": "wp_rocket",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "image_lazyload": "disabled",
+                "remove_unused_css": "enabled"
+            }
+        },
+        {
+            "id": "yoast",
+            "active": true,
+            "coverage": "registered",
+            "checks": {
+                "organization_name": "matches",
+                "organization_description": "present",
+                "organization_logo": "missing"
+            }
+        }
+    ],
+    "image_lazyload_overlap": "unverified",
+    "checkout_qa": "not_run",
+    "smtp_delivery_qa": "not_run",
+    "translation_browser_qa": "not_run",
+    "private_settings_exported": false,
+    "readback_verified": null
+}
