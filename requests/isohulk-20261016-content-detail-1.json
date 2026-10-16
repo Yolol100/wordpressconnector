@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-20261016-content-detail-1",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "per_page": 25,
+          "page": 2
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 264
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 256
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 254
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 253
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 252
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 251
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 17
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 16
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 15
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 14
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 13
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 12
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 1
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 355
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 354
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 353
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 58
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 57
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 56
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 55
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 54
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 53
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 52
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
