@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-20261016-product-excerpts-3",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 26
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 25
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 24
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 23
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 22
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 21
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 20
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 19
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
