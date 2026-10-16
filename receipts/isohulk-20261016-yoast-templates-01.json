@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-20261016-yoast-templates-01",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-16T16:30:38+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%title%% %%sep%% ISOHULK",
+        "product_category_title": "%%title%% %%sep%% ISOHULK"
+    },
+    "product_templates": {
+        "product_title": "%%title%% %%sep%% ISOHULK",
+        "product_description": "Discover technical adhesive tapes, protective films and packaging materials for industrial and construction use. Explore products or request custom solutions."
+    },
+    "before_fingerprint": "23feb85a632d703e0cdbba4d593de2e44a9e1c626275dbcb2138b42ab5ab8101",
+    "readback_verified": null
+}
