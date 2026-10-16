@@ -1,0 +1,363 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-20261016-product-excerpts-2",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-16T16:35:34+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 51,
+                "type": "product",
+                "status": "publish",
+                "title": "Machine Stretch Film – 500 mm × 1500 m × 23 µm (350%)",
+                "slug": "machinewikkelfolie-350-23my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-350-23my/",
+                "excerpt": "Transparent machine stretch film, 500 mm × 1500 m × 23 µm, with 350% stretch."
+            },
+            "post_fingerprint": "8764186876d2dc196d2d2a4d73badf58024e3635254f82fe6acac6ab888ea3a5"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 50,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 23 µm",
+                "slug": "rekfolie-plus-500-300-23my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-23my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 23 µm, for securing pallet loads."
+            },
+            "post_fingerprint": "19ba57949dc872944bfab41bfa0b717768a6478272a79fd6b1613f59c6d5e37d"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 49,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 17 µm",
+                "slug": "rekfolie-plus-500-300-17my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-17my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 17 µm, for securing pallets."
+            },
+            "post_fingerprint": "d180641b871f1b029d46189e45a4b4ae40fbb50b9406b619bc8b6daac871fb2d"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 48,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 20 µm",
+                "slug": "rekfolie-plus-500-300-20my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-20my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 20 µm, for stabilising pallet loads."
+            },
+            "post_fingerprint": "f4ac895bbca83cab9c820b666d21db99b55458e9b0c38b467d20a9e93e157dd9"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 47,
+                "type": "product",
+                "status": "publish",
+                "title": "Premium Weatherproof Thermal Jacketing Film",
+                "slug": "weatherproof-thermal-jacketing-film",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/weatherproof-thermal-jacketing-film/",
+                "excerpt": "Weatherproof cladding film for finishing insulation projects, available in different types, colours and sizes."
+            },
+            "post_fingerprint": "af6976990a80fcf5f98336d529440e0a7f1a860b9fee501e9c4915b18baf6007"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 46,
+                "type": "product",
+                "status": "publish",
+                "title": "Fibreglass Cloth Foil – 430/m²",
+                "slug": "fibre-glass-cloth-foil-430-m2",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/fibre-glass-cloth-foil-430-m2/",
+                "excerpt": "Fibreglass cloth foil supplied on jumbo rolls in different sizes and thicknesses; verify the 430/m² unit before ordering."
+            },
+            "post_fingerprint": "f1e4d79d10e913c688c66416e831572d9c8e1ada2e3465e97e380722fc29984a"
+        },
+        {
+            "index": 6,
+            "action": "post.get",
+            "post": {
+                "id": 45,
+                "type": "product",
+                "status": "publish",
+                "title": "Diamond-Reinforced Aluminium Foil",
+                "slug": "aluminum-foil-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminum-foil-reinforced/",
+                "excerpt": "Jumbo-roll aluminium foil reinforced with diamond-pattern glass fibres."
+            },
+            "post_fingerprint": "2cc5533e3317a44c495d3b3845c6dc84fad723221e1f163250174133fd79ec69"
+        },
+        {
+            "index": 7,
+            "action": "post.get",
+            "post": {
+                "id": 44,
+                "type": "product",
+                "status": "publish",
+                "title": "Scrim-Reinforced Aluminium Foil",
+                "slug": "aluminium-foil-scrim-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-foil-scrim-reinforced/",
+                "excerpt": "Jumbo-roll aluminium foil reinforced with glass-fibre scrim, available in different dimensions and thicknesses."
+            },
+            "post_fingerprint": "a1637da7266cf8055b8208dc088e9bc8a7b2ec396c3bd359da632c7c741a94b8"
+        },
+        {
+            "index": 8,
+            "action": "post.get",
+            "post": {
+                "id": 43,
+                "type": "product",
+                "status": "publish",
+                "title": "Pure Aluminium Foil",
+                "slug": "pure-aluminum-foil",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pure-aluminum-foil/",
+                "excerpt": "100% pure aluminium foil supplied in jumbo rolls in different sizes and thicknesses."
+            },
+            "post_fingerprint": "e339d7088747b59eed37f0078b0b0b27b2c0bb3f579a898322ae7f752c287f71"
+        },
+        {
+            "index": 9,
+            "action": "post.get",
+            "post": {
+                "id": 42,
+                "type": "product",
+                "status": "publish",
+                "title": "Glossy Non-Adhesive PVC Pipe Wrapping Tape",
+                "slug": "pvc-pipe-wrapping-shiny-no-adhesive",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pvc-pipe-wrapping-shiny-no-adhesive/",
+                "excerpt": "Glossy PVC pipe-wrapping tape without an adhesive layer."
+            },
+            "post_fingerprint": "192ccb60ca20ccf67489d131fc7360485dd58f5fb20d466d231bb4d41d3ef8e5"
+        },
+        {
+            "index": 10,
+            "action": "post.get",
+            "post": {
+                "id": 41,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Lilac Low Tack",
+                "slug": "washi-masking-lila-low-tack",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-lila-low-tack/",
+                "excerpt": "Low-tack lilac washi masking tape for delicate surfaces."
+            },
+            "post_fingerprint": "33e863f8a46998d441343f9cce705855882de83115f740e877e960034b95046f"
+        },
+        {
+            "index": 11,
+            "action": "post.get",
+            "post": {
+                "id": 40,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Gold, 3-Month UV",
+                "slug": "washi-masking-gold-3-months-uv",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-gold-3-months-uv/",
+                "excerpt": "Gold washi masking tape listed with three-month UV resistance."
+            },
+            "post_fingerprint": "7c775b7901ed1fe7198d11f8bbe43b36007ec5f3a52c5dc61a2400bf4e52715e"
+        },
+        {
+            "index": 12,
+            "action": "post.get",
+            "post": {
+                "id": 39,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Gold + Foil",
+                "slug": "washi-masking-tape-gold-foil",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-tape-gold-foil/",
+                "excerpt": "Gold + Foil washi masking tape from the TPS Pack construction tape range."
+            },
+            "post_fingerprint": "7536507261f3ec9c46505442fc772ed1798638864a564ff58d52cfa5dcad0fb2"
+        },
+        {
+            "index": 13,
+            "action": "post.get",
+            "post": {
+                "id": 38,
+                "type": "product",
+                "status": "publish",
+                "title": "Waterproof Duct Tape",
+                "slug": "duct-tape-waterproof",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/duct-tape-waterproof/",
+                "excerpt": "Water-resistant duct tape with strong adhesion; available in different colours, sizes and thicknesses."
+            },
+            "post_fingerprint": "5fac0b637f816fe94c28a94f8fb040d8333de0933a12ec745c4dbba79c41345b"
+        },
+        {
+            "index": 14,
+            "action": "post.get",
+            "post": {
+                "id": 37,
+                "type": "product",
+                "status": "publish",
+                "title": "Double-Sided Adhesive Tape",
+                "slug": "dubbelzijdige-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/dubbelzijdige-tape/",
+                "excerpt": "Strong tape for permanent attachment of materials such as carpets and carpet tiles."
+            },
+            "post_fingerprint": "b74be6efb640dfb0c69ebdd93d208c2c1152dc37f8f02514b9cc382c25f89280"
+        },
+        {
+            "index": 15,
+            "action": "post.get",
+            "post": {
+                "id": 36,
+                "type": "product",
+                "status": "publish",
+                "title": "Blue Marine Masking Tape – 14-Day UV",
+                "slug": "blue-masking-marine-tape-14-days-uv",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/blue-masking-marine-tape-14-days-uv/",
+                "excerpt": "Flexible blue masking tape with 14-day UV resistance."
+            },
+            "post_fingerprint": "4ce69160d19ce5e2b6eb44ec9256963dd3cbe5dd5cd1b8f0acde918005918786"
+        },
+        {
+            "index": 16,
+            "action": "post.get",
+            "post": {
+                "id": 35,
+                "type": "product",
+                "status": "publish",
+                "title": "Double-Sided Foam Tape",
+                "slug": "dubbelzijdig-foam-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/dubbelzijdig-foam-tape/",
+                "excerpt": "Strong, water-resistant double-sided foam tape for mounting and sealing."
+            },
+            "post_fingerprint": "bc6d74c8c3d5d37239c459be2fa4e8ffd49a7a6cc41f5fdd1a522fec6263ebd0"
+        },
+        {
+            "index": 17,
+            "action": "post.get",
+            "post": {
+                "id": 34,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® GM3 – Extreme Strength. IMO Marine MED Certified.",
+                "slug": "glass-cloth-tape-marine-gm3",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/glass-cloth-tape-marine-gm3/",
+                "excerpt": "Extreme-strength glass-fibre tape for marine insulation, with premium adhesion and custom width and thickness availability."
+            },
+            "post_fingerprint": "497822939a487e7736987546640e7db37a276b583aec31f4931dec3a4de439ab"
+        },
+        {
+            "index": 18,
+            "action": "post.get",
+            "post": {
+                "id": 33,
+                "type": "product",
+                "status": "publish",
+                "title": "Elastomeric Arma Foam Insulation Tape",
+                "slug": "elastomeer-arma-foam-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/elastomeer-arma-foam-tape/",
+                "excerpt": "Self-adhesive foam insulation tape for finishing insulated pipes and ducts."
+            },
+            "post_fingerprint": "aa3ecc910cbfd3069d39ca2dad421da73d2144b77ae4b5d5ac9fcdaf156a9d7d"
+        },
+        {
+            "index": 19,
+            "action": "post.get",
+            "post": {
+                "id": 32,
+                "type": "product",
+                "status": "publish",
+                "title": "Reinforced Aluminium Tape",
+                "slug": "aluminiumtape-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-reinforced/",
+                "excerpt": "Tear-resistant aluminium tape reinforced lengthwise and crosswise."
+            },
+            "post_fingerprint": "49fc5fb60f3f275c2d4e682e468c39a9340eaf989f7d07b376ebf16776322392"
+        },
+        {
+            "index": 20,
+            "action": "post.get",
+            "post": {
+                "id": 31,
+                "type": "product",
+                "status": "publish",
+                "title": "High-Temperature Aluminium Tape – 300°C",
+                "slug": "aluminiumtape-hittebestendig-300-graden",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-hittebestendig-300-graden/",
+                "excerpt": "Vapour-tight aluminium tape with heat-resistant adhesive rated up to 300°C."
+            },
+            "post_fingerprint": "c2ffb6a0c905f3ac0cbff32516b349da15d699d977d9df6c8c70d7ab69ac39e5"
+        },
+        {
+            "index": 21,
+            "action": "post.get",
+            "post": {
+                "id": 30,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® 38CWR/SK – Extreme Strength. IMO Marine MED Certified.",
+                "slug": "isohulk-aluminium-fsk-tape-imo",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminium-fsk-tape-imo/",
+                "excerpt": "Diamond-reinforced aluminium tape for marine insulation, with IMO MED certification, cold-weather adhesion and custom dimensions."
+            },
+            "post_fingerprint": "fee8bf2fd049d4b47cc053a3c157e3a2681a233d0540b8af67c257d302e2bb8a"
+        },
+        {
+            "index": 22,
+            "action": "post.get",
+            "post": {
+                "id": 29,
+                "type": "product",
+                "status": "publish",
+                "title": "Cardboard Edge Protectors – Pack of 50",
+                "slug": "kartonnen-hoekprofielen-bundel-50",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/kartonnen-hoekprofielen-bundel-50/",
+                "excerpt": "Cardboard corner protectors for pallet and package edge protection."
+            },
+            "post_fingerprint": "0e5cb1deecc12ac9836349af7f226a72d26fce025418b029578638c96a085a52"
+        },
+        {
+            "index": 23,
+            "action": "post.get",
+            "post": {
+                "id": 28,
+                "type": "product",
+                "status": "publish",
+                "title": "Machine Stretch Film Power 300% – 500 mm × 1500 m × 23 µm",
+                "slug": "machinewikkelfolie-power-300-23my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-300-23my/",
+                "excerpt": "Clear machine stretch film, 23 µm thick, with 300% stretch."
+            },
+            "post_fingerprint": "b24f54f1861dacc36c3221ad5da4050fb461fa5185c26d53dfcee2f072e8d011"
+        },
+        {
+            "index": 24,
+            "action": "post.get",
+            "post": {
+                "id": 27,
+                "type": "product",
+                "status": "publish",
+                "title": "Machine Stretch Film Power 300% – 500 mm × 1800 m × 20 µm",
+                "slug": "machinewikkelfolie-power-300-20my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-300-20my/",
+                "excerpt": "Clear machine stretch film, 20 µm thick, with 300% stretch."
+            },
+            "post_fingerprint": "3004d3bf619e9153ff1142998ded658c9b5feda49576b9142bb4d1e47bd4dc62"
+        }
+    ],
+    "readback_verified": null
+}
