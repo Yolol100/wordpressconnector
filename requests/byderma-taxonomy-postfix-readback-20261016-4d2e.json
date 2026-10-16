@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-taxonomy-postfix-readback-20261016-4d2e",
+  "action": "yoast.templates.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
