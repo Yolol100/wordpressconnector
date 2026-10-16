@@ -1,0 +1,125 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-20261016-product-excerpts-3",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-16T16:35:43+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 26,
+                "type": "product",
+                "status": "publish",
+                "title": "Machine Stretch Film Power 250% – 500 mm × 2000 m × 17 µm",
+                "slug": "machinewikkelfolie-power-250-17my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-250-17my/",
+                "excerpt": "Clear machine stretch film, 17 µm thick, with 250% stretch."
+            },
+            "post_fingerprint": "1aba16084427773d1f59184883a219ecdf88314c2ed69b1642ad00fd372a35a1"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 25,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® FT1 – Extreme Strength. Sharp in Price",
+                "slug": "filament-tape-lengteversterkt",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/filament-tape-lengteversterkt/",
+                "excerpt": "Glass-fibre-reinforced FT1 filament tape with high tensile strength, modified high-tack adhesion and custom dimensions."
+            },
+            "post_fingerprint": "387b5327c20288aca50b8dccd895b13fee8252a79243d5825cf3cbae8d67d230"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 24,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® BL38 – Extreme Strength. With a tough black finishing touch!",
+                "slug": "aluminiumtape-zwart-aw",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-zwart-aw/",
+                "excerpt": "Strong black-finish aluminium tape for insulation and HVAC, with flame-retardant, cold-weather-resistant adhesion and custom dimensions."
+            },
+            "post_fingerprint": "f69dc83650d95920188285ad7a580abc886b1f152d51b6e6911fee2c124fdd2e"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 23,
+                "type": "product",
+                "status": "publish",
+                "title": "PP-Coated Aluminium Tape",
+                "slug": "pp-aluminiumtape-opgedampt",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pp-aluminiumtape-opgedampt/",
+                "excerpt": "PP-aluminium tape for joining laminate foil and sealing insulation materials."
+            },
+            "post_fingerprint": "a59b6d659267652bfa3dbc57bb01acef9b6d3c01be45f35b5123138c0c274037"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 22,
+                "type": "product",
+                "status": "publish",
+                "title": "Aluminium Butyl Waterproof Repair Tape",
+                "slug": "aluminium-butyl-reparatietape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-butyl-reparatietape/",
+                "excerpt": "Water-resistant and vapour-tight butyl repair tape for sealing joints and connections."
+            },
+            "post_fingerprint": "1c49b35c41bbde5ada59ced3d7251cf5f0e27800b212988e100f3eecc8c3a20c"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 21,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK Aluminium Tracing Tape IMO",
+                "slug": "isohulk-aluminium-tracing-tape-imo",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminium-tracing-tape-imo/",
+                "excerpt": "Marine-grade, glass-fibre-reinforced aluminium tracing tape with strong adhesion."
+            },
+            "post_fingerprint": "f16c967dff17a04efa58a0cad348044e11428a9c20d0e8f9b52574c1bb7de56e"
+        },
+        {
+            "index": 6,
+            "action": "post.get",
+            "post": {
+                "id": 20,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® IMO Aluminium Foil Tape – Paper or Plastic Liner",
+                "slug": "isohulk-aluminiumtape-aw-imo",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminiumtape-aw-imo/",
+                "excerpt": "IMO/MED-certified aluminium foil tape with paper or blue plastic release-liner options and custom width and thickness availability."
+            },
+            "post_fingerprint": "53632e9e42a66b00ff25ec4e1ba78816f617c3cca83a3771ee000f9f3e025e45"
+        },
+        {
+            "index": 7,
+            "action": "post.get",
+            "post": {
+                "id": 19,
+                "type": "product",
+                "status": "publish",
+                "title": "Aluminium Tape – Cold Weather",
+                "slug": "aluminiumtape-cold-weather",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-cold-weather/",
+                "excerpt": "Vapour-tight aluminium tape with cold-weather acrylic adhesive for insulation and sealing."
+            },
+            "post_fingerprint": "1c0162c5d6da2657e2554cccbe76ced5f4937fdbd34b745fe05d0c2807aca971"
+        }
+    ],
+    "readback_verified": null
+}
