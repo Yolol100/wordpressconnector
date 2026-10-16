@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-canary-20261016-1838-x6b8",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
