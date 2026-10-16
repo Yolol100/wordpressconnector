@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-current-yoast-20261016-f51b",
+  "action": "yoast.templates.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
