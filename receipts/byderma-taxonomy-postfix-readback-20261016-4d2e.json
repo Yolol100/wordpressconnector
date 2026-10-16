@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-taxonomy-postfix-readback-20261016-4d2e",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-16T00:06:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%term_title%% %%page%% %%sep%% Byderma",
+        "product_category_title": "%%term_title%% %%page%% %%sep%% Byderma"
+    },
+    "product_templates": {
+        "product_title": "%%title%% %%sep%% Byderma",
+        "product_description": "Ontdek luxe beautybehandelingen bij Byderma. Boek eenvoudig jouw behandeling online en shop hoogwaardige huidverzorgingsproducten in onze webshop."
+    },
+    "before_fingerprint": "06bef221f92ff22b9d1e5a0f17506d52eb4d1f62c7d85519b319441bbe2349b5",
+    "readback_verified": null
+}
