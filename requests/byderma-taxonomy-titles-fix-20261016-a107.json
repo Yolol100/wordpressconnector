@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-taxonomy-titles-fix-20261016-a107",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% %%sep%% Byderma",
+      "product_category_title": "%%term_title%% %%page%% %%sep%% Byderma"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "bf3f423795eb2d6f93f346943eea414d59979435fe40e5e78643621b76dd5c24"
+}
