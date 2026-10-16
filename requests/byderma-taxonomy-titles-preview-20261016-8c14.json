@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://byderma.nl",
+  "request_id": "byderma-taxonomy-titles-preview-20261016-8c14",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% %%sep%% Byderma",
+      "product_category_title": "%%term_title%% %%page%% %%sep%% Byderma"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
