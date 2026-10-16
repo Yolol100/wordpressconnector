@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "byderma-taxonomy-titles-fix-20261016-a107",
+    "action": "yoast.templates.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-16T00:03:16+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "updated_keys": [
+        "category_title",
+        "product_category_title"
+    ],
+    "before_fingerprint": "bf3f423795eb2d6f93f346943eea414d59979435fe40e5e78643621b76dd5c24",
+    "after_fingerprint": "06bef221f92ff22b9d1e5a0f17506d52eb4d1f62c7d85519b319441bbe2349b5",
+    "readback_verified": true
+}
