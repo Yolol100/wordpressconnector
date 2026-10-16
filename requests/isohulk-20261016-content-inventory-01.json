@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-20261016-content-inventory-01",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "per_page": 100,
+          "page": 1
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "post",
+          "status": "publish",
+          "per_page": 100,
+          "page": 1
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "per_page": 100,
+          "page": 1
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
