@@ -38,6 +38,7 @@ run_php tests/read-batch-contract.php
 run_php tests/diagnostics-contract.php
 run_php tests/connector-core-backup-runtime.php
 run_php tests/plugin-control-contract.php
+run_php tests/plugin-list-multisite-contract.php
 run_php tests/joinchat-settings-contract.php
 run_php tests/gtranslate-settings-contract.php
 run_php tests/optimizer-settings-contract.php
