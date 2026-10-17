@@ -9,7 +9,7 @@ $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
     'plugin/wordpressconnector/includes/Plugin.php' => array('new FilesystemAdapter()'),
     'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'AUTO_ENABLED_FLAGS'),
-    'plugin/wordpressconnector/includes/Admin/Settings.php' => array('Authenticated WordPress REST/MCP works immediately.', 'Optional emergency policy overrides', 'Authorize pinned GitHub Actions workflow'),
+    'plugin/wordpressconnector/includes/Admin/Settings.php' => array('After a WordPress administrator clicks Activate,', 'Optional emergency policy overrides', 'Reconnect trusted GitHub Actions'),
     'plugin/wordpressconnector/includes/REST/Controller.php' => array('filesystem_writes', 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),
     'plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php' => array('filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text', 'WP_Filesystem', "'direct' !== \$method", 'expected_sha256', 'TOKEN_PARSE', 'JSON_THROW_ON_ERROR', 'readback verification failed', "'_rollback'", 'assertNoEmbeddedSecrets', "'private_ajax_reused' => false"),
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array('shared_filesystem_interface', 'filesystem.inspect', 'filesystem.write_text', 'bounded_filesystem_bridge'),

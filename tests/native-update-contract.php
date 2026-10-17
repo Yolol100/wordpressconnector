@@ -19,6 +19,9 @@ namespace {
     $GLOBALS['test_release_status'] = 200;
     $GLOBALS['release_calls'] = 0;
     $GLOBALS['download_calls'] = 0;
+    $GLOBALS['notice_actions'] = array();
+    $GLOBALS['wp_site_transients'] = array();
+    $GLOBALS['test_can_update_plugins'] = true;
 
     class WP_Error
     {
@@ -30,6 +33,20 @@ namespace {
     {
         $GLOBALS['native_hooks'][$name] = array('callback' => $callback, 'args' => $args);
     }
+    function add_action(string $name, $callback, int $priority = 10, int $acceptedArgs = 1): void
+    {
+        $GLOBALS['notice_actions'][$name] = array('callback' => $callback, 'priority' => $priority);
+    }
+    function get_site_transient($name) { return $GLOBALS['wp_site_transients'][$name] ?? false; }
+    function set_site_transient($name, $value, $expiration = 0): bool {
+        $GLOBALS['wp_site_transients'][$name] = $value;
+        return true;
+    }
+    function current_user_can($capability): bool { return $GLOBALS['test_can_update_plugins']; }
+    function admin_url($path): string { return 'https://example.com/wp-admin/' . $path; }
+    function wp_nonce_url($url, $action): string { return $url . '&_wpnonce=fixture'; }
+    function esc_url($url): string { return $url; }
+    function esc_html__($text, $domain): string { return $text; }
     function is_wp_error($value): bool { return $value instanceof WP_Error; }
     function wp_safe_remote_get(string $url, array $options = array())
     {
@@ -145,6 +162,63 @@ namespace {
         if (false !== $adapter->verifiedNativeDownload(false, $update['package'], null, array_merge($bulkHook, $conflict))
             || 2 !== $GLOBALS['download_calls']) {
             throw new \RuntimeException('Conflicting update target incorrectly accepted.');
+        }
+    }
+
+    // A new GitHub release must appear in the native Plugins update transient
+    // even when WordPress Core's hourly update check has not run.
+    $GLOBALS['wp_site_transients']['update_plugins'] = (object) array(
+        'last_checked' => time(),
+        'response' => array('other/keep.php' => (object) array('id' => 'https://other.example')),
+        'no_update' => array('other/nochange.php' => (object) array('id' => 'other')),
+        'checked' => array($plugin => $version[1]),
+    );
+    $priorCalls = $GLOBALS['release_calls'];
+    if (! $adapter->refreshNativeUpdateNotice()) {
+        throw new \RuntimeException('Targeted update notice refresh did not complete.');
+    }
+    $notice = $GLOBALS['wp_site_transients']['update_plugins'];
+    $new = $notice->response[$plugin] ?? null;
+    if (! is_object($new) || $new->new_version !== $newerVersion ||
+        $new->plugin !== $plugin || $new->id !== $uri ||
+        ! isset($notice->response['other/keep.php']) ||
+        ! isset($notice->no_update['other/nochange.php']) ||
+        $notice->last_checked !== $GLOBALS['wp_site_transients']['update_plugins']->last_checked) {
+        throw new \RuntimeException('Native update notice missing or another plugin was changed.');
+    }
+    $callsAfter = $GLOBALS['release_calls'];
+    $adapter->refreshNativeUpdateNotice();
+    if ($GLOBALS['release_calls'] !== $callsAfter || $callsAfter !== $priorCalls + 1) {
+        throw new \RuntimeException('Bounded update notice polling made repeated GitHub API calls.');
+    }
+    $list = $adapter->pluginActionLinks(array('deactivate' => 'keep'));
+    if (!isset($list['deactivate'], $list['wpconnector-refresh']) ||
+        strpos($list['wpconnector-refresh'], 'wpconnector_check_updates') === false) {
+        throw new \RuntimeException('Manual GitHub release refresh missing from Plugins row.');
+    }
+    $GLOBALS['test_can_update_plugins'] = false;
+    if (false !== $adapter->refreshNativeUpdateNotice(true) ||
+        count($adapter->pluginActionLinks(array())) !== 0) {
+        throw new \RuntimeException('Unprivileged visitor can trigger an update check.');
+    }
+    $GLOBALS['test_can_update_plugins'] = true;
+    // An equal/older GitHub release clears only a previous connector offer.
+    $GLOBALS['test_release_version'] = $version[1];
+    if (! $adapter->refreshNativeUpdateNotice(true) ||
+        isset($GLOBALS['wp_site_transients']['update_plugins']->response[$plugin]) ||
+        ! isset($GLOBALS['wp_site_transients']['update_plugins']->response['other/keep.php'])) {
+        throw new \RuntimeException('Installed version did not clear its own stale native update.');
+    }
+    // Failed release API must not overwrite unrelated or existing update data.
+    $GLOBALS['test_release_status'] = 503;
+    $beforeFailure = serialize($GLOBALS['wp_site_transients']['update_plugins']);
+    if (false !== $adapter->refreshNativeUpdateNotice(true) ||
+        serialize($GLOBALS['wp_site_transients']['update_plugins']) !== $beforeFailure) {
+        throw new \RuntimeException('GitHub outage changed the native update notices.');
+    }
+    foreach (array('load-plugins.php', 'load-update-core.php', 'admin_post_wpconnector_check_updates') as $hook) {
+        if (!isset($GLOBALS['notice_actions'][$hook])) {
+            throw new \RuntimeException('Native Plugins update refresh hook missing: ' . $hook);
         }
     }
 

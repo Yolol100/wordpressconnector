@@ -30,10 +30,10 @@ The existing guarded `connector.update.check` and `connector.update.apply` actio
 
 ## Zero-config GitHub connection
 
-Starting with version **1.19.5**, GitHub OIDC additionally requires a **one-time explicit local administrator approval per WordPress site**, under Settings → WordPress Connector. Installing or cloning the plugin never grants this repository access by default. Authorization binds to the site's WordPress REST URL and a chosen administrator, and can be revoked. No persistent GitHub or WordPress credentials are required. This also affects sites upgrading from 1.19.4, which must be approved after upgrade.
+Starting with version **1.19.6**, normal WordPress administrator **activation** is the only step needed to connect a new installation to the pinned Yolol100 GitHub OIDC workflow; there is no second pairing button. The activation is a deliberate grant of WordPress site administration to that exact repository, limited by WordPress capability checks and the connector public-safe action contract. The URL-bound and revocable site pairing added in 1.19.5 remains intact. Unattended WP-CLI/network activation, previously unpaired upgrades and site clones are not silently approved; use Settings → WordPress Connector to connect those cases. No long-lived credentials are required.
 
 1. Install and activate the plugin on the WordPress site.
-2. Presence can be checked at `/wp-json/webactueel-wordpress-connector/v1/presence`, **but this does not prove authorization**. For GitHub OIDC, locally approve the site as an administrator under Settings → WordPress Connector.
+2. Presence can be checked at `/wp-json/webactueel-wordpress-connector/v1/presence`, **but this does not prove authorization**. After normal administrator activation, verify a trusted read-only GitHub OIDC request before claiming access. Other install modes can be connected in Settings → WordPress Connector.
 3. A ChatGPT-created runtime request includes its canonical `site_url` in `requests/*.json`.
 4. `wordpress-request.yml` validates the request without production credentials.
 5. The trusted `wordpress-zero-config-execute.yml` workflow requests a short-lived GitHub Actions OIDC token.

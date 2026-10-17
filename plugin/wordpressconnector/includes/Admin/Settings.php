@@ -25,7 +25,7 @@ final class Settings
         }
         $url = admin_url('options-general.php?page=' . self::PAGE);
         echo '<div class="notice notice-warning"><p>';
-        echo esc_html__('WordPress Connector: GitHub Actions cannot administer this site until an administrator approves the connection.', 'wordpressconnector') . ' ';
+        echo esc_html__('WordPress Connector: GitHub connection is not active. Normal administrator activation connects automatically; CLI, network-wide or older installations can be connected here.', 'wordpressconnector') . ' ';
         echo '<a href="' . esc_url($url) . '">' . esc_html__('Review site authorization', 'wordpressconnector') . '</a>';
         echo '</p></div>';
     }
@@ -65,7 +65,7 @@ final class Settings
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__('WordPress Connector', 'wordpressconnector') . '</h1>';
-        echo '<p>' . esc_html__('Authenticated WordPress REST/MCP works immediately. GitHub OIDC needs one local administrator approval per site; it is never granted merely by installing the plugin.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('After a WordPress administrator clicks Activate, this plugin connects to the pinned Yolol100/wordpressconnector GitHub Actions workflow automatically. No separate permission screen is needed. Remote actions retain authenticated WordPress capability and request safety checks.', 'wordpressconnector') . '</p>';
 
         if ($legacyActive) {
             echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__('Legacy Elementor JSON Bridge detected.', 'wordpressconnector') . '</strong> ';
@@ -74,9 +74,9 @@ final class Settings
         }
 
         $pairedAdministrator = SitePairing::pairedAdministratorId();
-        echo '<h2>' . esc_html__('Authorize this site for GitHub Actions', 'wordpressconnector') . '</h2>';
-        echo '<p><strong>' . esc_html($pairedAdministrator ? __('Enabled for this exact WordPress URL', 'wordpressconnector') : __('Not authorized', 'wordpressconnector')) . '</strong></p>';
-        echo '<p>' . esc_html__('Enabling lets the pinned Yolol100/wordpressconnector GitHub Actions workflow carry out approved administrator-level operations on THIS site. Use this only for sites you own or manage. Existing WordPress administrator login is required. Copying the database or changing the site URL invalidates the grant.', 'wordpressconnector') . '</p>';
+        echo '<h2>' . esc_html__('GitHub connection', 'wordpressconnector') . '</h2>';
+        echo '<p><strong>' . esc_html($pairedAdministrator ? __('Connected to trusted GitHub Actions', 'wordpressconnector') : __('Not connected', 'wordpressconnector')) . '</strong></p>';
+        echo '<p>' . esc_html__('Activating this plugin as a WordPress administrator authorizes the pinned GitHub Actions workflow to manage this website with administrator permissions. A separate setup click is normally unnecessary. Keep this installed only on websites you manage. Access can be revoked here; a cloned or moved site must be reconnected.', 'wordpressconnector') . '</p>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('wpconnector_site_pairing');
         echo '<input type="hidden" name="action" value="wpconnector_site_pairing" />';
@@ -85,7 +85,7 @@ final class Settings
             submit_button(__('Revoke GitHub Actions access for this site', 'wordpressconnector'), 'secondary');
         } else {
             echo '<input type="hidden" name="pairing_decision" value="enable" />';
-            submit_button(__('Authorize pinned GitHub Actions workflow', 'wordpressconnector'), 'primary');
+            submit_button(__('Reconnect trusted GitHub Actions', 'wordpressconnector'), 'primary');
         }
         echo '</form>';
 
@@ -107,12 +107,14 @@ final class Settings
         echo '</tbody></table>';
         echo '<p>' . esc_html__('Hosting/WAF blocks (401/403/429), outbound GitHub JWKS access, permalinks and third-party plugin compatibility still require a real end-to-end test. An installed plugin alone cannot fix a firewall, missing user permissions or absent dependencies.', 'wordpressconnector') . '</p>';
 
+        echo '<h2>' . esc_html__('GitHub plugin updates', 'wordpressconnector') . '</h2>';
+        echo '<p>' . esc_html__('The Plugins screen checks the canonical GitHub release at most once every two minutes while a plugin administrator views it. If a verified newer release exists, WordPress shows its standard Update Now action. Use the Check GitHub update now link beside this plugin for an immediate manual refresh. A commit on GitHub main is not an installable update until CI passes and the versioned release ZIP is published.', 'wordpressconnector') . '</p>';
         echo '<h2>' . esc_html__('Connection', 'wordpressconnector') . '</h2>';
         echo '<table class="widefat striped" style="max-width:900px"><tbody>';
         echo '<tr><td><strong>' . esc_html__('Connector version', 'wordpressconnector') . '</strong></td><td><code>' . esc_html(defined('WPCONNECTOR_VERSION') ? WPCONNECTOR_VERSION : '') . '</code></td></tr>';
         echo '<tr><td><strong>' . esc_html__('Presence endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($presenceUrl) . '</code></td></tr>';
         echo '<tr><td><strong>' . esc_html__('REST health endpoint', 'wordpressconnector') . '</strong></td><td><code>' . esc_html($healthUrl) . '</code></td></tr>';
-        echo '<tr><td><strong>' . esc_html__('GitHub authentication', 'wordpressconnector') . '</strong></td><td>' . esc_html__('Short-lived GitHub Actions OIDC token, only after local site approval', 'wordpressconnector') . '</td></tr>';
+        echo '<tr><td><strong>' . esc_html__('GitHub authentication', 'wordpressconnector') . '</strong></td><td>' . esc_html__('Short-lived GitHub Actions OIDC token, normally enabled upon administrator activation', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Persistent connector secrets', 'wordpressconnector') . '</strong></td><td>' . esc_html__('None required', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Execution safety', 'wordpressconnector') . '</strong></td><td>' . esc_html__('Capability checks, dry-run, request confirmation, stale-state guards, idempotency, readback and rollback remain active.', 'wordpressconnector') . '</td></tr>';
         echo '<tr><td><strong>' . esc_html__('Runtime coverage', 'wordpressconnector') . '</strong></td><td>' . esc_html__('WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem', 'wordpressconnector') . '</td></tr>';
@@ -121,7 +123,7 @@ final class Settings
 
         echo '<h2>' . esc_html__('First test', 'wordpressconnector') . '</h2>';
         echo '<p><code>' . esc_html__('presence -> OIDC health -> connector.discover -> system.doctor -> dry-run mutation -> confirmed staging write + rollback', 'wordpressconnector') . '</code></p>';
-        echo '<p>' . esc_html__('Optional emergency policy overrides can disable classes of connector actions. WordPress-native authenticated REST/MCP needs no GitHub pairing; GitHub OIDC does.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('Optional emergency policy overrides can disable connector actions. WordPress-native REST/MCP needs an authenticated WordPress user; GitHub OIDC is automatically paired on ordinary administrator activation, and never bypasses policy gates.', 'wordpressconnector') . '</p>';
         echo '</div>';
     }
 

@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.5
+Stable tag: 1.19.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.6 simplifies first use: clicking Activate as a WordPress administrator also authorizes the pinned Yolol100 GitHub OIDC workflow for this website; there is no separate initial authorization button. Activation is an administrator action and intentionally grants that trusted workflow site administration privileges. Network-wide or unattended CLI activation does not silently authorize every website; use the WordPress settings page to approve sites that cannot be paired during admin activation. Existing installations are not silently re-paired on upgrades. OIDC issuer, repository claims, permissions, per-action confirmation, readback and rollback remain enforced. The Plugins screen checks validated GitHub releases more frequently and provides a manual Check GitHub update now link; installation still uses verified SHA-256 ZIP downloads. This does not provide push notifications or guarantee a release is available immediately after a GitHub commit.
+
 
 Version 1.19.5 requires a site-specific WordPress administrator approval before GitHub OIDC can impersonate an administrator on **each** WordPress installation. Approve or revoke this at Settings > WordPress Connector, using a nonce-protected local form. A moved/cloned site needs fresh approval. Authenticated direct REST/MCP remains available without GitHub pairing. The local settings page provides a compatibility preflight. Existing sites will require one-time approval after upgrading; never publish this upgrade without a site administrator ready to approve it.
 

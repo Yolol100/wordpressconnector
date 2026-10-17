@@ -73,7 +73,7 @@ if (false !== strpos($sources['settings'], 'WP Agent')) {
     fwrite(STDERR, "Admin settings must not advertise the retired WP Agent preference.\n");
     exit(1);
 }
-$require('settings', array('Authorize pinned GitHub Actions workflow', 'check_admin_referer'));
+$require('settings', array('Reconnect trusted GitHub Actions', 'check_admin_referer'));
 
 foreach (array("'7.4'", "'8.0'", "'8.1'", "'8.2'", "'8.3'", "'8.4'", "'8.5'") as $version) {
     if (false === strpos($sources['ci'], $version)) {
