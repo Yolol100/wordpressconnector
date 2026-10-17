@@ -26,6 +26,7 @@ function WP_Filesystem($credentials = false, $context = ''): bool { return true;
 function current_user_can($cap): bool { return $GLOBALS['wpconn_file_permissions']; }
 function wp_is_file_mod_allowed($context): bool { return $GLOBALS['wpconn_file_edits_allowed']; }
 function sanitize_text_field($s): string { return trim(strip_tags((string) $s)); }
+function sanitize_key($s): string { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $s)); }
 function is_multisite(): bool { return false; }
 $GLOBALS['wpconn_plugins'] = array(
     'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.7'),
@@ -84,7 +85,7 @@ function plugins_api($action, $args = array()) {
 class WP_Error { public function get_error_message(): string { return 'Test failure'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
-foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Security/Policy.php',
+foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php', 'Security/Policy.php',
     'Security/FilesystemPolicy.php', 'Adapters/FilesystemAdapter.php',
     'Adapters/SystemAdapter.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
