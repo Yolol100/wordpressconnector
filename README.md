@@ -30,10 +30,10 @@ The existing guarded `connector.update.check` and `connector.update.apply` actio
 
 ## Zero-config GitHub connection
 
-From version 1.13.0, normal GitHub transport requires no repository secrets, no `WPCONNECTOR_SITE_URL` variable, no WordPress username, no Application Password and no WordPress settings checkboxes.
+Starting with version **1.19.5**, GitHub OIDC additionally requires a **one-time explicit local administrator approval per WordPress site**, under Settings → WordPress Connector. Installing or cloning the plugin never grants this repository access by default. Authorization binds to the site's WordPress REST URL and a chosen administrator, and can be revoked. No persistent GitHub or WordPress credentials are required. This also affects sites upgrading from 1.19.4, which must be approved after upgrade.
 
 1. Install and activate the plugin on the WordPress site.
-2. A known site can immediately be verified at `/wp-json/webactueel-wordpress-connector/v1/presence`.
+2. Presence can be checked at `/wp-json/webactueel-wordpress-connector/v1/presence`, **but this does not prove authorization**. For GitHub OIDC, locally approve the site as an administrator under Settings → WordPress Connector.
 3. A ChatGPT-created runtime request includes its canonical `site_url` in `requests/*.json`.
 4. `wordpress-request.yml` validates the request without production credentials.
 5. The trusted `wordpress-zero-config-execute.yml` workflow requests a short-lived GitHub Actions OIDC token.
@@ -44,7 +44,7 @@ The request itself remains strict: mutations require `confirm=true`; stale-state
 
 ## Discovery boundary
 
-Installation makes a site immediately recognizable once its domain is known, but GitHub cannot securely enumerate arbitrary unknown WordPress domains merely because a plugin was installed. Full automatic “which sites have this plugin?” discovery requires a separate authenticated site registry/pairing service. The connector does not fake that capability with web crawling or public data leakage.
+Installation makes a plugin presence endpoint recognizable once its domain is known, but GitHub cannot securely enumerate arbitrary unknown WordPress domains merely because a plugin was installed. Presence does not imply permission to make changes. Full automatic “which sites have this plugin?” discovery requires a separate authenticated site registry/pairing service. The connector does not fake that capability with web crawling or public data leakage.
 
 ## Public vs private GitHub runtime
 
