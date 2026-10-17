@@ -1,0 +1,64 @@
+name: WordPress Connector Docker runtime smoke
+
+on:
+  pull_request:
+    paths:
+      - '.wp-env.json'
+      - 'plugin/wordpressconnector/**'
+      - '.github/workflows/docker-runtime-smoke.yml'
+      - 'docs/LOCAL-RUNTIME-TESTING.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wp-env-smoke:
+    name: Isolated WordPress runtime (no credentials)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+      - name: Install pinned WordPress test environment
+        run: npm install --global @wordpress/env@11.17.0
+      - name: Start disposable WordPress with Docker
+        run: wp-env start
+      - name: Check plugin activation
+        run: wp-env run cli wp plugin is-active wordpressconnector
+      - name: Check plugin bootstrap and REST registration
+        run: |
+          wp-env run cli wp eval '
+            if (! defined("WPCONNECTOR_VERSION")) {
+              WP_CLI::error("Connector failed to boot");
+            }
+            $routes = rest_get_server()->get_routes();
+            foreach (array("/webactueel-wordpress-connector/v1/presence", "/webactueel-wordpress-connector/v1/health", "/webactueel-wordpress-connector/v1/execute") as $route) {
+              if (! isset($routes[$route])) {
+                WP_CLI::error("Missing expected REST route: " . $route);
+              }
+            }
+            WP_CLI::success("Connector boot and REST route registry verified");
+          '
+      - name: Reject anonymous non-HTTPS presence
+        run: |
+          wp-env run cli wp eval '
+            $response = rest_do_request(new WP_REST_Request("GET", "/webactueel-wordpress-connector/v1/presence"));
+            if (is_ssl() || $response->get_status() !== 403) {
+              WP_CLI::error("HTTP presence must remain forbidden in the disposable test site");
+            }
+            WP_CLI::success("HTTP presence blocked as intended");
+          '
+      - name: Docker diagnostics on failure
+        if: failure()
+        run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'
+      - name: Destroy disposable test environment
+        if: always()
+        run: wp-env destroy
