@@ -38,7 +38,7 @@ foreach ($required as $needle) {
     }
 }
 if (strpos($controller, "get_option('wpconnector_rest_enabled'") !== false) { fwrite(STDERR,"REST transport still depends on a checkbox.\n"); exit(1); }
-foreach (array('Authenticated WordPress REST/MCP works immediately.','Authorize pinned GitHub Actions workflow','wp_nonce_field(\'wpconnector_site_pairing\')','check_admin_referer(\'wpconnector_site_pairing\')','SitePairing::enableForAdministrator','SitePairing::disable','Short-lived GitHub Actions OIDC token','Persistent connector secrets','None required') as $needle) {
+foreach (array('After a WordPress administrator clicks Activate,','Reconnect trusted GitHub Actions','wp_nonce_field(\'wpconnector_site_pairing\')','check_admin_referer(\'wpconnector_site_pairing\')','SitePairing::enableForAdministrator','SitePairing::disable','Short-lived GitHub Actions OIDC token','Persistent connector secrets','None required') as $needle) {
     if (strpos($settings,$needle)===false) { fwrite(STDERR,"Missing zero-config settings contract: {$needle}\n"); exit(1); }
 }
 foreach (array('register_setting(','renderCheckbox','wpconnector_allow_writes','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_SITE_URL') as $needle) {
