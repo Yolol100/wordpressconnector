@@ -19,8 +19,10 @@ final class ConnectorUpdateAdapter
     private const MAX_PACKAGE_BYTES = 20971520;
     private const MAX_UNCOMPRESSED_BYTES = 104857600;
     private const MAX_ENTRIES = 2500;
+    private const NOTICE_REFRESH_TRANSIENT = 'wpconnector_github_update_notice_v1';
     // Only the already verified local ZIP for the current guarded REST self-update.
     private $verifiedSelfUpdatePackagePath = null;
+    private $cachedRelease = null;
 
     public function register(Registry $registry): void
     {
@@ -43,7 +45,121 @@ final class ConnectorUpdateAdapter
         if (function_exists('add_filter')) {
             add_filter('update_plugins_github.com', array($this, 'nativeUpdateOffer'), 10, 4);
             add_filter('upgrader_pre_download', array($this, 'verifiedNativeDownload'), 10, 4);
+            add_filter('plugin_action_links_' . self::PLUGIN_FILE, array($this, 'pluginActionLinks'));
         }
+        if (function_exists('add_action')) {
+            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNotice'), 20);
+            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNotice'), 20);
+            add_action('admin_post_wpconnector_check_updates', array($this, 'forceNativeUpdateCheck'));
+            add_action('admin_notices', array($this, 'checkedNotice'));
+        }
+    }
+
+    /**
+     * WordPress Core may keep plugin update results for an hour on Plugins.
+     * Refresh only this plugin's trusted GitHub release when an administrator
+     * actually visits Plugins or Updates. Do not invalidate other plugins or
+     * run an unauthenticated global update scan.
+     */
+    public function refreshNativeUpdateNotice(bool $force = false): bool
+    {
+        if (! current_user_can('update_plugins')) {
+            return false;
+        }
+        if (! $force && false !== get_site_transient(self::NOTICE_REFRESH_TRANSIENT)) {
+            return true;
+        }
+
+        // Throttle even failed requests; hosting firewalls and GitHub rate
+        // limits must not turn every admin page view into an API retry.
+        set_site_transient(self::NOTICE_REFRESH_TRANSIENT, 1, $force ? 30 : 120);
+        try {
+            $release = $this->release(4);
+            $installed = defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : '';
+            if ('' === $installed) {
+                return false;
+            }
+            $updates = get_site_transient('update_plugins');
+            if (! is_object($updates)) {
+                return false;
+            }
+            if (! isset($updates->response) || ! is_array($updates->response)) {
+                $updates->response = array();
+            }
+            if (! isset($updates->no_update) || ! is_array($updates->no_update)) {
+                $updates->no_update = array();
+            }
+            if (version_compare($release['version'], $installed, '>')) {
+                $offer = $this->nativeUpdateOffer(false, array(
+                    'UpdateURI' => self::UPDATE_URI,
+                    'Version' => $installed,
+                ), self::PLUGIN_FILE, array());
+                if (! is_array($offer)) {
+                    return false;
+                }
+                $offer['new_version'] = $offer['version'];
+                $offer['plugin'] = self::PLUGIN_FILE;
+                $updates->response[self::PLUGIN_FILE] = (object) $offer;
+                unset($updates->no_update[self::PLUGIN_FILE]);
+            } elseif (isset($updates->response[self::PLUGIN_FILE])) {
+                // Only discard an obsolete update which this connector owns.
+                $existing = $updates->response[self::PLUGIN_FILE];
+                $identity = is_object($existing) ? ($existing->id ?? null) :
+                    (is_array($existing) ? ($existing['id'] ?? null) : null);
+                if (self::UPDATE_URI === $identity) {
+                    unset($updates->response[self::PLUGIN_FILE]);
+                }
+            }
+            set_site_transient('update_plugins', $updates);
+            return true;
+        } catch (\Throwable $error) {
+            // Leave the last known Core update result intact on network errors.
+            // The guarded downloader will still refuse a stale/bad package.
+            return false;
+        }
+    }
+
+    public function pluginActionLinks(array $links): array
+    {
+        if (! current_user_can('update_plugins')) {
+            return $links;
+        }
+        $url = wp_nonce_url(
+            admin_url('admin-post.php?action=wpconnector_check_updates'),
+            'wpconnector_check_updates'
+        );
+        $links['wpconnector-refresh'] = '<a href="' . esc_url($url) . '">' .
+            esc_html__('Check GitHub update now', 'wordpressconnector') . '</a>';
+        return $links;
+    }
+
+    public function forceNativeUpdateCheck(): void
+    {
+        if (! current_user_can('update_plugins')) {
+            wp_die(esc_html__('Plugin update permission is required.', 'wordpressconnector'));
+        }
+        check_admin_referer('wpconnector_check_updates');
+        $ok = $this->refreshNativeUpdateNotice(true);
+        wp_safe_redirect(add_query_arg(
+            'wpconnector_update_checked',
+            $ok ? '1' : '0',
+            admin_url('plugins.php')
+        ));
+        exit;
+    }
+
+    public function checkedNotice(): void
+    {
+        if (! current_user_can('update_plugins') || ! isset($_GET['wpconnector_update_checked'])) {
+            return;
+        }
+        $ok = '1' === (string) $_GET['wpconnector_update_checked'];
+        echo '<div class="notice ' . ($ok ? 'notice-success' : 'notice-warning') .
+            ' is-dismissible"><p>' .
+            esc_html($ok
+                ? __('WordPress Connector: GitHub release checked. If newer, Update Now appears in the Plugins list.', 'wordpressconnector')
+                : __('WordPress Connector: GitHub update check failed; verify outbound HTTPS, firewall and GitHub availability. Nothing was installed.', 'wordpressconnector')) .
+            '</p></div>';
     }
 
     /**
@@ -330,10 +446,13 @@ final class ConnectorUpdateAdapter
         }
     }
 
-    private function release(): array
+    private function release(int $timeout = 10): array
     {
+        if (is_array($this->cachedRelease)) {
+            return $this->cachedRelease;
+        }
         $response = wp_safe_remote_get(self::RELEASE_API, array(
-            'timeout' => 10,
+            'timeout' => $timeout,
             'redirection' => 3,
             'limit_response_size' => 262144,
             'headers' => array(
@@ -394,7 +513,7 @@ final class ConnectorUpdateAdapter
             throw new RuntimeException('Canonical release assets are missing GitHub SHA-256 digests.');
         }
 
-        return array(
+        $this->cachedRelease = array(
             'tag' => $tag,
             'version' => (string) $matches[1],
             'package_url' => $packageUrl,
@@ -403,6 +522,7 @@ final class ConnectorUpdateAdapter
             'package_digest' => $packageDigest,
             'checksum_digest' => $checksumDigest,
         );
+        return $this->cachedRelease;
     }
 
     /**
