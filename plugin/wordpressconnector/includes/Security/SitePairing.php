@@ -7,8 +7,9 @@ namespace Webactueel\WordPressConnector\Security;
 use RuntimeException;
 
 /**
- * Each WordPress site/blog must explicitly opt into the pinned GitHub OIDC
- * control plane. A cloned DB or a changed WordPress URL loses its grant.
+ * Ordinary WordPress admin activation pairs this site with the pinned GitHub
+ * OIDC control plane, without a second approval screen. A database clone or
+ * WordPress URL change never inherits authorization.
  * Direct authenticated WordPress REST/MCP is intentionally unaffected.
  */
 final class SitePairing
@@ -41,6 +42,28 @@ final class SitePairing
             return 0;
         }
         return $id;
+    }
+
+    /**
+     * WordPress plugin activation is an explicit administrator action guarded by
+     * Core's own activation permissions and nonce. Reuse that single step for
+     * this trusted, pinned GitHub control plane; never pair a mere upload,
+     * an automated CLI install, or a network-wide activation.
+     *
+     * Existing installations are NOT silently re-paired during upgrades.
+     */
+    public static function approveOnActivation(bool $networkWide = false): void
+    {
+        if ($networkWide || ! is_admin() ||
+            ! current_user_can('activate_plugins') ||
+            ! current_user_can('manage_options')) {
+            return;
+        }
+        $userId = get_current_user_id();
+        if (! is_int($userId) || $userId <= 0) {
+            return;
+        }
+        self::enableForAdministrator($userId);
     }
 
     public static function enableForAdministrator(int $administratorId): void
