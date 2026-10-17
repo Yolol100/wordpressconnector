@@ -16,7 +16,7 @@ The GitHub runtime is zero-config but not unauthenticated. `wordpress-zero-confi
 - GitHub-hosted runner;
 - validity window and one-time `jti` replay protection.
 
-No WordPress password, Application Password or long-lived GitHub-to-WordPress secret is stored for this path.
+No WordPress password, Application Password or long-lived GitHub-to-WordPress secret is stored for this path. Since version 1.19.5, each site must also hold a locally administrator-approved, URL-bound GitHub OIDC grant. Installing the plugin alone confers no remote access. The approving administrator's user ID is the only WordPress identity eligible for OIDC; it is not silently assigned to the oldest administrator. Approval can be revoked from Settings → WordPress Connector and does not apply after a site URL change or to a different multisite blog.
 
 ## GitHub request trust
 
@@ -26,7 +26,7 @@ Request assets are bounded to 10 files and 25 MiB total. Public request branches
 
 ## WordPress authorization
 
-After OIDC verification, the connector establishes the WordPress execution context using an administrator on the current site. Existing action-specific `current_user_can()` checks remain authoritative. Direct authenticated WordPress REST clients remain supported.
+After OIDC verification and site-specific administrator approval, the connector uses only the administrator account that approved the current site. If that administrator loses `manage_options`, or the local approval is revoked, GitHub OIDC fails closed. Existing action-specific `current_user_can()` checks remain authoritative. Direct authenticated WordPress REST clients remain supported.
 
 ## Execution safety
 
