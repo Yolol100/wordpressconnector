@@ -6,6 +6,8 @@ $root = sys_get_temp_dir() . '/wpconn-private-ops-' . bin2hex(random_bytes(6)) .
 mkdir($root . 'wp-content/themes/fixture/assets', 0700, true);
 mkdir($root . 'wp-admin/includes', 0700, true);
 file_put_contents($root . 'wp-admin/includes/file.php', "<?php\n");
+file_put_contents($root . 'wp-admin/includes/plugin.php', "<?php\n");
+file_put_contents($root . 'wp-admin/includes/plugin-install.php', "<?php\n");
 define('ABSPATH', $root);
 
 class WP_Filesystem_Base
@@ -147,6 +149,8 @@ if (FilesystemPolicy::assertLifecycleText($path)!==$path) {
 }
 unlink($root.$path);
 unlink($root.'wp-admin/includes/file.php');
+unlink($root.'wp-admin/includes/plugin.php');
+unlink($root.'wp-admin/includes/plugin-install.php');
 rmdir($root.'wp-content/themes/fixture/assets');
 rmdir($root.'wp-content/themes/fixture');
 rmdir($root.'wp-content/themes');
