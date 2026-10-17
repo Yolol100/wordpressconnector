@@ -47,14 +47,39 @@ jobs:
             }
             WP_CLI::success("Connector boot and REST route registry verified");
           '
-      - name: Reject anonymous non-HTTPS presence
+      - name: Verify public and private REST permission boundaries
         run: |
           wp-env run cli wp eval '
-            $response = rest_do_request(new WP_REST_Request("GET", "/webactueel-wordpress-connector/v1/presence"));
-            if (is_ssl() || $response->get_status() !== 403) {
-              WP_CLI::error("HTTP presence must remain forbidden in the disposable test site");
+            $base = "/webactueel-wordpress-connector/v1/";
+            if (is_ssl()) { WP_CLI::error("Expected disposable HTTP site"); }
+            foreach (array(
+              array("GET", "presence"),
+              array("GET", "health"),
+              array("POST", "assets"),
+              array("POST", "execute")
+            ) as $probe) {
+              $response = rest_do_request(new WP_REST_Request($probe[0], $base . $probe[1]));
+              if ($response->get_status() !== 403) {
+                WP_CLI::error("Anonymous HTTP access not blocked for " . $probe[1]);
+              }
             }
-            WP_CLI::success("HTTP presence blocked as intended");
+            $_SERVER["HTTPS"] = "on";
+            if (! is_ssl()) { WP_CLI::error("HTTPS test precondition failed"); }
+            $public = rest_do_request(new WP_REST_Request("GET", $base . "presence"));
+            if ($public->get_status() !== 200 || $public->get_data()["ok"] !== true) {
+              WP_CLI::error("HTTPS public presence contract failed");
+            }
+            foreach (array(
+              array("GET", "health"),
+              array("POST", "assets"),
+              array("POST", "execute")
+            ) as $probe) {
+              $response = rest_do_request(new WP_REST_Request($probe[0], $base . $probe[1]));
+              if ($response->get_status() !== 401) {
+                WP_CLI::error("Anonymous HTTPS access not blocked for " . $probe[1]);
+              }
+            }
+            WP_CLI::success("Eight anonymous HTTP/HTTPS REST gate probes passed");
           '
       - name: Docker diagnostics on failure
         if: failure()
