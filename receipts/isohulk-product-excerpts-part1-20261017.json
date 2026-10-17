@@ -1,0 +1,293 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-product-excerpts-part1-20261017",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T16:59:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 57,
+                "type": "product",
+                "status": "publish",
+                "title": "PET Strapping Band",
+                "slug": "pet-omsnoeringsband",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pet-omsnoeringsband/",
+                "excerpt": "PET strapping for securing loads and packaging; confirm dimensions and strength."
+            },
+            "post_fingerprint": "62e9d6e2887765c06231f51d376bed592c329a4a7d549f3b9cb3f2dab66e4d9d"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 56,
+                "type": "product",
+                "status": "publish",
+                "title": "Polyester Strapping Band",
+                "slug": "polyester-omsnoeringsband",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/polyester-omsnoeringsband/",
+                "excerpt": "Polyester strapping for packaging and bundling; confirm dimensions and tensile strength."
+            },
+            "post_fingerprint": "daa2e318dda9b435c233a1abbd69c4e3e93918ef48e9c0be6816040483a199ed"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 55,
+                "type": "product",
+                "status": "publish",
+                "title": "Paper Strapping Band",
+                "slug": "papieren-omsnoeringsband",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/papieren-omsnoeringsband/",
+                "excerpt": "Paper strapping material for bundling packages; dimensions to be confirmed."
+            },
+            "post_fingerprint": "acf2ae16fc63e25bdbb9c36de4e39c8d0d80746db61e53f7403e0b47f20a4a02"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 54,
+                "type": "product",
+                "status": "publish",
+                "title": "PP Strapping Band",
+                "slug": "pp-omsnoeringsband",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pp-omsnoeringsband/",
+                "excerpt": "Polypropylene strapping for bundling and securing packages. Check the required width and strength."
+            },
+            "post_fingerprint": "86f8b75da9d2a5901b37bfd398ab938922250cef836925d21d5067638a3bc98a"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 53,
+                "type": "product",
+                "status": "publish",
+                "title": "Pallet Top Sheets",
+                "slug": "topvellen-pallets",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/topvellen-pallets/",
+                "excerpt": "Protective pallet top sheets supplied on rolls, available in clear or black and in various sizes and thicknesses."
+            },
+            "post_fingerprint": "1a83a37fc2848bf94fe6ffaf71e48ac450fd88b969a75f26d7eba478cf7984e3"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 52,
+                "type": "product",
+                "status": "publish",
+                "title": "Three-Layer Bubble Wrap – 100 µm",
+                "slug": "luchtkussenfolie-noppenfolie",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/luchtkussenfolie-noppenfolie/",
+                "excerpt": "Three-layer, 100 µm bubble wrap for cushioning and protecting goods; various sizes available."
+            },
+            "post_fingerprint": "740195b8812e9b6b0eb7140701a04c81bdce1750280da271282d39ec6c34c54b"
+        },
+        {
+            "index": 6,
+            "action": "post.get",
+            "post": {
+                "id": 50,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 23 µm",
+                "slug": "rekfolie-plus-500-300-23my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-23my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 23 µm, for securing pallet loads."
+            },
+            "post_fingerprint": "19ba57949dc872944bfab41bfa0b717768a6478272a79fd6b1613f59c6d5e37d"
+        },
+        {
+            "index": 7,
+            "action": "post.get",
+            "post": {
+                "id": 49,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 17 µm",
+                "slug": "rekfolie-plus-500-300-17my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-17my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 17 µm, for securing pallets."
+            },
+            "post_fingerprint": "d180641b871f1b029d46189e45a4b4ae40fbb50b9406b619bc8b6daac871fb2d"
+        },
+        {
+            "index": 8,
+            "action": "post.get",
+            "post": {
+                "id": 48,
+                "type": "product",
+                "status": "publish",
+                "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 20 µm",
+                "slug": "rekfolie-plus-500-300-20my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-20my/",
+                "excerpt": "Transparent hand stretch wrap, 500 mm × 300 m × 20 µm, for stabilising pallet loads."
+            },
+            "post_fingerprint": "f4ac895bbca83cab9c820b666d21db99b55458e9b0c38b467d20a9e93e157dd9"
+        },
+        {
+            "index": 9,
+            "action": "post.get",
+            "post": {
+                "id": 47,
+                "type": "product",
+                "status": "publish",
+                "title": "Premium Weatherproof Thermal Jacketing Film",
+                "slug": "weatherproof-thermal-jacketing-film",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/weatherproof-thermal-jacketing-film/",
+                "excerpt": "Weatherproof cladding film for finishing insulation projects, available in different types, colours and sizes."
+            },
+            "post_fingerprint": "af6976990a80fcf5f98336d529440e0a7f1a860b9fee501e9c4915b18baf6007"
+        },
+        {
+            "index": 10,
+            "action": "post.get",
+            "post": {
+                "id": 46,
+                "type": "product",
+                "status": "publish",
+                "title": "Fibreglass Cloth Foil – 430/m²",
+                "slug": "fibre-glass-cloth-foil-430-m2",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/fibre-glass-cloth-foil-430-m2/",
+                "excerpt": "Fibreglass cloth foil supplied on jumbo rolls in different sizes and thicknesses; verify the 430/m² unit before ordering."
+            },
+            "post_fingerprint": "f1e4d79d10e913c688c66416e831572d9c8e1ada2e3465e97e380722fc29984a"
+        },
+        {
+            "index": 11,
+            "action": "post.get",
+            "post": {
+                "id": 45,
+                "type": "product",
+                "status": "publish",
+                "title": "Diamond-Reinforced Aluminium Foil",
+                "slug": "aluminum-foil-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminum-foil-reinforced/",
+                "excerpt": "Jumbo-roll aluminium foil reinforced with diamond-pattern glass fibres."
+            },
+            "post_fingerprint": "2cc5533e3317a44c495d3b3845c6dc84fad723221e1f163250174133fd79ec69"
+        },
+        {
+            "index": 12,
+            "action": "post.get",
+            "post": {
+                "id": 44,
+                "type": "product",
+                "status": "publish",
+                "title": "Scrim-Reinforced Aluminium Foil",
+                "slug": "aluminium-foil-scrim-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-foil-scrim-reinforced/",
+                "excerpt": "Jumbo-roll aluminium foil reinforced with glass-fibre scrim, available in different dimensions and thicknesses."
+            },
+            "post_fingerprint": "a1637da7266cf8055b8208dc088e9bc8a7b2ec396c3bd359da632c7c741a94b8"
+        },
+        {
+            "index": 13,
+            "action": "post.get",
+            "post": {
+                "id": 43,
+                "type": "product",
+                "status": "publish",
+                "title": "Pure Aluminium Foil",
+                "slug": "pure-aluminum-foil",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pure-aluminum-foil/",
+                "excerpt": "100% pure aluminium foil supplied in jumbo rolls in different sizes and thicknesses."
+            },
+            "post_fingerprint": "e339d7088747b59eed37f0078b0b0b27b2c0bb3f579a898322ae7f752c287f71"
+        },
+        {
+            "index": 14,
+            "action": "post.get",
+            "post": {
+                "id": 42,
+                "type": "product",
+                "status": "publish",
+                "title": "Glossy Non-Adhesive PVC Pipe Wrapping Tape",
+                "slug": "pvc-pipe-wrapping-shiny-no-adhesive",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pvc-pipe-wrapping-shiny-no-adhesive/",
+                "excerpt": "Glossy PVC pipe-wrapping tape without an adhesive layer."
+            },
+            "post_fingerprint": "192ccb60ca20ccf67489d131fc7360485dd58f5fb20d466d231bb4d41d3ef8e5"
+        },
+        {
+            "index": 15,
+            "action": "post.get",
+            "post": {
+                "id": 41,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Lilac Low Tack",
+                "slug": "washi-masking-lila-low-tack",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-lila-low-tack/",
+                "excerpt": "Low-tack lilac washi masking tape for delicate surfaces."
+            },
+            "post_fingerprint": "33e863f8a46998d441343f9cce705855882de83115f740e877e960034b95046f"
+        },
+        {
+            "index": 16,
+            "action": "post.get",
+            "post": {
+                "id": 40,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Gold, 3-Month UV",
+                "slug": "washi-masking-gold-3-months-uv",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-gold-3-months-uv/",
+                "excerpt": "Gold washi masking tape listed with three-month UV resistance."
+            },
+            "post_fingerprint": "7c775b7901ed1fe7198d11f8bbe43b36007ec5f3a52c5dc61a2400bf4e52715e"
+        },
+        {
+            "index": 17,
+            "action": "post.get",
+            "post": {
+                "id": 39,
+                "type": "product",
+                "status": "publish",
+                "title": "Washi Masking Tape – Gold + Foil",
+                "slug": "washi-masking-tape-gold-foil",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-tape-gold-foil/",
+                "excerpt": "Gold + Foil washi masking tape from the TPS Pack construction tape range."
+            },
+            "post_fingerprint": "7536507261f3ec9c46505442fc772ed1798638864a564ff58d52cfa5dcad0fb2"
+        },
+        {
+            "index": 18,
+            "action": "post.get",
+            "post": {
+                "id": 37,
+                "type": "product",
+                "status": "publish",
+                "title": "Double-Sided Adhesive Tape",
+                "slug": "dubbelzijdige-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/dubbelzijdige-tape/",
+                "excerpt": "Strong tape for permanent attachment of materials such as carpets and carpet tiles."
+            },
+            "post_fingerprint": "b74be6efb640dfb0c69ebdd93d208c2c1152dc37f8f02514b9cc382c25f89280"
+        },
+        {
+            "index": 19,
+            "action": "post.get",
+            "post": {
+                "id": 36,
+                "type": "product",
+                "status": "publish",
+                "title": "Blue Marine Masking Tape – 14-Day UV",
+                "slug": "blue-masking-marine-tape-14-days-uv",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/blue-masking-marine-tape-14-days-uv/",
+                "excerpt": "Flexible blue masking tape with 14-day UV resistance."
+            },
+            "post_fingerprint": "4ce69160d19ce5e2b6eb44ec9256963dd3cbe5dd5cd1b8f0acde918005918786"
+        }
+    ],
+    "readback_verified": null
+}
