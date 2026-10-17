@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-30-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "5c86a29febe735225967bdbecb8aa00f7887a70bd9da34335ba5e395ddc0b432",
+  "payload": {
+    "id": 30,
+    "fields": {
+      "description": "ISOHULK 38CWR/SK reinforced aluminium tape for marine insulation. IMO MED certified, flame retardant and suitable for cold-weather use."
+    }
+  }
+}
