@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-connector-1-19-4-install-20261017",
+  "action": "connector.update.apply",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "b225e637fac1034a0c147195d7f4a8eedac719b75512db0af122e8f3cec16251",
+  "payload": {}
+}
