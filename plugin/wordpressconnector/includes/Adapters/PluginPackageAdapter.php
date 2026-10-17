@@ -142,7 +142,9 @@ final class PluginPackageAdapter
                 ? ! is_plugin_active_for_network($expectedPlugin)
                 : ! is_plugin_active($expectedPlugin);
             if ($needsActivation) {
-                $activated = activate_plugin($expectedPlugin, '', $networkWide, true);
+                // This is a user-requested fresh activation, not a silent Core upgrade.
+                // Third-party install hooks must run exactly as in wp-admin.
+                $activated = activate_plugin($expectedPlugin, '', $networkWide, false);
                 if (is_wp_error($activated)) {
                     throw new RuntimeException($activated->get_error_message());
                 }
@@ -156,6 +158,9 @@ final class PluginPackageAdapter
         }
 
         $after = $this->snapshot($expectedPlugin, $afterPlugins);
+        if ($activate && ! ($networkWide ? $after['network_active'] : $after['active'])) {
+            throw new RuntimeException('Plugin was installed but activation did not persist; investigate the activation hook and server restrictions.');
+        }
         return array(
             'operation' => $overwrite ? 'updated' : 'installed',
             'package' => $plan,
