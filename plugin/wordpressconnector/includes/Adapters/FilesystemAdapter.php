@@ -35,6 +35,16 @@ final class FilesystemAdapter
             'privileged' => true,
             'description' => 'Replace an existing plugin/theme text file with checksum guard, syntax validation, readback and rollback.',
         ));
+        $registry->register('filesystem.create_text', array($this, 'createText'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'description' => 'Create a new non-PHP plugin/theme text asset in an existing directory with dry-run, readback and rollback.',
+        ));
+        $registry->register('filesystem.delete_text', array($this, 'deleteText'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'description' => 'Delete a guarded non-PHP plugin/theme text asset with exact SHA-256, readback and rollback.',
+        ));
     }
 
     public function inspect(array $payload = array(), array $context = array()): array
@@ -59,11 +69,11 @@ final class FilesystemAdapter
                 'managed_data_paths' => 'use dedicated WordPress/media/system actions',
             ),
             'write' => array(
-                'scope' => array('existing wp-content/plugins/* text files', 'existing wp-content/themes/* text files'),
+                'scope' => array('replace existing wp-content/plugins/* and wp-content/themes/* text files', 'create/delete non-PHP text assets in existing plugin/theme directories'),
                 'core' => false,
                 'uploads' => false,
                 'connector_self_update' => false,
-                'requires' => array('privileged gate', 'writes gate', 'filesystem-writes gate', 'confirm=true', 'expected_sha256'),
+                'requires' => array('privileged gate', 'writes gate', 'filesystem-writes gate', 'confirm=true', 'expected_sha256 for delete/replace', 'no existing file for create'),
                 'parser_validation' => array('php', 'inc', 'json'),
                 'readback' => 'sha256',
                 'rollback' => true,
@@ -230,6 +240,147 @@ final class FilesystemAdapter
             ),
         );
         return $result;
+    }
+
+    public function createText(array $payload, array $context): array
+    {
+        $this->assertLifecyclePermission($payload, $context);
+        $relative = FilesystemPolicy::assertLifecycleText((string) ($payload['path'] ?? ''));
+        if (! isset($payload['content']) || ! is_string($payload['content'])) {
+            throw new RuntimeException('filesystem.create_text requires UTF-8 content.');
+        }
+        $content = $payload['content'];
+        if (strlen($content) > self::MAX_TEXT_BYTES || ! $this->isUtf8($content)) {
+            throw new RuntimeException('New text asset exceeds the UTF-8 text limit.');
+        }
+        $this->assertNoEmbeddedSecrets($content);
+        $this->validateText($relative, $content);
+        $absolute = $this->resolveNewTextPath($relative);
+        $expectedState = array('path' => $relative, 'exists' => false);
+        $result = array(
+            'before' => $expectedState,
+            'after' => array('path' => $relative, 'bytes' => strlen($content), 'sha256' => hash('sha256', $content)),
+            '_current_fingerprint' => Fingerprint::make($expectedState),
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+
+        $this->filesystem();
+        // Exclusive create: a concurrent file or symlink must not be overwritten.
+        $handle = @fopen($absolute, 'x');
+        if (false === $handle) {
+            throw new RuntimeException('New file could not be created exclusively; target may now exist or filesystem permissions may block it.');
+        }
+        $ok = true;
+        $offset = 0;
+        $size = strlen($content);
+        while ($offset < $size) {
+            $written = @fwrite($handle, substr($content, $offset));
+            if (false === $written || 0 === $written) {
+                $ok = false;
+                break;
+            }
+            $offset += $written;
+        }
+        if (! @fflush($handle)) {
+            $ok = false;
+        }
+        @fclose($handle);
+        @chmod($absolute, defined('FS_CHMOD_FILE') ? FS_CHMOD_FILE : 0644);
+        if (! $ok || $offset !== $size) {
+            @unlink($absolute);
+            throw new RuntimeException('New file write failed; partial content was removed.');
+        }
+        clearstatcache(true, $absolute);
+        $readback = @file_get_contents($absolute);
+        if (! is_string($readback) || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
+            @unlink($absolute);
+            throw new RuntimeException('New file readback failed; incomplete file was removed.');
+        }
+        $result['after'] = $this->state($relative, $readback, $absolute);
+        $result['_rollback'] = array('action' => 'filesystem.delete_text', 'payload' => array(
+            'path' => $relative, 'expected_sha256' => hash('sha256', $readback),
+        ));
+        return $result;
+    }
+
+    public function deleteText(array $payload, array $context): array
+    {
+        $this->assertLifecyclePermission($payload, $context);
+        $relative = FilesystemPolicy::assertLifecycleText((string) ($payload['path'] ?? ''));
+        $absolute = $this->resolveExisting($relative, false);
+        if (! is_file($absolute) || is_link($absolute)) {
+            throw new RuntimeException('Text deletion requires a regular non-symlink file.');
+        }
+        $before = @file_get_contents($absolute);
+        if (! is_string($before) || strlen($before) > self::MAX_TEXT_BYTES || ! $this->isUtf8($before)) {
+            throw new RuntimeException('Existing file is unreadable or exceeds safe text limit.');
+        }
+        $this->assertNoEmbeddedSecrets($before);
+        $beforeState = $this->state($relative, $before, $absolute);
+        $result = array(
+            'before' => $beforeState,
+            'after' => array('path' => $relative, 'exists' => false),
+            '_current_fingerprint' => Fingerprint::make($beforeState),
+        );
+        if (! empty($context['dry_run'])) {
+            return $result;
+        }
+        $expected = $payload['expected_sha256'] ?? null;
+        if (! is_string($expected) || ! preg_match('/^[a-f0-9]{64}\z/', $expected) ||
+            ! hash_equals($beforeState['sha256'], $expected)) {
+            throw new RuntimeException('Delete refused: exact current file SHA-256 is required.');
+        }
+        $filesystem = $this->filesystem();
+        clearstatcache(true, $absolute);
+        if (! is_file($absolute) || is_link($absolute) ||
+            ! hash_equals($expected, (string) @hash_file('sha256', $absolute))) {
+            throw new RuntimeException('Delete target changed before filesystem action.');
+        }
+        if (! $filesystem->delete($absolute, false, 'f')) {
+            throw new RuntimeException('WordPress Filesystem refused deletion; check permissions and security policies.');
+        }
+        clearstatcache(true, $absolute);
+        if (file_exists($absolute) || is_link($absolute)) {
+            throw new RuntimeException('File still exists after attempted deletion.');
+        }
+        $result['_rollback'] = array('action' => 'filesystem.create_text', 'payload' => array(
+            'path' => $relative, 'content' => $before,
+        ));
+        return $result;
+    }
+
+    private function assertLifecyclePermission(array $payload, array $context): void
+    {
+        if (array_diff(array_keys($payload), array('path','content','expected_sha256'))) {
+            throw new RuntimeException('Filesystem lifecycle request contains unsupported fields.');
+        }
+        if (empty($context['dry_run']) && ! Policy::flag('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES')) {
+            throw new RuntimeException('Filesystem writes are disabled by server policy.');
+        }
+        $relative = FilesystemPolicy::assertLifecycleText((string) ($payload['path'] ?? ''));
+        $capability = 0 === strpos($relative, 'wp-content/plugins/') ? 'edit_plugins' : 'edit_themes';
+        if (! current_user_can($capability)) {
+            throw new RuntimeException('WordPress denied capability ' . $capability . ' (file editor or server policy may be disabled).');
+        }
+        if (function_exists('wp_is_file_mod_allowed') && ! wp_is_file_mod_allowed('connector_filesystem')) {
+            throw new RuntimeException('WordPress or a policy plugin disallows file modifications; check DISALLOW_FILE_MODS and file_mod_allowed.');
+        }
+    }
+
+    private function resolveNewTextPath(string $relative): string
+    {
+        $parent = dirname($relative);
+        $parentPath = $this->resolveExisting($parent, true);
+        if (! is_dir($parentPath)) {
+            throw new RuntimeException('Parent directory must already exist.');
+        }
+        $candidate = $parentPath . DIRECTORY_SEPARATOR . basename($relative);
+        if (file_exists($candidate) || is_link($candidate)) {
+            throw new RuntimeException('File already exists; use guarded filesystem.write_text.');
+        }
+        return $candidate;
     }
 
     private function filesystem(): \WP_Filesystem_Base
