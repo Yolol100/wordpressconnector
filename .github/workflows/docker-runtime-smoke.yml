@@ -58,7 +58,12 @@ jobs:
               array("POST", "assets"),
               array("POST", "execute")
             ) as $probe) {
-              $response = rest_do_request(new WP_REST_Request($probe[0], $base . $probe[1]));
+              $request = new WP_REST_Request($probe[0], $base . $probe[1]);
+              if ($probe[1] === "assets") {
+                $request->set_param("request_id", "test-access-12345");
+                $request->set_param("asset_path", "synthetic.txt");
+              }
+              $response = rest_do_request($request);
               if ($response->get_status() !== 403) {
                 WP_CLI::error("Anonymous HTTP access not blocked for " . $probe[1]);
               }
@@ -74,7 +79,12 @@ jobs:
               array("POST", "assets"),
               array("POST", "execute")
             ) as $probe) {
-              $response = rest_do_request(new WP_REST_Request($probe[0], $base . $probe[1]));
+              $request = new WP_REST_Request($probe[0], $base . $probe[1]);
+              if ($probe[1] === "assets") {
+                $request->set_param("request_id", "test-access-12345");
+                $request->set_param("asset_path", "synthetic.txt");
+              }
+              $response = rest_do_request($request);
               if ($response->get_status() !== 401) {
                 WP_CLI::error("Anonymous HTTPS access not blocked for " . $probe[1]);
               }
