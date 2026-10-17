@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-preview-34-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 34,
+    "fields": {
+      "description": "ISOHULK GM3 glass cloth tape for marine insulation. IMO MED certified, flame retardant and cold-weather resistant. Custom dimensions available."
+    }
+  }
+}
