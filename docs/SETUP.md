@@ -2,7 +2,7 @@
 
 ## 1. Install
 
-Install and activate `plugin/wordpressconnector` on each target WordPress site. **GitHub OIDC requires explicit local authorization**: sign in to each site as an administrator, open **Settings → WordPress Connector**, and select **Authorize pinned GitHub Actions workflow**. This consent applies only to the current site's WordPress REST URL and selected administrator. It can be revoked at any time. Direct authenticated WordPress REST/MCP remains available without GitHub pairing. No WordPress password or GitHub OIDC secret is placed in the repository.
+Install and **activate** `plugin/wordpressconnector` as a WordPress administrator on the target site. **Activation itself approves the pinned `Yolol100/wordpressconnector` GitHub workflow**, with WordPress Core activation capability/nonce already enforced: there is no second authorization step in normal wp-admin installations. The connection remains scoped to that WordPress site and the activating administrator; it can be revoked at Settings → WordPress Connector. A file upload without activation, unattended WP-CLI activation, network-wide activation, or upgrade of an older unpaired site does not silently grant GitHub administrator access: an administrator can use **Reconnect trusted GitHub Actions** when necessary. Do not install this remote-management plugin on a site that you do not authorize the named GitHub owner to manage.
 
 The plugin immediately registers:
 
@@ -14,7 +14,7 @@ The plugin immediately registers:
 
 ## Native Plugins-screen updates (1.19.0+)
 
-After the one-time upgrade from 1.18.9 (which declares `Update URI: false`), WordPress Core checks the canonical GitHub release via the plugin's `Update URI` response filter. An administrator sees **Plugins > Update Now** when the latest validated release is newer. The existing SHA-256 and plugin ZIP identity verification run again before Core receives the update package. Other GitHub plugins are not intercepted.
+After the one-time upgrade from 1.18.9 (which declares `Update URI: false`), WordPress Core checks the canonical GitHub release via the plugin's `Update URI` response filter. From 1.19.6, the Plugins/Updates admin screen also checks the verified release with a bounded two-minute throttle, without resetting other plugins' update transients. Administrators can click **Check GitHub update now** next to WordPress Connector for an explicit immediate refresh. The native **Update Now** row appears when a valid release version is higher than the installed plugin. The existing SHA-256 and plugin ZIP identity verification run again before Core receives the update package. Other GitHub plugins are not intercepted.
 
 Do not confuse this ordinary WordPress dashboard upgrade with the guarded `connector.update.apply` REST action. Both share trusted package verification; WordPress's temporary backup is not a general rollback after a successful installation. Take and test an external backup before a first production upgrade. Automatic background updates are not enabled by this change.
 
@@ -58,7 +58,7 @@ Flow:
 9. Public repositories receive only a sanitized `receipts/*.json`; private repositories may receive a full `results/*.json`.
 10. Close the runtime PR without merging its request/result/receipt payloads.
 
-No long-lived GitHub-to-WordPress credential is needed. The **one-time administrator pairing is mandatory on each site**, including existing sites upgraded from v1.19.4. Newly installed plugins do not grant remote administrator access by themselves. Migrating a site to a different canonical URL or cloning a database to a different URL invalidates GitHub authorization until an administrator explicitly re-approves it.
+No long-lived GitHub-to-WordPress credential is needed. Normal **administrator activation is now the single pairing step** on new sites. An existing site upgrading from older versions is not silently re-authorized by the update itself: if it has no pairing, use **Settings → WordPress Connector → Reconnect trusted GitHub Actions** once, or deactivate/reactivate deliberately. Moving/cloning to another canonical URL invalidates the existing binding. Presence alone never grants access.
 
 ## 3. What zero-config discovery means
 
@@ -98,7 +98,7 @@ Authenticated owner/trusted-actor OIDC requests may read or update only `blognam
 
 ## 6. Request confirmation and safety
 
-The plugin's direct authenticated REST/MCP surface is operational after activation. **GitHub OIDC is disabled until the site is explicitly approved**. Pairing does not bypass any request controls:
+The direct authenticated REST/MCP surface is operational after activation. **Normal administrator activation approves the pinned GitHub OIDC workflow automatically**; other installation modes remain unpaired until a local administrator reconnects. Pairing never bypasses any request controls:
 
 - mutations require `dry_run:false` and `confirm:true`;
 - action-specific WordPress capabilities remain required;
@@ -135,7 +135,7 @@ For dedicated connector writes, use the same safe sequence as REST: discovery ->
 
 ## 10. Acceptance sequence
 
-1. Verify `/presence` on the target staging site; presence alone does **not** prove the site is paired for GitHub OIDC. Log in and approve GitHub Actions at Settings → WordPress Connector.
+1. Verify `/presence` on the target staging site; this does **not** prove OIDC authority. A normal admin activation already pairs the site. On older unpaired/CLI/network installations, use Settings → WordPress Connector for recovery.
 2. Run an authenticated `/health` through the GitHub OIDC route.
 3. Run `connector.discover` / `system.doctor` where the transport allows it.
 4. Perform a harmless dry-run.
@@ -145,4 +145,4 @@ For dedicated connector writes, use the same safe sequence as REST: discovery ->
 8. For asset-dependent actions, test one bounded upload plus execution.
 9. Independently verify the resulting WordPress/Elementor state.
 
-Static CI is not production-runtime proof. First live writes remain staging-first or require equivalent target-runtime evidence.
+Static CI is not production-runtime proof. First live writes remain staging-first or require equivalent target-runtime evidence. A change on GitHub `main` is not automatically downloadable: `Connector CI` must pass and the `Connector Release` job must publish a new versioned GitHub ZIP. WordPress does not receive an instant push; opening Plugins after the short check interval or clicking **Check GitHub update now** triggers the bounded native update notice check. If the host blocks outgoing GitHub API requests, WordPress cannot show a verified new release.
