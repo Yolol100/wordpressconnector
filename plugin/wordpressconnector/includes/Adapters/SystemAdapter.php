@@ -363,7 +363,10 @@ final class SystemAdapter
             'query' => $search,
             'page' => $page,
             'plugins' => $items,
-            'results_total' => isset($result->info['results']) ? (int) $result->info['results'] : null,
+            'results_total' => isset($result->info) && is_array($result->info) && isset($result->info['results'])
+                ? (int) $result->info['results']
+                : (isset($result->info) && is_object($result->info) && isset($result->info->results)
+                    ? (int) $result->info->results : null),
             'read_only' => true,
         );
     }
