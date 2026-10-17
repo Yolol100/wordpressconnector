@@ -18,6 +18,8 @@ foreach (array('adapter' => $adapter, 'asset store' => $assetStore, 'bootstrap' 
 
 $adapterRequired = array(
     "'plugin.install_package'",
+    "activate_plugin(\$expectedPlugin, '', \$networkWide, false)",
+    "Plugin was installed but activation did not persist",
     "'system_update' => true",
     "Policy::assertLocalAssetPath",
     "plugin-packages/",
