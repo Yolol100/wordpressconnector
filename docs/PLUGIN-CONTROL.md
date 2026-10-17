@@ -8,7 +8,7 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 - `WPCONNECTOR_ALLOW_WRITES=1` plus `confirm:true` is required for non-dry-run mutations.
 - `WPCONNECTOR_ALLOW_SENSITIVE=1` is additionally required where an adapter explicitly handles sensitive records/settings.
 - `WPCONNECTOR_ALLOW_SYSTEM_UPDATES=1` remains required for plugin/theme/core install, update and delete actions.
-- `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES=1` is separately required for real `filesystem.write_text` operations.
+- `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES=1` is separately required for real `filesystem.write_text`, `filesystem.create_text` and `filesystem.delete_text` operations.
 - Secrets, arbitrary plugin-setting code execution and unrestricted filesystem access are not exposed.
 
 ## Plugin control matrix
@@ -81,7 +81,10 @@ Filesystem actions intentionally have a narrower blast radius than the File Mana
 - `filesystem.inspect`: reports filesystem method, gates and File Manager integration state without exposing absolute server paths.
 - `filesystem.list`: bounded listing inside the WordPress root; dotfiles, secret paths, uploads, caches, backups, upgrade state and security logs are excluded.
 - `filesystem.read_text`: reads bounded UTF-8 text files, blocks credential-like files and refuses files that appear to contain embedded secret literals.
-- `filesystem.write_text`: replaces **existing** UTF-8 text files only under `wp-content/plugins/*` or `wp-content/themes/*`.
+- `filesystem.write_text`: replaces **existing** UTF-8 text files only under `wp-content/plugins/*` or `wp-content/themes/*`. 
+- `filesystem.create_text` / `filesystem.delete_text`: private authenticated actions for **non-PHP** text assets inside existing plugin/theme directories only; create requires an absent target, delete requires exact previous SHA-256. Both have readback and site-local rollback. No plugin PHP entrypoint, theme stylesheet, theme.json, block.json, configuration, uploaded data, secrets or core files can be deleted this way.
+- `plugin.list`: returns a per-plugin status including activation, network status, native WordPress update availability when checked and the permitted management actions. `plugin.directory.search`: reads bounded results from the WordPress.org Plugins API to find candidate plugin slugs; installing still uses `plugin.install` and system-update capability gates. Both are for private authenticated WordPress sessions, not public GitHub PR receipts.
+- `system.doctor`: reports DISALLOW_FILE_MODS / DISALLOW_FILE_EDIT and WordPress file-modification/capability checks. A 403 or blocked write does **not** prove a named security plugin caused the problem. Review server configuration, WAF logs and plugin-specific evidence; do not automatically disable security plugins or change their settings.
 - WordPress core (`wp-admin`, `wp-includes` and root core files) is read-only.
 - Uploads are managed through `media.*`, not raw filesystem writes.
 - The connector cannot rewrite its own installed runtime files; connector releases go through the GitHub/release workflow.
