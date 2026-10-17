@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-product-excerpts-part2-20261017",
+  "action": "connector.read_batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 35
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 34
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 33
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 31
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 30
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 29
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 28
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 27
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 26
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 25
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 24
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 23
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 21
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 20
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 19
+        }
+      }
+    ]
+  }
+}
