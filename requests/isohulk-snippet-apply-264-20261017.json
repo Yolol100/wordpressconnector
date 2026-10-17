@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-264-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "0db615ed73267436076dfbbb3e8c4479f18d24903ac2967bcdc1baeb9322b81d",
+  "payload": {
+    "id": 264,
+    "fields": {
+      "title": "Product Categories | ISOHULK"
+    }
+  }
+}
