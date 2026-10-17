@@ -61,4 +61,4 @@ jobs:
         run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'
       - name: Destroy disposable test environment
         if: always()
-        run: wp-env destroy
+        run: wp-env destroy --force
