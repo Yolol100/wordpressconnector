@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-24-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "4c56389bf36bd6d4a73df53ca3fb6721caa0307c22b6230ebe572280fc5da2af",
+  "payload": {
+    "id": 24,
+    "fields": {
+      "description": "ISOHULK BL38 black aluminium tape delivers premium, flame-retardant adhesion and cold-weather resistance. Custom dimensions available."
+    }
+  }
+}
