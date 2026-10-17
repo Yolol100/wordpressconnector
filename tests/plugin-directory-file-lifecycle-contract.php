@@ -202,7 +202,7 @@ if (empty($plan['requires_active_content_acknowledgement'])) {
     throw new RuntimeException('HTML preview failed to warn about active browser content.');
 }
 $fail(static function() use($fs,$path,$content) {
-    $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
+    $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'=>false));
 }, 'HTML asset creation without active content acknowledgement');
 $created = $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
@@ -210,7 +210,7 @@ if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
     throw new RuntimeException('File was not created and verified.');
 }
 $fail(static function()use($fs,$path,$content) {
-    $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'=>false));
+    $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
 $deletePlan = $fs->deleteText(array('path'=>$path),array('dry_run'=>true));
 if (empty($deletePlan['requires_active_content_acknowledgement'])) {
