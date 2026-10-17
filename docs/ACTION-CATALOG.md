@@ -97,7 +97,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.deactivate` | mutation, privileged | Deactivate an installed plugin. |
 | `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
 | `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
-| `plugin.list` | privileged | List installed plugins and activation state. |
+| `plugin.list` | privileged | List installed plugins with activation, WordPress update state, and permitted actions. |
 | `gtranslate.settings.inspect` | privileged | Inspect a bounded nonsecret GTranslate 5.0.x language/settings snapshot. |
 | `gtranslate.settings.update` | mutation, privileged | Set Dutch/English language choices with strict provider/version checks, dry-run, readback and rollback. |
 | `gtranslate.settings.restore` | mutation, privileged | Internal stale-state protected restoration of earlier GTranslate language settings. |
