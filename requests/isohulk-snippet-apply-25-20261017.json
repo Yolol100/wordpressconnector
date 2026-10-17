@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-25-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "7d696c6f6bbbbd3fd1e380b3b68cb5d5abd8fd3fb32267f21020e09b6326cc4c",
+  "payload": {
+    "id": 25,
+    "fields": {
+      "description": "ISOHULK FT1 glass-fibre filament tape offers high tensile strength and high-tack adhesion for demanding packaging. Custom sizes available."
+    }
+  }
+}
