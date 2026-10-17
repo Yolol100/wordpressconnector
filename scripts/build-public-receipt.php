@@ -727,6 +727,27 @@ if (! $ok) {
             $receipt['after_fingerprint'] = $fingerprint($after);
             if (! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
         }
+    } elseif ('yoast.snippet.inspect' === $action) {
+        $receipt['post_id'] = (int) ($data['post_id'] ?? 0);
+        $fields = isset($data['fields']) && is_array($data['fields']) ? $data['fields'] : array();
+        $receipt['fields'] = array_intersect_key($fields, array_flip(array('title','description')));
+        $fp = (string) ($data['fingerprint'] ?? '');
+        if (preg_match('/^[a-f0-9]{64}\z/', $fp)) $receipt['before_fingerprint'] = $fp;
+        $receipt['readback_verified'] = null;
+    } elseif ('yoast.snippet.update' === $action) {
+        $receipt['post_id'] = (int) ($data['post_id'] ?? ($payload['id'] ?? 0));
+        $requested = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
+        $before = isset($data['before']) && is_array($data['before']) ? $data['before'] : array();
+        $after = isset($data['after']) && is_array($data['after']) ? $data['after'] : array();
+        $receipt['updated_keys'] = array_values(array_intersect(array_keys($requested), array('title','description')));
+        if ($before) $receipt['before_fingerprint'] = $fingerprint($before);
+        if ($after) $receipt['after_fingerprint'] = $fingerprint($after);
+        $receipt['readback_verified'] = $dryRun ? null : (
+            isset($after['post_id'], $after['fields']) &&
+            (int) $after['post_id'] === (int) ($payload['id'] ?? 0) &&
+            $containsRequested($requested, $after['fields'])
+        );
+        if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
     } elseif ('yoast.templates.inspect' === $action) {
         $fields = isset($data['fields']) && is_array($data['fields']) ? $data['fields'] : array();
         $receipt['taxonomy_titles'] = array_intersect_key($fields, array_flip(array('category_title','product_category_title')));
