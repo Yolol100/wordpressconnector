@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-snippet-preview-354-20261017",
+    "action": "yoast.snippet.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T17:49:13+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 354,
+    "updated_keys": [
+        "description"
+    ],
+    "before_fingerprint": "8cd9eaff1458e8ec9b875d2dc610a4c7182af640eaaf503da051ad04b4818e2e",
+    "after_fingerprint": "7c73c28a463949c46925eb517ef9f583aca29a5d81f52dcb6781ddcd338b666c",
+    "readback_verified": null
+}
