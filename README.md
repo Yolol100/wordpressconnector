@@ -6,6 +6,8 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 
 **Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [GitHub project index](https://github.com/Yolol100?tab=repositories)
 
+**1.19.8 audit hardening:** WordPress plugin activation follows native activation hooks; WordPress.org plugin and theme installs reject noncanonical download URLs, including filtered API substitutions. Browser-active HTML/JavaScript/CSS file creation and deletion require explicit risk acknowledgement and independent readback. A disposable Docker WordPress test exercises real package installation and lifecycle; production hosts still require staging acceptance. Private site enumeration and unrestricted public_html access are not available through this public GitHub transport.
+
 ## What it demonstrates
 
 | Area | Implementation |
