@@ -2,7 +2,7 @@
 
 ## 1. Install
 
-Install and activate `plugin/wordpressconnector` on the target WordPress site. Normal GitHub use needs no connector checkboxes, no GitHub site variable, no WordPress username and no Application Password.
+Install and activate `plugin/wordpressconnector` on each target WordPress site. **GitHub OIDC requires explicit local authorization**: sign in to each site as an administrator, open **Settings → WordPress Connector**, and select **Authorize pinned GitHub Actions workflow**. This consent applies only to the current site's WordPress REST URL and selected administrator. It can be revoked at any time. Direct authenticated WordPress REST/MCP remains available without GitHub pairing. No WordPress password or GitHub OIDC secret is placed in the repository.
 
 The plugin immediately registers:
 
@@ -58,11 +58,11 @@ Flow:
 9. Public repositories receive only a sanitized `receipts/*.json`; private repositories may receive a full `results/*.json`.
 10. Close the runtime PR without merging its request/result/receipt payloads.
 
-No long-lived GitHub-to-WordPress credential is needed.
+No long-lived GitHub-to-WordPress credential is needed. The **one-time administrator pairing is mandatory on each site**, including existing sites upgraded from v1.19.4. Newly installed plugins do not grant remote administrator access by themselves. Migrating a site to a different canonical URL or cloning a database to a different URL invalidates GitHub authorization until an administrator explicitly re-approves it.
 
 ## 3. What zero-config discovery means
 
-Once a domain is known, the plugin can immediately prove it is installed via:
+Once a domain is known, the plugin can prove it is installed via the public presence route **even if GitHub OIDC is not yet authorized**:
 
 `https://example.com/wp-json/webactueel-wordpress-connector/v1/presence`
 
@@ -98,7 +98,7 @@ Authenticated owner/trusted-actor OIDC requests may read or update only `blognam
 
 ## 6. Request confirmation and safety
 
-The plugin is operational immediately after activation, but this does not mean destructive actions execute without request controls:
+The plugin's direct authenticated REST/MCP surface is operational after activation. **GitHub OIDC is disabled until the site is explicitly approved**. Pairing does not bypass any request controls:
 
 - mutations require `dry_run:false` and `confirm:true`;
 - action-specific WordPress capabilities remain required;
@@ -135,7 +135,7 @@ For dedicated connector writes, use the same safe sequence as REST: discovery ->
 
 ## 10. Acceptance sequence
 
-1. Verify `/presence` on the target staging site.
+1. Verify `/presence` on the target staging site; presence alone does **not** prove the site is paired for GitHub OIDC. Log in and approve GitHub Actions at Settings → WordPress Connector.
 2. Run an authenticated `/health` through the GitHub OIDC route.
 3. Run `connector.discover` / `system.doctor` where the transport allows it.
 4. Perform a harmless dry-run.
