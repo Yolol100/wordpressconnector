@@ -31,6 +31,7 @@ use Webactueel\WordPressConnector\Adapters\WooCommerceSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceOperationsAdapter;
 use Webactueel\WordPressConnector\Adapters\WooCommerceFulfillmentAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastAdapter;
+use Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastTemplateSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastFeatureSettingsAdapter;
 use Webactueel\WordPressConnector\Adapters\YoastNativeAbilitiesAdapter;
@@ -72,6 +73,7 @@ final class Plugin
             new AcfAdapter(),
             new PortfolioStatsAdapter(),
             new YoastAdapter(),
+            new YoastSnippetAdapter(),
             new YoastTemplateSettingsAdapter(),
             new YoastFeatureSettingsAdapter(),
             new YoastNativeAbilitiesAdapter(),
