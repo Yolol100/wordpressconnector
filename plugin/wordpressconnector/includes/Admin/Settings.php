@@ -14,7 +14,20 @@ final class Settings
     {
         if (! is_admin()) { return; }
         add_action('admin_menu', array($this, 'registerPage'));
+        add_action('admin_notices', array($this, 'unpairedNotice'));
         add_action('admin_post_wpconnector_site_pairing', array($this, 'saveSitePairing'));
+    }
+
+    public function unpairedNotice(): void
+    {
+        if (! current_user_can('manage_options') || SitePairing::pairedAdministratorId()) {
+            return;
+        }
+        $url = admin_url('options-general.php?page=' . self::PAGE);
+        echo '<div class="notice notice-warning"><p>';
+        echo esc_html__('WordPress Connector: GitHub Actions cannot administer this site until an administrator approves the connection.', 'wordpressconnector') . ' ';
+        echo '<a href="' . esc_url($url) . '">' . esc_html__('Review site authorization', 'wordpressconnector') . '</a>';
+        echo '</p></div>';
     }
 
     public function registerPage(): void
