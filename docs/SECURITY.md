@@ -16,7 +16,7 @@ The GitHub runtime is zero-config but not unauthenticated. `wordpress-zero-confi
 - GitHub-hosted runner;
 - validity window and one-time `jti` replay protection.
 
-No WordPress password, Application Password or long-lived GitHub-to-WordPress secret is stored for this path. Since version 1.19.5, each site must also hold a locally administrator-approved, URL-bound GitHub OIDC grant. Installing the plugin alone confers no remote access. The approving administrator's user ID is the only WordPress identity eligible for OIDC; it is not silently assigned to the oldest administrator. Approval can be revoked from Settings → WordPress Connector and does not apply after a site URL change or to a different multisite blog.
+No WordPress password, Application Password or long-lived GitHub-to-WordPress secret is stored for this path. Since version 1.19.5, each site holds a locally administrator-approved, URL-bound GitHub OIDC grant. From version 1.19.6, **normal wp-admin plugin activation itself** provides that approval, using Core's activation permissions and nonce; uploading plugin files without activating, unattended CLI and network-wide activation do not automatically grant remote administrator access. Users must explicitly choose to activate this owner-controlled remote-management plugin. The approving administrator's user ID is the only WordPress identity eligible for OIDC; it is not silently assigned to the oldest administrator. Approval can be revoked from Settings → WordPress Connector and does not apply after a site URL change or to a different multisite blog. Upgrades do not silently re-pair previously unapproved sites.
 
 ## GitHub request trust
 
