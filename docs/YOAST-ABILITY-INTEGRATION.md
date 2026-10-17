@@ -14,6 +14,7 @@ Research and implementation: 2026-10-15. This is a connector extension, not a fo
 | Global feature toggles and indexing defaults | yoast.features.inspect, yoast.features.update | Existing private provider-backed action; high impact demands risk acknowledgment |
 | Organization identity and logo | yoast.site_representation.inspect, .update | Existing allowlisted capability |
 | Public GitHub OIDC templates | yoast.templates.inspect, .update | Four fields: category_title, product_category_title, product_title, product_description |
+| Guarded public snippet repair | yoast.snippet.inspect, .update | Published page/post/product SEO title and meta description only; exact fingerprint, readback, rollback |
 
 ## Official native Yoast Abilities
 
