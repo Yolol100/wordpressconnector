@@ -29,7 +29,7 @@ function sanitize_text_field($s): string { return trim(strip_tags((string) $s));
 function sanitize_key($s): string { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $s)); }
 function is_multisite(): bool { return false; }
 $GLOBALS['wpconn_plugins'] = array(
-    'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.7'),
+    'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.8'),
     'hello-dolly/hello.php'=>array('Name'=>'Hello Dolly','Version'=>'1.7.2'),
     'sample/sample.php'=>array('Name'=>'Sample','Version'=>'1.0.0'),
 );
