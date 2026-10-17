@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-preview-14-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 14,
+    "fields": {
+      "title": "Industrial Tapes and Packaging Materials | ISOHULK"
+    }
+  }
+}
