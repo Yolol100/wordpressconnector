@@ -2,7 +2,7 @@
 /**
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
- * Description: Administrator-activated remote management bridge controlled by Yolol100/wordpressconnector GitHub Actions; verified updates, WordPress, Elementor, WooCommerce and SEO for WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings, Additional CSS, bounded filesystem access and administration workflows over authenticated HTTPS REST, native MCP or local WP-CLI.
+ * Description: Connect WordPress to the trusted Yolol100 GitHub workflow when an administrator activates this plugin. Manage WordPress, Elementor, WooCommerce and SEO via authenticated REST/MCP; signed releases appear in Plugins as native updates.
  * Version: 1.19.6
  * Requires at least: 6.4
  * Requires PHP: 7.4
