@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-252-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "11762b94e93565f5a53f971f4cd5a8911344ac44b36c731a08d2824bf6181183",
+  "payload": {
+    "id": 252,
+    "fields": {
+      "title": "Request a Quotation | ISOHULK"
+    }
+  }
+}
