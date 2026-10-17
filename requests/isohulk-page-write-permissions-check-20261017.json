@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-page-write-permissions-check-20261017",
+  "action": "post.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 13,
+    "title": "Home"
+  }
+}
