@@ -13,7 +13,13 @@ class WP_REST_Request
     public function __construct(array $headers) { $this->headers = $headers; }
     public function get_header($name) { return $this->headers[strtolower((string) $name)] ?? ''; }
 }
-function rest_url($path = ''): string { return 'https://example.com/wp-json/' . ltrim((string) $path, '/'); }
+$GLOBALS['wpconnector_base_url'] = 'https://example.com';
+$GLOBALS['wpconnector_blog_id'] = 1;
+$GLOBALS['wpconnector_site_options'] = array();
+function rest_url($path = ''): string { return $GLOBALS['wpconnector_base_url'] . '/wp-json/' . ltrim((string) $path, '/'); }
+function get_option($key, $default = false) { return $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key] ?? $default; }
+function update_option($key, $value, $autoload = null) { $old=get_option($key,null); $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]=$value; return $old!==$value; }
+function delete_option($key) { unset($GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]); return true; }
 function get_transient($key) { return $GLOBALS['wpconnector_transients'][$key] ?? false; }
 function set_transient($key, $value, $ttl): bool { $GLOBALS['wpconnector_transients'][$key] = $value; return true; }
 function wp_safe_remote_get($url, $args = array()) { return array('response'=>array('code'=>200),'body'=>json_encode(array('keys'=>$GLOBALS['wpconnector_jwks']))); }
@@ -26,10 +32,12 @@ function user_can($userId, $capability): bool { return 1 === (int)$userId && 'ma
 function current_user_can($capability): bool { return true; }
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/SitePairing.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/GitHubOidc.php';
 
 use Webactueel\WordPressConnector\Security\GitHubOidc;
 use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Security\SitePairing;
 
 if (!function_exists('openssl_pkey_new')) { echo "github oidc contract skipped: OpenSSL unavailable\n"; exit(0); }
 $key=openssl_pkey_new(array('private_key_bits'=>2048,'private_key_type'=>OPENSSL_KEYTYPE_RSA));
@@ -49,7 +57,20 @@ $token=static function(array $overrides=array())use($key,$b64url):string{
     $input=implode('.',$segments);if(!openssl_sign($input,$signature,$key,OPENSSL_ALGO_SHA256))throw new RuntimeException('Could not sign test JWT.');
     return $input.'.'.$b64url($signature);
 };
-$auth=new GitHubOidc();$jwt=$token();$userId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));
+$auth=new GitHubOidc();
+$jwt=$token();
+// Installing the plugin alone must never grant remote administrator access.
+try { $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt))); throw new RuntimeException('Unpaired install accepted GitHub OIDC.'); }
+catch (RuntimeException $e) { if (strpos($e->getMessage(),'not approved') === false) throw $e; }
+SitePairing::enableForAdministrator(1);
+if (SitePairing::pairedAdministratorId() !== 1) throw new RuntimeException('Site approval not retained.');
+$GLOBALS['wpconnector_blog_id'] = 2;
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Pairing crossed multisite blog boundary.');
+$GLOBALS['wpconnector_blog_id'] = 1;
+$GLOBALS['wpconnector_base_url'] = 'https://moved.example.com';
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Pairing survived site URL change.');
+$GLOBALS['wpconnector_base_url'] = 'https://example.com';
+$userId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));
 if(1!==$userId||!Policy::publicRepositoryContext()){fwrite(STDERR,"Valid GitHub OIDC token was not accepted.\n");exit(1);}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));fwrite(STDERR,"Replayed token accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'already used'))throw $e;}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array('aud'=>'https://evil.example/wp-json/webactueel-wordpress-connector/v1')))));fwrite(STDERR,"Wrong audience accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'audience'))throw $e;}
@@ -89,5 +110,11 @@ try{
     )))));
     fwrite(STDERR,"Untrusted repository token was accepted.\n");exit(1);
 }catch(RuntimeException $e){if(false===strpos($e->getMessage(),'repository'))throw $e;}
+
+
+SitePairing::disable();
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Revoked OIDC pairing remained active.');
+try { $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token()))); throw new RuntimeException('Revoked OIDC authentication succeeded.'); }
+catch (RuntimeException $e) { if (strpos($e->getMessage(),'not approved') === false) throw $e; }
 
 echo "github oidc contract OK\n";

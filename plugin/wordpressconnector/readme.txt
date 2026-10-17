@@ -4,13 +4,16 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.4
+Stable tag: 1.19.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.5 requires a site-specific WordPress administrator approval before GitHub OIDC can impersonate an administrator on **each** WordPress installation. Approve or revoke this at Settings > WordPress Connector, using a nonce-protected local form. A moved/cloned site needs fresh approval. Authenticated direct REST/MCP remains available without GitHub pairing. The local settings page provides a compatibility preflight. Existing sites will require one-time approval after upgrading; never publish this upgrade without a site administrator ready to approve it.
+
 
 Version 1.19.4 adds an explicitly bounded public GitHub OIDC action for SEO titles and meta descriptions of published pages, posts and products only, with dry-run, permission checks, fingerprint, readback and rollback. Other private Yoast metadata remains protected.
 

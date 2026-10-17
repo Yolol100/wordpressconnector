@@ -38,10 +38,10 @@ foreach ($required as $needle) {
     }
 }
 if (strpos($controller, "get_option('wpconnector_rest_enabled'") !== false) { fwrite(STDERR,"REST transport still depends on a checkbox.\n"); exit(1); }
-foreach (array('Zero-config runtime bridge.','no connector checkboxes','Short-lived GitHub Actions OIDC token','Persistent connector secrets','None required') as $needle) {
+foreach (array('Authenticated WordPress REST/MCP works immediately.','Authorize pinned GitHub Actions workflow','wp_nonce_field(\'wpconnector_site_pairing\')','check_admin_referer(\'wpconnector_site_pairing\')','SitePairing::enableForAdministrator','SitePairing::disable','Short-lived GitHub Actions OIDC token','Persistent connector secrets','None required') as $needle) {
     if (strpos($settings,$needle)===false) { fwrite(STDERR,"Missing zero-config settings contract: {$needle}\n"); exit(1); }
 }
-foreach (array('register_setting(','renderCheckbox','options.php','wpconnector_allow_writes','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_SITE_URL') as $needle) {
+foreach (array('register_setting(','renderCheckbox','wpconnector_allow_writes','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_SITE_URL') as $needle) {
     if (strpos($settings,$needle)!==false) { fwrite(STDERR,"Manual setup remains in settings: {$needle}\n"); exit(1); }
 }
 foreach (array('AUTO_ENABLED_FLAGS',"'WPCONNECTOR_ALLOW_WRITES'",'Sensitive actions require confirm=true','setPublicRepositoryContext','public_repository_safe') as $needle) {
@@ -50,6 +50,7 @@ foreach (array('AUTO_ENABLED_FLAGS',"'WPCONNECTOR_ALLOW_WRITES'",'Sensitive acti
 foreach (array("private const ISSUER = 'https://token.actions.githubusercontent.com'","private const JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks'","private const TRUSTED_RUNTIMES = array(","'Yolol100/wordpressconnector'","'repository_id' => '1341990468'","'Yolol100/Wordpress'","'repository_id' => '933904076'","private const REPOSITORY_OWNER_ID = '22932777'",'wordpress-zero-config-execute.yml@refs/heads/main','wordpressconnector-zero-config-execute.yml@refs/heads/main',"private const HEADER = 'x-webactueel-github-oidc'",'openssl_verify(','wp_safe_remote_get(self::JWKS_URL','assertNotReplayed',"'workflow_dispatch'","'github-hosted'") as $needle) {
     if (strpos($oidc,$needle)===false) { fwrite(STDERR,"Missing GitHub OIDC boundary: {$needle}\n"); exit(1); }
 }
+if (strpos($oidc, 'SitePairing::pairedAdministratorId()') === false || strpos($bootstrap, 'includes/Security/SitePairing.php') === false) { fwrite(STDERR, "Missing opt-in GitHub OIDC pairing boundary.\n"); exit(1); }
 foreach (array('is_uploaded_file($tmpName)','filesize($tmpName)','allowedFileType($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','realpath($root)','sys_get_temp_dir()','assertOutsideWebRoot') as $needle) {
     if (strpos($assetStore,$needle)===false) { fwrite(STDERR,"Missing REST asset security contract: {$needle}\n"); exit(1); }
 }

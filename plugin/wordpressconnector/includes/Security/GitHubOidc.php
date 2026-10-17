@@ -34,6 +34,11 @@ final class GitHubOidc
         if ('' === $token) {
             return 0;
         }
+        // Site owners must opt in locally; a third-party plugin installation
+        // never grants this repository WordPress administrator access by itself.
+        if (SitePairing::pairedAdministratorId() <= 0) {
+            throw new RuntimeException('GitHub OIDC is not approved for this WordPress site.');
+        }
         if (! function_exists('openssl_verify')) {
             throw new RuntimeException('GitHub OIDC authentication requires the PHP OpenSSL extension.');
         }
@@ -138,19 +143,13 @@ final class GitHubOidc
 
     private function administratorId(array $claims): int
     {
-        $ids = get_users(array(
-            'role' => 'administrator',
-            'orderby' => 'ID',
-            'order' => 'ASC',
-            'number' => 1,
-            'fields' => 'ID',
-        ));
-        $defaultId = $ids ? (int) reset($ids) : 0;
-        $userId = (int) apply_filters('wpconnector_github_oidc_user_id', $defaultId, $claims);
-        if ($userId <= 0 || ! user_can($userId, 'manage_options')) {
-            throw new RuntimeException('No WordPress administrator is available for GitHub OIDC execution.');
+        // The WordPress administrator who approved this exact site is the
+        // executing actor; never impersonate an arbitrary first admin user.
+        $id = SitePairing::pairedAdministratorId();
+        if ($id <= 0) {
+            throw new RuntimeException('GitHub OIDC site approval is unavailable or was revoked.');
         }
-        return $userId;
+        return $id;
     }
 
     private function publicKey(string $kid)
