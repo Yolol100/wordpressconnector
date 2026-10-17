@@ -273,6 +273,12 @@ final class SystemAdapter
             : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS);
         $items = array();
         foreach (get_plugins() as $file => $data) {
+            // Match WordPress Core's REST plugin visibility for multisite site administrators.
+            // Inactive network-only plugins are visible to network plugin managers only.
+            if (is_multisite() && ! current_user_can('manage_network_plugins')
+                && ! is_plugin_active($file) && is_network_only_plugin($file)) {
+                continue;
+            }
             $network = is_multisite() ? is_plugin_active_for_network($file) : false;
             $active = is_plugin_active($file) || $network;
             $offer = $offers[$file] ?? null;
