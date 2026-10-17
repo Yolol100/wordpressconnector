@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-20-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d2c725cf2d2d8a5d86ad9cd0a9f5ff6d1a7ea338930a15615cdad46c286cd01c",
+  "payload": {
+    "id": 20,
+    "fields": {
+      "description": "ISOHULK IMO aluminium foil tape for marine insulation, with paper or blue plastic release liner. Ask about custom widths and thicknesses."
+    }
+  }
+}
