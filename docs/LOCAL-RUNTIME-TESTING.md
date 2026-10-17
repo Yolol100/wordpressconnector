@@ -16,7 +16,7 @@ From repository root:
 wp-env start
 wp-env run cli wp plugin is-active wordpressconnector
 wp-env run cli wp eval 'if (!defined("WPCONNECTOR_VERSION")) { WP_CLI::error("Connector did not boot"); }'
-wp-env destroy
+wp-env destroy --force
 ```
 
 The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.2 / PHP 8.3 environment. The GitHub workflow also checks the registration of three expected REST routes and verifies anonymous HTTP requests to `/presence` fail closed with 403.
