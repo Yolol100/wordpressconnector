@@ -159,6 +159,20 @@ foreach (array(
     },'plugin source from filter: ' . $untrusted);
 }
 $GLOBALS['wpconn_plugin_download_link'] = 'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip';
+// Both plugin and theme directory packages must match the requested slug,
+ // not merely share a plausible domain.
+$origin = new ReflectionMethod(SystemAdapter::class, 'officialDirectoryPackageUrl');
+$origin->setAccessible(true);
+$officialTheme = 'https://downloads.wordpress.org/theme/qa-theme.1.2.3.zip';
+if ($origin->invoke($system, $officialTheme, 'qa-theme', 'theme') !== $officialTheme) {
+    throw new RuntimeException('Canonical WordPress theme package was rejected.');
+}
+$fail(static function() use ($origin, $system) {
+    $origin->invoke($system, 'https://downloads.wordpress.org/plugin/qa-theme.zip', 'qa-theme', 'theme');
+}, 'WordPress theme package path changed to plugin');
+$fail(static function() use ($origin, $system) {
+    $origin->invoke($system, 'https://downloads.wordpress.org/theme/another-theme.zip', 'qa-theme', 'theme');
+}, 'Theme package identity substitution');
 $preview = $system->pluginInstall(array('slug'=>'new-plugin'),array('dry_run'=>true));
 if (($preview['verified_package_origin'] ?? '') !== 'downloads.wordpress.org') {
     throw new RuntimeException('Official plugin source not validated in dry-run.');
@@ -246,6 +260,12 @@ foreach (array(
     $fail(static function() use($unsafe) {
         FilesystemPolicy::assertLifecycleText($unsafe);
     },$unsafe);
+}
+if (!FilesystemPolicy::affectsBrowserExecution($path) ||
+    !FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/app.js') ||
+    !FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/styles.css') ||
+    FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/notes.txt')) {
+    throw new RuntimeException('Active browser code classification is incorrect.');
 }
 if (FilesystemPolicy::assertLifecycleText($path)!==$path) {
     throw new RuntimeException('Safe file lifecycle path rejected.');
