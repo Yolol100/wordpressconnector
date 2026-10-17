@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-17-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "7ce71863af2b1614f3e65e85927318d1c8c80dc2b5a4a3ad0e2d157c855e39fa",
+  "payload": {
+    "id": 17,
+    "fields": {
+      "title": "Contact ISOHULK | Product Advice & Quotes",
+      "description": "Contact ISOHULK for adhesive tape advice, product specifications, packaging materials and quotation requests."
+    }
+  }
+}
