@@ -55,7 +55,7 @@ function plugins_api($action, $args = array()) {
 class WP_Error { public function get_error_message(): string { return 'Test failure'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
-foreach (array('Support/Fingerprint.php', 'Security/Policy.php',
+foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Security/Policy.php',
     'Security/FilesystemPolicy.php', 'Adapters/FilesystemAdapter.php',
     'Adapters/SystemAdapter.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
