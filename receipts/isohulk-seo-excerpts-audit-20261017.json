@@ -1,0 +1,307 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-seo-excerpts-audit-20261017",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T16:58:09+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 13,
+                "type": "page",
+                "status": "publish",
+                "title": "Home",
+                "slug": "home",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "5d8e236e23a63c0749362c74a45115ec7ac55be1fefb5e1430d6d4eaae0cfc23"
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 14,
+                "type": "page",
+                "status": "publish",
+                "title": "Products",
+                "slug": "products",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/products/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "36f036efbead742f405e99b2db98e344d9d3cb7d9b79036e762f2c8b44275930"
+        },
+        {
+            "index": 2,
+            "action": "post.get",
+            "post": {
+                "id": 15,
+                "type": "page",
+                "status": "publish",
+                "title": "Custom Solutions",
+                "slug": "custom-solutions",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/custom-solutions/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "ed0cc659ef3feb1f2b12c977d29fcc9ca2117132035f9665b83fb88366b6a7f3"
+        },
+        {
+            "index": 3,
+            "action": "post.get",
+            "post": {
+                "id": 16,
+                "type": "page",
+                "status": "publish",
+                "title": "About Us",
+                "slug": "about-us",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "b2c0d64f932764630598b54b3db3bd555d32f11eefd028e605ec093d4c2144a6"
+        },
+        {
+            "index": 4,
+            "action": "post.get",
+            "post": {
+                "id": 17,
+                "type": "page",
+                "status": "publish",
+                "title": "Contact",
+                "slug": "contact",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/contact/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "ddd6228293d4dce6ba76cd6278f3eb2fdd485738cee2e93fe65434e0f8c2298a"
+        },
+        {
+            "index": 5,
+            "action": "post.get",
+            "post": {
+                "id": 251,
+                "type": "page",
+                "status": "publish",
+                "title": "Terms & Conditions",
+                "slug": "terms-and-conditions",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/terms-and-conditions/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "8fb0dc643073c65daf5092fe7daa46df0cac99df1da4a883d6806794a0ae52ba"
+        },
+        {
+            "index": 6,
+            "action": "post.get",
+            "post": {
+                "id": 252,
+                "type": "page",
+                "status": "publish",
+                "title": "Request a Quotation",
+                "slug": "request-a-quote",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "26634d0c35e564df8b35caa9e926e87d8715e78b96e3dcf12794a13daf81c029"
+        },
+        {
+            "index": 7,
+            "action": "post.get",
+            "post": {
+                "id": 253,
+                "type": "page",
+                "status": "publish",
+                "title": "Thank You for Your Message",
+                "slug": "thank-you-message",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "d0695fa5f9ed0175ac3a1d059ec7cc46c118270d7e8316bb7eeef3be25b133f7"
+        },
+        {
+            "index": 8,
+            "action": "post.get",
+            "post": {
+                "id": 254,
+                "type": "page",
+                "status": "publish",
+                "title": "Thank You for Your Quotation Request",
+                "slug": "thank-you-quotation",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-quotation/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "9993bea3c0a4ce38127961f6ac60c6703c218c129ea4ca3549368764dd5f7911"
+        },
+        {
+            "index": 9,
+            "action": "post.get",
+            "post": {
+                "id": 256,
+                "type": "page",
+                "status": "publish",
+                "title": "Sitemap",
+                "slug": "sitemap",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/sitemap/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "6617e296ac1581746e4495c8a4bafdc7f249dbd7136d864045b5c5a7b683168d"
+        },
+        {
+            "index": 10,
+            "action": "post.get",
+            "post": {
+                "id": 264,
+                "type": "page",
+                "status": "publish",
+                "title": "Categories",
+                "slug": "categories",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/categories/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "6a05d3b3e1da0dc0c22c2c3274e5adcc38c55c4e981bedbc726b816bd3489904"
+        },
+        {
+            "index": 11,
+            "action": "post.get",
+            "post": {
+                "id": 3,
+                "type": "page",
+                "status": "publish",
+                "title": "Privacy Policy",
+                "slug": "privacy-policy",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/privacy-policy/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "b3c7784d58e78d6cbad5e5f9d72902bec9d829cea1899650c04f489c26a856c7"
+        },
+        {
+            "index": 12,
+            "action": "post.get",
+            "post": {
+                "id": 12,
+                "type": "page",
+                "status": "publish",
+                "title": "Refund & Returns Policy",
+                "slug": "refund-returns-policy",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/refund-returns-policy/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "142f1865db18bf8efbb51df3f06a8ea3ae2d8fbe0df8da4a9bda6b8097e6b529"
+        },
+        {
+            "index": 13,
+            "action": "post.get",
+            "post": {
+                "id": 22,
+                "type": "product",
+                "status": "publish",
+                "title": "Aluminium Butyl Waterproof Repair Tape",
+                "slug": "aluminium-butyl-reparatietape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-butyl-reparatietape/",
+                "excerpt": "Water-resistant and vapour-tight butyl repair tape for sealing joints and connections."
+            },
+            "post_fingerprint": "1c49b35c41bbde5ada59ced3d7251cf5f0e27800b212988e100f3eecc8c3a20c"
+        },
+        {
+            "index": 14,
+            "action": "post.get",
+            "post": {
+                "id": 32,
+                "type": "product",
+                "status": "publish",
+                "title": "Reinforced Aluminium Tape",
+                "slug": "aluminiumtape-reinforced",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-reinforced/",
+                "excerpt": "Tear-resistant aluminium tape reinforced lengthwise and crosswise."
+            },
+            "post_fingerprint": "49fc5fb60f3f275c2d4e682e468c39a9340eaf989f7d07b376ebf16776322392"
+        },
+        {
+            "index": 15,
+            "action": "post.get",
+            "post": {
+                "id": 38,
+                "type": "product",
+                "status": "publish",
+                "title": "Waterproof Duct Tape",
+                "slug": "duct-tape-waterproof",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/duct-tape-waterproof/",
+                "excerpt": "Water-resistant duct tape with strong adhesion; available in different colours, sizes and thicknesses."
+            },
+            "post_fingerprint": "5fac0b637f816fe94c28a94f8fb040d8333de0933a12ec745c4dbba79c41345b"
+        },
+        {
+            "index": 16,
+            "action": "post.get",
+            "post": {
+                "id": 51,
+                "type": "product",
+                "status": "publish",
+                "title": "Machine Stretch Film – 500 mm × 1500 m × 23 µm (350%)",
+                "slug": "machinewikkelfolie-350-23my",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-350-23my/",
+                "excerpt": "Transparent machine stretch film, 500 mm × 1500 m × 23 µm, with 350% stretch."
+            },
+            "post_fingerprint": "8764186876d2dc196d2d2a4d73badf58024e3635254f82fe6acac6ab888ea3a5"
+        },
+        {
+            "index": 17,
+            "action": "post.get",
+            "post": {
+                "id": 58,
+                "type": "product",
+                "status": "publish",
+                "title": "Spray Adhesive – 500 ml",
+                "slug": "spray-adhesive-500ml",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/spray-adhesive-500ml/",
+                "excerpt": "Fast-acting 500 ml spray adhesive with high initial tack and quick permanent bonding."
+            },
+            "post_fingerprint": "3eccadcc44962dc42a7bb8855bb4681da7c950157802e80cd1806d5406bec9be"
+        },
+        {
+            "index": 18,
+            "action": "post.get",
+            "post": {
+                "id": 355,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® PK1 – Extreme Strength. Economical.",
+                "slug": "isohulk-pk1-extreme-strength-economical",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-pk1-extreme-strength-economical/",
+                "excerpt": "Professional packaging tape with high tensile strength and modified high-tack adhesion, available as printed-logo or low-noise clear tape."
+            },
+            "post_fingerprint": "e1995191c41ad6cd4491efcc9f739f2ce6c06ba7e27d6af4b95d775629afda5a"
+        },
+        {
+            "index": 19,
+            "action": "post.get",
+            "post": {
+                "id": 354,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® EP3 – Reinforced Rubber Foam Tape",
+                "slug": "isohulk-ep3-reinforced-rubber-foam-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-ep3-reinforced-rubber-foam-tape/",
+                "excerpt": "3 mm reinforced rubber foam tape with polyester diamond reinforcement, flexible high-tack adhesion and custom dimensions."
+            },
+            "post_fingerprint": "0a572545b0b27a4c5695347505f1ea838b09a7e8b6032a330ac1242ebaab3d46"
+        },
+        {
+            "index": 20,
+            "action": "post.get",
+            "post": {
+                "id": 353,
+                "type": "product",
+                "status": "publish",
+                "title": "ISOHULK® PP-25 Metallized PP Tape",
+                "slug": "isohulk-pp-25-metallized-pp-tape",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-pp-25-metallized-pp-tape/",
+                "excerpt": "Metallized polypropylene tape that helps protect insulation from moisture and water vapour, with custom widths and thicknesses available."
+            },
+            "post_fingerprint": "d0b2fc59a943a82505f240176d44f3aa18cbf11d82464d491b2ef9a5ad56f0c1"
+        }
+    ],
+    "readback_verified": null
+}
