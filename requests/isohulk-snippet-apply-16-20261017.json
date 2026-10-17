@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-16-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "ff083ff18a90b208247411a92c90f79bde9c32843bc6dd597728915919dfea07",
+  "payload": {
+    "id": 16,
+    "fields": {
+      "title": "About ISOHULK | Adhesive Tapes & Packaging",
+      "description": "Learn about ISOHULK, our adhesive tapes and packaging materials, and practical support for industrial and construction applications."
+    }
+  }
+}
