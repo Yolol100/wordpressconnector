@@ -126,7 +126,7 @@ jobs:
             $name = "wpconnector-runtime-fixture";
             $file = $name . "/fixture.php";
             $root = WP_PLUGIN_DIR . "/" . $name;
-            $assetRoot = WP_CONTENT_DIR . "/upgrade/wpconnector-qa-assets";
+            $assetRoot = WP_CONTENT_DIR . "/uploads/wpconnector-qa-assets";
             wp_mkdir_p($assetRoot . "/plugin-packages");
             $package = $assetRoot . "/plugin-packages/" . $name . ".zip";
             $fixture = "<?php\n/*\nPlugin Name: Connector Runtime Fixture\nVersion: 1.0.0\n*/\nregister_activation_hook(__FILE__, static function () { update_option(\"wpconnector_qa_activation_count\", 1 + (int) get_option(\"wpconnector_qa_activation_count\", 0)); });\n";
