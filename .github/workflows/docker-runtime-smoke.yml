@@ -1,6 +1,13 @@
 name: WordPress Connector Docker runtime smoke
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.wp-env.json'
+      - 'plugin/wordpressconnector/**'
+      - '.github/workflows/docker-runtime-smoke.yml'
+      - 'docs/LOCAL-RUNTIME-TESTING.md'
   pull_request:
     paths:
       - '.wp-env.json'
@@ -31,6 +38,21 @@ jobs:
         run: npm install --global @wordpress/env@11.17.0
       - name: Start disposable WordPress with Docker
         run: wp-env start
+      - name: Verify exact WordPress, PHP, and database runtime
+        run: |
+          wp-env run cli wp eval '
+            global $wpdb;
+            if (get_bloginfo("version") !== "7.1.3") {
+              WP_CLI::error("Expected WordPress 7.1.3");
+            }
+            if (PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 3) {
+              WP_CLI::error("Expected PHP 8.3");
+            }
+            if ((string) $wpdb->get_var("SELECT 1") !== "1") {
+              WP_CLI::error("Isolated database query failed");
+            }
+            WP_CLI::success("Pinned WordPress, PHP and database runtime verified");
+          '
       - name: Check plugin activation
         run: wp-env run cli wp plugin is-active wordpressconnector
       - name: Check plugin bootstrap and REST registration
