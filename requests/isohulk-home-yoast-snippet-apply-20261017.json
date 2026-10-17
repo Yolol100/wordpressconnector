@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-home-yoast-snippet-apply-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "8cccc4c36a8c266dc0a41baf31c9c8a4b22294e3de46c00a30f4b18a0ca73454",
+  "payload": {
+    "id": 13,
+    "fields": {
+      "title": "Adhesive Tapes & Packaging Materials | ISOHULK",
+      "description": "Explore adhesive tapes, protective films and packaging materials at ISOHULK. Browse professional products or discuss a custom solution."
+    }
+  }
+}
