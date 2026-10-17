@@ -14,6 +14,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 - Real mutations require the connector write, privileged and system-update gates plus `confirm:true`.
 - The WordPress user needs `install_plugins`; overwrite additionally needs `update_plugins`; activation needs `activate_plugins`; network activation needs `manage_network_plugins`.
 - PHP `ZipArchive` must be available.
+- Upload the verified ZIP under the Connector's trusted request asset root **outside** `wp-content/upgrade/`. WordPress Core clears its upgrade scratch directory before unpacking; the Connector now rejects source ZIPs there rather than losing them during installation.
 - Use staging first for a new or unproven package. Package install/overwrite is intentionally non-rollbackable.
 - Do not place a confidential package under `assets/inbox/` on a public GitHub branch. Public runtime package installation is only for packages whose bytes may be public.
 
