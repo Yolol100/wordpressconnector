@@ -1,0 +1,60 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-legacy-brand-content-audit-20261017",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T17:03:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 16,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "About Us",
+                    "slug": "about-us",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/"
+                },
+                {
+                    "id": 13,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Home",
+                    "slug": "home",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 100,
+            "total": 2,
+            "pages": 1
+        },
+        {
+            "index": 1,
+            "action": "post.list",
+            "items": [],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 100,
+            "total": 0,
+            "pages": 0
+        },
+        {
+            "index": 2,
+            "action": "post.list",
+            "items": [],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 100,
+            "total": 0,
+            "pages": 0
+        }
+    ],
+    "readback_verified": null
+}
