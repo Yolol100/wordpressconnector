@@ -55,6 +55,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
 | `elementor.regenerate` | mutation | Clear Elementor generated CSS/files cache. |
 | `elementor.replace_document` | mutation | Replace Elementor elements/settings through the Elementor document API. |
+| `filesystem.create_text` | mutation, privileged | Create a non-PHP plugin/theme text asset in an existing directory with guarded readback and rollback. |
+| `filesystem.delete_text` | mutation, privileged | Delete a non-PHP plugin/theme text asset after exact SHA-256 guard with readback and rollback. |
 | `filesystem.inspect` | privileged | Inspect safe filesystem capabilities and WP File Manager integration state without exposing absolute paths. |
 | `filesystem.list` | privileged | List a bounded directory inside the WordPress root while excluding secret and managed-data paths. |
 | `filesystem.read_text` | privileged | Read a bounded non-secret UTF-8 text file inside the WordPress root. |
@@ -91,6 +93,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `option.get` | privileged | Read a WordPress option. |
 | `option.update` | mutation, privileged | Update a WordPress option. |
 | `plugin.activate` | mutation, privileged | Activate an installed plugin. |
+| `plugin.directory.search` | privileged | Search WordPress.org plugin directory for bounded metadata and installed-plugin matching. |
 | `plugin.deactivate` | mutation, privileged | Deactivate an installed plugin. |
 | `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
 | `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
