@@ -35,6 +35,8 @@ final class Policy
         'gtranslate.settings.update',
         'yoast.site_representation.inspect',
         'yoast.site_representation.update',
+        'yoast.snippet.inspect',
+        'yoast.snippet.update',
         'yoast.templates.inspect',
         'yoast.templates.update',
         'acf.update',
@@ -118,7 +120,7 @@ final class Policy
 
     public static function assertPublicActionTarget(string $action, array $payload): void
     {
-        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.inspect', 'elementor.patch_element'), true)) {
+        if (! self::publicRepositoryContext() || ! in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.inspect', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore'), true)) {
             return;
         }
 
@@ -134,7 +136,7 @@ final class Policy
         if (! $post instanceof \WP_Post) {
             throw new RuntimeException('Public ' . $action . ' target post was not found.');
         }
-        $requiresEdit = in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element'), true);
+        $requiresEdit = in_array($action, array('post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore'), true);
         self::assertPublicContentTarget($post, $requiresEdit);
     }
 

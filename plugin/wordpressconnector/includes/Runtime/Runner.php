@@ -388,6 +388,24 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('yoast.snippet.inspect' === $action || 'yoast.snippet.update' === $action) {
+            $inspect = 'yoast.snippet.inspect' === $action;
+            if ($inspect) {
+                if (array_keys($payload) !== array('id') || ! is_int($payload['id']) || $payload['id'] < 1 || ! $dryRun) {
+                    throw new RuntimeException('Public snippet inspection requires only an id and dry-run.');
+                }
+            } else {
+                if (array_diff(array_keys($payload), array('id', 'fields')) ||
+                    ! is_int($payload['id'] ?? null) || $payload['id'] < 1) {
+                    throw new RuntimeException('Public snippet edit accepts only id and fields.');
+                }
+                \Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields($payload['fields'] ?? null);
+                if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
+                    throw new RuntimeException('Confirmed snippet edit requires expected_fingerprint from dry-run.');
+                }
+            }
+            return $descriptor;
+        }
         if ('yoast.templates.inspect' === $action || 'yoast.templates.update' === $action) {
             if ('yoast.templates.inspect' === $action) {
                 if ($payload) {
@@ -854,6 +872,7 @@ final class Runner
             'site.identity.update' => array('site.identity.restore'),
             'gtranslate.settings.update' => array('gtranslate.settings.restore'),
             'yoast.site_representation.update' => array('yoast.site_representation.restore'),
+            'yoast.snippet.update' => array('yoast.snippet.restore'),
             'elementor.patch_element' => array('elementor.replace_document'),
             'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
             'connector.batch' => array('connector.batch'),
@@ -865,6 +884,17 @@ final class Runner
         }
         if ('acf.portfolio_stats_update' === $sourceAction) {
             $this->assertPublicPortfolioStatsPayload((array) ($rollback['payload'] ?? array()));
+        } elseif ('yoast.snippet.update' === $sourceAction) {
+            $rollbackPayload = (array) ($rollback['payload'] ?? array());
+            if (array_diff(array_keys($rollbackPayload), array('id', 'fields', 'expected_after_fingerprint'))) {
+                throw new RuntimeException('Public snippet rollback has unsupported keys.');
+            }
+            $this->assertPublicRollbackPostId($rollbackPayload);
+            \Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields($rollbackPayload['fields'] ?? null, true);
+            if (! is_string($rollbackPayload['expected_after_fingerprint'] ?? null) ||
+                ! preg_match('/^[a-f0-9]{64}\z/', $rollbackPayload['expected_after_fingerprint'])) {
+                throw new RuntimeException('Public snippet rollback requires an after-fingerprint.');
+            }
         } elseif ('code_snippets.patch' === $sourceAction) {
             $rollbackPayload = (array) ($rollback['payload'] ?? array());
             $snippetId = isset($rollbackPayload['snippet_id']) ? (int) $rollbackPayload['snippet_id'] : 0;
