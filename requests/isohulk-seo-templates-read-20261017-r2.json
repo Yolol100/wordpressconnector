@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-seo-templates-read-20261017-r2",
+  "action": "yoast.templates.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
