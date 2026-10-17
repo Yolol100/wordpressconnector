@@ -1,0 +1,99 @@
+name: WordPress Connector Docker runtime smoke
+
+on:
+  pull_request:
+    paths:
+      - '.wp-env.json'
+      - 'plugin/wordpressconnector/**'
+      - '.github/workflows/docker-runtime-smoke.yml'
+      - 'docs/LOCAL-RUNTIME-TESTING.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wp-env-smoke:
+    name: Isolated WordPress runtime (no credentials)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout isolated revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24.18.0'
+          package-manager-cache: false
+      - name: Install pinned WordPress test environment
+        run: npm install --global @wordpress/env@11.17.0
+      - name: Start disposable WordPress with Docker
+        run: wp-env start
+      - name: Check plugin activation
+        run: wp-env run cli wp plugin is-active wordpressconnector
+      - name: Check plugin bootstrap and REST registration
+        run: |
+          wp-env run cli wp eval '
+            if (! defined("WPCONNECTOR_VERSION")) {
+              WP_CLI::error("Connector failed to boot");
+            }
+            $routes = rest_get_server()->get_routes();
+            foreach (array("/webactueel-wordpress-connector/v1/presence", "/webactueel-wordpress-connector/v1/health", "/webactueel-wordpress-connector/v1/execute") as $route) {
+              if (! isset($routes[$route])) {
+                WP_CLI::error("Missing expected REST route: " . $route);
+              }
+            }
+            WP_CLI::success("Connector boot and REST route registry verified");
+          '
+      - name: Verify public and private REST permission boundaries
+        run: |
+          wp-env run cli wp eval '
+            $base = "/webactueel-wordpress-connector/v1/";
+            if (is_ssl()) { WP_CLI::error("Expected disposable HTTP site"); }
+            foreach (array(
+              array("GET", "presence"),
+              array("GET", "health"),
+              array("POST", "assets"),
+              array("POST", "execute")
+            ) as $probe) {
+              $request = new WP_REST_Request($probe[0], $base . $probe[1]);
+              if ($probe[1] === "assets") {
+                $request->set_param("request_id", "test-access-12345");
+                $request->set_param("asset_path", "synthetic.txt");
+              }
+              $response = rest_do_request($request);
+              if ($response->get_status() !== 403) {
+                WP_CLI::error("Anonymous HTTP access not blocked for " . $probe[1]);
+              }
+            }
+            $_SERVER["HTTPS"] = "on";
+            if (! is_ssl()) { WP_CLI::error("HTTPS test precondition failed"); }
+            $public = rest_do_request(new WP_REST_Request("GET", $base . "presence"));
+            if ($public->get_status() !== 200 || $public->get_data()["ok"] !== true) {
+              WP_CLI::error("HTTPS public presence contract failed");
+            }
+            foreach (array(
+              array("GET", "health"),
+              array("POST", "assets"),
+              array("POST", "execute")
+            ) as $probe) {
+              $request = new WP_REST_Request($probe[0], $base . $probe[1]);
+              if ($probe[1] === "assets") {
+                $request->set_param("request_id", "test-access-12345");
+                $request->set_param("asset_path", "synthetic.txt");
+              }
+              $response = rest_do_request($request);
+              if ($response->get_status() !== 401) {
+                WP_CLI::error("Anonymous HTTPS access not blocked for " . $probe[1]);
+              }
+            }
+            WP_CLI::success("Eight anonymous HTTP/HTTPS REST gate probes passed");
+          '
+      - name: Docker diagnostics on failure
+        if: failure()
+        run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'
+      - name: Destroy disposable test environment
+        if: always()
+        run: wp-env destroy --force
