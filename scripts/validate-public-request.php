@@ -38,6 +38,8 @@ $publicActions = array(
     'gtranslate.settings.update',
     'yoast.site_representation.inspect',
     'yoast.site_representation.update',
+    'yoast.snippet.inspect',
+    'yoast.snippet.update',
     'yoast.templates.inspect',
     'yoast.templates.update',
     'acf.update',
@@ -64,6 +66,66 @@ $publicActions = array(
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
     exit(1);
+}
+
+// Explicit public snippet exception: only existing published page/post/product
+// SEO title and meta-description overrides. No robots/canonical/focus keyword.
+if (in_array($action, array('yoast.snippet.inspect', 'yoast.snippet.update'), true)) {
+    $errors = array();
+    $read = 'yoast.snippet.inspect' === $action;
+    $root = array('version','site_url','request_id','action','payload','dry_run','confirm');
+    if (! $read) $root[] = 'expected_fingerprint';
+    if (array_diff(array_keys($data), $root) || array_key_exists('expected_state_token', $data)) {
+        $errors[] = 'Snippet request has forbidden root keys.';
+    }
+    $payload = $data['payload'] ?? null;
+    if (! is_array($payload) || ! is_int($payload['id'] ?? null) || $payload['id'] < 1) {
+        $errors[] = 'Snippet request requires a positive integer id.';
+    }
+    if ($read) {
+        if (! is_array($payload) || array_keys($payload) !== array('id') ||
+            ($data['dry_run'] ?? null) !== true || ($data['confirm'] ?? null) !== false) {
+            $errors[] = 'Snippet inspection is an id-only read request.';
+        }
+    } else {
+        if (! is_array($payload) || array_diff(array_keys($payload), array('id','fields'))) {
+            $errors[] = 'Snippet update accepts only id and fields.';
+        }
+        $fields = is_array($payload) ? ($payload['fields'] ?? null) : null;
+        if (! is_array($fields) || ! $fields || count($fields) > 2 ||
+            array_keys($fields) === range(0, count($fields) - 1)) {
+            $errors[] = 'Snippet update requires 1-2 named fields.';
+        } else {
+            foreach ($fields as $key => $value) {
+                $max = 'title' === $key ? 190 : 320;
+                if (! in_array($key, array('title','description'), true) ||
+                    ! is_string($value) || strlen($value) < 10 || strlen($value) > $max ||
+                    trim($value) !== $value || strpos($value, '%%') !== false ||
+                    preg_match('/[\x00-\x1f\x7f<>]/', $value)) {
+                    $errors[] = 'Snippet update field is not allowed or plain text is invalid.';
+                }
+            }
+        }
+        if (($data['dry_run'] ?? null) === true) {
+            if (($data['confirm'] ?? null) !== false || array_key_exists('expected_fingerprint', $data)) {
+                $errors[] = 'Snippet dry-run must not confirm or supply a fingerprint.';
+            }
+        } elseif (($data['dry_run'] ?? null) === false) {
+            if (($data['confirm'] ?? null) !== true ||
+                ! is_string($data['expected_fingerprint'] ?? null) ||
+                ! preg_match('/^[a-f0-9]{64}\z/', $data['expected_fingerprint'])) {
+                $errors[] = 'Confirmed snippet edit requires the prior dry-run fingerprint.';
+            }
+        } else {
+            $errors[] = 'Snippet requests require explicit dry_run.';
+        }
+    }
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: ' . $action . PHP_EOL;
+    return;
 }
 
 // The PUBLIC GitHub transport may patch only four non-sensitive SEO templates.
