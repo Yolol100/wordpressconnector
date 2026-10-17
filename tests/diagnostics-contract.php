@@ -19,6 +19,20 @@ $examples = array(
     array('A provider request timed out.', 'transient_transport'),
     array('Plugin is not active.', 'dependency_unavailable'),
     array('Unsupported field foo.', 'invalid_request'),
+    array('GitHub OIDC is not approved for this WordPress site.', 'site_approval_required'),
+    array('GitHub OIDC site approval is unavailable or was revoked.', 'site_approval_required'),
+    array('GitHub OIDC audience is invalid for this WordPress site.', 'site_identity_mismatch'),
+    array('GitHub OIDC authentication requires the PHP OpenSSL extension.', 'runtime_incompatible'),
+    array('PHP ZipArchive is required for connector release verification.', 'runtime_incompatible'),
+    array('HTTP 403 GitHub API rate limit exceeded.', 'github_rate_limited'),
+    array('HTTP 403 hosting WAF blocked the request.', 'security_policy_blocked'),
+    array('Outbound network blocked by hosting policy.', 'outbound_network_blocked'),
+    array('WordPress Filesystem API could not initialize without interactive filesystem credentials.', 'filesystem_unavailable'),
+    array('WordPress plugin installation failed; check filesystem permissions.', 'plugin_operation_failed'),
+    array('Plugin update failed or no update is available.', 'plugin_operation_failed'),
+    array('Plugin activation did not persist; check plugin requirements.', 'persistence_unverified'),
+    array('Filesystem write readback verification failed.', 'persistence_unverified'),
+    array('Connector update readback failed and automatic recovery was not verified.', 'persistence_unverified'),
     array('Unexpected internal code error.', 'unknown_failure'),
 );
 foreach ($examples as $example) {
@@ -37,5 +51,13 @@ if (! $read['retryable_read'] || $read['reconcile_before_retry']
     || false !== strpos(json_encode($mutation), 'secret.example')
     || false !== strpos(json_encode($mutation), 'SENSITIVE-DO-NOT-LOG')) {
     throw new RuntimeException('Diagnostic metadata must be secret-free and mutation-safe.');
+}
+$rateRead = Diagnostics::classify('GitHub API rate limit exceeded for token=SENSITIVE-DO-NOT-LOG', false);
+$rateWrite = Diagnostics::classify('GitHub API rate limit exceeded for token=SENSITIVE-DO-NOT-LOG', true);
+if (! $rateRead['retryable_read'] || $rateRead['reconcile_before_retry']
+    || $rateWrite['retryable_read'] || ! $rateWrite['reconcile_before_retry']
+    || false !== strpos(json_encode($rateRead), 'SENSITIVE-DO-NOT-LOG')
+    || false !== strpos(json_encode($rateWrite), 'SENSITIVE-DO-NOT-LOG')) {
+    throw new RuntimeException('Rate-limit diagnostics must be secret-free and mutation-safe.');
 }
 echo "typed diagnostics and privacy-safe retry guidance OK\n";
