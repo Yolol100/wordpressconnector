@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-legacy-brand-content-audit-20261017",
+  "action": "connector.read_batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "search": "Tape Solutions",
+          "per_page": 100,
+          "page": 1
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "post",
+          "status": "publish",
+          "search": "Tape Solutions",
+          "per_page": 100,
+          "page": 1
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "search": "Tape Solutions",
+          "per_page": 100,
+          "page": 1
+        }
+      }
+    ]
+  }
+}
