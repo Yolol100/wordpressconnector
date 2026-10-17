@@ -29,7 +29,15 @@ function wp_remote_retrieve_body($response): string { return (string)($response[
 function get_users($args = array()): array { return array(1); }
 function apply_filters($name, $value) { return $value; }
 function user_can($userId, $capability): bool { return 1 === (int)$userId && 'manage_options' === $capability; }
-function current_user_can($capability): bool { return true; }
+$GLOBALS['admin_activation_context'] = true;
+$GLOBALS['admin_activation_user_id'] = 1;
+$GLOBALS['can_activate_plugins'] = true;
+function is_admin(): bool { return $GLOBALS['admin_activation_context']; }
+function get_current_user_id(): int { return $GLOBALS['admin_activation_user_id']; }
+function current_user_can($capability): bool {
+    if ('activate_plugins' === $capability) return $GLOBALS['can_activate_plugins'];
+    return true;
+}
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/SitePairing.php';
@@ -62,6 +70,25 @@ $jwt=$token();
 // Installing the plugin alone must never grant remote administrator access.
 try { $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt))); throw new RuntimeException('Unpaired install accepted GitHub OIDC.'); }
 catch (RuntimeException $e) { if (strpos($e->getMessage(),'not approved') === false) throw $e; }
+// Uploading PHP files alone is not a grant, but normal WordPress admin
+// activation is the single explicit site-owner action required.
+SitePairing::approveOnActivation(false);
+if (SitePairing::pairedAdministratorId() !== 1) throw new RuntimeException('Admin activation did not approve trusted GitHub OIDC.');
+SitePairing::disable();
+$GLOBALS['admin_activation_context'] = false;
+SitePairing::approveOnActivation(false);
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('CLI activation silently approved site.');
+$GLOBALS['admin_activation_context'] = true;
+$GLOBALS['can_activate_plugins'] = false;
+SitePairing::approveOnActivation(false);
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Unprivileged activation approved site.');
+$GLOBALS['can_activate_plugins'] = true;
+SitePairing::approveOnActivation(true);
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Network activation automatically approved every site.');
+$GLOBALS['admin_activation_user_id'] = 0;
+SitePairing::approveOnActivation(false);
+if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Missing authenticated administrator was approved.');
+$GLOBALS['admin_activation_user_id'] = 1;
 SitePairing::enableForAdministrator(1);
 if (SitePairing::pairedAdministratorId() !== 1) throw new RuntimeException('Site approval not retained.');
 $GLOBALS['wpconnector_blog_id'] = 2;
