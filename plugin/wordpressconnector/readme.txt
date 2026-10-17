@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.8
+Stable tag: 1.19.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.9 improves diagnostic categories for verified WordPress connection, version/extension compatibility, site approval, GitHub rate limits, file permissions, plugin installation and readback failures without exposing raw URLs or secrets. On multisite, plugin.list now follows WordPress Core REST visibility: inactive network-only plugins are hidden from site administrators who lack manage_network_plugins, while network administrators and active plugins remain visible. The existing public/private transport gates and plugin management adapters are unchanged. Automated contract and WordPress/Docker tests do not prove a particular hosted site can complete privileged writes or native dashboard upgrades.
 
 Version 1.19.8 restores normal WordPress activation hooks for authenticated plugin activation and verified package installation, verifies official WordPress.org plugin/theme package URL identity before installation, and requires explicit `acknowledge_active_content:true` when creating or deleting HTML/JavaScript/CSS assets. HTML, JavaScript and CSS can affect or execute code in browsers; they are **not** described as inert files. Previously installed packages are not retroactively reactivated. Dedicated tests cover changed package origins, denied asset writes and real WordPress ZIP installation, activation, deactivation and file creation/deletion; live hosting behavior remains environment-specific.
 
