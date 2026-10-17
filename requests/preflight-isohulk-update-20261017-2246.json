@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "preflight-isohulk-update-20261017-2246",
+  "action": "connector.update.apply",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
