@@ -8,6 +8,8 @@ mkdir($root . 'wp-admin/includes', 0700, true);
 file_put_contents($root . 'wp-admin/includes/file.php', "<?php\n");
 file_put_contents($root . 'wp-admin/includes/plugin.php', "<?php\n");
 file_put_contents($root . 'wp-admin/includes/plugin-install.php', "<?php\n");
+file_put_contents($root . 'wp-admin/includes/update.php', "<?php\n");
+file_put_contents($root . 'wp-admin/includes/class-wp-upgrader.php', "<?php\n");
 define('ABSPATH', $root);
 
 class WP_Filesystem_Base
@@ -25,13 +27,39 @@ function current_user_can($cap): bool { return $GLOBALS['wpconn_file_permissions
 function wp_is_file_mod_allowed($context): bool { return $GLOBALS['wpconn_file_edits_allowed']; }
 function sanitize_text_field($s): string { return trim(strip_tags((string) $s)); }
 function is_multisite(): bool { return false; }
-function is_plugin_active($file): bool { return $file === 'wordpressconnector/wordpressconnector.php'; }
-function get_plugins(): array {
-    return array(
-        'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.7'),
-        'hello-dolly/hello.php'=>array('Name'=>'Hello Dolly','Version'=>'1.7.2'),
-        'sample/sample.php'=>array('Name'=>'Sample','Version'=>'1.0.0'),
-    );
+$GLOBALS['wpconn_plugins'] = array(
+    'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.7'),
+    'hello-dolly/hello.php'=>array('Name'=>'Hello Dolly','Version'=>'1.7.2'),
+    'sample/sample.php'=>array('Name'=>'Sample','Version'=>'1.0.0'),
+);
+$GLOBALS['wpconn_active'] = array('wordpressconnector/wordpressconnector.php' => true);
+function is_plugin_active($file): bool { return ! empty($GLOBALS['wpconn_active'][$file]); }
+function is_plugin_active_for_network($file): bool { return false; }
+function get_plugins(): array { return $GLOBALS['wpconn_plugins']; }
+function wp_clean_plugins_cache($clear = false): void {}
+function activate_plugin($file, $redirect = '', $network = false, $silent = false) {
+    $GLOBALS['wpconn_active'][$file] = true;
+    return null;
+}
+function deactivate_plugins($file, $silent = false, $network = false): void {
+    unset($GLOBALS['wpconn_active'][$file]);
+}
+function delete_plugins($files) {
+    foreach ($files as $file) unset($GLOBALS['wpconn_plugins'][$file]);
+    return true;
+}
+function wp_update_plugins(): void {}
+class Automatic_Upgrader_Skin {}
+class Plugin_Upgrader {
+    public function __construct($skin) {}
+    public function install($url): bool {
+        $GLOBALS['wpconn_plugins']['new-plugin/new-plugin.php']=array('Name'=>'New Plugin','Version'=>'2.4');
+        return true;
+    }
+    public function upgrade($file): bool {
+        $GLOBALS['wpconn_plugins'][$file]['Version']='2.0.0';
+        return true;
+    }
 }
 function get_site_transient($key) {
     if ($key !== 'update_plugins') return false;
@@ -39,6 +67,7 @@ function get_site_transient($key) {
         'response'=>array('sample/sample.php'=>(object) array('new_version'=>'1.1.0')));
 }
 function plugins_api($action, $args = array()) {
+    if ($action === 'plugin_information') return (object) array('download_link'=>'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip');
     if ($action !== 'query_plugins') return new WP_Error();
     return (object) array(
         'info'=>array('results'=>3),
@@ -88,6 +117,37 @@ $fail(static function()use($system){$system->pluginDirectorySearch(array('search
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','token'=>'test'));},'unknown query');
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','per_page'=>1000));},'unbounded query');
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','page'=>0));},'invalid page');
+
+$activate = $system->pluginActivate(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
+if (!is_plugin_active('hello-dolly/hello.php') || empty($activate['readback_verified'])) {
+    throw new RuntimeException('Plugin activation lacked readback proof.');
+}
+$deactivate = $system->pluginDeactivate(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
+if (is_plugin_active('hello-dolly/hello.php') || empty($deactivate['readback_verified'])) {
+    throw new RuntimeException('Plugin deactivation lacked readback proof.');
+}
+$fail(static function() use($system) {
+    $system->pluginDeactivate(array('file'=>'wordpressconnector/wordpressconnector.php'),array('dry_run'=>false));
+},'remote connector self-deactivation');
+$fail(static function() use($system) {
+    $system->pluginUpdate(array('file'=>'wordpressconnector/wordpressconnector.php'),array('dry_run'=>false));
+},'unverified connector self-upgrade');
+$fail(static function() use($system) {
+    $system->pluginDelete(array('file'=>'wordpressconnector/wordpressconnector.php'),array('dry_run'=>false));
+},'connector self-deletion');
+$installed = $system->pluginInstall(array('slug'=>'new-plugin'),array('dry_run'=>false));
+if (empty($installed['readback_verified']) ||
+    !isset(get_plugins()['new-plugin/new-plugin.php'])) {
+    throw new RuntimeException('WordPress.org plugin install was not verified.');
+}
+$updated = $system->pluginUpdate(array('file'=>'sample/sample.php'),array('dry_run'=>false));
+if ($updated['version'] !== '2.0.0' || empty($updated['readback_verified'])) {
+    throw new RuntimeException('Plugin update version change was not read back.');
+}
+$deletedPlugin = $system->pluginDelete(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
+if (isset(get_plugins()['hello-dolly/hello.php']) || empty($deletedPlugin['readback_verified'])) {
+    throw new RuntimeException('Plugin deletion did not verify target absence.');
+}
 
 $fs = new FilesystemAdapter();
 $path = 'wp-content/themes/fixture/assets/new-block.html';
@@ -151,6 +211,8 @@ unlink($root.$path);
 unlink($root.'wp-admin/includes/file.php');
 unlink($root.'wp-admin/includes/plugin.php');
 unlink($root.'wp-admin/includes/plugin-install.php');
+unlink($root.'wp-admin/includes/update.php');
+unlink($root.'wp-admin/includes/class-wp-upgrader.php');
 rmdir($root.'wp-content/themes/fixture/assets');
 rmdir($root.'wp-content/themes/fixture');
 rmdir($root.'wp-content/themes');
