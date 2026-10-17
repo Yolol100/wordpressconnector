@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-apply-354-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "8cd9eaff1458e8ec9b875d2dc610a4c7182af640eaaf503da051ad04b4818e2e",
+  "payload": {
+    "id": 354,
+    "fields": {
+      "description": "ISOHULK EP3 is 3 mm reinforced rubber foam tape with polyester diamond reinforcement, strong adhesion and custom sizes. Ask about IMO MED specifications."
+    }
+  }
+}
