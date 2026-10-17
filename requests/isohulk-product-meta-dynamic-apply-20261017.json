@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-product-meta-dynamic-apply-20261017",
+  "action": "yoast.templates.update",
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "23feb85a632d703e0cdbba4d593de2e44a9e1c626275dbcb2138b42ab5ab8101",
+  "payload": {
+    "fields": {
+      "product_description": "%%excerpt%% %%sep%% ISOHULK"
+    }
+  }
+}
