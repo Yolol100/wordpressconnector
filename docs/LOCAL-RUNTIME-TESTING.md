@@ -25,7 +25,7 @@ The isolated Docker check runs for changes in relevant paths on pull requests, a
 
 ## Evidence and limitations
 
-- This proves only activation, basic WordPress runtime boot, route registration, and the anonymous HTTP denial in the disposable environment.
+- In addition to bootstrap, REST-route and anonymous HTTP/HTTPS denial, the Docker smoke now installs a **disposable verified ZIP** through the real WordPress plugin upgrader, verifies `register_activation_hook()` execution, deactivates/reactivates the installed plugin, creates and deletes a confirmed browser-active HTML asset, and cleans up the temporary plugin. This is isolated Docker WordPress/MySQL proof, **not** live hosting, managed WAF, multisite or production deployment proof.
 - The real presence endpoint is **HTTPS-only**. Do not weaken that check or claim the local HTTP test proves authenticated HTTPS access.
 - This does **not** prove production WordPress connectivity, GitHub OIDC signatures, Elementor/WooCommerce integration, production writes, deployment, rollback, or release compatibility across all declared PHP and WordPress versions.
 - No production credentials, contact data, site URL, or request payloads are needed. Test failures block this new runtime gate but must not silently change existing trusted executor permissions.
