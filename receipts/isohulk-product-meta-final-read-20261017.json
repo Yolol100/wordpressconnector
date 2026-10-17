@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-product-meta-final-read-20261017",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T17:02:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%title%% %%sep%% ISOHULK",
+        "product_category_title": "%%title%% %%sep%% ISOHULK"
+    },
+    "product_templates": {
+        "product_title": "%%title%% %%sep%% ISOHULK",
+        "product_description": "%%excerpt%% %%sep%% ISOHULK"
+    },
+    "before_fingerprint": "51816063c4adcc0c3835090b3b9c6398b86192b8739482663584f74d6e4df162",
+    "readback_verified": null
+}
