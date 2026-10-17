@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-seo-excerpts-audit-20261017",
+  "action": "connector.read_batch",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 13
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 14
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 15
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 16
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 17
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 251
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 252
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 253
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 254
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 256
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 264
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 3
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 12
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 22
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 32
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 38
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 51
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 58
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 355
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 354
+        }
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 353
+        }
+      }
+    ]
+  }
+}
