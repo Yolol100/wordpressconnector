@@ -15,6 +15,7 @@ $cleanupCurrentSite = static function (): void {
         'wpconnector_allow_system_updates',
         'wpconnector_allow_filesystem_writes',
         'wpconnector_mutation_lock',
+        'wpconnector_github_oidc_site_pairing_v1',
     ) as $option) {
         delete_option($option);
     }
