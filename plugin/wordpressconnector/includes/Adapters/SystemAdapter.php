@@ -31,7 +31,8 @@ final class SystemAdapter
         $registry->register('role.update', array($this, 'roleUpdate'), $privileged + array('mutation' => true, 'capability' => 'promote_users', 'description' => 'Add or remove capabilities from a role.'));
         $registry->register('role.delete', array($this, 'roleDelete'), $privileged + array('mutation' => true, 'capability' => 'promote_users', 'description' => 'Delete a WordPress role.'));
 
-        $registry->register('plugin.list', array($this, 'pluginList'), $privileged + array('capability' => 'activate_plugins', 'description' => 'List installed plugins and activation state.'));
+        $registry->register('plugin.list', array($this, 'pluginList'), $privileged + array('capability' => 'activate_plugins', 'description' => 'List installed plugins with activation, available update state and permitted actions.'));
+        $registry->register('plugin.directory.search', array($this, 'pluginDirectorySearch'), $privileged + array('capability' => 'install_plugins', 'description' => 'Search the official WordPress.org plugin directory for bounded install candidates.'));
         $registry->register('plugin.activate', array($this, 'pluginActivate'), $privileged + array('mutation' => true, 'capability' => 'activate_plugins', 'description' => 'Activate an installed plugin.'));
         $registry->register('plugin.deactivate', array($this, 'pluginDeactivate'), $privileged + array('mutation' => true, 'capability' => 'activate_plugins', 'description' => 'Deactivate an installed plugin.'));
         $registry->register('plugin.install', array($this, 'pluginInstall'), $systemUpdate + array('capability' => 'install_plugins', 'description' => 'Install a plugin from WordPress.org by slug.'));
@@ -76,6 +77,11 @@ final class SystemAdapter
             'elementor' => class_exists('Elementor\\Plugin'),
             'acf' => function_exists('get_fields'),
             'multisite' => is_multisite(),
+            'file_modifications_allowed' => function_exists('wp_is_file_mod_allowed') ? wp_is_file_mod_allowed('plugin_update') : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS),
+            'file_editor_disabled' => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT,
+            'file_modifications_disabled' => defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS,
+            'plugin_update_permission' => current_user_can('update_plugins'),
+            'plugin_install_permission' => current_user_can('install_plugins'),
         );
         $checks['ok'] = $checks['wordpress_bootstrap'] && $checks['database'];
         return $checks;
@@ -257,11 +263,109 @@ final class SystemAdapter
     public function pluginList(): array
     {
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $transient = get_site_transient('update_plugins');
+        $offers = is_object($transient) && isset($transient->response) && is_array($transient->response)
+            ? $transient->response : array();
+        $checkedAt = is_object($transient) && isset($transient->last_checked)
+            ? (int) $transient->last_checked : 0;
+        $canModify = function_exists('wp_is_file_mod_allowed')
+            ? wp_is_file_mod_allowed('plugin_update')
+            : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS);
         $items = array();
         foreach (get_plugins() as $file => $data) {
-            $items[] = array('file' => $file, 'name' => $data['Name'] ?? $file, 'version' => $data['Version'] ?? '', 'active' => is_plugin_active($file), 'network_active' => is_multisite() ? is_plugin_active_for_network($file) : false);
+            $network = is_multisite() ? is_plugin_active_for_network($file) : false;
+            $active = is_plugin_active($file) || $network;
+            $offer = $offers[$file] ?? null;
+            $newVersion = is_object($offer) ? ($offer->new_version ?? $offer->version ?? null)
+                : (is_array($offer) ? ($offer['new_version'] ?? $offer['version'] ?? null) : null);
+            $isConnector = 'wordpressconnector/wordpressconnector.php' === $file;
+            $items[] = array(
+                'file' => $file,
+                'name' => sanitize_text_field((string) ($data['Name'] ?? $file)),
+                'version' => (string) ($data['Version'] ?? ''),
+                'active' => $active,
+                'network_active' => $network,
+                'update_available' => $checkedAt > 0 ? (null !== $newVersion) : null,
+                'available_version' => is_string($newVersion) ? $newVersion : null,
+                'can_activate' => ! $active && current_user_can('activate_plugins'),
+                'can_deactivate' => $active && ! $network && ! $isConnector && current_user_can('activate_plugins'),
+                'can_update' => $canModify && current_user_can('update_plugins'),
+                'can_delete' => ! $active && ! $isConnector && $canModify && current_user_can('delete_plugins'),
+            );
         }
-        return array('plugins' => $items);
+        return array(
+            'plugins' => $items,
+            'updates_checked_gmt' => $checkedAt > 0 ? gmdate('c', $checkedAt) : null,
+            'update_state' => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+            'update_listing_is_not_an_install_or_health_test' => true,
+        );
+    }
+
+    public function pluginDirectorySearch(array $payload, array $context = array()): array
+    {
+        if (array_diff(array_keys($payload), array('search', 'page', 'per_page'))) {
+            throw new RuntimeException('Plugin directory search accepts only search, page and per_page.');
+        }
+        $search = isset($payload['search']) && is_string($payload['search'])
+            ? trim(sanitize_text_field($payload['search'])) : '';
+        if (strlen($search) < 2 || strlen($search) > 70 || preg_match('/[\x00-\x1F\x7F<>]/', $search)) {
+            throw new RuntimeException('Plugin directory query must contain 2–70 plain-text bytes.');
+        }
+        $page = isset($payload['page']) && is_int($payload['page']) ? $payload['page'] : 1;
+        $limit = isset($payload['per_page']) && is_int($payload['per_page']) ? $payload['per_page'] : 10;
+        if ($page < 1 || $page > 20 || $limit < 1 || $limit > 20) {
+            throw new RuntimeException('Plugin directory pagination is out of bounds.');
+        }
+        require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
+        $result = plugins_api('query_plugins', array(
+            'search' => $search,
+            'page' => $page,
+            'per_page' => $limit,
+            'fields' => array('sections' => false, 'description' => false, 'short_description' => true),
+        ));
+        if (is_wp_error($result) || ! is_object($result) || ! isset($result->plugins) || ! is_array($result->plugins)) {
+            throw new RuntimeException(is_wp_error($result) ? $result->get_error_message()
+                : 'WordPress.org plugin directory could not be queried.');
+        }
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $installed = get_plugins();
+        $items = array();
+        foreach (array_slice($result->plugins, 0, $limit) as $plugin) {
+            if (! is_object($plugin)) {
+                continue;
+            }
+            $slug = isset($plugin->slug) ? (string) $plugin->slug : '';
+            if (! preg_match('/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug)) {
+                continue;
+            }
+            $matches = array();
+            foreach ($installed as $file => $meta) {
+                if (dirname($file) === $slug || $file === $slug . '.php') {
+                    $matches[] = $file;
+                }
+            }
+            $items[] = array(
+                'slug' => $slug,
+                'name' => sanitize_text_field((string) ($plugin->name ?? $slug)),
+                'version' => sanitize_text_field((string) ($plugin->version ?? '')),
+                'short_description' => substr(sanitize_text_field((string) ($plugin->short_description ?? '')), 0, 240),
+                'requires' => sanitize_text_field((string) ($plugin->requires ?? '')),
+                'requires_php' => sanitize_text_field((string) ($plugin->requires_php ?? '')),
+                'tested' => sanitize_text_field((string) ($plugin->tested ?? '')),
+                'active_installs' => isset($plugin->active_installs) ? (int) $plugin->active_installs : null,
+                'already_installed' => ! empty($matches),
+                'installed_plugin_files' => $matches,
+                'directory_url' => 'https://wordpress.org/plugins/' . $slug . '/',
+            );
+        }
+        return array(
+            'source' => 'WordPress.org plugins_api (filterable by installed plugins)',
+            'query' => $search,
+            'page' => $page,
+            'plugins' => $items,
+            'results_total' => isset($result->info['results']) ? (int) $result->info['results'] : null,
+            'read_only' => true,
+        );
     }
 
     public function pluginActivate(array $payload, array $context): array
