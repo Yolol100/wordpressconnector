@@ -77,7 +77,7 @@ final class YoastSnippetAdapter
     /** Shared server-side validation; request/runner also validate independently. */
     public static function validateFields($fields, bool $restore = false): array
     {
-        if (! is_array($fields) || ! $fields || count($fields) > 2 || array_is_list($fields)) {
+        if (! is_array($fields) || ! $fields || count($fields) > 2 || array_keys($fields) === range(0, count($fields) - 1)) {
             throw new RuntimeException('Snippet fields must be a nonempty title/description object.');
         }
         $validated = array();
