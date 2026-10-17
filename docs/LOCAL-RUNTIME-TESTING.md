@@ -19,7 +19,7 @@ wp-env run cli wp eval 'if (!defined("WPCONNECTOR_VERSION")) { WP_CLI::error("Co
 wp-env destroy --force
 ```
 
-The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.2 / PHP 8.3 environment. The GitHub workflow also checks the registration of three expected REST routes and verifies anonymous HTTP requests to `/presence` fail closed with 403.
+The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.2 / PHP 8.3 environment. The GitHub workflow also checks three expected REST routes. Four unauthenticated HTTP route probes must return 403. With HTTPS simulated **inside the isolated WP-CLI test only**, public `/presence` must return 200 while `/health`, `/assets`, and `/execute` require authentication (401). Simulated HTTPS is not a real network/TLS transport test.
 
 ## Evidence and limitations
 
