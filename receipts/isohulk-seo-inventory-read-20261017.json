@@ -1,0 +1,513 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-seo-inventory-read-20261017",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-17T16:56:43+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 264,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Categories",
+                    "slug": "categories",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/categories/"
+                },
+                {
+                    "id": 256,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Sitemap",
+                    "slug": "sitemap",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/sitemap/"
+                },
+                {
+                    "id": 254,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Quotation Request",
+                    "slug": "thank-you-quotation",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-quotation/"
+                },
+                {
+                    "id": 253,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Message",
+                    "slug": "thank-you-message",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/"
+                },
+                {
+                    "id": 252,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Request a Quotation",
+                    "slug": "request-a-quote",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/"
+                },
+                {
+                    "id": 251,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Terms & Conditions",
+                    "slug": "terms-and-conditions",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/terms-and-conditions/"
+                },
+                {
+                    "id": 17,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Contact",
+                    "slug": "contact",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/contact/"
+                },
+                {
+                    "id": 16,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "About Us",
+                    "slug": "about-us",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/about-us/"
+                },
+                {
+                    "id": 15,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Custom Solutions",
+                    "slug": "custom-solutions",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/custom-solutions/"
+                },
+                {
+                    "id": 14,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Products",
+                    "slug": "products",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/products/"
+                },
+                {
+                    "id": 13,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Home",
+                    "slug": "home",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/"
+                },
+                {
+                    "id": 12,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Refund & Returns Policy",
+                    "slug": "refund-returns-policy",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/refund-returns-policy/"
+                },
+                {
+                    "id": 3,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Privacy Policy",
+                    "slug": "privacy-policy",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/privacy-policy/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 25,
+            "total": 13,
+            "pages": 1
+        },
+        {
+            "index": 1,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 1,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Hello world!",
+                    "slug": "hello-world",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/hello-world/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 25,
+            "total": 1,
+            "pages": 1
+        },
+        {
+            "index": 2,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 355,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® PK1 – Extreme Strength. Economical.",
+                    "slug": "isohulk-pk1-extreme-strength-economical",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-pk1-extreme-strength-economical/"
+                },
+                {
+                    "id": 354,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® EP3 – Reinforced Rubber Foam Tape",
+                    "slug": "isohulk-ep3-reinforced-rubber-foam-tape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-ep3-reinforced-rubber-foam-tape/"
+                },
+                {
+                    "id": 353,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® PP-25 Metallized PP Tape",
+                    "slug": "isohulk-pp-25-metallized-pp-tape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-pp-25-metallized-pp-tape/"
+                },
+                {
+                    "id": 58,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Spray Adhesive – 500 ml",
+                    "slug": "spray-adhesive-500ml",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/spray-adhesive-500ml/"
+                },
+                {
+                    "id": 57,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PET Strapping Band",
+                    "slug": "pet-omsnoeringsband",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pet-omsnoeringsband/"
+                },
+                {
+                    "id": 56,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Polyester Strapping Band",
+                    "slug": "polyester-omsnoeringsband",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/polyester-omsnoeringsband/"
+                },
+                {
+                    "id": 55,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Paper Strapping Band",
+                    "slug": "papieren-omsnoeringsband",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/papieren-omsnoeringsband/"
+                },
+                {
+                    "id": 54,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PP Strapping Band",
+                    "slug": "pp-omsnoeringsband",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pp-omsnoeringsband/"
+                },
+                {
+                    "id": 53,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Pallet Top Sheets",
+                    "slug": "topvellen-pallets",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/topvellen-pallets/"
+                },
+                {
+                    "id": 52,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Three-Layer Bubble Wrap – 100 µm",
+                    "slug": "luchtkussenfolie-noppenfolie",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/luchtkussenfolie-noppenfolie/"
+                },
+                {
+                    "id": 51,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Machine Stretch Film – 500 mm × 1500 m × 23 µm (350%)",
+                    "slug": "machinewikkelfolie-350-23my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-350-23my/"
+                },
+                {
+                    "id": 50,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 23 µm",
+                    "slug": "rekfolie-plus-500-300-23my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-23my/"
+                },
+                {
+                    "id": 49,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 17 µm",
+                    "slug": "rekfolie-plus-500-300-17my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-17my/"
+                },
+                {
+                    "id": 48,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PLUS Hand Stretch Film – 500 mm × 300 m × 20 µm",
+                    "slug": "rekfolie-plus-500-300-20my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/rekfolie-plus-500-300-20my/"
+                },
+                {
+                    "id": 47,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Premium Weatherproof Thermal Jacketing Film",
+                    "slug": "weatherproof-thermal-jacketing-film",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/weatherproof-thermal-jacketing-film/"
+                },
+                {
+                    "id": 46,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Fibreglass Cloth Foil – 430/m²",
+                    "slug": "fibre-glass-cloth-foil-430-m2",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/fibre-glass-cloth-foil-430-m2/"
+                },
+                {
+                    "id": 45,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Diamond-Reinforced Aluminium Foil",
+                    "slug": "aluminum-foil-reinforced",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminum-foil-reinforced/"
+                },
+                {
+                    "id": 44,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Scrim-Reinforced Aluminium Foil",
+                    "slug": "aluminium-foil-scrim-reinforced",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-foil-scrim-reinforced/"
+                },
+                {
+                    "id": 43,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Pure Aluminium Foil",
+                    "slug": "pure-aluminum-foil",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pure-aluminum-foil/"
+                },
+                {
+                    "id": 42,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Glossy Non-Adhesive PVC Pipe Wrapping Tape",
+                    "slug": "pvc-pipe-wrapping-shiny-no-adhesive",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pvc-pipe-wrapping-shiny-no-adhesive/"
+                },
+                {
+                    "id": 41,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Washi Masking Tape – Lilac Low Tack",
+                    "slug": "washi-masking-lila-low-tack",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-lila-low-tack/"
+                },
+                {
+                    "id": 40,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Washi Masking Tape – Gold, 3-Month UV",
+                    "slug": "washi-masking-gold-3-months-uv",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-gold-3-months-uv/"
+                },
+                {
+                    "id": 39,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Washi Masking Tape – Gold + Foil",
+                    "slug": "washi-masking-tape-gold-foil",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/washi-masking-tape-gold-foil/"
+                },
+                {
+                    "id": 38,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Waterproof Duct Tape",
+                    "slug": "duct-tape-waterproof",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/duct-tape-waterproof/"
+                },
+                {
+                    "id": 37,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Double-Sided Adhesive Tape",
+                    "slug": "dubbelzijdige-tape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/dubbelzijdige-tape/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 25,
+            "total": 43,
+            "pages": 2
+        },
+        {
+            "index": 3,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 36,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Blue Marine Masking Tape – 14-Day UV",
+                    "slug": "blue-masking-marine-tape-14-days-uv",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/blue-masking-marine-tape-14-days-uv/"
+                },
+                {
+                    "id": 35,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Double-Sided Foam Tape",
+                    "slug": "dubbelzijdig-foam-tape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/dubbelzijdig-foam-tape/"
+                },
+                {
+                    "id": 34,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® GM3 – Extreme Strength. IMO Marine MED Certified.",
+                    "slug": "glass-cloth-tape-marine-gm3",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/glass-cloth-tape-marine-gm3/"
+                },
+                {
+                    "id": 33,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Elastomeric Arma Foam Insulation Tape",
+                    "slug": "elastomeer-arma-foam-tape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/elastomeer-arma-foam-tape/"
+                },
+                {
+                    "id": 32,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Reinforced Aluminium Tape",
+                    "slug": "aluminiumtape-reinforced",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-reinforced/"
+                },
+                {
+                    "id": 31,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "High-Temperature Aluminium Tape – 300°C",
+                    "slug": "aluminiumtape-hittebestendig-300-graden",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-hittebestendig-300-graden/"
+                },
+                {
+                    "id": 30,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® 38CWR/SK – Extreme Strength. IMO Marine MED Certified.",
+                    "slug": "isohulk-aluminium-fsk-tape-imo",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminium-fsk-tape-imo/"
+                },
+                {
+                    "id": 29,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Cardboard Edge Protectors – Pack of 50",
+                    "slug": "kartonnen-hoekprofielen-bundel-50",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/kartonnen-hoekprofielen-bundel-50/"
+                },
+                {
+                    "id": 28,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Machine Stretch Film Power 300% – 500 mm × 1500 m × 23 µm",
+                    "slug": "machinewikkelfolie-power-300-23my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-300-23my/"
+                },
+                {
+                    "id": 27,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Machine Stretch Film Power 300% – 500 mm × 1800 m × 20 µm",
+                    "slug": "machinewikkelfolie-power-300-20my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-300-20my/"
+                },
+                {
+                    "id": 26,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Machine Stretch Film Power 250% – 500 mm × 2000 m × 17 µm",
+                    "slug": "machinewikkelfolie-power-250-17my",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/machinewikkelfolie-power-250-17my/"
+                },
+                {
+                    "id": 25,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® FT1 – Extreme Strength. Sharp in Price",
+                    "slug": "filament-tape-lengteversterkt",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/filament-tape-lengteversterkt/"
+                },
+                {
+                    "id": 24,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® BL38 – Extreme Strength. With a tough black finishing touch!",
+                    "slug": "aluminiumtape-zwart-aw",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-zwart-aw/"
+                },
+                {
+                    "id": 23,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "PP-Coated Aluminium Tape",
+                    "slug": "pp-aluminiumtape-opgedampt",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/pp-aluminiumtape-opgedampt/"
+                },
+                {
+                    "id": 22,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Aluminium Butyl Waterproof Repair Tape",
+                    "slug": "aluminium-butyl-reparatietape",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminium-butyl-reparatietape/"
+                },
+                {
+                    "id": 21,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK Aluminium Tracing Tape IMO",
+                    "slug": "isohulk-aluminium-tracing-tape-imo",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminium-tracing-tape-imo/"
+                },
+                {
+                    "id": 20,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "ISOHULK® IMO Aluminium Foil Tape – Paper or Plastic Liner",
+                    "slug": "isohulk-aluminiumtape-aw-imo",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/isohulk-aluminiumtape-aw-imo/"
+                },
+                {
+                    "id": 19,
+                    "type": "product",
+                    "status": "publish",
+                    "title": "Aluminium Tape – Cold Weather",
+                    "slug": "aluminiumtape-cold-weather",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/product/aluminiumtape-cold-weather/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 2,
+            "per_page": 25,
+            "total": 43,
+            "pages": 2
+        }
+    ],
+    "readback_verified": null
+}
