@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-preview-355-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 355,
+    "fields": {
+      "description": "ISOHULK PK1 packaging tape combines high tensile strength with high-tack adhesion. Available in printed-logo or low-noise clear versions and custom sizes."
+    }
+  }
+}
