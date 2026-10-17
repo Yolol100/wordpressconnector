@@ -94,7 +94,7 @@ The public dry-run writes only a sanitized receipt to GitHub. Use its `before_fi
 
 - New plugin: use `overwrite:false`. The exact plugin must not already be installed and its destination directory must not already exist.
 - Existing custom/private plugin replacement: use `overwrite:true`. `expected_plugin` must already be installed and the caller must have `update_plugins`.
-- `activate:true, network_wide:false` ensures normal activation.
+- `activate:true, network_wide:false` performs **normal**, non-silent activation, including WordPress `register_activation_hook()` callbacks when the plugin was previously inactive. An already-active plugin is not reactivated during a package overwrite. Require permission checks and verify activation state afterward.
 - `activate:true, network_wide:true` ensures network activation on multisite, even if the plugin was already active only on the current site.
 - WordPress Connector itself cannot be replaced through this generic action. Connector self-update uses the dedicated `connector.update.check` / `connector.update.apply` path pinned to canonical `Yolol100/wordpressconnector` releases.
 
