@@ -378,20 +378,36 @@ final class SystemAdapter
         $before = is_plugin_active($file);
         $networkWide = Input::bool($payload, 'network_wide');
         if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => true, 'network_wide' => $networkWide, '_current_fingerprint' => Fingerprint::make($before));
+        if ($networkWide && (! is_multisite() || ! current_user_can('manage_network_plugins'))) {
+            throw new RuntimeException('Network-wide plugin activation requires network plugin administrator permission.');
+        }
         $result = activate_plugin($file, '', $networkWide, true);
         if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
-        return array('file' => $file, 'active' => true, '_rollback' => array('action' => 'plugin.deactivate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)));
+        $activeNow = $networkWide && is_multisite() ? is_plugin_active_for_network($file) : is_plugin_active($file);
+        if (! $activeNow) throw new RuntimeException('Plugin activation did not persist; check plugin requirements or security restrictions.');
+        return array('file' => $file, 'active' => true, 'readback_verified' => true, '_rollback' => array('action' => 'plugin.deactivate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)));
     }
 
     public function pluginDeactivate(array $payload, array $context): array
     {
         $file = $this->pluginFile($payload);
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        $before = is_plugin_active($file);
+        if ('wordpressconnector/wordpressconnector.php' === $file) {
+            throw new RuntimeException('The Connector cannot deactivate its own management connection; use WordPress admin for intentional removal.');
+        }
         $networkWide = Input::bool($payload, 'network_wide');
+        if ($networkWide && (! is_multisite() || ! current_user_can('manage_network_plugins'))) {
+            throw new RuntimeException('Network plugin deactivation requires network plugin administrator permission.');
+        }
+        if (! $networkWide && is_multisite() && is_plugin_active_for_network($file)) {
+            throw new RuntimeException('Network-activated plugins must be managed by the network administrator.');
+        }
+        $before = $networkWide && is_multisite() ? is_plugin_active_for_network($file) : is_plugin_active($file);
         if (! empty($context['dry_run'])) return array('before_active' => $before, 'after_active' => false, 'network_wide' => $networkWide, '_current_fingerprint' => Fingerprint::make($before));
         deactivate_plugins($file, false, $networkWide);
-        return array('file' => $file, 'active' => false, '_rollback' => $before ? array('action' => 'plugin.activate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)) : null);
+        $stillActive = $networkWide && is_multisite() ? is_plugin_active_for_network($file) : is_plugin_active($file);
+        if ($stillActive) throw new RuntimeException('Plugin deactivation did not persist; check dependency or security policy.');
+        return array('file' => $file, 'active' => false, 'readback_verified' => true, '_rollback' => $before ? array('action' => 'plugin.activate', 'payload' => array('file' => $file, 'network_wide' => $networkWide)) : null);
     }
 
     public function pluginInstall(array $payload, array $context): array
@@ -406,31 +422,57 @@ final class SystemAdapter
         $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
         $installed = $upgrader->install($api->download_link);
         if (true !== $installed) throw new RuntimeException('Plugin installation failed.');
-        return array('installed' => $slug, 'rollback_supported' => false);
+        wp_clean_plugins_cache(true);
+        require_once ABSPATH . 'wp-admin/includes/plugin.php';
+        $installedFiles = array();
+        foreach (get_plugins() as $installedFile => $pluginData) {
+            if (dirname($installedFile) === $slug || $installedFile === $slug . '.php') {
+                $installedFiles[] = $installedFile;
+            }
+        }
+        if (! $installedFiles) throw new RuntimeException('Plugin installer returned success, but the requested WordPress.org slug was not found afterward.');
+        return array('installed' => $slug, 'installed_files' => $installedFiles, 'readback_verified' => true, 'rollback_supported' => false);
     }
 
     public function pluginUpdate(array $payload, array $context): array
     {
         $file = $this->pluginFile($payload);
-        if (! empty($context['dry_run'])) return array('would_update' => $file, '_current_fingerprint' => Fingerprint::make($this->pluginVersion($file)));
+        if ('wordpressconnector/wordpressconnector.php' === $file) {
+            throw new RuntimeException('Update WordPress Connector through connector.update.apply or the verified native Plugins updater.');
+        }
+        $previousVersion = $this->pluginVersion($file);
+        if (! empty($context['dry_run'])) return array('would_update' => $file, '_current_fingerprint' => Fingerprint::make($previousVersion));
         require_once ABSPATH . 'wp-admin/includes/update.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         wp_update_plugins();
         $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($file);
         if (false === $updated || is_wp_error($updated)) throw new RuntimeException(is_wp_error($updated) ? $updated->get_error_message() : 'Plugin update failed or no update is available.');
-        return array('updated' => $file, 'version' => $this->pluginVersion($file), 'rollback_supported' => false);
+        wp_clean_plugins_cache(true);
+        $version = $this->pluginVersion($file);
+        if (! version_compare($version, $previousVersion, '>')) {
+            throw new RuntimeException('Plugin update could not be verified: installed version did not increase.');
+        }
+        return array('updated' => $file, 'version' => $version, 'readback_verified' => true, 'rollback_supported' => false);
     }
 
     public function pluginDelete(array $payload, array $context): array
     {
         $file = $this->pluginFile($payload);
+        if ('wordpressconnector/wordpressconnector.php' === $file) {
+            throw new RuntimeException('The Connector cannot delete its own management connection.');
+        }
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
-        if (is_plugin_active($file)) throw new RuntimeException('Plugin must be inactive before deletion.');
+        if (is_plugin_active($file) || (is_multisite() && is_plugin_active_for_network($file))) {
+            throw new RuntimeException('Plugin must be inactive before deletion.');
+        }
         if (! empty($context['dry_run'])) return array('would_delete' => $file, '_current_fingerprint' => Fingerprint::make($this->pluginVersion($file)));
         $deleted = delete_plugins(array($file));
         if (is_wp_error($deleted)) throw new RuntimeException($deleted->get_error_message());
-        return array('deleted' => $file, 'rollback_supported' => false);
+        if (true !== $deleted) throw new RuntimeException('WordPress could not complete plugin deletion; filesystem credentials or server permission may be required.');
+        wp_clean_plugins_cache(true);
+        if (isset(get_plugins()[$file])) throw new RuntimeException('Plugin deletion did not persist: plugin still appears in WordPress inventory.');
+        return array('deleted' => $file, 'readback_verified' => true, 'rollback_supported' => false);
     }
 
     public function themeList(): array
