@@ -113,6 +113,89 @@ jobs:
             }
             WP_CLI::success("Eight anonymous HTTP/HTTPS REST gate probes passed");
           '
+      - name: Verify plugin install hooks, lifecycle and confirmed asset writes on real WordPress
+        run: |
+          wp-env run cli wp eval '
+            if (!class_exists("ZipArchive")) {
+              WP_CLI::error("ZipArchive is required for verified plugin package management.");
+            }
+            $admins = get_users(array("role" => "administrator", "number" => 1));
+            if (!$admins) WP_CLI::error("Disposable WordPress has no administrator.");
+            wp_set_current_user((int) $admins[0]->ID);
+
+            $name = "wpconnector-runtime-fixture";
+            $file = $name . "/fixture.php";
+            $root = WP_PLUGIN_DIR . "/" . $name;
+            $assetRoot = WP_CONTENT_DIR . "/uploads/wpconnector-qa-assets";
+            wp_mkdir_p($assetRoot . "/plugin-packages");
+            $package = $assetRoot . "/plugin-packages/" . $name . ".zip";
+            $fixture = "<?php\n/*\nPlugin Name: Connector Runtime Fixture\nVersion: 1.0.0\n*/\nregister_activation_hook(__FILE__, static function () { update_option(\"wpconnector_qa_activation_count\", 1 + (int) get_option(\"wpconnector_qa_activation_count\", 0)); });\n";
+            $archive = new ZipArchive();
+            if ($archive->open($package, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+              WP_CLI::error("Could not build disposable test package.");
+            }
+            $archive->addFromString($file, $fixture);
+            $archive->close();
+
+            $pluginAdapter = new \Webactueel\WordPressConnector\Adapters\PluginPackageAdapter();
+            $system = new \Webactueel\WordPressConnector\Adapters\SystemAdapter();
+            $files = new \Webactueel\WordPressConnector\Adapters\FilesystemAdapter();
+            delete_option("wpconnector_qa_activation_count");
+            $payload = array("source_path" => "plugin-packages/" . $name . ".zip",
+              "sha256" => hash_file("sha256", $package), "expected_plugin" => $file,
+              "overwrite" => false, "activate" => true, "network_wide" => false);
+            $context = array("asset_root" => $assetRoot, "dry_run" => false);
+            $preview = $pluginAdapter->installPackage($payload, array("asset_root" => $assetRoot, "dry_run" => true));
+            if (empty($preview["would_install_package"])) WP_CLI::error("Package dry-run failed.");
+            $done = $pluginAdapter->installPackage($payload, $context);
+            if (!is_plugin_active($file) || (int) get_option("wpconnector_qa_activation_count") !== 1 ||
+                empty($done["after"]["active"])) {
+              WP_CLI::error("Verified ZIP installation skipped real activation hooks.");
+            }
+
+            $d = $system->pluginDeactivate(array("file" => $file), array("dry_run" => false));
+            if (empty($d["readback_verified"]) || is_plugin_active($file)) WP_CLI::error("Plugin deactivation failed.");
+            $a = $system->pluginActivate(array("file" => $file), array("dry_run" => false));
+            if (empty($a["readback_verified"]) || (int) get_option("wpconnector_qa_activation_count") !== 2) {
+              WP_CLI::error("Normal plugin activation did not execute the registered hook.");
+            }
+
+            wp_mkdir_p($root . "/assets");
+            $relative = "wp-content/plugins/" . $name . "/assets/demo.html";
+            $content = "<section>Safe disposable QA asset</section>";
+            $plan = $files->createText(array("path" => $relative, "content" => $content), array("dry_run" => true));
+            if (empty($plan["requires_active_content_acknowledgement"])) {
+              WP_CLI::error("Browser-active asset was not identified in preview.");
+            }
+            try {
+              $files->createText(array("path" => $relative, "content" => $content), array("dry_run" => false));
+              WP_CLI::error("Unacknowledged active HTML creation was incorrectly allowed.");
+            } catch (\RuntimeException $expected) {
+              // Explicit approval is required before creating browser-active code.
+            }
+            $c = $files->createText(array("path" => $relative, "content" => $content,
+              "acknowledge_active_content" => true), array("dry_run" => false));
+            if (empty($c["after"]["sha256"]) || file_get_contents(ABSPATH . $relative) !== $content) {
+              WP_CLI::error("Created HTML asset did not pass live readback.");
+            }
+            $del = $files->deleteText(array("path" => $relative,
+              "expected_sha256" => hash("sha256", $content), "acknowledge_active_content" => true),
+              array("dry_run" => false));
+            if (file_exists(ABSPATH . $relative) || ($del["_rollback"]["action"] ?? "") !== "filesystem.create_text") {
+              WP_CLI::error("Guarded HTML asset deletion or rollback evidence failed.");
+            }
+
+            $system->pluginDeactivate(array("file" => $file), array("dry_run" => false));
+            $removed = $system->pluginDelete(array("file" => $file), array("dry_run" => false));
+            if (empty($removed["readback_verified"]) || isset(get_plugins()[$file])) {
+              WP_CLI::error("Disposable plugin delete failed readback.");
+            }
+            delete_option("wpconnector_qa_activation_count");
+            @unlink($package);
+            @rmdir($assetRoot . "/plugin-packages");
+            @rmdir($assetRoot);
+            WP_CLI::success("Real WordPress ZIP install, hook execution, activate/deactivate, HTML creation/deletion and plugin removal verified.");
+          '
       - name: Docker diagnostics on failure
         if: failure()
         run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'

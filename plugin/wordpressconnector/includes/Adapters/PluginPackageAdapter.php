@@ -45,6 +45,15 @@ final class PluginPackageAdapter
 
         $candidate = $assetRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $sourcePath);
         $package = Policy::assertLocalAssetPath($candidate, $assetRoot);
+        // Core's WP_Upgrader::unpack_package() clears wp-content/upgrade
+        // before extraction. A ZIP stored there would be deleted mid-install.
+        if (defined('WP_CONTENT_DIR')) {
+            $contentDir = realpath(WP_CONTENT_DIR);
+            if (false !== $contentDir && 0 === strpos($package,
+                rtrim($contentDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'upgrade' . DIRECTORY_SEPARATOR)) {
+                throw new RuntimeException('Plugin ZIP is in WordPress upgrade scratch storage, which Core clears during installation; upload it to the trusted asset store outside wp-content/upgrade.');
+            }
+        }
         if ('zip' !== strtolower((string) pathinfo($package, PATHINFO_EXTENSION))) {
             throw new RuntimeException('Plugin package must be a ZIP file.');
         }
@@ -128,7 +137,12 @@ final class PluginPackageAdapter
             throw new RuntimeException($result->get_error_message());
         }
         if (true !== $result) {
-            throw new RuntimeException('Plugin package installation failed.');
+            $errors = isset($upgrader->skin) && method_exists($upgrader->skin, 'get_errors')
+                ? $upgrader->skin->get_errors() : null;
+            $details = is_wp_error($errors) ? (array) $errors->get_error_messages() : array();
+            $message = $details ? substr(sanitize_text_field(implode('; ', $details)), 0, 280)
+                : 'WordPress Core upgrader returned an unsuccessful result; verify filesystem, target directory and host restrictions.';
+            throw new RuntimeException('Plugin package installation failed: ' . $message);
         }
 
         wp_clean_plugins_cache(true);
@@ -142,7 +156,9 @@ final class PluginPackageAdapter
                 ? ! is_plugin_active_for_network($expectedPlugin)
                 : ! is_plugin_active($expectedPlugin);
             if ($needsActivation) {
-                $activated = activate_plugin($expectedPlugin, '', $networkWide, true);
+                // This is a user-requested fresh activation, not a silent Core upgrade.
+                // Third-party install hooks must run exactly as in wp-admin.
+                $activated = activate_plugin($expectedPlugin, '', $networkWide, false);
                 if (is_wp_error($activated)) {
                     throw new RuntimeException($activated->get_error_message());
                 }
@@ -156,6 +172,9 @@ final class PluginPackageAdapter
         }
 
         $after = $this->snapshot($expectedPlugin, $afterPlugins);
+        if ($activate && ! ($networkWide ? $after['network_active'] : $after['active'])) {
+            throw new RuntimeException('Plugin was installed but activation did not persist; investigate the activation hook and server restrictions.');
+        }
         return array(
             'operation' => $overwrite ? 'updated' : 'installed',
             'package' => $plan,

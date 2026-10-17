@@ -29,16 +29,19 @@ function sanitize_text_field($s): string { return trim(strip_tags((string) $s));
 function sanitize_key($s): string { return preg_replace('/[^a-z0-9_\-]/', '', strtolower((string) $s)); }
 function is_multisite(): bool { return false; }
 $GLOBALS['wpconn_plugins'] = array(
-    'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.7'),
+    'wordpressconnector/wordpressconnector.php' => array('Name'=>'WordPress Connector','Version'=>'1.19.8'),
     'hello-dolly/hello.php'=>array('Name'=>'Hello Dolly','Version'=>'1.7.2'),
     'sample/sample.php'=>array('Name'=>'Sample','Version'=>'1.0.0'),
 );
 $GLOBALS['wpconn_active'] = array('wordpressconnector/wordpressconnector.php' => true);
+$GLOBALS['wpconn_activation_hooks'] = array();
+$GLOBALS['wpconn_plugin_download_link'] = 'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip';
 function is_plugin_active($file): bool { return ! empty($GLOBALS['wpconn_active'][$file]); }
 function is_plugin_active_for_network($file): bool { return false; }
 function get_plugins(): array { return $GLOBALS['wpconn_plugins']; }
 function wp_clean_plugins_cache($clear = false): void {}
 function activate_plugin($file, $redirect = '', $network = false, $silent = false) {
+    if (! $silent) $GLOBALS['wpconn_activation_hooks'][] = $file;
     $GLOBALS['wpconn_active'][$file] = true;
     return null;
 }
@@ -68,7 +71,7 @@ function get_site_transient($key) {
         'response'=>array('sample/sample.php'=>(object) array('new_version'=>'1.1.0')));
 }
 function plugins_api($action, $args = array()) {
-    if ($action === 'plugin_information') return (object) array('download_link'=>'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip');
+    if ($action === 'plugin_information') return (object) array('slug'=>'new-plugin', 'download_link'=>$GLOBALS['wpconn_plugin_download_link']);
     if ($action !== 'query_plugins') return new WP_Error();
     return (object) array(
         'info'=>array('results'=>3),
@@ -120,6 +123,9 @@ $fail(static function()use($system){$system->pluginDirectorySearch(array('search
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','page'=>0));},'invalid page');
 
 $activate = $system->pluginActivate(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
+if (!in_array('hello-dolly/hello.php', $GLOBALS['wpconn_activation_hooks'], true)) {
+    throw new RuntimeException('Normal plugin activation skipped WordPress activation hooks.');
+}
 if (!is_plugin_active('hello-dolly/hello.php') || empty($activate['readback_verified'])) {
     throw new RuntimeException('Plugin activation lacked readback proof.');
 }
@@ -136,6 +142,41 @@ $fail(static function() use($system) {
 $fail(static function() use($system) {
     $system->pluginDelete(array('file'=>'wordpressconnector/wordpressconnector.php'),array('dry_run'=>false));
 },'connector self-deletion');
+$fail(static function() use($system) {
+    $system->pluginInstall(array('slug'=>'../new-plugin'),array('dry_run'=>true));
+},'sanitized slug substitution');
+foreach (array(
+    'https://attacker.example/plugin/new-plugin.zip',
+    'http://downloads.wordpress.org/plugin/new-plugin.zip',
+    'https://downloads.wordpress.org/plugin/unrelated.zip',
+    'https://downloads.wordpress.org/plugin/new-plugin.zip?redirect=attacker',
+    'https://downloads.wordpress.org@attacker.example/plugin/new-plugin.zip',
+    'https://downloads.wordpress.org/plugin/../new-plugin.zip',
+) as $untrusted) {
+    $GLOBALS['wpconn_plugin_download_link'] = $untrusted;
+    $fail(static function() use($system) {
+        $system->pluginInstall(array('slug'=>'new-plugin'),array('dry_run'=>true));
+    },'plugin source from filter: ' . $untrusted);
+}
+$GLOBALS['wpconn_plugin_download_link'] = 'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip';
+// Both plugin and theme directory packages must match the requested slug,
+ // not merely share a plausible domain.
+$origin = new ReflectionMethod(SystemAdapter::class, 'officialDirectoryPackageUrl');
+$origin->setAccessible(true);
+$officialTheme = 'https://downloads.wordpress.org/theme/qa-theme.1.2.3.zip';
+if ($origin->invoke($system, $officialTheme, 'qa-theme', 'theme') !== $officialTheme) {
+    throw new RuntimeException('Canonical WordPress theme package was rejected.');
+}
+$fail(static function() use ($origin, $system) {
+    $origin->invoke($system, 'https://downloads.wordpress.org/plugin/qa-theme.zip', 'qa-theme', 'theme');
+}, 'WordPress theme package path changed to plugin');
+$fail(static function() use ($origin, $system) {
+    $origin->invoke($system, 'https://downloads.wordpress.org/theme/another-theme.zip', 'qa-theme', 'theme');
+}, 'Theme package identity substitution');
+$preview = $system->pluginInstall(array('slug'=>'new-plugin'),array('dry_run'=>true));
+if (($preview['verified_package_origin'] ?? '') !== 'downloads.wordpress.org') {
+    throw new RuntimeException('Official plugin source not validated in dry-run.');
+}
 $installed = $system->pluginInstall(array('slug'=>'new-plugin'),array('dry_run'=>false));
 if (empty($installed['readback_verified']) ||
     !isset(get_plugins()['new-plugin/new-plugin.php'])) {
@@ -157,32 +198,47 @@ $plan = $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'
 if (file_exists($root . $path) || !isset($plan['_current_fingerprint'])) {
     throw new RuntimeException('Filesystem create dry-run changed the target.');
 }
-$created = $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'=>false));
+if (empty($plan['requires_active_content_acknowledgement'])) {
+    throw new RuntimeException('HTML preview failed to warn about active browser content.');
+}
+$fail(static function() use($fs,$path,$content) {
+    $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'=>false));
+}, 'HTML asset creation without active content acknowledgement');
+$created = $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
     $created['_rollback']['action'] !== 'filesystem.delete_text') {
     throw new RuntimeException('File was not created and verified.');
 }
 $fail(static function()use($fs,$path,$content) {
-    $fs->createText(array('path'=>$path,'content'=>$content),array('dry_run'=>false));
+    $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
 $deletePlan = $fs->deleteText(array('path'=>$path),array('dry_run'=>true));
+if (empty($deletePlan['requires_active_content_acknowledgement'])) {
+    throw new RuntimeException('HTML deletion preview did not declare browser-active asset.');
+}
+$fail(static function() use($fs,$path,$content) {
+    $fs->deleteText(array('path'=>$path,'expected_sha256'=>hash('sha256',$content)),array('dry_run'=>false));
+},'HTML deletion without active-content acknowledgement');
 if (!is_file($root.$path) || $deletePlan['before']['sha256'] !== hash('sha256',$content)) {
     throw new RuntimeException('Deletion plan missing original fingerprint.');
 }
 $fail(static function()use($fs,$path) {
-    $fs->deleteText(array('path'=>$path,'expected_sha256'=>str_repeat('0',64)),array('dry_run'=>false));
+    $fs->deleteText(array('path'=>$path,'expected_sha256'=>str_repeat('0',64),'acknowledge_active_content'=>true),array('dry_run'=>false));
 },'delete with stale SHA');
 $deleted = $fs->deleteText(array(
-    'path'=>$path,'expected_sha256'=>hash('sha256',$content)),array('dry_run'=>false));
+    'path'=>$path,'expected_sha256'=>hash('sha256',$content),'acknowledge_active_content'=>true),array('dry_run'=>false));
 if (file_exists($root.$path) || $deleted['_rollback']['action']!=='filesystem.create_text' ||
     $deleted['_rollback']['payload']['content'] !== $content) {
     throw new RuntimeException('Deletion readback or rollback failed.');
+}
+if (($deleted['_rollback']['payload']['acknowledge_active_content'] ?? null) !== true) {
+    throw new RuntimeException('Browser-active restore does not preserve approved acknowledgement.');
 }
 $fs->createText($deleted['_rollback']['payload'],array('dry_run'=>false));
 if (file_get_contents($root.$path)!==$content) throw new RuntimeException('Deletion rollback failed.');
 $GLOBALS['wpconn_file_edits_allowed'] = false;
 $fail(static function()use($fs,$path,$content) {
-    $fs->deleteText(array('path'=>$path,'expected_sha256'=>hash('sha256',$content)),array('dry_run'=>false));
+    $fs->deleteText(array('path'=>$path,'expected_sha256'=>hash('sha256',$content),'acknowledge_active_content'=>true),array('dry_run'=>false));
 },'server file modification policy');
 $GLOBALS['wpconn_file_edits_allowed'] = true;
 $GLOBALS['wpconn_file_permissions'] = false;
@@ -204,6 +260,12 @@ foreach (array(
     $fail(static function() use($unsafe) {
         FilesystemPolicy::assertLifecycleText($unsafe);
     },$unsafe);
+}
+if (!FilesystemPolicy::affectsBrowserExecution($path) ||
+    !FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/app.js') ||
+    !FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/styles.css') ||
+    FilesystemPolicy::affectsBrowserExecution('wp-content/themes/fixture/assets/notes.txt')) {
+    throw new RuntimeException('Active browser code classification is incorrect.');
 }
 if (FilesystemPolicy::assertLifecycleText($path)!==$path) {
     throw new RuntimeException('Safe file lifecycle path rejected.');

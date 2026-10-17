@@ -381,7 +381,9 @@ final class SystemAdapter
         if ($networkWide && (! is_multisite() || ! current_user_can('manage_network_plugins'))) {
             throw new RuntimeException('Network-wide plugin activation requires network plugin administrator permission.');
         }
-        $result = activate_plugin($file, '', $networkWide, true);
+        // Normal activation must execute register_activation_hook callbacks.
+        // Silent activation is appropriate for Core upgrades, not user-requested activation.
+        $result = activate_plugin($file, '', $networkWide, false);
         if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
         $activeNow = $networkWide && is_multisite() ? is_plugin_active_for_network($file) : is_plugin_active($file);
         if (! $activeNow) throw new RuntimeException('Plugin activation did not persist; check plugin requirements or security restrictions.');
@@ -412,16 +414,31 @@ final class SystemAdapter
 
     public function pluginInstall(array $payload, array $context): array
     {
-        $slug = isset($payload['slug']) ? sanitize_key((string) $payload['slug']) : '';
-        if ('' === $slug) throw new RuntimeException('Plugin slug is required.');
-        if (! empty($context['dry_run'])) return array('would_install' => $slug, '_current_fingerprint' => Fingerprint::make(array('plugin_install' => $slug)));
+        $slug = isset($payload['slug']) && is_string($payload['slug']) ? $payload['slug'] : '';
+        if (! preg_match('/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug)) {
+            throw new RuntimeException('WordPress.org plugin slug must be an exact lowercase directory slug.');
+        }
         require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         $api = plugins_api('plugin_information', array('slug' => $slug, 'fields' => array('sections' => false)));
-        if (is_wp_error($api) || empty($api->download_link)) throw new RuntimeException(is_wp_error($api) ? $api->get_error_message() : 'Plugin package not found.');
+        if (is_wp_error($api) || ! is_object($api) || ! is_string($api->download_link ?? null)) {
+            throw new RuntimeException(is_wp_error($api) ? $api->get_error_message() : 'Official WordPress.org plugin package not found.');
+        }
+        if (isset($api->slug) && (string) $api->slug !== $slug) {
+            throw new RuntimeException('Plugin directory response identity does not match requested slug.');
+        }
+        $url = $this->officialDirectoryPackageUrl($api->download_link, $slug, 'plugin');
+        if (! empty($context['dry_run'])) {
+            return array(
+                'would_install' => $slug,
+                'verified_package_origin' => 'downloads.wordpress.org',
+                '_current_fingerprint' => Fingerprint::make(array('plugin_install' => $slug)),
+            );
+        }
         $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
-        $installed = $upgrader->install($api->download_link);
-        if (true !== $installed) throw new RuntimeException('Plugin installation failed.');
+        $installed = $upgrader->install($url);
+        if (is_wp_error($installed)) throw new RuntimeException($installed->get_error_message());
+        if (true !== $installed) throw new RuntimeException('WordPress plugin installation failed; check filesystem permissions or existing destination.');
         wp_clean_plugins_cache(true);
         require_once ABSPATH . 'wp-admin/includes/plugin.php';
         $installedFiles = array();
@@ -498,16 +515,28 @@ final class SystemAdapter
 
     public function themeInstall(array $payload, array $context): array
     {
-        $slug = isset($payload['slug']) ? sanitize_key((string) $payload['slug']) : '';
-        if ('' === $slug) throw new RuntimeException('Theme slug is required.');
-        if (! empty($context['dry_run'])) return array('would_install' => $slug, '_current_fingerprint' => Fingerprint::make(array('theme_install' => $slug)));
+        $slug = isset($payload['slug']) && is_string($payload['slug']) ? $payload['slug'] : '';
+        if (! preg_match('/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug)) {
+            throw new RuntimeException('WordPress.org theme slug must be an exact lowercase directory slug.');
+        }
         require_once ABSPATH . 'wp-admin/includes/theme-install.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         $api = themes_api('theme_information', array('slug' => $slug));
-        if (is_wp_error($api) || empty($api->download_link)) throw new RuntimeException(is_wp_error($api) ? $api->get_error_message() : 'Theme package not found.');
+        if (is_wp_error($api) || ! is_object($api) || ! is_string($api->download_link ?? null)) {
+            throw new RuntimeException(is_wp_error($api) ? $api->get_error_message() : 'Official WordPress.org theme package not found.');
+        }
+        if (isset($api->slug) && (string) $api->slug !== $slug) {
+            throw new RuntimeException('Theme directory response identity does not match requested slug.');
+        }
+        $url = $this->officialDirectoryPackageUrl($api->download_link, $slug, 'theme');
+        if (! empty($context['dry_run'])) {
+            return array('would_install' => $slug, 'verified_package_origin' => 'downloads.wordpress.org',
+                '_current_fingerprint' => Fingerprint::make(array('theme_install' => $slug)));
+        }
         $upgrader = new \Theme_Upgrader(new \Automatic_Upgrader_Skin());
-        $installed = $upgrader->install($api->download_link);
-        if (true !== $installed) throw new RuntimeException('Theme installation failed.');
+        $installed = $upgrader->install($url);
+        if (is_wp_error($installed)) throw new RuntimeException($installed->get_error_message());
+        if (true !== $installed) throw new RuntimeException('WordPress theme installation failed; check filesystem permissions.');
         return array('installed' => $slug, 'rollback_supported' => false);
     }
 
@@ -701,6 +730,31 @@ final class SystemAdapter
             $result = wp_update_user($fields);
             if (is_wp_error($result)) throw new RuntimeException($result->get_error_message());
         }
+    }
+
+    /**
+     * A plugin can filter plugins_api()/themes_api() responses. Never install an
+     * untrusted package URL merely because that API returned it. Custom ZIPs
+     * use plugin.install_package with independent SHA-256 and archive checks.
+     */
+    private function officialDirectoryPackageUrl(string $url, string $slug, string $kind): string
+    {
+        if (strlen($url) > 320 || ! in_array($kind, array('plugin', 'theme'), true)) {
+            throw new RuntimeException('Invalid official directory package reference.');
+        }
+        $parts = parse_url($url);
+        if (! is_array($parts) || ($parts['scheme'] ?? '') !== 'https' ||
+            ($parts['host'] ?? '') !== 'downloads.wordpress.org' ||
+            isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) ||
+            isset($parts['fragment']) || (isset($parts['port']) && (int) $parts['port'] !== 443)) {
+            throw new RuntimeException('Directory package URL is not a canonical HTTPS WordPress.org download.');
+        }
+        $pattern = '#\A/' . $kind . '/' . preg_quote($slug, '#') .
+            '(?:\.[A-Za-z0-9][A-Za-z0-9._+-]{0,95})?\.zip\z#D';
+        if (! preg_match($pattern, (string) ($parts['path'] ?? ''))) {
+            throw new RuntimeException('Directory package URL does not match the requested slug and archive type.');
+        }
+        return $url;
     }
 
     private function pluginFile(array $payload): string

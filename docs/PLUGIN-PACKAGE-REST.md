@@ -14,6 +14,7 @@ WordPress Connector supports custom/private plugin ZIP delivery through the exis
 - Real mutations require the connector write, privileged and system-update gates plus `confirm:true`.
 - The WordPress user needs `install_plugins`; overwrite additionally needs `update_plugins`; activation needs `activate_plugins`; network activation needs `manage_network_plugins`.
 - PHP `ZipArchive` must be available.
+- Upload the verified ZIP under the Connector's trusted request asset root **outside** `wp-content/upgrade/`. WordPress Core clears its upgrade scratch directory before unpacking; the Connector now rejects source ZIPs there rather than losing them during installation.
 - Use staging first for a new or unproven package. Package install/overwrite is intentionally non-rollbackable.
 - Do not place a confidential package under `assets/inbox/` on a public GitHub branch. Public runtime package installation is only for packages whose bytes may be public.
 
@@ -94,7 +95,7 @@ The public dry-run writes only a sanitized receipt to GitHub. Use its `before_fi
 
 - New plugin: use `overwrite:false`. The exact plugin must not already be installed and its destination directory must not already exist.
 - Existing custom/private plugin replacement: use `overwrite:true`. `expected_plugin` must already be installed and the caller must have `update_plugins`.
-- `activate:true, network_wide:false` ensures normal activation.
+- `activate:true, network_wide:false` performs **normal**, non-silent activation, including WordPress `register_activation_hook()` callbacks when the plugin was previously inactive. An already-active plugin is not reactivated during a package overwrite. Require permission checks and verify activation state afterward.
 - `activate:true, network_wide:true` ensures network activation on multisite, even if the plugin was already active only on the current site.
 - WordPress Connector itself cannot be replaced through this generic action. Connector self-update uses the dedicated `connector.update.check` / `connector.update.apply` path pinned to canonical `Yolol100/wordpressconnector` releases.
 

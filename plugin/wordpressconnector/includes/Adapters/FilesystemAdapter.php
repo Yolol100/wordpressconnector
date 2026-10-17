@@ -260,6 +260,7 @@ final class FilesystemAdapter
         $result = array(
             'before' => $expectedState,
             'after' => array('path' => $relative, 'bytes' => strlen($content), 'sha256' => hash('sha256', $content)),
+            'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution($relative),
             '_current_fingerprint' => Fingerprint::make($expectedState),
         );
         if (! empty($context['dry_run'])) {
@@ -301,6 +302,7 @@ final class FilesystemAdapter
         $result['after'] = $this->state($relative, $readback, $absolute);
         $result['_rollback'] = array('action' => 'filesystem.delete_text', 'payload' => array(
             'path' => $relative, 'expected_sha256' => hash('sha256', $readback),
+            'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution($relative),
         ));
         return $result;
     }
@@ -323,6 +325,7 @@ final class FilesystemAdapter
             'before' => $beforeState,
             'after' => array('path' => $relative, 'exists' => false),
             '_current_fingerprint' => Fingerprint::make($beforeState),
+            'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution($relative),
         );
         if (! empty($context['dry_run'])) {
             return $result;
@@ -347,19 +350,24 @@ final class FilesystemAdapter
         }
         $result['_rollback'] = array('action' => 'filesystem.create_text', 'payload' => array(
             'path' => $relative, 'content' => $before,
+            'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution($relative),
         ));
         return $result;
     }
 
     private function assertLifecyclePermission(array $payload, array $context): void
     {
-        if (array_diff(array_keys($payload), array('path','content','expected_sha256'))) {
+        if (array_diff(array_keys($payload), array('path','content','expected_sha256','acknowledge_active_content'))) {
             throw new RuntimeException('Filesystem lifecycle request contains unsupported fields.');
         }
         if (empty($context['dry_run']) && ! Policy::flag('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES')) {
             throw new RuntimeException('Filesystem writes are disabled by server policy.');
         }
         $relative = FilesystemPolicy::assertLifecycleText((string) ($payload['path'] ?? ''));
+        if (empty($context['dry_run']) && FilesystemPolicy::affectsBrowserExecution($relative) &&
+            ($payload['acknowledge_active_content'] ?? null) !== true) {
+            throw new RuntimeException('Browser-active HTML, JavaScript and CSS assets require acknowledge_active_content=true and normal confirmed change approval.');
+        }
         $capability = 0 === strpos($relative, 'wp-content/plugins/') ? 'edit_plugins' : 'edit_themes';
         if (! current_user_can($capability)) {
             throw new RuntimeException('WordPress denied capability ' . $capability . ' (file editor or server policy may be disabled).');

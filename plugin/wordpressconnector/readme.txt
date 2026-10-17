@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.7
+Stable tag: 1.19.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,10 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.19.7 enhances private authenticated WordPress management with official plugin-directory search, per-installed-plugin available update and action eligibility, and guarded creation/deletion of nonexecutable HTML/CSS/JS/text assets under existing plugin and theme directories. File modification must be permitted by WordPress and hosting. PHP, WordPress core, wp-config, secrets, connector runtime, critical manifests and backups cannot be created/deleted via these actions. Every filesystem lifecycle mutation has dry-run, capability checks, SHA-256 verification, readback and site-local rollback. These privileged actions are **not available via public GitHub receipts**; use a separately authorized private REST/MCP session.
+Version 1.19.8 restores normal WordPress activation hooks for authenticated plugin activation and verified package installation, verifies official WordPress.org plugin/theme package URL identity before installation, and requires explicit `acknowledge_active_content:true` when creating or deleting HTML/JavaScript/CSS assets. HTML, JavaScript and CSS can affect or execute code in browsers; they are **not** described as inert files. Previously installed packages are not retroactively reactivated. Dedicated tests cover changed package origins, denied asset writes and real WordPress ZIP installation, activation, deactivation and file creation/deletion; live hosting behavior remains environment-specific.
+
+
+Version 1.19.7 enhances private authenticated WordPress management with official plugin-directory search, per-installed-plugin available update and action eligibility, and guarded creation/deletion of HTML/CSS/JS/text assets under existing plugin and theme directories. File modification must be permitted by WordPress and hosting. PHP, WordPress core, wp-config, secrets, connector runtime, critical manifests and backups cannot be created/deleted via these actions. Every filesystem lifecycle mutation has dry-run, capability checks, SHA-256 verification, readback and site-local rollback. These privileged actions are **not available via public GitHub receipts**; use a separately authorized private REST/MCP session.
 
 
 Version 1.19.6 simplifies first use: clicking Activate as a WordPress administrator also authorizes the pinned Yolol100 GitHub OIDC workflow for this website; there is no separate initial authorization button. Activation is an administrator action and intentionally grants that trusted workflow site administration privileges. Network-wide or unattended CLI activation does not silently authorize every website; use the WordPress settings page to approve sites that cannot be paired during admin activation. Existing installations are not silently re-paired on upgrades. OIDC issuer, repository claims, permissions, per-action confirmation, readback and rollback remain enforced. The Plugins screen checks validated GitHub releases more frequently and provides a manual Check GitHub update now link; installation still uses verified SHA-256 ZIP downloads. This does not provide push notifications or guarantee a release is available immediately after a GitHub commit.

@@ -106,6 +106,17 @@ final class FilesystemPolicy
         return $path;
     }
 
+    /**
+     * HTML and JavaScript execute in browsers; CSS also changes the rendered
+     * interface. Treat these as active code assets, not inert text.
+     */
+    public static function affectsBrowserExecution(string $path): bool
+    {
+        $path = self::assertLifecycleText($path);
+        return in_array(strtolower((string) pathinfo($path, PATHINFO_EXTENSION)),
+            array('html', 'htm', 'js', 'mjs', 'css'), true);
+    }
+
     public static function isWritableText(string $path): bool
     {
         try {
