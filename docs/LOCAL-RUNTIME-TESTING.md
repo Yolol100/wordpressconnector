@@ -19,7 +19,9 @@ wp-env run cli wp eval 'if (!defined("WPCONNECTOR_VERSION")) { WP_CLI::error("Co
 wp-env destroy --force
 ```
 
-The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.2 / PHP 8.3 environment. The GitHub workflow also checks three expected REST routes. Four unauthenticated HTTP route probes must return 403. With HTTPS simulated **inside the isolated WP-CLI test only**, public `/presence` must return 200 while `/health`, `/assets`, and `/execute` require authentication (401). Simulated HTTPS is not a real network/TLS transport test.
+The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.3 / PHP 8.3 environment. The GitHub workflow checks WordPress 7.1.3, PHP 8.3, a real disposable database query and three expected REST routes. Four unauthenticated HTTP route probes must return 403. With HTTPS simulated **inside the isolated WP-CLI test only**, public `/presence` must return 200 while `/health`, `/assets`, and `/execute` require authentication (401). Simulated HTTPS is not a real network/TLS transport test.
+
+The isolated Docker check runs for changes in relevant paths on pull requests, again after those changes land on `main`, or with manual `workflow_dispatch`. Other file-only changes do not trigger this expensive runtime check. The existing main-branch Connector CI and release workflow remain separate; green Docker CI is not production deployment evidence.
 
 ## Evidence and limitations
 
