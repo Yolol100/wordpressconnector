@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-yoast-organization-read-20261017",
+  "action": "yoast.site_representation.inspect",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {}
+}
