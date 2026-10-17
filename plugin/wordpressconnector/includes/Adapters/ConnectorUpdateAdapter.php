@@ -22,7 +22,6 @@ final class ConnectorUpdateAdapter
     private const NOTICE_REFRESH_TRANSIENT = 'wpconnector_github_update_notice_v1';
     // Only the already verified local ZIP for the current guarded REST self-update.
     private $verifiedSelfUpdatePackagePath = null;
-    private $cachedRelease = null;
 
     public function register(Registry $registry): void
     {
@@ -90,10 +89,7 @@ final class ConnectorUpdateAdapter
                 $updates->no_update = array();
             }
             if (version_compare($release['version'], $installed, '>')) {
-                $offer = $this->nativeUpdateOffer(false, array(
-                    'UpdateURI' => self::UPDATE_URI,
-                    'Version' => $installed,
-                ), self::PLUGIN_FILE, array());
+                $offer = $this->nativeOfferFromRelease($release, $installed);
                 if (! is_array($offer)) {
                     return false;
                 }
@@ -176,25 +172,31 @@ final class ConnectorUpdateAdapter
         }
 
         try {
-            $release = $this->release();
-            $installed = isset($pluginData['Version']) ? (string) $pluginData['Version'] : '';
-            if ('' === $installed || ! version_compare($release['version'], $installed, '>')) {
-                return false;
-            }
-
-            return array(
-                'id' => self::UPDATE_URI,
-                'slug' => 'wordpressconnector',
-                'version' => $release['version'],
-                'url' => self::UPDATE_URI . '/releases/tag/' . $release['tag'],
-                'package' => $release['package_url'],
-                'requires_php' => '7.4',
-                'autoupdate' => false,
+            return $this->nativeOfferFromRelease(
+                $this->release(),
+                isset($pluginData['Version']) ? (string) $pluginData['Version'] : ''
             );
         } catch (\Throwable $error) {
             // A missing or invalid canonical release must never create an update offer.
             return false;
         }
+    }
+
+    /** @return array<string, mixed>|false */
+    private function nativeOfferFromRelease(array $release, string $installed)
+    {
+        if ('' === $installed || ! version_compare($release['version'], $installed, '>')) {
+            return false;
+        }
+        return array(
+            'id' => self::UPDATE_URI,
+            'slug' => 'wordpressconnector',
+            'version' => $release['version'],
+            'url' => self::UPDATE_URI . '/releases/tag/' . $release['tag'],
+            'package' => $release['package_url'],
+            'requires_php' => '7.4',
+            'autoupdate' => false,
+        );
     }
 
     /**
@@ -448,9 +450,6 @@ final class ConnectorUpdateAdapter
 
     private function release(int $timeout = 10): array
     {
-        if (is_array($this->cachedRelease)) {
-            return $this->cachedRelease;
-        }
         $response = wp_safe_remote_get(self::RELEASE_API, array(
             'timeout' => $timeout,
             'redirection' => 3,
@@ -513,7 +512,7 @@ final class ConnectorUpdateAdapter
             throw new RuntimeException('Canonical release assets are missing GitHub SHA-256 digests.');
         }
 
-        $this->cachedRelease = array(
+        return array(
             'tag' => $tag,
             'version' => (string) $matches[1],
             'package_url' => $packageUrl,
@@ -522,7 +521,6 @@ final class ConnectorUpdateAdapter
             'package_digest' => $packageDigest,
             'checksum_digest' => $checksumDigest,
         );
-        return $this->cachedRelease;
     }
 
     /**
