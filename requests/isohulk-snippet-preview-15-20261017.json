@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-snippet-preview-15-20261017",
+  "action": "yoast.snippet.update",
+  "dry_run": true,
+  "confirm": false,
+  "payload": {
+    "id": 15,
+    "fields": {
+      "title": "Custom Adhesive Tapes & Private Label | ISOHULK",
+      "description": "Need custom tape dimensions, private-label options or packaging materials? Share your requirements with ISOHULK and request a tailored quotation."
+    }
+  }
+}
