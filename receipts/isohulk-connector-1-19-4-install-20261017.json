@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-connector-1-19-4-install-20261017",
+    "action": "connector.update.apply",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-17T17:45:37+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "from_version": "1.19.3",
+    "to_version": "1.19.4",
+    "package_sha256": "a22bab9e488fd4a09145d4057e08510820142517971a6a435506d01a250b5bfe"
+}
