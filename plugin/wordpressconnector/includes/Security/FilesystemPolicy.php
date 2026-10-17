@@ -84,6 +84,28 @@ final class FilesystemPolicy
         return $path;
     }
 
+    /**
+     * Creation/deletion is narrower than replacement: executable PHP and
+     * plugin/theme identity, build and dependency manifests stay deployment-only.
+     */
+    public static function assertLifecycleText(string $path): string
+    {
+        $path = self::assertWritableText($path);
+        $extension = strtolower((string) pathinfo($path, PATHINFO_EXTENSION));
+        if (! in_array($extension, array('css','htm','html','js','json','md','mjs','txt','xml','yaml','yml'), true)) {
+            throw new RuntimeException('Create/delete supports only non-PHP theme/plugin text assets.');
+        }
+        $base = strtolower((string) basename($path));
+        if (in_array($base, array(
+            'style.css', 'theme.json', 'block.json', 'package.json',
+            'package-lock.json', 'composer.json', 'composer.lock',
+            'readme.txt', 'license.txt',
+        ), true)) {
+            throw new RuntimeException('Package and theme identity files require reviewed deployment rather than direct create/delete.');
+        }
+        return $path;
+    }
+
     public static function isWritableText(string $path): bool
     {
         try {
