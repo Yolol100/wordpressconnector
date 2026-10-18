@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.14
+Stable tag: 1.19.15
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,12 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.15 =
+* Add standards-based MCP resources/list, resources/read, prompts/list and prompts/get without duplicating the semantic WordPress action model.
+* Expose only two fixed, authenticated safety/integration text resources and two safe user-selectable prompt templates; no secrets, arbitrary resource URI fetching, second write API or new site access.
+* Preserve modern MCP 2026-07-28 cacheScope=private and legacy 2025-11-25 compatibility. Reject forged resource URIs, unknown prompt arguments, stale cursors and mismatched MCP headers.
+* Extend contract and isolated real-WordPress Docker tests for resources/prompts, authentication and no-side-effect boundaries. Direct ChatGPT OAuth remains a separate, unimplemented task.
 
 = 1.19.14 =
 * Verify activation and deletion of themes with strict WordPress readback rather than assuming success.

@@ -16,7 +16,9 @@ The untrusted request PR never receives production credentials. The trusted exec
 
 Approved authenticated MCP client -> WordPress REST `/mcp` -> MCP envelope validation -> existing WordPress authorization -> bounded MCP tool facade -> the same semantic `Runtime\\Request` and `Runner` -> policy/capability checks -> adapter -> readback/result.
 
-MCP is transport only. It does not register a parallel WordPress action model, does not expose arbitrary REST/SQL/shell/filesystem primitives and does not weaken the existing mutation contract. The bounded tool facade first exposes discovery/action metadata, then routes requested semantic actions through the canonical Runner. Confirmed writes require an explicit stable connector `request_id` so client retries remain inside the existing idempotency model.
+MCP is transport only. It does not register a parallel WordPress action model, does not expose arbitrary REST/SQL/shell/filesystem primitives and does not weaken the existing mutation contract.
+
+The MCP transport also serves fixed, authenticated read-only resources and user-selectable safe-workflow prompts via standards-based `resources/list`, `resources/read`, `prompts/list` and `prompts/get` (MCP 2025-11-25 and 2026-07-28). These metadata endpoints do not call the semantic Runner and cannot perform writes. Both resource URIs and prompt names are exact allowlists; modern responses use `cacheScope=private`. No subscriptions, arbitrary resource URLs, hidden credential transport, or OAuth service is implied. The bounded tool facade first exposes discovery/action metadata, then routes requested semantic actions through the canonical Runner. Confirmed writes require an explicit stable connector `request_id` so client retries remain inside the existing idempotency model.
 
 ## Fast read and failure diagnostics
 

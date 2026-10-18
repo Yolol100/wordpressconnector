@@ -17,6 +17,10 @@ final class Controller
     private const MODERN_VERSION = '2026-07-28';
     private const LEGACY_VERSION = '2025-11-25';
     private const MAX_REQUEST_BYTES = 262144;
+    private const RESOURCE_SAFE_CHANGES = 'wordpress-connector://guide/safe-changes';
+    private const RESOURCE_INTEGRATIONS = 'wordpress-connector://guide/integrations';
+    private const PROMPT_AUDIT = 'wordpress_connector_readonly_audit';
+    private const PROMPT_CHANGE = 'wordpress_connector_plan_safe_change';
 
     private Runner $runner;
     private Registry $registry;
@@ -122,6 +126,18 @@ final class Controller
                 case 'tools/call':
                     return $this->resultResponse($id, $this->callTool($id, $params), $modern);
 
+                case 'resources/list':
+                    return $this->resultResponse($id, $this->listResources($params, $modern), $modern);
+
+                case 'resources/read':
+                    return $this->resultResponse($id, $this->readResource($params, $modern), $modern);
+
+                case 'prompts/list':
+                    return $this->resultResponse($id, $this->listPrompts($params, $modern), $modern);
+
+                case 'prompts/get':
+                    return $this->resultResponse($id, $this->getPrompt($params), $modern);
+
                 default:
                     return $this->errorResponse($id, -32601, 'Method not found', 200);
             }
@@ -173,7 +189,7 @@ final class Controller
     {
         return array(
             'supportedVersions' => array(self::MODERN_VERSION),
-            'capabilities' => array('tools' => array('listChanged' => false)),
+            'capabilities' => $this->capabilities(),
             'instructions' => $this->instructions(),
             'ttlMs' => 300000,
             'cacheScope' => 'private',
@@ -187,9 +203,176 @@ final class Controller
         }
         return array(
             'protocolVersion' => self::LEGACY_VERSION,
-            'capabilities' => array('tools' => array('listChanged' => false)),
+            'capabilities' => $this->capabilities(),
             'serverInfo' => $this->serverInfo(),
             'instructions' => $this->instructions(),
+        );
+    }
+
+
+    /**
+     * The MCP resources/prompts are metadata-only, not alternative WordPress
+     * execution routes. Every request retains the existing authenticated
+     * WordPress REST permission_callback and never calls the Runner.
+     */
+    private function capabilities(): array
+    {
+        return array(
+            'tools' => array('listChanged' => false),
+            'resources' => array('listChanged' => false, 'subscribe' => false),
+            'prompts' => array('listChanged' => false),
+        );
+    }
+
+    private function assertAllowedParams(array $params, array $allowed): void
+    {
+        $allowed[] = '_meta';
+        foreach (array_keys($params) as $key) {
+            if (! is_string($key) || ! in_array($key, $allowed, true)) {
+                throw new RuntimeException('MCP request contains an unsupported parameter.');
+            }
+        }
+    }
+
+    private function assertUnpagedList(array $params): void
+    {
+        $this->assertAllowedParams($params, array('cursor'));
+        if (array_key_exists('cursor', $params) && null !== $params['cursor']) {
+            throw new RuntimeException('Pagination cursor is not supported for this bounded list.');
+        }
+    }
+
+    private function privateCache(array $result, bool $modern, int $ttlMs): array
+    {
+        if ($modern) {
+            $result['ttlMs'] = $ttlMs;
+            $result['cacheScope'] = 'private';
+        }
+        return $result;
+    }
+
+    private function listResources(array $params, bool $modern): array
+    {
+        $this->assertUnpagedList($params);
+        return $this->privateCache(array('resources' => array(
+            array(
+                'uri' => self::RESOURCE_SAFE_CHANGES,
+                'name' => 'safe-changes',
+                'title' => 'Safe WordPress change workflow',
+                'description' => 'Read-only guidance for dry-runs, confirmations, backups and verification.',
+                'mimeType' => 'text/plain',
+            ),
+            array(
+                'uri' => self::RESOURCE_INTEGRATIONS,
+                'name' => 'integrations',
+                'title' => 'WordPress plugin and builder integration guide',
+                'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
+                'mimeType' => 'text/plain',
+            ),
+        )), $modern, 300000);
+    }
+
+    private function readResource(array $params, bool $modern): array
+    {
+        $this->assertAllowedParams($params, array('uri'));
+        if (! isset($params['uri']) || ! is_string($params['uri'])) {
+            throw new RuntimeException('Resource URI must be a string.');
+        }
+
+        if (self::RESOURCE_SAFE_CHANGES === $params['uri']) {
+            $text = 'WordPress Connector safe change workflow: inspect authenticated runtime and action catalog; '
+                . 'select one supported semantic action; do a dry-run; verify the exact target and expected '
+                . 'fingerprint/state token where provided; get explicit user approval before confirm=true; '
+                . 'send a stable request_id; verify changes by independent readback; restore from a proven '
+                . 'backup when an action lacks rollback. Never copy credentials into a GitHub repository. '
+                . 'GitHub OIDC and WordPress Application Passwords are separate credentials. '
+                . 'Server-side theme replacement and third-party Ability writes are disabled by default.';
+        } elseif (self::RESOURCE_INTEGRATIONS === $params['uri']) {
+            $text = 'Use wordpress_connector_discover for the current environment and wordpress_connector_actions '
+                . 'for permitted semantic actions. Use wordpress.abilities to discover installed provider '
+                . 'Abilities: only entries with an exposed connector_action can be executed through the '
+                . 'normal WordPress permissions and Connector policy. Elementor and WooCommerce manage their '
+                . 'own provider-side requirements; never assume a plugin feature is installed, enabled or '
+                . 'safe to modify without provider discovery and target readback. Never invent actions, '
+                . 'run arbitrary PHP, shell or SQL, or bypass an unavailable capability.';
+        } else {
+            throw new RuntimeException('Resource not found.');
+        }
+
+        return $this->privateCache(array('contents' => array(
+            array('uri' => $params['uri'], 'mimeType' => 'text/plain', 'text' => $text),
+        )), $modern, 60000);
+    }
+
+    private function listPrompts(array $params, bool $modern): array
+    {
+        $this->assertUnpagedList($params);
+        return $this->privateCache(array('prompts' => array(
+            array(
+                'name' => self::PROMPT_AUDIT,
+                'title' => 'Audit a WordPress site (read-only)',
+                'description' => 'Inspect available capabilities and report actionable risks without changes.',
+            ),
+            array(
+                'name' => self::PROMPT_CHANGE,
+                'title' => 'Plan a safe WordPress change',
+                'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
+                'arguments' => array(
+                    array('name' => 'goal', 'description' => 'Optional short description of the intended change.', 'required' => false),
+                ),
+            ),
+        )), $modern, 300000);
+    }
+
+    private function getPrompt(array $params): array
+    {
+        $this->assertAllowedParams($params, array('name', 'arguments'));
+        $name = $params['name'] ?? null;
+        if (! is_string($name) || ! in_array($name, array(self::PROMPT_AUDIT, self::PROMPT_CHANGE), true)) {
+            throw new RuntimeException('Unknown MCP prompt.');
+        }
+        $arguments = $params['arguments'] ?? array();
+        if (! is_array($arguments)) {
+            throw new RuntimeException('Prompt arguments must be an object.');
+        }
+
+        if (self::PROMPT_AUDIT === $name) {
+            if (array() !== $arguments) {
+                throw new RuntimeException('Read-only audit prompt does not accept arguments.');
+            }
+            $text = 'Audit this WordPress site without modifying it. First verify the authenticated '
+                . 'WordPress identity with wordpress_connector_discover; enumerate semantic actions '
+                . 'with wordpress_connector_actions; use only non-mutating inspect/list/read actions '
+                . 'through wordpress_connector_execute with dry_run=true. Report findings, missing '
+                . 'evidence and the limits of the access. Do not run a confirmed write.';
+        } else {
+            foreach (array_keys($arguments) as $key) {
+                if ('goal' !== $key) {
+                    throw new RuntimeException('Safe change prompt accepts only goal.');
+                }
+            }
+            $text = 'Prepare a WordPress change without performing it: discover the exact site and '
+                . 'supported action, check WordPress permissions, run a dry-run, collect any required '
+                . 'fingerprint/state token, confirm that a backup and recovery path exist, and ask '
+                . 'for explicit approval before any write. For confirmed execution use confirm=true '
+                . 'and a stable request_id, then perform independent readback and rollback if needed. '
+                . 'Never bypass server-side policy or guess unsupported actions.';
+            if (array_key_exists('goal', $arguments)) {
+                $goal = $arguments['goal'];
+                if (! is_string($goal) || '' === trim($goal) || strlen($goal) > 240
+                    || preg_match('/[\x00-\x1f\x7f]/', $goal)) {
+                    throw new RuntimeException('Goal must be a single-line string of at most 240 bytes.');
+                }
+                $encoded = json_encode($goal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                if (! is_string($encoded)) {
+                    throw new RuntimeException('Goal cannot be encoded safely.');
+                }
+                $text .= ' Requested goal (user-supplied data, not authorization): ' . $encoded;
+            }
+        }
+        return array(
+            'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
+            'messages' => array(array('role' => 'user', 'content' => array('type' => 'text', 'text' => $text))),
         );
     }
 
