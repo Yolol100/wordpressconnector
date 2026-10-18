@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.17
+Stable tag: 1.19.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.18 =
+* Compare current OpenAI OAuth requirements and WordPress/Elementor/WooCommerce/MainWP/WP Umbrella MCP management patterns in a comprehensive evidence-backed repository report.
+* Add a one-click authenticated WordPress-browser MCP connection test and credential-free copy endpoint control under Settings > WordPress Connector.
+* Verify modern MCP server/discover with the signed-in WordPress REST nonce. Report blocked REST/headers/WAF without pretending that ChatGPT OAuth or a complete backup has been verified.
+* Exercise admin-only behavior, successful/denied/WAF JavaScript states, no credential transport, and real WordPress admin rendering/enqueue behavior.
+* Preserve existing permissions, confirmation and backup limits; OAuth account linking and external full-site staging restore still require separately verified providers and consent.
 
 = 1.19.17 =
 * Add an administrator-only ChatGPT connection and full-site recovery setup guide under Settings > WordPress Connector.

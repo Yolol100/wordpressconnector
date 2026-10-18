@@ -19,6 +19,7 @@ final class Settings
         add_action('admin_notices', array($this, 'unpairedNotice'));
         add_action('admin_post_wpconnector_site_pairing', array($this, 'saveSitePairing'));
         add_action('admin_post_wpconnector_create_application_password', array($this, 'createApplicationPassword'));
+        add_action('admin_enqueue_scripts', array($this, 'enqueueConnectionDoctor'));
     }
 
     public function unpairedNotice(): void
@@ -36,6 +37,29 @@ final class Settings
     public function registerPage(): void
     {
         add_options_page('WordPress Connector', 'WordPress Connector', 'manage_options', self::PAGE, array($this, 'renderPage'));
+    }
+
+
+    /**
+     * Test only the currently authenticated administrator browser session.
+     * This does not prove external ChatGPT OAuth access.
+     */
+    public function enqueueConnectionDoctor(string $hook): void
+    {
+        if ('settings_page_' . self::PAGE !== $hook || ! current_user_can('manage_options')) {
+            return;
+        }
+        $src = plugins_url('assets/connection-doctor.js', WPCONNECTOR_FILE);
+        wp_enqueue_script('wpconnector-connection-doctor', $src, array(), WPCONNECTOR_VERSION, true);
+        wp_localize_script('wpconnector-connection-doctor', 'WPConnectorDoctor', array(
+            'url' => rest_url('webactueel-wordpress-connector/v1/mcp'),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'checking' => __('Checking this signed-in browser session...', 'wordpressconnector'),
+            'success' => __('WordPress browser session confirmed. External ChatGPT OAuth is NOT yet proven.', 'wordpressconnector'),
+            'failed' => __('This browser could not reach the authenticated MCP endpoint.', 'wordpressconnector'),
+            'copied' => __('Endpoint copied. Do not paste application passwords into chats.', 'wordpressconnector'),
+            'copyFailed' => __('Copy unavailable; select the address above and copy it manually.', 'wordpressconnector'),
+        ));
     }
 
     public function saveSitePairing(): void
@@ -245,6 +269,14 @@ final class Settings
 
         echo '<h2>' . esc_html__('ChatGPT connection and recovery setup', 'wordpressconnector') . '</h2>';
         echo '<p>' . esc_html__('This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector') . '</p>';
+        echo '<div class="wpconnector-connection-doctor" style="max-width:900px; margin:16px 0">';
+        echo '<p><label for="wpconnector-mcp-address"><strong>' . esc_html__('Your WordPress MCP endpoint', 'wordpressconnector') . '</strong></label></p>';
+        echo '<input id="wpconnector-mcp-address" readonly="readonly" type="url" style="width:100%" value="' . esc_attr(rest_url('webactueel-wordpress-connector/v1/mcp')) . '" />';
+        echo '<p><button type="button" class="button button-secondary" id="wpconnector-copy-mcp">' . esc_html__('Copy endpoint', 'wordpressconnector') . '</button> ';
+        echo '<button type="button" class="button button-secondary" id="wpconnector-test-mcp">' . esc_html__('Test MCP connection from this WordPress browser', 'wordpressconnector') . '</button></p>';
+        echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
+        echo '<p><small>' . esc_html__('This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector') . '</small></p>';
+        echo '</div>';
         echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
         echo '<th scope="col">' . esc_html__('Setup step', 'wordpressconnector') . '</th>';
         echo '<th scope="col">' . esc_html__('Current evidence', 'wordpressconnector') . '</th>';
