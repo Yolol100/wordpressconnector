@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-public-dryrun-20261018-f2",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogname": "ISOHULK"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
