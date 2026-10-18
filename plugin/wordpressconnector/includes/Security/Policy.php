@@ -59,6 +59,7 @@ final class Policy
         'custom_css.inspect',
         'custom_css.patch',
         'plugin.install_package',
+        'theme.install_package',
     );
 
     private static ?bool $runtimePublicRepository = null;
