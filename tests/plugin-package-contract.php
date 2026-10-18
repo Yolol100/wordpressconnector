@@ -144,4 +144,74 @@ if (strpos($publicRunner, "\$payload['overwrite'] !== false") === false ||
     exit(1);
 }
 
+// Exercise the actual ZIP parser, not merely source-string checks, whenever
+// the PHP runner has ZipArchive enabled.
+if (class_exists('ZipArchive')) {
+    require_once $root . '/plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php';
+    $target = new ReflectionMethod(
+        \Webactueel\WordPressConnector\Adapters\PluginPackageAdapter::class,
+        'inspectThemePackage'
+    );
+    $target->setAccessible(true);
+    $instance = new \Webactueel\WordPressConnector\Adapters\PluginPackageAdapter();
+    $archive = tempnam(sys_get_temp_dir(), 'wpc-theme-');
+    if (false === $archive) throw new RuntimeException('Could not create theme test ZIP.');
+    $create = static function (string $filename, array $entries): void {
+        $zip = new ZipArchive();
+        if (true !== $zip->open($filename, ZipArchive::CREATE | ZipArchive::OVERWRITE)) {
+            throw new RuntimeException('Could not open theme test ZIP.');
+        }
+        foreach ($entries as $name => $contents) {
+            $zip->addFromString($name, $contents);
+        }
+        $zip->close();
+    };
+    try {
+        $good = array(
+            'example/style.css' => "/*
+Theme Name: Example
+*/",
+            'example/functions.php' => '<?php // harmless fixture',
+        );
+        $create($archive, $good);
+        $result = $target->invoke($instance, $archive, 'example');
+        if (! is_array($result) || $result['entries'] !== 2) {
+            throw new RuntimeException('Valid theme package failed to pass exact archive checks.');
+        }
+        try {
+            $target->invoke($instance, $archive, 'wrong-theme');
+            throw new RuntimeException('Wrong theme ZIP identity was accepted.');
+        } catch (RuntimeException $e) {
+            if (strpos($e->getMessage(), 'folder or duplicate') === false) throw $e;
+        }
+        $create($archive, array(
+            'example/style.css' => "/*
+Theme Name: Example
+*/",
+            'example/../escape.php' => '<?php // forbidden traversal',
+        ));
+        try {
+            $target->invoke($instance, $archive, 'example');
+            throw new RuntimeException('Theme ZIP traversal was accepted.');
+        } catch (RuntimeException $e) {
+            if (strpos($e->getMessage(), 'traversal') === false) throw $e;
+        }
+        $create($archive, array(
+            'example/style.css' => '/* Theme header omitted */',
+            'example/functions.php' => '<?php // fixture',
+        ));
+        try {
+            $target->invoke($instance, $archive, 'example');
+            throw new RuntimeException('Missing theme header was accepted.');
+        } catch (RuntimeException $e) {
+            if (strpos($e->getMessage(), 'theme header') === false) throw $e;
+        }
+        echo "theme ZIP archive runtime contract OK\n";
+    } finally {
+        @unlink($archive);
+    }
+} else {
+    echo "theme ZIP archive runtime fixture not run: ZipArchive unavailable\n";
+}
+
 echo "plugin package contract OK\n";
