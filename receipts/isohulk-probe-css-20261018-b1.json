@@ -1,0 +1,15 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-probe-css-20261018-b1",
+    "action": "custom_css.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T14:02:23+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "stylesheet": "tps-pack-wordpress-theme",
+    "css_bytes": 0,
+    "css_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "custom_css_fingerprint": "2b401ef49c05b91d273766c30a5d867cc3071820b0e5a27382839fb26c958136",
+    "readback_verified": null
+}
