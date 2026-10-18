@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-access-20261018-1140",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
