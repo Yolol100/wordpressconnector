@@ -12,6 +12,12 @@ Additional CSS is handled through WordPress core `wp_get_custom_css()`, `wp_get_
 
 Parse, inspect, replace and patch serialized block trees using WordPress block parsing/serialization while preserving unrelated blocks.
 
+## Native Site Editor (block themes)
+
+The private authenticated Connector exposes `site_editor.template.list` and `site_editor.template.inspect` for Core `wp_template` / `wp_template_part` templates, plus `site_editor.global_styles.inspect` for the active block theme. These actions use Core's own `/wp/v2/templates`, `/wp/v2/template-parts` and `/wp/v2/global-styles/themes/{stylesheet}` REST permission checks. They are never allowed over public repository transport.
+
+`site_editor.template.update` modifies only a previously customized template or part belonging to the current theme. Both the WordPress `edit_theme_options` and `edit_post` capabilities, the private authenticated transport, an exact preceding dry-run fingerprint, stable request ID, explicit confirm and the **server-only** `WPCONNECTOR_ALLOW_SITE_EDITOR_WRITES=1` gate are required. Changes use Core REST write/validation, byte-identical readback and a saved rollback. The read-only global styles action does not offer an arbitrary `theme.json` or global styles mutation route. Fresh file-backed templates, active theme ZIP replacement and programmatic theme switching are separate higher-risk workflows. A tested staging backup remains necessary for risky changes.
+
 ## Elementor
 
 Inspect/create/replace Elementor documents and patch nested elements by stable Elementor element ID. Elementor page settings, edit mode, template type, Theme Builder conditions, capability inventory and V3/V4 forms are supported through Elementor APIs.
