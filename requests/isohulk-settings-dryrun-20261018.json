@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-settings-dryrun-20261018",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogdescription": "Adhesive tapes and packaging materials (temporary connector QA test)"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
