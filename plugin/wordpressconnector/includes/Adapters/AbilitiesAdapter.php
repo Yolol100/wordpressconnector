@@ -27,6 +27,13 @@ final class AbilitiesAdapter
             'capability' => 'manage_options',
             'description' => 'Execute one explicitly mutating, MCP-exposed native Elementor Core/Pro Ability after verified provider provenance; native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
         ));
+        $registry->register('wordpress.ability.execute_approved', array($this, 'executeApprovedAbility'), array(
+            'mutation' => true,
+            'privileged' => true,
+            'sensitive' => true,
+            'capability' => 'manage_options',
+            'description' => 'Execute an expressly approved, non-destructive native Ability from a verified active third-party plugin on private authenticated transport only.',
+        ));
     }
 
     public function catalog(array $payload, array $context): array
@@ -106,7 +113,17 @@ final class AbilitiesAdapter
 
     public function executeAbility(array $payload, array $context): array
     {
-        list($name, $ability) = $this->resolveAbility($payload, true);
+        return $this->executeMutation($payload, $context, false);
+    }
+
+    public function executeApprovedAbility(array $payload, array $context): array
+    {
+        return $this->executeMutation($payload, $context, true);
+    }
+
+    private function executeMutation(array $payload, array $context, bool $approvedProvider): array
+    {
+        list($name, $ability) = $this->resolveAbility($payload, true, $approvedProvider);
         $input = array_key_exists('input', $payload) ? $payload['input'] : null;
         $annotations = $this->safeAnnotations($ability);
 
@@ -131,7 +148,7 @@ final class AbilitiesAdapter
         return $result;
     }
 
-    private function resolveAbility(array $payload, bool $mutation): array
+    private function resolveAbility(array $payload, bool $mutation, bool $approvedProvider = false): array
     {
         if (! function_exists('wp_get_ability')) {
             throw new \RuntimeException('WordPress Abilities API is not available on this site.');
@@ -142,7 +159,8 @@ final class AbilitiesAdapter
         }
         $ability = wp_get_ability($name);
         $eligible = $mutation
-            ? $this->isElementorMutationEligible($name, $ability)
+            ? ($approvedProvider ? $this->isApprovedPluginMutationEligible($name, $ability)
+                : $this->isElementorMutationEligible($name, $ability))
             : $this->isReadEligible($ability);
         if (! is_object($ability) || ! $eligible) {
             throw new \RuntimeException('The requested client-exposed WordPress Ability was not found.');
@@ -287,7 +305,7 @@ final class AbilitiesAdapter
             'provider_error_code' => $safeCode,
             'result' => null,
             'result_omitted' => true,
-            '_terminal_error' => 'Elementor Ability execution ended with a terminal provider failure; this request_id will not execute again.',
+            '_terminal_error' => 'Native WordPress Ability execution ended with a terminal provider failure; this request_id will not execute again.',
         );
     }
 
@@ -366,6 +384,101 @@ final class AbilitiesAdapter
         }
 
         return $this->isNativeElementorAbilityProvider($name, $ability);
+    }
+
+
+    /**
+     * Other plugins may opt into the native Abilities API, but arbitrary
+     * abilities never become callable just because they exist. A server
+     * operator must approve the exact ability AND exact active plugin file
+     * using a JSON mapping in wp-config.php.
+     */
+    private function isApprovedPluginMutationEligible(string $name, $ability): bool
+    {
+        if ($this->isElementorAbilityName($name) || ! is_object($ability)
+            || ! Policy::flag('WPCONNECTOR_ALLOW_APPROVED_ABILITY_WRITES')
+            || ! $this->isExplicitMcpPublic($ability) || ! $this->isMutationEligible($ability)) {
+            return false;
+        }
+
+        $annotations = $this->safeAnnotations($ability);
+        if (false !== ($annotations['destructive'] ?? null)) {
+            return false;
+        }
+
+        $approved = $this->approvedAbilityProviders();
+        if (! isset($approved[$name])) {
+            return false;
+        }
+        $pluginFile = $approved[$name];
+
+        if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_option')) {
+            return false;
+        }
+        $active = get_option('active_plugins', array());
+        $active = is_array($active) ? $active : array();
+        $networkActive = function_exists('get_site_option')
+            ? get_site_option('active_sitewide_plugins', array()) : array();
+        $networkActive = is_array($networkActive) ? array_keys($networkActive) : array();
+        if (! in_array($pluginFile, $active, true) && ! in_array($pluginFile, $networkActive, true)) {
+            return false;
+        }
+
+        $pluginRoot = rtrim((string) WP_PLUGIN_DIR, '/\\');
+        $mainFile = realpath($pluginRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $pluginFile));
+        if (! is_string($mainFile) || ! is_file($mainFile)) {
+            return false;
+        }
+        $callback = $this->abilityExecuteCallback($ability);
+        $file = $this->callableSourceFile($callback);
+        if (null === $file) {
+            return false;
+        }
+        $canonicalCallback = realpath($file);
+        $canonicalPlugin = realpath(dirname($mainFile));
+        return is_string($canonicalCallback) && is_string($canonicalPlugin)
+            && $this->pathWithinRoot($canonicalCallback, $canonicalPlugin);
+    }
+
+    private function approvedAbilityProviders(): array
+    {
+        $json = defined('WPCONNECTOR_APPROVED_ABILITY_PROVIDERS')
+            ? constant('WPCONNECTOR_APPROVED_ABILITY_PROVIDERS') : false;
+        if (! is_string($json) || strlen($json) > 8192) {
+            return array();
+        }
+        $value = json_decode($json, true);
+        if (! is_array($value) || count($value) > 30) {
+            return array();
+        }
+        $approved = array();
+        foreach ($value as $name => $pluginFile) {
+            if (! is_string($name) || ! $this->isValidName($name)
+                || ! is_string($pluginFile)
+                || ! preg_match('#^[A-Za-z0-9._-]{1,80}/[A-Za-z0-9._-]{1,80}\.php\z#D', $pluginFile)) {
+                return array();
+            }
+            $approved[$name] = $pluginFile;
+        }
+        return $approved;
+    }
+
+    private function callableSourceFile($callback): ?string
+    {
+        try {
+            if ($callback instanceof \Closure || is_string($callback)) {
+                $file = (new \ReflectionFunction($callback))->getFileName();
+            } elseif (is_array($callback) && count($callback) === 2) {
+                $file = (new \ReflectionMethod($callback[0], $callback[1]))->getFileName();
+            } elseif (is_object($callback) && is_callable($callback)) {
+                $file = (new \ReflectionMethod($callback, '__invoke'))->getFileName();
+            } else {
+                return null;
+            }
+        } catch (\Throwable $error) {
+            return null;
+        }
+        return is_string($file) && '' !== $file ? $file : null;
     }
 
     private function isElementorAbilityName(string $name): bool
@@ -526,6 +639,7 @@ final class AbilitiesAdapter
         $safeAnnotations = $this->safeAnnotations($ability);
         $readEligible = $this->isReadEligible($ability);
         $mutationEligible = $this->isElementorMutationEligible($name, $ability);
+        $approvedMutationEligible = $this->isApprovedPluginMutationEligible($name, $ability);
 
         list($inputSchema, $inputSchemaOmitted) = $this->boundedCatalogValue(
             method_exists($ability, 'get_input_schema') ? $ability->get_input_schema() : null
@@ -545,8 +659,10 @@ final class AbilitiesAdapter
             'output_schema_omitted' => $outputSchemaOmitted,
             'annotations' => $safeAnnotations,
             'execution_exposed' => $readEligible,
-            'mutation_execution_exposed' => $mutationEligible,
-            'connector_action' => $readEligible ? 'wordpress.ability.read' : ($mutationEligible ? 'wordpress.ability.execute' : null),
+            'mutation_execution_exposed' => $mutationEligible || $approvedMutationEligible,
+            'connector_action' => $readEligible ? 'wordpress.ability.read'
+                : ($mutationEligible ? 'wordpress.ability.execute'
+                    : ($approvedMutationEligible ? 'wordpress.ability.execute_approved' : null)),
         );
     }
 
