@@ -71,13 +71,16 @@ $runBuilder = static function (string $name, array $result) use ($store,$run,$bu
 };
 list($exit, $log, $receipt) = $runBuilder('safe', $result);
 if ($exit !== 0 || ($receipt['installed_count'] ?? null) !== 3
-    || ($receipt['plugins'][0]['checks']['guest_checkout'] ?? null) !== 'enabled'
+    || ($receipt['inventory_details_exported'] ?? null) !== false
     || ($receipt['private_settings_exported'] ?? null) !== false
-    || ($receipt['must_use_count'] ?? -1) !== 2 || ($receipt['dropin_count'] ?? -1) !== 1) {
+    || ($receipt['must_use_count'] ?? -1) !== 2 || ($receipt['dropin_count'] ?? -1) !== 1
+    || array_intersect(array('plugins', 'plugin_files', 'plugin_versions', 'image_lazyload_overlap',
+        'checkout_qa', 'smtp_delivery_qa', 'translation_browser_qa'), array_keys($receipt))) {
     throw new RuntimeException('Safe public plugin audit receipt failed: ' . $log);
 }
 $receiptJson = json_encode($receipt,JSON_THROW_ON_ERROR);
-foreach (array('password','secret','PRIVATE-NAME','internal.domain') as $needle) {
+foreach (array('password','secret','PRIVATE-NAME','internal.domain','woocommerce','wp_mail_smtp',
+    'unmodeled_1','guest_checkout','stock_management') as $needle) {
     if (stripos($receiptJson,$needle) !== false) {
         throw new RuntimeException('Public plugin audit receipt leaked sensitive content.');
     }
@@ -89,7 +92,9 @@ $variants['data']['active_count'] = 3;
 $variants['data']['provider_checks_count'] = 2;
 list($exit, $log, $variantReceipt) = $runBuilder('repeated-registered-id', $variants);
 if ($exit !== 0 || ($variantReceipt['installed_count'] ?? null) !== 4
-    || count($variantReceipt['plugins'] ?? array()) !== 4) {
+    || ($variantReceipt['active_count'] ?? null) !== 3
+    || ($variantReceipt['provider_checks_count'] ?? null) !== 2
+    || array_key_exists('plugins', $variantReceipt)) {
     throw new RuntimeException('Multiple installations sharing a static adapter ID were lost: ' . $log);
 }
 $hostinger = $result;
@@ -108,13 +113,12 @@ $hostinger['data']['active_count'] = 6;
 list($exit, $log, $hostingerReceipt) = $runBuilder('hostinger-coverage', $hostinger);
 if ($exit !== 0 || ($hostingerReceipt['installed_count'] ?? null) !== 7
     || ($hostingerReceipt['unmodeled_count'] ?? null) !== 1
-    || count($hostingerReceipt['plugins'] ?? array()) !== 7) {
+    || array_key_exists('plugins', $hostingerReceipt)) {
     throw new RuntimeException('Hostinger inventory was rejected or altered: ' . $log);
 }
-$hostingerNames = array_column($hostingerReceipt['plugins'], 'id');
 foreach (array('hostinger_ai','hostinger_easy_onboarding','hostinger_reach','hostinger_tools') as $id) {
-    if (! in_array($id, $hostingerNames, true)) {
-        throw new RuntimeException('Known Hostinger plugin missing from public inventory: ' . $id);
+    if (false !== strpos(json_encode($hostingerReceipt), $id)) {
+        throw new RuntimeException('Private plugin identity leaked into the public audit: ' . $id);
     }
 }
 $joinchat = $result;
@@ -126,8 +130,11 @@ $joinchat['data']['installed_count'] = 4;
 $joinchat['data']['active_count'] = 3;
 $joinchat['data']['provider_checks_count'] = 2;
 list($exit, $log, $joinchatReceipt) = $runBuilder('joinchat-phone-enum', $joinchat);
-if ($exit !== 0 || ($joinchatReceipt['plugins'][3]['checks']['whatsapp_number'] ?? null) !== 'missing') {
-    throw new RuntimeException('Secret-free Joinchat number readiness was rejected: ' . $log);
+if ($exit !== 0 || ($joinchatReceipt['installed_count'] ?? null) !== 4
+    || ($joinchatReceipt['provider_checks_count'] ?? null) !== 2
+    || array_key_exists('plugins', $joinchatReceipt)
+    || false !== strpos(json_encode($joinchatReceipt), 'joinchat')) {
+    throw new RuntimeException('Private Joinchat audit detail leaked into public receipt: ' . $log);
 }
 $numberLeak = $joinchat;
 $numberLeak['data']['plugins'][3]['checks']['whatsapp_number'] = '+31612345678';
