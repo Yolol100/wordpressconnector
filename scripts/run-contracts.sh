@@ -53,6 +53,7 @@ run_php tests/connector-update-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
+run_php tests/direct-mcp-admin-runtime.php
 run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
