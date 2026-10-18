@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-probe-pages-20261018-b1",
+  "action": "post.list",
+  "payload": {
+    "post_type": "page",
+    "status": "publish",
+    "per_page": 5
+  },
+  "dry_run": true,
+  "confirm": false
+}
