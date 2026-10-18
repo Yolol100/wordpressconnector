@@ -198,7 +198,7 @@ jobs:
               $files->writeText(array("path" => $relative, "content" => $updatedText),
                 array("dry_run" => false));
               WP_CLI::error("Filesystem edit accepted a missing stale-state hash.");
-            } catch (\\RuntimeException $expected) {
+            } catch (\RuntimeException $expected) {
               // A valid mutation always carries the prior file checksum.
             }
             $write = $files->writeText(array("path" => $relative, "content" => $updatedText,
