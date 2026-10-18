@@ -8,6 +8,10 @@ if (! is_file($source)) {
     fwrite(STDERR, "Public receipt builder source is missing.\n");
     exit(1);
 }
+if (is_file($root . '/scripts/build-public-receipt-legacy.php')) {
+    fwrite(STDERR, "Superseded public receipt builder is still present; canonical builder is self-contained.\n");
+    exit(1);
+}
 $sourceContents = (string) file_get_contents($source);
 if (strpos($sourceContents, 'build-public-receipt-legacy.php') !== false) {
     fwrite(STDERR, "Public receipt builder still depends on the legacy helper.\n");
