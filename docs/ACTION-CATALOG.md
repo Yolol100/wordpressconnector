@@ -119,6 +119,11 @@ This catalog is generated from the connector action registrations. Security labe
 | `post.trash` | mutation | Move a post object to Trash. |
 | `post.update` | mutation | Update a post, page or custom post type object. |
 | `post.literal_replace` | mutation | Replace one bounded literal phrase on an existing published page; dry-run fingerprint, verified readback and site-local rollback. |
+| `site_editor.global_styles.inspect` | privileged | Read active-theme global styles through WordPress Core Site Editor REST permissions; no writes. |
+| `site_editor.template.inspect` | privileged | Read one active-theme Site Editor template or part, including safe current fingerprint. |
+| `site_editor.template.list` | privileged | List bounded active-theme Site Editor templates or parts. |
+| `site_editor.template.restore` | mutation, privileged | Rollback-only restore of a previously customized template after exact state check. |
+| `site_editor.template.update` | mutation, privileged | Modify a previously customized template or part via Core REST with explicit server opt-in, fingerprint, readback and guarded rollback. |
 | `site.identity.inspect` | privileged, public-safe | Read four nonsecret WordPress identity fields, requiring manage_options. |
 | `site.identity.update` | mutation, privileged, public-safe | Update approved site identity fields with dry-run fingerprint, readback, rollback and locale-pack checks. |
 | `gtranslate.settings.inspect` / `gtranslate.settings.update` | privileged, public-safe | Inspect or update only provider-supported Dutch/English language choices with manage_options, fingerprints, redacted receipts and rollback. |

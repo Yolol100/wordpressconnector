@@ -396,6 +396,68 @@ jobs:
       - name: Docker diagnostics on failure
         if: failure()
         run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'
+      - name: Test WordPress Site Editor template write and rollback on disposable block theme
+        run: |
+          wp-env run cli wp eval '
+            $admins = get_users(array("role" => "administrator", "number" => 1));
+            if (!$admins) WP_CLI::error("Missing disposable test administrator");
+            wp_set_current_user((int) $admins[0]->ID);
+            if (!wp_is_block_theme() && wp_get_theme("twentytwentyfive")->exists()) {
+              switch_theme("twentytwentyfive");
+            }
+            if (!wp_is_block_theme()) WP_CLI::error("Disposable WordPress test must have an active block theme");
+            $adapter = new \Webactueel\WordPressConnector\Adapters\SiteEditorAdapter();
+            $list = $adapter->listTemplates(array("kind" => "template"));
+            if (($list["theme"] ?? "") !== get_stylesheet() || !is_array($list["items"] ?? null)) {
+              WP_CLI::error("Native Site Editor template listing failed");
+            }
+            $styles = $adapter->globalStyles();
+            if (($styles["theme"] ?? "") !== get_stylesheet() || !isset($styles["fingerprint"])) {
+              WP_CLI::error("Native WordPress global styles route failed");
+            }
+            $beforeContent = "<!-- wp:paragraph --><p>Connector QA Original</p><!-- /wp:paragraph -->";
+            $create = new WP_REST_Request("POST", "/wp/v2/templates");
+            foreach (array("slug" => "wpconnector-qa", "theme" => get_stylesheet(),
+              "title" => "WordPress Connector QA", "content" => $beforeContent, "status" => "publish") as $k => $v) {
+              $create->set_param($k, $v);
+            }
+            $created = rest_do_request($create);
+            if ($created->get_status() < 200 || $created->get_status() >= 300) {
+              WP_CLI::error("Could not create a disposable customized WordPress template");
+            }
+            $id = $created->get_data()["id"] ?? "";
+            if ($id !== get_stylesheet() . "//wpconnector-qa") WP_CLI::error("Unexpected custom template identity");
+            $target = array("kind" => "template", "id" => $id);
+            $before = $adapter->inspect($target);
+            if (empty($before["customized"])) WP_CLI::error("WordPress template did not become a customized template");
+            $updatedContent = "<!-- wp:paragraph --><p>Connector QA Changed</p><!-- /wp:paragraph -->";
+            $request = $target + array("content" => $updatedContent,
+              "expected_before_fingerprint" => $before["fingerprint"]);
+            $preview = $adapter->update($request, array("dry_run" => true));
+            if (empty($preview["would_change"])) WP_CLI::error("Site Editor dry-run missing change");
+            $denied = false;
+            try { $adapter->update($request, array("dry_run" => false)); }
+            catch (\RuntimeException $expected) { $denied = true; }
+            if (!$denied || $adapter->inspect($target)["content"] !== $before["content"]) {
+              WP_CLI::error("Site Editor mutation bypassed default-off policy");
+            }
+            define("WPCONNECTOR_ALLOW_SITE_EDITOR_WRITES", true);
+            $changed = $adapter->update($request, array("dry_run" => false));
+            if (empty($changed["updated"]) || $adapter->inspect($target)["content"] !== $updatedContent) {
+              WP_CLI::error("Site Editor native REST write did not persist");
+            }
+            $recovered = $adapter->restore($changed["_rollback"]["payload"], array("rollback_mode" => true));
+            if (empty($recovered["readback_verified"]) || $adapter->inspect($target)["content"] !== $before["content"]) {
+              WP_CLI::error("Site Editor native REST rollback did not restore identical content");
+            }
+            $delete = new WP_REST_Request("DELETE", "/wp/v2/templates/" . $id);
+            $delete->set_param("force", true);
+            $deleted = rest_do_request($delete);
+            if ($deleted->get_status() < 200 || $deleted->get_status() >= 300) {
+              WP_CLI::error("Disposable Site Editor template cleanup failed");
+            }
+            WP_CLI::success("Native block theme templates, Site Editor default-off writes and exact rollback verified");
+          '
       - name: Destroy disposable test environment
         if: always()
         run: wp-env destroy --force
