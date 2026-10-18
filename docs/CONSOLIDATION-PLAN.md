@@ -17,7 +17,7 @@ Version 1.9.0 additionally closes the remaining repository parity gaps:
 - admin Elementor JSON import can replace an explicit existing Page/Post/Template or create a new draft;
 - Page/Post export can include the matching Elementor Pro Theme Builder header/footer as a site-parts bundle;
 - `expected_state_token` adds a site-scoped HMAC stale-state guard alongside `expected_fingerprint`;
-- the retired GitHub `requests/`, `results/`, request schemas/examples and request/execute workflows are removed.
+- the previous Elementorconnector-specific request/result transport was retired. The **current** WordPress Connector still uses `.github/workflows/wordpress-request.yml` and `.github/workflows/wordpress-zero-config-execute.yml` for guarded GitHub OIDC execution. Both workflows are active, security-tested and must not be removed.
 
 ## Removal gate for Elementorconnector
 
