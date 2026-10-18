@@ -20,7 +20,8 @@ This is an evidence-bound triage document, **not** a declaration that every stri
 2. **PHPCompatibilityWP:** Convert a compressed `foreach` to explicit braces and preserve the early `break`.
 3. **PHPStan callback contract:** Align the `elementor/mcp/pre_execute_guard` registered argument count with its one-argument closure. Existing capability and denial behavior remain.
 4. **WordPress SQL identifier safety:** Use `wpdb::prepare('%i', ...)` for WooCommerce shipping and tax table names, while preserving typed value placeholders and page/row limits; update the test double to model official `%i` quoting. Supported since WordPress 6.2 (plugin minimum 6.4).
-5. **Readme:** Align upcoming v1.19.19 plugin metadata, reduce WordPress.org tags to five and describe the actual fix scope.
+5. **URL parsing:** Replace native parse_url() with wp_parse_url() for official package URL validation and Yoast organization media; retain HTTPS and origin checks.
+6. **Readme:** Align upcoming v1.19.19 plugin metadata, reduce WordPress.org tags to five and describe the actual fix scope.
 
 ## Remaining gates — not waived
 
