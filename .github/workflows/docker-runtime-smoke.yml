@@ -178,6 +178,37 @@ jobs:
             if (empty($c["after"]["sha256"]) || file_get_contents(ABSPATH . $relative) !== $content) {
               WP_CLI::error("Created HTML asset did not pass live readback.");
             }
+            $read = $files->readText(array("path" => $relative));
+            if (($read["content"] ?? "") !== $content) {
+              WP_CLI::error("Created HTML asset could not be read via the connector.");
+            }
+            $replacement = "<section>Updated disposable QA asset</section>";
+            $editPreview = $files->writeText(array("path" => $relative, "content" => $replacement),
+              array("dry_run" => true));
+            if (empty($editPreview["requires_active_content_acknowledgement"]) ||
+                file_get_contents(ABSPATH . $relative) !== $content) {
+              WP_CLI::error("Browser-active write preview mutated the target or failed to classify risk.");
+            }
+            try {
+              $files->writeText(array("path" => $relative, "content" => $replacement,
+                "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+              WP_CLI::error("Unacknowledged HTML replacement was incorrectly allowed.");
+            } catch (\RuntimeException $expected) {
+              // Exact active content approval is required before replacing HTML.
+            }
+            $written = $files->writeText(array("path" => $relative, "content" => $replacement,
+              "expected_sha256" => hash("sha256", $content),
+              "acknowledge_active_content" => true), array("dry_run" => false));
+            if (file_get_contents(ABSPATH . $relative) !== $replacement ||
+                ($written["after"]["sha256"] ?? "") !== hash("sha256", $replacement) ||
+                ($written["_rollback"]["payload"]["acknowledge_active_content"] ?? null) !== true) {
+              WP_CLI::error("Confirmed HTML replacement or guarded rollback metadata failed.");
+            }
+            $reverted = $files->writeText($written["_rollback"]["payload"], array("dry_run" => false));
+            if (file_get_contents(ABSPATH . $relative) !== $content ||
+                ($reverted["after"]["sha256"] ?? "") !== hash("sha256", $content)) {
+              WP_CLI::error("HTML replacement rollback could not restore original bytes.");
+            }
             $del = $files->deleteText(array("path" => $relative,
               "expected_sha256" => hash("sha256", $content), "acknowledge_active_content" => true),
               array("dry_run" => false));
