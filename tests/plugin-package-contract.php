@@ -91,8 +91,8 @@ foreach (array('dry-run consumes', 're-upload', 'expected_state_token') as $need
     }
 }
 
-// Theme ZIP support reuses the canonical installer, remaining outside the
-// public OIDC action allowlist until destructive rollback is independently verified.
+// Theme ZIP support reuses the canonical installer. The public OIDC contract
+// permits only new installs; overwrite and deletion require private approval.
 $themeRequired = array(
     "'theme.install_package'",
     "registerThemePackage(\$registry)",
@@ -125,8 +125,18 @@ if (strpos($docs, 'theme.install_package') === false) {
     fwrite(STDERR, "Missing guarded theme package documentation.\n");
     exit(1);
 }
-if (strpos(file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php'), "'theme.install_package'") !== false) {
-    fwrite(STDERR, "Theme package was accidentally added to public OIDC allowlist.\n");
+$publicPolicy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
+$publicRunner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$publicValidator = file_get_contents($root . '/scripts/validate-public-request.php');
+foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {
+    if (! is_string($boundary) || strpos($boundary, "'theme.install_package'") === false) {
+        fwrite(STDERR, "Missing bounded public theme ZIP contract.\n");
+        exit(1);
+    }
+}
+if (strpos($publicRunner, "$payload['overwrite'] !== false") === false ||
+    strpos($publicValidator, "overwrite=false") === false) {
+    fwrite(STDERR, "Public theme ZIP overwrite must remain denied.\n");
     exit(1);
 }
 
