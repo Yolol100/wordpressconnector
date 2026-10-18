@@ -765,7 +765,7 @@ final class SystemAdapter
         if (strlen($url) > 320 || ! in_array($kind, array('plugin', 'theme'), true)) {
             throw new RuntimeException('Invalid official directory package reference.');
         }
-        $parts = parse_url($url);
+        $parts = wp_parse_url($url);
         if (! is_array($parts) || ($parts['scheme'] ?? '') !== 'https' ||
             ($parts['host'] ?? '') !== 'downloads.wordpress.org' ||
             isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) ||
