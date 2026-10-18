@@ -17,6 +17,7 @@ run_php tests/plugin-adapter-catalog-contract.php
 run_php tests/plugin-audit-contract.php
 run_php tests/public-plugin-audit-transport-contract.php
 run_php tests/abilities-provider-provenance-contract.php
+run_php tests/approved-plugin-abilities-contract.php
 run_php tests/abilities-mutation-idempotency-contract.php
 run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
