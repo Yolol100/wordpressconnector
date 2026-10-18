@@ -126,14 +126,14 @@ final class AssetStore
             return $fileType;
         }
 
-        if (preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relativePath)) {
+        if (preg_match('#^(?:plugin-packages|theme-packages)/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relativePath)) {
             $zipType = wp_check_filetype($basename, array('zip' => 'application/zip'));
             if (! empty($zipType['ext']) && ! empty($zipType['type'])) {
                 return $zipType;
             }
         }
 
-        throw new RuntimeException('Asset extension is not an allowed WordPress media type or connector plugin package.');
+        throw new RuntimeException('Asset extension is not an allowed WordPress media type or connector plugin/theme package.');
     }
 
     private function baseRoot(bool $create): string
