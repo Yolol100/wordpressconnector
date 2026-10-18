@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-settings-write-20261018",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogdescription": "Adhesive tapes and packaging materials (temporary connector QA test)"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "77f4cc721f19fcad19937b4e67f462ec9972ac22b1e57cd323e501b94e531d0c"
+}
