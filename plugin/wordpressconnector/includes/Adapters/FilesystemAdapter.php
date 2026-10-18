@@ -169,6 +169,7 @@ final class FilesystemAdapter
         }
 
         $relative = FilesystemPolicy::assertWritableText(isset($payload['path']) ? (string) $payload['path'] : '');
+        $activeContent = FilesystemPolicy::affectsBrowserExecution($relative);
         $requiredCapability = 0 === strpos($relative, 'wp-content/plugins/') ? 'edit_plugins' : 'edit_themes';
         if (! current_user_can($requiredCapability)) {
             throw new RuntimeException('Current user lacks the required filesystem capability: ' . $requiredCapability . '.');
@@ -194,6 +195,7 @@ final class FilesystemAdapter
         }
 
         $this->validateText($relative, $content);
+        $this->assertNoEmbeddedSecrets($content);
         $beforeState = $this->state($relative, $before, $absolute);
         $afterState = array(
             'path' => $relative,
@@ -204,10 +206,18 @@ final class FilesystemAdapter
             'before' => $beforeState,
             'after' => $afterState,
             '_current_fingerprint' => Fingerprint::make($beforeState),
+            'requires_active_content_acknowledgement' => $activeContent,
         );
 
         if (! empty($context['dry_run'])) {
             return $result;
+        }
+
+        if ($activeContent && ($payload['acknowledge_active_content'] ?? null) !== true) {
+            throw new RuntimeException('Browser-active HTML, JavaScript and CSS file replacements require acknowledge_active_content=true.');
+        }
+        if (function_exists('wp_is_file_mod_allowed') && ! wp_is_file_mod_allowed('connector_filesystem')) {
+            throw new RuntimeException('WordPress or a policy plugin disallows file modifications; check DISALLOW_FILE_MODS and file_mod_allowed.');
         }
 
         $expectedSha = isset($payload['expected_sha256']) ? strtolower((string) $payload['expected_sha256']) : '';
@@ -237,6 +247,7 @@ final class FilesystemAdapter
                 'path' => $relative,
                 'content' => $before,
                 'expected_sha256' => hash('sha256', $readback),
+                'acknowledge_active_content' => $activeContent,
             ),
         );
         return $result;
