@@ -14,10 +14,29 @@ define('ABSPATH', $root);
 
 class WP_Filesystem_Base
 {
+    public array $writeBehaviors = array();
+    public int $writeCalls = 0;
     public function delete($path, $recursive = false, $type = false): bool {
         return $recursive ? false : unlink($path);
     }
     public function put_contents($path, $content, $mode = false): bool {
+        ++$this->writeCalls;
+        $behavior = array_shift($this->writeBehaviors);
+        if ('partial_false' === $behavior || 'partial_throw' === $behavior) {
+            file_put_contents($path, substr($content, 0, max(1, (int) (strlen($content) / 2))));
+            if ('partial_throw' === $behavior) throw new RuntimeException('Injected write failure.');
+            return false;
+        }
+        if ('corrupt_true' === $behavior) {
+            file_put_contents($path, 'corrupted fixture bytes');
+            return true;
+        }
+        if ('false' === $behavior) return false;
+        if ('throw' === $behavior) throw new RuntimeException('Injected filesystem failure.');
+        if ('complete_false' === $behavior) {
+            file_put_contents($path, $content);
+            return false;
+        }
         return false !== file_put_contents($path, $content);
     }
 }
@@ -253,6 +272,42 @@ if (file_get_contents($root.$path) !== $content ||
     ($restoredWrite['after']['sha256'] ?? '') !== hash('sha256',$content)) {
     throw new RuntimeException('Browser-active replacement rollback did not restore original bytes.');
 }
+// A failing filesystem write may already have truncated or changed the file.
+// Recover once, verify actual bytes, and keep the requested operation failed.
+$writeCases = array(
+    array('partial_false', null, true),
+    array('corrupt_true', null, true),
+    array('partial_throw', null, true),
+    array('partial_false', 'complete_false', true),
+    array('partial_false', 'false', false),
+    array('partial_false', 'corrupt_true', false),
+    array('partial_false', 'throw', false),
+);
+foreach ($writeCases as $writeCase) {
+    list($initialFailure, $recoveryBehavior, $recoveryExpected) = $writeCase;
+    file_put_contents($root.$path, $content);
+    $GLOBALS['wp_filesystem']->writeBehaviors = array($initialFailure, $recoveryBehavior);
+    $GLOBALS['wp_filesystem']->writeCalls = 0;
+    $failureMessage = '';
+    try {
+        $fs->writeText(array('path'=>$path, 'content'=>$replacement,
+            'expected_sha256'=>hash('sha256',$content), 'acknowledge_active_content'=>true),
+            array('dry_run'=>false));
+    } catch (RuntimeException $error) {
+        $failureMessage = $error->getMessage();
+    }
+    $restored = file_get_contents($root.$path) === $content;
+    if ('' === $failureMessage || $restored !== $recoveryExpected ||
+        $GLOBALS['wp_filesystem']->writeCalls !== 2) {
+        throw new RuntimeException('Failed replacement did not attempt and verify one recovery: ' . $initialFailure . '/' . (string) $recoveryBehavior);
+    }
+    $expectedMessage = $recoveryExpected ? 'original file restored and verified' : 'manual recovery required';
+    if (strpos($failureMessage, $expectedMessage) === false) {
+        throw new RuntimeException('Failed replacement reported an incorrect recovery outcome: ' . $initialFailure . '/' . (string) $recoveryBehavior);
+    }
+}
+$GLOBALS['wp_filesystem']->writeBehaviors = array();
+file_put_contents($root.$path, $content);
 if (FilesystemPolicy::affectsBrowserExecution('wp-content/plugins/sample/main.php')) {
     throw new RuntimeException('PHP must retain its separate parser/capability safety path.');
 }
