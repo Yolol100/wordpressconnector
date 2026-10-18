@@ -359,12 +359,12 @@ if (! $ok) {
             }
             $receipt[$name] = $value;
         }
-        $receipt['plugins'] = $publicPlugins;
-        $receipt['image_lazyload_overlap'] = $overlap;
-        $receipt['checkout_qa'] = 'not_run';
-        $receipt['smtp_delivery_qa'] = 'not_run';
-        $receipt['translation_browser_qa'] = 'not_run';
+        // This repository is public. Aggregate totals may be published, but
+        // even allowlisted plugin IDs, activation flags and provider checks
+        // form a private site inventory and must remain inside WordPress.
+        // Preserve the bounded validation above without exporting its rows.
         $receipt['private_settings_exported'] = false;
+        $receipt['inventory_details_exported'] = false;
         $receipt['readback_verified'] = null;
     } elseif ('plugin.install_package' === $action) {
         $expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin']) ? $payload['expected_plugin'] : '';
