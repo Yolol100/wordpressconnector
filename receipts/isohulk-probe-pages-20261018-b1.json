@@ -1,0 +1,57 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-probe-pages-20261018-b1",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T14:02:13+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 264,
+            "type": "page",
+            "status": "publish",
+            "title": "Categories",
+            "slug": "categories",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/categories/"
+        },
+        {
+            "id": 256,
+            "type": "page",
+            "status": "publish",
+            "title": "Sitemap",
+            "slug": "sitemap",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/sitemap/"
+        },
+        {
+            "id": 254,
+            "type": "page",
+            "status": "publish",
+            "title": "Thank You for Your Quotation Request",
+            "slug": "thank-you-quotation",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-quotation/"
+        },
+        {
+            "id": 253,
+            "type": "page",
+            "status": "publish",
+            "title": "Thank You for Your Message",
+            "slug": "thank-you-message",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/"
+        },
+        {
+            "id": 252,
+            "type": "page",
+            "status": "publish",
+            "title": "Request a Quotation",
+            "slug": "request-a-quote",
+            "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/"
+        }
+    ],
+    "page": 1,
+    "per_page": 5,
+    "total": 13,
+    "pages": 3,
+    "readback_verified": null
+}
