@@ -191,6 +191,7 @@ jobs:
             $writePreview = $files->writeText(array("path" => $relative, "content" => $updatedText),
               array("dry_run" => true));
             if (($writePreview["before"]["sha256"] ?? "") !== hash("sha256", $content)
+                || empty($writePreview["requires_active_content_acknowledgement"])
                 || file_get_contents(ABSPATH . $relative) !== $content) {
               WP_CLI::error("Filesystem edit dry-run changed or misidentified the source.");
             }
@@ -201,11 +202,20 @@ jobs:
             } catch (\RuntimeException $expected) {
               // A valid mutation always carries the prior file checksum.
             }
+            try {
+              $files->writeText(array("path" => $relative, "content" => $updatedText,
+                "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+              WP_CLI::error("Active HTML replacement incorrectly skipped explicit approval.");
+            } catch (\RuntimeException $expected) {
+              // Browser-active edits need an additional explicit risk acknowledgement.
+            }
             $write = $files->writeText(array("path" => $relative, "content" => $updatedText,
-              "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+              "expected_sha256" => hash("sha256", $content),
+              "acknowledge_active_content" => true), array("dry_run" => false));
             if (($write["after"]["sha256"] ?? "") !== hash("sha256", $updatedText)
                 || file_get_contents(ABSPATH . $relative) !== $updatedText
-                || ($write["_rollback"]["action"] ?? "") !== "filesystem.write_text") {
+                || ($write["_rollback"]["action"] ?? "") !== "filesystem.write_text"
+                || ($write["_rollback"]["payload"]["acknowledge_active_content"] ?? null) !== true) {
               WP_CLI::error("Filesystem edit did not persist or lost its rollback data.");
             }
             $restored = $files->writeText($write["_rollback"]["payload"], array("dry_run" => false));
