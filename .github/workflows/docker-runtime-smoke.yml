@@ -113,6 +113,63 @@ jobs:
             }
             WP_CLI::success("Eight anonymous HTTP/HTTPS REST gate probes passed");
           '
+      - name: Verify modern MCP read-only resources and prompts with real WordPress auth
+        run: |
+          wp-env run cli wp eval '
+            $namespace = "/webactueel-wordpress-connector/v1/mcp";
+            $_SERVER["HTTPS"] = "on";
+            $modernMeta = array(
+              "io.modelcontextprotocol/protocolVersion" => "2026-07-28",
+              "io.modelcontextprotocol/clientCapabilities" => array()
+            );
+            $send = static function (string $method, array $args = array()) use ($namespace, $modernMeta) {
+              $request = new WP_REST_Request("POST", $namespace);
+              $request->set_header("Content-Type", "application/json");
+              $request->set_header("MCP-Protocol-Version", "2026-07-28");
+              $request->set_header("Mcp-Method", $method);
+              $args["_meta"] = $modernMeta;
+              $request->set_body(wp_json_encode(array(
+                "jsonrpc" => "2.0",
+                "id" => "smoke-" . $method,
+                "method" => $method,
+                "params" => $args,
+              )));
+              return rest_do_request($request);
+            };
+            wp_set_current_user(0);
+            $unauthenticated = $send("resources/list");
+            if ($unauthenticated->get_status() !== 401) {
+              WP_CLI::error("Anonymous MCP resource listing was not denied");
+            }
+            $admins = get_users(array("role" => "administrator", "number" => 1));
+            if (!$admins) WP_CLI::error("Disposable WordPress lacks administrator");
+            wp_set_current_user((int) $admins[0]->ID);
+            $list = $send("resources/list");
+            $data = $list->get_data();
+            if ($list->get_status() !== 200 || count($data["result"]["resources"] ?? array()) !== 2 ||
+              ($data["result"]["cacheScope"] ?? "") !== "private") {
+              WP_CLI::error("Real WordPress standard MCP resources/list failed");
+            }
+            $read = $send("resources/read", array("uri" => "wordpress-connector://guide/safe-changes"));
+            if ($read->get_status() !== 200 || empty($read->get_data()["result"]["contents"][0]["text"])) {
+              WP_CLI::error("Real WordPress standard MCP resources/read failed");
+            }
+            $prompts = $send("prompts/list");
+            if ($prompts->get_status() !== 200 || count($prompts->get_data()["result"]["prompts"] ?? array()) !== 2) {
+              WP_CLI::error("Real WordPress standard MCP prompts/list failed");
+            }
+            $prompt = $send("prompts/get", array("name" => "wordpress_connector_readonly_audit"));
+            if ($prompt->get_status() !== 200 ||
+              empty($prompt->get_data()["result"]["messages"][0]["content"]["text"])) {
+              WP_CLI::error("Real WordPress standard MCP prompts/get failed");
+            }
+            $blocked = $send("resources/read", array("uri" => "file:///etc/passwd"));
+            if ($blocked->get_status() !== 200 ||
+              ($blocked->get_data()["error"]["code"] ?? 0) !== -32602) {
+              WP_CLI::error("MCP resource allowlist did not reject local files");
+            }
+            WP_CLI::success("Real WordPress private MCP resources/prompts, anonymous denial and URI guards verified");
+          '
       - name: Verify plugin install hooks, lifecycle and confirmed asset writes on real WordPress
         run: |
           wp-env run cli wp eval '
