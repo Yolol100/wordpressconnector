@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-update-preview-11910-20261018",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T07:53:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.19.4",
+    "to_version": "1.19.10",
+    "before_fingerprint": "563e78b3b373e9707ec2a251f71c377add0857db40bcb5be590faecea5e9a73a",
+    "rollback_supported": false,
+    "readback_verified": null
+}
