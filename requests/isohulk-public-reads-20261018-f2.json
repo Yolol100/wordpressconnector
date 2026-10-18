@@ -6,10 +6,6 @@
   "payload": {
     "operations": [
       {
-        "action": "site.identity.inspect",
-        "payload": {}
-      },
-      {
         "action": "post.list",
         "payload": {
           "post_type": "page",
