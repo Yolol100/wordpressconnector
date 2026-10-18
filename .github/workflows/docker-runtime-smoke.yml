@@ -498,7 +498,7 @@ jobs:
                 strpos($html, "does NOT connect ChatGPT") === false) {
               WP_CLI::error("MCP browser doctor admin controls are missing or misleading");
             }
-            do_action("admin_enqueue_scripts", "settings_page_wordpressconnector");
+            (new \Webactueel\WordPressConnector\Admin\Settings())->enqueueConnectionDoctor("settings_page_wordpressconnector");
             if (!wp_script_is("wpconnector-connection-doctor", "enqueued")) {
               WP_CLI::error("Admin MCP diagnostic script was not enqueued on its settings page");
             }
