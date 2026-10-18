@@ -8,6 +8,7 @@ use Webactueel\WordPressConnector\Adapters\AbilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\AcfAdapter;
 use Webactueel\WordPressConnector\Adapters\AutoImageAttributesAdapter;
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
+use Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter;
 use Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter;
 use Webactueel\WordPressConnector\Adapters\CodeSnippetsAdapter;
 use Webactueel\WordPressConnector\Adapters\CoreAdapter;
@@ -61,6 +62,7 @@ final class Plugin
         $registry = new Registry();
         $adapters = array(
             new DiscoveryAdapter(),
+            new ConnectionReadinessAdapter(),
             new AbilitiesAdapter(),
             new CoreAdapter(),
             new GutenbergAdapter(),

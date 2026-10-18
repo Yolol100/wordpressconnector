@@ -147,6 +147,16 @@ For dedicated connector writes, use the same safe sequence as REST: discovery ->
 
 Static CI is not production-runtime proof. First live writes remain staging-first or require equivalent target-runtime evidence. A change on GitHub `main` is not automatically downloadable: `Connector CI` must pass and the `Connector Release` job must publish a new versioned GitHub ZIP. WordPress does not receive an instant push; opening Plugins after the short check interval or clicking **Check GitHub update now** triggers the bounded native update notice check. If the host blocks outgoing GitHub API requests, WordPress cannot show a verified new release.
 
+## ChatGPT and full-site recovery setup assistant (v1.19.17)
+
+Open **WordPress → Settings → WordPress Connector → ChatGPT connection and recovery setup**. The guide is read-only and checks the current HTTPS context, whether GitHub administrator pairing is recorded, and a small fixed list of **active** backup plugins. It shows actual outstanding steps for OAuth, database+files backup, offsite storage and independent staging restoration. Backup-plugin detection **never** marks backup, offsite copy or a restore as verified.
+
+The new private `connector.setup.inspect` action requires authenticated `manage_options`, is excluded from the public GitHub request allowlist, accepts no inputs and cannot create credentials, call third-party servers, run backups, trigger restores, modify settings or grant write permission. If a site has no supported plugin, the host may still manage backups; this guide cannot see host backups without a separately consented, provider-specific API. Core's plugin/theme temporary backup protects update failures only and is not a full-site backup.
+
+**This is not a working ChatGPT OAuth connection.** That still requires a trusted OAuth 2.1 authorization issuer, public protected-resource metadata, PKCE, token audience/scope verification, explicit per-user WordPress mapping and refresh/revocation proof (issue #984), plus user/admin consent in a ChatGPT workspace. An application password for HTTPS Basic Auth cannot substitute for that OAuth contract. Never enter WordPress credentials in GitHub branches, ChatGPT chats or URLs.
+
+**This is not a full backup engine.** A real usable backup needs database + files, storage independent of the site/host, and a verified restore on an isolated staging clone. The site owner must connect/approve a compatible host or backup provider and perform the first restore test. Staging and backup providers differ; no universal authenticated host restore API exists in WordPress Core.
+
 ## Direct MCP credential button (admin opt-in)
 
 An authenticated administrator may use **Settings > WordPress Connector > Generate my direct MCP password**. This opt-in creates a dedicated WordPress Application Password for the **currently signed-in** account only; it does not select the first account. The form requires a valid WordPress nonce, explicit acceptance, HTTPS, the `create_app_password` capability and WordPress Application Password availability. Only the one-time response displays the plaintext value, with no-cache headers; revoke it from the WordPress Profile page. Do not post this password to a GitHub repository, workflow, issue, log or conversation.

@@ -12,6 +12,7 @@ if ($catalog === false) {
 $expected = array(
     'cache.flush' => 'mutation, privileged',
     'connector.rest_catalog' => 'privileged',
+    'connector.setup.inspect' => 'privileged',
     'core.check_updates' => 'privileged',
     'core.update' => 'mutation, privileged, system_update',
     'cron.delete' => 'mutation, privileged',

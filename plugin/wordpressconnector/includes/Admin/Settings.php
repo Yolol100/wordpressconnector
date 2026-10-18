@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\Admin;
 
 use Webactueel\WordPressConnector\Security\SitePairing;
+use Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter;
 
 final class Settings
 {
@@ -207,6 +208,8 @@ final class Settings
         echo '</tbody></table>';
         echo '<p>' . esc_html__('Hosting/WAF blocks (401/403/429), outbound GitHub JWKS access, permalinks and third-party plugin compatibility still require a real end-to-end test. An installed plugin alone cannot fix a firewall, missing user permissions or absent dependencies.', 'wordpressconnector') . '</p>';
 
+        $this->renderConnectionRecoveryGuide();
+
         echo '<h2>' . esc_html__('GitHub plugin updates', 'wordpressconnector') . '</h2>';
         echo '<p>' . esc_html__('The Plugins screen checks the canonical GitHub release at most once every two minutes while a plugin administrator views it. If a verified newer release exists, WordPress shows its standard Update Now action. Use the Check GitHub update now link beside this plugin for an immediate manual refresh. A commit on GitHub main is not an installable update until CI passes and the versioned release ZIP is published.', 'wordpressconnector') . '</p>';
         echo '<h2>' . esc_html__('Connection', 'wordpressconnector') . '</h2>';
@@ -225,6 +228,65 @@ final class Settings
         echo '<p><code>' . esc_html__('presence -> OIDC health -> connector.discover -> system.doctor -> dry-run mutation -> confirmed staging write + rollback', 'wordpressconnector') . '</code></p>';
         echo '<p>' . esc_html__('Optional emergency policy overrides can disable connector actions. WordPress-native REST/MCP needs an authenticated WordPress user; GitHub OIDC is automatically paired on ordinary administrator activation, and never bypasses policy gates.', 'wordpressconnector') . '</p>';
         echo '</div>';
+    }
+
+
+    /**
+     * Guided setup does not create OAuth credentials, trigger backups,
+     * connect hosting accounts, or claim that a staging restore was tested.
+     * It reuses the private read-only connector readiness facts.
+     */
+    private function renderConnectionRecoveryGuide(): void
+    {
+        $status = (new ConnectionReadinessAdapter())->inspect();
+        $site = $status['wordpress'];
+        $oauth = $status['chatgpt'];
+        $recovery = $status['recovery'];
+
+        echo '<h2>' . esc_html__('ChatGPT connection and recovery setup', 'wordpressconnector') . '</h2>';
+        echo '<p>' . esc_html__('This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector') . '</p>';
+        echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
+        echo '<th scope="col">' . esc_html__('Setup step', 'wordpressconnector') . '</th>';
+        echo '<th scope="col">' . esc_html__('Current evidence', 'wordpressconnector') . '</th>';
+        echo '</tr></thead><tbody>';
+
+        $rows = array(
+            __('HTTPS for WordPress and MCP', 'wordpressconnector') =>
+                $site['https_ready'] ? __('Available', 'wordpressconnector') : __('Needs attention', 'wordpressconnector'),
+            __('GitHub site pairing', 'wordpressconnector') =>
+                $site['github_pairing_recorded'] ? __('Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector') : __('Not recorded', 'wordpressconnector'),
+            __('Direct ChatGPT OAuth', 'wordpressconnector') =>
+                $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector'),
+            __('Full database and files backup', 'wordpressconnector') =>
+                __('Not independently verified', 'wordpressconnector'),
+            __('Copy stored outside this hosting account', 'wordpressconnector') =>
+                __('Not independently verified', 'wordpressconnector'),
+            __('Full restore tested on staging', 'wordpressconnector') =>
+                __('Not independently verified', 'wordpressconnector'),
+        );
+        foreach ($rows as $label => $value) {
+            echo '<tr><th scope="row">' . esc_html($label) . '</th><td>' . esc_html($value) . '</td></tr>';
+        }
+        echo '</tbody></table>';
+
+        $providers = $recovery['active_backup_plugins_detected'];
+        if (count($providers) > 0) {
+            echo '<p>' . esc_html__('Active backup plugin detected (not proof of a usable backup):', 'wordpressconnector') . ' <strong>' . esc_html(implode(', ', $providers)) . '</strong>.</p>';
+        } else {
+            echo '<p>' . esc_html__('No recognized backup plugin is active. Your hosting company may still provide backups; WordPress cannot verify their contents or restore status by itself.', 'wordpressconnector') . '</p>';
+        }
+
+        echo '<ol>';
+        echo '<li>' . esc_html__('First enable a trusted OAuth 2.1 provider or broker with PKCE, token validation and explicit WordPress-account linking. Do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector') . '</li>';
+        echo '<li>' . esc_html__('In a ChatGPT workspace that permits custom MCP connections, an admin must add the HTTPS MCP endpoint and approve OAuth linking.', 'wordpressconnector') . '</li>';
+        echo '<li>' . esc_html__('Configure a full backup with the hosting or backup provider: files plus database, with an independent offsite copy.', 'wordpressconnector') . '</li>';
+        echo '<li>' . esc_html__('Restore that backup on a separate staging site and confirm that content, files, plugins and the database are intact before high-risk writes.', 'wordpressconnector') . '</li>';
+        echo '</ol>';
+        echo '<p><a href="' . esc_url(admin_url('plugins.php')) . '">' . esc_html__('Review backup plugins', 'wordpressconnector') . '</a> | ';
+        echo '<a href="' . esc_url('https://help.openai.com/en/articles/12584461-connecting-custom-mcp-servers-in-chatgpt') . '">' . esc_html__('Official ChatGPT MCP connection instructions', 'wordpressconnector') . '</a> | ';
+        echo '<a href="' . esc_url('https://developer.wordpress.org/advanced-administration/security/backup/') . '">' . esc_html__('WordPress full-site backup guidance', 'wordpressconnector') . '</a></p>';
+        echo '<p><strong>' . esc_html__('High-risk actions must remain on a tested staging and backup path.', 'wordpressconnector') . '</strong> ';
+        echo esc_html__('An installed backup plugin, the WordPress temporary update backup, or a green CI run are not proof that a complete site can be restored.', 'wordpressconnector') . '</p>';
     }
 
     private function legacyBridgeActive(): bool
