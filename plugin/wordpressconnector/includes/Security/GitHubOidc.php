@@ -16,7 +16,7 @@ final class GitHubOidc
         'Yolol100/wordpressconnector' => array(
             'repository_id' => '1341990468',
             'workflow_ref' => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
-            'visibility' => array('public'),
+            'visibility' => array('public', 'private'),
         ),
         'Yolol100/Wordpress' => array(
             'repository_id' => '933904076',
