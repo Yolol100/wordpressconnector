@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-probe-acf-20261018-b1",
+  "action": "acf.field_groups",
+  "payload": {
+    "post_id": 264
+  },
+  "dry_run": true,
+  "confirm": false
+}
