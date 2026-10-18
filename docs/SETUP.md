@@ -164,3 +164,12 @@ An authenticated administrator may use **Settings > WordPress Connector > Genera
 **ChatGPT web custom MCP is a different authentication client:** current ChatGPT custom MCP connection choices include OAuth and unauthenticated transport; WordPress Application Password / Basic Auth is **not** a replacement for OAuth in that workflow. Do not mark direct ChatGPT linking as working merely because the button generates a password. Use a separately security-reviewed OAuth authorization server or trusted OAuth-capable bridge before enabling ChatGPT connections. The current GitHub workflow already uses short-lived OIDC without Application Passwords, and remains unchanged.
 
 Before using either path on a real site: read back the currently deployed Connector version; validate WordPress REST/MCP authorization, HTTP 401/403 rejection, capability enforcement, explicit confirmation, and revocation. Use an isolated WordPress test and security acceptance before deploying this change.
+
+
+## Read-only local MCP connection doctor (v1.19.18)
+
+In **WordPress > Settings > WordPress Connector > ChatGPT connection and recovery setup**, an administrator can **Copy endpoint** and **Test MCP connection from this WordPress browser**. The browser test uses the current authenticated WordPress session and a WordPress REST nonce to call exactly one MCP `server/discover` endpoint with the `2026-07-28` protocol headers. It performs no write and stores no token or password.
+
+Successful status means **only that the currently signed-in browser can reach the site's authenticated MCP endpoint**. It is **not** evidence that ChatGPT has completed OAuth, that the internet or ChatGPT can reach the endpoint, or that backups are usable. The entire flow uses no Application Password and does not weaken GitHub OIDC. A failed browser test suggests a missing nonce/auth state, a REST/protocol incompatibility or a WAF/reverse proxy issue.
+
+The research and requirement matrix is in [MCP competitor audit, 2026-10-18](MCP-COMPETITOR-AUDIT-2026-10-18.md). Follow [OAuth issue #984](https://github.com/Yolol100/wordpressconnector/issues/984) for the separately secured authorization server and real ChatGPT account linking. Existing WordPress permissions, capability flags, `confirm=true` and verified restore gates stay authoritative.
