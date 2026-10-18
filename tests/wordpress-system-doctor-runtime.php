@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+// WP-CLI eval-file prepends code, so strict_types cannot be declared here.
 
 if (! defined('ABSPATH') || ! defined('WPCONNECTOR_VERSION')) {
     throw new RuntimeException('WordPress Connector was not loaded into WordPress.');
