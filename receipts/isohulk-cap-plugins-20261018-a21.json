@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-cap-plugins-20261018-a21",
+    "action": "plugin.audit.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T14:00:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "installed_count": 20,
+    "active_count": 20,
+    "inactive_count": 0,
+    "unmodeled_count": 0,
+    "provider_checks_count": 7,
+    "must_use_count": 2,
+    "dropin_count": 1,
+    "private_settings_exported": false,
+    "inventory_details_exported": false,
+    "readback_verified": null
+}
