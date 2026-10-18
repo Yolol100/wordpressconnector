@@ -17,6 +17,9 @@ class WP_Filesystem_Base
     public function delete($path, $recursive = false, $type = false): bool {
         return $recursive ? false : unlink($path);
     }
+    public function put_contents($path, $content, $mode = false): bool {
+        return false !== file_put_contents($path, $content);
+    }
 }
 $GLOBALS['wp_filesystem'] = new WP_Filesystem_Base();
 $GLOBALS['wpconn_file_edits_allowed'] = true;
@@ -212,6 +215,48 @@ if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
 $fail(static function()use($fs,$path,$content) {
     $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
+$replacement = '<div>Updated QA content, rollback required</div>';
+$writePlan = $fs->writeText(array('path'=>$path,'content'=>$replacement),array('dry_run'=>true));
+if (empty($writePlan['requires_active_content_acknowledgement']) ||
+    file_get_contents($root.$path) !== $content) {
+    throw new RuntimeException('Browser-active replacement preview mutated the target or hid its risk.');
+}
+$fail(static function()use($fs,$path,$replacement,$content) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,
+        'expected_sha256'=>hash('sha256',$content)),array('dry_run'=>false));
+}, 'HTML replacement without active-content acknowledgement');
+$fail(static function()use($fs,$path,$replacement) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,
+        'expected_sha256'=>str_repeat('0',64),'acknowledge_active_content'=>true),array('dry_run'=>false));
+}, 'HTML replacement with stale fingerprint');
+$fail(static function()use($fs,$path) {
+    $fs->writeText(array('path'=>$path,'content'=>'{"api_key":"real-production-credential"}'),
+        array('dry_run'=>true));
+}, 'embedded secret in replacement content');
+$GLOBALS['wpconn_file_edits_allowed'] = false;
+$fail(static function()use($fs,$path,$replacement,$content) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,
+        'expected_sha256'=>hash('sha256',$content),'acknowledge_active_content'=>true),
+        array('dry_run'=>false));
+}, 'WordPress file modification policy for replacement');
+$GLOBALS['wpconn_file_edits_allowed'] = true;
+$written = $fs->writeText(array('path'=>$path,'content'=>$replacement,
+    'expected_sha256'=>hash('sha256',$content),'acknowledge_active_content'=>true),
+    array('dry_run'=>false));
+if (file_get_contents($root.$path) !== $replacement ||
+    ($written['after']['sha256'] ?? '') !== hash('sha256',$replacement) ||
+    ($written['_rollback']['payload']['acknowledge_active_content'] ?? null) !== true) {
+    throw new RuntimeException('Confirmed active-content replacement did not persist or preserve rollback acknowledgement.');
+}
+$restoredWrite = $fs->writeText($written['_rollback']['payload'],array('dry_run'=>false));
+if (file_get_contents($root.$path) !== $content ||
+    ($restoredWrite['after']['sha256'] ?? '') !== hash('sha256',$content)) {
+    throw new RuntimeException('Browser-active replacement rollback did not restore original bytes.');
+}
+if (FilesystemPolicy::affectsBrowserExecution('wp-content/plugins/sample/main.php')) {
+    throw new RuntimeException('PHP must retain its separate parser/capability safety path.');
+}
+
 $deletePlan = $fs->deleteText(array('path'=>$path),array('dry_run'=>true));
 if (empty($deletePlan['requires_active_content_acknowledgement'])) {
     throw new RuntimeException('HTML deletion preview did not declare browser-active asset.');
