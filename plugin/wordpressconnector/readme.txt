@@ -173,7 +173,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 == Changelog ==
 
 = 1.19.13 =
-Add guarded theme ZIP new installation through public owner-authorized OIDC with exact ZIP checksum and style.css/theme identity validation, dry-run fingerprint and confirm=true. Theme overwrites and arbitrary theme/plugin deletion remain excluded from public transport. Existing private-only file changes, plugin/theme management and backups remain subject to their own security permissions. Fix OIDC regression test error expectation. Require WordPress runtime verification before publishing or deploying.
+Add verified theme ZIP new installation through public owner-authorized OIDC with exact ZIP checksum, theme identity validation, dry-run fingerprint and confirmation. For private authenticated REST only, permit inactive standalone theme replacement after WordPress Core temporary backup, with verified restoration on error. Public theme overwrites, code-file editing and arbitrary plugin/theme deletion remain blocked. WordPress temporary backups are not durable; require external backup and staging acceptance. Fix OIDC regression test assertion.
 
 = 1.19.12 =
 Permit the canonical pinned wordpressconnector GitHub Actions OIDC workflow in both signed public and signed private repository visibility modes. Existing public request allowlist, private permission checks, explicit confirmation, idempotency, replay protection, stale-state and rollback boundaries remain in force. Private GitHub repositories require private Actions allowance and cannot assume public GitHub Releases are accessible to the WordPress updater. Deploy only after CI and site-level acceptance.
