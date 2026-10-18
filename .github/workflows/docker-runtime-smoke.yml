@@ -187,25 +187,53 @@ jobs:
             if (empty($c["after"]["sha256"]) || file_get_contents(ABSPATH . $relative) !== $content) {
               WP_CLI::error("Created HTML asset did not pass live readback.");
             }
+            $read = $files->readText(array("path" => $relative));
+            if (($read["content"] ?? "") !== $content) {
+              WP_CLI::error("Created HTML asset could not be read via the connector.");
+            }
             $updatedText = "<section>Updated disposable QA asset</section>";
             $writePreview = $files->writeText(array("path" => $relative, "content" => $updatedText),
               array("dry_run" => true));
             if (($writePreview["before"]["sha256"] ?? "") !== hash("sha256", $content)
+                || empty($writePreview["requires_active_content_acknowledgement"])
                 || file_get_contents(ABSPATH . $relative) !== $content) {
               WP_CLI::error("Filesystem edit dry-run changed or misidentified the source.");
             }
             try {
-              $files->writeText(array("path" => $relative, "content" => $updatedText),
-                array("dry_run" => false));
+              $files->writeText(array("path" => $relative, "content" => $updatedText,
+                "acknowledge_active_content" => true), array("dry_run" => false));
               WP_CLI::error("Filesystem edit accepted a missing stale-state hash.");
             } catch (\RuntimeException $expected) {
               // A valid mutation always carries the prior file checksum.
             }
+            try {
+              $files->writeText(array("path" => $relative, "content" => $updatedText,
+                "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+              WP_CLI::error("Browser-active HTML edit bypassed explicit approval.");
+            } catch (\RuntimeException $expected) {
+              // Missing acknowledgement must never overwrite active browser code.
+            }
+            $blockEdits = static function ($allowed, $context) {
+              return "connector_filesystem" === $context ? false : $allowed;
+            };
+            add_filter("file_mod_allowed", $blockEdits, 10, 2);
+            try {
+              $files->writeText(array("path" => $relative, "content" => $updatedText,
+                "expected_sha256" => hash("sha256", $content),
+                "acknowledge_active_content" => true), array("dry_run" => false));
+              WP_CLI::error("WordPress file modification policy was bypassed.");
+            } catch (\RuntimeException $expected) {
+              // An authenticated request cannot override site/hosting file policy.
+            } finally {
+              remove_filter("file_mod_allowed", $blockEdits, 10);
+            }
             $write = $files->writeText(array("path" => $relative, "content" => $updatedText,
-              "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+              "expected_sha256" => hash("sha256", $content),
+              "acknowledge_active_content" => true), array("dry_run" => false));
             if (($write["after"]["sha256"] ?? "") !== hash("sha256", $updatedText)
                 || file_get_contents(ABSPATH . $relative) !== $updatedText
-                || ($write["_rollback"]["action"] ?? "") !== "filesystem.write_text") {
+                || ($write["_rollback"]["action"] ?? "") !== "filesystem.write_text"
+                || ($write["_rollback"]["payload"]["acknowledge_active_content"] ?? null) !== true) {
               WP_CLI::error("Filesystem edit did not persist or lost its rollback data.");
             }
             $restored = $files->writeText($write["_rollback"]["payload"], array("dry_run" => false));
