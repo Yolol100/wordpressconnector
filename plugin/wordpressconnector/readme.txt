@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.16
+Stable tag: 1.19.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.17 =
+* Add an administrator-only ChatGPT connection and full-site recovery setup guide under Settings > WordPress Connector.
+* Add private read-only connector.setup.inspect to report WordPress HTTPS/pairing evidence and detect a small set of active backup plugins without exporting credentials.
+* Fail closed: no backup, offsite copy, staging restore, GitHub OIDC execution or OAuth account authorization is marked verified merely because a plugin or setting exists.
+* No automatic credentials, OAuth issuer, host accounts, backup archives, database exports, restores or new write permissions are created.
+* Add isolated privacy/permission/negative tests and real WordPress admin-page/Docker tests. Existing GitHub actions are unchanged.
 
 = 1.19.16 =
 * Add private, native WordPress Site Editor template/template-part inventory, inspection and opt-in updates of already customized active-theme templates.
