@@ -125,7 +125,7 @@ Default package limit: 20 MiB compressed. `WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES`
 
 `theme.install_package` installs a new theme ZIP using the existing
 Connector asset store and WordPress Core `Theme_Upgrader`. The registered
-action is **not available through the public GitHub OIDC allowlist**.
+action is available over public GitHub OIDC **only for new installs** with `overwrite:false`, a published ZIP, a dry-run fingerprint, exact checksums and explicit confirmation. Private source ZIPs must not be uploaded to public branches.
 
 - Upload `theme-packages/<safe-name>.zip` under the same private request asset
   root; provide exact lowercase SHA-256, exact `expected_stylesheet` and
@@ -138,7 +138,7 @@ action is **not available through the public GitHub OIDC allowlist**.
   guarded system updates, `confirm:true`, and a dry-run/stale-state check.
 - New theme installation uses `overwrite:false`. It does not activate or
   switch the current theme.
-- Existing-theme `overwrite:true` currently supports **dry-run only**:
+- Public runtime forbids `overwrite:true` completely. With private direct REST, existing-theme `overwrite:true` currently supports **dry-run only**:
   destructive execution is blocked until a verified backup and rollback
   procedure is in place. Active themes, their parent and parent themes
   used by installed children are protected.
