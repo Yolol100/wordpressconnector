@@ -212,6 +212,43 @@ if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
 $fail(static function()use($fs,$path,$content) {
     $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
+$replacement = '<div>Updated QA browser asset</div>';
+$editPlan = $fs->writeText(array('path'=>$path,'content'=>$replacement),array('dry_run'=>true));
+if (empty($editPlan['requires_active_content_acknowledgement']) ||
+    ($editPlan['before']['sha256'] ?? '') !== hash('sha256',$content) ||
+    file_get_contents($root.$path) !== $content) {
+    throw new RuntimeException('HTML edit dry-run mutated the source or concealed active-code risk.');
+}
+$fail(static function() use($fs,$path,$content,$replacement) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,'expected_sha256'=>hash('sha256',$content)),
+        array('dry_run'=>false));
+},'browser-active replacement without explicit acknowledgement');
+$fail(static function() use($fs,$path,$replacement) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,'expected_sha256'=>str_repeat('0',64),
+        'acknowledge_active_content'=>true),array('dry_run'=>false));
+},'browser-active replacement with stale SHA');
+$fail(static function() use($fs,$path) {
+    $fs->writeText(array('path'=>$path,'content'=>'{"api_key":"ActualCredentialValue56789"}'),array('dry_run'=>true));
+},'embedded secret in replacement content');
+$GLOBALS['wpconn_file_edits_allowed'] = false;
+$fail(static function() use($fs,$path,$content,$replacement) {
+    $fs->writeText(array('path'=>$path,'content'=>$replacement,'expected_sha256'=>hash('sha256',$content),
+        'acknowledge_active_content'=>true),array('dry_run'=>false));
+},'WordPress file modification policy for replacements');
+$GLOBALS['wpconn_file_edits_allowed'] = true;
+$written = $fs->writeText(array('path'=>$path,'content'=>$replacement,
+    'expected_sha256'=>hash('sha256',$content),'acknowledge_active_content'=>true),array('dry_run'=>false));
+if (file_get_contents($root.$path)!==$replacement ||
+    ($written['after']['sha256'] ?? '') !== hash('sha256',$replacement) ||
+    ($written['_rollback']['payload']['acknowledge_active_content'] ?? null) !== true) {
+    throw new RuntimeException('Confirmed browser-active replacement failed readback or rollback consent.');
+}
+$restored = $fs->writeText($written['_rollback']['payload'],array('dry_run'=>false));
+if (file_get_contents($root.$path)!==$content ||
+    ($restored['after']['sha256'] ?? '') !== hash('sha256',$content)) {
+    throw new RuntimeException('Browser-active replacement did not restore original bytes.');
+}
+
 $deletePlan = $fs->deleteText(array('path'=>$path),array('dry_run'=>true));
 if (empty($deletePlan['requires_active_content_acknowledgement'])) {
     throw new RuntimeException('HTML deletion preview did not declare browser-active asset.');
