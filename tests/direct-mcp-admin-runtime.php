@@ -39,6 +39,7 @@ function esc_html__($value, $domain = ''): string { return htmlspecialchars((str
 function esc_attr($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_url($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function admin_url(string $path): string { return 'https://example.invalid/wp-admin/' . $path; }
+function is_wp_error($value): bool { return false; }
 function nocache_headers(): void { ++$GLOBALS['direct_mcp']['no_cache']; }
 function wp_die($message = '', $title = '', $args = array()) {
     throw new ConnectorAdminStop($message, (int) ($args['response'] ?? 500));
