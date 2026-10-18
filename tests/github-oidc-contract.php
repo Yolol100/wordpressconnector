@@ -131,7 +131,7 @@ if(1!==$restoredPublicId||!Policy::publicRepositoryContext()){
     fwrite(STDERR,"Public canonical repo must retain public safety mode.\\n");exit(1);
 }
 try {
-    Policy::assertActionAllowed(array('name'=>'user.create','sensitive'=>true),true,true);
+    Policy::assertActionAllowed(array('name'=>'site.identity.inspect','sensitive'=>true),true,true);
     fwrite(STDERR,"Public canonical repository exposed sensitive actions.\\n");exit(1);
 } catch (RuntimeException $e) {
     if(false===strpos($e->getMessage(),'Sensitive actions are blocked')) throw $e;

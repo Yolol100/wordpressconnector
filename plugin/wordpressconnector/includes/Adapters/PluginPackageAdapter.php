@@ -29,6 +29,176 @@ final class PluginPackageAdapter
                 'description' => 'Install or overwrite a plugin from a verified ZIP uploaded to the trusted request asset root.',
             )
         );
+        $this->registerThemePackage($registry);
+    }
+
+    /**
+     * A theme ZIP uses the same private request asset store and exact SHA-256
+     * binding as plugin packages. Public requests cannot invoke this action.
+     */
+    public function registerThemePackage(Registry $registry): void
+    {
+        $registry->register(
+            'theme.install_package',
+            array($this, 'installThemePackage'),
+            array(
+                'mutation' => true,
+                'privileged' => true,
+                'system_update' => true,
+                'capability' => 'install_themes',
+                'description' => 'Install or replace an inactive theme from a verified, private request ZIP.',
+            )
+        );
+    }
+
+    public function installThemePackage(array $payload, array $context): array
+    {
+        if (array_diff(array_keys($payload), array('source_path', 'sha256', 'expected_stylesheet', 'overwrite'))) {
+            throw new RuntimeException('Theme package request contains unsupported fields.');
+        }
+        $source = isset($payload['source_path']) && is_string($payload['source_path']) ? $payload['source_path'] : '';
+        $expected = isset($payload['expected_stylesheet']) && is_string($payload['expected_stylesheet']) ? $payload['expected_stylesheet'] : '';
+        if (! preg_match('#^theme-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $source)
+            || ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}\z/', $expected)
+            || ! array_key_exists('overwrite', $payload) || ! is_bool($payload['overwrite'])) {
+            throw new RuntimeException('Theme package requires safe ZIP, expected_stylesheet and explicit overwrite boolean.');
+        }
+        $overwrite = $payload['overwrite'];
+        if (! current_user_can('install_themes') || ($overwrite && ! current_user_can('update_themes'))) {
+            throw new RuntimeException('Current user lacks theme install or replacement capabilities.');
+        }
+        $root = isset($context['asset_root']) ? (string) $context['asset_root'] : '';
+        if ('' === $root) {
+            throw new RuntimeException('Theme ZIP requires a trusted, private request asset root.');
+        }
+        $package = Policy::assertLocalAssetPath($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $source), $root);
+        if (defined('WP_CONTENT_DIR')) {
+            $contentRoot = realpath(WP_CONTENT_DIR);
+            if (false !== $contentRoot && 0 === strpos($package, rtrim($contentRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'upgrade' . DIRECTORY_SEPARATOR)) {
+                throw new RuntimeException('Theme package must not be inside WordPress upgrade scratch storage.');
+            }
+        }
+        $size = filesize($package);
+        if (false === $size || $size < 1 || $size > self::MAX_PACKAGE_BYTES) {
+            throw new RuntimeException('Theme package exceeds the 20 MiB size limit.');
+        }
+        $sha256 = isset($payload['sha256']) && is_string($payload['sha256']) ? $payload['sha256'] : '';
+        if (! preg_match('/^[a-f0-9]{64}\z/', $sha256)
+            || ! hash_equals($sha256, (string) hash_file('sha256', $package))) {
+            throw new RuntimeException('Theme package SHA-256 does not match.');
+        }
+        $info = $this->inspectThemePackage($package, $expected);
+        if ($expected === get_stylesheet() || $expected === get_template()) {
+            throw new RuntimeException('Refusing to replace or install over the active theme or its parent.');
+        }
+        $current = wp_get_theme($expected);
+        $installed = $current->exists();
+        if ($installed !== $overwrite) {
+            throw new RuntimeException($installed ? 'Theme exists; overwrite must be explicitly true.' : 'Theme is not installed; overwrite must be false.');
+        }
+        if ($installed) {
+            $themeRoot = realpath(get_theme_root($expected));
+            $canonical = realpath(get_theme_root());
+            if (false === $themeRoot || false === $canonical || ! hash_equals($canonical, $themeRoot)) {
+                throw new RuntimeException('Custom theme roots cannot be overwritten via the connector.');
+            }
+            foreach (wp_get_themes() as $name => $theme) {
+                if ($name !== $expected && (string) $theme->get('Template') === $expected) {
+                    throw new RuntimeException('Refusing to overwrite a parent theme used by an installed child.');
+                }
+            }
+        }
+        $before = array('stylesheet' => $expected, 'installed' => $installed, 'version' => $installed ? (string) $current->get('Version') : null);
+        $plan = array('stylesheet' => $expected, 'source_path' => $source,
+            'sha256' => $sha256, 'bytes' => (int) $size, 'overwrite' => $overwrite,
+            'archive_entries' => $info['entries'], 'uncompressed_bytes' => $info['uncompressed_bytes']);
+        if (! empty($context['dry_run'])) {
+            return array('would_install_theme_package' => $plan, 'before' => $before,
+                '_current_fingerprint' => Fingerprint::make($before));
+        }
+
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        $upgrader = new \Theme_Upgrader(new \Automatic_Upgrader_Skin());
+        // Uploaded-theme replacement in WordPress Core is destructive. Keep
+        // overwrites fail-closed until a separate recoverable backup exists.
+        if ($overwrite) {
+            throw new RuntimeException('Theme ZIP overwrite is blocked until verified backup and rollback support are available.');
+        }
+        $result = $upgrader->install($package, array('overwrite_package' => false));
+        if (is_wp_error($result) || true !== $result) {
+            throw new RuntimeException(is_wp_error($result) ? $result->get_error_message()
+                : 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.');
+        }
+        wp_clean_themes_cache();
+        $afterTheme = wp_get_theme($expected);
+        if (! $afterTheme->exists()) {
+            throw new RuntimeException('Theme installation readback failed.');
+        }
+        return array('operation' => 'installed', 'package' => $plan, 'before' => $before,
+            'after' => array('stylesheet' => $expected, 'version' => (string) $afterTheme->get('Version')),
+            'rollback_supported' => false, 'readback_verified' => true);
+    }
+
+    private function inspectThemePackage(string $package, string $expected): array
+    {
+        if (! class_exists('ZipArchive')) {
+            throw new RuntimeException('PHP ZipArchive is required for theme package inspection.');
+        }
+        $zip = new \ZipArchive();
+        if (true !== $zip->open($package, \ZipArchive::RDONLY)) {
+            throw new RuntimeException('Invalid theme ZIP archive.');
+        }
+        try {
+            if ($zip->numFiles < 2 || $zip->numFiles > self::MAX_ENTRIES) {
+                throw new RuntimeException('Theme ZIP has an invalid number of files.');
+            }
+            $seen = array();
+            $total = 0;
+            $style = '';
+            for ($i = 0; $i < $zip->numFiles; ++$i) {
+                $stat = $zip->statIndex($i, \ZipArchive::FL_UNCHANGED);
+                if (! is_array($stat) || ! isset($stat['name'])) {
+                    throw new RuntimeException('Unreadable theme ZIP member.');
+                }
+                $path = (string) $stat['name'];
+                if (strlen($path) > 512 || false !== strpos($path, "\0")
+                    || preg_match('/[\x01-\x1F\x7F]/', $path)
+                    || false !== strpos($path, '\\') || '/' === substr($path, 0, 1)
+                    || preg_match('/^[A-Za-z]:/', $path)) {
+                    throw new RuntimeException('Unsafe theme ZIP path.');
+                }
+                $normal = rtrim($path, '/');
+                $segments = explode('/', $normal);
+                if (count($segments) < 1 || $segments[0] !== $expected || isset($seen[$normal])) {
+                    throw new RuntimeException('Theme ZIP folder or duplicate path mismatch.');
+                }
+                foreach ($segments as $segment) {
+                    if ($segment === '' || $segment === '.' || $segment === '..') {
+                        throw new RuntimeException('Theme ZIP contains traversal or invalid path.');
+                    }
+                }
+                $seen[$normal] = true;
+                $bytes = isset($stat['size']) ? (int) $stat['size'] : -1;
+                if ($bytes < 0) throw new RuntimeException('Invalid theme ZIP entry size.');
+                $total += $bytes;
+                if ($total > self::MAX_UNCOMPRESSED_BYTES) throw new RuntimeException('Theme ZIP exceeds extracted size budget.');
+                $opsys = 0; $attributes = 0;
+                if ($zip->getExternalAttributesIndex($i, $opsys, $attributes)
+                    && 0xA000 === (($attributes >> 16) & 0xF000)) {
+                    throw new RuntimeException('Theme ZIP must not contain symbolic links.');
+                }
+                if ($normal === $expected . '/style.css' && '/' !== substr($path, -1)) {
+                    $style = (string) $zip->getFromIndex($i, min(8192, $bytes), \ZipArchive::FL_UNCHANGED);
+                }
+            }
+            if ('' === $style || ! preg_match('/(?:^|\n)[ \t\/\*#@]*Theme Name:\s*\S/i', $style)) {
+                throw new RuntimeException('Theme ZIP lacks a valid root style.css theme header.');
+            }
+            return array('entries' => $zip->numFiles, 'uncompressed_bytes' => $total);
+        } finally {
+            $zip->close();
+        }
     }
 
     public function installPackage(array $payload, array $context): array

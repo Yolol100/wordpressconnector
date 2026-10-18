@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.12
+Stable tag: 1.19.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,9 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.13 =
+Add guarded theme ZIP new installation through public owner-authorized OIDC with exact ZIP checksum and style.css/theme identity validation, dry-run fingerprint and confirm=true. Theme overwrites and arbitrary theme/plugin deletion remain excluded from public transport. Existing private-only file changes, plugin/theme management and backups remain subject to their own security permissions. Fix OIDC regression test error expectation. Require WordPress runtime verification before publishing or deploying.
 
 = 1.19.12 =
 Permit the canonical pinned wordpressconnector GitHub Actions OIDC workflow in both signed public and signed private repository visibility modes. Existing public request allowlist, private permission checks, explicit confirmation, idempotency, replay protection, stale-state and rollback boundaries remain in force. Private GitHub repositories require private Actions allowance and cannot assume public GitHub Releases are accessible to the WordPress updater. Deploy only after CI and site-level acceptance.

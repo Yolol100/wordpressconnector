@@ -52,9 +52,9 @@ foreach ($adapterRequired as $needle) {
 }
 
 $assetRequired = array(
-    "plugin-packages/",
+    "(?:plugin-packages|theme-packages)/",
     "array('zip' => 'application/zip')",
-    "connector plugin package",
+    "connector plugin/theme package",
 );
 foreach ($assetRequired as $needle) {
     if (strpos($assetStore, $needle) === false) {
@@ -89,6 +89,55 @@ foreach (array('dry-run consumes', 're-upload', 'expected_state_token') as $need
         fwrite(STDERR, "Plugin package documentation is missing lifecycle guidance: {$needle}\n");
         exit(1);
     }
+}
+
+// Theme ZIP support reuses the canonical installer. The public OIDC contract
+// permits only new installs; overwrite and deletion require private approval.
+$themeRequired = array(
+    "'theme.install_package'",
+    "registerThemePackage(\$registry)",
+    "installThemePackage(array \$payload",
+    "theme-packages/",
+    "expected_stylesheet",
+    "current_user_can('install_themes')",
+    "current_user_can('update_themes')",
+    "Refusing to replace or install over the active theme",
+    "Custom theme roots cannot be overwritten",
+    "Theme ZIP folder or duplicate path mismatch",
+    "Theme ZIP must not contain symbolic links",
+    "Theme ZIP lacks a valid root style.css theme header",
+    "Theme ZIP overwrite is blocked until verified backup and rollback support",
+    "new \Theme_Upgrader(",
+    "wp_clean_themes_cache()",
+    "readback_verified' => true",
+);
+foreach ($themeRequired as $needle) {
+    if (strpos($adapter, $needle) === false) {
+        fwrite(STDERR, "Missing guarded theme package contract: {$needle}\n");
+        exit(1);
+    }
+}
+if (strpos($assetStore, "(?:plugin-packages|theme-packages)") === false) {
+    fwrite(STDERR, "Trusted asset store does not allow the guarded theme ZIP path.\n");
+    exit(1);
+}
+if (strpos($docs, 'theme.install_package') === false) {
+    fwrite(STDERR, "Missing guarded theme package documentation.\n");
+    exit(1);
+}
+$publicPolicy = file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php');
+$publicRunner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+$publicValidator = file_get_contents($root . '/scripts/validate-public-request.php');
+foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {
+    if (! is_string($boundary) || strpos($boundary, "'theme.install_package'") === false) {
+        fwrite(STDERR, "Missing bounded public theme ZIP contract.\n");
+        exit(1);
+    }
+}
+if (strpos($publicRunner, "\$payload['overwrite'] !== false") === false ||
+    strpos($publicValidator, "overwrite=false") === false) {
+    fwrite(STDERR, "Public theme ZIP overwrite must remain denied.\n");
+    exit(1);
 }
 
 echo "plugin package contract OK\n";

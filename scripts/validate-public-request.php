@@ -619,6 +619,44 @@ if ('plugin.install_package' === $action) {
     return;
 }
 
+if ('theme.install_package' === $action) {
+    $payload = $data['payload'] ?? null;
+    $errors = array();
+    if (! is_array($payload) || array_diff(array_keys($payload), array('source_path','sha256','expected_stylesheet','overwrite'))
+        || count($payload) !== 4
+        || ! is_string($payload['source_path'] ?? null)
+        || ! preg_match('#^theme-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip$#D', $payload['source_path'])
+        || ! is_string($payload['sha256'] ?? null)
+        || ! preg_match('/^[a-f0-9]{64}$/D', $payload['sha256'])
+        || ! is_string($payload['expected_stylesheet'] ?? null)
+        || ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}$/D', $payload['expected_stylesheet'])
+        || ($payload['overwrite'] ?? null) !== false) {
+        $errors[] = 'Public theme ZIP installs allow only a new theme with verified identity, checksum and overwrite=false.';
+    }
+    if (array_key_exists('expected_state_token', $data) && null !== $data['expected_state_token']) {
+        $errors[] = 'Public theme requests must not contain private state tokens.';
+    }
+    if (($data['dry_run'] ?? null) === true) {
+        if (($data['confirm'] ?? null) !== false || array_key_exists('expected_fingerprint', $data)) {
+            $errors[] = 'Public theme dry-run cannot be confirmed or include a fingerprint.';
+        }
+    } elseif (($data['dry_run'] ?? null) === false) {
+        $fingerprint = $data['expected_fingerprint'] ?? null;
+        if (($data['confirm'] ?? null) !== true || ! is_string($fingerprint)
+            || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)) {
+            $errors[] = 'Public theme install requires confirmation and preceding dry-run fingerprint.';
+        }
+    } else {
+        $errors[] = 'Public theme install requires explicit dry_run flag.';
+    }
+    if ($errors) {
+        foreach (array_unique($errors) as $error) fwrite(STDERR, $error . "\n");
+        exit(1);
+    }
+    echo 'public runtime request OK: theme.install_package' . PHP_EOL;
+    return;
+}
+
 if ('custom_css.inspect' === $action || 'custom_css.patch' === $action) {
     $errors = array();
     $payload = isset($data['payload']) && is_array($data['payload']) ? $data['payload'] : array();

@@ -519,6 +519,24 @@ final class Runner
             $descriptor['public_repository_safe'] = false;
             return $descriptor;
         }
+        if ('theme.install_package' === $action) {
+            $allowed = array('source_path', 'sha256', 'expected_stylesheet', 'overwrite');
+            if (array_diff(array_keys($payload), $allowed) || count($payload) !== 4
+                || ! isset($payload['source_path']) || ! is_string($payload['source_path'])
+                || ! preg_match('#^theme-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $payload['source_path'])
+                || ! isset($payload['sha256']) || ! is_string($payload['sha256'])
+                || ! preg_match('/^[a-f0-9]{64}\z/', $payload['sha256'])
+                || ! isset($payload['expected_stylesheet']) || ! is_string($payload['expected_stylesheet'])
+                || ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}\z/', $payload['expected_stylesheet'])
+                || $payload['overwrite'] !== false) {
+                throw new RuntimeException('Public theme packages require a new theme, exact ZIP checksum and overwrite=false.');
+            }
+            if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
+                throw new RuntimeException('Confirmed public theme install requires preceding dry-run fingerprint.');
+            }
+            $descriptor['public_repository_safe'] = true;
+            return $descriptor;
+        }
         if ('plugin.install_package' === $action) {
             $this->assertPublicPluginInstallPayload($payload);
             if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\\z/', $expectedFingerprint))) {
