@@ -839,7 +839,20 @@ if (! $ok) {
         if (! $dryRun && ! empty($data['rollback_request_id'])) $receipt['rollback_available'] = true;
     } elseif ('connector.rollback' === $action) {
         $receipt['readback_verified'] = null;
-        $receipt['rollback_executed'] = true;
+        if ($dryRun) {
+            // A preview proves only that a site-local rollback is available.
+            $receipt['rollback_preflight_verified'] =
+                is_string($data['would_execute_action'] ?? null) && '' !== $data['would_execute_action']
+                && is_string($data['source_action'] ?? null) && '' !== $data['source_action'];
+        } else {
+            // Never claim a rollback executed from the envelope's ok flag alone.
+            $targetId = isset($payload['request_id']) && is_string($payload['request_id'])
+                ? $payload['request_id'] : '';
+            $receipt['rollback_executed'] = '' !== $targetId
+                && $targetId === (string) ($data['restored_request_id'] ?? '')
+                && is_string($data['restored_with'] ?? null)
+                && '' !== $data['restored_with'];
+        }
     } elseif ('connector.update.check' === $action) {
         $update = isset($data['update']) && is_array($data['update']) ? $data['update'] : array();
         $current = (string) ($update['current_version'] ?? '');

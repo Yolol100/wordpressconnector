@@ -73,4 +73,74 @@ foreach (array('password','secret','token') as $needle) {
     }
 }
 
+$rollbackTargetId = 'receipt-rollback-original-0001';
+$previewRequest = array(
+    'version'=>1, 'request_id'=>'receipt-rollback-preview-0001',
+    'action'=>'connector.rollback', 'dry_run'=>true, 'confirm'=>false,
+    'payload'=>array('request_id'=>$rollbackTargetId),
+);
+$previewResult = array(
+    'version'=>1, 'ok'=>true, 'request_id'=>$previewRequest['request_id'],
+    'action'=>'connector.rollback', 'dry_run'=>true,
+    'data'=>array('would_execute_action'=>'site.identity.restore',
+        'source_action'=>'site.identity.update',
+        'current_state_token'=>'SECRET_MUST_NOT_LEAK'),
+);
+list($status, $output, $previewReceipt) = $run(
+    $write('rollback-preview-request', $previewRequest),
+    $write('rollback-preview-result', $previewResult),
+    'rollback-preview-receipt'
+);
+if (0 !== $status || true !== ($previewReceipt['rollback_preflight_verified'] ?? null)
+    || array_key_exists('rollback_executed', $previewReceipt)
+    || false !== strpos(json_encode($previewReceipt), 'SECRET_MUST_NOT_LEAK')) {
+    throw new RuntimeException('Rollback preview falsely claimed an executed rollback or leaked private state.');
+}
+
+$confirmedRequest = $previewRequest;
+$confirmedRequest['request_id'] = 'receipt-rollback-confirmed-0001';
+$confirmedRequest['dry_run'] = false;
+$confirmedRequest['confirm'] = true;
+$confirmedRequest['expected_fingerprint'] = str_repeat('a', 64);
+$confirmedResult = array(
+    'version'=>1, 'ok'=>true, 'request_id'=>$confirmedRequest['request_id'],
+    'action'=>'connector.rollback', 'dry_run'=>false,
+    'data'=>array('restored_request_id'=>$rollbackTargetId,
+        'restored_with'=>'site.identity.restore',
+        'result'=>array('restored'=>true,'secret'=>'SECRET_MUST_NOT_LEAK')),
+);
+list($status, $output, $confirmedReceipt) = $run(
+    $write('rollback-confirmed-request', $confirmedRequest),
+    $write('rollback-confirmed-result', $confirmedResult),
+    'rollback-confirmed-receipt'
+);
+if (0 !== $status || true !== ($confirmedReceipt['rollback_executed'] ?? null)
+    || array_key_exists('rollback_preflight_verified', $confirmedReceipt)
+    || false !== strpos(json_encode($confirmedReceipt), 'SECRET_MUST_NOT_LEAK')) {
+    throw new RuntimeException('Verified rollback receipt did not distinguish execution from preview.');
+}
+
+$mismatch = $confirmedResult;
+$mismatch['data']['restored_request_id'] = 'receipt-rollback-different-0002';
+list($status, $output, $mismatchReceipt) = $run(
+    $write('rollback-mismatch-request', $confirmedRequest),
+    $write('rollback-mismatch-result', $mismatch),
+    'rollback-mismatch-receipt'
+);
+if (0 !== $status || false !== ($mismatchReceipt['rollback_executed'] ?? null)) {
+    throw new RuntimeException('Public receipt incorrectly trusted an unrelated rollback target.');
+}
+
+$missingPreview = $previewResult;
+$missingPreview['data'] = array();
+list($status, $output, $missingReceipt) = $run(
+    $write('rollback-missing-request', $previewRequest),
+    $write('rollback-missing-result', $missingPreview),
+    'rollback-missing-receipt'
+);
+if (0 !== $status || false !== ($missingReceipt['rollback_preflight_verified'] ?? null)
+    || array_key_exists('rollback_executed', $missingReceipt)) {
+    throw new RuntimeException('Unverified rollback preview must fail closed.');
+}
+
 echo "public receipt self-contained workspace contract OK\n";
