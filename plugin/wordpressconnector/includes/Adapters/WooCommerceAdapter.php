@@ -123,13 +123,14 @@ final class WooCommerceAdapter
         if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_zone') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
         $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
         $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
-        $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zones`';
-        $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE `zone_id` > %d", 0));
+        $table = $wpdb->prefix . 'woocommerce_shipping_zones';
+        $totalValue = $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE `zone_id` > %d', $table, 0));
         if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce shipping zones could not be counted.');
         $total = (int) $totalValue + 1;
         $pages = max(1, (int) ceil($total / $limit));
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT `zone_id`, `zone_name`, `zone_order` FROM {$table} WHERE `zone_id` > 0 ORDER BY `zone_order` ASC, `zone_id` ASC LIMIT %d OFFSET %d",
+            'SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` > 0 ORDER BY `zone_order` ASC, `zone_id` ASC LIMIT %d OFFSET %d',
+            $table,
             $limit,
             ($page - 1) * $limit
         ));
@@ -161,8 +162,8 @@ final class WooCommerceAdapter
             if (! $zone instanceof \WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
             $snapshot = $this->shippingZoneSnapshot(0, (string) $zone->get_zone_name(), (int) $zone->get_zone_order());
         } else {
-            $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zones`';
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT `zone_id`, `zone_name`, `zone_order` FROM {$table} WHERE `zone_id` = %d LIMIT 1", $id));
+            $table = $wpdb->prefix . 'woocommerce_shipping_zones';
+            $rows = $wpdb->get_results($wpdb->prepare('SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` = %d LIMIT 1', $table, $id));
             if (! is_array($rows) || empty($rows[0]) || ! is_object($rows[0]) || ! isset($rows[0]->zone_id, $rows[0]->zone_name, $rows[0]->zone_order)) throw new RuntimeException('WooCommerce shipping zone not found.');
             $snapshot = $this->shippingZoneSnapshot((int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order);
         }
@@ -194,13 +195,14 @@ final class WooCommerceAdapter
         $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
         $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
         $offset = ($page - 1) * $limit;
-        $ratesTable = '`' . $wpdb->prefix . 'woocommerce_tax_rates`';
-        $locationsTable = '`' . $wpdb->prefix . 'woocommerce_tax_rate_locations`';
-        $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$ratesTable} WHERE `tax_rate_class` = %s", $class));
+        $ratesTable = $wpdb->prefix . 'woocommerce_tax_rates';
+        $locationsTable = $wpdb->prefix . 'woocommerce_tax_rate_locations';
+        $totalValue = $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE `tax_rate_class` = %s', $ratesTable, $class));
         if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce tax rates could not be counted.');
         $total = (int) $totalValue;
         $rateRows = $wpdb->get_results($wpdb->prepare(
-            "SELECT `tax_rate_id`, `tax_rate_country`, `tax_rate_state`, `tax_rate`, `tax_rate_name`, `tax_rate_priority`, `tax_rate_compound`, `tax_rate_shipping`, `tax_rate_order` FROM {$ratesTable} WHERE `tax_rate_class` = %s ORDER BY `tax_rate_order` ASC, `tax_rate_id` ASC LIMIT %d OFFSET %d",
+            'SELECT `tax_rate_id`, `tax_rate_country`, `tax_rate_state`, `tax_rate`, `tax_rate_name`, `tax_rate_priority`, `tax_rate_compound`, `tax_rate_shipping`, `tax_rate_order` FROM %i WHERE `tax_rate_class` = %s ORDER BY `tax_rate_order` ASC, `tax_rate_id` ASC LIMIT %d OFFSET %d',
+            $ratesTable,
             $class,
             $limit,
             $offset
@@ -214,7 +216,8 @@ final class WooCommerceAdapter
         if ($rateIds) {
             $placeholders = implode(',', array_fill(0, count($rateIds), '%d'));
             $countRows = $wpdb->get_results($wpdb->prepare(
-                "SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM {$locationsTable} WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
+                'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`',
+                $locationsTable,
                 ...array_map('intval', $rateIds)
             ));
             if (! is_array($countRows)) throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
@@ -228,7 +231,8 @@ final class WooCommerceAdapter
             $rateId = isset($rate->tax_rate_id) ? (int) $rate->tax_rate_id : 0;
             $locationCount = $locationCounts[$rateId] ?? 0;
             $locations = $locationCount > 0 ? $wpdb->get_results($wpdb->prepare(
-                "SELECT `location_type`, `location_code` FROM {$locationsTable} WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
+                'SELECT `location_type`, `location_code` FROM %i WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d',
+                $locationsTable,
                 $rateId,
                 100
             )) : array();
@@ -781,13 +785,14 @@ final class WooCommerceAdapter
         $locations = array();
         $locationCount = 0;
         if ($zoneId > 0 && isset($wpdb) && is_object($wpdb) && method_exists($wpdb, 'prepare') && method_exists($wpdb, 'get_results') && method_exists($wpdb, 'get_var')) {
-            $table = '`' . $wpdb->prefix . 'woocommerce_shipping_zone_locations`';
-            $countValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$table} WHERE `zone_id` = %d", $zoneId));
+            $table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
+            $countValue = $wpdb->get_var($wpdb->prepare('SELECT COUNT(*) FROM %i WHERE `zone_id` = %d', $table, $zoneId));
             if (null === $countValue || false === $countValue) throw new RuntimeException('WooCommerce shipping zone locations could not be counted.');
             $locationCount = (int) $countValue;
             if ($locationCount > 0) {
                 $locationRows = $wpdb->get_results($wpdb->prepare(
-                    "SELECT `location_code`, `location_type` FROM {$table} WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
+                    'SELECT `location_code`, `location_type` FROM %i WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d',
+                    $table,
                     $zoneId,
                     100
                 ));
