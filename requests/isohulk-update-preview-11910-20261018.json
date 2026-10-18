@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-update-preview-11910-20261018",
+  "action": "connector.update.apply",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
