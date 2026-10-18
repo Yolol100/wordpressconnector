@@ -6,6 +6,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 
 use ParseError;
 use RuntimeException;
+use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 use Webactueel\WordPressConnector\Security\Policy;
@@ -230,14 +231,31 @@ final class FilesystemAdapter
 
         $filesystem = $this->filesystem();
         $mode = defined('FS_CHMOD_FILE') ? FS_CHMOD_FILE : 0644;
-        if (! $filesystem->put_contents($absolute, $content, $mode)) {
-            throw new RuntimeException('WordPress Filesystem API could not write the target file.');
-        }
+        try {
+            if (! $filesystem->put_contents($absolute, $content, $mode)) {
+                throw new RuntimeException('WordPress Filesystem API could not write the target file.');
+            }
 
-        clearstatcache(true, $absolute);
-        $readback = file_get_contents($absolute);
-        if (false === $readback || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
-            throw new RuntimeException('Filesystem write readback verification failed.');
+            clearstatcache(true, $absolute);
+            $readback = file_get_contents($absolute);
+            if (false === $readback || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
+                throw new RuntimeException('Filesystem write readback verification failed.');
+            }
+        } catch (Throwable $error) {
+            // A failed write can still truncate the file. Recover before the
+            // Runner loses this local before-image when the action fails.
+            try {
+                $filesystem->put_contents($absolute, $before, $mode);
+            } catch (Throwable $recoveryError) {
+                // Readback below is authoritative even if the backend throws
+                // after writing all original bytes.
+            }
+            clearstatcache(true, $absolute);
+            $restored = @file_get_contents($absolute);
+            if (! is_string($restored) || ! hash_equals($beforeState['sha256'], hash('sha256', $restored))) {
+                throw new RuntimeException($error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error);
+            }
+            throw new RuntimeException($error->getMessage() . ' Recovery complete; original file restored and verified.', 0, $error);
         }
 
         $result['after'] = $this->state($relative, $readback, $absolute);

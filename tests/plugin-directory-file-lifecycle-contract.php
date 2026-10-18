@@ -110,13 +110,14 @@ function plugins_api($action, $args = array()) {
 class WP_Error { public function get_error_message(): string { return 'Test failure'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
-foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php', 'Security/Policy.php',
+foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php', 'Runtime/Diagnostics.php', 'Security/Policy.php',
     'Security/FilesystemPolicy.php', 'Adapters/FilesystemAdapter.php',
     'Adapters/SystemAdapter.php') as $file) {
     require_once $base . '/plugin/wordpressconnector/includes/' . $file;
 }
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\SystemAdapter;
+use Webactueel\WordPressConnector\Runtime\Diagnostics;
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $fail = static function(callable $fn, string $label): void {
     try { $fn(); } catch (RuntimeException $e) { return; }
@@ -283,6 +284,11 @@ $writeCases = array(
     array('partial_false', 'corrupt_true', false),
     array('partial_false', 'throw', false),
 );
+$expectedDiagnostics = array(
+    'partial_false' => 'filesystem_unavailable',
+    'corrupt_true' => 'persistence_unverified',
+    'partial_throw' => 'unknown_failure',
+);
 foreach ($writeCases as $writeCase) {
     list($initialFailure, $recoveryBehavior, $recoveryExpected) = $writeCase;
     file_put_contents($root.$path, $content);
@@ -304,6 +310,10 @@ foreach ($writeCases as $writeCase) {
     $expectedMessage = $recoveryExpected ? 'original file restored and verified' : 'manual recovery required';
     if (strpos($failureMessage, $expectedMessage) === false) {
         throw new RuntimeException('Failed replacement reported an incorrect recovery outcome: ' . $initialFailure . '/' . (string) $recoveryBehavior);
+    }
+    $diagnostic = Diagnostics::classify($failureMessage, true);
+    if ($diagnostic['code'] !== $expectedDiagnostics[$initialFailure] || ! $diagnostic['reconcile_before_retry']) {
+        throw new RuntimeException('Filesystem recovery hid the original failure diagnostic: ' . $initialFailure);
     }
 }
 $GLOBALS['wp_filesystem']->writeBehaviors = array();

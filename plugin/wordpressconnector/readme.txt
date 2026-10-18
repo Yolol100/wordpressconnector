@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.10
+Stable tag: 1.19.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -171,6 +171,9 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.11 =
+Recover the original file after failed existing-file writes or readback verification, verify the restored SHA-256, and keep the operation failed. Report when manual recovery is required.
 
 = 1.19.3 =
 Fix the public Yoast product SEO title/description template execution gate to match the four-field GitHub validator and Yoast adapter. Preserve read-only inspection, explicit dry-run fingerprint, scope-limited writes and rollback safeguards. Add a direct runtime boundary regression test across supported PHP versions.
