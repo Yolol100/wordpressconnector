@@ -139,8 +139,14 @@ action is available over public GitHub OIDC **only for new installs** with `over
 - New theme installation uses `overwrite:false`. It does not activate or
   switch the current theme.
 - Public runtime forbids `overwrite:true` completely. With private direct REST, existing-theme `overwrite:true` currently supports **dry-run only**:
-  destructive execution is blocked until a verified backup and rollback
-  procedure is in place. Active themes, their parent and parent themes
+  confirmed replacement is supported only for inactive, standalone themes
+  under an explicit server-side `WPCONNECTOR_ALLOW_THEME_PACKAGE_REPLACE=1`
+  operator gate after staging restoration has been verified. WordPress Core
+  moves the previous theme to a temporary backup before installing; failure
+  triggers a restoration attempt with a SHA-256 readback of the original
+  style.css. On success the temporary backup is deleted and its cleanup state
+  is returned. There is still NO durable post-success rollback: require a
+  tested independent site backup before running this against production. Active themes, their parent and parent themes
   used by installed children are protected.
 - Theme deletion and existing-file edits are already registered separately
   as `theme.delete` and `filesystem.write_text`, but are private-only;
