@@ -55,11 +55,19 @@ class WooTaxWpdbStub
     public $prefix = 'wp_';
     public function prepare(string $query, ...$values): string
     {
-        foreach ($values as $value) {
-            $replacement = is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
-            $query = preg_replace('/%[sd]/', $replacement, $query, 1);
-        }
-        return $query;
+        // WordPress 6.2+ escapes identifier placeholders as quoted SQL names.
+        // Keep the test double consistent with Core's %i, %s and %d contract.
+        $args = $values;
+        return (string) preg_replace_callback('/%[sdi]/', static function (array $match) use (&$args): string {
+            if (empty($args)) {
+                throw new RuntimeException('Missing SQL prepare argument.');
+            }
+            $value = array_shift($args);
+            if ('%i' === $match[0]) {
+                return '`' . str_replace('`', '``', (string) $value) . '`';
+            }
+            return is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
+        }, $query);
     }
     public function get_var(string $query)
     {
