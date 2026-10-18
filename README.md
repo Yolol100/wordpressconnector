@@ -22,7 +22,11 @@ WordPress Connector is the canonical Webactueel bridge for controlled WordPress 
 
 ## Trusted private control plane
 
-Version 1.17.2 added an exact-identity **private-only** trust rule for the `Yolol100/Wordpress` GitHub Actions executor: its signed OIDC claim must report `repository_visibility=private` in addition to the pinned repository ID and workflow. **Live repository visibility on 2026-10-14 is public**, so this private execution route is **not available** in the current repository state. Do not assume private transport from its name, bypass the visibility check, or write full/private site results to public branches, logs, artifacts or PRs. The public WordPress runtime workflow also rejects full result files. The private-only exception to public action restrictions applies only if the repository truly becomes private and all original OIDC and request security gates pass; confirmation, capability, idempotency, stale-state, readback/rollback, filesystem and sensitive-action gates remain mandatory. See `plugin/wordpressconnector/includes/Security/GitHubOidc.php` and `tests/github-oidc-contract.php` for the fail-closed contract.
+The canonical `Yolol100/wordpressconnector` GitHub OIDC executor is bound to its exact repository ID, owner ID, trusted workflow on `main`, site-specific audience and short-lived, non-replayed GitHub token. It can operate in either GitHub visibility mode: signed `repository_visibility=private` activates the existing guarded private policy; signed `repository_visibility=public` keeps the restrictive public action allowlist and sanitized-receipt behavior. This is not a request-selectable mode and does **not** weaken confirmation, capability, stale-state, rollback or sensitive-action checks.
+
+The legacy `Yolol100/Wordpress` private trust entry is separately pinned to its own repository ID and workflow and **never** accepts a public visibility claim. The separate repository is not required for canonical connector operation.
+
+**Security and lifecycle:** switching any repository that has stored private request/result branches, workflow artifacts or logs back to public may expose historical client information. Do **not** change private to public until a documented security audit removes sensitive history and verifies exposure risks. Do not publish private request results in public branches or logs. This code change does not update an already installed WordPress plugin by itself; deploy a verified plugin release to each site using an authorized update path before expecting private OIDC to work.
 
 ## Native WordPress update notifications
 
@@ -50,7 +54,9 @@ Installation makes a plugin presence endpoint recognizable once its domain is kn
 
 ## Public vs private GitHub runtime
 
-This repository is currently public. Public runtime requests remain deliberately restricted and only sanitized receipts may be committed. Full/private results require a separate private transport surface and must never be written to this public branch, log, issue, artifact or receipt.
+The same canonical connector repository supports both modes, but never simultaneously. GitHub's signed `repository_visibility` determines the WordPress policy. Public runs are restricted to a reviewed action allowlist with sanitized receipts; private runs may access more registered actions only with the usual authorization, role, dry-run, confirmation and sensitive-data gates. Private GitHub-hosted runners can consume the account's Actions allowance.
+
+GitHub OIDC requires **no WordPress Application Password**. A directly connected REST/MCP client may use a separately revocable WordPress Application Password over HTTPS; never commit that credential to GitHub or store it in request files.
 
 ## Direct HTTPS REST
 
