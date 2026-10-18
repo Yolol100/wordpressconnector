@@ -138,17 +138,14 @@ action is available over public GitHub OIDC **only for new installs** with `over
   guarded system updates, `confirm:true`, and a dry-run/stale-state check.
 - New theme installation uses `overwrite:false`. It does not activate or
   switch the current theme.
-- Public runtime forbids `overwrite:true` completely. With private direct REST, existing-theme `overwrite:true` currently supports **dry-run only**:
-  destructive execution is blocked until a verified backup and rollback
-  procedure is in place. Active themes, their parent and parent themes
+- Public runtime forbids `overwrite:true` completely. Private authenticated REST may replace an **inactive standalone theme** after an explicit dry-run and confirmation. The adapter creates a WordPress Core temporary filesystem backup first; on an installation/readback failure it attempts automatic restoration and verifies that the original theme exists. It refuses active themes, active parents and parent themes used by installed children. WordPress temporary backups are not durable restore points, so retain a separate verified off-site backup before any live replacement. Active themes, their parent and parent themes
   used by installed children are protected.
 - Theme deletion and existing-file edits are already registered separately
   as `theme.delete` and `filesystem.write_text`, but are private-only;
   deletion is non-rollbackable and must never be performed without a verified
   backup, authorization, and an explicit target.
 - WordPress Core's theme ZIP installer supports `overwrite_package` in
-  principle. The Connector intentionally does not enable it automatically
-  until rollback is independently proven.
+  principle. The Connector uses Core's temporary backup/restore methods only for inactive private replacements; this does not authorize live production replacement without external backup and a proven staging restore.
 
 This change neither grants administrator permissions nor updates installed
 sites. It must be released and installed with staging verification first.
