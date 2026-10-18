@@ -1,16 +1,19 @@
 === WordPress Connector ===
 Contributors: webactueel
-Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
+Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.18
+Stable tag: 1.19.19
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.19 fixes a protected WordPress database-handle access in system.doctor, uses WordPress 6.2+ %i identifier placeholders for bounded WooCommerce shipping and tax reads, and aligns the Elementor MCP guard callback registration. Regression tests now exercise system.doctor in both a protected-handle fixture and real WordPress installations. PHPStan and WordPress.org-only audit findings require separate, evidence-based review and are not represented as fully cleared.
+
 
 Version 1.19.10 makes existing-file replacements honor WordPress file-modification policies and requires explicit acknowledge_active_content=true for browser-active HTML, JavaScript and CSS replacements, including guarded rollback. Replacement content now receives the same embedded-secret check as file reads; PHP/INC parser validation and existing per-file SHA-256 readback remain. Disposable WordPress/Docker integration tests cover read, write, restore, create and delete. Public GitHub file access is not expanded. These tests do not prove private hosted-site filesystem access.
 
@@ -171,6 +174,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.19 =
+* Prevent system.doctor from reading protected wpdb internals and verify healthy/unhealthy database readiness in mock and live WordPress CI.
+* Clarify the WordPress Core update foreach loop to satisfy PHPCompatibilityWP without changing update behavior.
+* Correct Elementor MCP pre-execution callback registration to match its single argument.
+* Escape WooCommerce table identifiers via wpdb::prepare %i (WordPress 6.2+), retain prepared value placeholders, and update test fixture SQL parser.
+* Keep WordPress capabilities, confirmation, read-only probes, and GitHub update provenance unchanged. Strict full WPCS/PHPStan/WordPress.org review remains a separate quality task.
 
 = 1.19.18 =
 * Compare current OpenAI OAuth requirements and WordPress/Elementor/WooCommerce/MainWP/WP Umbrella MCP management patterns in a comprehensive evidence-backed repository report.
