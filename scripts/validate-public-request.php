@@ -62,6 +62,7 @@ $publicActions = array(
     'custom_css.inspect',
     'custom_css.patch',
     'plugin.install_package',
+    'theme.install_package',
 );
 if (! in_array($action, $publicActions, true)) {
     fwrite(STDERR, 'Action is not allowed in public GitHub runtime mode: ' . $action . "\n");
