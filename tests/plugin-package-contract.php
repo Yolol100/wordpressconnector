@@ -52,9 +52,9 @@ foreach ($adapterRequired as $needle) {
 }
 
 $assetRequired = array(
-    "plugin-packages/",
+    "(?:plugin-packages|theme-packages)/",
     "array('zip' => 'application/zip')",
-    "connector plugin package",
+    "connector plugin/theme package",
 );
 foreach ($assetRequired as $needle) {
     if (strpos($assetStore, $needle) === false) {
