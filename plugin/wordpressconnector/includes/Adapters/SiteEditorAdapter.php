@@ -121,16 +121,21 @@ final class SiteEditorAdapter
         $this->writeAllowed();
         // Use Core's exact template route, validation, sanitization and
         // permission callback. Do not update wp_template database rows directly.
-        $previous = $this->rawContent($this->record($kind, $id));
-        $this->request('POST', $this->route($kind) . '/' . $id, array('content' => $content));
+        $current = $this->record($kind, $id);
+        $fresh = $this->state($kind, $id, $current);
+        if (! hash_equals($before['fingerprint'], $fresh['fingerprint'])) {
+            throw new RuntimeException('Site Editor template changed immediately before the write.');
+        }
+        $previous = $this->content(array('content' => $this->rawContent($current)));
         try {
+            $this->request('POST', $this->route($kind) . '/' . $id, array('content' => $content));
             $after = $this->state($kind, $id, $this->record($kind, $id));
             if ($after['content_sha256'] !== hash('sha256', $content)) {
                 throw new RuntimeException('WordPress did not retain the requested template content.');
             }
         } catch (\Throwable $failure) {
             $this->restoreAfterFailure($kind, $id, $previous);
-            throw new RuntimeException('Template update did not verify; original content restored.');
+            throw new RuntimeException('Template update was not confirmed; original content restored and verified.');
         }
         $result['updated'] = true;
         $result['after'] = array('content_sha256' => $after['content_sha256'], 'modified' => $after['modified']);
