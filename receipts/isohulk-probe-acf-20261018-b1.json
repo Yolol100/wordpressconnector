@@ -1,0 +1,56 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-probe-acf-20261018-b1",
+    "action": "acf.field_groups",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T14:02:18+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 264,
+    "field_groups": [
+        {
+            "key": "group_tps_a6216ea03e578f212dd6",
+            "title": "ISOHULK | Categories content",
+            "fields": [
+                {
+                    "key": "field_tps_heading_1bb719f8390c0c039f9d",
+                    "name": "",
+                    "label": "Introduction",
+                    "type": "accordion",
+                    "required": false
+                },
+                {
+                    "key": "field_isohulk_page_categories_eyebrow",
+                    "name": "isohulk_page_categories_eyebrow",
+                    "label": "Eyebrow",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_isohulk_page_categories_title",
+                    "name": "isohulk_page_categories_title",
+                    "label": "Title",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_isohulk_page_categories_intro",
+                    "name": "isohulk_page_categories_intro",
+                    "label": "Intro",
+                    "type": "text",
+                    "required": false
+                },
+                {
+                    "key": "field_isohulk_page_categories_all_products",
+                    "name": "isohulk_page_categories_all_products",
+                    "label": "All Products",
+                    "type": "text",
+                    "required": false
+                }
+            ]
+        }
+    ],
+    "schema_fingerprint": "d5a3217a20734b62bd45ec2e756689bf16881bc212868173e4f3f5b5d4548cc0",
+    "readback_verified": null
+}
