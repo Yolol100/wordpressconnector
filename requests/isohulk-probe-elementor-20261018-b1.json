@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-probe-elementor-20261018-b1",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 264
+  },
+  "dry_run": true,
+  "confirm": false
+}
