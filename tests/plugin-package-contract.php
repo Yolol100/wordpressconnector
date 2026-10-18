@@ -91,4 +91,43 @@ foreach (array('dry-run consumes', 're-upload', 'expected_state_token') as $need
     }
 }
 
+// Theme ZIP support reuses the canonical installer, remaining outside the
+// public OIDC action allowlist until destructive rollback is independently verified.
+$themeRequired = array(
+    "'theme.install_package'",
+    "registerThemePackage(\$registry)",
+    "installThemePackage(array \$payload",
+    "theme-packages/",
+    "expected_stylesheet",
+    "current_user_can('install_themes')",
+    "current_user_can('update_themes')",
+    "Refusing to replace or install over the active theme",
+    "Custom theme roots cannot be overwritten",
+    "Theme ZIP folder or duplicate path mismatch",
+    "Theme ZIP must not contain symbolic links",
+    "Theme ZIP lacks a valid root style.css theme header",
+    "Theme ZIP overwrite is blocked until verified backup and rollback support",
+    "new \Theme_Upgrader(",
+    "wp_clean_themes_cache()",
+    "readback_verified' => true",
+);
+foreach ($themeRequired as $needle) {
+    if (strpos($adapter, $needle) === false) {
+        fwrite(STDERR, "Missing guarded theme package contract: {$needle}\n");
+        exit(1);
+    }
+}
+if (strpos($assetStore, "(?:plugin-packages|theme-packages)") === false) {
+    fwrite(STDERR, "Trusted asset store does not allow the guarded theme ZIP path.\n");
+    exit(1);
+}
+if (strpos($docs, 'theme.install_package') === false) {
+    fwrite(STDERR, "Missing guarded theme package documentation.\n");
+    exit(1);
+}
+if (strpos(file_get_contents($root . '/plugin/wordpressconnector/includes/Security/Policy.php'), "'theme.install_package'") !== false) {
+    fwrite(STDERR, "Theme package was accidentally added to public OIDC allowlist.\n");
+    exit(1);
+}
+
 echo "plugin package contract OK\n";
