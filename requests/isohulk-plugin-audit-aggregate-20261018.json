@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-plugin-audit-aggregate-20261018",
+  "action": "plugin.audit.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
