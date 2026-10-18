@@ -9,6 +9,7 @@ use Webactueel\WordPressConnector\Security\SitePairing;
 final class Settings
 {
     private const PAGE = 'wordpressconnector';
+    private const DIRECT_MCP_PASSWORD_LABEL = 'WordPress Connector - Direct MCP';
 
     public function register(): void
     {
@@ -16,6 +17,7 @@ final class Settings
         add_action('admin_menu', array($this, 'registerPage'));
         add_action('admin_notices', array($this, 'unpairedNotice'));
         add_action('admin_post_wpconnector_site_pairing', array($this, 'saveSitePairing'));
+        add_action('admin_post_wpconnector_create_application_password', array($this, 'createApplicationPassword'));
     }
 
     public function unpairedNotice(): void
@@ -55,6 +57,75 @@ final class Settings
         exit;
     }
 
+
+    /**
+     * A WordPress administrator may explicitly generate one dedicated
+     * Application Password for their OWN account. Only this one response
+     * contains the plaintext credential; GitHub OIDC never uses it.
+     */
+    public function createApplicationPassword(): void
+    {
+        if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '')) {
+            wp_die(esc_html__('Use the WordPress Connector settings form to create a credential.', 'wordpressconnector'),
+                esc_html__('Method not allowed', 'wordpressconnector'), array('response' => 405));
+        }
+        if (! current_user_can('manage_options')) {
+            wp_die(esc_html__('Only the signed-in site administrator can create a Connector credential.', 'wordpressconnector'),
+                esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
+        }
+        check_admin_referer('wpconnector_create_application_password');
+        if ('1' !== ($_POST['confirm_direct_access'] ?? null)) {
+            wp_die(esc_html__('Confirm that the credential will have your WordPress account permissions.', 'wordpressconnector'),
+                esc_html__('Confirmation required', 'wordpressconnector'), array('response' => 400));
+        }
+
+        $userId = get_current_user_id();
+        $user = wp_get_current_user();
+        if ($userId <= 0 || ! is_object($user) || (int) $user->ID !== $userId ||
+            ! current_user_can('create_app_password', $userId)) {
+            wp_die(esc_html__('Application Password permission is not available for the signed-in account.', 'wordpressconnector'),
+                esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
+        }
+
+        $mcpUrl = rest_url('webactueel-wordpress-connector/v1/mcp');
+        if (! is_ssl() || 'https' !== strtolower((string) wp_parse_url($mcpUrl, PHP_URL_SCHEME)) ||
+            ! function_exists('wp_is_application_passwords_available_for_user') ||
+            ! wp_is_application_passwords_available_for_user($userId)) {
+            wp_die(esc_html__('Application Passwords require HTTPS and must be enabled for this WordPress account.', 'wordpressconnector'),
+                esc_html__('Secure connection unavailable', 'wordpressconnector'), array('response' => 403));
+        }
+
+        if (\WP_Application_Passwords::application_name_exists_for_user($userId, self::DIRECT_MCP_PASSWORD_LABEL)) {
+            wp_die(esc_html__('A direct MCP credential already exists for this account. Revoke it under Users > Profile before generating a replacement.', 'wordpressconnector'),
+                esc_html__('Credential already exists', 'wordpressconnector'), array('response' => 409));
+        }
+
+        $created = \WP_Application_Passwords::create_new_application_password(
+            $userId,
+            array('name' => self::DIRECT_MCP_PASSWORD_LABEL)
+        );
+        if (is_wp_error($created) || ! is_array($created) || ! isset($created[0]) || ! is_string($created[0])) {
+            wp_die(esc_html__('WordPress could not create the application password.', 'wordpressconnector'),
+                esc_html__('Credential creation failed', 'wordpressconnector'), array('response' => 500));
+        }
+
+        // No redirects, query parameters, options, transient storage or
+        // GitHub requests may carry the one-time plaintext value.
+        nocache_headers();
+        $message = '<h1>' . esc_html__('Direct MCP credential created', 'wordpressconnector') . '</h1>';
+        $message .= '<p>' . esc_html__('Copy this password now. WordPress will not show it again.', 'wordpressconnector') . '</p>';
+        $message .= '<p><label for="wpconnector-mcp-url">' . esc_html__('MCP endpoint', 'wordpressconnector') . '</label>';
+        $message .= '<input id="wpconnector-mcp-url" type="text" readonly="readonly" value="' . esc_attr($mcpUrl) . '" style="width:100%" /></p>';
+        $message .= '<p><label for="wpconnector-mcp-user">' . esc_html__('WordPress username', 'wordpressconnector') . '</label>';
+        $message .= '<input id="wpconnector-mcp-user" type="text" readonly="readonly" value="' . esc_attr((string) $user->user_login) . '" style="width:100%" /></p>';
+        $message .= '<p><label for="wpconnector-mcp-password">' . esc_html__('One-time application password', 'wordpressconnector') . '</label>';
+        $message .= '<input id="wpconnector-mcp-password" type="text" readonly="readonly" autocomplete="off" value="' . esc_attr($created[0]) . '" style="width:100%" /></p>';
+        $message .= '<p>' . esc_html__('Enter the details only into a trusted HTTPS REST/MCP client that supports WordPress Application Passwords. ChatGPT web connections may require OAuth instead. Never put this password in a GitHub branch, workflow, chat or URL. GitHub Actions already uses password-free OIDC.', 'wordpressconnector') . '</p>';
+        $message .= '<p><a href="' . esc_url(admin_url('profile.php')) . '">' . esc_html__('Manage or revoke this password in your profile', 'wordpressconnector') . '</a></p>';
+        wp_die($message, esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
+            array('response' => 200, 'back_link' => false));
+    }
+
     public function renderPage(): void
     {
         if (! current_user_can('manage_options')) { return; }
@@ -88,6 +159,35 @@ final class Settings
             submit_button(__('Reconnect trusted GitHub Actions', 'wordpressconnector'), 'primary');
         }
         echo '</form>';
+
+
+        echo '<h2>' . esc_html__('Direct AI / MCP connection', 'wordpressconnector') . '</h2>';
+        echo '<p>' . esc_html__('Connect a trusted direct REST/MCP client using an Application Password. This does not change the GitHub Actions connection, which already uses password-free OIDC.', 'wordpressconnector') . '</p>';
+        echo '<p><strong>' . esc_html__('MCP endpoint', 'wordpressconnector') . ':</strong> <code>' . esc_html(rest_url('webactueel-wordpress-connector/v1/mcp')) . '</code></p>';
+        echo '<p>' . esc_html__('The currently signed-in WordPress administrator is used. No first-user search, automatic administrator selection or password sharing with GitHub takes place.', 'wordpressconnector') . '</p>';
+        $currentId = get_current_user_id();
+        $canIssue = $currentId > 0 && current_user_can('create_app_password', $currentId)
+            && is_ssl()
+            && 'https' === strtolower((string) wp_parse_url(rest_url('webactueel-wordpress-connector/v1/mcp'), PHP_URL_SCHEME))
+            && function_exists('wp_is_application_passwords_available_for_user')
+            && wp_is_application_passwords_available_for_user($currentId);
+        if ($canIssue) {
+            $exists = \WP_Application_Passwords::application_name_exists_for_user($currentId, self::DIRECT_MCP_PASSWORD_LABEL);
+            if ($exists) {
+                echo '<p>' . esc_html__('A direct MCP Application Password already exists for your account. WordPress cannot show its value again; revoke it in your profile before requesting another.', 'wordpressconnector') . '</p>';
+            } else {
+                echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+                wp_nonce_field('wpconnector_create_application_password');
+                echo '<input type="hidden" name="action" value="wpconnector_create_application_password" />';
+                echo '<p><label><input type="checkbox" name="confirm_direct_access" value="1" required="required" /> ';
+                echo esc_html__('I understand this password grants the same WordPress rights as my account and will only be shown once.', 'wordpressconnector') . '</label></p>';
+                submit_button(__('Generate my direct MCP password', 'wordpressconnector'), 'secondary');
+                echo '</form>';
+            }
+        } else {
+            echo '<p>' . esc_html__('Direct Application Password setup is unavailable: check HTTPS, your account permissions and WordPress Application Password settings.', 'wordpressconnector') . '</p>';
+        }
+        echo '<p><a href="' . esc_url(admin_url('profile.php')) . '">' . esc_html__('Manage or revoke Application Passwords', 'wordpressconnector') . '</a></p>';
 
         echo '<h2>' . esc_html__('Installation readiness', 'wordpressconnector') . '</h2>';
         $checks = array(

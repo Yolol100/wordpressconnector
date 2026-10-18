@@ -71,6 +71,7 @@ $expected = array(
     'acf.schema.delete_field_group' => 'mutation, privileged',
     'portfolio.case_text_update' => 'mutation, privileged',
     'wordpress.ability.execute' => 'mutation, privileged',
+    'wordpress.ability.execute_approved' => 'mutation, privileged, sensitive',
     'wordpress.ability.read' => 'privileged, sensitive',
 );
 
