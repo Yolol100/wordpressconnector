@@ -493,6 +493,20 @@ jobs:
                 strpos($html, "Full restore tested on staging") === false) {
               WP_CLI::error("Administrator setup guide did not render fail-closed external requirements");
             }
+            if (strpos($html, "wpconnector-test-mcp") === false ||
+                strpos($html, "wpconnector-copy-mcp") === false ||
+                strpos($html, "does NOT connect ChatGPT") === false) {
+              WP_CLI::error("MCP browser doctor admin controls are missing or misleading");
+            }
+            do_action("admin_enqueue_scripts", "settings_page_wordpressconnector");
+            if (!wp_script_is("wpconnector-connection-doctor", "enqueued")) {
+              WP_CLI::error("Admin MCP diagnostic script was not enqueued on its settings page");
+            }
+            $registered = wp_scripts()->registered["wpconnector-connection-doctor"] ?? null;
+            if (!$registered || strpos($registered->src, "connection-doctor.js") === false ||
+                strpos($registered->extra["data"] ?? "", "WPConnectorDoctor") === false) {
+              WP_CLI::error("MCP admin script lacks REST nonce or is not registered");
+            }
             WP_CLI::success("Real WordPress admin setup guide and read-only OAuth/full backup readiness verified");
           '
       - name: Destroy disposable test environment
