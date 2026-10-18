@@ -8,7 +8,7 @@ Source consolidation is complete in WordPress Connector 1.9.0. `Yolol100/Element
 
 `ChatGPT / WP Agent -> WordPress Connector REST -> WordPress/Elementor -> exact readback + rollback`
 
-GitHub request/result workflows are retired.
+The old Elementorconnector request/result workflows were retired. **Current WordPress Connector** still uses `.github/workflows/wordpress-request.yml` and `.github/workflows/wordpress-zero-config-execute.yml` as an active authenticated GitHub OIDC transport, separate from direct REST/MCP.
 
 ## Parity retained in WordPress Connector
 
