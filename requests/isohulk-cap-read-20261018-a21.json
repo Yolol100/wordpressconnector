@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-cap-read-20261018-a21",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {}
+      },
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 264
+        }
+      },
+      {
+        "action": "acf.field_groups",
+        "payload": {}
+      },
+      {
+        "action": "elementor.inspect",
+        "payload": {
+          "post_id": 264
+        }
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      },
+      {
+        "action": "custom_css.inspect",
+        "payload": {}
+      },
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
