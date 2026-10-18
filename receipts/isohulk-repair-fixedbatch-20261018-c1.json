@@ -1,0 +1,98 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-repair-fixedbatch-20261018-c1",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-18T14:06:03+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 264,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Categories",
+                    "slug": "categories",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/categories/"
+                },
+                {
+                    "id": 256,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Sitemap",
+                    "slug": "sitemap",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/sitemap/"
+                },
+                {
+                    "id": 254,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Quotation Request",
+                    "slug": "thank-you-quotation",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-quotation/"
+                },
+                {
+                    "id": 253,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Message",
+                    "slug": "thank-you-message",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/thank-you-message/"
+                },
+                {
+                    "id": 252,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Request a Quotation",
+                    "slug": "request-a-quote",
+                    "permalink": "https://isohulk.conceptwebactueel-6.nl/request-a-quote/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 5,
+            "total": 13,
+            "pages": 3
+        },
+        {
+            "index": 1,
+            "action": "post.get",
+            "post": {
+                "id": 264,
+                "type": "page",
+                "status": "publish",
+                "title": "Categories",
+                "slug": "categories",
+                "permalink": "https://isohulk.conceptwebactueel-6.nl/categories/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "6a05d3b3e1da0dc0c22c2c3274e5adcc38c55c4e981bedbc726b816bd3489904"
+        },
+        {
+            "index": 2,
+            "action": "acf.field_groups",
+            "result_fingerprint": "2364f1863251d2595ae30b30d81b4e18e669ae0e4df6e52ba10dd1f7997e11d8"
+        },
+        {
+            "index": 3,
+            "action": "elementor.inspect",
+            "result_fingerprint": "658631100e9abe8ad567e09aa2b916f5f77d8b5ebe2921a37d289788e942a745"
+        },
+        {
+            "index": 4,
+            "action": "maintenance.cache_capabilities",
+            "result_fingerprint": "51fe1b5ff5c07d99e8225d7c23a3f125109b4e5c6fdf02552483ee3810ed8876"
+        },
+        {
+            "index": 5,
+            "action": "custom_css.inspect",
+            "result_fingerprint": "2fa940ed4e94dc6853f80489db47fa57f4e2e05dc76f4fe9b6964d63690f85da"
+        }
+    ],
+    "readback_verified": null
+}
