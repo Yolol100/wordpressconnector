@@ -455,7 +455,7 @@ final class AbilitiesAdapter
         foreach ($value as $name => $pluginFile) {
             if (! is_string($name) || ! $this->isValidName($name)
                 || ! is_string($pluginFile)
-                || ! preg_match('#^[A-Za-z0-9._-]{1,80}/[A-Za-z0-9._-]{1,80}\.php\z#D', $pluginFile)) {
+                || ! preg_match('#^[A-Za-z0-9][A-Za-z0-9._-]{0,79}/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.php\z#D', $pluginFile)) {
                 return array();
             }
             $approved[$name] = $pluginFile;
