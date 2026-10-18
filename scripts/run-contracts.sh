@@ -58,6 +58,7 @@ run_php tests/security-boundary-contract.php
 run_php tests/runtime-preflight-contract.php
 run_php tests/filesystem-control-contract.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
+run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
 run_php tests/mcp-transport-contract.php
