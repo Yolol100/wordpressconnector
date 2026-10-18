@@ -134,7 +134,7 @@ foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {
         exit(1);
     }
 }
-if (strpos($publicRunner, "$payload['overwrite'] !== false") === false ||
+if (strpos($publicRunner, "\$payload['overwrite'] !== false") === false ||
     strpos($publicValidator, "overwrite=false") === false) {
     fwrite(STDERR, "Public theme ZIP overwrite must remain denied.\n");
     exit(1);
