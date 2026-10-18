@@ -458,6 +458,43 @@ jobs:
             }
             WP_CLI::success("Native block theme templates, Site Editor default-off writes and exact rollback verified");
           '
+      - name: Verify private ChatGPT connection and backup recovery guide on WordPress
+        run: |
+          wp-env run cli wp eval '
+            $admins = get_users(array("role" => "administrator", "number" => 1));
+            if (!$admins) WP_CLI::error("Disposable WordPress has no administrator");
+            wp_set_current_user((int) $admins[0]->ID);
+            $adapter = new \Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter();
+            $registry = new \Webactueel\WordPressConnector\Runtime\Registry();
+            $adapter->register($registry);
+            $action = $registry->descriptor("connector.setup.inspect");
+            if (empty($action["privileged"]) || !empty($action["public_repository_safe"]) ||
+                !empty($action["mutation"]) || ($action["capability"] ?? "") !== "manage_options") {
+              WP_CLI::error("Connection readiness action is not private admin read-only");
+            }
+            $before = get_option("blogname");
+            $status = $adapter->inspect();
+            if (empty($status["read_only"]) || !empty($status["chatgpt"]["oauth_21_ready"]) ||
+                !empty($status["recovery"]["database_backup_verified"]) ||
+                !empty($status["recovery"]["site_files_backup_verified"]) ||
+                !empty($status["recovery"]["staging_restore_verified"]) ||
+                !empty($status["high_risk_changes_cleared"]) ||
+                get_option("blogname") !== $before) {
+              WP_CLI::error("Real WordPress setup inspection claimed unverified external capabilities");
+            }
+            require_once ABSPATH . "wp-admin/includes/template.php";
+            require_once ABSPATH . "wp-admin/includes/plugin.php";
+            ob_start();
+            (new \Webactueel\WordPressConnector\Admin\Settings())->renderPage();
+            $html = (string) ob_get_clean();
+            if (strpos($html, "ChatGPT connection and recovery setup") === false ||
+                strpos($html, "Not independently verified") === false ||
+                strpos($html, "Official ChatGPT MCP connection instructions") === false ||
+                strpos($html, "Full restore tested on staging") === false) {
+              WP_CLI::error("Administrator setup guide did not render fail-closed external requirements");
+            }
+            WP_CLI::success("Real WordPress admin setup guide and read-only OAuth/full backup readiness verified");
+          '
       - name: Destroy disposable test environment
         if: always()
         run: wp-env destroy --force
