@@ -153,6 +153,15 @@ jobs:
               WP_CLI::error("Verified ZIP installation skipped real activation hooks.");
             }
 
+            $plugins = $system->pluginList();
+            $matches = array_values(array_filter($plugins["plugins"], static function (array $item) use ($file): bool {
+              return ($item["file"] ?? "") === $file;
+            }));
+            if (count($matches) !== 1 || empty($matches[0]["active"]) || empty($matches[0]["can_deactivate"])
+                || !empty($matches[0]["update_available"])) {
+              WP_CLI::error("Installed fixture was not correctly reported by plugin.list.");
+            }
+
             $d = $system->pluginDeactivate(array("file" => $file), array("dry_run" => false));
             if (empty($d["readback_verified"]) || is_plugin_active($file)) WP_CLI::error("Plugin deactivation failed.");
             $a = $system->pluginActivate(array("file" => $file), array("dry_run" => false));
@@ -178,6 +187,33 @@ jobs:
             if (empty($c["after"]["sha256"]) || file_get_contents(ABSPATH . $relative) !== $content) {
               WP_CLI::error("Created HTML asset did not pass live readback.");
             }
+            $updatedText = "<section>Updated disposable QA asset</section>";
+            $writePreview = $files->writeText(array("path" => $relative, "content" => $updatedText),
+              array("dry_run" => true));
+            if (($writePreview["before"]["sha256"] ?? "") !== hash("sha256", $content)
+                || file_get_contents(ABSPATH . $relative) !== $content) {
+              WP_CLI::error("Filesystem edit dry-run changed or misidentified the source.");
+            }
+            try {
+              $files->writeText(array("path" => $relative, "content" => $updatedText),
+                array("dry_run" => false));
+              WP_CLI::error("Filesystem edit accepted a missing stale-state hash.");
+            } catch (\\RuntimeException $expected) {
+              // A valid mutation always carries the prior file checksum.
+            }
+            $write = $files->writeText(array("path" => $relative, "content" => $updatedText,
+              "expected_sha256" => hash("sha256", $content)), array("dry_run" => false));
+            if (($write["after"]["sha256"] ?? "") !== hash("sha256", $updatedText)
+                || file_get_contents(ABSPATH . $relative) !== $updatedText
+                || ($write["_rollback"]["action"] ?? "") !== "filesystem.write_text") {
+              WP_CLI::error("Filesystem edit did not persist or lost its rollback data.");
+            }
+            $restored = $files->writeText($write["_rollback"]["payload"], array("dry_run" => false));
+            if (($restored["after"]["sha256"] ?? "") !== hash("sha256", $content)
+                || file_get_contents(ABSPATH . $relative) !== $content) {
+              WP_CLI::error("Filesystem rollback failed exact readback.");
+            }
+
             $del = $files->deleteText(array("path" => $relative,
               "expected_sha256" => hash("sha256", $content), "acknowledge_active_content" => true),
               array("dry_run" => false));
@@ -194,7 +230,7 @@ jobs:
             @unlink($package);
             @rmdir($assetRoot . "/plugin-packages");
             @rmdir($assetRoot);
-            WP_CLI::success("Real WordPress ZIP install, hook execution, activate/deactivate, HTML creation/deletion and plugin removal verified.");
+            WP_CLI::success("Real WordPress ZIP install, installed status readback, activation hooks, plugin lifecycle, guarded HTML create/edit/rollback/delete and plugin removal verified.");
           '
       - name: Docker diagnostics on failure
         if: failure()
