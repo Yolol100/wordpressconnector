@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.conceptwebactueel-6.nl",
+  "request_id": "isohulk-public-seodryrun-20261018-f2",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 264,
+    "fields": {
+      "title": "Product Categories | ISOHULK",
+      "description": "Browse aluminium tapes, construction tapes, films, strapping bands and packaging materials by category. Find the right product for your needs."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
