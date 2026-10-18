@@ -102,6 +102,41 @@ if(1!==$userId||!Policy::publicRepositoryContext()){fwrite(STDERR,"Valid GitHub 
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));fwrite(STDERR,"Replayed token accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'already used'))throw $e;}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array('aud'=>'https://evil.example/wp-json/webactueel-wordpress-connector/v1')))));fwrite(STDERR,"Wrong audience accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'audience'))throw $e;}
 
+// The canonical connector repository may be private while retaining exactly
+// the same repository ID and pinned trusted workflow. Private mode must be
+// derived from a verified GitHub visibility claim, never a request flag.
+$sameRepoPrivateJwt=$token(array('repository_visibility'=>'private'));
+$sameRepoPrivateId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$sameRepoPrivateJwt)));
+if(1!==$sameRepoPrivateId||Policy::publicRepositoryContext()){
+    fwrite(STDERR,"Canonical private GitHub OIDC claim did not enter private policy mode.\\n");exit(1);
+}
+Policy::assertActionAllowed(array(
+    'name'=>'user.create',
+    'mutation'=>true,
+    'privileged'=>true,
+    'sensitive'=>true,
+    'capability'=>'manage_options',
+),false,true);
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array(
+        'repository_visibility'=>'private',
+        'workflow_ref'=>'Yolol100/wordpressconnector/.github/workflows/another.yml@refs/heads/main',
+    )))));
+    fwrite(STDERR,"Private canonical repository accepted an untrusted workflow.\\n");exit(1);
+} catch (RuntimeException $e) {
+    if (false===strpos($e->getMessage(),'workflow_ref')) throw $e;
+}
+$restoredPublicId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token())));
+if(1!==$restoredPublicId||!Policy::publicRepositoryContext()){
+    fwrite(STDERR,"Public canonical repo must retain public safety mode.\\n");exit(1);
+}
+try {
+    Policy::assertActionAllowed(array('name'=>'user.create','sensitive'=>true),true,true);
+    fwrite(STDERR,"Public canonical repository exposed sensitive actions.\\n");exit(1);
+} catch (RuntimeException $e) {
+    if(false===strpos($e->getMessage(),'Sensitive actions are blocked')) throw $e;
+}
+
 $privateJwt=$token(array(
     'repository'=>'Yolol100/Wordpress',
     'repository_id'=>'933904076',
