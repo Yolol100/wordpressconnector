@@ -260,6 +260,82 @@ jobs:
             @rmdir($assetRoot);
             WP_CLI::success("Real WordPress ZIP install, installed status readback, activation hooks, plugin lifecycle, guarded HTML create/edit/rollback/delete and plugin removal verified.");
           '
+      - name: Test real WordPress inactive theme overwrite and failure recovery
+        run: |
+          wp-env run cli wp eval '
+            if (!class_exists("ZipArchive")) WP_CLI::error("Required ZipArchive missing.");
+            $admins = get_users(array("role" => "administrator", "number" => 1));
+            wp_set_current_user((int) $admins[0]->ID);
+            $slug = "wpconnector-qa-theme";
+            $assetRoot = WP_CONTENT_DIR . "/uploads/wpconnector-qa-theme-assets";
+            $themeRoot = get_theme_root() . "/" . $slug;
+            wp_mkdir_p($assetRoot . "/theme-packages");
+            $path = $assetRoot . "/theme-packages/fixture.zip";
+            $makeZip = static function (string $version, string $marker) use ($path, $slug): array {
+              $style = "/*\nTheme Name: Connector QA Theme\nVersion: " . $version . "\n*/\n";
+              $zip = new ZipArchive();
+              if (true !== $zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE)) WP_CLI::error("ZIP creation failed");
+              $zip->addFromString($slug . "/style.css", $style);
+              $zip->addFromString($slug . "/index.php", "<?php // " . $marker . "\n");
+              $zip->close();
+              return array("source_path" => "theme-packages/fixture.zip", "sha256" => hash_file("sha256", $path),
+                "expected_stylesheet" => $slug, "overwrite" => false);
+            };
+            $adapter = new \Webactueel\WordPressConnector\Adapters\PluginPackageAdapter();
+            $original = $makeZip("1.0.0", "original-marker");
+            $preview = $adapter->installThemePackage($original, array("asset_root" => $assetRoot, "dry_run" => true));
+            if (empty($preview["would_install_theme_package"])) WP_CLI::error("New theme preview denied");
+            $first = $adapter->installThemePackage($original, array("asset_root" => $assetRoot, "dry_run" => false));
+            if (empty($first["readback_verified"]) || !wp_get_theme($slug)->exists()) WP_CLI::error("Theme install failed");
+            $originalHash = hash_file("sha256", $themeRoot . "/index.php");
+            $replacement = $makeZip("2.0.0", "replacement-marker");
+            $replacement["overwrite"] = true;
+            $dry = $adapter->installThemePackage($replacement, array("asset_root" => $assetRoot, "dry_run" => true));
+            if (empty($dry["would_install_theme_package"])) WP_CLI::error("Overwrite preview denied");
+            $denied = false;
+            try {
+              $adapter->installThemePackage($replacement, array("asset_root" => $assetRoot, "dry_run" => false));
+            } catch (\RuntimeException $expected) { $denied = true; }
+            if (!$denied || hash_file("sha256", $themeRoot . "/index.php") !== $originalHash) {
+              WP_CLI::error("Overwrite bypassed server-side approval");
+            }
+            define("WPCONNECTOR_ALLOW_THEME_PACKAGE_REPLACE", true);
+            $changed = $adapter->installThemePackage($replacement, array("asset_root" => $assetRoot, "dry_run" => false));
+            $updatedHash = hash_file("sha256", $themeRoot . "/index.php");
+            if (($changed["operation"] ?? "") !== "updated" || empty($changed["readback_verified"]) ||
+                $originalHash === $updatedHash || wp_get_theme($slug)->get("Version") !== "2.0.0") {
+              WP_CLI::error("Actual theme overwrite failed");
+            }
+            $backupDir = WP_CONTENT_DIR . "/upgrade-temp-backup/themes/" . $slug;
+            if (is_dir($backupDir)) WP_CLI::error("Successful overwrite left a temporary backup behind");
+            $beforeFailedHash = hash_file("sha256", $themeRoot . "/index.php");
+            $broken = $makeZip("3.0.0", "should-never-install");
+            $broken["overwrite"] = true;
+            $inject = static function ($result, $hook) {
+              if (is_array($hook) && ($hook["type"] ?? "") === "theme") {
+                return new WP_Error("wpconnector_qa_intentional_failure", "Controlled test install failure");
+              }
+              return $result;
+            };
+            add_filter("upgrader_pre_install", $inject, 10, 2);
+            $failed = false;
+            try {
+              $adapter->installThemePackage($broken, array("asset_root" => $assetRoot, "dry_run" => false));
+            } catch (\RuntimeException $expected) { $failed = true; }
+            finally { remove_filter("upgrader_pre_install", $inject, 10); }
+            wp_clean_themes_cache();
+            if (!$failed || hash_file("sha256", $themeRoot . "/index.php") !== $beforeFailedHash ||
+                wp_get_theme($slug)->get("Version") !== "2.0.0" || is_dir($backupDir)) {
+              WP_CLI::error("Theme overwrite failure did not restore identical files");
+            }
+            require_once ABSPATH . "wp-admin/includes/theme.php";
+            $removed = delete_theme($slug);
+            if (is_wp_error($removed) || true !== $removed || wp_get_theme($slug)->exists()) WP_CLI::error("Fixture cleanup failed");
+            @unlink($path);
+            @rmdir($assetRoot . "/theme-packages");
+            @rmdir($assetRoot);
+            WP_CLI::success("Verified new theme ZIP, inactive overwrite, backup cleanup and byte-equal recovery");
+          '
       - name: Docker diagnostics on failure
         if: failure()
         run: docker ps -a --format 'table {{.Names}}\t{{.Status}}'
