@@ -119,24 +119,79 @@ final class PluginPackageAdapter
 
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        if (function_exists('wp_is_file_mod_allowed') && ! wp_is_file_mod_allowed('theme_install')) {
+            throw new RuntimeException('WordPress file modification policy forbids theme installation.');
+        }
         $upgrader = new \Theme_Upgrader(new \Automatic_Upgrader_Skin());
-        // Uploaded-theme replacement in WordPress Core is destructive. Keep
-        // overwrites fail-closed until a separate recoverable backup exists.
+        $backup = array('slug' => $expected, 'src' => get_theme_root(), 'dir' => 'themes');
+        $restorePending = false;
+        $shutdownRestore = static function () use ($upgrader, $backup, &$restorePending): void {
+            if ($restorePending) {
+                $upgrader->restore_temp_backup(array($backup));
+            }
+        };
         if ($overwrite) {
-            throw new RuntimeException('Theme ZIP overwrite is blocked until verified backup and rollback support are available.');
+            global $wp_filesystem;
+            if (true !== WP_Filesystem() || ! is_object($wp_filesystem)
+                || ! $wp_filesystem->wp_content_dir()) {
+                throw new RuntimeException('WordPress filesystem is unavailable; cannot create theme replacement backup.');
+            }
+            $existingBackup = trailingslashit($wp_filesystem->wp_content_dir()) .
+                'upgrade-temp-backup/themes/' . $expected;
+            if ($wp_filesystem->exists($existingBackup)) {
+                throw new RuntimeException('An unresolved backup of this theme exists; refusing to overwrite it.');
+            }
+            // Register recovery before moving anything. If the PHP request dies
+            // during WordPress installation, shutdown can still restore the
+            // original inactive theme from Core's temp backup.
+            $restorePending = true;
+            add_action('shutdown', $shutdownRestore, 10, 0);
+            $saved = $upgrader->move_to_temp_backup_dir($backup);
+            if (true !== $saved) {
+                $restorePending = false;
+                remove_action('shutdown', $shutdownRestore, 10);
+                throw new RuntimeException(is_wp_error($saved) ? $saved->get_error_message()
+                    : 'The original theme could not be backed up safely.');
+            }
         }
-        $result = $upgrader->install($package, array('overwrite_package' => false));
-        if (is_wp_error($result) || true !== $result) {
-            throw new RuntimeException(is_wp_error($result) ? $result->get_error_message()
-                : 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.');
+
+        try {
+            // The original inactive theme was moved to Core's protected
+            // backup directory, so installation must never clear a live path.
+            $result = $upgrader->install($package, array('overwrite_package' => false));
+            if (is_wp_error($result) || true !== $result) {
+                throw new RuntimeException(is_wp_error($result) ? $result->get_error_message()
+                    : 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.');
+            }
+            wp_clean_themes_cache();
+            $afterTheme = wp_get_theme($expected);
+            if (! $afterTheme->exists()) {
+                throw new RuntimeException('Theme installation readback failed.');
+            }
+            $after = array('stylesheet' => $expected,
+                'version' => (string) $afterTheme->get('Version'));
+        } catch (\Throwable $error) {
+            if ($overwrite) {
+                $restored = $upgrader->restore_temp_backup(array($backup));
+                $restorePending = false;
+                remove_action('shutdown', $shutdownRestore, 10);
+                wp_clean_themes_cache();
+                if (true !== $restored || ! wp_get_theme($expected)->exists()) {
+                    throw new RuntimeException('Theme replacement failed and automatic recovery could not be verified. Manual recovery is required.');
+                }
+                throw new RuntimeException('Theme replacement failed; original theme restored: ' . $error->getMessage());
+            }
+            throw $error;
         }
-        wp_clean_themes_cache();
-        $afterTheme = wp_get_theme($expected);
-        if (! $afterTheme->exists()) {
-            throw new RuntimeException('Theme installation readback failed.');
+        $restorePending = false;
+        if ($overwrite) {
+            remove_action('shutdown', $shutdownRestore, 10);
         }
-        return array('operation' => 'installed', 'package' => $plan, 'before' => $before,
-            'after' => array('stylesheet' => $expected, 'version' => (string) $afterTheme->get('Version')),
+        return array('operation' => $overwrite ? 'updated' : 'installed',
+            'package' => $plan, 'before' => $before, 'after' => $after,
+            'on_failure_restore_supported' => $overwrite,
+            // WordPress temp backups may be cleaned up automatically; do not
+            // advertise a durable user-triggered rollback after success.
             'rollback_supported' => false, 'readback_verified' => true);
     }
 
