@@ -1,0 +1,12 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "isohulk-rollback-confirmed-20261018",
+    "action": "connector.rollback",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-18T07:33:55+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": null,
+    "rollback_executed": true
+}
