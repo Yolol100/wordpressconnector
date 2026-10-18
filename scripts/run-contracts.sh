@@ -56,6 +56,11 @@ run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
 run_php tests/direct-mcp-admin-runtime.php
 run_php tests/connection-readiness-contract.php
+run_php tests/mcp-admin-connection-doctor-contract.php
+if command -v node >/dev/null 2>&1; then
+  node --check plugin/wordpressconnector/assets/connection-doctor.js
+  node tests/mcp-admin-connection-doctor.js
+fi
 run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
