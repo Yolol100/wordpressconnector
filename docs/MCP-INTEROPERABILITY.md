@@ -29,3 +29,8 @@ This document explains the sources and the **smallest safe, implemented improvem
 ## Evidence required
 
 The plugin source version and stable tag must match. Require all GitHub CI PHP matrices, WordPress Plugin Check, pinned WordPress 7.1.3 real Docker smoke (including the new MCP REST tests), deterministic GitHub Release artifact integrity, and deployed-site acceptance separately. GitHub build success does not prove a production website is updated.
+
+
+## October 18, 2026 comparative upgrade
+
+See [MCP competitor audit](MCP-COMPETITOR-AUDIT-2026-10-18.md) for the current comparison including Automattic Remote, self-hosted OAuth/approvals, MainWP, WP Umbrella, the official ChatGPT authorization specification and security/release boundaries. Connector v1.19.18 adds an authenticated browser-only connection diagnostic; it does **not** change OAuth authorization behavior or imply a verified ChatGPT custom-plugin connection.
