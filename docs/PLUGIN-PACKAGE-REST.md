@@ -119,3 +119,36 @@ Nested PHP files are not treated as candidate main-plugin headers. This avoids r
 ## Limits
 
 Default package limit: 20 MiB compressed. `WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES` may lower that limit but is capped at 20 MiB. ZIP inspection caps archive entries at 2,500 and total uncompressed data at 100 MiB.
+
+
+## Guarded theme ZIP delivery (private authenticated transport only)
+
+`theme.install_package` installs a new theme ZIP using the existing
+Connector asset store and WordPress Core `Theme_Upgrader`. The registered
+action is **not available through the public GitHub OIDC allowlist**.
+
+- Upload `theme-packages/<safe-name>.zip` under the same private request asset
+  root; provide exact lowercase SHA-256, exact `expected_stylesheet` and
+  explicit boolean `overwrite`.
+- The ZIP must have exactly one root directory matching that stylesheet and
+  contain `style.css` with a WordPress `Theme Name:` header.
+- The inspector rejects traversal, symlinks, duplicate archive entries, bad
+  paths, ZIP bombs beyond existing limits and wrong theme identity.
+- Requires an independently paired WordPress administrator, `install_themes`,
+  guarded system updates, `confirm:true`, and a dry-run/stale-state check.
+- New theme installation uses `overwrite:false`. It does not activate or
+  switch the current theme.
+- Existing-theme `overwrite:true` currently supports **dry-run only**:
+  destructive execution is blocked until a verified backup and rollback
+  procedure is in place. Active themes, their parent and parent themes
+  used by installed children are protected.
+- Theme deletion and existing-file edits are already registered separately
+  as `theme.delete` and `filesystem.write_text`, but are private-only;
+  deletion is non-rollbackable and must never be performed without a verified
+  backup, authorization, and an explicit target.
+- WordPress Core's theme ZIP installer supports `overwrite_package` in
+  principle. The Connector intentionally does not enable it automatically
+  until rollback is independently proven.
+
+This change neither grants administrator permissions nor updates installed
+sites. It must be released and installed with staging verification first.
