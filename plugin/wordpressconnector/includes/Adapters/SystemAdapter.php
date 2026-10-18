@@ -516,7 +516,11 @@ final class SystemAdapter
         $before = get_stylesheet();
         if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $stylesheet, '_current_fingerprint' => Fingerprint::make($before));
         switch_theme($stylesheet);
-        return array('active' => get_stylesheet(), '_rollback' => array('action' => 'theme.switch', 'payload' => array('stylesheet' => $before)));
+        if (get_stylesheet() !== $stylesheet) {
+            throw new RuntimeException('Theme activation did not persist; check WordPress theme requirements and site restrictions.');
+        }
+        return array('active' => $stylesheet, 'readback_verified' => true,
+            '_rollback' => array('action' => 'theme.switch', 'payload' => array('stylesheet' => $before)));
     }
 
     public function themeInstall(array $payload, array $context): array
@@ -572,7 +576,14 @@ final class SystemAdapter
         require_once ABSPATH . 'wp-admin/includes/theme.php';
         $deleted = delete_theme($stylesheet);
         if (is_wp_error($deleted)) throw new RuntimeException($deleted->get_error_message());
-        return array('deleted' => $stylesheet, 'rollback_supported' => false);
+        if (true !== $deleted) {
+            throw new RuntimeException('Theme deletion was not confirmed; filesystem credentials or permissions may be required.');
+        }
+        wp_clean_themes_cache();
+        if (wp_get_theme($stylesheet)->exists()) {
+            throw new RuntimeException('Theme deletion readback failed: the theme is still installed.');
+        }
+        return array('deleted' => $stylesheet, 'readback_verified' => true, 'rollback_supported' => false);
     }
 
     public function coreCheckUpdates(): array

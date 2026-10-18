@@ -146,3 +146,11 @@ For dedicated connector writes, use the same safe sequence as REST: discovery ->
 9. Independently verify the resulting WordPress/Elementor state.
 
 Static CI is not production-runtime proof. First live writes remain staging-first or require equivalent target-runtime evidence. A change on GitHub `main` is not automatically downloadable: `Connector CI` must pass and the `Connector Release` job must publish a new versioned GitHub ZIP. WordPress does not receive an instant push; opening Plugins after the short check interval or clicking **Check GitHub update now** triggers the bounded native update notice check. If the host blocks outgoing GitHub API requests, WordPress cannot show a verified new release.
+
+## Direct MCP credential button (admin opt-in)
+
+An authenticated administrator may use **Settings > WordPress Connector > Generate my direct MCP password**. This opt-in creates a dedicated WordPress Application Password for the **currently signed-in** account only; it does not select the first account. The form requires a valid WordPress nonce, explicit acceptance, HTTPS, the `create_app_password` capability and WordPress Application Password availability. Only the one-time response displays the plaintext value, with no-cache headers; revoke it from the WordPress Profile page. Do not post this password to a GitHub repository, workflow, issue, log or conversation.
+
+**ChatGPT web custom MCP is a different authentication client:** current ChatGPT custom MCP connection choices include OAuth and unauthenticated transport; WordPress Application Password / Basic Auth is **not** a replacement for OAuth in that workflow. Do not mark direct ChatGPT linking as working merely because the button generates a password. Use a separately security-reviewed OAuth authorization server or trusted OAuth-capable bridge before enabling ChatGPT connections. The current GitHub workflow already uses short-lived OIDC without Application Passwords, and remains unchanged.
+
+Before using either path on a real site: read back the currently deployed Connector version; validate WordPress REST/MCP authorization, HTTP 401/403 rejection, capability enforcement, explicit confirmation, and revocation. Use an isolated WordPress test and security acceptance before deploying this change.

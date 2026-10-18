@@ -17,6 +17,7 @@ run_php tests/plugin-adapter-catalog-contract.php
 run_php tests/plugin-audit-contract.php
 run_php tests/public-plugin-audit-transport-contract.php
 run_php tests/abilities-provider-provenance-contract.php
+run_php tests/approved-plugin-abilities-contract.php
 run_php tests/abilities-mutation-idempotency-contract.php
 run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
@@ -52,12 +53,15 @@ run_php tests/plugin-package-contract.php
 run_php tests/connector-update-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
+run_php tests/direct-mcp-credential-admin-contract.php
+run_php tests/direct-mcp-admin-runtime.php
 run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
 run_php tests/runtime-preflight-contract.php
 run_php tests/filesystem-control-contract.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
+run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
 run_php tests/mcp-transport-contract.php
