@@ -112,7 +112,9 @@ final class FilesystemPolicy
      */
     public static function affectsBrowserExecution(string $path): bool
     {
-        $path = self::assertLifecycleText($path);
+        // Replacement also edits active browser assets; PHP/INC remain separately
+        // parser-validated under the existing plugin/theme capability gate.
+        $path = self::assertWritableText($path);
         return in_array(strtolower((string) pathinfo($path, PATHINFO_EXTENSION)),
             array('html', 'htm', 'js', 'mjs', 'css'), true);
     }
