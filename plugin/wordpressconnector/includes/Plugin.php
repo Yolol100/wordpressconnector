@@ -18,6 +18,7 @@ use Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter;
 use Webactueel\WordPressConnector\Adapters\ElementorFormsAdapter;
 use Webactueel\WordPressConnector\Adapters\FilesystemAdapter;
 use Webactueel\WordPressConnector\Adapters\GutenbergAdapter;
+use Webactueel\WordPressConnector\Adapters\SiteEditorAdapter;
 use Webactueel\WordPressConnector\Adapters\MediaAdapter;
 use Webactueel\WordPressConnector\Adapters\PluginPackageAdapter;
 use Webactueel\WordPressConnector\Adapters\GTranslateSettingsAdapter;
@@ -63,6 +64,7 @@ final class Plugin
             new AbilitiesAdapter(),
             new CoreAdapter(),
             new GutenbergAdapter(),
+            new SiteEditorAdapter(),
             new ElementorCapabilitiesAdapter(),
             new ElementorAdapter(),
             new ElementorFormsAdapter(),
