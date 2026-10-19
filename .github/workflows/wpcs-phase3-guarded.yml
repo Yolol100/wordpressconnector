@@ -6,6 +6,7 @@ on:
       - fix/wpcs-phase3-acf-woo-system-20261019
     paths:
       - .github/workflows/wpcs-phase3-guarded.yml
+      - tests/mutation-lock-contract.php
 
 permissions:
   contents: write
