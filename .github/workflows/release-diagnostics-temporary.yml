@@ -1,5 +1,6 @@
 # Final post-restoration WPCS/PHPStan and strict Plugin Check release evidence 2026-10-19.
 name: Temporary release diagnostics
+# Provider-stub verification on the same release-candidate PHP source
 on:
   push:
     branches:
