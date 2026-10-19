@@ -6,10 +6,23 @@ namespace Webactueel\WordPressConnector\REST {
     // Simulate filesystem permission failures without changing the real server.
     function chmod(string $path, int $mode): bool
     {
+        $GLOBALS['wpconn_chmod_paths'][] = $path;
+        if (($GLOBALS['wpconn_test_parent_alias'] ?? null) === $path) {
+            return true; // Detect unsafe chmod-before-boundary without touching target.
+        }
         if (($GLOBALS['deny_wpconn_chmod_mode'] ?? null) === $mode) {
             return false;
         }
         return \chmod($path, $mode);
+    }
+
+    // Model a cleanup permission error without weakening the real filesystem.
+    function unlink(string $path): bool
+    {
+        if (! empty($GLOBALS['deny_wpconn_cleanup'])) {
+            return false;
+        }
+        return \unlink($path);
     }
 
     // Isolated HTTP-upload test doubles, never part of the plugin ZIP.
@@ -82,7 +95,98 @@ namespace {
         throw new RuntimeException('Successful HTTP upload lost secure file permissions.');
     }
 
+    // The parent path must be validated before chmod, so a private-root
+    // symlink cannot change the permissions of an unrelated directory.
+    $outside = sys_get_temp_dir() . '/wpconn-outside-' . bin2hex(random_bytes(6));
+    mkdir($outside, 0700);
+    $parentAlias = $root . '/external';
+    if (! symlink($outside, $parentAlias)) {
+        throw new RuntimeException('Could not create isolated parent symlink.');
+    }
+    $outsideUpload = tempnam(sys_get_temp_dir(), 'wpconn-outside-file');
+    file_put_contents($outsideUpload, '{"ok":true}');
+    $GLOBALS['wpconn_test_parent_alias'] = $parentAlias;
+    $GLOBALS['wpconn_chmod_paths'] = array();
+    try {
+        $store->put($id, 'external/sample.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $outsideUpload));
+        throw new RuntimeException('Symlinked external asset parent unexpectedly accepted.');
+    } catch (RuntimeException $error) {
+        if ('Asset path escapes the request asset root.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if (in_array($parentAlias, $GLOBALS['wpconn_chmod_paths'], true)) {
+        throw new RuntimeException('External asset path was chmod-ed before boundary validation.');
+    }
+    $GLOBALS['wpconn_test_parent_alias'] = null;
+    \unlink($outsideUpload);
+    \unlink($parentAlias);
+    \rmdir($outside);
+
+    // A failed cleanup must not report success while the private upload remains.
+    $GLOBALS['deny_wpconn_cleanup'] = true;
+    try {
+        $store->cleanup($id);
+        throw new RuntimeException('Failed asset deletion silently succeeded.');
+    } catch (RuntimeException $error) {
+        if ('Could not remove private request asset.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if (! is_file($root . '/sample.json')) {
+        throw new RuntimeException('Denied cleanup unexpectedly removed the asset.');
+    }
+    $GLOBALS['deny_wpconn_cleanup'] = false;
     $store->cleanup($id);
-    rmdir($base);
-    echo "Private asset permissions, denied uploads and cleanup OK\n";
+
+    // A request-root symlink must never allow deleting another request's files.
+    $foreignId = 'request-foreign12345';
+    $foreignRoot = $store->rootForRequest($foreignId, true);
+    $sentinel = $foreignRoot . '/keep.txt';
+    file_put_contents($sentinel, 'other request');
+    $aliasId = 'request-alias12345';
+    $aliasRoot = $store->rootForRequest($aliasId, false);
+    if (! symlink($foreignRoot, $aliasRoot)) {
+        throw new RuntimeException('Test symlink could not be created.');
+    }
+    try {
+        $store->cleanup($aliasId);
+        throw new RuntimeException('Cleanup followed a foreign request symlink.');
+    } catch (RuntimeException $error) {
+        if ('Refusing symbolic link request asset root.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if (! is_file($sentinel)) {
+        throw new RuntimeException('Symlink cleanup erased foreign request data.');
+    }
+    try {
+        $store->rootForRequest($aliasId, true);
+        throw new RuntimeException('Request-root symlink accepted for new uploads.');
+    } catch (RuntimeException $error) {
+        if ('Refusing symbolic link request asset root.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    \unlink($aliasRoot);
+    $store->cleanup($foreignId);
+
+    // Expired cleanup may touch only 64-hex request directories, never
+    // unrelated directories within an administrator-configured asset root.
+    $unrelated = $base . '/other-app-data';
+    mkdir($unrelated, 0700);
+    file_put_contents($unrelated . '/keep.txt', 'not connector data');
+    touch($unrelated, time() - 7200);
+    $staleId = 'request-stale12345';
+    $staleRoot = $store->rootForRequest($staleId, true);
+    file_put_contents($staleRoot . '/old.txt', 'old');
+    touch($staleRoot, time() - 7200);
+    $store->cleanupExpired(3600);
+    if (! is_file($unrelated . '/keep.txt') || is_dir($staleRoot)) {
+        throw new RuntimeException('Expired cleanup removed unrelated data or kept expired connector assets.');
+    }
+    \unlink($unrelated . '/keep.txt');
+    \rmdir($unrelated);
+    \rmdir($base);
+    echo "Private asset permissions, symlink isolation and guarded cleanup OK\n";
 }

@@ -169,29 +169,46 @@ final class Controller {
 	public function execute( \WP_REST_Request $request ) {
 		$body = (string) $request->get_body();
 		if ( '' === $body || strlen( $body ) > self::MAX_REQUEST_BYTES ) {
-			return new \WP_Error( 'wpconnector_request_size', 'Request JSON is empty or exceeds 256 KiB.', array( 'status' => 413 ) ); }
+			return new \WP_Error( 'wpconnector_request_size', 'Request JSON is empty or exceeds 256 KiB.', array( 'status' => 413 ) );
+		}
 		$data = $request->get_json_params();
 		if ( ! is_array( $data ) ) {
-			return new \WP_Error( 'wpconnector_invalid_json', 'Request body must be a JSON object.', array( 'status' => 400 ) ); }
+			return new \WP_Error( 'wpconnector_invalid_json', 'Request body must be a JSON object.', array( 'status' => 400 ) );
+		}
 		try {
-			$connectorRequest = Request::fromArray( $data ); } catch ( RuntimeException $error ) {
-			return new \WP_Error( 'wpconnector_invalid_request', $error->getMessage(), array( 'status' => 400 ) ); }
+			$connectorRequest = Request::fromArray( $data );
+		} catch ( RuntimeException $error ) {
+			return new \WP_Error( 'wpconnector_invalid_request', $error->getMessage(), array( 'status' => 400 ) );
+		}
+
+		// A broken private storage root must never leak an absolute path or
+		// crash REST dispatch before the guarded action can be evaluated.
+		try {
+			$this->assets->cleanupExpired();
+			$assetRoot = $this->assets->rootForRequest( $connectorRequest->id(), false );
+		} catch ( Throwable $storageError ) {
+			return new \WP_Error( 'wpconnector_asset_storage_unavailable', 'Private request asset storage is unavailable.', array( 'status' => 503 ) );
+		}
+
+		try {
+			$result = $this->runner->run(
+				$connectorRequest,
+				array(
+					'transport'             => 'rest',
+					'authenticated_user_id' => get_current_user_id(),
+					'asset_root'            => $assetRoot,
+				)
+			);
+			return new \WP_REST_Response( $result, 200 );
+		} finally {
 			try {
-				$this->assets->cleanupExpired();
-				$result = $this->runner->run(
-					$connectorRequest,
-					array(
-						'transport'             => 'rest',
-						'authenticated_user_id' => get_current_user_id(),
-						'asset_root'            => $this->assets->rootForRequest( $connectorRequest->id(), false ),
-					)
-				);
-				return new \WP_REST_Response( $result, 200 );
-			} finally {
-				try {
-					$this->assets->cleanup( $connectorRequest->id() ); } catch ( Throwable $cleanupError ) {
-					}
+				$this->assets->cleanup( $connectorRequest->id() );
+			} catch ( Throwable $cleanupError ) {
+				// The connector must not silently ignore failed private-file cleanup.
+				// Never log upload paths, request IDs, errors or credentials.
+				error_log( 'WordPress Connector could not clear private request assets.' );
 			}
+		}
 	}
 
 	public function validateRequestId( $value ): bool {
