@@ -31,8 +31,9 @@ jobs:
           set -euo pipefail
           test "$GITHUB_REF" = "refs/heads/fix/phpstan-cli-acf-precision-20261019"
           mkdir -p qa-provider
-          composer validate --no-check-publish --working-dir=scripts/phpstan
+          # Manifest intentionally changed; regenerate lock before validating parity.
           composer update --working-dir=scripts/phpstan --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts
+          composer validate --no-check-publish --working-dir=scripts/phpstan
           sha256sum scripts/phpstan/composer.lock > qa-provider/lock.sha256
           composer show --working-dir=scripts/phpstan --locked > qa-provider/dependencies.txt
       - name: PHPStan with real provider API signatures
