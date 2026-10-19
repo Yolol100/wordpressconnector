@@ -66,6 +66,18 @@ jobs:
           }
           $original = getenv('RUNNER_TEMP') . '/original/wordpressconnector';
           $current = getcwd() . '/plugin/wordpressconnector';
+          // Scope this first batch to low-risk support and runtime owners.
+          $approved = array(
+              '/includes/Runtime/Diagnostics.php',
+              '/includes/Runtime/ProcessedStore.php',
+              '/includes/Runtime/Request.php',
+              '/includes/Runtime/Result.php',
+              '/includes/Runtime/SnapshotStore.php',
+              '/includes/Support/Fingerprint.php',
+              '/includes/Support/Input.php',
+              '/includes/Support/Json.php',
+              '/includes/Security/SitePairing.php',
+          );
           $safe = array(); $reverted = array(); $unchanged = array();
           foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($original)) as $file) {
               if (!$file->isFile() || 'php' !== strtolower((string) pathinfo($file->getFilename(), PATHINFO_EXTENSION))) {
@@ -80,7 +92,7 @@ jobs:
                   $unchanged[] = $relative;
                   continue;
               }
-              if (! equivalentTokens($file->getPathname(), $target)) {
+              if (! in_array($relative, $approved, true) || ! equivalentTokens($file->getPathname(), $target)) {
                   if (! copy($file->getPathname(), $target)) {
                       throw new RuntimeException('Failed to revert unsafe formatting in ' . $relative);
                   }
@@ -89,7 +101,7 @@ jobs:
               }
               $safe[] = $relative;
           }
-          if (count($safe) < 25 || count($reverted) < 10) {
+          if (count($safe) !== count($approved) || count($reverted) < 40) {
               throw new RuntimeException('Unexpected formatter selection; manual review required.');
           }
           file_put_contents(getenv('RUNNER_TEMP') . '/review/selection.json', json_encode(array(
