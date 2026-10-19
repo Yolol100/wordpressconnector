@@ -114,6 +114,7 @@ final class SystemAdapter
 		if ('' === $login || '' === $email) throw new RuntimeException('login and email are required.');
 		$plan = array('login' => $login, 'email' => $email, 'role' => isset($payload['role']) ? sanitize_key((string) $payload['role']) : get_option('default_role'));
 		if (isset($payload['role']) && ! current_user_can('promote_users')) throw new RuntimeException('Current user is not allowed to assign roles.');
+		$this->assertEditableUserRoles($payload);
 		if (! empty($context['dry_run'])) return array('would_create' => $plan, '_current_fingerprint' => Fingerprint::make(array('new_user' => $login)));
 		$password = wp_generate_password(32, true, true);
 		$id = wp_create_user($login, $password, $email);
@@ -127,8 +128,15 @@ final class SystemAdapter
 	public function userUpdate(array $payload, array $context): array
 	{
 		$user = $this->user($payload);
+		if (! current_user_can('edit_user', (int) $user->ID)) {
+			throw new RuntimeException('Current user is not allowed to edit this account.');
+		}
 		$before = $this->userSnapshot($user);
-		if ((isset($payload['role']) || isset($payload['add_roles']) || isset($payload['remove_roles'])) && ! current_user_can('promote_users')) throw new RuntimeException('Current user is not allowed to change user roles.');
+		if ((isset($payload['role']) || isset($payload['add_roles']) || isset($payload['remove_roles']))
+			&& (! current_user_can('promote_users') || ! current_user_can('promote_user', (int) $user->ID))) {
+			throw new RuntimeException('Current user is not allowed to change this account\'s roles.');
+		}
+		$this->assertEditableUserRoles($payload);
 		$after = $before;
 		foreach (array('email', 'display_name', 'first_name', 'last_name', 'description', 'url') as $key) if (array_key_exists($key, $payload)) $after[$key] = $payload[$key];
 		if (isset($payload['role'])) $after['roles'] = array(sanitize_key((string) $payload['role']));
@@ -206,6 +214,9 @@ final class SystemAdapter
 	public function userDelete(array $payload, array $context): array
 	{
 		$user = $this->user($payload);
+		if (! current_user_can('delete_user', (int) $user->ID)) {
+			throw new RuntimeException('Current user is not allowed to delete this account.');
+		}
 		$before = $this->userSnapshot($user);
 		if (1 === (int) $user->ID) throw new RuntimeException('Refusing to delete user ID 1.');
 		$reassign = isset($payload['reassign']) ? (int) $payload['reassign'] : null;
@@ -223,6 +234,7 @@ final class SystemAdapter
 
 	public function roleCreate(array $payload, array $context): array
 	{
+		$this->assertRoleManagementPermission();
 		$role = isset($payload['role']) ? sanitize_key((string) $payload['role']) : '';
 		$name = isset($payload['name']) ? sanitize_text_field((string) $payload['name']) : '';
 		$caps = isset($payload['capabilities']) && is_array($payload['capabilities']) ? $payload['capabilities'] : array();
@@ -238,6 +250,7 @@ final class SystemAdapter
 
 	public function roleUpdate(array $payload, array $context): array
 	{
+		$this->assertRoleManagementPermission();
 		$roleName = isset($payload['role']) ? sanitize_key((string) $payload['role']) : '';
 		$role = get_role($roleName);
 		if (! $role) throw new RuntimeException('Role not found.');
@@ -252,6 +265,7 @@ final class SystemAdapter
 
 	public function roleDelete(array $payload, array $context): array
 	{
+		$this->assertRoleManagementPermission();
 		$roleName = isset($payload['role']) ? sanitize_key((string) $payload['role']) : '';
 		$role = get_role($roleName);
 		if (! $role) throw new RuntimeException('Role not found.');
@@ -728,6 +742,52 @@ final class SystemAdapter
 		$deleted = wp_delete_site($id);
 		if (is_wp_error($deleted)) throw new RuntimeException($deleted->get_error_message());
 		return array('deleted' => $id, 'rollback_supported' => false);
+	}
+
+	/**
+	 * Respect Core's editable_roles filter for every explicit role mutation.
+	 * A global promote_users capability alone does not authorize all roles.
+	 */
+	private function assertEditableUserRoles(array $payload): void
+	{
+		$requested = array();
+		if (isset($payload['role'])) {
+			$requested[] = $payload['role'];
+		}
+		foreach (array('add_roles', 'remove_roles') as $field) {
+			if (! isset($payload[$field])) {
+				continue;
+			}
+			if (! is_array($payload[$field])) {
+				throw new RuntimeException('User roles must be supplied as an array.');
+			}
+			foreach ($payload[$field] as $role) {
+				$requested[] = $role;
+			}
+		}
+		if (array() === $requested) {
+			return;
+		}
+		if (! function_exists('get_editable_roles')) {
+			require_once ABSPATH . 'wp-admin/includes/user.php';
+		}
+		$editable = get_editable_roles();
+		foreach ($requested as $role) {
+			if (! is_string($role) || '' === $role || sanitize_key($role) !== $role || ! isset($editable[$role])) {
+				throw new RuntimeException('User role is not assignable by the current user.');
+			}
+		}
+	}
+
+	/**
+	 * Granting arbitrary role capabilities needs full site administration.
+	 * On multisite only network super administrators may alter role grants.
+	 */
+	private function assertRoleManagementPermission(): void
+	{
+		if (! current_user_can('manage_options') || (is_multisite() && ! is_super_admin())) {
+			throw new RuntimeException('Current user is not allowed to manage role capabilities.');
+		}
 	}
 
 	private function user(array $payload): \WP_User
