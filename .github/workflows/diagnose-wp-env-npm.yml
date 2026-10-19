@@ -1,0 +1,39 @@
+name: One-time npm wp-env upstream compatibility probe
+
+on:
+  push:
+    branches:
+      - fix/ci-env-bootstrap-probe-20261019
+    paths:
+      - .github/workflows/diagnose-wp-env-npm.yml
+
+permissions:
+  contents: read
+
+jobs:
+  npm-version-probe:
+    name: wp-env ${{ matrix.version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ['11.16.0', '11.15.0', '10.33.1']
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.18.0'
+      - name: Official npm manifest and published Playground versions
+        shell: bash
+        run: |
+          node --version
+          npm --version
+          npm view "@wordpress/env@${{ matrix.version }}" dependencies --json > npm-dependencies.json
+          node -e 'const d=require("./npm-dependencies.json"); console.log("env wp-playground-cli requirement",d["@wp-playground/cli"])'
+          npm view @wp-playground/blueprints versions --json > blueprint-versions.json
+          node -e 'const a=require("./blueprint-versions.json"); console.log("blueprints 3.1.58",a.includes("3.1.58"),"3.1.59",a.includes("3.1.59"))'
+      - name: Attempt pinned public official wp-env installation
+        shell: bash
+        run: |
+          npm install --global --no-audit --no-fund "@wordpress/env@${{ matrix.version }}"
+          wp-env --version
