@@ -1,0 +1,107 @@
+name: WordPressCS AST equivalence probe
+on:
+  push:
+    branches: [fix/release-readiness-guarded-wpcs-20261019]
+    paths: [.github/workflows/wpcs-ast-probe.yml]
+permissions:
+  contents: read
+jobs:
+  ast-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Install versioned source parser and WordPress Coding Standards
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/php-parser-audit"
+          cd "$RUNNER_TEMP/php-parser-audit"
+          composer init --no-interaction --name wordpressconnector/ast-proof --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress \
+            nikic/php-parser:5.9.0 \
+            squizlabs/php_codesniffer:3.13.6 \
+            wp-coding-standards/wpcs:3.4.1 \
+            dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Inspect full PHPCBF differences, but never write plugin commits
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ast-proof"
+          cat > "$RUNNER_TEMP/php-parser-audit/compare.php" <<'PHP'
+          <?php
+          declare(strict_types=1);
+          require __DIR__ . '/vendor/autoload.php';
+          use PhpParser\Node;
+          use PhpParser\ParserFactory;
+          function normalise($value) {
+              if ($value instanceof Node) {
+                  $parts = array();
+                  foreach ($value->getSubNodeNames() as $property) {
+                      $parts[$property] = normalise($value->$property);
+                  }
+                  return array('node' => get_class($value), 'parts' => $parts);
+              }
+              if (is_array($value)) {
+                  return array_map('normalise', $value);
+              }
+              return $value;
+          }
+          function comments(string $source): array {
+              $result = array();
+              foreach (token_get_all($source) as $token) {
+                  if (is_array($token) && in_array($token[0], array(T_COMMENT,T_DOC_COMMENT), true)) {
+                      $result[] = array($token[0], preg_replace('/\s+/', ' ', $token[1]));
+                  }
+              }
+              return $result;
+          }
+          $before=file_get_contents($argv[1]);
+          $after=file_get_contents($argv[2]);
+          if (!is_string($before) || !is_string($after)) { throw new RuntimeException('Unreadable candidate'); }
+          $parser=(new ParserFactory())->createForHostVersion();
+          $old=normalise($parser->parse($before));
+          $new=normalise($parser->parse($after));
+          $report=array(
+              'file' => basename($argv[2]),
+              'php_ast_equivalent' => $old === $new,
+              'phpdoc_comments_equivalent' => comments($before) === comments($after),
+              'source_sha256' => hash('sha256',$before),
+              'candidate_sha256' => hash('sha256',$after),
+          );
+          echo json_encode($report, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES).PHP_EOL;
+          PHP
+          targets=(
+            plugin/wordpressconnector/includes/Adapters/AcfAdapter.php
+            plugin/wordpressconnector/includes/Adapters/CoreAdapter.php
+            plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php
+            plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php
+            plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php
+          )
+          for target in "${targets[@]}"; do
+            name="$(basename "$target" .php)"
+            cp "$target" "$RUNNER_TEMP/ast-proof/$name.before.php"
+            "$RUNNER_TEMP/php-parser-audit/vendor/bin/phpcs" --standard=WordPress --report=summary "$target" > "$RUNNER_TEMP/ast-proof/$name.before.txt" 2>&1 || true
+            "$RUNNER_TEMP/php-parser-audit/vendor/bin/phpcbf" --standard=WordPress "$target" > "$RUNNER_TEMP/ast-proof/$name.fixlog.txt" 2>&1 || true
+            "$RUNNER_TEMP/php-parser-audit/vendor/bin/phpcs" --standard=WordPress --report=summary "$target" > "$RUNNER_TEMP/ast-proof/$name.after.txt" 2>&1 || true
+            php "$RUNNER_TEMP/php-parser-audit/compare.php" "$RUNNER_TEMP/ast-proof/$name.before.php" "$target" > "$RUNNER_TEMP/ast-proof/$name.ast.json" 2>&1 || true
+            git diff --check -- "$target" > "$RUNNER_TEMP/ast-proof/$name.diffcheck.txt" 2>&1 || true
+            git diff -- "$target" > "$RUNNER_TEMP/ast-proof/$name.diff"
+            cp "$RUNNER_TEMP/ast-proof/$name.before.php" "$target"
+          done
+          git diff --exit-code
+      - name: Store inspectable AST and diff evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wpcs-source-ast-proof
+          path: ${{ runner.temp }}/ast-proof/
+          retention-days: 14
+          if-no-files-found: warn
