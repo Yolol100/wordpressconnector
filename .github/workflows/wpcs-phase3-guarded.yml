@@ -75,25 +75,50 @@ jobs:
               return $result;
           }
           $names = array('AcfAdapter.php', 'WooCommerceAdapter.php', 'SystemAdapter.php');
+          $safe = array();
+          $reverted = array();
           foreach ($names as $name) {
+              $relative = 'plugin/wordpressconnector/includes/Adapters/' . $name;
               $before = getenv('RUNNER_TEMP') . '/wpcs-review/original/' . $name;
-              $after = getcwd() . '/plugin/wordpressconnector/includes/Adapters/' . $name;
-              if (meaningfulTokens($before) !== meaningfulTokens($after)) {
-                  throw new RuntimeException('Meaningful PHP tokens changed in ' . $name);
+              $after = getcwd() . '/' . $relative;
+              $first = meaningfulTokens($before);
+              $second = meaningfulTokens($after);
+              if ($first !== $second) {
+                  $limit = min(count($first), count($second));
+                  $mismatch = $limit;
+                  for ($i = 0; $i < $limit; ++$i) {
+                      if ($first[$i] !== $second[$i]) { $mismatch = $i; break; }
+                  }
+                  echo 'Rejected meaningful change in ' . $name . ' at token ' . $mismatch . PHP_EOL;
+                  if (! copy($before, $after)) {
+                      throw new RuntimeException('Could not restore unsafe formatted file ' . $name);
+                  }
+                  $reverted[] = $relative;
+                  continue;
               }
-              echo 'Token-equivalent: ' . $name . PHP_EOL;
+              if (hash_file('sha256', $before) !== hash_file('sha256', $after)) {
+                  echo 'Token-equivalent: ' . $name . PHP_EOL;
+                  $safe[] = $relative;
+              }
+          }
+          file_put_contents(getenv('RUNNER_TEMP') . '/wpcs-review/reports/selection.json', json_encode(
+              array('safe' => $safe, 'reverted' => $reverted),
+              JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES
+          ));
+          if (count($safe) < 1) {
+              throw new RuntimeException('All proposed files were unsafe; no commit permitted.');
           }
           PHP
           php "$RUNNER_TEMP/wpcs-review/token-guard.php"
           for target in "${targets[@]}"; do php -l "$target"; done
           git diff --check
           changed=$(git diff --name-only | sort)
-          expected=$(printf '%s\n' "${targets[@]}" | sort)
+          expected=$(jq -r '.safe[]' "$RUNNER_TEMP/wpcs-review/reports/selection.json" | sort)
           test "$changed" = "$expected" || { echo "Unexpected file changes"; echo "$changed"; exit 1; }
           git diff --stat > "$RUNNER_TEMP/wpcs-review/reports/change-stat.txt"
           git diff -- plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-review/reports/format.diff"
           bash scripts/run-contracts.sh > "$RUNNER_TEMP/wpcs-review/reports/contracts.txt" 2>&1 || { tail -n 60 "$RUNNER_TEMP/wpcs-review/reports/contracts.txt"; exit 1; }
-          echo "All 3 files token-equivalent and full contracts passed."
+          echo "Only token-equivalent plugin files were retained; full contracts passed."
       - name: Upload review evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
