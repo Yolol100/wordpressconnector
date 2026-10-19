@@ -159,11 +159,11 @@ final class ConnectorUpdateAdapter
             return;
         }
         // An informational success message must not be forgeable with a plain URL.
-        $rawNonce = $_GET['wpconnector_update_notice_nonce'] ?? null;
-        if (! is_string($rawNonce) || ! wp_verify_nonce(
-            sanitize_text_field(wp_unslash($rawNonce)),
-            'wpconnector_update_notice'
-        )) {
+        $rawNonce = isset($_GET['wpconnector_update_notice_nonce'])
+            && is_string($_GET['wpconnector_update_notice_nonce'])
+            ? sanitize_text_field(wp_unslash($_GET['wpconnector_update_notice_nonce']))
+            : '';
+        if ('' === $rawNonce || ! wp_verify_nonce($rawNonce, 'wpconnector_update_notice')) {
             return;
         }
         // The notice is informational only. Reject malformed or array-valued query parameters.
