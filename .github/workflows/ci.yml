@@ -371,11 +371,46 @@ jobs:
             echo 'changed=false' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Review dependency changes
+      # This public repository currently has no GitHub Dependency Graph API.
+      # Audit the exact committed lockfiles instead of falsely declaring an
+      # unavailable remote review action successful or skipping advisories.
+      - name: Set up pinned dependency audit runtime
         if: steps.dependency_changes.outputs.changed == 'true'
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
-          fail-on-severity: moderate
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate and audit changed dependency lockfiles
+        if: steps.dependency_changes.outputs.changed == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" --)"
+          mapfile -t composer_dirs < <(printf '%s\n' "$changed" | grep -E '(^|/)composer\.(json|lock)$' | xargs -r -n1 dirname | sort -u)
+          mapfile -t node_dirs < <(printf '%s\n' "$changed" | grep -E '(^|/)(package(-lock)?\.json|npm-shrinkwrap\.json)$' | xargs -r -n1 dirname | sort -u)
+          for dir in "${composer_dirs[@]}"; do
+            if test -f "$dir/composer.json"; then
+              test -s "$dir/composer.lock" || { echo "Missing Composer lockfile in $dir" >&2; exit 1; }
+              composer validate --no-check-publish --working-dir="$dir"
+              composer audit --locked --no-interaction --working-dir="$dir"
+            fi
+          done
+          for dir in "${node_dirs[@]}"; do
+            if test -f "$dir/package.json"; then
+              test -f "$dir/package-lock.json" -o -f "$dir/npm-shrinkwrap.json" || { echo "Missing npm lockfile in $dir" >&2; exit 1; }
+              (cd "$dir" && npm audit --package-lock-only --audit-level=moderate)
+            fi
+          done
+          if printf '%s\n' "$changed" | grep -Eq '(^|/)(pnpm-lock\.yaml|yarn\.lock)$'; then
+            echo "A changed pnpm/yarn lockfile requires a dedicated locked package-manager audit." >&2
+            exit 1
+          fi
+          echo 'Available exact dependency lockfiles passed security advisory checks.'
 
       - name: Dependency review not required
         if: steps.dependency_changes.outputs.changed != 'true'
