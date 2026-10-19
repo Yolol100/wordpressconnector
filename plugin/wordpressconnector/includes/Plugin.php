@@ -49,69 +49,71 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Runtime\SnapshotStore;
 
-final class Plugin
-{
-    public static function boot(): void
-    {
-        add_action('before_woocommerce_init', static function (): void {
-            if (class_exists('Automattic\\WooCommerce\\Utilities\\FeaturesUtil')) {
-                \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', WPCONNECTOR_FILE, true);
-            }
-        });
+final class Plugin {
 
-        $registry = new Registry();
-        $adapters = array(
-            new DiscoveryAdapter(),
-            new ConnectionReadinessAdapter(),
-            new AbilitiesAdapter(),
-            new CoreAdapter(),
-            new GutenbergAdapter(),
-            new SiteEditorAdapter(),
-            new ElementorCapabilitiesAdapter(),
-            new ElementorAdapter(),
-            new ElementorFormsAdapter(),
-            new WooCommerceAdapter(),
-            new WooCommerceSettingsAdapter(),
-            new WooCommerceOperationsAdapter(),
-            new WooCommerceFulfillmentAdapter(),
-            new AcfAdapter(),
-            new PortfolioStatsAdapter(),
-            new YoastAdapter(),
-            new YoastSnippetAdapter(),
-            new YoastTemplateSettingsAdapter(),
-            new YoastFeatureSettingsAdapter(),
-            new YoastNativeAbilitiesAdapter(),
-            new MediaAdapter(),
-            new AutoImageAttributesAdapter(),
-            new GTranslateSettingsAdapter(),
-            new OptimizerSettingsAdapter(),
-            new PluginSettingsAdapter(),
-            new CacheMaintenanceAdapter(),
-            new CodeSnippetsAdapter(),
-            new CustomCssAdapter(),
-            new FilesystemAdapter(),
-            new PluginPackageAdapter(),
-            new ConnectorUpdateAdapter(),
-            new SiteIdentityAdapter(),
-            new SystemAdapter(),
-        );
+	public static function boot(): void {
+		add_action(
+			'before_woocommerce_init',
+			static function (): void {
+				if ( class_exists( 'Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {
+					\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', WPCONNECTOR_FILE, true );
+				}
+			}
+		);
 
-        foreach ($adapters as $adapter) {
-            $adapter->register($registry);
-        }
+		$registry = new Registry();
+		$adapters = array(
+			new DiscoveryAdapter(),
+			new ConnectionReadinessAdapter(),
+			new AbilitiesAdapter(),
+			new CoreAdapter(),
+			new GutenbergAdapter(),
+			new SiteEditorAdapter(),
+			new ElementorCapabilitiesAdapter(),
+			new ElementorAdapter(),
+			new ElementorFormsAdapter(),
+			new WooCommerceAdapter(),
+			new WooCommerceSettingsAdapter(),
+			new WooCommerceOperationsAdapter(),
+			new WooCommerceFulfillmentAdapter(),
+			new AcfAdapter(),
+			new PortfolioStatsAdapter(),
+			new YoastAdapter(),
+			new YoastSnippetAdapter(),
+			new YoastTemplateSettingsAdapter(),
+			new YoastFeatureSettingsAdapter(),
+			new YoastNativeAbilitiesAdapter(),
+			new MediaAdapter(),
+			new AutoImageAttributesAdapter(),
+			new GTranslateSettingsAdapter(),
+			new OptimizerSettingsAdapter(),
+			new PluginSettingsAdapter(),
+			new CacheMaintenanceAdapter(),
+			new CodeSnippetsAdapter(),
+			new CustomCssAdapter(),
+			new FilesystemAdapter(),
+			new PluginPackageAdapter(),
+			new ConnectorUpdateAdapter(),
+			new SiteIdentityAdapter(),
+			new SystemAdapter(),
+		);
 
-        do_action('wpconnector_register_actions', $registry);
+		foreach ( $adapters as $adapter ) {
+			$adapter->register( $registry );
+		}
 
-        $runner = new Runner($registry, new SnapshotStore(), new ProcessedStore());
-        (new Settings())->register();
-        (new ElementorJsonExport())->register();
-        (new ElementorJsonImport())->register();
-        $restController = new Controller($runner, new AssetStore());
-        $restController->register();
-        (new McpController($runner, $registry, array($restController, 'authorize')))->register();
+		do_action( 'wpconnector_register_actions', $registry );
 
-        if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
-            \WP_CLI::add_command('wordpress-connector', new Command($runner));
-        }
-    }
+		$runner = new Runner( $registry, new SnapshotStore(), new ProcessedStore() );
+		( new Settings() )->register();
+		( new ElementorJsonExport() )->register();
+		( new ElementorJsonImport() )->register();
+		$restController = new Controller( $runner, new AssetStore() );
+		$restController->register();
+		( new McpController( $runner, $registry, array( $restController, 'authorize' ) ) )->register();
+
+		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
+			\WP_CLI::add_command( 'wordpress-connector', new Command( $runner ) );
+		}
+	}
 }
