@@ -35,7 +35,15 @@ jobs:
           node-version: '24.18.0'
           package-manager-cache: false
       - name: Install pinned WordPress test environment
-        run: npm install --global @wordpress/env@11.17.0
+        run: |
+          # Upstream wp-env 11.17.0 currently resolves an unpublished Playground
+          # dependency (@wp-playground/blueprints@3.1.59). Pin the compatible
+          # tooling pair until the npm release set is complete.
+          npm install --global --no-fund --no-audit \
+            @wordpress/env@11.16.0 \
+            @wp-playground/cli@3.1.54 \
+            @wp-playground/blueprints@3.1.54
+          wp-env --version
       - name: Start disposable WordPress with Docker
         run: wp-env start
       - name: Verify exact WordPress, PHP, and database runtime
