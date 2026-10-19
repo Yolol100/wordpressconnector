@@ -45,8 +45,8 @@ final class SnapshotStore {
 
 	public function cleanup( int $olderThanSeconds ): int {
 		global $wpdb;
-		$like    = $wpdb->esc_like( self::PREFIX ) . '%';
-		$rows    = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name, option_value FROM %i WHERE option_name LIKE %s', $wpdb->options, $like ) );
+		$like = $wpdb->esc_like( self::PREFIX ) . '%';
+		$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name, option_value FROM %i WHERE option_name LIKE %s', $wpdb->options, $like ) );
 		// Core may return null when the database connection is not ready.
 		if ( ! is_array( $rows ) ) {
 			return 0;
