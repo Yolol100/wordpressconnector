@@ -1,0 +1,75 @@
+name: Temporary release diagnostics
+on:
+  push:
+    branches:
+      - fix/release-readiness-guarded-wpcs-20261019
+    paths:
+      - .github/workflows/release-diagnostics-temporary.yml
+permissions:
+  contents: read
+jobs:
+  strict-statics:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Install pinned WPCS tooling in disposable environment
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs"
+          cd "$RUNNER_TEMP/wpcs"
+          composer init --no-interaction --name wordpressconnector/scans --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Full WPCS and PHPStan scans without baselines
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/release-scans"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/release-scans/commit.txt"
+          "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/release-scans/wpcs.txt" 2>&1 || true
+          composer install --working-dir=scripts/phpstan --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts
+          composer validate --no-check-publish --working-dir=scripts/phpstan
+          scripts/phpstan/vendor/bin/phpstan analyse -c scripts/phpstan/phpstan.neon --no-progress --error-format=json > "$RUNNER_TEMP/release-scans/phpstan.json" 2> "$RUNNER_TEMP/release-scans/phpstan-stderr.txt" || true
+          python3 - <<'PY'
+          import os,json,re,pathlib,collections
+          p=pathlib.Path(os.environ["RUNNER_TEMP"])/"release-scans"
+          text=(p/"wpcs.txt").read_text()
+          m=re.search(r"A TOTAL OF (\d+) ERRORS AND (\d+) WARNINGS WERE FOUND",text)
+          if not m: raise SystemExit("No trustworthy WPCS summary")
+          data=json.loads((p/"phpstan.json").read_text())
+          total=data.get("totals",{}).get("file_errors")
+          if not isinstance(total,int): raise SystemExit("No trustworthy PHPStan count")
+          families=collections.Counter()
+          for file,v in data.get("files",{}).items():
+            for msg in v.get("messages",[]): families[msg.get("identifier","unknown")]+=1
+          result={"head_sha":os.environ["GITHUB_SHA"],"wpcs_errors":int(m.group(1)),"wpcs_warnings":int(m.group(2)),"phpstan_errors":total,"phpstan_families":dict(families.most_common())}
+          (p/"summary.json").write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: always()
+        with:
+          name: current-release-full-scan
+          path: ${{ runner.temp }}/release-scans/
+          retention-days: 7
+          if-no-files-found: warn
+
+  unexcluded-plugin-check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+        with:
+          build-dir: plugin/wordpressconnector
+          strict: 'true'
