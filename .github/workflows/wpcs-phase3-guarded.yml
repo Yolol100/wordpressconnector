@@ -88,9 +88,7 @@ jobs:
           for target in "${targets[@]}"; do php -l "$target"; done
           git diff --check
           changed=$(git diff --name-only | sort)
-          expected=$(printf '%s\n' "plugin/wordpressconnector/includes/Adapters/AcfAdapter.php
-plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php
-plugin/wordpressconnector/includes/Adapters/SystemAdapter.php" | sort)
+          expected=$(printf '%s\n' "${targets[@]}" | sort)
           test "$changed" = "$expected" || { echo "Unexpected file changes"; echo "$changed"; exit 1; }
           git diff --stat > "$RUNNER_TEMP/wpcs-review/reports/change-stat.txt"
           git diff -- plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-review/reports/format.diff"
