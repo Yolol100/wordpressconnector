@@ -54,6 +54,9 @@ jobs:
           "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --report=summary "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/after.txt" 2>&1
           set -e
           echo "phpcbf exit: $fixer_exit" >> "$RUNNER_TEMP/wpcs-review/reports/phpcbf.log"
+          # PHPCBF may leave spaces after a rewritten indentation token.
+          # Strip only end-of-line blanks; meaningful PHP tokens are checked below.
+          for target in "${targets[@]}"; do sed -i -E 's/[[:blank:]]+$//' "$target"; done
           set +e
           "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --report=source "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/sniff-sources.txt" 2>&1
           set -e
