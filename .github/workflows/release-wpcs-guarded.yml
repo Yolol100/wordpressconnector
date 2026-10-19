@@ -1,5 +1,5 @@
 name: Guarded WPCS release cleanup
-# Second bounded attempt after making source-sensitive contract checks whitespace-safe.
+# Third and final bounded pass after fixing the public CSS contract's exact spacing assumption.
 on:
   push:
     branches: [fix/release-readiness-guarded-wpcs-20261019]
