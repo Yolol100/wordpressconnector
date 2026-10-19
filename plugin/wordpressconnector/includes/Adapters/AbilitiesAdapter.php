@@ -7,10 +7,8 @@ namespace Webactueel\WordPressConnector\Adapters;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
-final class AbilitiesAdapter
-{
-	public function register(Registry $registry): void
-	{
+final class AbilitiesAdapter {
+	public function register(Registry $registry): void {
 		$registry->register('wordpress.abilities', array($this, 'catalog'), array(
 			'privileged' => true,
 			'description' => 'Discover exposed WordPress Abilities API entries and their schemas without executing them.',
@@ -36,8 +34,7 @@ final class AbilitiesAdapter
 		));
 	}
 
-	public function catalog(array $payload, array $context): array
-	{
+	public function catalog(array $payload, array $context): array {
 		if (! function_exists('wp_get_abilities')) {
 			return array(
 				'available' => false,
@@ -104,25 +101,21 @@ final class AbilitiesAdapter
 		return $response;
 	}
 
-	public function readAbility(array $payload, array $context): array
-	{
+	public function readAbility(array $payload, array $context): array {
 		list($name, $ability) = $this->resolveAbility($payload, false);
 		$input = array_key_exists('input', $payload) ? $payload['input'] : null;
 		return $this->executeAndSanitize($name, $ability, $input, $this->safeAnnotations($ability), false);
 	}
 
-	public function executeAbility(array $payload, array $context): array
-	{
+	public function executeAbility(array $payload, array $context): array {
 		return $this->executeMutation($payload, $context, false);
 	}
 
-	public function executeApprovedAbility(array $payload, array $context): array
-	{
+	public function executeApprovedAbility(array $payload, array $context): array {
 		return $this->executeMutation($payload, $context, true);
 	}
 
-	private function executeMutation(array $payload, array $context, bool $approvedProvider): array
-	{
+	private function executeMutation(array $payload, array $context, bool $approvedProvider): array {
 		list($name, $ability) = $this->resolveAbility($payload, true, $approvedProvider);
 		$input = array_key_exists('input', $payload) ? $payload['input'] : null;
 		$annotations = $this->safeAnnotations($ability);
@@ -148,8 +141,7 @@ final class AbilitiesAdapter
 		return $result;
 	}
 
-	private function resolveAbility(array $payload, bool $mutation, bool $approvedProvider = false): array
-	{
+	private function resolveAbility(array $payload, bool $mutation, bool $approvedProvider = false): array {
 		if (! function_exists('wp_get_ability')) {
 			throw new \RuntimeException('WordPress Abilities API is not available on this site.');
 		}
@@ -168,8 +160,7 @@ final class AbilitiesAdapter
 		return array($name, $ability);
 	}
 
-	private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array
-	{
+	private function executeAndSanitize(string $name, object $ability, $input, array $annotations, bool $mutation): array {
 		$executionStarted = false;
 		$providerPreExecutionRejected = false;
 		$executionTracker = null;
@@ -291,8 +282,7 @@ final class AbilitiesAdapter
 		return $response;
 	}
 
-	private function terminalMutationFailure(string $name, array $annotations, ?string $providerErrorCode): array
-	{
+	private function terminalMutationFailure(string $name, array $annotations, ?string $providerErrorCode): array {
 		$safeCode = null;
 		if (is_string($providerErrorCode) && 1 === preg_match('/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode)) {
 			$safeCode = $providerErrorCode;
@@ -309,12 +299,15 @@ final class AbilitiesAdapter
 		);
 	}
 
-	private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget)
-	{
-		if (++$budget['nodes'] > 10000 || $depth > 20) throw new \RuntimeException('WordPress Ability result exceeds the traversal limit.');
+	private function redactAbilityResult($value, int $depth, \SplObjectStorage $seen, array &$budget) {
+		if (++$budget['nodes'] > 10000 || $depth > 20) {
+			throw new \RuntimeException('WordPress Ability result exceeds the traversal limit.');
+		}
 		$object = null;
 		if (is_object($value)) {
-			if ($seen->contains($value)) return '[circular object omitted]';
+			if ($seen->contains($value)) {
+				return '[circular object omitted]';
+			}
 			$seen->attach($value);
 			$object = $value;
 			$value = get_object_vars($value);
@@ -323,29 +316,33 @@ final class AbilitiesAdapter
 			foreach ($value as $key => $item) {
 				if (is_string($key)) {
 					$budget['bytes'] += strlen($key);
-					if ($budget['bytes'] > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+					if ($budget['bytes'] > 262144) {
+						throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+					}
 				}
 				$value[$key] = $this->redactAbilityResult($item, $depth + 1, $seen, $budget);
 			}
 			$value = Policy::redact($value);
-			if (null !== $object) $seen->detach($object);
+			if (null !== $object) {
+				$seen->detach($object);
+			}
 			return $value;
 		}
 		if (is_string($value)) {
 			$budget['bytes'] += strlen($value);
-			if ($budget['bytes'] > 262144) throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+			if ($budget['bytes'] > 262144) {
+				throw new \RuntimeException('WordPress Ability result exceeds the output limit.');
+			}
 			return $value;
 		}
 		return is_scalar($value) || null === $value ? $value : null;
 	}
 
-	private function isValidName(string $name): bool
-	{
+	private function isValidName(string $name): bool {
 		return 1 === preg_match('/^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_-]*$/D', $name);
 	}
 
-	private function catalogNamespace($value): ?string
-	{
+	private function catalogNamespace($value): ?string {
 		if (null === $value || '' === $value) {
 			return null;
 		}
@@ -355,8 +352,7 @@ final class AbilitiesAdapter
 		return $value;
 	}
 
-	private function isReadEligible($ability): bool
-	{
+	private function isReadEligible($ability): bool {
 		if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
 			return false;
 		}
@@ -364,8 +360,7 @@ final class AbilitiesAdapter
 		return true === ($annotations['readonly'] ?? null) && false === ($annotations['destructive'] ?? null);
 	}
 
-	private function isMutationEligible($ability): bool
-	{
+	private function isMutationEligible($ability): bool {
 		if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
 			return false;
 		}
@@ -373,8 +368,7 @@ final class AbilitiesAdapter
 		return false === ($annotations['readonly'] ?? null) && is_bool($annotations['destructive'] ?? null);
 	}
 
-	private function isElementorMutationEligible(string $name, $ability): bool
-	{
+	private function isElementorMutationEligible(string $name, $ability): bool {
 		if (! is_object($ability) || ! $this->isElementorAbilityName($name)) {
 			return false;
 		}
@@ -393,8 +387,7 @@ final class AbilitiesAdapter
 	 * operator must approve the exact ability AND exact active plugin file
 	 * using a JSON mapping in wp-config.php.
 	 */
-	private function isApprovedPluginMutationEligible(string $name, $ability): bool
-	{
+	private function isApprovedPluginMutationEligible(string $name, $ability): bool {
 		if ($this->isElementorAbilityName($name) || ! is_object($ability)
 			|| ! Policy::flag('WPCONNECTOR_ALLOW_APPROVED_ABILITY_WRITES')
 			|| ! $this->isExplicitMcpPublic($ability) || ! $this->isMutationEligible($ability)) {
@@ -440,8 +433,7 @@ final class AbilitiesAdapter
 			&& $this->pathWithinRoot($canonicalCallback, $canonicalPlugin);
 	}
 
-	private function approvedAbilityProviders(): array
-	{
+	private function approvedAbilityProviders(): array {
 		$json = defined('WPCONNECTOR_APPROVED_ABILITY_PROVIDERS')
 			? constant('WPCONNECTOR_APPROVED_ABILITY_PROVIDERS') : false;
 		if (! is_string($json) || strlen($json) > 8192) {
@@ -463,8 +455,7 @@ final class AbilitiesAdapter
 		return $approved;
 	}
 
-	private function callableSourceFile($callback): ?string
-	{
+	private function callableSourceFile($callback): ?string {
 		try {
 			if ($callback instanceof \Closure || is_string($callback)) {
 				$file = (new \ReflectionFunction($callback))->getFileName();
@@ -481,13 +472,11 @@ final class AbilitiesAdapter
 		return is_string($file) && '' !== $file ? $file : null;
 	}
 
-	private function isElementorAbilityName(string $name): bool
-	{
+	private function isElementorAbilityName(string $name): bool {
 		return 0 === strpos($name, 'elementor/') || 0 === strpos($name, 'elementor-pro/');
 	}
 
-	private function isExplicitMcpPublic(object $ability): bool
-	{
+	private function isExplicitMcpPublic(object $ability): bool {
 		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
 		return is_array($meta)
 			&& isset($meta['mcp'])
@@ -495,8 +484,7 @@ final class AbilitiesAdapter
 			&& true === ($meta['mcp']['public'] ?? false);
 	}
 
-	private function isNativeElementorAbilityProvider(string $name, object $ability): bool
-	{
+	private function isNativeElementorAbilityProvider(string $name, object $ability): bool {
 		$callback = $this->abilityExecuteCallback($ability);
 		if (! is_array($callback)
 			|| 2 !== count($callback)
@@ -533,8 +521,7 @@ final class AbilitiesAdapter
 		return false;
 	}
 
-	private function abilityExecuteCallback(object $ability)
-	{
+	private function abilityExecuteCallback(object $ability) {
 		try {
 			$reflection = new \ReflectionObject($ability);
 			if (! $reflection->hasProperty('execute_callback')) {
@@ -550,8 +537,7 @@ final class AbilitiesAdapter
 		}
 	}
 
-	private function trustedElementorPluginRoots(): array
-	{
+	private function trustedElementorPluginRoots(): array {
 		if (! defined('WP_PLUGIN_DIR') || ! function_exists('get_option')) {
 			return array();
 		}
@@ -585,14 +571,12 @@ final class AbilitiesAdapter
 		return $roots;
 	}
 
-	private function pathWithinRoot(string $file, string $root): bool
-	{
+	private function pathWithinRoot(string $file, string $root): bool {
 		$root = rtrim($root, DIRECTORY_SEPARATOR);
 		return $file === $root || 0 === strpos($file, $root . DIRECTORY_SEPARATOR);
 	}
 
-	private function isExecutionExposed(object $ability): bool
-	{
+	private function isExecutionExposed(object $ability): bool {
 		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
 		if (! is_array($meta)) {
 			return false;
@@ -605,8 +589,7 @@ final class AbilitiesAdapter
 		return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
 	}
 
-	private function isExposed(object $ability): bool
-	{
+	private function isExposed(object $ability): bool {
 		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
 		if (! is_array($meta)) {
 			return false;
@@ -619,8 +602,7 @@ final class AbilitiesAdapter
 		return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
 	}
 
-	private function safeAnnotations(object $ability): array
-	{
+	private function safeAnnotations(object $ability): array {
 		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
 		$annotations = is_array($meta) && isset($meta['annotations']) && is_array($meta['annotations'])
 			? $meta['annotations']
@@ -634,8 +616,7 @@ final class AbilitiesAdapter
 		return $safeAnnotations;
 	}
 
-	private function descriptor(string $name, object $ability): array
-	{
+	private function descriptor(string $name, object $ability): array {
 		$safeAnnotations = $this->safeAnnotations($ability);
 		$readEligible = $this->isReadEligible($ability);
 		$mutationEligible = $this->isElementorMutationEligible($name, $ability);
@@ -666,8 +647,7 @@ final class AbilitiesAdapter
 		);
 	}
 
-	private function catalogPositiveInteger($value, int $max, string $field): int
-	{
+	private function catalogPositiveInteger($value, int $max, string $field): int {
 		if (! is_int($value) && (! is_string($value) || 1 !== preg_match('/^[1-9][0-9]*$/D', $value))) {
 			throw new \RuntimeException($field . ' must be a positive integer.');
 		}
@@ -678,8 +658,7 @@ final class AbilitiesAdapter
 		return min($max, (int) $validated);
 	}
 
-	private function boundedCatalogText(string $value, int $maxBytes): string
-	{
+	private function boundedCatalogText(string $value, int $maxBytes): string {
 		if (strlen($value) <= $maxBytes) {
 			return $value;
 		}
@@ -693,8 +672,7 @@ final class AbilitiesAdapter
 		return substr($value, 0, $cut);
 	}
 
-	private function boundedCatalogValue($value): array
-	{
+	private function boundedCatalogValue($value): array {
 		$budget = array('nodes' => 0, 'bytes' => 0);
 		try {
 			$safe = $this->boundedCatalogWalk($value, 0, new \SplObjectStorage(), $budget);
@@ -709,8 +687,7 @@ final class AbilitiesAdapter
 		return array($safe, false);
 	}
 
-	private function boundedCatalogWalk($value, int $depth, \SplObjectStorage $seen, array &$budget)
-	{
+	private function boundedCatalogWalk($value, int $depth, \SplObjectStorage $seen, array &$budget) {
 		if (++$budget['nodes'] > 2000 || $depth > 12) {
 			throw new \RuntimeException('catalog value limit');
 		}
