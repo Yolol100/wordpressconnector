@@ -46,8 +46,10 @@ $adapterRequired = array(
     'wp_clean_plugins_cache(true)',
     "rollback_supported' => false",
 );
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) { throw new RuntimeException('Cannot normalize connector update source.'); }
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
