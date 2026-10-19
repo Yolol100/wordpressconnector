@@ -193,6 +193,8 @@ if ('reduced-rate' !== $classes['classes'][0]['slug'] || '' !== $classes['standa
 $rates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500));
 if (50 !== $rates['per_page'] || 101 !== $rates['total'] || 3 !== $rates['pages'] || '12' !== $rates['rates'][0]['id'] || isset($rates['rates'][0]['secret'])) throw new RuntimeException('Tax rates were not bounded and allowlisted.');
 if (100 !== count($rates['rates'][0]['locations']) || 101 !== $rates['rates'][0]['location_count'] || ! $rates['rates'][0]['locations_truncated'] || 'postcode' !== $rates['rates'][0]['locations'][0]['type']) throw new RuntimeException('Tax rate city/postcode locations were not returned with a hard bound and truncation evidence.');
+$nextRates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500, 'page' => 2));
+if ('62' !== $nextRates['rates'][0]['id'] || 2 !== $nextRates['page']) throw new RuntimeException('Tax rate SQL pagination did not map page and offset correctly.');
 // The scanner cannot count dynamic %d placeholders. Verify the real arguments
 // instead: an escaped table identifier followed only by integer tax-rate IDs.
 $inQueries = array_values(array_filter($wpdb->preparedQueries, static function (array $entry): bool {
@@ -210,8 +212,6 @@ foreach ($inQueries as $entry) {
         throw new RuntimeException('WooCommerce tax-rate query used an unsafe or mismatched SQL parameter.');
     }
 }
-$nextRates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500, 'page' => 2));
-if ('62' !== $nextRates['rates'][0]['id'] || 2 !== $nextRates['page']) throw new RuntimeException('Tax rate SQL pagination did not map page and offset correctly.');
 try {
     $adapter->taxRateList(array('tax_class' => 'not-a-real-class'));
     throw new RuntimeException('Unknown tax class was accepted.');
