@@ -9,8 +9,7 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
-final class PluginSettingsAdapter
-{
+final class PluginSettingsAdapter {
 	private const WP_ROCKET_FIELDS = array(
 		'emoji' => 'bool',
 		'minify_google_fonts' => 'bool',
@@ -102,8 +101,7 @@ final class PluginSettingsAdapter
 		'wordpress-seo-premium/wp-seo-premium.php' => array('id' => 'yoast_premium', 'mode' => 'native_adapter', 'actions' => array('yoast.inspect', 'yoast.update', 'yoast.templates.inspect', 'yoast.templates.update', 'yoast.site_representation.inspect', 'yoast.site_representation.update')),
 	);
 
-	public function register(Registry $registry): void
-	{
+	public function register(Registry $registry): void {
 		$registry->register('plugin.settings.catalog', array($this, 'catalog'), array(
 			'privileged' => true,
 			'description' => 'List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets.',
@@ -133,8 +131,7 @@ final class PluginSettingsAdapter
 	 * Only explicitly modeled nonsecret indicators are read below. Anything
 	 * else remains inventory-only rather than pretending to be an audit pass.
 	 */
-	public function audit(array $payload = array(), array $context = array()): array
-	{
+	public function audit(array $payload = array(), array $context = array()): array {
 		if ($payload) {
 			throw new RuntimeException('Plugin audit accepts no arguments or arbitrary option keys.');
 		}
@@ -242,8 +239,7 @@ final class PluginSettingsAdapter
 	 * Never return plugin-header text, unrestricted option data, credentials,
 	 * SMTP addresses, firewall rules, payment settings or source file paths.
 	 */
-	private function auditNonsecretChecks(string $id, string $mode): array
-	{
+	private function auditNonsecretChecks(string $id, string $mode): array {
 		if (! function_exists('get_option')) {
 			return array();
 		}
@@ -321,8 +317,7 @@ final class PluginSettingsAdapter
 		return array();
 	}
 
-	private function auditToggle($value): string
-	{
+	private function auditToggle($value): string {
 		if (in_array($value, array(true, 1, '1', 'yes', 'on'), true)) {
 			return 'enabled';
 		}
@@ -332,16 +327,14 @@ final class PluginSettingsAdapter
 		return 'unknown';
 	}
 
-	private function auditPageAssignment($value): string
-	{
+	private function auditPageAssignment($value): string {
 		if (is_int($value) || (is_string($value) && preg_match('/^[0-9]{1,10}\\z/', $value))) {
 			return (int) $value > 0 ? 'present' : 'missing';
 		}
 		return 'unknown';
 	}
 
-	private function auditCorePluginCount(string $function): ?int
-	{
+	private function auditCorePluginCount(string $function): ?int {
 		if (! in_array($function, array('get_mu_plugins', 'get_dropins'), true)
 			|| ! function_exists($function)) {
 			return null;
@@ -357,8 +350,7 @@ final class PluginSettingsAdapter
 		return count($plugins);
 	}
 
-	private function auditPhonePresence($value): string
-	{
+	private function auditPhonePresence($value): string {
 		if (! is_string($value)) {
 			return null === $value ? 'missing' : 'unknown';
 		}
@@ -373,13 +365,11 @@ final class PluginSettingsAdapter
 			? 'present' : 'unknown';
 	}
 
-	private function auditTextPresence($value): string
-	{
+	private function auditTextPresence($value): string {
 		return is_string($value) ? ('' === trim($value) ? 'missing' : 'present') : 'unknown';
 	}
 
-	public function catalog(array $payload = array(), array $context = array()): array
-	{
+	public function catalog(array $payload = array(), array $context = array()): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$registeredActions = isset($context['registry']) && $context['registry'] instanceof Registry
 			? $context['registry']->catalog() : null;
@@ -445,8 +435,7 @@ final class PluginSettingsAdapter
 		);
 	}
 
-	public function inspect(array $payload, array $context = array()): array
-	{
+	public function inspect(array $payload, array $context = array()): array {
 		$plugin = $this->profile($payload);
 		$settings = Policy::redact($this->readProfile($plugin));
 		return array(
@@ -456,8 +445,7 @@ final class PluginSettingsAdapter
 		);
 	}
 
-	public function update(array $payload, array $context): array
-	{
+	public function update(array $payload, array $context): array {
 		$plugin = $this->profile($payload);
 		$updates = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
 		if (! $updates) {
@@ -505,8 +493,7 @@ final class PluginSettingsAdapter
 		return $result;
 	}
 
-	private function profile(array $payload): string
-	{
+	private function profile(array $payload): string {
 		$plugin = isset($payload['plugin']) ? sanitize_key((string) $payload['plugin']) : '';
 		if (! in_array($plugin, array('wp_rocket', 'imagify', 'really_simple_security', 'joinchat'), true)) {
 			throw new RuntimeException('Unsupported plugin settings profile: ' . $plugin . '.');
@@ -514,8 +501,7 @@ final class PluginSettingsAdapter
 		return $plugin;
 	}
 
-	private function readProfile(string $plugin): array
-	{
+	private function readProfile(string $plugin): array {
 		if ('wp_rocket' === $plugin) {
 			return $this->readWpRocket();
 		}
@@ -525,8 +511,7 @@ final class PluginSettingsAdapter
 		return 'joinchat' === $plugin ? $this->readJoinchat() : $this->readReallySimpleSecurity();
 	}
 
-	private function writeProfile(string $plugin, array $updates): void
-	{
+	private function writeProfile(string $plugin, array $updates): void {
 		if ('wp_rocket' === $plugin) {
 			$this->writeWpRocket($updates);
 			return;
@@ -542,8 +527,7 @@ final class PluginSettingsAdapter
 		$this->writeReallySimpleSecurity($updates);
 	}
 
-	private function validateUpdates(string $plugin, array $updates, array $before): array
-	{
+	private function validateUpdates(string $plugin, array $updates, array $before): array {
 		$clean = array();
 		foreach ($updates as $key => $value) {
 			if (! is_string($key) || '' === $key) {
@@ -578,8 +562,7 @@ final class PluginSettingsAdapter
 		return $clean;
 	}
 
-	private function readWpRocket(): array
-	{
+	private function readWpRocket(): array {
 		if (! function_exists('get_rocket_option') || ! function_exists('update_rocket_option')) {
 			throw new RuntimeException('WP Rocket settings API is not available.');
 		}
@@ -590,8 +573,7 @@ final class PluginSettingsAdapter
 		return $settings;
 	}
 
-	private function writeWpRocket(array $updates): void
-	{
+	private function writeWpRocket(array $updates): void {
 		if (! function_exists('update_rocket_option')) {
 			throw new RuntimeException('WP Rocket settings API is not available.');
 		}
@@ -600,15 +582,13 @@ final class PluginSettingsAdapter
 		}
 	}
 
-	private function readImagify(): array
-	{
+	private function readImagify(): array {
 		$settings = $this->executeAbility('imagify/get-settings', array());
 		unset($settings['api_key'], $settings['version']);
 		return $settings;
 	}
 
-	private function writeImagify(array $updates): void
-	{
+	private function writeImagify(array $updates): void {
 		unset($updates['api_key'], $updates['version']);
 		$result = $this->executeAbility('imagify/update-settings', $updates);
 		if (isset($result['status']) && 'error' === $result['status']) {
@@ -616,8 +596,7 @@ final class PluginSettingsAdapter
 		}
 	}
 
-	private function executeAbility(string $name, array $input): array
-	{
+	private function executeAbility(string $name, array $input): array {
 		if (! function_exists('wp_get_ability')) {
 			throw new RuntimeException('WordPress Abilities API is not available.');
 		}
@@ -636,8 +615,7 @@ final class PluginSettingsAdapter
 	}
 
 
-	private function readJoinchat(): array
-	{
+	private function readJoinchat(): array {
 		if (! defined('JOINCHAT_VERSION') || ! preg_match('/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION) || ! function_exists('jc_common')) {
 			throw new RuntimeException('Joinchat settings require an active supported 6.4.x installation.');
 		}
@@ -660,8 +638,7 @@ final class PluginSettingsAdapter
 		return $settings;
 	}
 
-	private function writeJoinchat(array $updates): void
-	{
+	private function writeJoinchat(array $updates): void {
 		$stored = get_option('joinchat', array());
 		if (! is_array($stored)) {
 			throw new RuntimeException('Joinchat settings are not an array.');
@@ -670,8 +647,7 @@ final class PluginSettingsAdapter
 		update_option('joinchat', array_merge($stored, $updates));
 	}
 
-	private function sanitizeJoinchatValue(string $type, $value)
-	{
+	private function sanitizeJoinchatValue(string $type, $value) {
 		if ('yes_no' === $type) {
 			if (! is_string($value) || ! in_array($value, array('yes', 'no'), true)) {
 				throw new RuntimeException('Joinchat toggle must be yes or no.');
@@ -720,8 +696,7 @@ final class PluginSettingsAdapter
 		throw new RuntimeException('Unsupported Joinchat value type.');
 	}
 
-	private function readReallySimpleSecurity(): array
-	{
+	private function readReallySimpleSecurity(): array {
 		if (! function_exists('rsssl_fields') || ! function_exists('rsssl_get_option') || ! function_exists('rsssl_update_option')) {
 			throw new RuntimeException('Really Simple Security settings API is not available.');
 		}
@@ -749,8 +724,7 @@ final class PluginSettingsAdapter
 		return $settings;
 	}
 
-	private function writeReallySimpleSecurity(array $updates): void
-	{
+	private function writeReallySimpleSecurity(array $updates): void {
 		if (! function_exists('rsssl_update_option')) {
 			throw new RuntimeException('Really Simple Security settings API is not available.');
 		}
@@ -759,8 +733,7 @@ final class PluginSettingsAdapter
 		}
 	}
 
-	private function sanitizeWpRocketValue(string $type, $value)
-	{
+	private function sanitizeWpRocketValue(string $type, $value) {
 		if ('bool' === $type) {
 			return $this->toBoolInt($value);
 		}
@@ -796,8 +769,7 @@ final class PluginSettingsAdapter
 		throw new RuntimeException('Unsupported WP Rocket value type.');
 	}
 
-	private function sanitizeLike($current, $value)
-	{
+	private function sanitizeLike($current, $value) {
 		if (is_bool($current)) {
 			return (bool) $this->toBoolInt($value);
 		}
@@ -827,8 +799,7 @@ final class PluginSettingsAdapter
 		return null === $value ? null : sanitize_text_field((string) $value);
 	}
 
-	private function sanitizeArray(array $value): array
-	{
+	private function sanitizeArray(array $value): array {
 		$clean = array();
 		foreach ($value as $key => $item) {
 			if (is_array($item)) {
@@ -842,8 +813,7 @@ final class PluginSettingsAdapter
 		return $clean;
 	}
 
-	private function toBoolInt($value): int
-	{
+	private function toBoolInt($value): int {
 		$normalized = strtolower((string) $value);
 		if (true === $value || 1 === $value || '1' === $normalized || 'true' === $normalized || 'yes' === $normalized || 'on' === $normalized) {
 			return 1;
@@ -854,18 +824,15 @@ final class PluginSettingsAdapter
 		throw new RuntimeException('Boolean setting requires true/false or 1/0.');
 	}
 
-	private function normalizeForCompare($value): string
-	{
+	private function normalizeForCompare($value): string {
 		return (string) wp_json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 	}
 
-	private function isSecretSetting(string $key): bool
-	{
+	private function isSecretSetting(string $key): bool {
 		return 1 === preg_match('/(password|passwd|secret|token|api[_-]?key|private[_-]?key|license|oauth|authorization|certificate|nonce|salt)/i', $key);
 	}
 
-	private function isHighRiskSecuritySetting(string $key): bool
-	{
+	private function isHighRiskSecuritySetting(string $key): bool {
 		return 1 === preg_match('/(firewall|two[_-]?fa|2fa|login|lockout|xmlrpc|user|role|admin|lets?encrypt|encrypt|hardening|vulnerab|file[_-]?edit|rest[_-]?api|hsts|csp|security[_-]?header)/i', $key);
 	}
 }
