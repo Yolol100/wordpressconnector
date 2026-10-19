@@ -76,6 +76,7 @@ run_php tests/plugin-directory-file-lifecycle-contract.php
 run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
+run_php tests/asset-private-permissions-contract.php
 run_php tests/mcp-transport-contract.php
 run_php tests/site-editor-contract.php
 run_php tests/request-workflow-contract.php
