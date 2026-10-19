@@ -512,4 +512,4 @@ jobs:
           '
       - name: Destroy disposable test environment
         if: always()
-        run: wp-env destroy --force
+        run: printf 'y\n' | wp-env destroy --force
