@@ -9,10 +9,8 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
-final class ElementorCapabilitiesAdapter
-{
-	public function register(Registry $registry): void
-	{
+final class ElementorCapabilitiesAdapter {
+	public function register(Registry $registry): void {
 		$registry->register('elementor.capabilities', array($this, 'capabilities'), array(
 			'description' => 'Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities.',
 		));
@@ -21,8 +19,7 @@ final class ElementorCapabilitiesAdapter
 		));
 	}
 
-	public function capabilities(array $payload, array $context): array
-	{
+	public function capabilities(array $payload, array $context): array {
 		$environment = $this->environment();
 
 		if (! class_exists('Elementor\\Plugin')) {
@@ -53,8 +50,7 @@ final class ElementorCapabilitiesAdapter
 		);
 	}
 
-	public function inventory(array $payload, array $context): array
-	{
+	public function inventory(array $payload, array $context): array {
 		$environment = $this->environment();
 		if (! class_exists('Elementor\\Plugin')) {
 			return array(
@@ -236,8 +232,7 @@ final class ElementorCapabilitiesAdapter
 		);
 	}
 
-	private function environment(): array
-	{
+	private function environment(): array {
 		return array(
 			'elementor' => defined('ELEMENTOR_VERSION') ? ELEMENTOR_VERSION : null,
 			'elementor_pro' => defined('ELEMENTOR_PRO_VERSION') ? ELEMENTOR_PRO_VERSION : null,
@@ -246,8 +241,7 @@ final class ElementorCapabilitiesAdapter
 		);
 	}
 
-	private function documentTypes(object $elementor, array &$warnings): array
-	{
+	private function documentTypes(object $elementor, array &$warnings): array {
 		if (! isset($elementor->documents) || ! is_object($elementor->documents) || ! method_exists($elementor->documents, 'get_document_types')) {
 			$warnings[] = 'documents_manager_unavailable';
 			return array();
@@ -283,8 +277,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function widgets(object $elementor, array &$warnings): array
-	{
+	private function widgets(object $elementor, array &$warnings): array {
 		if (! isset($elementor->widgets_manager) || ! is_object($elementor->widgets_manager) || ! method_exists($elementor->widgets_manager, 'get_widget_types')) {
 			$warnings[] = 'widgets_manager_unavailable';
 			return array();
@@ -321,8 +314,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function elements(object $elementor, array &$warnings): array
-	{
+	private function elements(object $elementor, array &$warnings): array {
 		if (! isset($elementor->elements_manager) || ! is_object($elementor->elements_manager) || ! method_exists($elementor->elements_manager, 'get_element_types')) {
 			$warnings[] = 'elements_manager_unavailable';
 			return array();
@@ -355,8 +347,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function dynamicTags(object $elementor, array &$warnings): array
-	{
+	private function dynamicTags(object $elementor, array &$warnings): array {
 		if (! isset($elementor->dynamic_tags) || ! is_object($elementor->dynamic_tags) || ! method_exists($elementor->dynamic_tags, 'get_tags')) {
 			return array();
 		}
@@ -390,8 +381,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function breakpoints(object $elementor, array &$warnings): array
-	{
+	private function breakpoints(object $elementor, array &$warnings): array {
 		if (! isset($elementor->breakpoints) || ! is_object($elementor->breakpoints) || ! method_exists($elementor->breakpoints, 'get_active_breakpoints')) {
 			return array();
 		}
@@ -419,8 +409,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function widgetSource(object $widget): array
-	{
+	private function widgetSource(object $widget): array {
 		$className = get_class($widget);
 		$file = '';
 		try {
@@ -458,8 +447,7 @@ final class ElementorCapabilitiesAdapter
 		return $this->source('unknown', null, null, null, 'unknown', $className);
 	}
 
-	private function source(string $family, ?string $slug, ?string $name, ?string $version, string $confidence, string $className): array
-	{
+	private function source(string $family, ?string $slug, ?string $name, ?string $version, string $confidence, string $className): array {
 		return array(
 			'family' => $family,
 			'slug' => $slug,
@@ -470,13 +458,11 @@ final class ElementorCapabilitiesAdapter
 		);
 	}
 
-	private function pathWithinDefinedRoot(string $file, string $constant): bool
-	{
+	private function pathWithinDefinedRoot(string $file, string $constant): bool {
 		return '' !== $file && defined($constant) && $this->pathWithin($file, (string) constant($constant));
 	}
 
-	private function pathWithin(string $file, string $root): bool
-	{
+	private function pathWithin(string $file, string $root): bool {
 		if ('' === $file || '' === $root) {
 			return false;
 		}
@@ -485,8 +471,7 @@ final class ElementorCapabilitiesAdapter
 		return 0 === strpos($file, $root);
 	}
 
-	private function pluginForFile(string $file): ?array
-	{
+	private function pluginForFile(string $file): ?array {
 		if ('' === $file) {
 			return null;
 		}
@@ -524,8 +509,7 @@ final class ElementorCapabilitiesAdapter
 		return null;
 	}
 
-	private function installedPlugins(bool $mu): array
-	{
+	private function installedPlugins(bool $mu): array {
 		static $regular = null;
 		static $mustUse = null;
 
@@ -550,8 +534,7 @@ final class ElementorCapabilitiesAdapter
 		return $regular;
 	}
 
-	private function themeForFile(string $file): ?array
-	{
+	private function themeForFile(string $file): ?array {
 		if ('' === $file || ! function_exists('get_theme_root')) {
 			return null;
 		}
@@ -570,8 +553,7 @@ final class ElementorCapabilitiesAdapter
 		);
 	}
 
-	private function inventoryPostTypes(array $payload, array &$warnings): array
-	{
+	private function inventoryPostTypes(array $payload, array &$warnings): array {
 		$requested = isset($payload['post_types']) ? (array) $payload['post_types'] : array();
 		if (empty($requested)) {
 			$requested = array_values((array) get_post_types(array('show_ui' => true), 'names'));
@@ -597,8 +579,7 @@ final class ElementorCapabilitiesAdapter
 		return $result;
 	}
 
-	private function inventoryStatuses(array $payload): array
-	{
+	private function inventoryStatuses(array $payload): array {
 		$requested = isset($payload['post_statuses']) ? (array) $payload['post_statuses'] : array('publish', 'draft', 'pending', 'private', 'future');
 		$result = array();
 		foreach ($requested as $status) {
@@ -610,8 +591,7 @@ final class ElementorCapabilitiesAdapter
 		return ! empty($result) ? array_values(array_unique($result)) : array('publish');
 	}
 
-	private function elementorData(int $postId, array &$warnings): ?array
-	{
+	private function elementorData(int $postId, array &$warnings): ?array {
 		$raw = get_post_meta($postId, '_elementor_data', true);
 		if (is_array($raw)) {
 			return $raw;
@@ -627,8 +607,7 @@ final class ElementorCapabilitiesAdapter
 		return $decoded;
 	}
 
-	private function collectElementUsage(array $elements, array &$widgets, array &$elementTypes, array &$families): void
-	{
+	private function collectElementUsage(array $elements, array &$widgets, array &$elementTypes, array &$families): void {
 		foreach ($elements as $element) {
 			if (! is_array($element)) {
 				continue;
@@ -658,8 +637,7 @@ final class ElementorCapabilitiesAdapter
 		ksort($elementTypes, SORT_STRING);
 	}
 
-	private function architectureLabel(array $families): string
-	{
+	private function architectureLabel(array $families): string {
 		$active = array_keys(array_filter($families));
 		if (count($active) > 1) {
 			return 'mixed';
@@ -667,8 +645,7 @@ final class ElementorCapabilitiesAdapter
 		return isset($active[0]) ? (string) $active[0] : 'widget-only';
 	}
 
-	private function mergeUsageIntoWidgets(array $registeredWidgets, array $usedWidgets): array
-	{
+	private function mergeUsageIntoWidgets(array $registeredWidgets, array $usedWidgets): array {
 		foreach ($registeredWidgets as $name => &$widget) {
 			$widget['usage'] = isset($usedWidgets[$name])
 				? $usedWidgets[$name]
