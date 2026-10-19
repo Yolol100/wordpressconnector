@@ -14,7 +14,17 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 WordPress Connector links an authorized WordPress administrator to bounded REST and MCP management tools. It supports guarded content, Elementor, WooCommerce and SEO operations with role checks, previews and recovery paths. The plugin distributes signed, checksum-verified releases outside the WordPress.org directory. See Version Notes and the Changelog for the full technical history.
 
-== Version Notes ==
+== Security ==
+
+REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
+
+Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF textual-field identity (`text`, `textarea` or `wysiwyg`), applicable field group and edit capability; textarea/WYSIWYG updates are plain-text only in public-repository mode, and the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; public execution is admitted only after payload validation and confirmed writes require the preceding dry-run fingerprint. It does not make unpublished post content readable.
+
+Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
+
+== Changelog ==
+
+= Version Notes =
 
 Version 1.19.19 fixes a protected WordPress database-handle access in system.doctor, uses WordPress 6.2+ %i identifier placeholders for bounded WooCommerce shipping and tax reads, and aligns the Elementor MCP guard callback registration. Regression tests now exercise system.doctor in both a protected-handle fixture and real WordPress installations. PHPStan and WordPress.org-only audit findings require separate, evidence-based review and are not represented as fully cleared.
 
@@ -169,17 +179,8 @@ Installations that predate the self-update actions cannot bootstrap themselves t
 
 Local WP-CLI commands remain available for host-local diagnostics and recovery.
 
-== Security ==
-
-REST endpoints require HTTPS. The canonical GitHub runtime uses short-lived GitHub Actions OIDC authentication bound to the canonical repository and workflow; ordinary authenticated WordPress administrators remain supported for direct REST access. The connector exposes no generic shell, arbitrary SQL, eval or unrestricted filesystem endpoint.
-
-Confirmed writes still require request confirmation. Sensitive actions require explicit request confirmation and are blocked in public-repository mode. Privileged/system/filesystem action classes can be disabled server-side through WPCONNECTOR_ALLOW_* constants or environment variables. Public GitHub transport never persists full WordPress responses and never permits sensitive actions. The bounded public ACF exception is evaluated dynamically against the exact published post, existing ACF textual-field identity (`text`, `textarea` or `wysiwyg`), applicable field group and edit capability; textarea/WYSIWYG updates are plain-text only in public-repository mode, and the broad privileged ACF action remains blocked outside that bounded case. The dedicated portfolio-stat action is separately limited to the standard `post` type, five normal content statuses, the eight `portfolio_stat_*` text fields and exact readback; public execution is admitted only after payload validation and confirmed writes require the preceding dry-run fingerprint. It does not make unpublished post content readable.
-
-Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
-
-== Changelog ==
-
 = 1.19.19 =
+* Release-candidate hardening: guarded WordPressCS formatting with PHP-token preservation, WooCommerce registered custom product-type factory validation, fail-closed product readback, and PHP 7.4–8.5 regressions.
 * Prevent system.doctor from reading protected wpdb internals and verify healthy/unhealthy database readiness in mock and live WordPress CI.
 * Clarify the WordPress Core update foreach loop to satisfy PHPCompatibilityWP without changing update behavior.
 * Correct Elementor MCP pre-execution callback registration to match its single argument.
