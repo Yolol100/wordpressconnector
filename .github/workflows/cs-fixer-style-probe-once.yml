@@ -1,0 +1,116 @@
+name: Temporary PHP CS Fixer WPCS compatibility probe
+on:
+  push:
+    branches: [fix/release-core-policy-and-admin-input-20261019]
+    paths: [.github/workflows/cs-fixer-style-probe-once.yml]
+permissions:
+  contents: read
+jobs:
+  candidate-format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Install locked-style probes in disposable runner
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/style-tools"
+          cd "$RUNNER_TEMP/style-tools"
+          composer init --no-interaction --name wordpressconnector/formatprobe --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress \
+            friendsofphp/php-cs-fixer:3.95.27 \
+            nikic/php-parser:5.9.0 squizlabs/php_codesniffer:3.13.6 \
+            wp-coding-standards/wpcs:3.4.1 \
+            dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Probe compact PHP styling without source writes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/csf-probe"
+          cat > "$RUNNER_TEMP/style-tools/fixer.php" <<'PHP'
+          <?php
+          require __DIR__.'/vendor/autoload.php';
+          $finder = (new PhpCsFixer\Finder())->in(getcwd())->name('*.php');
+          return (new PhpCsFixer\Config())
+              ->setRules(array(
+                  'no_multiple_statements_per_line' => true,
+                  'control_structure_braces' => true,
+                  'braces_position' => array(
+                      'functions_opening_brace' => 'same_line',
+                      'classes_opening_brace' => 'same_line',
+                      'control_structures_opening_brace' => 'same_line',
+                  ),
+                  'statement_indentation' => true,
+              ))
+              ->setIndent("\t")
+              ->setLineEnding("\n")
+              ->setFinder($finder);
+          PHP
+          cat > "$RUNNER_TEMP/style-tools/equal.php" <<'PHP'
+          <?php
+          declare(strict_types=1);
+          require __DIR__.'/vendor/autoload.php';
+          use PhpParser\Node;
+          use PhpParser\ParserFactory;
+          function shape($x) {
+              if ($x instanceof Node) {
+                  $a=array();
+                  foreach ($x->getSubNodeNames() as $k) $a[$k]=shape($x->$k);
+                  return array(get_class($x),$a);
+              }
+              return is_array($x) ? array_map('shape',$x) : $x;
+          }
+          function docs(string $c): array {
+              $a=array();
+              foreach(token_get_all($c) as $t) {
+                  if(is_array($t) && in_array($t[0],array(T_COMMENT,T_DOC_COMMENT),true)) {
+                      $a[]=array($t[0],preg_replace('/\s+/', ' ',$t[1]));
+                  }
+              }
+              return $a;
+          }
+          $a=file_get_contents($argv[1]);$b=file_get_contents($argv[2]);
+          if(!is_string($a)||!is_string($b)) exit(1);
+          $p=(new ParserFactory())->createForHostVersion();
+          if(shape($p->parse($a))!==shape($p->parse($b))||docs($a)!==docs($b))exit(1);
+          PHP
+          targets=(
+            plugin/wordpressconnector/includes/Adapters/AcfAdapter.php
+            plugin/wordpressconnector/includes/Runtime/Runner.php
+            plugin/wordpressconnector/includes/Adapters/SystemAdapter.php
+            plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php
+            plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php
+            plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php
+          )
+          phpcs="$RUNNER_TEMP/style-tools/vendor/bin/phpcs"
+          csfix="$RUNNER_TEMP/style-tools/vendor/bin/php-cs-fixer"
+          for file in "${targets[@]}"; do
+            name="$(basename "$file" .php)"
+            cp "$file" "$RUNNER_TEMP/csf-probe/$name.original.php"
+            "$phpcs" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/csf-probe/$name.before.json" 2>/dev/null || true
+            PHP_CS_FIXER_IGNORE_ENV=1 "$csfix" fix "$file" --config="$RUNNER_TEMP/style-tools/fixer.php" --path-mode=override --using-cache=no --allow-risky=no --quiet > "$RUNNER_TEMP/csf-probe/$name.fixer.log" 2>&1 || true
+            "$phpcs" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/csf-probe/$name.after.json" 2>/dev/null || true
+            php "$RUNNER_TEMP/style-tools/equal.php" "$RUNNER_TEMP/csf-probe/$name.original.php" "$file" > "$RUNNER_TEMP/csf-probe/$name.ast.txt" 2>&1
+            ast=$?
+            php -l "$file" >> "$RUNNER_TEMP/csf-probe/$name.ast.txt" 2>&1 || true
+            git diff -- "$file" > "$RUNNER_TEMP/csf-probe/$name.patch"
+            echo "$name ast_status=$ast" >> "$RUNNER_TEMP/csf-probe/summary.txt"
+            cp "$RUNNER_TEMP/csf-probe/$name.original.php" "$file"
+          done
+          git diff --exit-code
+      - name: Save reviewed source-only candidate results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phpcsfixer-wpcs-style-probe
+          path: ${{ runner.temp }}/csf-probe/
+          retention-days: 3
+          if-no-files-found: warn
