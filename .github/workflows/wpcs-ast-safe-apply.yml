@@ -1,0 +1,131 @@
+name: WPCS AST-safe four-file application
+on:
+  push:
+    branches: [fix/release-readiness-guarded-wpcs-20261019]
+    paths: [.github/workflows/wpcs-ast-safe-apply.yml]
+permissions:
+  contents: write
+jobs:
+  ast-approved:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+      - name: Install pinned PHP AST and WordPressCS tools
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/astfix"
+          cd "$RUNNER_TEMP/astfix"
+          composer init --no-interaction --name wordpressconnector/ast-safe --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress nikic/php-parser:5.9.0 squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Apply four previously proven AST-equivalent files individually
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/astfix-proof"
+          test "$GITHUB_REF" = 'refs/heads/fix/release-readiness-guarded-wpcs-20261019'
+          cat > "$RUNNER_TEMP/astfix/equal.php" <<'PHP'
+          <?php
+          declare(strict_types=1);
+          require __DIR__ . '/vendor/autoload.php';
+          use PhpParser\Node;
+          use PhpParser\ParserFactory;
+          function tree($value) {
+              if ($value instanceof Node) {
+                  $parts=array();
+                  foreach ($value->getSubNodeNames() as $name) { $parts[$name]=tree($value->$name); }
+                  return array(get_class($value), $parts);
+              }
+              return is_array($value) ? array_map('tree',$value) : $value;
+          }
+          function comments(string $source): array {
+              $result=array();
+              foreach(token_get_all($source) as $token) {
+                  if(is_array($token) && in_array($token[0], array(T_COMMENT,T_DOC_COMMENT), true)) {
+                      $result[]=array($token[0],preg_replace('/\s+/', ' ', $token[1]));
+                  }
+              }
+              return $result;
+          }
+          $before=file_get_contents($argv[1]);
+          $after=file_get_contents($argv[2]);
+          if(!is_string($before) || !is_string($after)) { exit(1); }
+          $parser=(new ParserFactory())->createForHostVersion();
+          if(tree($parser->parse($before))!==tree($parser->parse($after)) || comments($before)!==comments($after)) {
+              fwrite(STDERR, "Refused changed PHP AST or PHPDoc/comment content\n");
+              exit(1);
+          }
+          echo "PHP AST, PHPDoc/comments equivalent\n";
+          PHP
+          targets=(
+            plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php
+            plugin/wordpressconnector/includes/Adapters/CoreAdapter.php
+            plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php
+            plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php
+          )
+          expected=(
+            f7b6b2d58772329fcdde581feaf1ebbfafc59b04f821c798ad238ae4feba131a
+            e83b8be0f74349c0a47210a2c9cfca1f9f590934b7fd044358b2c1d651c4d19e
+            1418ee00b8a022c2971d99b3ddfbf0d811a67bcf2f2f0e43d3016ad57b138f75
+            70438b2e9cc6df4556987deadf9d5820e3fe5545ce50f21ab1e0125801f8ac06
+          )
+          scanner="$RUNNER_TEMP/astfix/vendor/bin/phpcs"
+          fixer="$RUNNER_TEMP/astfix/vendor/bin/phpcbf"
+          "$scanner" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/astfix-proof/before.txt" 2>&1 || true
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          accepted=0
+          rejected=0
+          for i in 0 1 2 3; do
+            file="${targets[$i]}"
+            name="$(basename "$file" .php)"
+            before="$RUNNER_TEMP/astfix-proof/$name.original.php"
+            cp "$file" "$before"
+            actual="$(sha256sum "$before" | cut -d' ' -f1)"
+            if test "$actual" != "${expected[$i]}"; then
+              echo "Source drift for $file: $actual" >&2
+              exit 1
+            fi
+            "$fixer" --standard=WordPress "$file" > "$RUNNER_TEMP/astfix-proof/$name.formatter.log" 2>&1 || true
+            if ! php "$RUNNER_TEMP/astfix/equal.php" "$before" "$file" > "$RUNNER_TEMP/astfix-proof/$name.ast.txt" 2>&1 ||
+               ! php -l "$file" >> "$RUNNER_TEMP/astfix-proof/$name.ast.txt" 2>&1 ||
+               ! git diff --check -- "$file"; then
+              cp "$before" "$file"
+              rejected=$((rejected+1))
+              echo "$name: REJECT AST/comment/syntax/diff" >> "$RUNNER_TEMP/astfix-proof/decisions.txt"
+              continue
+            fi
+            if ! bash scripts/run-contracts.sh > "$RUNNER_TEMP/astfix-proof/$name.contracts.txt" 2>&1; then
+              cp "$before" "$file"
+              rejected=$((rejected+1))
+              echo "$name: REJECT contract regression" >> "$RUNNER_TEMP/astfix-proof/decisions.txt"
+              tail -n 12 "$RUNNER_TEMP/astfix-proof/$name.contracts.txt"
+              continue
+            fi
+            git add -- "$file"
+            git diff --cached --check
+            git commit -m "style(wpcs): AST-identical safe formatting in $name"
+            accepted=$((accepted+1))
+            echo "$name: ACCEPT AST/comment/syntax/contracts" >> "$RUNNER_TEMP/astfix-proof/decisions.txt"
+          done
+          "$scanner" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/astfix-proof/after.txt" 2>&1 || true
+          echo "accepted=$accepted rejected=$rejected" | tee "$RUNNER_TEMP/astfix-proof/summary.txt"
+          if test "$accepted" -gt 0; then
+            git push origin HEAD:fix/release-readiness-guarded-wpcs-20261019
+          fi
+      - name: Preserve formatter AST and full-contract review evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wpcs-ast-safe-format-review
+          path: ${{ runner.temp }}/astfix-proof/
+          retention-days: 14
+          if-no-files-found: warn
