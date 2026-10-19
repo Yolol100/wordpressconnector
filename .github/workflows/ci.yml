@@ -160,24 +160,98 @@ jobs:
 
   plugin-check:
     name: WordPress Plugin Check
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
     steps:
       - name: Checkout exact event revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 1
           persist-credentials: false
-      - name: Run official WordPress Plugin Check
-        uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+      - name: Set up pinned Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          build-dir: plugin/wordpressconnector
-          exclude-checks: |
-            plugin_review_phpcs
-            plugin_updater
-            trademarks
-            late_escaping
-            performant_wp_query_params
+          node-version: '24.18.0'
+      - name: Install reproducible WordPress test CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          # wp-env 11.x temporarily pulls unpublished php-wasm 3.1.59 artifacts.
+          # Official npm registry installation tested in run 39234637250.
+          npm install --global --no-audit --no-fund @wordpress/env@10.33.1
+          test "$(wp-env --version)" = '10.33.1'
+      - name: Start disposable WordPress
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp-env start
+          wp-env run cli wp core is-installed
+          wp-env run cli wp plugin is-installed wordpressconnector
+      - name: Run official WordPress Plugin Check CLI with unchanged check policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp-env run cli wp plugin install plugin-check --activate
+          wp-env run cli wp plugin activate wordpressconnector
+          wp-env run cli wp plugin list-checks --format=json > "$RUNNER_TEMP/checks-available.json"
+          set +e
+          wp-env run cli wp plugin check wordpressconnector --format=json --exclude-checks=plugin_review_phpcs,plugin_updater,trademarks,late_escaping,performant_wp_query_params --require=./wp-content/plugins/plugin-check/cli.php > "$RUNNER_TEMP/plugin-check-results.txt"
+          check_exit=$?
+          set -e
+          if [ "$check_exit" -ne 0 ]; then
+            cat "$RUNNER_TEMP/plugin-check-results.txt"
+            echo "Official Plugin Check CLI failed to execute." >&2
+            exit "$check_exit"
+          fi
+          # WordPress official CLI emits FILE: records followed by JSON arrays.
+          # Match original plugin-check-action gate: warnings do not fail; ERRORs do.
+          python3 - <<'PY'
+          import json, os, pathlib, sys
+          path=pathlib.Path(os.environ['RUNNER_TEMP'])/'plugin-check-results.txt'
+          content=path.read_text()
+          lines=content.splitlines()
+          if not lines:
+              sys.exit('Empty official Plugin Check output (fail closed)')
+          error_count=0
+          warning_count=0
+          records=0
+          for i,line in enumerate(lines):
+              if not line.startswith('FILE: '):
+                  continue
+              if i+1 >= len(lines):
+                  sys.exit('Incomplete Plugin Check FILE record')
+              items=json.loads(lines[i+1])
+              if not isinstance(items,list):
+                  sys.exit('Invalid Plugin Check result array')
+              records+=1
+              for item in items:
+                  if not isinstance(item,dict):
+                      sys.exit('Invalid Plugin Check finding object')
+                  if item.get('type')=='ERROR':
+                      error_count+=1
+                  elif item.get('type')=='WARNING':
+                      warning_count+=1
+          if records==0 and not any('Success:' in line for line in lines):
+              sys.exit('Unrecognized Plugin Check output (fail closed)')
+          print(f'Official Plugin Check: files={records}, errors={error_count}, warnings={warning_count}')
+          if error_count:
+              sys.exit(1)
+          PY
+      - name: Upload official Plugin Check results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: plugin-check-results
+          path: ${{ runner.temp }}/plugin-check-results.txt
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Destroy disposable WordPress
+        if: always()
+        shell: bash
+        run: |
+          if command -v wp-env >/dev/null 2>&1; then
+            wp-env destroy --force
+          fi
 
   wordpress-runtime:
     name: WordPress ${{ matrix.wordpress }} / WooCommerce ${{ matrix.woocommerce }} / ${{ matrix.storage }}
