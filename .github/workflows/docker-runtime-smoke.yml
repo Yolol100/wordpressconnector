@@ -35,7 +35,8 @@ jobs:
           node-version: '24.18.0'
           package-manager-cache: false
       - name: Install pinned WordPress test environment
-        run: npm install --global @wordpress/env@11.17.0
+        # Temporary reproducible fallback while wp-env 11.x resolves unavailable php-wasm 3.1.59.
+        run: npm install --global --no-audit --no-fund @wordpress/env@10.33.1
       - name: Start disposable WordPress with Docker
         run: wp-env start
       - name: Verify exact WordPress, PHP, and database runtime
