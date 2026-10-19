@@ -19,6 +19,10 @@ namespace Code_Snippets\Model {
      * @property bool $trashed
      */
     class Snippet {
+        // The provider's Model::__get exposes id as a virtual property.
+        // The declaration exists only for static analysis, never for runtime.
+        public int $id;
+
         /** @param array<string, mixed>|object|null $initial_data */
         public function __construct($initial_data = null) {}
     }
