@@ -1,4 +1,5 @@
 name: Guarded WPCS release cleanup
+# Second bounded attempt after making source-sensitive contract checks whitespace-safe.
 on:
   push:
     branches: [fix/release-readiness-guarded-wpcs-20261019]
