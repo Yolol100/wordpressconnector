@@ -83,6 +83,9 @@ foreach ( $wpconnector_files as $wpconnector_file ) {
 Plugin::boot();
 // Standard wp-admin activation uses WordPress Core's existing approval and
 // immediately authorizes the pinned GitHub runtime for this exact website.
-register_activation_hook(WPCONNECTOR_FILE, static function ($networkWide = false): void {
-    \Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation((bool) $networkWide);
-});
+register_activation_hook(
+	WPCONNECTOR_FILE,
+	static function ( $networkWide = false ): void {
+		\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $networkWide );
+	}
+);

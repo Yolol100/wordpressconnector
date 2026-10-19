@@ -1,0 +1,82 @@
+name: WPCS style candidate (isolated preview)
+
+on:
+  push:
+    branches:
+      - fix/wpcs-style-preview-20261019
+    paths:
+      - .github/workflows/connector-wpcs-preview.yml
+
+permissions:
+  contents: write
+
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: true
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - name: Install pinned official WordPress formatter versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs-tools"
+          cd "$RUNNER_TEMP/wpcs-tools"
+          composer init --no-interaction --name wordpressconnector/qa-tools --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+          vendor/bin/phpcbf --version
+      - name: Format three plugin files without committing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs-output"
+          targets=(
+            plugin/wordpressconnector/wordpressconnector.php
+            plugin/wordpressconnector/uninstall.php
+            plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
+          )
+          for target in "${targets[@]}"; do php -l "$target"; done
+          set +e
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=WordPress --extensions=php "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/fix-log.txt" 2>&1
+          fixer_status=$?
+          set -e
+          echo "phpcbf exit $fixer_status" >> "$RUNNER_TEMP/wpcs-output/fix-log.txt"
+          for target in "${targets[@]}"; do php -l "$target"; done
+          git diff -- "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/format.diff"
+          git diff --stat -- "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/format-stat.txt"
+          mkdir -p "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/includes/Admin"
+          cp plugin/wordpressconnector/wordpressconnector.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/"
+          cp plugin/wordpressconnector/uninstall.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/"
+          cp plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/includes/Admin/"
+          (cd "$RUNNER_TEMP/wpcs-output" && zip -q -r formatted-files.zip plugin)
+          unzip -t "$RUNNER_TEMP/wpcs-output/formatted-files.zip"
+      - name: Upload review-only artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wpcs-phase1-preview
+          path: ${{ runner.temp }}/wpcs-output/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Commit formatter-only result to isolated branch after preview
+        if: github.ref == 'refs/heads/fix/wpcs-style-preview-20261019'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add -- plugin/wordpressconnector/wordpressconnector.php plugin/wordpressconnector/uninstall.php plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
+          if git diff --cached --quiet; then
+            echo "No WPCS changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(wpcs): phase 1 three plugin files"
+          git push origin HEAD:fix/wpcs-style-preview-20261019
