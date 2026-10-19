@@ -63,7 +63,7 @@ final class AssetStore
 			throw new RuntimeException('Could not secure request asset directory.');
 		}
 
-		if (file_exists($destination)) {
+		if (file_exists($destination) || is_link($destination)) {
 			throw new RuntimeException('Duplicate request asset path: ' . $relativePath);
 		}
 		if (! move_uploaded_file($tmpName, $destination)) {
@@ -172,6 +172,10 @@ final class AssetStore
 			$base = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $siteNamespace;
 		}
 
+		// A configured alias must not redirect chmod, uploads or cleanup into another root.
+		if (is_link($base)) {
+			throw new RuntimeException('Refusing symbolic link connector asset base directory.');
+		}
 		$this->assertOutsideWebRoot($base);
 
 		if ($create && ! is_dir($base) && ! wp_mkdir_p($base)) {

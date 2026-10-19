@@ -77,6 +77,7 @@ run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
 run_php tests/asset-private-permissions-contract.php
+run_php tests/asset-base-symlink-contract.php
 run_php tests/rest-asset-cleanup-contract.php
 run_php tests/mcp-transport-contract.php
 run_php tests/site-editor-contract.php

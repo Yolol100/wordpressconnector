@@ -44,7 +44,7 @@ namespace {
     function wp_mkdir_p(string $dir): bool { return is_dir($dir) || mkdir($dir, 0700, true); }
     function wp_check_filetype(string $filename, array $allowed): array
     {
-        return 'sample.json' === $filename
+        return 1 === preg_match('/\.json\z/', $filename)
             ? array('ext' => 'json', 'type' => 'application/json')
             : array('ext' => '', 'type' => '');
     }
@@ -93,6 +93,32 @@ namespace {
     if (11 !== ($stored['bytes'] ?? null) || ! is_file($root . '/sample.json')
         || (fileperms($root . '/sample.json') & 0077) !== 0) {
         throw new RuntimeException('Successful HTTP upload lost secure file permissions.');
+    }
+
+    // file_exists() returns false for broken symlinks. Never overwrite them.
+    $dangling = $root . '/dangling.json';
+    $missingTarget = sys_get_temp_dir() . '/wpconn-no-such-target-' . bin2hex(random_bytes(6));
+    if (! symlink($missingTarget, $dangling)) {
+        throw new RuntimeException('Could not create dangling upload target test.');
+    }
+    $danglingTemp = tempnam(sys_get_temp_dir(), 'wpconn-dangle');
+    file_put_contents($danglingTemp, '{"valid":true}');
+    $danglingRejected = false;
+    try {
+        $store->put($id, 'dangling.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $danglingTemp));
+    } catch (RuntimeException $error) {
+        $danglingRejected = 'Duplicate request asset path: dangling.json' === $error->getMessage();
+    }
+    $originalAliasStillPresent = is_link($dangling);
+    $outsideWasWritten = file_exists($missingTarget);
+    if (is_file($danglingTemp)) {
+        \unlink($danglingTemp);
+    }
+    if (is_link($dangling)) {
+        \unlink($dangling);
+    }
+    if (! $danglingRejected || ! $originalAliasStillPresent || $outsideWasWritten) {
+        throw new RuntimeException('Dangling symlink asset target was not rejected.');
     }
 
     // The parent path must be validated before chmod, so a private-root
