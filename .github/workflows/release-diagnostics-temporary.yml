@@ -1,3 +1,4 @@
+# Final post-restoration WPCS/PHPStan and strict Plugin Check release evidence 2026-10-19.
 name: Temporary release diagnostics
 on:
   push:
