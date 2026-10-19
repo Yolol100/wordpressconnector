@@ -45,7 +45,9 @@ final class AssetStore
 		if (! is_dir($parent) && ! wp_mkdir_p($parent)) {
 			throw new RuntimeException('Could not create request asset directory.');
 		}
-		@chmod($parent, 0700);
+		if (! @chmod($parent, 0700)) {
+			throw new RuntimeException('Could not secure request asset directory.');
+		}
 
 		$rootReal = realpath($root);
 		$parentReal = realpath($parent);
@@ -63,7 +65,12 @@ final class AssetStore
 		if (! move_uploaded_file($tmpName, $destination)) {
 			throw new RuntimeException('Could not store uploaded request asset.');
 		}
-		@chmod($destination, 0600);
+		if (! @chmod($destination, 0600)) {
+			if (! @unlink($destination)) {
+				throw new RuntimeException('Could not secure or remove uploaded request asset; manual recovery is required.');
+			}
+			throw new RuntimeException('Could not secure uploaded request asset.');
+		}
 		@touch($root);
 
 		return array(
@@ -84,7 +91,9 @@ final class AssetStore
 			throw new RuntimeException('Could not create request asset root.');
 		}
 		if ($create) {
-			@chmod($directory, 0700);
+			if (! @chmod($directory, 0700)) {
+				throw new RuntimeException('Could not secure request asset root directory.');
+			}
 		}
 
 		return $directory;
@@ -159,7 +168,9 @@ final class AssetStore
 			throw new RuntimeException('Could not create connector asset base directory.');
 		}
 		if ($create) {
-			@chmod($base, 0700);
+			if (! @chmod($base, 0700)) {
+				throw new RuntimeException('Could not secure connector asset base directory.');
+			}
 			$resolved = realpath($base);
 			if (false === $resolved) {
 				throw new RuntimeException('Could not resolve connector asset base directory.');
