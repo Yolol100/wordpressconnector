@@ -1,0 +1,64 @@
+name: WordPress Connector WPCS complete preview
+
+on:
+  push:
+    branches:
+      - fix/wpcs-bulk-preview-20261019
+    paths:
+      - .github/workflows/connector-wpcs-all-preview.yml
+
+permissions:
+  contents: read
+
+jobs:
+  full-style-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - name: Install pinned PHPCS/WordPressCS in temporary directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs-tools"
+          cd "$RUNNER_TEMP/wpcs-tools"
+          composer init --no-interaction --name wordpressconnector/qa-tools --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Run complete plugin WPCS autofix into uncommitted review artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs-all"
+          set +e
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-all/before-wpcs.txt" 2>&1
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=WordPress --extensions=php plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-all/phpcbf.log" 2>&1
+          fixer_status=$?
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-all/after-wpcs.txt" 2>&1
+          set -e
+          echo "phpcbf_exit=$fixer_status" >> "$RUNNER_TEMP/wpcs-all/phpcbf.log"
+          find plugin/wordpressconnector -name '*.php' -type f -print0 | xargs -0 -n 1 php -l > "$RUNNER_TEMP/wpcs-all/php-lint.txt"
+          git diff --check
+          git diff -- plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-all/format.diff"
+          git diff --stat -- plugin/wordpressconnector > "$RUNNER_TEMP/wpcs-all/format-stat.txt"
+          set +e
+          bash scripts/run-contracts.sh > "$RUNNER_TEMP/wpcs-all/contract-results.txt" 2>&1
+          contracts_status=$?
+          set -e
+          echo "contracts_exit=$contracts_status" >> "$RUNNER_TEMP/wpcs-all/contract-results.txt"
+          (cd plugin && zip -qr "$RUNNER_TEMP/wpcs-all/wordpressconnector-formatted.zip" wordpressconnector)
+          unzip -t "$RUNNER_TEMP/wpcs-all/wordpressconnector-formatted.zip" > "$RUNNER_TEMP/wpcs-all/zip-verify.txt"
+          sha256sum "$RUNNER_TEMP/wpcs-all/wordpressconnector-formatted.zip" > "$RUNNER_TEMP/wpcs-all/wordpressconnector-formatted.zip.sha256"
+      - name: Upload review-only complete WPCS candidate
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wpcs-complete-preview
+          path: ${{ runner.temp }}/wpcs-all/
+          if-no-files-found: error
+          retention-days: 14
