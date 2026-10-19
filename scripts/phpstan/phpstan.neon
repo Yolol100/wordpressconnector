@@ -14,7 +14,6 @@ parameters:
         - vendor/php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
         - vendor/php-stubs/wp-cli-stubs/wp-cli-i18n-stubs.php
         - code-snippets-3.10.2.stub.php
-        - elementor-plugin.stub.php
     stubFiles:
         - acf-return.stub
     excludePaths:
