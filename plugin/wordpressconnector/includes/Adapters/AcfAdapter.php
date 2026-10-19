@@ -9,10 +9,8 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
-final class AcfAdapter
-{
-	public function register(Registry $registry): void
-	{
+final class AcfAdapter {
+	public function register(Registry $registry): void {
 		$registry->register('acf.get', array($this, 'get'), array(
 			'privileged' => true,
 			'description' => 'Read ACF values for a post, term, user or options target.',
@@ -73,8 +71,7 @@ final class AcfAdapter
 		));
 	}
 
-	public function get(array $payload): array
-	{
+	public function get(array $payload): array {
 		$this->assertAcf();
 		$target = $this->target($payload);
 		$fields = get_fields($target, false);
@@ -98,8 +95,7 @@ final class AcfAdapter
 		);
 	}
 
-	public function update(array $payload, array $context): array
-	{
+	public function update(array $payload, array $context): array {
 		$this->assertAcf();
 		$target = $this->target($payload);
 		$fields = isset($payload['fields']) && is_array($payload['fields']) ? $payload['fields'] : array();
@@ -140,8 +136,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function delete(array $payload, array $context): array
-	{
+	public function delete(array $payload, array $context): array {
 		$this->assertAcf();
 		$target = $this->target($payload);
 		$fields = isset($payload['fields']) && is_array($payload['fields']) ? array_values($payload['fields']) : array();
@@ -165,8 +160,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function fieldGroups(array $payload): array
-	{
+	public function fieldGroups(array $payload): array {
 		$this->assertAcfSchema();
 		$args = array();
 		if (isset($payload['post_id'])) {
@@ -207,8 +201,7 @@ final class AcfAdapter
 		return array('field_groups' => $result);
 	}
 
-	public function ensureTextFields(array $payload, array $context): array
-	{
+	public function ensureTextFields(array $payload, array $context): array {
 		$this->assertAcfSchema();
 		$postId = isset($payload['post_id']) ? (int) $payload['post_id'] : 0;
 		$groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
@@ -343,8 +336,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function removeTextFields(array $payload, array $context): array
-	{
+	public function removeTextFields(array $payload, array $context): array {
 		$this->assertAcfSchema();
 		$postId = isset($payload['post_id']) ? (int) $payload['post_id'] : 0;
 		$groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
@@ -396,8 +388,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function ensureFields(array $payload, array $context): array
-	{
+	public function ensureFields(array $payload, array $context): array {
 		$this->assertAcfComplexSchema();
 		$postId = isset($payload['post_id']) ? (int) $payload['post_id'] : 0;
 		$groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
@@ -520,8 +511,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function removeFields(array $payload, array $context): array
-	{
+	public function removeFields(array $payload, array $context): array {
 		$this->assertAcfComplexSchema();
 		$postId = isset($payload['post_id']) ? (int) $payload['post_id'] : 0;
 		$groupKey = isset($payload['group_key']) ? (string) $payload['group_key'] : '';
@@ -593,8 +583,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function createFieldGroup(array $payload, array $context): array
-	{
+	public function createFieldGroup(array $payload, array $context): array {
 		$this->assertAcfComplexSchema();
 		foreach (array_keys($payload) as $key) {
 			if (! in_array((string) $key, array('group', 'fields'), true)) {
@@ -660,8 +649,7 @@ final class AcfAdapter
 		return $result;
 	}
 
-	public function deleteFieldGroup(array $payload, array $context): array
-	{
+	public function deleteFieldGroup(array $payload, array $context): array {
 		$this->assertAcfComplexSchema();
 		foreach (array_keys($payload) as $key) {
 			if (! in_array((string) $key, array('group_key', 'expected_schema'), true)) {
@@ -712,15 +700,13 @@ final class AcfAdapter
 		return $result;
 	}
 
-	private function assertAcf(): void
-	{
+	private function assertAcf(): void {
 		if (! function_exists('get_fields') || ! function_exists('update_field')) {
 			throw new RuntimeException('ACF is not active.');
 		}
 	}
 
-	private function assertAcfSchema(): void
-	{
+	private function assertAcfSchema(): void {
 		$this->assertAcf();
 		foreach (array('acf_get_field_groups', 'acf_get_fields', 'acf_get_field_group', 'acf_get_field', 'acf_update_field', 'acf_delete_field') as $function) {
 			if (! function_exists($function)) {
@@ -729,8 +715,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function assertGroupAppliesToPost(string $groupKey, int $postId): void
-	{
+	private function assertGroupAppliesToPost(string $groupKey, int $postId): void {
 		$post = get_post($postId);
 		if (! $post instanceof \WP_Post) {
 			throw new RuntimeException('ACF schema target post was not found.');
@@ -754,8 +739,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function groupId(string $groupKey): int
-	{
+	private function groupId(string $groupKey): int {
 		$group = acf_get_field_group($groupKey);
 		$groupId = is_array($group) && isset($group['ID']) ? (int) $group['ID'] : 0;
 		if ($groupId <= 0) {
@@ -764,8 +748,7 @@ final class AcfAdapter
 		return $groupId;
 	}
 
-	private function groupFields(string $groupKey): array
-	{
+	private function groupFields(string $groupKey): array {
 		$group = acf_get_field_group($groupKey);
 		if (! is_array($group)) {
 			throw new RuntimeException('ACF field group was not found: ' . $groupKey);
@@ -774,8 +757,7 @@ final class AcfAdapter
 		return is_array($fields) ? $fields : array();
 	}
 
-	private function normalizeRequestedTextFields(array $requested): array
-	{
+	private function normalizeRequestedTextFields(array $requested): array {
 		$normalized = array();
 		$keys = array();
 		$names = array();
@@ -812,8 +794,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function fieldSummary(array $field): array
-	{
+	private function fieldSummary(array $field): array {
 		return array(
 			'key' => isset($field['key']) ? (string) $field['key'] : '',
 			'name' => isset($field['name']) ? (string) $field['name'] : '',
@@ -824,8 +805,7 @@ final class AcfAdapter
 		);
 	}
 
-	private function fieldMatchesDefinition(array $summary, array $definition, int $groupId): bool
-	{
+	private function fieldMatchesDefinition(array $summary, array $definition, int $groupId): bool {
 		return (string) ($summary['key'] ?? '') === (string) $definition['key']
 			&& (string) ($summary['name'] ?? '') === (string) $definition['name']
 			&& (string) ($summary['label'] ?? '') === (string) $definition['label']
@@ -834,8 +814,7 @@ final class AcfAdapter
 			&& empty($summary['required']);
 	}
 
-	private function assertAcfComplexSchema(): void
-	{
+	private function assertAcfComplexSchema(): void {
 		$this->assertAcfSchema();
 		foreach (array(
 			'acf_get_field_type',
@@ -850,8 +829,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function normalizeFieldGroup(array $group): array
-	{
+	private function normalizeFieldGroup(array $group): array {
 		$allowed = array(
 			'key', 'title', 'location', 'description', 'position', 'style',
 			'label_placement', 'instruction_placement', 'hide_on_screen',
@@ -928,8 +906,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function normalizeLocationRules(array $location): array
-	{
+	private function normalizeLocationRules(array $location): array {
 		if (! $location || count($location) > 8) {
 			throw new RuntimeException('ACF field-group location requires 1-8 OR groups.');
 		}
@@ -978,8 +955,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function normalizeSchemaFields(array $requested, int $depth, int &$total, array &$keys): array
-	{
+	private function normalizeSchemaFields(array $requested, int $depth, int &$total, array &$keys): array {
 		if ($depth > 3) {
 			throw new RuntimeException('ACF nested field depth exceeds the maximum of 3.');
 		}
@@ -1006,8 +982,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function normalizeSchemaField(array $field, int $depth, int &$total, array &$keys): array
-	{
+	private function normalizeSchemaField(array $field, int $depth, int &$total, array &$keys): array {
 		$type = isset($field['type']) ? (string) $field['type'] : '';
 		$typeProperties = array(
 			'text' => array('default_value', 'placeholder', 'prepend', 'append', 'maxlength'),
@@ -1205,8 +1180,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function normalizeWrapper($wrapper): array
-	{
+	private function normalizeWrapper($wrapper): array {
 		if (! is_array($wrapper)) {
 			throw new RuntimeException('ACF field wrapper must be an object.');
 		}
@@ -1230,8 +1204,7 @@ final class AcfAdapter
 		return array('width' => $width, 'class' => $class, 'id' => $id);
 	}
 
-	private function normalizeConditionalLogic($logic)
-	{
+	private function normalizeConditionalLogic($logic) {
 		if (false === $logic || 0 === $logic || '0' === $logic || null === $logic) {
 			return false;
 		}
@@ -1269,8 +1242,7 @@ final class AcfAdapter
 		return $normalized;
 	}
 
-	private function createFieldTree(array $definition, int $parentId, int $menuOrder, array &$createdNodes): void
-	{
+	private function createFieldTree(array $definition, int $parentId, int $menuOrder, array &$createdNodes): void {
 		$children = isset($definition['sub_fields']) && is_array($definition['sub_fields']) ? $definition['sub_fields'] : array();
 		$field = $definition;
 		unset($field['sub_fields']);
@@ -1294,8 +1266,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function cleanupCreatedFieldNodes(array $createdNodes): array
-	{
+	private function cleanupCreatedFieldNodes(array $createdNodes): array {
 		$failures = array();
 		foreach (array_reverse($createdNodes) as $node) {
 			$key = isset($node['key']) ? (string) $node['key'] : '';
@@ -1324,8 +1295,7 @@ final class AcfAdapter
 		return array_values(array_unique($failures));
 	}
 
-	private function deleteFieldTreeByKey(string $key): void
-	{
+	private function deleteFieldTreeByKey(string $key): void {
 		$field = acf_get_field($key);
 		if (! is_array($field)) {
 			return;
@@ -1344,8 +1314,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function hydrateFieldTree(array $field): array
-	{
+	private function hydrateFieldTree(array $field): array {
 		$tree = $field;
 		$children = acf_get_fields($field);
 		if (is_array($children) && $children) {
@@ -1358,8 +1327,7 @@ final class AcfAdapter
 		return $tree;
 	}
 
-	private function fieldGroupSnapshot(string $groupKey): ?array
-	{
+	private function fieldGroupSnapshot(string $groupKey): ?array {
 		$group = acf_get_field_group($groupKey);
 		if (! is_array($group)) {
 			return null;
@@ -1374,8 +1342,7 @@ final class AcfAdapter
 		return array('group' => $group, 'fields' => $trees);
 	}
 
-	private function assertFieldTreeKeysAvailable(array $definition): void
-	{
+	private function assertFieldTreeKeysAvailable(array $definition): void {
 		$key = (string) $definition['key'];
 		if (is_array(acf_get_field($key))) {
 			throw new RuntimeException('Existing global ACF field conflicts with requested schema field: ' . $key);
@@ -1385,8 +1352,7 @@ final class AcfAdapter
 		}
 	}
 
-	private function schemaContains($expected, $actual): bool
-	{
+	private function schemaContains($expected, $actual): bool {
 		if (is_array($expected)) {
 			if (! is_array($actual)) {
 				return false;
@@ -1423,8 +1389,7 @@ final class AcfAdapter
 		return $expected === $actual;
 	}
 
-	private function boundedText($value, int $maxLength, bool $allowNewlines, string $context): string
-	{
+	private function boundedText($value, int $maxLength, bool $allowNewlines, string $context): string {
 		if (! is_string($value) && ! is_int($value) && ! is_float($value)) {
 			throw new RuntimeException('ACF ' . $context . ' must be text.');
 		}
@@ -1435,30 +1400,26 @@ final class AcfAdapter
 		return $text;
 	}
 
-	private function hasInvalidControl(string $value, bool $allowNewlines): bool
-	{
+	private function hasInvalidControl(string $value, bool $allowNewlines): bool {
 		$pattern = $allowNewlines ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/';
 		return (bool) preg_match($pattern, $value);
 	}
 
-	private function requireBoolean($value, string $context): bool
-	{
+	private function requireBoolean($value, string $context): bool {
 		if (! is_bool($value)) {
 			throw new RuntimeException('ACF ' . $context . ' must be boolean.');
 		}
 		return $value;
 	}
 
-	private function boundedInteger($value, int $min, int $max, string $context): int
-	{
+	private function boundedInteger($value, int $min, int $max, string $context): int {
 		if (! is_int($value) || $value < $min || $value > $max) {
 			throw new RuntimeException('ACF ' . $context . ' must be an integer between ' . $min . ' and ' . $max . '.');
 		}
 		return $value;
 	}
 
-	private function boundedNumber($value, float $min, float $max, string $context)
-	{
+	private function boundedNumber($value, float $min, float $max, string $context) {
 		if (! is_int($value) && ! is_float($value)) {
 			throw new RuntimeException('ACF ' . $context . ' must be numeric.');
 		}
@@ -1469,8 +1430,7 @@ final class AcfAdapter
 		return $value;
 	}
 
-	private function enumValue($value, array $allowed, string $context): string
-	{
+	private function enumValue($value, array $allowed, string $context): string {
 		$value = (string) $value;
 		if (! in_array($value, $allowed, true)) {
 			throw new RuntimeException('Invalid ACF enum value for ' . $context . '.');
@@ -1478,8 +1438,7 @@ final class AcfAdapter
 		return $value;
 	}
 
-	private function normalizeKeyList($value, int $maxItems, string $context): array
-	{
+	private function normalizeKeyList($value, int $maxItems, string $context): array {
 		if (! is_array($value) || count($value) > $maxItems) {
 			throw new RuntimeException('Invalid ACF list for ' . $context . '.');
 		}
@@ -1495,8 +1454,7 @@ final class AcfAdapter
 		return array_values(array_unique($result));
 	}
 
-	private function normalizeBoundedStringList($value, int $maxItems, int $maxLength, string $context): array
-	{
+	private function normalizeBoundedStringList($value, int $maxItems, int $maxLength, string $context): array {
 		if (! is_array($value) || count($value) > $maxItems) {
 			throw new RuntimeException('Invalid ACF list for ' . $context . '.');
 		}
@@ -1511,8 +1469,7 @@ final class AcfAdapter
 		return array_values(array_unique($result));
 	}
 
-	private function target(array $payload)
-	{
+	private function target(array $payload) {
 		if (array_key_exists('target', $payload)) {
 			$target = $payload['target'];
 			if (is_int($target) || is_string($target)) {

@@ -65,6 +65,7 @@ final class SystemAdapter
 	public function doctor(): array
 	{
 		global $wpdb, $wp_version;
+		$fileModificationsAllowed = wp_is_file_mod_allowed('plugin_update');
 		$checks = array(
 			'wordpress_bootstrap' => defined('ABSPATH'),
 			// WordPress exposes ready publicly; dbh is protected and must never be accessed.
@@ -78,9 +79,9 @@ final class SystemAdapter
 			'elementor' => class_exists('Elementor\\Plugin'),
 			'acf' => function_exists('get_fields'),
 			'multisite' => is_multisite(),
-			'file_modifications_allowed' => function_exists('wp_is_file_mod_allowed') ? wp_is_file_mod_allowed('plugin_update') : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS),
+			'file_modifications_allowed' => $fileModificationsAllowed,
 			'file_editor_disabled' => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT,
-			'file_modifications_disabled' => defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS,
+			'file_modifications_disabled' => ! $fileModificationsAllowed,
 			'plugin_update_permission' => current_user_can('update_plugins'),
 			'plugin_install_permission' => current_user_can('install_plugins'),
 		);
@@ -269,9 +270,7 @@ final class SystemAdapter
 			? $transient->response : array();
 		$checkedAt = is_object($transient) && isset($transient->last_checked)
 			? (int) $transient->last_checked : 0;
-		$canModify = function_exists('wp_is_file_mod_allowed')
-			? wp_is_file_mod_allowed('plugin_update')
-			: (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS);
+		$canModify = wp_is_file_mod_allowed('plugin_update');
 		$items = array();
 		foreach (get_plugins() as $file => $data) {
 			// Match WordPress Core's REST plugin visibility for multisite site administrators.

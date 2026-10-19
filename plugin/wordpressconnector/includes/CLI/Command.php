@@ -9,98 +9,98 @@ use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Support\Json;
 
-final class Command
-{
-    private Runner $runner;
+final class Command {
 
-    public function __construct(Runner $runner)
-    {
-        $this->runner = $runner;
-    }
+	private Runner $runner;
 
-    /**
-     * Execute one connector request file.
-     *
-     * ## OPTIONS
-     *
-     * <request>
-     * : Path to a request JSON file.
-     *
-     * [--output=<path>]
-     * : Write the result JSON atomically to this path.
-     *
-     * [--asset-root=<path>]
-     * : Trusted root used by media.import source_path.
-     *
-     * ## EXAMPLES
-     *
-     *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
-     *
-     * @subcommand run
-     */
-    public function run(array $args, array $assocArgs): void
-    {
-        $requestPath = isset($args[0]) ? (string) $args[0] : '';
-        if ('' === $requestPath) {
-            \WP_CLI::error('Request file is required.');
-        }
+	public function __construct( Runner $runner ) {
+		$this->runner = $runner;
+	}
 
-        try {
-            $request = Request::fromFile($requestPath);
-            $context = array(
-                'asset_root' => isset($assocArgs['asset-root']) ? (string) $assocArgs['asset-root'] : '',
-            );
-            $result = $this->runner->run($request, $context);
+	/**
+	 * Execute one connector request file.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <request>
+	 * : Path to a request JSON file.
+	 *
+	 * [--output=<path>]
+	 * : Write the result JSON atomically to this path.
+	 *
+	 * [--asset-root=<path>]
+	 * : Trusted root used by media.import source_path.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
+	 *
+	 * @subcommand run
+	 */
+	public function run( array $args, array $assocArgs ): void {
+		$requestPath = isset( $args[0] ) ? (string) $args[0] : '';
+		if ( '' === $requestPath ) {
+			\WP_CLI::error( 'Request file is required.' );
+		}
 
-            if (! empty($assocArgs['output'])) {
-                Json::writeFileAtomic((string) $assocArgs['output'], $result);
-                \WP_CLI::log((string) $assocArgs['output']);
-            } else {
-                \WP_CLI::line(Json::encode($result));
-            }
+		try {
+			$request = Request::fromFile( $requestPath );
+			$context = array(
+				'asset_root' => isset( $assocArgs['asset-root'] ) ? (string) $assocArgs['asset-root'] : '',
+			);
+			$result  = $this->runner->run( $request, $context );
 
-            if (empty($result['ok'])) {
-                \WP_CLI::halt(1);
-            }
-        } catch (RuntimeException $error) {
-            \WP_CLI::error($error->getMessage());
-        }
-    }
+			if ( ! empty( $assocArgs['output'] ) ) {
+				Json::writeFileAtomic( (string) $assocArgs['output'], $result );
+				\WP_CLI::log( (string) $assocArgs['output'] );
+			} else {
+				\WP_CLI::line( Json::encode( $result ) );
+			}
 
-    /**
-     * Print the registered action catalog.
-     *
-     * @subcommand actions
-     */
-    public function actions(array $args, array $assocArgs): void
-    {
-        $request = Request::fromArray(array(
-            'request_id' => 'actions-list-0001',
-            'action' => 'connector.actions',
-            'dry_run' => true,
-            'payload' => array(),
-        ));
-        $result = $this->runner->run($request);
-        \WP_CLI::line(Json::encode($result));
-    }
+			if ( empty( $result['ok'] ) ) {
+				\WP_CLI::halt( 1 );
+			}
+		} catch ( RuntimeException $error ) {
+			\WP_CLI::error( $error->getMessage() );
+		}
+	}
 
-    /**
-     * Run read-only runtime diagnostics.
-     *
-     * @subcommand doctor
-     */
-    public function doctor(array $args, array $assocArgs): void
-    {
-        $request = Request::fromArray(array(
-            'request_id' => 'doctor-run-00001',
-            'action' => 'system.doctor',
-            'dry_run' => true,
-            'payload' => array(),
-        ));
-        $result = $this->runner->run($request);
-        \WP_CLI::line(Json::encode($result));
-        if (empty($result['ok']) || empty($result['data']['ok'])) {
-            \WP_CLI::halt(1);
-        }
-    }
+	/**
+	 * Print the registered action catalog.
+	 *
+	 * @subcommand actions
+	 */
+	public function actions( array $args, array $assocArgs ): void {
+		$request = Request::fromArray(
+			array(
+				'request_id' => 'actions-list-0001',
+				'action'     => 'connector.actions',
+				'dry_run'    => true,
+				'payload'    => array(),
+			)
+		);
+		$result  = $this->runner->run( $request );
+		\WP_CLI::line( Json::encode( $result ) );
+	}
+
+	/**
+	 * Run read-only runtime diagnostics.
+	 *
+	 * @subcommand doctor
+	 */
+	public function doctor( array $args, array $assocArgs ): void {
+		$request = Request::fromArray(
+			array(
+				'request_id' => 'doctor-run-00001',
+				'action'     => 'system.doctor',
+				'dry_run'    => true,
+				'payload'    => array(),
+			)
+		);
+		$result  = $this->runner->run( $request );
+		\WP_CLI::line( Json::encode( $result ) );
+		if ( empty( $result['ok'] ) || empty( $result['data']['ok'] ) ) {
+			\WP_CLI::halt( 1 );
+		}
+	}
 }

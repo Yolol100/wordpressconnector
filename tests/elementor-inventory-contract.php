@@ -31,6 +31,12 @@ require $proRoot . 'pro-widget.php';
 require $pluginRoot . '/awesome-addon/widget.php';
 require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php';
 
+// Elementor inventories must respect filters supplied by multilingual and other providers.
+$adapterSource = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php');
+if (! is_string($adapterSource) || 1 !== preg_match('/[\\x27\\x22]suppress_filters[\\x27\\x22]\\s*=>\\s*false/', $adapterSource)) {
+    throw new RuntimeException('Elementor document inventory must not suppress provider query filters.');
+}
+
 $adapter = new Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter();
 $reflection = new ReflectionClass($adapter);
 

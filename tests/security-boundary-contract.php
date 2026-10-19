@@ -93,11 +93,11 @@ if (substr_count($system, 'wp_get_scheduled_event($hook, $args)') < 2) {
     fwrite(STDERR, "Cron run and schedule must both bind to an existing exact event.\n");
     exit(1);
 }
-if (substr_count($core, 'Policy::assertMetaKeyAllowed($key);') !== 3) {
+if (substr_count(preg_replace('/\\s+/', '', $core), 'Policy::assertMetaKeyAllowed($key);') !== 3) {
     fwrite(STDERR, "All three generic meta actions must reject protected/internal metadata.\n");
     exit(1);
 }
-if (substr_count($core, 'Policy::assertOptionKeyAllowed($name);') !== 6) {
+if (substr_count(preg_replace('/\\s+/', '', $core), 'Policy::assertOptionKeyAllowed($name);') !== 6) {
     fwrite(STDERR, "Site and network generic option actions must reject system-owned options.\n");
     exit(1);
 }
