@@ -645,7 +645,7 @@ final class SystemAdapter
 		$hook = isset($payload['hook']) ? sanitize_key((string) $payload['hook']) : '';
 		if ('' === $hook) throw new RuntimeException('hook is required.');
 		if (! empty($context['dry_run'])) return array('would_clear' => $hook, '_current_fingerprint' => Fingerprint::make(wp_next_scheduled($hook)));
-		$count = wp_clear_scheduled_hook($hook, isset($payload['args']) && is_array($payload['args']) ? $payload['args'] : array());
+		$count = wp_clear_scheduled_hook($hook, isset($payload['args']) && is_array($payload['args']) ? $payload['args'] : array(), true);
 		if (is_wp_error($count)) throw new RuntimeException($count->get_error_message());
 		return array('cleared' => (int) $count, 'rollback_supported' => false);
 	}
