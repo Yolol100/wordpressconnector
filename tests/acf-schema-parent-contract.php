@@ -7,12 +7,12 @@ $source = (string) file_get_contents($root . '/plugin/wordpressconnector/include
 
 $required = array(
     '$groupId = $this->groupId($groupKey);',
-    "'parent' => \$groupId",
+    '\'parent\' => $groupId',
     'private function groupId(string $groupKey): int',
     'private function fieldMatchesDefinition(array $summary, array $definition, int $groupId): bool',
-    "0 !== (int) (\$summary['parent'] ?? 0)",
-    "\$recoverable[\$key] = \$globalId;",
-    "\$field['ID'] = (int) \$recoverable[\$definition['key']];",
+    '0 !== (int) ($summary[\'parent\'] ?? 0)',
+    '$recoverable[$key] = $globalId;',
+    '$field[\'ID\'] = (int) $recoverable[$definition[\'key\']];',
 );
 
 foreach ($required as $needle) {
@@ -22,7 +22,7 @@ foreach ($required as $needle) {
     }
 }
 
-if (false !== strpos($source, "'parent' => \$groupKey")) {
+if (false !== strpos($source, '\'parent\' => $groupKey')) {
     fwrite(STDERR, "ACF schema writes must not persist a group key as field parent.\n");
     exit(1);
 }
