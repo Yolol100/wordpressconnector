@@ -30,7 +30,7 @@ $cleanupCurrentSite = static function (): void {
         '_transient_timeout_wpconnector_oidc_jti_',
     ) as $prefix) {
         $like = $wpdb->esc_like($prefix) . '%';
-        $names = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+        $names = $wpdb->get_col($wpdb->prepare('SELECT option_name FROM %i WHERE option_name LIKE %s', $wpdb->options, $like));
         foreach ((array) $names as $name) {
             if (is_string($name) && 0 === strpos($name, $prefix)) {
                 delete_option($name);
