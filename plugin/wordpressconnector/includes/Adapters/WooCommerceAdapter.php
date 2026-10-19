@@ -306,6 +306,9 @@ final class WooCommerceAdapter
 		$id = $product->save();
 		if (! $id) throw new RuntimeException('WooCommerce product save failed.');
 		$saved = wc_get_product($id);
+		if (! $saved instanceof \WC_Product) {
+			throw new RuntimeException('Saved WooCommerce product could not be read back.');
+		}
 		return array('product' => $this->productSnapshot($saved), '_rollback' => array('action' => 'post.trash', 'payload' => array('id' => (int) $id)));
 	}
 
@@ -321,7 +324,11 @@ final class WooCommerceAdapter
 
 		$this->applyProduct($product, $payload);
 		$product->save();
-		$result['after'] = $this->productSnapshot(wc_get_product($product->get_id()));
+		$updated = wc_get_product($product->get_id());
+		if (! $updated instanceof \WC_Product) {
+			throw new RuntimeException('Updated WooCommerce product could not be read back.');
+		}
+		$result['after'] = $this->productSnapshot($updated);
 		$result['_rollback'] = array('action' => 'woocommerce.product.update', 'payload' => $this->productRollbackPayload($before));
 		return $result;
 	}
@@ -524,8 +531,16 @@ final class WooCommerceAdapter
 			case 'external': return new \WC_Product_External();
 			case 'simple': return new \WC_Product_Simple();
 			default:
-				$class = wc_get_product_classname(0, $type);
-				if (class_exists($class) && is_subclass_of($class, 'WC_Product')) return new $class();
+				// Only registered product types may be constructed via provider classes.
+				$types = function_exists('wc_get_product_types') ? wc_get_product_types() : array();
+				if (! is_array($types) || ! isset($types[$type]) || ! class_exists('WC_Product_Factory')) {
+					throw new RuntimeException('Unsupported product type: ' . $type);
+				}
+				$class = \WC_Product_Factory::get_product_classname(0, $type);
+				if (is_string($class) && class_exists($class) && is_subclass_of($class, 'WC_Product')) {
+					$product = new $class();
+					if ($product->get_type() === $type) return $product;
+				}
 				throw new RuntimeException('Unsupported product type: ' . $type);
 		}
 	}
