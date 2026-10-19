@@ -1,4 +1,4 @@
-name: WPCS AST-safe four-file application
+name: WPCS AST-safe remaining three files
 on:
   push:
     branches: [fix/release-readiness-guarded-wpcs-20261019]
@@ -26,7 +26,7 @@ jobs:
           composer init --no-interaction --name wordpressconnector/ast-safe --type project
           composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer require --dev --no-interaction --no-progress nikic/php-parser:5.9.0 squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
-      - name: Apply four previously proven AST-equivalent files individually
+      - name: Apply remaining three AST-equivalent files individually
         shell: bash
         run: |
           set -euo pipefail
@@ -69,13 +69,11 @@ jobs:
             plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php
             plugin/wordpressconnector/includes/Adapters/CoreAdapter.php
             plugin/wordpressconnector/includes/Adapters/PluginPackageAdapter.php
-            plugin/wordpressconnector/includes/Adapters/WooCommerceAdapter.php
           )
           expected=(
             f7b6b2d58772329fcdde581feaf1ebbfafc59b04f821c798ad238ae4feba131a
             e83b8be0f74349c0a47210a2c9cfca1f9f590934b7fd044358b2c1d651c4d19e
             1418ee00b8a022c2971d99b3ddfbf0d811a67bcf2f2f0e43d3016ad57b138f75
-            70438b2e9cc6df4556987deadf9d5820e3fe5545ce50f21ab1e0125801f8ac06
           )
           scanner="$RUNNER_TEMP/astfix/vendor/bin/phpcs"
           fixer="$RUNNER_TEMP/astfix/vendor/bin/phpcbf"
@@ -84,7 +82,7 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           accepted=0
           rejected=0
-          for i in 0 1 2 3; do
+          for i in 0 1 2; do
             file="${targets[$i]}"
             name="$(basename "$file" .php)"
             before="$RUNNER_TEMP/astfix-proof/$name.original.php"
