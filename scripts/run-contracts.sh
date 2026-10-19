@@ -24,6 +24,7 @@ run_php tests/woocommerce-catalog-read-contract.php
 run_php tests/woocommerce-settings-contract.php
 run_php tests/woocommerce-operations-contract.php
 run_php tests/woocommerce-variation-readback-contract.php
+run_php tests/woocommerce-product-factory-readback-contract.php
 run_php tests/woocommerce-fulfillment-contract.php
 run_php tests/user-password-reset-contract.php
 run_php tests/custom-css-contract.php
