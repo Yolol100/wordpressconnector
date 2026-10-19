@@ -30,4 +30,5 @@ jobs:
           name: wpconnector-reviewed-source
           path: ${{ runner.temp }}/review-source/
           retention-days: 3
+          include-hidden-files: true
           if-no-files-found: error
