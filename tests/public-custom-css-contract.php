@@ -204,7 +204,8 @@ foreach (array(
     'wp_update_custom_css_post(',
     "'_rollback'",
 ) as $needle) {
-    if (! str_contains($adapter, $needle)) {
+    // Match required security contracts without depending on WordPressCS spacing.
+    if (! str_contains(preg_replace('/\\s+/', '', $adapter), preg_replace('/\\s+/', '', $needle))) {
         fwrite(STDERR, "Custom CSS adapter is missing marker: {$needle}\n");
         exit(1);
     }
