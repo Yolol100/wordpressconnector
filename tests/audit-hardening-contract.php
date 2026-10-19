@@ -85,7 +85,13 @@ foreach (array("'7.4'", "'8.0'", "'8.1'", "'8.2'", "'8.3'", "'8.4'", "'8.5'") as
     }
 }
 $require('ci', array(
-    'WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e',
+    // The pinned official action cannot currently start because its unpinned npm dependency is unpublished.
+    // Preserve the official Plugin Check plugin and the same fail-on-ERROR check policy.
+    'npm install --global --no-audit --no-fund @wordpress/env@10.33.1',
+    'wp plugin install plugin-check --activate',
+    'wp plugin check wordpressconnector --format=json --exclude-checks=plugin_review_phpcs,plugin_updater,trademarks,late_escaping,performant_wp_query_params',
+    '--require=./wp-content/plugins/plugin-check/cli.php',
+    "item.get('type')=='ERROR'",
     'persist-credentials: false',
     'bash scripts/run-contracts.sh',
 ));
