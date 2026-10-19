@@ -12,6 +12,10 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
+WordPress Connector links an authorized WordPress administrator to bounded REST and MCP management tools. It supports guarded content, Elementor, WooCommerce and SEO operations with role checks, previews and recovery paths. The plugin distributes signed, checksum-verified releases outside the WordPress.org directory. See Version Notes and the Changelog for the full technical history.
+
+== Version Notes ==
+
 Version 1.19.19 fixes a protected WordPress database-handle access in system.doctor, uses WordPress 6.2+ %i identifier placeholders for bounded WooCommerce shipping and tax reads, and aligns the Elementor MCP guard callback registration. Regression tests now exercise system.doctor in both a protected-handle fixture and real WordPress installations. PHPStan and WordPress.org-only audit findings require separate, evidence-based review and are not represented as fully cleared.
 
 
