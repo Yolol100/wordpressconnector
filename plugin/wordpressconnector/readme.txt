@@ -182,6 +182,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 * Escape WooCommerce table identifiers via wpdb::prepare %i (WordPress 6.2+), retain prepared value placeholders, and update test fixture SQL parser.
 * Prepare WordPress options table identifiers in snapshot, processed-request and uninstall SQL while preserving expiration/cleanup boundaries.
 * Use WordPress wp_parse_url() for verified plugin/theme directory packages and Yoast logo URLs.
+* Reject malformed administrator notice, Elementor JSON export and cache loopback inputs; sanitize consent/method fields and restrict the one-time MCP credential HTML response with a dedicated WordPress KSES allowlist.
 * Keep WordPress capabilities, confirmation, read-only probes, and GitHub update provenance unchanged. Strict full WPCS/PHPStan/WordPress.org review remains a separate quality task.
 
 = 1.19.18 =
