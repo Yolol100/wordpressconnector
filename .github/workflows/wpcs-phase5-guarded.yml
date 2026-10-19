@@ -3,7 +3,7 @@ name: WPCS phase 5 guarded WooCommerceFulfillment Elementor Optimizer
 on:
   push:
     branches:
-      - fix/wpcs-phase5-safe-five-files-20261019
+      - fix/wpcs-phase5-three-adapters-20261019
     paths:
       - .github/workflows/wpcs-phase5-guarded.yml
 
@@ -134,7 +134,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Commit only validated formatter results
-        if: success() && github.ref == 'refs/heads/fix/wpcs-phase5-safe-five-files-20261019'
+        if: success() && github.ref == 'refs/heads/fix/wpcs-phase5-three-adapters-20261019'
         shell: bash
         run: |
           set -euo pipefail
@@ -143,4 +143,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "style(wpcs): token-safe phase5 for WooCommerce fulfillment Elementor Optimizer adapters"
-          git push origin HEAD:fix/wpcs-phase5-safe-five-files-20261019
+          git push origin HEAD:fix/wpcs-phase5-three-adapters-20261019
