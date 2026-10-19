@@ -47,11 +47,21 @@ final class ConnectorUpdateAdapter
             add_filter('plugin_action_links_' . self::PLUGIN_FILE, array($this, 'pluginActionLinks'));
         }
         if (function_exists('add_action')) {
-            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNotice'), 20);
-            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNotice'), 20);
+            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
+            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
             add_action('admin_post_wpconnector_check_updates', array($this, 'forceNativeUpdateCheck'));
             add_action('admin_notices', array($this, 'checkedNotice'));
         }
+    }
+
+    /**
+     * WordPress action callbacks do not consume an update-check result.
+     * Preserve the boolean API for direct callers and use this void wrapper
+     * only for wp-admin hooks.
+     */
+    public function refreshNativeUpdateNoticeAction(): void
+    {
+        $this->refreshNativeUpdateNotice();
     }
 
     /**
