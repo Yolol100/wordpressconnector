@@ -121,7 +121,7 @@ final class ElementorCapabilitiesAdapter
 				),
 			),
 			'no_found_rows' => true,
-			'suppress_filters' => true,
+			'suppress_filters' => false,
 		));
 
 		$hasMore = count($ids) > $limit;
