@@ -20,7 +20,7 @@ class wpdb
 
 function wp_is_writable(string $path): bool { return true; }
 function wp_get_upload_dir(): array { return array('basedir' => __DIR__); }
-function wp_is_file_mod_allowed(string $context): bool { return true; }
+function wp_is_file_mod_allowed(string $context): bool { return $GLOBALS['wpconn_file_mod_allowed'] ?? true; }
 function current_user_can(string $capability): bool { return true; }
 function is_multisite(): bool { return false; }
 
@@ -35,6 +35,14 @@ if (true !== ($ready['database'] ?? null) || true !== ($ready['ok'] ?? null)
     || false !== ($ready['wp_cli'] ?? true)) {
     throw new RuntimeException('Doctor failed with a ready database and unavailable optional WP-CLI.');
 }
+
+$GLOBALS['wpconn_file_mod_allowed'] = false;
+$disabled = $doctor->doctor();
+if (true !== ($disabled['file_modifications_disabled'] ?? null)
+    || false !== ($disabled['file_modifications_allowed'] ?? null)) {
+    throw new RuntimeException('File modification diagnostic must honor WordPress Core policy filters.');
+}
+$GLOBALS['wpconn_file_mod_allowed'] = true;
 
 $wpdb->ready = false;
 $unready = $doctor->doctor();
