@@ -3,7 +3,7 @@ name: Temporary release diagnostics
 on:
   push:
     branches:
-      - fix/release-readiness-guarded-wpcs-20261019
+      - fix/release-risk-triage-sql-contract-20261019
     paths:
       - .github/workflows/release-diagnostics-temporary.yml
 permissions:
