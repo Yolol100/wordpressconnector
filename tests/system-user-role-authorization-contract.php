@@ -45,6 +45,7 @@ function is_super_admin(): bool { return $GLOBALS['wpconn_super_admin']; }
 function get_option(string $name) { return 'default_role' === $name ? 'subscriber' : null; }
 function sanitize_user(string $value, bool $strict = false): string { return $value; }
 function sanitize_email(string $value): string { return $value; }
+function sanitize_text_field(string $value): string { return $value; }
 function sanitize_key(string $value): string { return strtolower((string) preg_replace('/[^a-z0-9_-]/', '', $value)); }
 function get_role(string $name)
 {
