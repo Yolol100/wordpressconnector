@@ -1,0 +1,31 @@
+name: WordPress Plugin Check strict evidence audit
+
+on:
+  push:
+    branches:
+      - fix/plugin-check-strict-triage-20261019
+    paths:
+      - '.github/workflows/plugin-check-strict-diagnostic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  all-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate plugin
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Run official Plugin Check with no excluded checks
+        uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
+        with:
+          build-dir: plugin/wordpressconnector
+          strict: 'true'
+      - name: Record independently evaluated candidate revision
+        if: always()
+        run: |
+          echo "Full strict Plugin Check for $GITHUB_SHA"
+          echo "No checks excluded. An error means NOT distribution-ready."
