@@ -1,4 +1,4 @@
-name: WPCS token-equivalent Elementor Forms batch (contract v2)
+name: WPCS token-equivalent Elementor Forms batch (contract v3)
 
 on:
   push:
