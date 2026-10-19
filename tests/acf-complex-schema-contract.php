@@ -15,6 +15,8 @@ foreach (array($adapterPath, $validatorPath, $legacyValidatorPath) as $path) {
 }
 
 $adapter = (string) file_get_contents($adapterPath);
+$structure = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($structure)) { throw new RuntimeException('Could not normalize ACF schema structure.'); }
 $validator = (string) file_get_contents($validatorPath);
 $legacyValidator = (string) file_get_contents($legacyValidatorPath);
 
@@ -25,7 +27,7 @@ $requiredActions = array(
     'acf.schema.delete_field_group',
 );
 foreach ($requiredActions as $action) {
-    if (false === strpos($adapter, "\$registry->register('{$action}'")) {
+    if (false === strpos($structure, preg_replace('/\\s+/', '', "\$registry->register('{$action}'"))) {
         fwrite(STDERR, "Missing complex ACF action registration: {$action}\n");
         exit(1);
     }
@@ -49,13 +51,13 @@ foreach (array(
     "['_rollback'] = array(",
     "'_current_fingerprint' => Fingerprint::make",
 ) as $needle) {
-    if (false === strpos($adapter, $needle)) {
+    if (false === strpos($structure, preg_replace('/\\s+/', '', $needle))) {
         fwrite(STDERR, "Missing complex ACF safety/schema token: {$needle}\n");
         exit(1);
     }
 }
 
-if (false !== strpos($adapter, 'acf_update_field_group(')) {
+if (false !== strpos($structure, preg_replace('/\\s+/', '', 'acf_update_field_group('))) {
     fwrite(STDERR, "Complex ACF schema must not rewrite existing field groups in place.\n");
     exit(1);
 }
