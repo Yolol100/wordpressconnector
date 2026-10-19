@@ -41,10 +41,10 @@ final class Runner {
 			}
 			Policy::assertActionAllowed($descriptor, $request->dryRun(), $request->confirm());
 			$requestFingerprint = Fingerprint::make(array(
-			    'action' => $request->action(),
-			    'payload' => $request->payload(),
-			    'expected_fingerprint' => $request->expectedFingerprint(),
-			    'expected_state_token' => $request->expectedStateToken(),
+				'action' => $request->action(),
+				'payload' => $request->payload(),
+				'expected_fingerprint' => $request->expectedFingerprint(),
+				'expected_state_token' => $request->expectedStateToken(),
 			));
 			if (! empty($descriptor['mutation']) && ! $request->dryRun()) {
 				$lockToken = $this->processed->acquireMutationLock();
@@ -60,14 +60,14 @@ final class Runner {
 						return Result::failure(
 							$request,
 							isset($existing['terminal_error']) && is_string($existing['terminal_error'])
-							    ? $existing['terminal_error']
-							    : 'Completed mutation ended with a terminal execution failure.',
+								? $existing['terminal_error']
+								: 'Completed mutation ended with a terminal execution failure.',
 							array(
-							    'request_fingerprint' => $requestFingerprint,
-							    'idempotent_replay' => true,
-							    'original_result_hash' => $existing['result_hash'] ?? null,
-							    'terminal_mutation' => true,
-							    'diagnostic' => Diagnostics::classify((string) ($existing['terminal_error'] ?? ''), true),
+								'request_fingerprint' => $requestFingerprint,
+								'idempotent_replay' => true,
+								'original_result_hash' => $existing['result_hash'] ?? null,
+								'terminal_mutation' => true,
+								'diagnostic' => Diagnostics::classify((string) ($existing['terminal_error'] ?? ''), true),
 							)
 						);
 					}
@@ -87,8 +87,8 @@ final class Runner {
 			}
 			$rollback = isset($data['_rollback']) && is_array($data['_rollback']) ? $data['_rollback'] : null;
 			$terminalError = isset($data['_terminal_error']) && is_string($data['_terminal_error'])
-			    ? trim($data['_terminal_error'])
-			    : '';
+				? trim($data['_terminal_error'])
+				: '';
 			$terminalContext = array();
 			foreach (array('name', 'execution_may_have_started', 'provider_error_code') as $key) {
 				if (array_key_exists($key, $data)) {
@@ -98,17 +98,17 @@ final class Runner {
 			unset($data['_rollback'], $data['_current_fingerprint'], $data['_terminal_error']);
 			if ($rollback && ! $request->dryRun() && ! empty($descriptor['mutation'])) {
 				$this->snapshots->put($request->id(), $rollback, array(
-				    'source_action' => $request->action(),
-				    'public_repository_mode' => Policy::publicRepositoryContext(),
+					'source_action' => $request->action(),
+					'public_repository_mode' => Policy::publicRepositoryContext(),
 				));
 				$data['rollback_request_id'] = $request->id();
 			}
 			if ('' !== $terminalError) {
 				$result = Result::failure($request, $terminalError, array(
-				    'request_fingerprint' => $requestFingerprint,
-				    'terminal_mutation' => true,
-				    'terminal_context' => $terminalContext,
-				    'diagnostic' => Diagnostics::classify($terminalError, true),
+					'request_fingerprint' => $requestFingerprint,
+					'terminal_mutation' => true,
+					'terminal_context' => $terminalContext,
+					'diagnostic' => Diagnostics::classify($terminalError, true),
 				));
 				if (! $request->dryRun() && ! empty($descriptor['mutation'])) {
 					$this->processed->put(
@@ -130,8 +130,8 @@ final class Runner {
 			return $result;
 		} catch (Throwable $error) {
 			return Result::failure($request, $error->getMessage(), array(
-			    'exception' => get_class($error),
-			    'diagnostic' => Diagnostics::classify($error->getMessage(), isset($descriptor) && ! empty($descriptor['mutation']) && ! $request->dryRun()),
+				'exception' => get_class($error),
+				'diagnostic' => Diagnostics::classify($error->getMessage(), isset($descriptor) && ! empty($descriptor['mutation']) && ! $request->dryRun()),
 			));
 		} finally {
 			if ('' !== $lockToken) {
@@ -158,13 +158,13 @@ final class Runner {
 		$allowed = array();
 		foreach ($operations as $index => $operation) {
 			if (! is_array($operation) || ! isset($operation['action']) || ! is_string($operation['action'])
-			    || ! isset($operation['payload']) || ! is_array($operation['payload'])
-			    || array_diff(array_keys($operation), array('action', 'payload'))) {
+				|| ! isset($operation['payload']) || ! is_array($operation['payload'])
+				|| array_diff(array_keys($operation), array('action', 'payload'))) {
 				throw new RuntimeException('Read batch operation at index ' . $index . ' is invalid.');
 			}
 			$action = $operation['action'];
 			if (in_array($action, array('connector.read_batch', 'connector.batch', 'connector.rollback', 'connector.cleanup'), true)
-			    || 'wordpress.ability.execute' === $action) {
+				|| 'wordpress.ability.execute' === $action) {
 				throw new RuntimeException('Nested and delegated actions are not allowed in connector.read_batch.');
 			}
 			$descriptor = $this->registry->descriptor($action);
@@ -181,8 +181,8 @@ final class Runner {
 		$results = array();
 		foreach ($allowed as $operation) {
 			$result = $this->registry->execute($operation['action'], $operation['payload'], array_merge($context, array(
-			    'dry_run' => true,
-			    'confirm' => false,
+				'dry_run' => true,
+				'confirm' => false,
 			)));
 			unset($result['_rollback'], $result['_current_fingerprint']);
 			$results[] = array('action' => $operation['action'], 'result' => $result);
@@ -275,9 +275,9 @@ final class Runner {
 			}
 			if (! empty($context['dry_run'])) {
 				return array(
-				    'would_execute_action' => (string) $rollback['action'],
-				    'source_action' => (string) ($record['source_action'] ?? ''),
-				    '_current_fingerprint' => $fingerprint,
+					'would_execute_action' => (string) $rollback['action'],
+					'source_action' => (string) ($record['source_action'] ?? ''),
+					'_current_fingerprint' => $fingerprint,
 				);
 			}
 		} elseif (! empty($context['dry_run'])) {
@@ -307,7 +307,7 @@ final class Runner {
 	private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array {
 		if ('elementor.header_links.inspect' === $action) {
 			if (array_diff(array_keys($payload), array('post_id','checks'))
-			    || ! is_int($payload['post_id'] ?? null) || $payload['post_id'] < 1) {
+				|| ! is_int($payload['post_id'] ?? null) || $payload['post_id'] < 1) {
 				throw new RuntimeException('Header diagnostics require only a positive post_id and checks.');
 			}
 			$checks = $payload['checks'] ?? null;
@@ -323,10 +323,10 @@ final class Runner {
 				$id = $check['element_id'] ?? null;
 				$url = $check['from'] ?? null;
 				if (! is_string($id) || ! preg_match('/^[A-Za-z0-9_-]{5,64}\\z/', $id)
-				    || isset($seen[$id]) || ! is_string($url) || strlen($url) > 500
-				    || ! filter_var($url, FILTER_VALIDATE_URL)
-				    || wp_parse_url($url, PHP_URL_SCHEME) !== 'https'
-				    || strtolower((string) wp_parse_url($url, PHP_URL_HOST)) !== $host) {
+					|| isset($seen[$id]) || ! is_string($url) || strlen($url) > 500
+					|| ! filter_var($url, FILTER_VALIDATE_URL)
+					|| wp_parse_url($url, PHP_URL_SCHEME) !== 'https'
+					|| strtolower((string) wp_parse_url($url, PHP_URL_HOST)) !== $host) {
 					throw new RuntimeException('Invalid header diagnostic widget or site URL.');
 				}
 				$seen[$id] = true;
@@ -340,7 +340,7 @@ final class Runner {
 		}
 		if ('elementor.header_links.replace' === $action) {
 			if (array_diff(array_keys($payload), array('post_id','changes'))
-			    || ! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] < 1) {
+				|| ! isset($payload['post_id']) || ! is_int($payload['post_id']) || $payload['post_id'] < 1) {
 				throw new RuntimeException('Header link repair requires only post_id and changes.');
 			}
 			$changes = $payload['changes'] ?? null;
@@ -355,16 +355,16 @@ final class Runner {
 				}
 				$elementId = $change['element_id'] ?? '';
 				if (! is_string($elementId) || ! preg_match('/^[a-zA-Z0-9_-]{5,64}\\z/', $elementId)
-				    || isset($seen[$elementId])) {
+					|| isset($seen[$elementId])) {
 					throw new RuntimeException('Header link widget ID must be unique and bounded.');
 				}
 				$seen[$elementId] = true;
 				foreach (array('from','to') as $field) {
 					$url = $change[$field] ?? null;
 					if (! is_string($url) || strlen($url) > 500 || ! filter_var($url, FILTER_VALIDATE_URL)
-					    || wp_parse_url($url, PHP_URL_SCHEME) !== 'https'
-					    || strtolower((string) wp_parse_url($url, PHP_URL_HOST)) !== $homeHost
-					    || ($field === 'to' && (null !== wp_parse_url($url, PHP_URL_QUERY) || null !== wp_parse_url($url, PHP_URL_FRAGMENT)))) {
+						|| wp_parse_url($url, PHP_URL_SCHEME) !== 'https'
+						|| strtolower((string) wp_parse_url($url, PHP_URL_HOST)) !== $homeHost
+						|| ($field === 'to' && (null !== wp_parse_url($url, PHP_URL_QUERY) || null !== wp_parse_url($url, PHP_URL_FRAGMENT)))) {
 						throw new RuntimeException('Header link URLs must be exact HTTPS same-site URLs.');
 					}
 				}
@@ -387,7 +387,7 @@ final class Runner {
 				}
 			} else {
 				if (array_diff(array_keys($payload), array('id', 'fields')) ||
-				    ! is_int($payload['id'] ?? null) || $payload['id'] < 1) {
+					! is_int($payload['id'] ?? null) || $payload['id'] < 1) {
 					throw new RuntimeException('Public snippet edit accepts only id and fields.');
 				}
 				\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields($payload['fields'] ?? null);
@@ -408,21 +408,21 @@ final class Runner {
 				}
 				$fields = $payload['fields'] ?? null;
 				$allowedVariables = array(
-				    'category_title' => '%%term_title%%',
-				    'product_category_title' => '%%term_title%%',
-				    'product_title' => '%%title%%',
-				    'product_description' => '%%excerpt%%',
+					'category_title' => '%%term_title%%',
+					'product_category_title' => '%%term_title%%',
+					'product_title' => '%%title%%',
+					'product_description' => '%%excerpt%%',
 				);
 				if (! is_array($fields) || ! $fields || count($fields) > count($allowedVariables)) {
 					throw new RuntimeException('Public Yoast templates require one to four allowlisted fields.');
 				}
 				foreach ($fields as $key => $value) {
 					$requiredVariable = is_string($key) && array_key_exists($key, $allowedVariables)
-					    ? $allowedVariables[$key] : null;
+						? $allowedVariables[$key] : null;
 					if (null === $requiredVariable || ! is_string($value)
-					    || strlen($value) > 150 || strlen($value) < 10
-					    || false === strpos($value, $requiredVariable)
-					    || preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
+						|| strlen($value) > 150 || strlen($value) < 10
+						|| false === strpos($value, $requiredVariable)
+						|| preg_match('/[\\x00-\\x1f\\x7f<>]/', $value)) {
 						throw new RuntimeException('Public Yoast template field or value is not allowed.');
 					}
 				}
@@ -513,13 +513,13 @@ final class Runner {
 		if ('theme.install_package' === $action) {
 			$allowed = array('source_path', 'sha256', 'expected_stylesheet', 'overwrite');
 			if (array_diff(array_keys($payload), $allowed) || count($payload) !== 4
-			    || ! isset($payload['source_path']) || ! is_string($payload['source_path'])
-			    || ! preg_match('#^theme-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $payload['source_path'])
-			    || ! isset($payload['sha256']) || ! is_string($payload['sha256'])
-			    || ! preg_match('/^[a-f0-9]{64}\z/', $payload['sha256'])
-			    || ! isset($payload['expected_stylesheet']) || ! is_string($payload['expected_stylesheet'])
-			    || ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}\z/', $payload['expected_stylesheet'])
-			    || $payload['overwrite'] !== false) {
+				|| ! isset($payload['source_path']) || ! is_string($payload['source_path'])
+				|| ! preg_match('#^theme-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $payload['source_path'])
+				|| ! isset($payload['sha256']) || ! is_string($payload['sha256'])
+				|| ! preg_match('/^[a-f0-9]{64}\z/', $payload['sha256'])
+				|| ! isset($payload['expected_stylesheet']) || ! is_string($payload['expected_stylesheet'])
+				|| ! preg_match('/^[a-z0-9][a-z0-9._-]{0,79}\z/', $payload['expected_stylesheet'])
+				|| $payload['overwrite'] !== false) {
 				throw new RuntimeException('Public theme packages require a new theme, exact ZIP checksum and overwrite=false.');
 			}
 			if (! $dryRun && (null === $expectedFingerprint || ! preg_match('/^[a-f0-9]{64}\z/', $expectedFingerprint))) {
@@ -557,8 +557,8 @@ final class Runner {
 
 	private function assertPublicCustomCssPayload(array $payload, bool $patch): void {
 		$allowed = $patch
-		    ? array('stylesheet', 'patch_id', 'operation', 'css')
-		    : array('stylesheet');
+			? array('stylesheet', 'patch_id', 'operation', 'css')
+			: array('stylesheet');
 		foreach (array_keys($payload) as $key) {
 			if (! in_array((string) $key, $allowed, true)) {
 				throw new RuntimeException('Public Additional CSS request contains unsupported payload key: ' . (string) $key);
@@ -630,22 +630,22 @@ final class Runner {
 		}
 
 		$sourcePath = isset($payload['source_path']) && is_string($payload['source_path'])
-		    ? str_replace('\\', '/', $payload['source_path'])
-		    : '';
+			? str_replace('\\', '/', $payload['source_path'])
+			: '';
 		if (! preg_match('#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip\\z#', $sourcePath)) {
 			throw new RuntimeException('Public plugin package install requires source_path plugin-packages/<safe-name>.zip.');
 		}
 
 		$sha256 = isset($payload['sha256']) && is_string($payload['sha256'])
-		    ? strtolower($payload['sha256'])
-		    : '';
+			? strtolower($payload['sha256'])
+			: '';
 		if (! preg_match('/^[a-f0-9]{64}\\z/', $sha256)) {
 			throw new RuntimeException('Public plugin package install requires an exact lowercase SHA-256 checksum.');
 		}
 
 		$expectedPlugin = isset($payload['expected_plugin']) && is_string($payload['expected_plugin'])
-		    ? str_replace('\\', '/', $payload['expected_plugin'])
-		    : '';
+			? str_replace('\\', '/', $payload['expected_plugin'])
+			: '';
 		if (! preg_match('/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php\\z/', $expectedPlugin)) {
 			throw new RuntimeException('Public plugin package install requires an exact expected_plugin file.');
 		}
@@ -654,7 +654,7 @@ final class Runner {
 			throw new RuntimeException('Public plugin package install requires an explicit boolean overwrite value.');
 		}
 		if (true === $payload['overwrite']
-		    && ! hash_equals('webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expectedPlugin)) {
+			&& ! hash_equals('webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expectedPlugin)) {
 			throw new RuntimeException('Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.');
 		}
 		if (! array_key_exists('network_wide', $payload) || false !== $payload['network_wide']) {
@@ -673,8 +673,8 @@ final class Runner {
 		}
 
 		$layer = isset($payload['layer']) && is_string($payload['layer'])
-		    ? sanitize_key($payload['layer'])
-		    : '';
+			? sanitize_key($payload['layer'])
+			: '';
 
 		if (! in_array($layer, array('elementor', 'wp_rocket', 'asset_cleanup'), true)) {
 			throw new RuntimeException('Public cache flush requires layer: elementor, wp_rocket or asset_cleanup.');
@@ -686,9 +686,9 @@ final class Runner {
 		}
 
 		$preview = $this->registry->execute('maintenance.cache_flush', array('layer' => $layer, 'regenerate' => $regenerate), array(
-		    'dry_run' => true,
-		    'confirm' => true,
-		    'public_validation' => true,
+			'dry_run' => true,
+			'confirm' => true,
+			'public_validation' => true,
 		));
 
 		$fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
@@ -708,8 +708,8 @@ final class Runner {
 
 		$snippetId = isset($payload['snippet_id']) ? (int) $payload['snippet_id'] : 0;
 		$marker = isset($payload['match_code_contains']) && is_string($payload['match_code_contains'])
-		    ? $payload['match_code_contains']
-		    : '';
+			? $payload['match_code_contains']
+			: '';
 
 		if (($snippetId > 0 && '' !== $marker) || ($snippetId <= 0 && '' === $marker)) {
 			throw new RuntimeException('Public Code Snippets patch requires exactly one of snippet_id or match_code_contains.');
@@ -719,8 +719,8 @@ final class Runner {
 		}
 
 		$replacements = isset($payload['replacements']) && is_array($payload['replacements'])
-		    ? array_values($payload['replacements'])
-		    : array();
+			? array_values($payload['replacements'])
+			: array();
 		if (! $replacements || count($replacements) > 4) {
 			throw new RuntimeException('Public Code Snippets patch requires 1-4 exact replacements.');
 		}
@@ -745,9 +745,9 @@ final class Runner {
 		}
 
 		$preview = $this->registry->execute('code_snippets.patch', $payload, array(
-		    'dry_run' => true,
-		    'confirm' => true,
-		    'public_validation' => true,
+			'dry_run' => true,
+			'confirm' => true,
+			'public_validation' => true,
 		));
 		$targetId = isset($preview['snippet']['id']) ? (int) $preview['snippet']['id'] : 0;
 		$fingerprint = isset($preview['_current_fingerprint']) ? (string) $preview['_current_fingerprint'] : '';
@@ -864,20 +864,20 @@ final class Runner {
 		$rollback = isset($record['rollback']) && is_array($record['rollback']) ? $record['rollback'] : array();
 		$rollbackAction = (string) ($rollback['action'] ?? '');
 		$allowed = array(
-		    'acf.update' => array('acf.update'),
-		    'acf.portfolio_stats_update' => array('acf.portfolio_stats_update', 'acf.update'),
-		    'portfolio.case_text_update' => array('portfolio.case_text_update'),
-		    'post.update' => array('post.update'),
-		    'post.literal_replace' => array('post.update'),
-		    'site.identity.update' => array('site.identity.restore'),
-		    'gtranslate.settings.update' => array('gtranslate.settings.restore'),
-		    'yoast.site_representation.update' => array('yoast.site_representation.restore'),
-		    'yoast.snippet.update' => array('yoast.snippet.restore'),
-		    'elementor.patch_element' => array('elementor.replace_document'),
-		    'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
-		    'connector.batch' => array('connector.batch'),
-		    'code_snippets.patch' => array('code_snippets.restore_code'),
-		    'custom_css.patch' => array('custom_css.update'),
+			'acf.update' => array('acf.update'),
+			'acf.portfolio_stats_update' => array('acf.portfolio_stats_update', 'acf.update'),
+			'portfolio.case_text_update' => array('portfolio.case_text_update'),
+			'post.update' => array('post.update'),
+			'post.literal_replace' => array('post.update'),
+			'site.identity.update' => array('site.identity.restore'),
+			'gtranslate.settings.update' => array('gtranslate.settings.restore'),
+			'yoast.site_representation.update' => array('yoast.site_representation.restore'),
+			'yoast.snippet.update' => array('yoast.snippet.restore'),
+			'elementor.patch_element' => array('elementor.replace_document'),
+			'acf.schema.ensure_text_fields' => array('acf.schema.remove_text_fields'),
+			'connector.batch' => array('connector.batch'),
+			'code_snippets.patch' => array('code_snippets.restore_code'),
+			'custom_css.patch' => array('custom_css.update'),
 		);
 		if (! isset($allowed[$sourceAction]) || ! in_array($rollbackAction, $allowed[$sourceAction], true)) {
 			throw new RuntimeException('Rollback snapshot is not eligible for the guarded public rollback route.');
@@ -892,7 +892,7 @@ final class Runner {
 			$this->assertPublicRollbackPostId($rollbackPayload);
 			\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields($rollbackPayload['fields'] ?? null, true);
 			if (! is_string($rollbackPayload['expected_after_fingerprint'] ?? null) ||
-			    ! preg_match('/^[a-f0-9]{64}\z/', $rollbackPayload['expected_after_fingerprint'])) {
+				! preg_match('/^[a-f0-9]{64}\z/', $rollbackPayload['expected_after_fingerprint'])) {
 				throw new RuntimeException('Public snippet rollback requires an after-fingerprint.');
 			}
 		} elseif ('code_snippets.patch' === $sourceAction) {
