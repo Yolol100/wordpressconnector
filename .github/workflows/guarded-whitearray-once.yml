@@ -1,0 +1,120 @@
+name: Scoped WPCS whitespace and array guard
+on:
+  push:
+    branches: [fix/release-readiness-guarded-wpcs-20261019]
+    paths: [.github/workflows/guarded-whitearray-once.yml]
+permissions:
+  contents: write
+jobs:
+  safe-whitearray:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: true}
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with: {php-version: '8.3', tools: 'composer:v2', coverage: none}
+      - name: Install official WordPressCS and AST parser
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs"
+          cd "$RUNNER_TEMP/wpcs"
+          composer init --no-interaction --name wordpressconnector/whitearray --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 nikic/php-parser:5.9.0 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Accept only semantically identical official whitespace and array rewrites
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/fix/release-readiness-guarded-wpcs-20261019
+          mkdir -p "$RUNNER_TEMP/wa-proof"
+          cat > "$RUNNER_TEMP/wpcs/equal.php" <<'PHP'
+          <?php
+          declare(strict_types=1);
+          require __DIR__.'/vendor/autoload.php';
+          use PhpParser\Node;
+          use PhpParser\ParserFactory;
+          function tree($v) {
+            if ($v instanceof Node) {
+              $out = array();
+              foreach ($v->getSubNodeNames() as $key) $out[$key] = tree($v->$key);
+              return array(get_class($v), $out);
+            }
+            return is_array($v) ? array_map('tree', $v) : $v;
+          }
+          function doc(string $s): array {
+            $out=array();foreach(token_get_all($s) as $t)
+             if(is_array($t) && in_array($t[0],array(T_COMMENT,T_DOC_COMMENT),true))
+               $out[]=array($t[0],preg_replace('/\s+/', ' ', $t[1]));
+            return $out;
+          }
+          $a=file_get_contents($argv[1]);$b=file_get_contents($argv[2]);
+          if(!is_string($a)||!is_string($b))exit(1);
+          $parser=(new ParserFactory())->createForHostVersion();
+          if(tree($parser->parse($a))!==tree($parser->parse($b))||doc($a)!==doc($b))exit(1);
+          PHP
+          files=(
+            plugin/wordpressconnector/includes/Adapters/AbilitiesAdapter.php
+            plugin/wordpressconnector/includes/Adapters/AcfAdapter.php
+            plugin/wordpressconnector/includes/Adapters/ElementorCapabilitiesAdapter.php
+            plugin/wordpressconnector/includes/Adapters/WooCommerceFulfillmentAdapter.php
+            plugin/wordpressconnector/includes/MCP/Controller.php
+            plugin/wordpressconnector/includes/Runtime/Runner.php
+            plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php
+            plugin/wordpressconnector/includes/Adapters/SystemAdapter.php
+            plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php
+          )
+          scanner="$RUNNER_TEMP/wpcs/vendor/bin/phpcs"
+          fixer="$RUNNER_TEMP/wpcs/vendor/bin/phpcbf"
+          "$scanner" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/wa-proof/before.txt" 2>&1 || true
+          accepted=0; rejected=0
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          for file in "${files[@]}"; do
+            basename="$(basename "$file" .php)"
+            original="$RUNNER_TEMP/wa-proof/$basename.original.php"
+            cp "$file" "$original"
+            "$scanner" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/wa-proof/$basename.before.json" 2>/dev/null || true
+            pass=no
+            for sniffs in 'WordPress.WhiteSpace,Generic.WhiteSpace,WordPress.Arrays' 'WordPress.WhiteSpace,Generic.WhiteSpace' 'Generic.WhiteSpace.DisallowSpaceIndent'; do
+              cp "$original" "$file"
+              set +e
+              "$fixer" --standard=WordPress --sniffs="$sniffs" "$file" > "$RUNNER_TEMP/wa-proof/$basename.fix.log" 2>&1
+              status=$?
+              set -e
+              if test "$status" -gt 2;then continue;fi
+              if ! php "$RUNNER_TEMP/wpcs/equal.php" "$original" "$file" > "$RUNNER_TEMP/wa-proof/$basename.ast.log" 2>&1 ||
+                 ! php -l "$file" >/dev/null 2>&1 ||
+                 ! git diff --check -- "$file" >/dev/null 2>&1;then continue;fi
+              "$scanner" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/wa-proof/$basename.after.json" 2>/dev/null || true
+              before="$(jq -r '.totals.errors + .totals.warnings' "$RUNNER_TEMP/wa-proof/$basename.before.json" || echo 0)"
+              after="$(jq -r '.totals.errors + .totals.warnings' "$RUNNER_TEMP/wa-proof/$basename.after.json" || echo 999999)"
+              if test "$after" -ge "$before";then continue;fi
+              if bash scripts/run-contracts.sh > "$RUNNER_TEMP/wa-proof/$basename.contracts.log" 2>&1;then
+                pass=yes
+                break
+              fi
+            done
+            if test "$pass" = yes;then
+              git add -- "$file"
+              git diff --cached --check
+              git commit -m "style(wpcs): AST-identical array and whitespace in $basename"
+              accepted=$((accepted+1))
+              echo "$basename ACCEPT sniffs=$sniffs $before to $after" >> "$RUNNER_TEMP/wa-proof/decisions.txt"
+            else
+              cp "$original" "$file"
+              rejected=$((rejected+1))
+              echo "$basename REJECT no safe improving configuration" >> "$RUNNER_TEMP/wa-proof/decisions.txt"
+            fi
+          done
+          "$scanner" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/wa-proof/after.txt" 2>&1 || true
+          printf 'accepted=%s rejected=%s\\n' "$accepted" "$rejected" > "$RUNNER_TEMP/wa-proof/summary.txt"
+          if test "$accepted" -gt 0;then git push origin HEAD:fix/release-readiness-guarded-wpcs-20261019;fi
+      - name: Store acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: whitespace-array-wpcs-proof
+          path: ${{ runner.temp }}/wa-proof/
+          retention-days: 5
+          if-no-files-found: warn
