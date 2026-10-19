@@ -163,7 +163,32 @@ final class Controller {
 				201
 			);
 		} catch ( Throwable $error ) {
-			return new \WP_Error( 'wpconnector_asset_rejected', $error->getMessage(), array( 'status' => 400 ) ); }
+			// Expose only our fixed input-validation messages. A filesystem or
+			// provider exception can contain private absolute server paths.
+			$reason = $error->getMessage();
+			$clientError = $error instanceof RuntimeException && (
+				in_array(
+					$reason,
+					array(
+						'Asset upload is not a valid HTTP upload.',
+						'Asset exceeds the per-file size limit.',
+						'Request asset limit exceeded (max 10 files / 25 MiB total).',
+						'Asset extension is not an allowed WordPress media type or connector plugin/theme package.',
+						'asset_path must be a short relative path without whitespace or control characters.',
+						'asset_path contains an invalid path segment.',
+						'asset_path contains unsupported characters.',
+						'request_id must be 8-100 safe characters.',
+					),
+					true
+				)
+				|| 1 === preg_match( '/\AAsset upload failed with PHP upload error -?[0-9]+\.\z/', $reason )
+				|| 1 === preg_match( '#\ADuplicate request asset path: [A-Za-z0-9._/-]{1,240}\z#', $reason )
+			);
+			if ($clientError) {
+				return new \WP_Error( 'wpconnector_asset_rejected', $reason, array( 'status' => 400 ) );
+			}
+			return new \WP_Error( 'wpconnector_asset_storage_unavailable', 'Private request asset storage is unavailable.', array( 'status' => 503 ) );
+		}
 	}
 
 	public function execute( \WP_REST_Request $request ) {

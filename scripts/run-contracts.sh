@@ -79,6 +79,7 @@ run_php tests/rest-transport-contract.php
 run_php tests/asset-private-permissions-contract.php
 run_php tests/asset-base-symlink-contract.php
 run_php tests/rest-asset-cleanup-contract.php
+run_php tests/rest-asset-upload-error-contract.php
 run_php tests/mcp-transport-contract.php
 run_php tests/site-editor-contract.php
 run_php tests/request-workflow-contract.php
