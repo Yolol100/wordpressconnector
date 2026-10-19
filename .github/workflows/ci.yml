@@ -101,6 +101,26 @@ jobs:
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
 
+      - name: Stage reproducible plugin candidate for review
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector.zip"
+          (cd "$RUNNER_TEMP" && sha256sum wordpressconnector.zip > wordpressconnector.zip.sha256)
+          (cd "$RUNNER_TEMP" && sha256sum -c wordpressconnector.zip.sha256)
+
+      - name: Upload plugin candidate (not a production release)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wordpressconnector-qa-candidate
+          path: |
+            ${{ runner.temp }}/wordpressconnector.zip
+            ${{ runner.temp }}/wordpressconnector.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
