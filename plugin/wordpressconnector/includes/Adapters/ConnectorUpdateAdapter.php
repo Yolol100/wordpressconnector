@@ -146,17 +146,24 @@ final class ConnectorUpdateAdapter
         }
         check_admin_referer('wpconnector_check_updates');
         $ok = $this->refreshNativeUpdateNotice(true);
-        wp_safe_redirect(add_query_arg(
-            'wpconnector_update_checked',
-            $ok ? '1' : '0',
-            admin_url('plugins.php')
-        ));
+        wp_safe_redirect(add_query_arg(array(
+            'wpconnector_update_checked' => $ok ? '1' : '0',
+            'wpconnector_update_notice_nonce' => wp_create_nonce('wpconnector_update_notice'),
+        ), admin_url('plugins.php')));
         exit;
     }
 
     public function checkedNotice(): void
     {
         if (! current_user_can('update_plugins') || ! isset($_GET['wpconnector_update_checked'])) {
+            return;
+        }
+        // An informational success message must not be forgeable with a plain URL.
+        $rawNonce = $_GET['wpconnector_update_notice_nonce'] ?? null;
+        if (! is_string($rawNonce) || ! wp_verify_nonce(
+            sanitize_text_field(wp_unslash($rawNonce)),
+            'wpconnector_update_notice'
+        )) {
             return;
         }
         // The notice is informational only. Reject malformed or array-valued query parameters.
