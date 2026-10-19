@@ -1,0 +1,75 @@
+name: PHPStan provider-aware plugin preview
+
+on:
+  push:
+    branches:
+      - fix/phpstan-provider-preview-20261019
+    paths:
+      - .github/workflows/connector-phpstan-provider-preview.yml
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - name: Install versioned WordPress, WooCommerce and ACF type definitions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/phpstan-tools" "$RUNNER_TEMP/phpstan-evidence"
+          cd "$RUNNER_TEMP/phpstan-tools"
+          composer init --no-interaction --name wordpressconnector/phpstan-qa --type project
+          composer require --dev --no-interaction --no-progress phpstan/phpstan:^2.1 szepeviktor/phpstan-wordpress:^2.0 php-stubs/woocommerce-stubs:11.2.0 php-stubs/acf-pro-stubs:6.8.2
+          composer show --locked --format=json > "$RUNNER_TEMP/phpstan-evidence/composer-versions.json"
+          cp composer.lock "$RUNNER_TEMP/phpstan-evidence/composer.lock"
+      - name: Analyze plugin before/after provider stubs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$GITHUB_WORKSPACE"
+          tools="$RUNNER_TEMP/phpstan-tools"
+          evidence="$RUNNER_TEMP/phpstan-evidence"
+          cat > "$evidence/basic.neon" <<CFG
+          includes:
+              - $tools/vendor/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              paths:
+                  - $GITHUB_WORKSPACE/plugin/wordpressconnector
+          CFG
+          cat > "$evidence/provider.neon" <<CFG
+          includes:
+              - $tools/vendor/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              paths:
+                  - $GITHUB_WORKSPACE/plugin/wordpressconnector
+              bootstrapFiles:
+                  - $tools/vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+                  - $tools/vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
+          CFG
+          set +e
+          php "$tools/vendor/bin/phpstan" analyse -c "$evidence/basic.neon" --no-progress --error-format=json > "$evidence/basic.json" 2> "$evidence/basic.stderr"
+          echo $? > "$evidence/basic.exit"
+          php "$tools/vendor/bin/phpstan" analyse -c "$evidence/provider.neon" --no-progress --error-format=json > "$evidence/provider.json" 2> "$evidence/provider.stderr"
+          echo $? > "$evidence/provider.exit"
+          set -e
+          php -r 'foreach(["basic","provider"] as $name) { $root=getenv("RUNNER_TEMP")."/phpstan-evidence/".$name; $d=json_decode(file_get_contents($root.".json"),true); echo $name.": ".($d["totals"]["file_errors"]??"invalid")." file errors and ".($d["totals"]["errors"]??"unknown")." global errors\n"; }' > "$evidence/counts.txt"
+          cat "$evidence/counts.txt"
+      - name: Upload diagnostic evidence (not a quality waiver)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: phpstan-provider-diagnostics
+          path: ${{ runner.temp }}/phpstan-evidence/
+          if-no-files-found: error
+          retention-days: 14
