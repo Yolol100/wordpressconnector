@@ -8,7 +8,7 @@ on:
       - .github/workflows/connector-wpcs-preview.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   preview:
@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: false
+          persist-credentials: true
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
@@ -64,3 +64,19 @@ jobs:
           path: ${{ runner.temp }}/wpcs-output/
           if-no-files-found: error
           retention-days: 14
+
+      - name: Commit formatter-only result to isolated branch after preview
+        if: github.ref == 'refs/heads/fix/wpcs-style-preview-20261019'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git add -- plugin/wordpressconnector/wordpressconnector.php plugin/wordpressconnector/uninstall.php plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
+          if git diff --cached --quiet; then
+            echo "No WPCS changes."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "style(wpcs): phase 1 three plugin files"
+          git push origin HEAD:fix/wpcs-style-preview-20261019
