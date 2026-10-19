@@ -1,0 +1,12 @@
+<?php
+/**
+ * ACF fields.php: acf()->fields->get_field_type() returns an instantiated
+ * acf_field/field type object, or null when no registered type exists.
+ * The generated provider stub has an empty body that PHPStan otherwise
+ * incorrectly interprets as a void return.
+ *
+ * @param string $name
+ * @return object|null
+ * @see https://github.com/AdvancedCustomFields/acf/blob/master/includes/fields.php
+ */
+function acf_get_field_type($name) {}
