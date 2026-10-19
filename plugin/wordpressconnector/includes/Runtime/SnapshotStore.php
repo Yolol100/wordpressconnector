@@ -4,63 +4,65 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Runtime;
 
-final class SnapshotStore
-{
-    private const PREFIX = 'wpconnector_snapshot_';
+final class SnapshotStore {
 
-    public function put(string $requestId, array $rollback, array $metadata = array()): void
-    {
-        update_option(self::key($requestId), array(
-            'created_at' => time(),
-            'rollback' => $rollback,
-            'source_action' => isset($metadata['source_action']) ? (string) $metadata['source_action'] : '',
-            'public_repository_mode' => ! empty($metadata['public_repository_mode']),
-        ), false);
-    }
+	private const PREFIX = 'wpconnector_snapshot_';
 
-    public function get(string $requestId): ?array
-    {
-        $record = $this->getRecord($requestId);
-        return is_array($record) && isset($record['rollback']) && is_array($record['rollback']) ? $record['rollback'] : null;
-    }
+	public function put( string $requestId, array $rollback, array $metadata = array() ): void {
+		update_option(
+			self::key( $requestId ),
+			array(
+				'created_at'             => time(),
+				'rollback'               => $rollback,
+				'source_action'          => isset( $metadata['source_action'] ) ? (string) $metadata['source_action'] : '',
+				'public_repository_mode' => ! empty( $metadata['public_repository_mode'] ),
+			),
+			false
+		);
+	}
 
-    public function getRecord(string $requestId): ?array
-    {
-        $value = get_option(self::key($requestId), null);
-        if (! is_array($value) || ! isset($value['rollback']) || ! is_array($value['rollback'])) {
-            return null;
-        }
-        return array(
-            'created_at' => isset($value['created_at']) ? (int) $value['created_at'] : 0,
-            'rollback' => $value['rollback'],
-            'source_action' => isset($value['source_action']) ? (string) $value['source_action'] : '',
-            'public_repository_mode' => ! empty($value['public_repository_mode']),
-        );
-    }
+	public function get( string $requestId ): ?array {
+		$record = $this->getRecord( $requestId );
+		return is_array( $record ) && isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : null;
+	}
 
-    public function delete(string $requestId): void
-    {
-        delete_option(self::key($requestId));
-    }
+	public function getRecord( string $requestId ): ?array {
+		$value = get_option( self::key( $requestId ), null );
+		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
+			return null;
+		}
+		return array(
+			'created_at'             => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
+			'rollback'               => $value['rollback'],
+			'source_action'          => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
+			'public_repository_mode' => ! empty( $value['public_repository_mode'] ),
+		);
+	}
 
-    public function cleanup(int $olderThanSeconds): int
-    {
-        global $wpdb;
-        $like = $wpdb->esc_like(self::PREFIX) . '%';
-        $rows = $wpdb->get_results($wpdb->prepare('SELECT option_name, option_value FROM %i WHERE option_name LIKE %s', $wpdb->options, $like));
-        $deleted = 0;
-        foreach ($rows as $row) {
-            $value = maybe_unserialize($row->option_value);
-            if (is_array($value) && isset($value['created_at']) && (int) $value['created_at'] < time() - $olderThanSeconds) {
-                delete_option((string) $row->option_name);
-                ++$deleted;
-            }
-        }
-        return $deleted;
-    }
+	public function delete( string $requestId ): void {
+		delete_option( self::key( $requestId ) );
+	}
 
-    private static function key(string $requestId): string
-    {
-        return self::PREFIX . hash('sha256', $requestId);
-    }
+	public function cleanup( int $olderThanSeconds ): int {
+		global $wpdb;
+		$like    = $wpdb->esc_like( self::PREFIX ) . '%';
+		$rows    = $wpdb->get_results( $wpdb->prepare( 'SELECT option_name, option_value FROM %i WHERE option_name LIKE %s', $wpdb->options, $like ) );
+		// Core may return null when the database connection is not ready.
+		if ( ! is_array( $rows ) ) {
+			return 0;
+		}
+		$deleted = 0;
+		foreach ( $rows as $row ) {
+			$value = maybe_unserialize( $row->option_value );
+			if ( is_array( $value ) && isset( $value['created_at'] ) && (int) $value['created_at'] < time() - $olderThanSeconds ) {
+				delete_option( (string) $row->option_name );
+				++$deleted;
+			}
+		}
+		return $deleted;
+	}
+
+	private static function key( string $requestId ): string {
+		return self::PREFIX . hash( 'sha256', $requestId );
+	}
 }

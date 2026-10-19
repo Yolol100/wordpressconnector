@@ -203,12 +203,15 @@ namespace {
     if ($redacted['token'] !== '[redacted]' || $redacted['nested']['api_key'] !== '[redacted]' || $redacted['nested']['label'] !== 'ok') { fwrite(STDERR, "Redaction failed.\n"); exit(1); }
 
     $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ElementorFormsAdapter.php');
+    // Compare formatting-independent source markers; PHP_CodeSniffer may add whitespace
+    // without changing the actual guarded Elementor save operation.
+    $normalizedSource = preg_replace('/,([)\\]])/', '$1', (string) preg_replace('/\\s+/', '', (string) $source));
     foreach (array(
         'elementor.form_capabilities', 'elementor.form_inspect', 'elementor.form_upsert', 'expected_schema_fingerprint', 'allow_family_change',
         "save(array('elements' => \$data, 'settings' => \$pageSettings))", 'restoreSnapshot($before)', 'Fingerprint::make($form)'
     ) as $needle) {
         $scenarios++;
-        if (false === strpos($source, $needle)) { fwrite(STDERR, "Missing contract: {$needle}\n"); exit(1); }
+        if (false === strpos((string) $normalizedSource, (string) preg_replace('/,([)\\]])/', '$1', (string) preg_replace('/\\s+/', '', $needle)))) { fwrite(STDERR, "Missing contract: {$needle}\n"); exit(1); }
     }
 
     echo "elementor forms contract OK ({$scenarios} scenarios)\n";

@@ -9,6 +9,7 @@ final class WpcOptionTableSqlStub
     public $options = 'wp9_options';
     public $lastLike = '';
     public $prepareCalls = 0;
+    public $forceNullResults = false;
 
     public function esc_like($value)
     {
@@ -28,6 +29,9 @@ final class WpcOptionTableSqlStub
 
     public function get_results($query)
     {
+        if ($this->forceNullResults) {
+            return null;
+        }
         $kind = false !== strpos($this->lastLike, 'snapshot') ? 'snapshot' : 'processed';
         return array(
             (object) array('option_name' => 'wpconnector_' . $kind . '_expired', 'option_value' => serialize(array('created_at' => time() - 3600))),
@@ -92,4 +96,18 @@ if (6 !== $wpdb->prepareCalls || $GLOBALS['wpc_deleted_transients'] !== array('w
     throw new RuntimeException('Uninstall must prepare all option-table identifiers and preserve unrelated options.');
 }
 
-echo "WordPress options SQL identifier preparation, expiration, and uninstall boundaries OK\n";
+$wpdb->forceNullResults = true;
+$beforeUnavailable = count($GLOBALS['wpc_deleted_options']);
+set_error_handler(static function (int $severity, string $message): void {
+    throw new ErrorException($message, 0, $severity);
+});
+try {
+    if (0 !== $snapshot->cleanup(120) || 0 !== $processed->cleanup(120)
+        || count($GLOBALS['wpc_deleted_options']) !== $beforeUnavailable) {
+        throw new RuntimeException('Unavailable WordPress DB must prevent cleanup without warnings or deletion.');
+    }
+} finally {
+    restore_error_handler();
+}
+
+echo "WordPress options SQL identifier preparation, expiration, and unavailable DB handling OK\n";
