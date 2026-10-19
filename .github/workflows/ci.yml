@@ -250,7 +250,7 @@ jobs:
         shell: bash
         run: |
           if command -v wp-env >/dev/null 2>&1; then
-            wp-env destroy --force
+            printf 'y\n' | wp-env destroy --force
           fi
 
   wordpress-runtime:
