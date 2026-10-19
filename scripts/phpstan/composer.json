@@ -10,7 +10,8 @@
     "szepeviktor/phpstan-wordpress": "2.0.3",
     "php-stubs/wordpress-stubs": "6.9.4",
     "php-stubs/woocommerce-stubs": "11.1.2",
-    "php-stubs/acf-pro-stubs": "6.8.2"
+    "php-stubs/acf-pro-stubs": "6.8.2",
+    "php-stubs/wp-cli-stubs": "2.12.0"
   },
   "config": {
     "allow-plugins": false,
