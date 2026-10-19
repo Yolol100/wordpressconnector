@@ -48,7 +48,7 @@ jobs:
           done
           set +e
           "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --report=summary "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/before.txt" 2>&1
-          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=WordPress "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/phpcbf.log" 2>&1
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=WordPress --sniffs=Generic.WhiteSpace,Squiz.WhiteSpace,WordPress.WhiteSpace "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/phpcbf.log" 2>&1
           fixer_exit=$?
           "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=WordPress --report=summary "${targets[@]}" > "$RUNNER_TEMP/wpcs-review/reports/after.txt" 2>&1
           set -e
