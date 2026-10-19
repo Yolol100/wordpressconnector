@@ -69,7 +69,6 @@ jobs:
           // Scope this first batch to low-risk support and runtime owners.
           $approved = array(
               '/includes/Runtime/Diagnostics.php',
-              '/includes/Runtime/ProcessedStore.php',
               '/includes/Runtime/Request.php',
               '/includes/Runtime/Result.php',
               '/includes/Runtime/SnapshotStore.php',
