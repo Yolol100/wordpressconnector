@@ -1,4 +1,4 @@
-name: WordPress Connector PHPStan CLI and ACF diagnostics
+name: WordPress Connector PHPStan providers final diagnostic
 
 on:
   push:
@@ -82,7 +82,7 @@ jobs:
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'build(qa): lock WordPress WooCommerce ACF WPCLI static-analysis providers'
+          git commit -m 'build(qa): lock WordPress WooCommerce ACF WPCLI CodeSnippets static-analysis providers'
           git push origin HEAD:fix/phpstan-cli-acf-precision-20261019
       - name: Upload full machine-readable analysis
         if: always()
