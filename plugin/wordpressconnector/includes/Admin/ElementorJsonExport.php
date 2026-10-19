@@ -5,9 +5,77 @@ namespace Webactueel\WordPressConnector\Admin;
 use RuntimeException; use Throwable;
 final class ElementorJsonExport
 {
-    private const ACTION='wpconnector_export_elementor_json'; private const POST_TYPES=array('page','post','elementor_library'); private const BUNDLE_FORMAT='wordpressconnector/elementor-site-parts-bundle'; private const BUNDLE_VERSION=1;
-    public function register(): void{if(!is_admin()){return;}add_filter('page_row_actions',array($this,'rowActions'),99,2);add_filter('post_row_actions',array($this,'rowActions'),99,2);add_action('admin_post_'.self::ACTION,array($this,'download'));}
+    private const ACTION='wpconnector_export_elementor_json'; private const BULK_ACTION='wpconnector_bulk_export_elementor_json'; private const POST_TYPES=array('page','post','elementor_library'); private const BUNDLE_FORMAT='wordpressconnector/elementor-site-parts-bundle'; private const BULK_FORMAT='wordpressconnector/elementor-bulk-export'; private const BUNDLE_VERSION=1; private const MAX_BULK_ITEMS=100; private const MAX_BULK_BYTES=52428800;
+    public function register(): void{if(!is_admin()){return;}add_filter('page_row_actions',array($this,'rowActions'),99,2);add_filter('post_row_actions',array($this,'rowActions'),99,2);add_action('admin_post_'.self::ACTION,array($this,'download'));foreach(array('edit-page','edit-post','edit-elementor_library') as $screen){add_filter('bulk_actions-'.$screen,array($this,'bulkActions'));add_filter('handle_bulk_actions-'.$screen,array($this,'handleBulkAction'),10,3);}add_action('admin_notices',array($this,'bulkNotice'));}
     public function rowActions(array $actions,\WP_Post $post): array{if(!$this->supportsPostType((string)$post->post_type)||!current_user_can('edit_post',(int)$post->ID)||!$this->isElementorDocument((int)$post->ID)){return $actions;}if('elementor_library'===(string)$post->post_type&&isset($actions['export-template'])){return $actions;}$actions['wpconnector_export_elementor_json']=sprintf('<a href="%1$s">%2$s</a>',esc_url($this->exportUrl((int)$post->ID,false)),esc_html__('Export Elementor JSON','wordpressconnector'));if(in_array((string)$post->post_type,array('page','post'),true)&&class_exists('ElementorPro\\Modules\\ThemeBuilder\\Module')){$actions['wpconnector_export_elementor_site_parts']=sprintf('<a href="%1$s">%2$s</a>',esc_url($this->exportUrl((int)$post->ID,true)),esc_html__('Export Elementor + Site Parts','wordpressconnector'));}return $actions;}
+
+    public function bulkActions(array $actions): array
+    {
+        $actions[self::BULK_ACTION]=__('Export Elementor JSON (ZIP)','wordpressconnector');
+        return $actions;
+    }
+
+    public function handleBulkAction(string $redirectUrl,string $action,array $postIds): string
+    {
+        if(self::BULK_ACTION!==$action){return $redirectUrl;}
+        check_admin_referer('bulk-posts');
+        $postIds=array_values(array_unique(array_filter(array_map('absint',$postIds))));
+        $selectedCount=count($postIds);
+        if(0===$selectedCount){return add_query_arg('wpconnector_elementor_bulk_export','none',$redirectUrl);}
+        if($selectedCount>self::MAX_BULK_ITEMS){return add_query_arg(array('wpconnector_elementor_bulk_export'=>'too_many','wpconnector_elementor_bulk_count'=>$selectedCount),$redirectUrl);}
+
+        $files=array();$exported=array();$skipped=array();$totalBytes=0;
+        foreach($postIds as $postId){
+            $post=get_post($postId);
+            if(!$post instanceof \WP_Post||!$this->supportsPostType((string)$post->post_type)){$skipped[]=array('post_id'=>$postId,'reason'=>'unsupported_post_type');continue;}
+            if(!current_user_can('edit_post',$postId)){$skipped[]=array('post_id'=>$postId,'reason'=>'forbidden');continue;}
+            if(!$this->isElementorDocument($postId)){$skipped[]=array('post_id'=>$postId,'reason'=>'not_elementor');continue;}
+            try{$payload=$this->exportPayload($this->document($postId),$post);$json=wp_json_encode($payload,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);if(!is_string($json)||''===$json){throw new RuntimeException('WordPress could not encode one Elementor export as JSON.');}}catch(Throwable $error){$skipped[]=array('post_id'=>$postId,'reason'=>'export_failed');continue;}
+            $totalBytes+=strlen($json);
+            if($totalBytes>self::MAX_BULK_BYTES){return add_query_arg('wpconnector_elementor_bulk_export','too_large',$redirectUrl);}
+            $slug=''!==(string)$post->post_name?(string)$post->post_name:(string)$post->post_type.'-'.$postId;$filename=sanitize_file_name($postId.'-'.$slug.'-elementor.json');$files[$filename]=$json;$exported[]=array('post_id'=>$postId,'post_type'=>(string)$post->post_type,'title'=>(string)$post->post_title,'file'=>$filename);
+        }
+        if(empty($files)){return add_query_arg('wpconnector_elementor_bulk_export','none',$redirectUrl);}
+        $manifest=array('format'=>self::BULK_FORMAT,'version'=>1,'selected_count'=>$selectedCount,'exported_count'=>count($exported),'skipped_count'=>count($skipped),'exported'=>$exported,'skipped'=>$skipped);
+        $this->downloadBulkArchive($files,$manifest);
+        return $redirectUrl;
+    }
+
+    public function bulkNotice(): void
+    {
+        if(!isset($_GET['wpconnector_elementor_bulk_export'])){return;}
+        $status=sanitize_key((string)wp_unslash($_GET['wpconnector_elementor_bulk_export']));
+        if('none'===$status){$message=__('No selected item could be exported as Elementor JSON.','wordpressconnector');}
+        elseif('too_many'===$status){$message=sprintf(__('Select at most %d items for one Elementor JSON bulk export.','wordpressconnector'),self::MAX_BULK_ITEMS);}
+        elseif('too_large'===$status){$message=__('The selected Elementor JSON export is too large. Export fewer items and try again.','wordpressconnector');}
+        else{return;}
+        echo '<div class="notice notice-warning is-dismissible"><p>'.esc_html($message).'</p></div>';
+    }
+
+    private function downloadBulkArchive(array $files,array $manifest): void
+    {
+        $archivePath=wp_tempnam('wordpressconnector-elementor-json.zip');
+        if(!is_string($archivePath)||''===$archivePath){wp_die(esc_html__('WordPress could not create a temporary bulk export archive.','wordpressconnector'),'',array('response'=>500));}
+        try{
+            if(class_exists('ZipArchive')){
+                $zip=new \ZipArchive();$opened=$zip->open($archivePath,\ZipArchive::CREATE|\ZipArchive::OVERWRITE);if(true!==$opened){throw new RuntimeException('The Elementor bulk export ZIP could not be opened.');}
+                foreach($files as $filename=>$json){if(!$zip->addFromString($filename,$json)){$zip->close();throw new RuntimeException('One Elementor JSON file could not be added to the ZIP.');}}
+                $manifestJson=wp_json_encode($manifest,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);if(!is_string($manifestJson)||!$zip->addFromString('manifest.json',$manifestJson)){$zip->close();throw new RuntimeException('The Elementor bulk export manifest could not be added to the ZIP.');}
+                if(!$zip->close()){throw new RuntimeException('The Elementor bulk export ZIP could not be finalized.');}
+            }else{$this->buildBulkArchiveWithPclZip($archivePath,$files,$manifest);}
+            clearstatcache(true,$archivePath);$size=filesize($archivePath);if(false===$size||$size<1){throw new RuntimeException('The Elementor bulk export ZIP is empty.');}
+            nocache_headers();header('Content-Type: application/zip');header('Content-Disposition: attachment; filename="elementor-json-bulk-'.gmdate('Ymd-His').'.zip"');header('Content-Length: '.(string)$size);header('X-Content-Type-Options: nosniff');if(false===readfile($archivePath)){throw new RuntimeException('The Elementor bulk export ZIP could not be sent.');}
+        }catch(Throwable $error){@unlink($archivePath);wp_die(esc_html__('The Elementor JSON bulk export could not be completed.','wordpressconnector'),'',array('response'=>500));}
+        @unlink($archivePath);exit;
+    }
+
+    private function buildBulkArchiveWithPclZip(string $archivePath,array $files,array $manifest): void
+    {
+        if(!class_exists('PclZip')){$pclZipPath=ABSPATH.'wp-admin/includes/class-pclzip.php';if(!is_file($pclZipPath)){throw new RuntimeException('WordPress PclZip is unavailable.');}require_once $pclZipPath;}if(!class_exists('PclZip')){throw new RuntimeException('WordPress PclZip could not be loaded.');}
+        $tempDir=wp_tempnam('wpconnector-elementor-bulk');if(!is_string($tempDir)||''===$tempDir){throw new RuntimeException('WordPress could not create a temporary bulk export directory.');}@unlink($tempDir);if(!wp_mkdir_p($tempDir)){throw new RuntimeException('WordPress could not prepare the temporary bulk export directory.');}
+        $paths=array();try{foreach($files as $filename=>$json){$path=trailingslashit($tempDir).$filename;if(false===file_put_contents($path,$json)){throw new RuntimeException('One Elementor JSON file could not be written for the ZIP.');}$paths[]=$path;}$manifestPath=trailingslashit($tempDir).'manifest.json';$manifestJson=wp_json_encode($manifest,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES);if(!is_string($manifestJson)||false===file_put_contents($manifestPath,$manifestJson)){throw new RuntimeException('The Elementor bulk export manifest could not be written.');}$paths[]=$manifestPath;$archive=new \PclZip($archivePath);$created=$archive->create($paths,PCLZIP_OPT_REMOVE_PATH,$tempDir);if(0===$created){throw new RuntimeException('WordPress PclZip could not create the Elementor bulk export archive.');}}finally{foreach($paths as $path){@unlink($path);}@rmdir($tempDir);}
+    }
+
     public function download(): void
     {
         $postId=isset($_GET['post_id'])?absint(wp_unslash($_GET['post_id'])):0;$includeSiteParts=isset($_GET['include_site_parts'])&&'1'===(string)wp_unslash($_GET['include_site_parts']);if($postId<1){wp_die(esc_html__('Invalid Elementor document.','wordpressconnector'),'',array('response'=>400));}check_admin_referer(self::ACTION.'_'.$postId);$post=get_post($postId);if(!$post instanceof \WP_Post||!$this->supportsPostType((string)$post->post_type)){wp_die(esc_html__('This item cannot be exported as Elementor JSON.','wordpressconnector'),'',array('response'=>400));}if(!current_user_can('edit_post',$postId)){wp_die(esc_html__('You are not allowed to export this Elementor document.','wordpressconnector'),'',array('response'=>403));}if($includeSiteParts&&!in_array((string)$post->post_type,array('page','post'),true)){wp_die(esc_html__('Site-parts export is available only for pages and posts.','wordpressconnector'),'',array('response'=>400));}
