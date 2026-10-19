@@ -37,9 +37,9 @@ final class Controller {
 
 	public function registerRoutes(): void {
 		register_rest_route(self::NAMESPACE, self::ROUTE, array(
-		    'methods' => \WP_REST_Server::CREATABLE,
-		    'callback' => array($this, 'handle'),
-		    'permission_callback' => array($this, 'authorize'),
+			'methods' => \WP_REST_Server::CREATABLE,
+			'callback' => array($this, 'handle'),
+			'permission_callback' => array($this, 'authorize'),
 		));
 	}
 
@@ -163,9 +163,9 @@ final class Controller {
 
 		$meta = isset($params['_meta']) && is_array($params['_meta']) ? $params['_meta'] : null;
 		if (null === $meta
-		    || self::MODERN_VERSION !== (string) ($meta['io.modelcontextprotocol/protocolVersion'] ?? '')
-		    || ! array_key_exists('io.modelcontextprotocol/clientCapabilities', $meta)
-		    || ! is_array($meta['io.modelcontextprotocol/clientCapabilities'])) {
+			|| self::MODERN_VERSION !== (string) ($meta['io.modelcontextprotocol/protocolVersion'] ?? '')
+			|| ! array_key_exists('io.modelcontextprotocol/clientCapabilities', $meta)
+			|| ! is_array($meta['io.modelcontextprotocol/clientCapabilities'])) {
 			throw new RuntimeException('Modern MCP requests require protocolVersion and clientCapabilities in params._meta.');
 		}
 
@@ -179,11 +179,11 @@ final class Controller {
 
 	private function discoverResult(): array {
 		return array(
-		    'supportedVersions' => array(self::MODERN_VERSION),
-		    'capabilities' => $this->capabilities(),
-		    'instructions' => $this->instructions(),
-		    'ttlMs' => 300000,
-		    'cacheScope' => 'private',
+			'supportedVersions' => array(self::MODERN_VERSION),
+			'capabilities' => $this->capabilities(),
+			'instructions' => $this->instructions(),
+			'ttlMs' => 300000,
+			'cacheScope' => 'private',
 		);
 	}
 
@@ -192,10 +192,10 @@ final class Controller {
 			throw new RuntimeException('initialize.protocolVersion must be a string.');
 		}
 		return array(
-		    'protocolVersion' => self::LEGACY_VERSION,
-		    'capabilities' => $this->capabilities(),
-		    'serverInfo' => $this->serverInfo(),
-		    'instructions' => $this->instructions(),
+			'protocolVersion' => self::LEGACY_VERSION,
+			'capabilities' => $this->capabilities(),
+			'serverInfo' => $this->serverInfo(),
+			'instructions' => $this->instructions(),
 		);
 	}
 
@@ -207,9 +207,9 @@ final class Controller {
 	 */
 	private function capabilities(): array {
 		return array(
-		    'tools' => array('listChanged' => false),
-		    'resources' => array('listChanged' => false, 'subscribe' => false),
-		    'prompts' => array('listChanged' => false),
+			'tools' => array('listChanged' => false),
+			'resources' => array('listChanged' => false, 'subscribe' => false),
+			'prompts' => array('listChanged' => false),
 		);
 	}
 
@@ -240,20 +240,20 @@ final class Controller {
 	private function listResources(array $params, bool $modern): array {
 		$this->assertUnpagedList($params);
 		return $this->privateCache(array('resources' => array(
-		    array(
-		        'uri' => self::RESOURCE_SAFE_CHANGES,
-		        'name' => 'safe-changes',
-		        'title' => 'Safe WordPress change workflow',
-		        'description' => 'Read-only guidance for dry-runs, confirmations, backups and verification.',
-		        'mimeType' => 'text/plain',
-		    ),
-		    array(
-		        'uri' => self::RESOURCE_INTEGRATIONS,
-		        'name' => 'integrations',
-		        'title' => 'WordPress plugin and builder integration guide',
-		        'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
-		        'mimeType' => 'text/plain',
-		    ),
+			array(
+				'uri' => self::RESOURCE_SAFE_CHANGES,
+				'name' => 'safe-changes',
+				'title' => 'Safe WordPress change workflow',
+				'description' => 'Read-only guidance for dry-runs, confirmations, backups and verification.',
+				'mimeType' => 'text/plain',
+			),
+			array(
+				'uri' => self::RESOURCE_INTEGRATIONS,
+				'name' => 'integrations',
+				'title' => 'WordPress plugin and builder integration guide',
+				'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
+				'mimeType' => 'text/plain',
+			),
 		)), $modern, 300000);
 	}
 
@@ -265,45 +265,45 @@ final class Controller {
 
 		if (self::RESOURCE_SAFE_CHANGES === $params['uri']) {
 			$text = 'WordPress Connector safe change workflow: inspect authenticated runtime and action catalog; '
-			    . 'select one supported semantic action; do a dry-run; verify the exact target and expected '
-			    . 'fingerprint/state token where provided; get explicit user approval before confirm=true; '
-			    . 'send a stable request_id; verify changes by independent readback; restore from a proven '
-			    . 'backup when an action lacks rollback. Never copy credentials into a GitHub repository. '
-			    . 'GitHub OIDC and WordPress Application Passwords are separate credentials. '
-			    . 'Server-side theme replacement and third-party Ability writes are disabled by default.';
+				. 'select one supported semantic action; do a dry-run; verify the exact target and expected '
+				. 'fingerprint/state token where provided; get explicit user approval before confirm=true; '
+				. 'send a stable request_id; verify changes by independent readback; restore from a proven '
+				. 'backup when an action lacks rollback. Never copy credentials into a GitHub repository. '
+				. 'GitHub OIDC and WordPress Application Passwords are separate credentials. '
+				. 'Server-side theme replacement and third-party Ability writes are disabled by default.';
 		} elseif (self::RESOURCE_INTEGRATIONS === $params['uri']) {
 			$text = 'Use wordpress_connector_discover for the current environment and wordpress_connector_actions '
-			    . 'for permitted semantic actions. Use wordpress.abilities to discover installed provider '
-			    . 'Abilities: only entries with an exposed connector_action can be executed through the '
-			    . 'normal WordPress permissions and Connector policy. Elementor and WooCommerce manage their '
-			    . 'own provider-side requirements; never assume a plugin feature is installed, enabled or '
-			    . 'safe to modify without provider discovery and target readback. Never invent actions, '
-			    . 'run arbitrary PHP, shell or SQL, or bypass an unavailable capability.';
+				. 'for permitted semantic actions. Use wordpress.abilities to discover installed provider '
+				. 'Abilities: only entries with an exposed connector_action can be executed through the '
+				. 'normal WordPress permissions and Connector policy. Elementor and WooCommerce manage their '
+				. 'own provider-side requirements; never assume a plugin feature is installed, enabled or '
+				. 'safe to modify without provider discovery and target readback. Never invent actions, '
+				. 'run arbitrary PHP, shell or SQL, or bypass an unavailable capability.';
 		} else {
 			throw new RuntimeException('Resource not found.');
 		}
 
 		return $this->privateCache(array('contents' => array(
-		    array('uri' => $params['uri'], 'mimeType' => 'text/plain', 'text' => $text),
+			array('uri' => $params['uri'], 'mimeType' => 'text/plain', 'text' => $text),
 		)), $modern, 60000);
 	}
 
 	private function listPrompts(array $params, bool $modern): array {
 		$this->assertUnpagedList($params);
 		return $this->privateCache(array('prompts' => array(
-		    array(
-		        'name' => self::PROMPT_AUDIT,
-		        'title' => 'Audit a WordPress site (read-only)',
-		        'description' => 'Inspect available capabilities and report actionable risks without changes.',
-		    ),
-		    array(
-		        'name' => self::PROMPT_CHANGE,
-		        'title' => 'Plan a safe WordPress change',
-		        'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
-		        'arguments' => array(
-		            array('name' => 'goal', 'description' => 'Optional short description of the intended change.', 'required' => false),
-		        ),
-		    ),
+			array(
+				'name' => self::PROMPT_AUDIT,
+				'title' => 'Audit a WordPress site (read-only)',
+				'description' => 'Inspect available capabilities and report actionable risks without changes.',
+			),
+			array(
+				'name' => self::PROMPT_CHANGE,
+				'title' => 'Plan a safe WordPress change',
+				'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
+				'arguments' => array(
+					array('name' => 'goal', 'description' => 'Optional short description of the intended change.', 'required' => false),
+				),
+			),
 		)), $modern, 300000);
 	}
 
@@ -323,10 +323,10 @@ final class Controller {
 				throw new RuntimeException('Read-only audit prompt does not accept arguments.');
 			}
 			$text = 'Audit this WordPress site without modifying it. First verify the authenticated '
-			    . 'WordPress identity with wordpress_connector_discover; enumerate semantic actions '
-			    . 'with wordpress_connector_actions; use only non-mutating inspect/list/read actions '
-			    . 'through wordpress_connector_execute with dry_run=true. Report findings, missing '
-			    . 'evidence and the limits of the access. Do not run a confirmed write.';
+				. 'WordPress identity with wordpress_connector_discover; enumerate semantic actions '
+				. 'with wordpress_connector_actions; use only non-mutating inspect/list/read actions '
+				. 'through wordpress_connector_execute with dry_run=true. Report findings, missing '
+				. 'evidence and the limits of the access. Do not run a confirmed write.';
 		} else {
 			foreach (array_keys($arguments) as $key) {
 				if ('goal' !== $key) {
@@ -334,15 +334,15 @@ final class Controller {
 				}
 			}
 			$text = 'Prepare a WordPress change without performing it: discover the exact site and '
-			    . 'supported action, check WordPress permissions, run a dry-run, collect any required '
-			    . 'fingerprint/state token, confirm that a backup and recovery path exist, and ask '
-			    . 'for explicit approval before any write. For confirmed execution use confirm=true '
-			    . 'and a stable request_id, then perform independent readback and rollback if needed. '
-			    . 'Never bypass server-side policy or guess unsupported actions.';
+				. 'supported action, check WordPress permissions, run a dry-run, collect any required '
+				. 'fingerprint/state token, confirm that a backup and recovery path exist, and ask '
+				. 'for explicit approval before any write. For confirmed execution use confirm=true '
+				. 'and a stable request_id, then perform independent readback and rollback if needed. '
+				. 'Never bypass server-side policy or guess unsupported actions.';
 			if (array_key_exists('goal', $arguments)) {
 				$goal = $arguments['goal'];
 				if (! is_string($goal) || '' === trim($goal) || strlen($goal) > 240
-				    || preg_match('/[\x00-\x1f\x7f]/', $goal)) {
+					|| preg_match('/[\x00-\x1f\x7f]/', $goal)) {
 					throw new RuntimeException('Goal must be a single-line string of at most 240 bytes.');
 				}
 				$encoded = json_encode($goal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -353,33 +353,33 @@ final class Controller {
 			}
 		}
 		return array(
-		    'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
-		    'messages' => array(array('role' => 'user', 'content' => array('type' => 'text', 'text' => $text))),
+			'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
+			'messages' => array(array('role' => 'user', 'content' => array('type' => 'text', 'text' => $text))),
 		);
 	}
 
 	private function listTools(bool $modern): array {
 		$result = array(
-		    'tools' => array(
-		        array(
-		            'name' => 'wordpress_connector_actions',
-		            'description' => 'List the WordPress Connector semantic actions and their security metadata. Use this before selecting an action.',
-		            'inputSchema' => $this->emptyObjectSchema(),
-		            'annotations' => array('readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false),
-		        ),
-		        array(
-		            'name' => 'wordpress_connector_discover',
-		            'description' => 'Discover the authenticated WordPress runtime, builders, plugins, post types, taxonomies, media sizes and connector capabilities.',
-		            'inputSchema' => $this->emptyObjectSchema(),
-		            'annotations' => array('readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false),
-		        ),
-		        array(
-		            'name' => 'wordpress_connector_execute',
-		            'description' => 'Execute one existing semantic connector action through the normal Runner. Dry-run is the default. Confirmed writes require confirm=true and an explicit stable request_id so retries remain idempotent.',
-		            'inputSchema' => $this->executeSchema(),
-		            'annotations' => array('readOnlyHint' => false, 'destructiveHint' => true, 'idempotentHint' => false, 'openWorldHint' => false),
-		        ),
-		    ),
+			'tools' => array(
+				array(
+					'name' => 'wordpress_connector_actions',
+					'description' => 'List the WordPress Connector semantic actions and their security metadata. Use this before selecting an action.',
+					'inputSchema' => $this->emptyObjectSchema(),
+					'annotations' => array('readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false),
+				),
+				array(
+					'name' => 'wordpress_connector_discover',
+					'description' => 'Discover the authenticated WordPress runtime, builders, plugins, post types, taxonomies, media sizes and connector capabilities.',
+					'inputSchema' => $this->emptyObjectSchema(),
+					'annotations' => array('readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false),
+				),
+				array(
+					'name' => 'wordpress_connector_execute',
+					'description' => 'Execute one existing semantic connector action through the normal Runner. Dry-run is the default. Confirmed writes require confirm=true and an explicit stable request_id so retries remain idempotent.',
+					'inputSchema' => $this->executeSchema(),
+					'annotations' => array('readOnlyHint' => false, 'destructiveHint' => true, 'idempotentHint' => false, 'openWorldHint' => false),
+				),
+			),
 		);
 		if ($modern) {
 			$result['ttlMs'] = 300000;
@@ -484,12 +484,12 @@ final class Controller {
 		}
 
 		$data = array(
-		    'version' => 1,
-		    'request_id' => $requestId,
-		    'action' => $action,
-		    'dry_run' => $dryRun,
-		    'confirm' => $confirm,
-		    'payload' => $payload,
+			'version' => 1,
+			'request_id' => $requestId,
+			'action' => $action,
+			'dry_run' => $dryRun,
+			'confirm' => $confirm,
+			'payload' => $payload,
 		);
 		if (null !== $expectedFingerprint) {
 			$data['expected_fingerprint'] = $expectedFingerprint;
@@ -500,8 +500,8 @@ final class Controller {
 
 		$connectorRequest = Request::fromArray($data);
 		return $this->runner->run($connectorRequest, array(
-		    'transport' => 'mcp',
-		    'authenticated_user_id' => get_current_user_id(),
+			'transport' => 'mcp',
+			'authenticated_user_id' => get_current_user_id(),
 		));
 	}
 
@@ -516,28 +516,28 @@ final class Controller {
 		}
 
 		return new \WP_REST_Response(array(
-		    'jsonrpc' => '2.0',
-		    'id' => $id,
-		    'result' => $result,
+			'jsonrpc' => '2.0',
+			'id' => $id,
+			'result' => $result,
 		), 200);
 	}
 
 	private function errorResponse($id, int $code, string $message, int $status): \WP_REST_Response {
 		return new \WP_REST_Response(array(
-		    'jsonrpc' => '2.0',
-		    'id' => $id,
-		    'error' => array('code' => $code, 'message' => $this->boundedMessage($message)),
+			'jsonrpc' => '2.0',
+			'id' => $id,
+			'error' => array('code' => $code, 'message' => $this->boundedMessage($message)),
 		), $status);
 	}
 
 	private function toolResult(array $value, bool $isError): array {
 		return array(
-		    'content' => array(array(
-		        'type' => 'text',
-		        'text' => $this->encodeForText($value),
-		    )),
-		    'structuredContent' => array('result' => $value),
-		    'isError' => $isError,
+			'content' => array(array(
+				'type' => 'text',
+				'text' => $this->encodeForText($value),
+			)),
+			'structuredContent' => array('result' => $value),
+			'isError' => $isError,
 		);
 	}
 
@@ -556,11 +556,11 @@ final class Controller {
 
 	private function generatedRequestId($rpcId, string $toolName, string $action, array $payload): string {
 		$json = json_encode(array(
-		    'rpc_id' => $rpcId,
-		    'tool' => $toolName,
-		    'action' => $action,
-		    'payload' => $payload,
-		    'user_id' => get_current_user_id(),
+			'rpc_id' => $rpcId,
+			'tool' => $toolName,
+			'action' => $action,
+			'payload' => $payload,
+			'user_id' => get_current_user_id(),
 		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 		if (! is_string($json)) {
 			throw new RuntimeException('Unable to generate a connector request id.');
@@ -586,56 +586,56 @@ final class Controller {
 
 	private function emptyObjectSchema(): array {
 		return array(
-		    '$schema' => 'https://json-schema.org/draft/2020-12/schema',
-		    'type' => 'object',
-		    'properties' => new \stdClass(),
-		    'additionalProperties' => false,
+			'$schema' => 'https://json-schema.org/draft/2020-12/schema',
+			'type' => 'object',
+			'properties' => new \stdClass(),
+			'additionalProperties' => false,
 		);
 	}
 
 	private function executeSchema(): array {
 		return array(
-		    '$schema' => 'https://json-schema.org/draft/2020-12/schema',
-		    'type' => 'object',
-		    'additionalProperties' => false,
-		    'properties' => array(
-		        'action' => array('type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9._-]*$'),
-		        'payload' => array('type' => 'object'),
-		        'dry_run' => array('type' => 'boolean', 'default' => true),
-		        'confirm' => array('type' => 'boolean', 'default' => false),
-		        'request_id' => array('type' => 'string', 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'),
-		        'expected_fingerprint' => array('type' => 'string', 'pattern' => '^[a-f0-9]{64}$'),
-		        'expected_state_token' => array('type' => 'string', 'pattern' => '^[a-f0-9]{64}$'),
-		    ),
-		    'required' => array('action', 'payload'),
-		    'allOf' => array(
-		        array(
-		            'if' => array(
-		                'properties' => array('dry_run' => array('const' => false)),
-		                'required' => array('dry_run'),
-		            ),
-		            'then' => array(
-		                'required' => array('request_id', 'confirm'),
-		                'properties' => array('confirm' => array('const' => true)),
-		            ),
-		        ),
-		    ),
+			'$schema' => 'https://json-schema.org/draft/2020-12/schema',
+			'type' => 'object',
+			'additionalProperties' => false,
+			'properties' => array(
+				'action' => array('type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9._-]*$'),
+				'payload' => array('type' => 'object'),
+				'dry_run' => array('type' => 'boolean', 'default' => true),
+				'confirm' => array('type' => 'boolean', 'default' => false),
+				'request_id' => array('type' => 'string', 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'),
+				'expected_fingerprint' => array('type' => 'string', 'pattern' => '^[a-f0-9]{64}$'),
+				'expected_state_token' => array('type' => 'string', 'pattern' => '^[a-f0-9]{64}$'),
+			),
+			'required' => array('action', 'payload'),
+			'allOf' => array(
+				array(
+					'if' => array(
+						'properties' => array('dry_run' => array('const' => false)),
+						'required' => array('dry_run'),
+					),
+					'then' => array(
+						'required' => array('request_id', 'confirm'),
+						'properties' => array('confirm' => array('const' => true)),
+					),
+				),
+			),
 		);
 	}
 
 	private function serverInfo(): array {
 		return array(
-		    'name' => 'webactueel-wordpress-connector',
-		    'title' => 'WordPress Connector',
-		    'version' => defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : 'unknown',
-		    'description' => 'Authenticated WordPress MCP transport over the existing semantic connector action registry.',
+			'name' => 'webactueel-wordpress-connector',
+			'title' => 'WordPress Connector',
+			'version' => defined('WPCONNECTOR_VERSION') ? (string) WPCONNECTOR_VERSION : 'unknown',
+			'description' => 'Authenticated WordPress MCP transport over the existing semantic connector action registry.',
 		);
 	}
 
 	private function instructions(): string {
 		return 'Use wordpress_connector_discover and wordpress_connector_actions before execution. '
-		    . 'wordpress_connector_execute defaults to dry-run. Real mutations require confirm=true and a stable explicit request_id, '
-		    . 'and remain subject to WordPress capabilities, connector policy, stale-state guards, readback, idempotency and rollback.';
+			. 'wordpress_connector_execute defaults to dry-run. Real mutations require confirm=true and a stable explicit request_id, '
+			. 'and remain subject to WordPress capabilities, connector policy, stale-state guards, readback, idempotency and rollback.';
 	}
 
 	private function boundedMessage(string $message): string {
