@@ -27,6 +27,7 @@ function absint($value): int { return abs((int) $value); }
 function esc_html__(string $text, string $domain = ''): string { return esc_html($text); }
 function wp_die($message = '', $title = '', $args = array()): void { throw new WpcQaExit((int) ($args['response'] ?? 500)); }
 function check_admin_referer($action): int { return 1; }
+function wp_verify_nonce($nonce, $action) { return ('valid-update-nonce' === $nonce && 'wpconnector_update_notice' === $action) ? 1 : false; }
 function wp_send_json_error(array $data = array(), int $status = 200): void { throw new WpcQaExit($status); }
 function get_transient($key) { return false; }
 function delete_transient($key): void {}
@@ -38,8 +39,11 @@ require_once $root . 'Admin/Settings.php';
 require_once $root . 'Admin/ElementorJsonExport.php';
 
 $updater = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
-$notice = static function ($value, bool $canUpdate) use ($updater): string {
+$notice = static function ($value, bool $canUpdate, $nonce = 'valid-update-nonce') use ($updater): string {
     $_GET = array('wpconnector_update_checked' => $value);
+    if (null !== $nonce) {
+        $_GET['wpconnector_update_notice_nonce'] = $nonce;
+    }
     $GLOBALS['wpc_qa_admin'] = $canUpdate;
     ob_start();
     try {
@@ -50,6 +54,8 @@ $notice = static function ($value, bool $canUpdate) use ($updater): string {
     return $output;
 };
 if ('' !== $notice(array('1'), true) || '' !== $notice('invalid', true)
+    || '' !== $notice('1', true, 'wrong') || '' !== $notice('1', true, array('valid-update-nonce'))
+    || '' !== $notice('1', true, null)
     || '' !== $notice('1', false)
     || false === strpos($notice('1', true), 'notice-success')
     || false === strpos($notice('0', true), 'notice-warning')) {
