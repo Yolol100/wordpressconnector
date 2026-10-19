@@ -98,8 +98,10 @@ jobs:
             "$phpcs" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/csf-probe/$name.before.json" 2>/dev/null || true
             PHP_CS_FIXER_IGNORE_ENV=1 "$csfix" fix "$file" --config="$RUNNER_TEMP/style-tools/fixer.php" --path-mode=override --using-cache=no --allow-risky=no --quiet > "$RUNNER_TEMP/csf-probe/$name.fixer.log" 2>&1 || true
             "$phpcs" --standard=WordPress --report=json "$file" > "$RUNNER_TEMP/csf-probe/$name.after.json" 2>/dev/null || true
+            set +e
             php "$RUNNER_TEMP/style-tools/equal.php" "$RUNNER_TEMP/csf-probe/$name.original.php" "$file" > "$RUNNER_TEMP/csf-probe/$name.ast.txt" 2>&1
             ast=$?
+            set -e
             php -l "$file" >> "$RUNNER_TEMP/csf-probe/$name.ast.txt" 2>&1 || true
             git diff -- "$file" > "$RUNNER_TEMP/csf-probe/$name.patch"
             echo "$name ast_status=$ast" >> "$RUNNER_TEMP/csf-probe/summary.txt"
