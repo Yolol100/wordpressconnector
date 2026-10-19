@@ -180,6 +180,7 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 * Clarify the WordPress Core update foreach loop to satisfy PHPCompatibilityWP without changing update behavior.
 * Correct Elementor MCP pre-execution callback registration to match its single argument.
 * Escape WooCommerce table identifiers via wpdb::prepare %i (WordPress 6.2+), retain prepared value placeholders, and update test fixture SQL parser.
+* Prepare WordPress options table identifiers in snapshot, processed-request and uninstall SQL while preserving expiration/cleanup boundaries.
 * Use WordPress wp_parse_url() for verified plugin/theme directory packages and Yoast logo URLs.
 * Keep WordPress capabilities, confirmation, read-only probes, and GitHub update provenance unchanged. Strict full WPCS/PHPStan/WordPress.org review remains a separate quality task.
 
