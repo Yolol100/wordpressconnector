@@ -44,8 +44,10 @@ $adapterRequired = array(
     "WordPress Connector cannot replace its own active runtime",
     "rollback_supported' => false",
 );
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) { throw new RuntimeException('Cannot normalize plugin package source.'); }
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing plugin package contract fragment: {$needle}\n");
         exit(1);
     }
