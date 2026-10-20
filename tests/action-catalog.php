@@ -107,7 +107,7 @@ if ($source === false) {
 
 $registrationLines = array();
 foreach (preg_split('/\R/', $source) as $line) {
-    if (preg_match("/register\\('([^']+)'/", $line, $matches) === 1) {
+    if (preg_match("/register\\s*\\(\\s*'([^']+)'/", $line, $matches) === 1) {
         $registrationLines[$matches[1]] = $line;
     }
 }
