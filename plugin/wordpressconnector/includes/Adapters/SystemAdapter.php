@@ -279,11 +279,34 @@ final class SystemAdapter
 		$role = get_role($roleName);
 		if (! $role) throw new RuntimeException('Role not found.');
 		$before = $role->capabilities;
-		if (! empty($context['dry_run'])) return array('before' => $before, 'add' => $payload['add'] ?? array(), 'remove' => $payload['remove'] ?? array(), '_current_fingerprint' => Fingerprint::make($before));
-		foreach ((array) ($payload['add'] ?? array()) as $cap => $grant) {
-			if (is_int($cap)) $role->add_cap((string) $grant, true); else $role->add_cap((string) $cap, Input::boolValue($grant, 'payload.add.' . (string) $cap));
+		$addInput = array_key_exists('add', $payload) ? $payload['add'] : array();
+		$removeInput = array_key_exists('remove', $payload) ? $payload['remove'] : array();
+		if (! is_array($addInput) || ! is_array($removeInput)) {
+			throw new RuntimeException('Role capability changes must be arrays.');
 		}
-		foreach ((array) ($payload['remove'] ?? array()) as $cap) $role->remove_cap((string) $cap);
+		// Validate all entries before mutating any role option: an invalid later
+		// grant must not leave earlier capabilities partially applied.
+		$add = array();
+		foreach ($addInput as $cap => $grant) {
+			if (is_int($cap)) {
+				$cap = $grant;
+				$grant = true;
+			}
+			if (! is_string($cap) || '' === $cap || sanitize_key($cap) !== $cap) {
+				throw new RuntimeException('Role capability keys must be safe strings.');
+			}
+			$add[$cap] = Input::boolValue($grant, 'payload.add.' . $cap);
+		}
+		$remove = array();
+		foreach ($removeInput as $cap) {
+			if (! is_string($cap) || '' === $cap || sanitize_key($cap) !== $cap) {
+				throw new RuntimeException('Role capability keys must be safe strings.');
+			}
+			$remove[] = $cap;
+		}
+		if (! empty($context['dry_run'])) return array('before' => $before, 'add' => $addInput, 'remove' => $removeInput, '_current_fingerprint' => Fingerprint::make($before));
+		foreach ($add as $cap => $grant) $role->add_cap($cap, $grant);
+		foreach ($remove as $cap) $role->remove_cap($cap);
 		return array('role' => $roleName, 'capabilities' => get_role($roleName)->capabilities, 'rollback_supported' => false);
 	}
 
