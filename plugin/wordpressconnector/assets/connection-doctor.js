@@ -4,6 +4,8 @@
     const config = window.WPConnectorDoctor;
     const testButton = document.getElementById('wpconnector-test-mcp');
     const copyButton = document.getElementById('wpconnector-copy-mcp');
+    const oauthCopyButton = document.getElementById('wpconnector-copy-oauth-mcp');
+    const oauthAddress = document.getElementById('wpconnector-oauth-mcp-address');
     const result = document.getElementById('wpconnector-mcp-doctor-result');
     const address = document.getElementById('wpconnector-mcp-address');
     if (!config || !testButton || !copyButton || !result || !address) {
@@ -14,19 +16,24 @@
         result.textContent = message;
     }
 
-    copyButton.addEventListener('click', async function () {
+    async function copyAddress(field) {
         try {
             if (!navigator.clipboard || !navigator.clipboard.writeText) {
                 throw new Error('Clipboard API unavailable');
             }
-            await navigator.clipboard.writeText(address.value);
+            await navigator.clipboard.writeText(field.value);
             show(config.copied);
         } catch (error) {
-            address.focus();
-            address.select();
+            field.focus();
+            field.select();
             show(config.copyFailed);
         }
-    });
+    }
+
+    copyButton.addEventListener('click', function () { return copyAddress(address); });
+    if (oauthCopyButton && oauthAddress) {
+        oauthCopyButton.addEventListener('click', function () { return copyAddress(oauthAddress); });
+    }
 
     async function readOnlyRequest(method) {
         if (method !== 'server/discover' && method !== 'tools/list') {

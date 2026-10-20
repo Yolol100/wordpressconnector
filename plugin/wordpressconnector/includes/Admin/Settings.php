@@ -299,6 +299,12 @@ final class Settings
         echo '<button type="button" class="button button-secondary" id="wpconnector-test-mcp">' . esc_html__('Test MCP connection from this WordPress browser', 'wordpressconnector') . '</button></p>';
         echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
         echo '<p><small>' . esc_html__('This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector') . '</small></p>';
+        if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_oauth_server_candidate'])) {
+            echo '<p><label for="wpconnector-oauth-mcp-address"><strong>' . esc_html__('Possible OAuth MCP server (not verified):', 'wordpressconnector') . '</strong></label></p>';
+            echo '<input id="wpconnector-oauth-mcp-address" readonly="readonly" type="url" style="width:100%" value="' . esc_attr($oauth['native_mcp_oauth_server_candidate']) . '" />';
+            echo '<p><button type="button" class="button button-secondary" id="wpconnector-copy-oauth-mcp">' . esc_html__('Copy OAuth server candidate', 'wordpressconnector') . '</button></p>';
+            echo '<p><small>' . esc_html__('For OAuth-capable ChatGPT clients, this is a candidate address from the official MCP Adapter. Check authorization-server metadata, the requested scopes and account consent before connecting; no external connection was tested here.', 'wordpressconnector') . '</small></p>';
+        }
         echo '</div>';
         echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
         echo '<th scope="col">' . esc_html__('Setup step', 'wordpressconnector') . '</th>';
@@ -337,8 +343,7 @@ final class Settings
         if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_server_candidate'])) {
             echo '<p><strong>' . esc_html__('Optional official WordPress MCP Adapter server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_server_candidate']) . '</code></p>';
             if (is_string($oauth['native_mcp_oauth_server_candidate'])) {
-                echo '<p><strong>' . esc_html__('Possible OAuth MCP server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_oauth_server_candidate']) . '</code></p>';
-                echo '<p>' . esc_html__('Verify the OAuth protected-resource and authorization-server metadata, token scope and user permissions before adding this server to ChatGPT. A candidate URL does not prove a working connection.', 'wordpressconnector') . '</p>';
+                echo '<p>' . esc_html__('An OAuth server candidate is shown in the connection panel above. This address does not prove a working sign-in or account permissions.', 'wordpressconnector') . '</p>';
             }
         }
 

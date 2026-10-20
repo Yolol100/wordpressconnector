@@ -11,6 +11,12 @@ let intercepted = [];
 const elements = {
     'wpconnector-test-mcp': { disabled: false, addEventListener: (event, fn) => { handlers['test:' + event] = fn; } },
     'wpconnector-copy-mcp': { addEventListener: (event, fn) => { handlers['copy:' + event] = fn; } },
+    'wpconnector-copy-oauth-mcp': { addEventListener: (event, fn) => { handlers['oauth-copy:' + event] = fn; } },
+    'wpconnector-oauth-mcp-address': {
+        value: 'https://example.invalid/wp-json/mcp/mcp-oauth-server',
+        focus: () => {},
+        select: () => { intercepted.push('select-oauth'); },
+    },
     'wpconnector-mcp-doctor-result': { textContent: '' },
     'wpconnector-mcp-address': {
         value: 'https://example.invalid/wp-json/webactueel-wordpress-connector/v1/mcp',
@@ -56,11 +62,26 @@ vm.runInNewContext(source, {
 });
 assert.equal(typeof handlers['test:click'], 'function');
 assert.equal(typeof handlers['copy:click'], 'function');
+assert.equal(typeof handlers['oauth-copy:click'], 'function');
 
 (async () => {
     await handlers['copy:click']();
     assert.equal(intercepted[0], conf.url);
+    await handlers['oauth-copy:click']();
+    assert.equal(intercepted[1], elements['wpconnector-oauth-mcp-address'].value);
     assert.equal(elements['wpconnector-mcp-doctor-result'].textContent, 'Copied');
+    // A site without the optional official Adapter must keep the legacy tool usable.
+    const withoutAdapter = { ...elements };
+    delete withoutAdapter['wpconnector-copy-oauth-mcp'];
+    delete withoutAdapter['wpconnector-oauth-mcp-address'];
+    vm.runInNewContext(source, {
+        window: { WPConnectorDoctor: conf },
+        document: { getElementById: (id) => withoutAdapter[id] },
+        navigator: { clipboard: { writeText: async (x) => { intercepted.push(x); } } },
+        fetch: (...args) => fetcher(...args),
+    });
+    assert.equal(typeof handlers['copy:click'], 'function');
+    assert.equal(typeof handlers['test:click'], 'function');
     await handlers['test:click']();
     assert.equal(elements['wpconnector-test-mcp'].disabled, false);
     assert.equal(elements['wpconnector-mcp-doctor-result'].textContent, conf.success);

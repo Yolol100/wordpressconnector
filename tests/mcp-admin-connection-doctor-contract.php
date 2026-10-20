@@ -49,6 +49,8 @@ namespace {
 
     $ui = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
     foreach (array('wpconnector-copy-mcp', 'wpconnector-test-mcp', 'wpconnector-mcp-address',
+        'wpconnector-copy-oauth-mcp', 'wpconnector-oauth-mcp-address',
+        'Possible OAuth MCP server (not verified):', 'does not prove a working sign-in',
         'aria-live="polite"', 'does NOT connect ChatGPT', 'renderConnectionRecoveryGuide') as $needle) {
         $assert(strpos($ui, $needle) !== false, 'Admin UI missing connection control or evidence limit: ' . $needle);
     }
