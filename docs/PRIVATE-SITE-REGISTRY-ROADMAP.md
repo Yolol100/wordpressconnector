@@ -1,8 +1,19 @@
 # Private multi-site inventory and management: deployment plan
 
-Status: design only. This repository does not operate a central site inventory or an always-on agent. Upload, activation and public presence are not proof that a remote ChatGPT client is authorized to administer a site.
+Status: deferred design reference — do not build a second multi-site platform by default.
 
-## Target flow
+## Current decision: reuse an existing site manager (2026-10-20)
+- For multiple independently hosted WordPress sites, prefer an owner-authorized MainWP Dashboard and the official MainWP MCP integration. Do not recreate its client/site registry, update scheduler or workflow engine in WordPress Connector.
+- WordPress Connector stays a *single authenticated site* action bridge. Its private `connector.setup.inspect` now detects MainWP Dashboard, MainWP Child and native WordPress multisite; this is detection only, not proof that any child is paired or that remote writes are authorized.
+- The plugin never enumerates unknown websites, saves a customer-site inventory, shares credentials between sites, bypasses MainWP user approval or treats network activation as cross-site permission.
+- A private registry below is a **deferred alternative** only if existing site-management software demonstrably cannot satisfy the requirement, the owner expressly approves it and a private authenticated service and site-specific staging tests exist.
+- Backups remain the responsibility of the installed approved backup provider. The read-only readiness guide can identify WPvivid (Free/Pro), All-in-One WP Migration and other supported plugin basenames, but cannot certify a completed backup or staging restore. No automated restore runs from this bridge.
+
+Official integration: https://github.com/mainwp/mainwp-mcp
+
+## Deferred alternative (not an approved build target) This repository does not operate a central site inventory or an always-on agent. Upload, activation and public presence are not proof that a remote ChatGPT client is authorized to administer a site.
+
+## Target flow (only after separate owner authorization)
 1. Site administrator activates Connector and supplies or approves their site HTTPS origin.
 2. An authenticated PRIVATE site registry (future component) verifies origin ownership using a signed challenge and separately performs a read-only, authenticated WordPress canary on exactly that site.
 3. Store only site ID, origin, verified WordPress REST base, tenant scope, approval/revocation, last verified status, Connector version, and a reference to credentials in a secret manager.
