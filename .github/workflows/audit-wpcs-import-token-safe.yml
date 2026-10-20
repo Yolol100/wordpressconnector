@@ -1,0 +1,75 @@
+name: WPCS isolated Elementor JSON import token-safe preview
+on:
+  push:
+    branches:
+      - audit/wpcs-import-token-safe-20261020
+    paths:
+      - .github/workflows/audit-wpcs-import-token-safe.yml
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+      - name: Install pinned WPCS tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wpcs"
+          cd "$RUNNER_TEMP/wpcs"
+          composer init --no-interaction --name wordpressconnector/qa-tools --type project
+          composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
+      - name: Format isolated file and prove executable token parity
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
+          report="$RUNNER_TEMP/preview"
+          mkdir -p "$report"
+          cp "$target" "$report/old.php"
+          "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --report=summary "$target" > "$report/wpcs-before.txt" 2>&1 || true
+          set +e
+          "$RUNNER_TEMP/wpcs/vendor/bin/phpcbf" --standard=WordPress "$target" > "$report/phpcbf.log" 2>&1
+          rc=$?
+          set -e
+          echo "phpcbf_exit=$rc" >> "$report/phpcbf.log"
+          php -l "$target"
+          cat > "$report/guard.php" <<'PHP'
+          <?php
+          $clean = static function (string $path): array {
+              $out = array();
+              foreach (token_get_all((string) file_get_contents($path), TOKEN_PARSE) as $token) {
+                  if (is_array($token) && in_array($token[0], array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT), true)) continue;
+                  $out[] = is_array($token) ? array($token[0], $token[1]) : $token;
+              }
+              return $out;
+          };
+          if ($clean($argv[1]) !== $clean($argv[2])) {
+              fwrite(STDERR, "Formatter changed executable PHP tokens: candidate rejected.\n");
+              exit(7);
+          }
+          echo "Exact executable-token parity OK\n";
+          PHP
+          php "$report/guard.php" "$report/old.php" "$target" | tee "$report/token-guard.txt"
+          "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --report=summary "$target" > "$report/wpcs-after.txt" 2>&1 || true
+          git diff -- "$target" > "$report/format.diff"
+          cp "$target" "$report/candidate.php"
+          bash scripts/run-contracts.sh > "$report/contracts.log" 2>&1
+          echo "Local contract suite PASS" | tee -a "$report/contracts.log"
+      - name: Upload audited candidate regardless of outcome
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: token-safe-elementor-import-preview
+          path: ${{ runner.temp }}/preview/
+          if-no-files-found: warn
+          retention-days: 14
