@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  REVIEW_SOURCE_SHA: c320bd2a64c951f7f5e73b75b338c6a0190d1e71
+  REVIEW_SOURCE_SHA: b6ed872458c8fe20fa144c1c185abf61d728abdd
 
 jobs:
   preview:
@@ -91,12 +91,7 @@ jobs:
             'Generic.Functions.OpeningFunctionBraceKernighanRitchie'
           ])
           targets=[
-            'Adapters/AcfAdapter.php','Adapters/SystemAdapter.php','Runtime/Runner.php',
-            'Adapters/WooCommerceFulfillmentAdapter.php','Adapters/ConnectorUpdateAdapter.php',
-            'Adapters/PluginPackageAdapter.php','Adapters/PluginSettingsAdapter.php',
-            'Adapters/AbilitiesAdapter.php','Admin/Settings.php','Adapters/ElementorCapabilitiesAdapter.php',
-            'Adapters/FilesystemAdapter.php','Adapters/CodeSnippetsAdapter.php','MCP/Controller.php',
-            'REST/AssetStore.php','Adapters/ConnectionReadinessAdapter.php','Security/Policy.php','Support/Json.php'
+            'Adapters/SystemAdapter.php',
           ]
           selection=[];kept=[]
           for i,relative in enumerate(targets):
