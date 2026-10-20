@@ -288,6 +288,7 @@ final class Settings
         $site = $status['wordpress'];
         $oauth = $status['chatgpt'];
         $recovery = $status['recovery'];
+        $sites = $status['site_management'];
 
         echo '<h2>' . esc_html__('ChatGPT connection and recovery setup', 'wordpressconnector') . '</h2>';
         echo '<p>' . esc_html__('This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector') . '</p>';
@@ -313,6 +314,14 @@ final class Settings
                 $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector'),
             __('Official WordPress MCP Adapter', 'wordpressconnector') =>
                 $oauth['native_mcp_adapter_detected'] ? __('Detected (server and OAuth access not independently verified)', 'wordpressconnector') : __('Optional; WordPress Connector already has an MCP endpoint', 'wordpressconnector'),
+            __('Existing multi-site management', 'wordpressconnector') =>
+                $sites['mainwp_dashboard_detected']
+                    ? __('MainWP Dashboard detected; use its own authorized MCP tools, not a second Connector registry', 'wordpressconnector')
+                    : ($sites['mainwp_child_detected']
+                        ? __('MainWP Child detected; remote dashboard connection is not verified', 'wordpressconnector')
+                        : ($sites['wordpress_multisite_detected']
+                            ? __('WordPress multisite detected; only this site context has been inspected', 'wordpressconnector')
+                            : __('No MainWP integration detected; remote sites are not enrolled', 'wordpressconnector'))),
             __('Full database and files backup', 'wordpressconnector') =>
                 __('Not independently verified', 'wordpressconnector'),
             __('Copy stored outside this hosting account', 'wordpressconnector') =>
@@ -329,6 +338,7 @@ final class Settings
             echo '<p><strong>' . esc_html__('Optional official WordPress MCP Adapter server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_server_candidate']) . '</code></p>';
         }
 
+        echo '<p>' . esc_html__('To manage several sites, use an existing MainWP Dashboard and its official MCP connection. A Child plugin, network multisite, or accessible website does not authorize control of another site. This Connector does not collect customer site URLs or credentials.', 'wordpressconnector') . '</p>';
         $providers = $recovery['active_backup_plugins_detected'];
         $detectedBackup = $recovery['backup_provider_detected'];
         if (is_string($detectedBackup)) {

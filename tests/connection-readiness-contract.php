@@ -25,10 +25,13 @@ namespace {
         'https' => true, 'url' => 'https://example.invalid/wp-json/',
         'paired' => false, 'plugins' => array(), 'network' => array(),
         'writes' => 0, 'outbound' => 0,
+        'multisite' => false, 'blog_id' => 1,
     );
 
     function rest_url(string $path): string { return $GLOBALS['setup_readiness']['url'] . $path; }
     function is_ssl(): bool { return $GLOBALS['setup_readiness']['https']; }
+    function is_multisite(): bool { return $GLOBALS['setup_readiness']['multisite']; }
+    function get_current_blog_id(): int { return $GLOBALS['setup_readiness']['blog_id']; }
     function wp_parse_url(string $url, int $component) { return parse_url($url, $component); }
     function get_option(string $name, $default = false) {
         return 'active_plugins' === $name ? $GLOBALS['setup_readiness']['plugins'] : $default;
@@ -67,6 +70,11 @@ namespace {
         && $status['recovery']['site_files_backup_verified'] === false
         && $status['recovery']['offsite_backup_verified'] === false
         && $status['recovery']['staging_restore_verified'] === false
+        && $status['site_management']['wordpress_multisite_detected'] === false
+        && $status['site_management']['current_blog_id'] === null
+        && $status['site_management']['mainwp_dashboard_detected'] === false
+        && $status['site_management']['mainwp_child_detected'] === false
+        && $status['site_management']['remote_sites_authorized'] === false
         && $status['high_risk_changes_cleared'] === false,
         'The initial setup snapshot must never guess that OAuth or recovery works.');
 
@@ -110,6 +118,28 @@ namespace {
         && $status['recovery']['backup_provider_admin_path'] === 'admin.php?page=ai1wm_backups'
         && $status['recovery']['backup_automation_verified'] === false,
         'Installed migration plugin must offer its own admin page, not a fake backup API.');
+
+    $GLOBALS['setup_readiness']['plugins'] = array('mainwp-child/mainwp-child.php');
+    $GLOBALS['setup_readiness']['network'] = array();
+    $status = $adapter->inspect();
+    $assert($status['site_management']['mainwp_child_detected'] === true
+        && $status['site_management']['mainwp_dashboard_detected'] === false
+        && $status['site_management']['remote_sites_authorized'] === false,
+        'MainWP Child must not be mistaken for an authorized remote dashboard.');
+
+    $GLOBALS['setup_readiness']['plugins'] = array('mainwp/mainwp.php');
+    $GLOBALS['setup_readiness']['multisite'] = true;
+    $GLOBALS['setup_readiness']['blog_id'] = 17;
+    $status = $adapter->inspect();
+    $assert($status['site_management']['wordpress_multisite_detected'] === true
+        && $status['site_management']['current_blog_id'] === 17
+        && $status['site_management']['mainwp_dashboard_detected'] === true
+        && $status['site_management']['remote_sites_authorized'] === false
+        && $status['site_management']['mainwp_connection_verified'] === false
+        && $status['site_management']['private_site_registry_ready'] === false,
+        'Native network and MainWP discovery must never imply cross-site authorization.');
+    $GLOBALS['setup_readiness']['multisite'] = false;
+    $GLOBALS['setup_readiness']['blog_id'] = 1;
 
     $GLOBALS['setup_readiness']['plugins'] = array('unrelated/unrelated.php');
     $GLOBALS['setup_readiness']['network'] = array();
@@ -169,6 +199,8 @@ namespace {
         'Official WordPress MCP Adapter',
         'Installing the official MCP Adapter alone does not enable OAuth.',
         'Open %s backup screen',
+        'Existing multi-site management',
+        'use an existing MainWP Dashboard',
         'database',
         'separate staging site',
     ) as $needle) {

@@ -53,10 +53,14 @@ final class ConnectionReadinessAdapter {
 		$https     = is_ssl() && is_string( $endpoint )
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
-		$providers = $this->activeBackupProviders();
+		$activePlugins = $this->activePluginPaths();
+		$providers = $this->activeBackupProviders( $activePlugins );
 		$provider = 1 === count( $providers ) ? $providers[0] : null;
-		$nativeMcpAdapter = in_array('mcp-adapter/mcp-adapter.php', $this->activePluginPaths(), true)
+		$nativeMcpAdapter = in_array('mcp-adapter/mcp-adapter.php', $activePlugins, true)
 			&& class_exists('WP\\MCP\\Core\\McpAdapter');
+		$multisite = function_exists( 'is_multisite' ) && is_multisite();
+		$blogId = $multisite && function_exists( 'get_current_blog_id' ) ? (int) get_current_blog_id() : null;
+		$blogId = is_int( $blogId ) && $blogId > 0 ? $blogId : null;
 
 		return array(
 			'read_only'                 => true,
@@ -86,12 +90,20 @@ final class ConnectionReadinessAdapter {
 				'staging_restore_verified'       => false,
 				'state'                          => 'independent_host_backup_and_staging_restore_required',
 			),
+			'site_management' => array(
+				'wordpress_multisite_detected'   => $multisite,
+				'current_blog_id'               => $blogId,
+				'mainwp_dashboard_detected'      => in_array( 'mainwp/mainwp.php', $activePlugins, true ),
+				'mainwp_child_detected'          => in_array( 'mainwp-child/mainwp-child.php', $activePlugins, true ),
+				'remote_sites_authorized'       => false,
+				'mainwp_connection_verified'    => false,
+				'private_site_registry_ready'   => false,
+			),
 			'high_risk_changes_cleared' => false,
 		);
 	}
 
-	private function activeBackupProviders(): array {
-		$active = $this->activePluginPaths();
+	private function activeBackupProviders( array $active ): array {
 		$detected = array();
 		foreach ( self::BACKUP_PROVIDERS as $file => $name ) {
 			if ( in_array( $file, $active, true ) ) {
