@@ -3,19 +3,21 @@
 declare(strict_types=1);
 
 $path = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php';
+require_once __DIR__ . '/source-token-contract-helper.php';
 $source = file_get_contents($path);
 if ($source === false) {
     fwrite(STDERR, "Unable to read SystemAdapter.php.\n");
     exit(1);
 }
 
-$start = strpos($source, 'public function userForcePasswordReset');
-$end = strpos($source, 'public function userDelete', $start === false ? 0 : $start);
+$code = wpconn_source_tokens($source);
+$start = strpos($code, 'publicfunctionuserForcePasswordReset');
+$end = strpos($code, 'publicfunctionuserDelete', $start === false ? 0 : $start);
 if ($start === false || $end === false || $end <= $start) {
     fwrite(STDERR, "Emergency password reset action is missing.\n");
     exit(1);
 }
-$method = substr($source, $start, $end - $start);
+$method = substr($code, $start, $end - $start);
 
 $required = array(
     "register('user.force_password_reset'",
@@ -33,7 +35,7 @@ $required = array(
 );
 
 foreach ($required as $needle) {
-    if (strpos($source, $needle) === false) {
+    if (strpos($code, wpconn_source_fragment($needle)) === false) {
         fwrite(STDERR, "Missing emergency password reset contract marker: {$needle}\n");
         exit(1);
     }
@@ -45,7 +47,7 @@ if (strpos($method, 'retrieve_password(') !== false) {
 }
 
 foreach (array("'password' =>", "'reset_key' =>", "'key' =>") as $forbidden) {
-    if (strpos($method, $forbidden) !== false) {
+    if (strpos($method, wpconn_source_fragment($forbidden)) !== false) {
         fwrite(STDERR, "Emergency reset response must not expose password/reset-key material: {$forbidden}\n");
         exit(1);
     }
