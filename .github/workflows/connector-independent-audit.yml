@@ -39,7 +39,7 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/reports/source-commit.txt"
           (cd plugin/wordpressconnector && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$RUNNER_TEMP/reports/plugin-file-shas.txt"
           "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/reports/wpcs.txt" 2>&1 || true
-          composer install --working-dir=scripts/phpstan --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts --locked
+          composer install --working-dir=scripts/phpstan --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts
           scripts/phpstan/vendor/bin/phpstan analyse -c scripts/phpstan/phpstan.neon --no-progress --error-format=json > "$RUNNER_TEMP/reports/phpstan.json" 2> "$RUNNER_TEMP/reports/phpstan-stderr.txt" || true
           python3 - <<'PY'
           import os, json, re, pathlib, collections
