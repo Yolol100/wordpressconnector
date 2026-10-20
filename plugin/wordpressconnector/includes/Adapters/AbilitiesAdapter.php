@@ -353,7 +353,7 @@ final class AbilitiesAdapter {
 	}
 
 	private function isReadEligible($ability): bool {
-		if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+		if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) {
 			return false;
 		}
 		$annotations = $this->safeAnnotations($ability);
@@ -361,7 +361,7 @@ final class AbilitiesAdapter {
 	}
 
 	private function isMutationEligible($ability): bool {
-		if (! is_object($ability) || ! $this->isExecutionExposed($ability) || ! method_exists($ability, 'execute')) {
+		if (! is_object($ability) || ! $this->isExposed($ability) || ! method_exists($ability, 'execute')) {
 			return false;
 		}
 		$annotations = $this->safeAnnotations($ability);
@@ -576,30 +576,24 @@ final class AbilitiesAdapter {
 		return $file === $root || 0 === strpos($file, $root . DIRECTORY_SEPARATOR);
 	}
 
-	private function isExecutionExposed(object $ability): bool {
-		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
-		if (! is_array($meta)) {
-			return false;
-		}
-
-		if (isset($meta['mcp']) && is_array($meta['mcp']) && array_key_exists('public', $meta['mcp'])) {
-			return true === $meta['mcp']['public'];
-		}
-
-		return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
-	}
-
+	/**
+	 * Match WordPress MCP Adapter opt-in semantics: an explicit MCP flag
+	 * overrides the public flag. REST-only exposure is not MCP consent.
+	 */
 	private function isExposed(object $ability): bool {
 		$meta = method_exists($ability, 'get_meta') ? $ability->get_meta() : array();
 		if (! is_array($meta)) {
 			return false;
 		}
-
-		if (isset($meta['mcp']) && is_array($meta['mcp']) && array_key_exists('public', $meta['mcp'])) {
-			return true === $meta['mcp']['public'];
+		if (array_key_exists('mcp', $meta) && null !== $meta['mcp']) {
+			if (! is_array($meta['mcp'])) {
+				return false;
+			}
+			if (array_key_exists('public', $meta['mcp']) && null !== $meta['mcp']['public']) {
+				return true === $meta['mcp']['public'];
+			}
 		}
-
-		return true === ($meta['public'] ?? false) || true === ($meta['show_in_rest'] ?? false);
+		return true === ($meta['public'] ?? false);
 	}
 
 	private function safeAnnotations(object $ability): array {
