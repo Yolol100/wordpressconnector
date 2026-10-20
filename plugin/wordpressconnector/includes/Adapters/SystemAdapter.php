@@ -139,7 +139,18 @@ final class SystemAdapter
 		$this->assertEditableUserRoles($payload);
 		$after = $before;
 		foreach (array('email', 'display_name', 'first_name', 'last_name', 'description', 'url') as $key) if (array_key_exists($key, $payload)) $after[$key] = $payload[$key];
-		if (isset($payload['role'])) $after['roles'] = array(sanitize_key((string) $payload['role']));
+		// Mirror WP_User::set_role(), add_role() and remove_role() in the dry-run.
+		$plannedRoles = isset($payload['role']) ? array(sanitize_key((string) $payload['role'])) : array_values($before['roles']);
+		foreach ($payload['add_roles'] ?? array() as $role) {
+			$role = sanitize_key($role);
+			if (! in_array($role, $plannedRoles, true)) {
+				$plannedRoles[] = $role;
+			}
+		}
+		foreach ($payload['remove_roles'] ?? array() as $role) {
+			$plannedRoles = array_values(array_diff($plannedRoles, array(sanitize_key($role))));
+		}
+		$after['roles'] = $plannedRoles;
 		$result = array('before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make($before));
 		if (! empty($context['dry_run'])) return $result;
 		$this->applyUserFields((int) $user->ID, $payload);
@@ -147,7 +158,20 @@ final class SystemAdapter
 		if (isset($payload['add_roles'])) foreach ((array) $payload['add_roles'] as $role) $user->add_role(sanitize_key((string) $role));
 		if (isset($payload['remove_roles'])) foreach ((array) $payload['remove_roles'] as $role) $user->remove_role(sanitize_key((string) $role));
 		$result['after'] = $this->userSnapshot(get_user_by('id', $user->ID));
-		$result['_rollback'] = array('action' => 'user.update', 'payload' => array('id' => (int) $user->ID, 'email' => $before['email'], 'display_name' => $before['display_name'], 'first_name' => $before['first_name'], 'last_name' => $before['last_name'], 'description' => $before['description'], 'url' => $before['url'], 'role' => $before['roles'][0] ?? 'subscriber'));
+		$restore = array('id' => (int) $user->ID, 'email' => $before['email'], 'display_name' => $before['display_name'], 'first_name' => $before['first_name'], 'last_name' => $before['last_name'], 'description' => $before['description'], 'url' => $before['url']);
+		if ($before['roles'] !== $result['after']['roles']) {
+			if ($before['roles']) {
+				// set_role() clears all current roles. Re-add the remaining originals.
+				$restore['role'] = $before['roles'][0];
+				if (count($before['roles']) > 1) {
+					$restore['add_roles'] = array_slice($before['roles'], 1);
+				}
+			} else {
+				// Do not invent a default role for an account that had none.
+				$restore['remove_roles'] = $result['after']['roles'];
+			}
+		}
+		$result['_rollback'] = array('action' => 'user.update', 'payload' => $restore);
 		return $result;
 	}
 

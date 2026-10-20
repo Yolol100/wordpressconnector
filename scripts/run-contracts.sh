@@ -29,6 +29,7 @@ run_php tests/woocommerce-product-factory-readback-contract.php
 run_php tests/woocommerce-fulfillment-contract.php
 run_php tests/user-password-reset-contract.php
 run_php tests/system-user-role-authorization-contract.php
+run_php tests/system-user-role-preview-rollback-contract.php
 run_php tests/custom-css-contract.php
 run_php tests/public-custom-css-contract.php
 run_php tests/code-snippets-contract.php
