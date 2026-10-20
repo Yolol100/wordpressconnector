@@ -149,9 +149,14 @@ final class FilesystemAdapter
 		if (false === $size || $size < 0 || $size > self::MAX_TEXT_BYTES) {
 			throw new RuntimeException('Text file exceeds the connector read limit.');
 		}
-		$content = file_get_contents($absolute);
+		$content = file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 		if (false === $content || ! $this->isUtf8($content)) {
 			throw new RuntimeException('Filesystem file is not readable UTF-8 text.');
+		}
+		// Recheck the bytes actually read. filesize() can be stale if another
+		// process grows the file between stat() and file_get_contents().
+		if (strlen($content) > self::MAX_TEXT_BYTES) {
+			throw new RuntimeException('Text file exceeds the connector read limit.');
 		}
 		$this->assertNoEmbeddedSecrets($content);
 		$state = $this->state($relative, $content, $absolute);
@@ -179,7 +184,7 @@ final class FilesystemAdapter
 		if (! is_file($absolute)) {
 			throw new RuntimeException('filesystem.write_text only replaces existing regular files.');
 		}
-		$before = file_get_contents($absolute);
+		$before = file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 		if (false === $before || ! $this->isUtf8($before)) {
 			throw new RuntimeException('Existing file is not readable UTF-8 text.');
 		}
@@ -237,7 +242,7 @@ final class FilesystemAdapter
 			}
 
 			clearstatcache(true, $absolute);
-			$readback = file_get_contents($absolute);
+			$readback = file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 			if (false === $readback || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
 				throw new RuntimeException('Filesystem write readback verification failed.');
 			}
@@ -251,7 +256,7 @@ final class FilesystemAdapter
 				// after writing all original bytes.
 			}
 			clearstatcache(true, $absolute);
-			$restored = @file_get_contents($absolute);
+			$restored = @file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 			if (! is_string($restored) || ! hash_equals($beforeState['sha256'], hash('sha256', $restored))) {
 				throw new RuntimeException($error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error);
 			}
@@ -323,7 +328,7 @@ final class FilesystemAdapter
 			throw new RuntimeException('New file write failed; partial content was removed.');
 		}
 		clearstatcache(true, $absolute);
-		$readback = @file_get_contents($absolute);
+		$readback = @file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 		if (! is_string($readback) || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
 			@unlink($absolute);
 			throw new RuntimeException('New file readback failed; incomplete file was removed.');
@@ -344,7 +349,7 @@ final class FilesystemAdapter
 		if (! is_file($absolute) || is_link($absolute)) {
 			throw new RuntimeException('Text deletion requires a regular non-symlink file.');
 		}
-		$before = @file_get_contents($absolute);
+		$before = @file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 		if (! is_string($before) || strlen($before) > self::MAX_TEXT_BYTES || ! $this->isUtf8($before)) {
 			throw new RuntimeException('Existing file is unreadable or exceeds safe text limit.');
 		}

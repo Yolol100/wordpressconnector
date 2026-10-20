@@ -77,6 +77,7 @@ run_php tests/runtime-preflight-contract.php
 run_php tests/system-doctor-runtime-contract.php
 run_php tests/cron-delete-failure-contract.php
 run_php tests/filesystem-control-contract.php
+run_php tests/filesystem-bounded-io-runtime.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
 run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
