@@ -1,82 +1,145 @@
-name: WPCS style candidate (isolated preview)
+name: WPCS whitespace-only candidate review
 
 on:
   push:
     branches:
-      - fix/wpcs-style-preview-20261019
+      - audit/connector-strict-20261020
     paths:
       - .github/workflows/connector-wpcs-preview.yml
 
 permissions:
-  contents: write
+  contents: read
+
+env:
+  REVIEW_SOURCE_SHA: c320bd2a64c951f7f5e73b75b338c6a0190d1e71
 
 jobs:
   preview:
+    if: github.repository == 'Yolol100/wordpressconnector'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          persist-credentials: true
-      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+          ref: ${{ env.REVIEW_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: '8.3'
           tools: composer:v2
-      - name: Install pinned official WordPress formatter versions
+          coverage: none
+      - name: Install pinned WPCS
         shell: bash
         run: |
           set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REVIEW_SOURCE_SHA"
           mkdir -p "$RUNNER_TEMP/wpcs-tools"
           cd "$RUNNER_TEMP/wpcs-tools"
           composer init --no-interaction --name wordpressconnector/qa-tools --type project
           composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
           composer require --dev --no-interaction --no-progress squizlabs/php_codesniffer:3.13.6 wp-coding-standards/wpcs:3.4.1 dealerdirect/phpcodesniffer-composer-installer:1.2.1
-          vendor/bin/phpcbf --version
-      - name: Format three plugin files without committing
+      - name: Review each whitespace candidate without moving any branch
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/wpcs-output"
-          targets=(
-            plugin/wordpressconnector/wordpressconnector.php
-            plugin/wordpressconnector/uninstall.php
-            plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
-          )
-          for target in "${targets[@]}"; do php -l "$target"; done
-          set +e
-          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=WordPress --extensions=php "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/fix-log.txt" 2>&1
-          fixer_status=$?
-          set -e
-          echo "phpcbf exit $fixer_status" >> "$RUNNER_TEMP/wpcs-output/fix-log.txt"
-          for target in "${targets[@]}"; do php -l "$target"; done
-          git diff -- "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/format.diff"
-          git diff --stat -- "${targets[@]}" > "$RUNNER_TEMP/wpcs-output/format-stat.txt"
-          mkdir -p "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/includes/Admin"
-          cp plugin/wordpressconnector/wordpressconnector.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/"
-          cp plugin/wordpressconnector/uninstall.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/"
-          cp plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php "$RUNNER_TEMP/wpcs-output/plugin/wordpressconnector/includes/Admin/"
-          (cd "$RUNNER_TEMP/wpcs-output" && zip -q -r formatted-files.zip plugin)
-          unzip -t "$RUNNER_TEMP/wpcs-output/formatted-files.zip"
-      - name: Upload review-only artifacts
+          python3 - <<'PY'
+          import os,json,pathlib,subprocess,hashlib,zipfile
+          root=pathlib.Path.cwd()
+          report=pathlib.Path(os.environ['RUNNER_TEMP'])/'wpcs-review'
+          report.mkdir()
+          tools=pathlib.Path(os.environ['RUNNER_TEMP'])/'wpcs-tools/vendor/bin'
+          def run(args,name,timeout=180):
+            with (report/name).open('w') as log:
+              p=subprocess.run(args,stdout=log,stderr=subprocess.STDOUT,timeout=timeout)
+            return p.returncode
+          if run(['bash','scripts/run-contracts.sh'],'baseline-contracts.log'):
+            raise SystemExit('Baseline contracts failed; no formatting attempted')
+          token_script=report/'tokens.php'
+          token_script.write_text('''<?php
+          $out=array();
+          foreach(token_get_all(file_get_contents($argv[1]), TOKEN_PARSE) as $token){
+              if(is_array($token) && in_array($token[0],array(T_WHITESPACE,T_COMMENT,T_DOC_COMMENT),true)) continue;
+              $out[]=is_array($token)?array($token[0],$token[1]):$token;
+          }
+          echo json_encode($out,JSON_THROW_ON_ERROR);
+          ''')
+          def tokens(file):
+            return subprocess.check_output(['php',str(token_script),str(file)])
+          def scan(name):
+            rc=run([str(tools/'phpcs'),'--standard=WordPress','--extensions=php','--report=json','plugin/wordpressconnector'],name)
+            data=json.loads((report/name).read_text())
+            if not isinstance(data.get('totals',{}).get('errors'),int):
+              raise SystemExit('Missing trustworthy WPCS totals')
+            return data['totals']
+          before=scan('wpcs-before.json')
+          sniffs=','.join([
+            'PEAR.Functions.FunctionCallSignature',
+            'Generic.WhiteSpace.DisallowSpaceIndent',
+            'WordPress.WhiteSpace.ControlStructureSpacing',
+            'WordPress.WhiteSpace.OperatorSpacing',
+            'WordPress.Arrays.MultipleStatementAlignment',
+            'NormalizedArrays.Arrays.ArrayBraceSpacing',
+            'Generic.Formatting.MultipleStatementAlignment',
+            'Squiz.Functions.FunctionDeclarationArgumentSpacing',
+            'Generic.WhiteSpace.ArbitraryParenthesesSpacing',
+            'WordPress.Arrays.ArrayKeySpacingRestrictions',
+            'WordPress.WhiteSpace.CastStructureSpacing',
+            'Generic.Functions.OpeningFunctionBraceKernighanRitchie'
+          ])
+          targets=[
+            'Adapters/AcfAdapter.php','Adapters/SystemAdapter.php','Runtime/Runner.php',
+            'Adapters/WooCommerceFulfillmentAdapter.php','Adapters/ConnectorUpdateAdapter.php',
+            'Adapters/PluginPackageAdapter.php','Adapters/PluginSettingsAdapter.php',
+            'Adapters/AbilitiesAdapter.php','Admin/Settings.php','Adapters/ElementorCapabilitiesAdapter.php',
+            'Adapters/FilesystemAdapter.php','Adapters/CodeSnippetsAdapter.php','MCP/Controller.php',
+            'REST/AssetStore.php','Adapters/ConnectionReadinessAdapter.php','Security/Policy.php','Support/Json.php'
+          ]
+          selection=[];kept=[]
+          for i,relative in enumerate(targets):
+            path=pathlib.Path('plugin/wordpressconnector/includes')/relative
+            original=path.read_bytes();original_tokens=tokens(path)
+            rc=run([str(tools/'phpcbf'),'--standard=WordPress','--sniffs='+sniffs,str(path)],f'{i:02d}-formatter.log')
+            status='unchanged'
+            if path.read_bytes()!=original:
+              status='rejected_token_change'
+              if tokens(path)==original_tokens:
+                status='accepted' if run(['bash','scripts/run-contracts.sh'],f'{i:02d}-contracts.log')==0 else 'rejected_contract_regression'
+              if status!='accepted':path.write_bytes(original)
+              else:kept.append(path)
+            selection.append({'path':str(path),'status':status,'formatter_exit':rc,'original_sha256':hashlib.sha256(original).hexdigest(),'final_sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
+            (report/'selection.json').write_text(json.dumps(selection,indent=2))
+            print(str(path)+': '+status,flush=True)
+          after=scan('wpcs-after.json')
+          if run(['bash','scripts/run-contracts.sh'],'final-contracts.log'):
+            raise SystemExit('Final contracts failed')
+          (report/'format.diff').write_bytes(subprocess.check_output(['git','diff','--','plugin/wordpressconnector']))
+          with zipfile.ZipFile(report/'candidate-files.zip','w',zipfile.ZIP_DEFLATED) as archive:
+            for path in kept:archive.write(path,str(path))
+          # Only immutable content-addressed blobs are written. No branch, PR,
+          # tag, release or website is changed by this review workflow.
+          blobs=[]
+          for path in kept:
+            data=path.read_bytes()
+            request=report/'blob-request.json'
+            request.write_text(json.dumps({'content':data.decode('utf-8'),'encoding':'utf-8'}))
+            response=json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GITHUB_REPOSITORY']+'/git/blobs','--method','POST','--input',str(request)]))
+            expected=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+            if response.get('sha')!=expected:raise SystemExit('Blob identity mismatch')
+            blobs.append({'path':str(path),'mode':'100644','type':'blob','sha':expected})
+            request.unlink()
+          (report/'kept-blobs.json').write_text(json.dumps(blobs,indent=2))
+          summary={'source_sha':os.environ['REVIEW_SOURCE_SHA'],'before':before,'after':after,'accepted':len(kept),'rejected':sum(x['status'].startswith('rejected') for x in selection),'executable_tokens_unchanged':True,'contracts':'passed','branch_mutation':False}
+          (report/'summary.json').write_text(json.dumps(summary,indent=2));print(json.dumps(summary,indent=2))
+          PY
+      - name: Upload candidate and evidence
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: wpcs-phase1-preview
-          path: ${{ runner.temp }}/wpcs-output/
-          if-no-files-found: error
+          name: wpcs-whitespace-review
+          path: ${{ runner.temp }}/wpcs-review/
+          if-no-files-found: warn
           retention-days: 14
-
-      - name: Commit formatter-only result to isolated branch after preview
-        if: github.ref == 'refs/heads/fix/wpcs-style-preview-20261019'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git diff --check
-          git add -- plugin/wordpressconnector/wordpressconnector.php plugin/wordpressconnector/uninstall.php plugin/wordpressconnector/includes/Admin/ElementorJsonImport.php
-          if git diff --cached --quiet; then
-            echo "No WPCS changes."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "style(wpcs): phase 1 three plugin files"
-          git push origin HEAD:fix/wpcs-style-preview-20261019
