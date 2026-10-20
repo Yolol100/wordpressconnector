@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  AUDIT_SOURCE_SHA: 930cab6589d32b4eee351db6f0f15435f7793cd2
+  AUDIT_SOURCE_SHA: d54322f3ee57be7b0526ddcb7c4163a908eef4ef
 
 jobs:
   full-wpcs-phpstan:
