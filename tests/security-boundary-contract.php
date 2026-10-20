@@ -58,10 +58,12 @@ foreach (array('connector.update.check', 'connector.update.apply') as $action) {
     }
 }
 
+require_once __DIR__ . '/source-token-contract-helper.php';
 $system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
 $core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CoreAdapter.php');
 $filesystem = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
 
+$systemTokens = wpconn_source_tokens($system);
 foreach (array(
     "'capability' => 'create_users'",
     "'capability' => 'edit_users'",
@@ -84,12 +86,16 @@ foreach (array(
     'cron.schedule only reschedules an existing hook with the exact argument set.',
     "Input::boolValue(\$grant, 'payload.capabilities.' . \$cap)",
 ) as $needle) {
-    if (strpos($system, $needle) === false) {
+    // Human-readable error explanations retain spaces inside quoted strings.
+    $marker = strpos($needle, 'only ') !== false
+        ? strpos($system, $needle)
+        : strpos($systemTokens, wpconn_source_fragment($needle));
+    if (false === $marker) {
         fwrite(STDERR, "Missing SystemAdapter boundary: {$needle}\n");
         exit(1);
     }
 }
-if (substr_count($system, 'wp_get_scheduled_event($hook, $args)') < 2) {
+if (substr_count($systemTokens, wpconn_source_fragment('wp_get_scheduled_event($hook, $args)')) < 2) {
     fwrite(STDERR, "Cron run and schedule must both bind to an existing exact event.\n");
     exit(1);
 }

@@ -16,7 +16,7 @@ final class Json {
 		}
 
 		if ( ! is_array( $value ) ) {
-			throw new RuntimeException( 'JSON root must be an object.' );
+			throw new RuntimeException( 'JSON root must be an object or array.' );
 		}
 
 		return $value;
@@ -49,6 +49,8 @@ final class Json {
 	}
 
 	public static function writeFileAtomic( string $path, array $data ): void {
+		// Encoding can throw: do it before creating any directory or temp file.
+		$encoded   = self::encode( $data ) . PHP_EOL;
 		$directory = dirname( $path );
 		if ( ! is_dir( $directory ) && ! wp_mkdir_p( $directory ) ) {
 			throw new RuntimeException( 'Could not create output directory: ' . $directory );
@@ -59,10 +61,21 @@ final class Json {
 			throw new RuntimeException( 'Could not create temporary output file.' );
 		}
 
-		$bytes = file_put_contents( $temporary, self::encode( $data ) . PHP_EOL, LOCK_EX );
-		if ( false === $bytes || ! rename( $temporary, $path ) ) {
-			@unlink( $temporary );
-			throw new RuntimeException( 'Could not write output file: ' . $path );
+		try {
+			// tempnam() may silently fall back to another filesystem. That is
+			// not a valid source for the atomic same-directory replacement.
+			if ( realpath( dirname( $temporary ) ) !== realpath( $directory ) ) {
+				throw new RuntimeException( 'Temporary output file is outside the destination directory.' );
+			}
+			$bytes = file_put_contents( $temporary, $encoded, LOCK_EX );
+			if ( strlen( $encoded ) !== $bytes || ! rename( $temporary, $path ) ) {
+				throw new RuntimeException( 'Could not write complete output file.' );
+			}
+		} catch ( \Throwable $error ) {
+			if ( is_file( $temporary ) && ! @unlink( $temporary ) ) {
+				throw new RuntimeException( 'Temporary output file removal failed; manual cleanup required.', 0, $error );
+			}
+			throw $error;
 		}
 	}
 }

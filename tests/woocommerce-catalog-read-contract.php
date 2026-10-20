@@ -53,12 +53,14 @@ class WC_Tax
 class WooTaxWpdbStub
 {
     public $prefix = 'wp_';
+    /** @var array<int, array{template: string, sql: string, parameters: array}> */
+    public $preparedQueries = array();
     public function prepare(string $query, ...$values): string
     {
         // WordPress 6.2+ escapes identifier placeholders as quoted SQL names.
         // Keep the test double consistent with Core's %i, %s and %d contract.
         $args = $values;
-        return (string) preg_replace_callback('/%[sdi]/', static function (array $match) use (&$args): string {
+        $prepared = preg_replace_callback('/%[sdi]/', static function (array $match) use (&$args): string {
             if (empty($args)) {
                 throw new RuntimeException('Missing SQL prepare argument.');
             }
@@ -68,6 +70,11 @@ class WooTaxWpdbStub
             }
             return is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
         }, $query);
+        if (! is_string($prepared) || count($args) !== 0) {
+            throw new RuntimeException('SQL placeholders must use exactly the supplied parameters.');
+        }
+        $this->preparedQueries[] = array('template' => $query, 'sql' => $prepared, 'parameters' => $values);
+        return $prepared;
     }
     public function get_var(string $query)
     {
@@ -188,6 +195,23 @@ if (50 !== $rates['per_page'] || 101 !== $rates['total'] || 3 !== $rates['pages'
 if (100 !== count($rates['rates'][0]['locations']) || 101 !== $rates['rates'][0]['location_count'] || ! $rates['rates'][0]['locations_truncated'] || 'postcode' !== $rates['rates'][0]['locations'][0]['type']) throw new RuntimeException('Tax rate city/postcode locations were not returned with a hard bound and truncation evidence.');
 $nextRates = $adapter->taxRateList(array('tax_class' => 'reduced-rate', 'per_page' => 500, 'page' => 2));
 if ('62' !== $nextRates['rates'][0]['id'] || 2 !== $nextRates['page']) throw new RuntimeException('Tax rate SQL pagination did not map page and offset correctly.');
+// The scanner cannot count dynamic %d placeholders. Verify the real arguments
+// instead: an escaped table identifier followed only by integer tax-rate IDs.
+$inQueries = array_values(array_filter($wpdb->preparedQueries, static function (array $entry): bool {
+    return false !== strpos($entry['template'], 'tax_rate_id` IN (');
+}));
+if (count($inQueries) < 2) {
+    throw new RuntimeException('No WooCommerce tax-rate IN queries were prepared.');
+}
+foreach ($inQueries as $entry) {
+    if (false === strpos($entry['template'], 'FROM %i')
+        || false === strpos($entry['sql'], 'FROM `wp_woocommerce_tax_rate_locations`')
+        || 1 !== preg_match('/`tax_rate_id` IN \\(([0-9]+(?:,[0-9]+)*)\\)/', $entry['sql'])
+        || preg_match('/%[sdi]/', $entry['sql'])
+        || count($entry['parameters']) !== substr_count($entry['template'], '%d') + substr_count($entry['template'], '%i')) {
+        throw new RuntimeException('WooCommerce tax-rate query used an unsafe or mismatched SQL parameter.');
+    }
+}
 try {
     $adapter->taxRateList(array('tax_class' => 'not-a-real-class'));
     throw new RuntimeException('Unknown tax class was accepted.');

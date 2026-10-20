@@ -770,8 +770,8 @@ final class WooCommerceAdapter {
 			return $result;
 		}
 		$deleted = wc_delete_attribute( $id );
-		if ( is_wp_error( $deleted ) ) {
-			throw new RuntimeException( $deleted->get_error_message() );
+		if ( true !== $deleted ) {
+			throw new RuntimeException( 'WooCommerce attribute deletion failed.' );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['_rollback'] = array(

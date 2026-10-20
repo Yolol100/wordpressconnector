@@ -49,17 +49,21 @@ namespace {
 
     $ui = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
     foreach (array('wpconnector-copy-mcp', 'wpconnector-test-mcp', 'wpconnector-mcp-address',
+        'wpconnector-copy-oauth-mcp', 'wpconnector-oauth-mcp-address',
+        'Possible OAuth MCP server (not verified):', 'does not prove a working sign-in',
         'aria-live="polite"', 'does NOT connect ChatGPT', 'renderConnectionRecoveryGuide') as $needle) {
         $assert(strpos($ui, $needle) !== false, 'Admin UI missing connection control or evidence limit: ' . $needle);
     }
     $js = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/assets/connection-doctor.js');
-    foreach (array("'server/discover'", "'X-WP-Nonce'", "'MCP-Protocol-Version'", "'Mcp-Method'",
+    foreach (array("'server/discover'", "'tools/list'", "'X-WP-Nonce'", "'MCP-Protocol-Version'", "'Mcp-Method'",
         "credentials: 'same-origin'", "cache: 'no-store'", 'response.ok',
         'testButton.disabled = true', 'testButton.disabled = false', 'textContent') as $needle) {
         $assert(strpos($js, $needle) !== false, 'MCP doctor misses secure browser transport: ' . $needle);
     }
+    // The diagnostic may inspect the name of the execute tool, but must never
+    // CALL it or retain credentials. Its only allowed MCP methods are reads.
     foreach (array('Authorization: Bearer', 'wp_remote_post(', 'application_password', 'admin-post.php',
-        'wordpress_connector_execute', 'tools/call', 'localStorage', 'sessionStorage') as $forbidden) {
+        'tools/call', 'localStorage', 'sessionStorage') as $forbidden) {
         $assert(strpos($js, $forbidden) === false,
             'MCP doctor must not request writes, credentials or persistent browser tokens: ' . $forbidden);
     }

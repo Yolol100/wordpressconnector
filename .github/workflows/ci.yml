@@ -267,6 +267,12 @@ jobs:
           wp eval 'if (!defined("WPCONNECTOR_VERSION")) { throw new RuntimeException("WordPress Connector did not bootstrap."); } echo WPCONNECTOR_VERSION . PHP_EOL;' --path="$root"
           wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-system-doctor-runtime.php" --user=admin --path="$root"
 
+      - name: Test WordPress role previews and capability writes
+        if: matrix.wordpress == '7.1.3' && matrix.woocommerce == 'none'
+        run: |
+          root="$RUNNER_TEMP/wordpress"
+          wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-user-role-runtime.php" --user=admin --path="$root"
+
       - name: Test WordPress Abilities bridge runtime
         shell: bash
         run: |

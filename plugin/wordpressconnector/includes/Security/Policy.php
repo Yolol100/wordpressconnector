@@ -8,6 +8,10 @@ use RuntimeException;
 
 final class Policy {
 
+	private const SECRET_KEY_PATTERN  = '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i';
+	private const REDACTION_MAX_DEPTH = 64;
+	private const REDACTION_MAX_NODES = 100000;
+
 	private const SENSITIVE_POST_TYPES = array(
 		'shop_order',
 		'shop_order_refund',
@@ -206,7 +210,7 @@ final class Policy {
 	}
 
 	public static function assertKeyAllowed( string $key ): void {
-		if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i', $key ) ) {
+		if ( (bool) preg_match( self::SECRET_KEY_PATTERN, $key ) ) {
 			throw new RuntimeException( 'Secret-like keys cannot be read or written through the connector.' );
 		}
 	}
@@ -226,6 +230,26 @@ final class Policy {
 	}
 
 	public static function assertLocalAssetPath( string $path, string $assetRoot ): string {
+		// Validate the original path and intermediate directories first:
+		// realpath() removes symlinks, so is_link( $real ) cannot find them.
+		$base = rtrim( $assetRoot, DIRECTORY_SEPARATOR );
+		if ( '' === $base || ( $path !== $base && 0 !== strpos( $path, $base . DIRECTORY_SEPARATOR ) ) ) {
+			throw new RuntimeException( 'Asset path does not belong to the request root.' );
+		}
+		$cursor = $path;
+		while ( $cursor !== $base ) {
+			if ( is_link( $cursor ) ) {
+				throw new RuntimeException( 'Symlink assets are not allowed.' );
+			}
+			$parent = dirname( $cursor );
+			if ( $cursor === $parent ) {
+				throw new RuntimeException( 'Asset path does not belong to the request root.' );
+			}
+			$cursor = $parent;
+		}
+		if ( is_link( $base ) ) {
+			throw new RuntimeException( 'Symlink assets are not allowed.' );
+		}
 		$root = realpath( $assetRoot );
 		$real = realpath( $path );
 		if ( false === $root || false === $real ) {
@@ -233,24 +257,90 @@ final class Policy {
 		$root = rtrim( $root, DIRECTORY_SEPARATOR );
 		if ( $real !== $root && 0 !== strpos( $real, $root . DIRECTORY_SEPARATOR ) ) {
 			throw new RuntimeException( 'Asset path escapes the allowed asset root.' ); }
-		if ( is_link( $real ) ) {
-			throw new RuntimeException( 'Symlink assets are not allowed.' ); }
+
 		return $real;
 	}
 
+	/**
+	 * Redact JSON-visible data without mutating provider-owned objects.
+	 *
+	 * @param mixed $value Data to redact.
+	 * @return mixed Safe data with arrays and JSON object shapes preserved.
+	 */
 	public static function redact( $value ) {
-		if ( ! is_array( $value ) ) {
-			return $value; }
-		$redacted = array();
-		foreach ( $value as $key => $item ) {
-			$name = (string) $key;
-			if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', $name ) ) {
-				$redacted[ $key ] = '[redacted]';
-				continue;
-			}
-			$redacted[ $key ] = self::redact( $item );
+		$remaining = self::REDACTION_MAX_NODES;
+		return self::redactValue( $value, 0, $remaining, new \SplObjectStorage() );
+	}
+
+	/**
+	 * Traverse bounded data; failures never include raw provider error text.
+	 *
+	 * @param mixed             $value     Current value.
+	 * @param int               $depth     Current nesting depth.
+	 * @param int               $remaining Remaining node budget.
+	 * @param \SplObjectStorage $seen      Objects on the current traversal path.
+	 * @return mixed Redacted data, or a safe marker for unsupported data.
+	 */
+	private static function redactValue( $value, int $depth, int &$remaining, \SplObjectStorage $seen ) {
+		if ( $remaining <= 0 || $depth > self::REDACTION_MAX_DEPTH ) {
+			return '[redacted:limit]';
 		}
-		return $redacted;
+		--$remaining;
+
+		// Honor the same JSON representation as the original response. In
+		// particular, never cast objects to arrays and expose private fields.
+		if ( is_object( $value ) && ( ! $value instanceof \stdClass || $value instanceof \JsonSerializable ) ) {
+			try {
+				$json  = json_encode( $value, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION, self::REDACTION_MAX_DEPTH );
+				$value = json_decode( $json, false, self::REDACTION_MAX_DEPTH, JSON_THROW_ON_ERROR );
+			} catch ( \Throwable $error ) {
+				return '[redacted:unserializable]';
+			}
+		}
+
+		if ( is_array( $value ) ) {
+			$redacted = array();
+			foreach ( $value as $key => $item ) {
+				if ( $remaining <= 0 ) {
+					$redacted[ $key ] = '[redacted:limit]';
+					break;
+				}
+				if ( preg_match( self::SECRET_KEY_PATTERN, (string) $key ) ) {
+					--$remaining;
+					$redacted[ $key ] = '[redacted]';
+				} else {
+					$redacted[ $key ] = self::redactValue( $item, $depth + 1, $remaining, $seen );
+				}
+			}
+			return $redacted;
+		}
+
+		if ( $value instanceof \stdClass ) {
+			if ( $seen->contains( $value ) ) {
+				return '[redacted:cycle]';
+			}
+			$seen->attach( $value );
+			try {
+				$redacted = new \stdClass();
+				foreach ( get_object_vars( $value ) as $key => $item ) {
+					if ( $remaining <= 0 ) {
+						$redacted->{$key} = '[redacted:limit]';
+						break;
+					}
+					if ( preg_match( self::SECRET_KEY_PATTERN, (string) $key ) ) {
+						--$remaining;
+						$redacted->{$key} = '[redacted]';
+					} else {
+						$redacted->{$key} = self::redactValue( $item, $depth + 1, $remaining, $seen );
+					}
+				}
+				return $redacted;
+			} finally {
+				$seen->detach( $value );
+			}
+		}
+
+		return is_resource( $value ) ? '[redacted:unsupported]' : $value;
 	}
 
 	public static function setPublicRepositoryContext( bool $isPublic ): void {

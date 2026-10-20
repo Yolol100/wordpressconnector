@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 $root = dirname(__DIR__);
+require_once __DIR__ . '/source-token-contract-helper.php';
 $system = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
 $runner = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
 
@@ -11,16 +12,17 @@ if (false === $system || false === $runner) {
     exit(1);
 }
 
+$systemTokens = wpconn_source_tokens($system);
 $doctorOk = "\$checks['ok'] = \$checks['wordpress_bootstrap'] && \$checks['database'];";
-if (strpos($system, $doctorOk) === false) {
+if (strpos($systemTokens, wpconn_source_fragment($doctorOk)) === false) {
     fwrite(STDERR, "system.doctor must base universal runtime health on WordPress bootstrap and database access.\n");
     exit(1);
 }
-if (strpos($system, "\$checks['ok'] = \$checks['wordpress_bootstrap'] && \$checks['database'] && \$checks['wp_cli'];") !== false) {
+if (strpos($systemTokens, wpconn_source_fragment("\$checks['ok'] = \$checks['wordpress_bootstrap'] && \$checks['database'] && \$checks['wp_cli'];")) !== false) {
     fwrite(STDERR, "system.doctor must not require optional WP-CLI for REST runtime health.\n");
     exit(1);
 }
-if (strpos($system, "'wp_cli' => defined('WP_CLI') && WP_CLI") === false) {
+if (1 !== preg_match("/'wp_cli'\\s*=>\\s*defined\\s*\\(\\s*'WP_CLI'\\s*\\)\\s*&&\\s*WP_CLI/", $system)) {
     fwrite(STDERR, "system.doctor must retain WP-CLI as an informational capability.\n");
     exit(1);
 }

@@ -73,6 +73,37 @@ try {
         }
     }
 
+    // Real WooCommerce attribute deletion must return true and remove the attribute.
+    // Negative false returns are covered by the separate provider contract double.
+    $attributeId = null;
+    try {
+        $created = wc_create_attribute(array(
+            'name' => 'Connector QA Attribute',
+            'slug' => 'wpconn_qa_' . substr(md5(wp_generate_uuid4()), 0, 8),
+            'type' => 'select',
+            'order_by' => 'menu_order',
+            'has_archives' => false,
+        ));
+        if (is_wp_error($created) || ! is_int($created) || $created < 1) {
+            throw new RuntimeException('Could not create real WooCommerce attribute test fixture.');
+        }
+        $attributeId = $created;
+        $deleted = $adapter->attributeDelete(array('id' => $attributeId), array());
+        if ('woocommerce.attribute.create' !== ($deleted['_rollback']['action'] ?? null)
+            || (int) $attributeId !== ($deleted['before']['id'] ?? null)) {
+            throw new RuntimeException('WooCommerce attribute deletion omitted verified rollback data.');
+        }
+        foreach (wc_get_attribute_taxonomies() as $existingAttribute) {
+            if ((int) $existingAttribute->attribute_id === $attributeId) {
+                throw new RuntimeException('WooCommerce attribute deletion was not persisted.');
+            }
+        }
+    } finally {
+        if (is_int($attributeId) && $attributeId > 0) {
+            wc_delete_attribute($attributeId);
+        }
+    }
+
     echo wp_json_encode(array(
         'ok' => true,
         'wordpress' => get_bloginfo('version'),
