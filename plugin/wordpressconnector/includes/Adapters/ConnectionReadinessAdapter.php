@@ -27,8 +27,8 @@ final class ConnectionReadinessAdapter {
 
 	/** Direct admin links only; not provider APIs or proof of recovery. */
 	private const BACKUP_ADMIN_PAGES = array(
-		'WPvivid'                => 'admin.php?page=WPvivid',
-		'WPvivid Pro'            => 'admin.php?page=wpvivid-dashboard',
+		'WPvivid'                 => 'admin.php?page=WPvivid',
+		'WPvivid Pro'             => 'admin.php?page=wpvivid-dashboard',
 		'All-in-One WP Migration' => 'admin.php?page=ai1wm_backups',
 	);
 
@@ -49,18 +49,18 @@ final class ConnectionReadinessAdapter {
 			throw new RuntimeException( 'Connection readiness does not accept parameters.' );
 		}
 
-		$endpoint  = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
-		$https     = is_ssl() && is_string( $endpoint )
+		$endpoint         = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
+		$https            = is_ssl() && is_string( $endpoint )
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
-		$paired    = SitePairing::pairedAdministratorId() > 0;
-		$activePlugins = $this->activePluginPaths();
-		$providers = $this->activeBackupProviders( $activePlugins );
-		$provider = 1 === count( $providers ) ? $providers[0] : null;
-		$nativeMcpAdapter = in_array('mcp-adapter/mcp-adapter.php', $activePlugins, true)
-			&& class_exists('WP\\MCP\\Core\\McpAdapter');
-		$multisite = function_exists( 'is_multisite' ) && is_multisite();
-		$blogId = $multisite && function_exists( 'get_current_blog_id' ) ? (int) get_current_blog_id() : null;
-		$blogId = is_int( $blogId ) && $blogId > 0 ? $blogId : null;
+		$paired           = SitePairing::pairedAdministratorId() > 0;
+		$activePlugins    = $this->activePluginPaths();
+		$providers        = $this->activeBackupProviders( $activePlugins );
+		$provider         = 1 === count( $providers ) ? $providers[0] : null;
+		$nativeMcpAdapter = in_array( 'mcp-adapter/mcp-adapter.php', $activePlugins, true )
+			&& class_exists( 'WP\\MCP\\Core\\McpAdapter' );
+		$multisite        = function_exists( 'is_multisite' ) && is_multisite();
+		$blogId           = $multisite && function_exists( 'get_current_blog_id' ) ? (int) get_current_blog_id() : null;
+		$blogId           = is_int( $blogId ) && $blogId > 0 ? $blogId : null;
 
 		return array(
 			'read_only'                 => true,
@@ -70,35 +70,35 @@ final class ConnectionReadinessAdapter {
 				'github_oidc_execution_verified' => false,
 			),
 			'chatgpt'                   => array(
-				'mcp_endpoint_https'           => $https,
-				'oauth_21_ready'               => false,
-				'oauth_authorization_verified' => false,
-				'native_mcp_adapter_detected' => $nativeMcpAdapter,
-				'native_mcp_server_candidate' => $nativeMcpAdapter && $https ? rest_url('mcp/mcp-adapter-default-server') : null,
-				'native_mcp_oauth_server_candidate' => $nativeMcpAdapter && $https ? rest_url('mcp/mcp-oauth-server') : null,
-				'native_mcp_server_verified' => false,
-				'state'                        => 'requires_trusted_oauth_provider_and_explicit_account_consent',
+				'mcp_endpoint_https'                => $https,
+				'oauth_21_ready'                    => false,
+				'oauth_authorization_verified'      => false,
+				'native_mcp_adapter_detected'       => $nativeMcpAdapter,
+				'native_mcp_server_candidate'       => $nativeMcpAdapter && $https ? rest_url( 'mcp/mcp-adapter-default-server' ) : null,
+				'native_mcp_oauth_server_candidate' => $nativeMcpAdapter && $https ? rest_url( 'mcp/mcp-oauth-server' ) : null,
+				'native_mcp_server_verified'        => false,
+				'state'                             => 'requires_trusted_oauth_provider_and_explicit_account_consent',
 			),
 			'recovery'                  => array(
-				'active_backup_plugins_detected' => $providers,
-				'backup_provider_detected'         => $provider,
-				'backup_provider_admin_path'       => null === $provider ? null : ( self::BACKUP_ADMIN_PAGES[ $provider ] ?? null ),
+				'active_backup_plugins_detected'  => $providers,
+				'backup_provider_detected'        => $provider,
+				'backup_provider_admin_path'      => null === $provider ? null : ( self::BACKUP_ADMIN_PAGES[ $provider ] ?? null ),
 				'backup_provider_choice_required' => count( $providers ) > 1,
-				'backup_automation_verified'       => false,
-				'database_backup_verified'       => false,
-				'site_files_backup_verified'     => false,
-				'offsite_backup_verified'        => false,
-				'staging_restore_verified'       => false,
-				'state'                          => 'independent_host_backup_and_staging_restore_required',
+				'backup_automation_verified'      => false,
+				'database_backup_verified'        => false,
+				'site_files_backup_verified'      => false,
+				'offsite_backup_verified'         => false,
+				'staging_restore_verified'        => false,
+				'state'                           => 'independent_host_backup_and_staging_restore_required',
 			),
-			'site_management' => array(
-				'wordpress_multisite_detected'   => $multisite,
-				'current_blog_id'               => $blogId,
-				'mainwp_dashboard_detected'      => in_array( 'mainwp/mainwp.php', $activePlugins, true ),
-				'mainwp_child_detected'          => in_array( 'mainwp-child/mainwp-child.php', $activePlugins, true ),
-				'remote_sites_authorized'       => false,
-				'mainwp_connection_verified'    => false,
-				'private_site_registry_ready'   => false,
+			'site_management'           => array(
+				'wordpress_multisite_detected' => $multisite,
+				'current_blog_id'              => $blogId,
+				'mainwp_dashboard_detected'    => in_array( 'mainwp/mainwp.php', $activePlugins, true ),
+				'mainwp_child_detected'        => in_array( 'mainwp-child/mainwp-child.php', $activePlugins, true ),
+				'remote_sites_authorized'      => false,
+				'mainwp_connection_verified'   => false,
+				'private_site_registry_ready'  => false,
 			),
 			'high_risk_changes_cleared' => false,
 		);

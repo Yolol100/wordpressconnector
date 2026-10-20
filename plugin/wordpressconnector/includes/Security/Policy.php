@@ -8,7 +8,7 @@ use RuntimeException;
 
 final class Policy {
 
-	private const SECRET_KEY_PATTERN = '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i';
+	private const SECRET_KEY_PATTERN  = '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i';
 	private const REDACTION_MAX_DEPTH = 64;
 	private const REDACTION_MAX_NODES = 100000;
 
@@ -291,7 +291,7 @@ final class Policy {
 		// particular, never cast objects to arrays and expose private fields.
 		if ( is_object( $value ) && ( ! $value instanceof \stdClass || $value instanceof \JsonSerializable ) ) {
 			try {
-				$json = json_encode( $value, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION, self::REDACTION_MAX_DEPTH );
+				$json  = json_encode( $value, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION, self::REDACTION_MAX_DEPTH );
 				$value = json_decode( $json, false, self::REDACTION_MAX_DEPTH, JSON_THROW_ON_ERROR );
 			} catch ( \Throwable $error ) {
 				return '[redacted:unserializable]';
