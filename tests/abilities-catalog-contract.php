@@ -188,6 +188,24 @@ if (5 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['names
     || ! isset($elementorCatalog['abilities']['elementor/mismatched-provider'])) {
     fwrite(STDERR, "Ability namespace filtering failed.\n"); exit(1);
 }
+$exact = $adapter->catalog(array('name' => 'elementor/list-posts'), array());
+if (1 !== $exact['total'] || 1 !== $exact['pages'] || count($exact['abilities']) !== 1
+    || ! isset($exact['abilities']['elementor/list-posts']['input_schema'])) {
+    throw new RuntimeException('One-Ability native schema lookup failed.');
+}
+foreach (array('third-party-plugin/rest-only', 'third-party-plugin/private-operation') as $hiddenName) {
+    $hidden = $adapter->catalog(array('name' => $hiddenName), array());
+    if (0 !== $hidden['total'] || array() !== $hidden['abilities']) {
+        throw new RuntimeException('Exact Ability schema lookup leaked a private/REST-only provider.');
+    }
+}
+foreach (array(array('name' => 'InvalidName'), array('name' => null), array('name' => 'elementor/list-posts', 'page' => 2)) as $invalidLookup) {
+    try {
+        $adapter->catalog($invalidLookup, array());
+        throw new \LogicException('Invalid exact-Ability schema lookup was accepted.');
+    } catch (RuntimeException $expected) {
+    }
+}
 try {
     $adapter->catalog(array('namespace' => 'Bad/Namespace'), array());
     fwrite(STDERR, "Malformed Ability namespace was accepted.\n"); exit(1);

@@ -11,7 +11,7 @@ final class AbilitiesAdapter {
 	public function register(Registry $registry): void {
 		$registry->register('wordpress.abilities', array($this, 'catalog'), array(
 			'privileged' => true,
-			'description' => 'Discover exposed WordPress Abilities API entries and their schemas without executing them.',
+			'description' => 'Discover native WordPress Abilities and schemas; use payload.name for one exact exposed Ability schema.',
 		));
 		$registry->register('wordpress.ability.read', array($this, 'readAbility'), array(
 			'privileged' => true,
@@ -46,6 +46,16 @@ final class AbilitiesAdapter {
 		$perPage = $this->catalogPositiveInteger($payload['per_page'] ?? 10, 10, 'per_page');
 		$page = $this->catalogPositiveInteger($payload['page'] ?? 1, 100000, 'page');
 		$namespace = $this->catalogNamespace($payload['namespace'] ?? null);
+		$exactNameProvided = array_key_exists('name', $payload);
+		$exactName = $exactNameProvided ? $payload['name'] : null;
+		if ($exactNameProvided) {
+			if (! is_string($exactName) || ! $this->isValidName($exactName)) {
+				throw new \RuntimeException('name must be a valid namespace/ability name.');
+			}
+			if (array_key_exists('namespace', $payload) || array_key_exists('page', $payload) || array_key_exists('per_page', $payload)) {
+				throw new \RuntimeException('Exact Ability schema lookup cannot use catalog pagination or namespace filters.');
+			}
+		}
 
 		$registered = (array) wp_get_abilities();
 		if (count($registered) > 10000) {
@@ -63,6 +73,9 @@ final class AbilitiesAdapter {
 			}
 
 			if (! $this->isValidName($name) || ! $this->isExposed($ability)) {
+				continue;
+			}
+			if (null !== $exactName && $exactName !== $name) {
 				continue;
 			}
 			if (null !== $namespace && 0 !== strpos($name, $namespace . '/')) {
