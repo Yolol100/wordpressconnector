@@ -11,6 +11,7 @@ find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n
 run_php tests/policy-contract.php
 run_php tests/policy-asset-symlink-contract.php
 run_php tests/policy-object-redaction-contract.php
+run_php tests/json-atomic-write-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
 run_php tests/abilities-catalog-contract.php
