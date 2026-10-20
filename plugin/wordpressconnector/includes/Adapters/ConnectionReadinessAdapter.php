@@ -75,6 +75,7 @@ final class ConnectionReadinessAdapter {
 				'oauth_authorization_verified' => false,
 				'native_mcp_adapter_detected' => $nativeMcpAdapter,
 				'native_mcp_server_candidate' => $nativeMcpAdapter && $https ? rest_url('mcp/mcp-adapter-default-server') : null,
+				'native_mcp_oauth_server_candidate' => $nativeMcpAdapter && $https ? rest_url('mcp/mcp-oauth-server') : null,
 				'native_mcp_server_verified' => false,
 				'state'                        => 'requires_trusted_oauth_provider_and_explicit_account_consent',
 			),

@@ -62,6 +62,7 @@ namespace {
         && $status['chatgpt']['oauth_authorization_verified'] === false
         && $status['chatgpt']['native_mcp_adapter_detected'] === false
         && $status['chatgpt']['native_mcp_server_candidate'] === null
+        && $status['chatgpt']['native_mcp_oauth_server_candidate'] === null
         && $status['chatgpt']['native_mcp_server_verified'] === false
         && $status['recovery']['backup_provider_detected'] === null
         && $status['recovery']['backup_provider_choice_required'] === false
@@ -93,6 +94,7 @@ namespace {
         && $status['recovery']['backup_provider_choice_required'] === true
         && $status['chatgpt']['native_mcp_adapter_detected'] === true
         && $status['chatgpt']['native_mcp_server_candidate'] === 'https://example.invalid/wp-json/mcp/mcp-adapter-default-server'
+        && $status['chatgpt']['native_mcp_oauth_server_candidate'] === 'https://example.invalid/wp-json/mcp/mcp-oauth-server'
         && $status['chatgpt']['native_mcp_server_verified'] === false
         && $status['recovery']['staging_restore_verified'] === false
         && $status['recovery']['offsite_backup_verified'] === false
@@ -198,6 +200,8 @@ namespace {
         'trusted OAuth 2.1 provider',
         'Official WordPress MCP Adapter',
         'Installing the official MCP Adapter alone does not enable OAuth.',
+        'Possible OAuth MCP server (not verified):',
+        'An OAuth provider may already be active;',
         'Open %s backup screen',
         'Existing multi-site management',
         'use an existing MainWP Dashboard',

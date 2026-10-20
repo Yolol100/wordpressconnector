@@ -311,7 +311,7 @@ final class Settings
             __('GitHub site pairing', 'wordpressconnector') =>
                 $site['github_pairing_recorded'] ? __('Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector') : __('Not recorded', 'wordpressconnector'),
             __('Direct ChatGPT OAuth', 'wordpressconnector') =>
-                $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector'),
+                $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not verified in Connector: a separate OAuth provider may already be configured; check its metadata and complete ChatGPT login', 'wordpressconnector'),
             __('Official WordPress MCP Adapter', 'wordpressconnector') =>
                 $oauth['native_mcp_adapter_detected'] ? __('Detected (server and OAuth access not independently verified)', 'wordpressconnector') : __('Optional; WordPress Connector already has an MCP endpoint', 'wordpressconnector'),
             __('Existing multi-site management', 'wordpressconnector') =>
@@ -333,9 +333,13 @@ final class Settings
             echo '<tr><th scope="row">' . esc_html($label) . '</th><td>' . esc_html($value) . '</td></tr>';
         }
         echo '</tbody></table>';
-        echo '<p>' . esc_html__('For approved GitHub workflows, use the existing short-lived OIDC connection. Direct ChatGPT linking still requires an independently configured OAuth provider and an actual ChatGPT sign-in test. Installing the official MCP Adapter alone does not enable OAuth.', 'wordpressconnector') . '</p>';
+        echo '<p>' . esc_html__('For approved GitHub workflows, use the existing short-lived OIDC connection. Direct ChatGPT linking requires an independently verified OAuth provider and an actual ChatGPT sign-in test. Installing the official MCP Adapter alone does not enable OAuth.', 'wordpressconnector') . '</p>';
         if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_server_candidate'])) {
             echo '<p><strong>' . esc_html__('Optional official WordPress MCP Adapter server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_server_candidate']) . '</code></p>';
+            if (is_string($oauth['native_mcp_oauth_server_candidate'])) {
+                echo '<p><strong>' . esc_html__('Possible OAuth MCP server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_oauth_server_candidate']) . '</code></p>';
+                echo '<p>' . esc_html__('Verify the OAuth protected-resource and authorization-server metadata, token scope and user permissions before adding this server to ChatGPT. A candidate URL does not prove a working connection.', 'wordpressconnector') . '</p>';
+            }
         }
 
         echo '<p>' . esc_html__('To manage several sites, use an existing MainWP Dashboard and its official MCP connection. A Child plugin, network multisite, or accessible website does not authorize control of another site. This Connector does not collect customer site URLs or credentials.', 'wordpressconnector') . '</p>';
@@ -364,7 +368,7 @@ final class Settings
         }
 
         echo '<ol>';
-        echo '<li>' . esc_html__('First enable a trusted OAuth 2.1 provider or broker with PKCE, token validation and explicit WordPress-account linking. Do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector') . '</li>';
+        echo '<li>' . esc_html__('Verify or configure a trusted OAuth 2.1 provider with PKCE, token validation and explicit WordPress-account linking. An OAuth provider may already be active; do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('In a ChatGPT workspace that permits custom MCP connections, an admin must add the HTTPS MCP endpoint and approve OAuth linking.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('Configure a full backup with the hosting or backup provider: files plus database, with an independent offsite copy.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('Restore that backup on a separate staging site and confirm that content, files, plugins and the database are intact before high-risk writes.', 'wordpressconnector') . '</li>';
