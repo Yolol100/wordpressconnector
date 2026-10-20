@@ -344,8 +344,10 @@ final class Settings
         if (is_string($detectedBackup)) {
             $adminPath = $recovery['backup_provider_admin_path'];
             if (is_string($adminPath)) {
+                /* translators: %s: Name of the active WordPress backup plugin. */
+                $backupLinkText = sprintf(__('Open %s backup screen', 'wordpressconnector'), $detectedBackup);
                 echo '<p><a href="' . esc_url(admin_url($adminPath)) . '">' .
-                    esc_html(sprintf(__('Open %s backup screen', 'wordpressconnector'), $detectedBackup)) .
+                    esc_html($backupLinkText) .
                     '</a> — ' . esc_html__('Make a full files + database backup with your existing plugin, store a separate copy and verify a staging restore before risky updates. The Connector does not start or verify that backup.', 'wordpressconnector') . '</p>';
             }
         } elseif ($recovery['backup_provider_choice_required']) {
