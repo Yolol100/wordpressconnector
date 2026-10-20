@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 // Only run in a disposable WordPress/MySQL test instance as --user=admin.
 if (! defined('ABSPATH') || ! class_exists('Webactueel\WordPressConnector\Adapters\SystemAdapter')) {
     throw new RuntimeException('Connector must be active on a real WordPress instance.');
