@@ -93,6 +93,24 @@ namespace {
         && $status['chatgpt']['native_mcp_adapter_detected'] === false,
         'Inactive or unrecognized plugins must not be treated as active services.');
 
+    $GLOBALS['setup_readiness']['plugins'] = array(
+        array('invalid'), 'wpvivid-backuprestore/wpvivid-backuprestore.php', true
+    );
+    $GLOBALS['setup_readiness']['network'] = array('bad' => array('invalid'));
+    set_error_handler(static function ($severity, $message): void {
+        throw new RuntimeException('Malformed active plugin option triggered a warning: ' . $message);
+    });
+    try {
+        $status = $adapter->inspect();
+        $assert($status['recovery']['active_backup_plugins_detected'] === array('WPvivid')
+            && $status['chatgpt']['native_mcp_adapter_detected'] === false,
+            'Broken active-plugin options must be ignored without false-positive integrations.');
+    } finally {
+        restore_error_handler();
+    }
+    $GLOBALS['setup_readiness']['plugins'] = array();
+    $GLOBALS['setup_readiness']['network'] = array();
+
     $GLOBALS['setup_readiness']['https'] = false;
     $status = $adapter->inspect();
     $assert($status['wordpress']['https_ready'] === false

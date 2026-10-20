@@ -102,6 +102,8 @@ final class ConnectionReadinessAdapter {
 			$active = array_merge( $active, array_keys( $network ) );
 		}
 
-		return array_values( array_unique( $active ) );
+		// WordPress options can contain invalid values after a broken migration;
+		// do not let array_unique() cast arrays/objects and raise warnings.
+		return array_values( array_filter( $active, 'is_string' ) );
 	}
 }
