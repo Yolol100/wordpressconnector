@@ -8,6 +8,9 @@ on:
 permissions:
   contents: read
 
+env:
+  AUDIT_SOURCE_SHA: 930cab6589d32b4eee351db6f0f15435f7793cd2
+
 jobs:
   full-wpcs-phpstan:
     runs-on: ubuntu-24.04
@@ -15,7 +18,24 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.AUDIT_SOURCE_SHA }}
           persist-credentials: false
+      - name: Capture exact tracked source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$AUDIT_SOURCE_SHA"
+          mkdir -p "$RUNNER_TEMP/reports"
+          git archive --format=zip HEAD > "$RUNNER_TEMP/reports/source.zip"
+          git ls-tree -r HEAD > "$RUNNER_TEMP/reports/source-tree.txt"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: exact-source-checkpoint
+          path: |
+            ${{ runner.temp }}/reports/source.zip
+            ${{ runner.temp }}/reports/source-tree.txt
+          retention-days: 14
+          if-no-files-found: error
       - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
           php-version: '8.3'
@@ -34,28 +54,24 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/reports"
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/reports/workflow-head.txt"
           git rev-parse HEAD > "$RUNNER_TEMP/reports/source-commit.txt"
           (cd plugin/wordpressconnector && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$RUNNER_TEMP/reports/plugin-file-shas.txt"
-          "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=summary plugin/wordpressconnector > "$RUNNER_TEMP/reports/wpcs.txt" 2>&1 || true
+          "$RUNNER_TEMP/wpcs/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=json plugin/wordpressconnector > "$RUNNER_TEMP/reports/wpcs.json" 2> "$RUNNER_TEMP/reports/wpcs-stderr.txt" || true
           composer install --working-dir=scripts/phpstan --no-interaction --no-progress --prefer-dist --no-plugins --no-scripts
           scripts/phpstan/vendor/bin/phpstan analyse -c scripts/phpstan/phpstan.neon --no-progress --error-format=json > "$RUNNER_TEMP/reports/phpstan.json" 2> "$RUNNER_TEMP/reports/phpstan-stderr.txt" || true
+          tar -czf "$RUNNER_TEMP/reports/wpcs-tools.tar.gz" -C "$RUNNER_TEMP/wpcs" composer.json composer.lock vendor
+          tar -czf "$RUNNER_TEMP/reports/phpstan-tools.tar.gz" scripts/phpstan/vendor
           python3 - <<'PY'
-          import os, json, re, pathlib, collections
-          d=pathlib.Path(os.environ["RUNNER_TEMP"])/"reports"
-          s=(d/"wpcs.txt").read_text()
-          n=re.search(r"A TOTAL OF ([0-9,]+) ERRORS AND ([0-9,]+) WARNINGS WERE FOUND",s)
-          if not n:
-            raise SystemExit("Missing WPCS total; inspect raw report.")
-          result=json.loads((d/"phpstan.json").read_text())
-          total=result.get("totals",{}).get("file_errors")
-          if not isinstance(total,int):
-            raise SystemExit("Missing PHPStan total; inspect raw report.")
-          groups=collections.Counter(m.get("identifier","unknown") for file in result.get("files",{}).values() for m in file.get("messages",[]))
-          summary={"audit_sha":os.environ["GITHUB_SHA"],"wpcs_errors":int(n.group(1).replace(",","")),"wpcs_warnings":int(n.group(2).replace(",","")),"phpstan_errors":total,"phpstan_families":dict(groups.most_common())}
-          (d/"summary.json").write_text(json.dumps(summary,indent=2))
-          print(json.dumps(summary,indent=2))
+          import os, json, pathlib, collections
+          d=pathlib.Path(os.environ['RUNNER_TEMP'])/'reports'
+          w=json.loads((d/'wpcs.json').read_text())
+          p=json.loads((d/'phpstan.json').read_text())
+          if not isinstance(w.get('totals',{}).get('errors'),int) or not isinstance(p.get('totals',{}).get('file_errors'),int):
+            raise SystemExit('Missing trustworthy scanner totals')
+          result={'source_sha':os.environ['AUDIT_SOURCE_SHA'],'audit_sha':os.environ['GITHUB_SHA'],'wpcs_errors':w['totals']['errors'],'wpcs_warnings':w['totals']['warnings'],'phpstan_errors':p['totals']['file_errors'],'phpstan_global_errors':p.get('errors',[])}
+          (d/'summary.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
           PY
       - name: Upload evidence even if scanning fails
         if: always()
@@ -65,6 +81,14 @@ jobs:
           path: ${{ runner.temp }}/reports/
           if-no-files-found: warn
           retention-days: 14
+      - name: Fail closed when strict findings remain
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib
+          s=json.loads((pathlib.Path(os.environ['RUNNER_TEMP'])/'reports/summary.json').read_text())
+          raise SystemExit(1 if s['wpcs_errors'] or s['wpcs_warnings'] or s['phpstan_errors'] or s['phpstan_global_errors'] else 0)
+          PY
 
   strict-wordpress-plugin-check:
     runs-on: ubuntu-24.04
@@ -72,6 +96,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ env.AUDIT_SOURCE_SHA }}
           persist-credentials: false
       - uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e # v1.1.9
         with:
