@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\REST;
 
 use RuntimeException;
+use Webactueel\WordPressConnector\Security\Policy;
 
 final class AssetStore
 {
@@ -45,20 +46,9 @@ final class AssetStore
 		if (! is_dir($parent) && ! wp_mkdir_p($parent)) {
 			throw new RuntimeException('Could not create request asset directory.');
 		}
-		$rootReal = realpath($root);
-		$parentReal = realpath($parent);
-		if (false === $rootReal || false === $parentReal) {
-			throw new RuntimeException('Could not resolve request asset directory.');
-		}
-		$rootReal = rtrim($rootReal, DIRECTORY_SEPARATOR);
-		if ($parentReal !== $rootReal && 0 !== strpos($parentReal, $rootReal . DIRECTORY_SEPARATOR)) {
-			throw new RuntimeException('Asset path escapes the request asset root.');
-		}
-		// Verify the real destination before changing filesystem permissions.
-		// Chmod follows symlinks, which may otherwise alter an outside directory.
-		if (is_link($parent)) {
-			throw new RuntimeException('Refusing symbolic link asset parent directory.');
-		}
+		// Reuse the central asset boundary, which checks every lexical parent
+		// component *before* realpath() or chmod can follow a symlink.
+		Policy::assertLocalAssetPath($parent, $root);
 		if (! @chmod($parent, 0700)) {
 			throw new RuntimeException('Could not secure request asset directory.');
 		}

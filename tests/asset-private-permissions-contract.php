@@ -50,6 +50,7 @@ namespace {
     }
     function get_allowed_mime_types(): array { return array('json' => 'application/json'); }
 
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/REST/AssetStore.php';
 
     $store = new \Webactueel\WordPressConnector\REST\AssetStore();
@@ -121,6 +122,38 @@ namespace {
         throw new RuntimeException('Dangling symlink asset target was not rejected.');
     }
 
+    // An indirect symlink entirely inside the private root is forbidden too:
+    // otherwise upload paths can alias a sibling tree without detection.
+    $inside = $root . '/inner-genuine';
+    if (! mkdir($inside, 0700) || ! mkdir($inside . '/deep', 0700)
+        || ! symlink($inside, $root . '/inner-alias')) {
+        throw new RuntimeException('Could not set up indirect parent symlink fixture.');
+    }
+    $normalUpload = tempnam(sys_get_temp_dir(), 'wpconn-inner-normal');
+    file_put_contents($normalUpload, '{"normal":true}');
+    $normalStored = $store->put($id, 'inner-genuine/deep/normal.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $normalUpload));
+    if (15 !== ($normalStored['bytes'] ?? null) || ! is_file($inside . '/deep/normal.json')) {
+        throw new RuntimeException('Ordinary nested upload unexpectedly failed.');
+    }
+    $indirectUpload = tempnam(sys_get_temp_dir(), 'wpconn-inner-alias');
+    file_put_contents($indirectUpload, '{"alias":true}');
+    $indirectRejected = false;
+    try {
+        $store->put($id, 'inner-alias/deep/alias.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $indirectUpload));
+    } catch (RuntimeException $error) {
+        $indirectRejected = 'Symlink assets are not allowed.' === $error->getMessage();
+    }
+    $aliasWrote = file_exists($inside . '/deep/alias.json');
+    if ($aliasWrote) \unlink($inside . '/deep/alias.json');
+    if (is_file($indirectUpload)) \unlink($indirectUpload);
+    \unlink($inside . '/deep/normal.json');
+    \unlink($root . '/inner-alias');
+    \rmdir($inside . '/deep');
+    \rmdir($inside);
+    if (! $indirectRejected || $aliasWrote) {
+        throw new RuntimeException('Indirect symlink to a sibling asset directory was accepted.');
+    }
+
     // The parent path must be validated before chmod, so a private-root
     // symlink cannot change the permissions of an unrelated directory.
     $outside = sys_get_temp_dir() . '/wpconn-outside-' . bin2hex(random_bytes(6));
@@ -137,7 +170,7 @@ namespace {
         $store->put($id, 'external/sample.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $outsideUpload));
         throw new RuntimeException('Symlinked external asset parent unexpectedly accepted.');
     } catch (RuntimeException $error) {
-        if ('Asset path escapes the request asset root.' !== $error->getMessage()) {
+        if ('Symlink assets are not allowed.' !== $error->getMessage()) {
             throw $error;
         }
     }

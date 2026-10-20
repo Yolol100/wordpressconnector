@@ -53,7 +53,7 @@ foreach (array("private const ISSUER = 'https://token.actions.githubusercontent.
     if (strpos(preg_replace('/\\s+/', '', $oidc), preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing GitHub OIDC boundary: {$needle}\n"); exit(1); }
 }
 if (strpos($oidc, 'SitePairing::pairedAdministratorId()') === false || strpos($bootstrap, 'includes/Security/SitePairing.php') === false) { fwrite(STDERR, "Missing opt-in GitHub OIDC pairing boundary.\n"); exit(1); }
-foreach (array('is_uploaded_file($tmpName)','filesize($tmpName)','allowedFileType($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','realpath($root)','sys_get_temp_dir()','assertOutsideWebRoot') as $needle) {
+foreach (array('is_uploaded_file($tmpName)','filesize($tmpName)','allowedFileType($relativePath)','get_allowed_mime_types()','MAX_FILES = 10','MAX_TOTAL_BYTES = 26214400','MAX_FILE_BYTES = 20971520','Policy::assertLocalAssetPath($parent, $root)','sys_get_temp_dir()','assertOutsideWebRoot') as $needle) {
     if (strpos(preg_replace('/\\s+/', '', $assetStore), preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing REST asset security contract: {$needle}\n"); exit(1); }
 }
 if (strpos($controller,'__return_true')!==false) { fwrite(STDERR,"REST routes must not use __return_true.\n"); exit(1); }
