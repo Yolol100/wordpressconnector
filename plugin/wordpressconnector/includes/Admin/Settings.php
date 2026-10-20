@@ -346,7 +346,11 @@ final class Settings
             if (is_string($adminPath)) {
                 /* translators: %s: Name of the active WordPress backup plugin. */
                 $backupLinkText = sprintf(__('Open %s backup screen', 'wordpressconnector'), $detectedBackup);
-                echo '<p><a href="' . esc_url(admin_url($adminPath)) . '">' .
+                // WPvivid's network settings live in network admin on multisite.
+                $networkBackup = $sites['wordpress_multisite_detected']
+                    && in_array($detectedBackup, array('WPvivid', 'WPvivid Pro'), true);
+                $backupAdminUrl = $networkBackup ? network_admin_url($adminPath) : admin_url($adminPath);
+                echo '<p><a href="' . esc_url($backupAdminUrl) . '">' .
                     esc_html($backupLinkText) .
                     '</a> — ' . esc_html__('Make a full files + database backup with your existing plugin, store a separate copy and verify a staging restore before risky updates. The Connector does not start or verify that backup.', 'wordpressconnector') . '</p>';
             }
