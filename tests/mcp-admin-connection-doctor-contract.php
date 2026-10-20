@@ -58,8 +58,10 @@ namespace {
         'testButton.disabled = true', 'testButton.disabled = false', 'textContent') as $needle) {
         $assert(strpos($js, $needle) !== false, 'MCP doctor misses secure browser transport: ' . $needle);
     }
+    // The diagnostic may inspect the name of the execute tool, but must never
+    // CALL it or retain credentials. Its only allowed MCP methods are reads.
     foreach (array('Authorization: Bearer', 'wp_remote_post(', 'application_password', 'admin-post.php',
-        'wordpress_connector_execute', 'tools/call', 'localStorage', 'sessionStorage') as $forbidden) {
+        'tools/call', 'localStorage', 'sessionStorage') as $forbidden) {
         $assert(strpos($js, $forbidden) === false,
             'MCP doctor must not request writes, credentials or persistent browser tokens: ' . $forbidden);
     }
