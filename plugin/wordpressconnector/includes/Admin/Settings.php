@@ -311,6 +311,8 @@ final class Settings
                 $site['github_pairing_recorded'] ? __('Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector') : __('Not recorded', 'wordpressconnector'),
             __('Direct ChatGPT OAuth', 'wordpressconnector') =>
                 $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector'),
+            __('Official WordPress MCP Adapter', 'wordpressconnector') =>
+                $oauth['native_mcp_adapter_detected'] ? __('Detected (server and OAuth access not independently verified)', 'wordpressconnector') : __('Optional; WordPress Connector already has an MCP endpoint', 'wordpressconnector'),
             __('Full database and files backup', 'wordpressconnector') =>
                 __('Not independently verified', 'wordpressconnector'),
             __('Copy stored outside this hosting account', 'wordpressconnector') =>
@@ -322,6 +324,10 @@ final class Settings
             echo '<tr><th scope="row">' . esc_html($label) . '</th><td>' . esc_html($value) . '</td></tr>';
         }
         echo '</tbody></table>';
+        echo '<p>' . esc_html__('For approved GitHub workflows, use the existing short-lived OIDC connection. Direct ChatGPT linking still requires an independently configured OAuth provider and an actual ChatGPT sign-in test. Installing the official MCP Adapter alone does not enable OAuth.', 'wordpressconnector') . '</p>';
+        if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_server_candidate'])) {
+            echo '<p><strong>' . esc_html__('Optional official WordPress MCP Adapter server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_server_candidate']) . '</code></p>';
+        }
 
         $providers = $recovery['active_backup_plugins_detected'];
         if (count($providers) > 0) {

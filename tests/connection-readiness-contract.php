@@ -12,6 +12,11 @@ namespace Webactueel\WordPressConnector\Security {
     }
 }
 
+namespace WP\MCP\Core {
+    // Fixture only: availability also requires an active canonical plugin path.
+    class McpAdapter {}
+}
+
 namespace {
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectionReadinessAdapter.php';
@@ -52,6 +57,9 @@ namespace {
         && $status['wordpress']['github_oidc_execution_verified'] === false
         && $status['chatgpt']['oauth_21_ready'] === false
         && $status['chatgpt']['oauth_authorization_verified'] === false
+        && $status['chatgpt']['native_mcp_adapter_detected'] === false
+        && $status['chatgpt']['native_mcp_server_candidate'] === null
+        && $status['chatgpt']['native_mcp_server_verified'] === false
         && $status['recovery']['database_backup_verified'] === false
         && $status['recovery']['site_files_backup_verified'] === false
         && $status['recovery']['offsite_backup_verified'] === false
@@ -59,12 +67,20 @@ namespace {
         && $status['high_risk_changes_cleared'] === false,
         'The initial setup snapshot must never guess that OAuth or recovery works.');
 
-    $GLOBALS['setup_readiness']['plugins'] = array('updraftplus/updraftplus.php', 'unrelated/unrelated.php');
+    $GLOBALS['setup_readiness']['plugins'] = array(
+        'updraftplus/updraftplus.php',
+        'all-in-one-wp-migration/all-in-one-wp-migration.php',
+        'mcp-adapter/mcp-adapter.php',
+        'unrelated/unrelated.php',
+    );
     $GLOBALS['setup_readiness']['network'] = array('duplicator/duplicator.php' => 1);
     $GLOBALS['setup_readiness']['paired'] = true;
     $status = $adapter->inspect();
     $assert($status['wordpress']['github_pairing_recorded'] === true
-        && $status['recovery']['active_backup_plugins_detected'] === array('UpdraftPlus', 'Duplicator')
+        && $status['recovery']['active_backup_plugins_detected'] === array('UpdraftPlus', 'Duplicator', 'All-in-One WP Migration')
+        && $status['chatgpt']['native_mcp_adapter_detected'] === true
+        && $status['chatgpt']['native_mcp_server_candidate'] === 'https://example.invalid/wp-json/mcp/mcp-adapter-default-server'
+        && $status['chatgpt']['native_mcp_server_verified'] === false
         && $status['recovery']['staging_restore_verified'] === false
         && $status['recovery']['offsite_backup_verified'] === false
         && $status['chatgpt']['oauth_21_ready'] === false,
@@ -73,8 +89,9 @@ namespace {
     $GLOBALS['setup_readiness']['plugins'] = array('unrelated/unrelated.php');
     $GLOBALS['setup_readiness']['network'] = array();
     $status = $adapter->inspect();
-    $assert($status['recovery']['active_backup_plugins_detected'] === array(),
-        'Unrecognized plugins must not be treated as backup coverage.');
+    $assert($status['recovery']['active_backup_plugins_detected'] === array()
+        && $status['chatgpt']['native_mcp_adapter_detected'] === false,
+        'Inactive or unrecognized plugins must not be treated as active services.');
 
     $GLOBALS['setup_readiness']['https'] = false;
     $status = $adapter->inspect();
@@ -106,6 +123,8 @@ namespace {
         'new ConnectionReadinessAdapter()',
         'Not independently verified',
         'trusted OAuth 2.1 provider',
+        'Official WordPress MCP Adapter',
+        'Installing the official MCP Adapter alone does not enable OAuth.',
         'database',
         'separate staging site',
     ) as $needle) {

@@ -21,6 +21,7 @@ final class ConnectionReadinessAdapter {
 		'wpvivid-backuprestore/wpvivid-backuprestore.php' => 'WPvivid',
 		'duplicator/duplicator.php'                       => 'Duplicator',
 		'backwpup/backwpup.php'                           => 'BackWPup',
+		'all-in-one-wp-migration/all-in-one-wp-migration.php' => 'All-in-One WP Migration',
 	);
 
 	public function register( Registry $registry ): void {
@@ -45,6 +46,8 @@ final class ConnectionReadinessAdapter {
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
 		$providers = $this->activeBackupProviders();
+		$nativeMcpAdapter = in_array('mcp-adapter/mcp-adapter.php', $this->activePluginPaths(), true)
+			&& class_exists('WP\\MCP\\Core\\McpAdapter');
 
 		return array(
 			'read_only'                 => true,
@@ -57,6 +60,9 @@ final class ConnectionReadinessAdapter {
 				'mcp_endpoint_https'           => $https,
 				'oauth_21_ready'               => false,
 				'oauth_authorization_verified' => false,
+				'native_mcp_adapter_detected' => $nativeMcpAdapter,
+				'native_mcp_server_candidate' => $nativeMcpAdapter && $https ? rest_url('mcp/mcp-adapter-default-server') : null,
+				'native_mcp_server_verified' => false,
 				'state'                        => 'requires_trusted_oauth_provider_and_explicit_account_consent',
 			),
 			'recovery'                  => array(
@@ -72,6 +78,19 @@ final class ConnectionReadinessAdapter {
 	}
 
 	private function activeBackupProviders(): array {
+		$active = $this->activePluginPaths();
+		$detected = array();
+		foreach ( self::BACKUP_PROVIDERS as $file => $name ) {
+			if ( in_array( $file, $active, true ) ) {
+				$detected[] = $name;
+			}
+		}
+		// Active plugins and Core's temporary update backup do not prove
+		// complete database/files, offsite copies or tested staging restores.
+		return $detected;
+	}
+
+	private function activePluginPaths(): array {
 		$active = function_exists( 'get_option' )
 			? get_option( 'active_plugins', array() ) : array();
 		$active = is_array( $active ) ? $active : array();
@@ -83,14 +102,6 @@ final class ConnectionReadinessAdapter {
 			$active = array_merge( $active, array_keys( $network ) );
 		}
 
-		$detected = array();
-		foreach ( self::BACKUP_PROVIDERS as $file => $name ) {
-			if ( in_array( $file, $active, true ) ) {
-				$detected[] = $name;
-			}
-		}
-		// Neither an active plugin nor Core's upgrade-temp-backup is proof
-		// of successful files+DB backup, an offsite copy, or staging restore.
-		return $detected;
+		return array_values( array_unique( $active ) );
 	}
 }

@@ -53,7 +53,7 @@ namespace {
         $assert(strpos($ui, $needle) !== false, 'Admin UI missing connection control or evidence limit: ' . $needle);
     }
     $js = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/assets/connection-doctor.js');
-    foreach (array("'server/discover'", "'X-WP-Nonce'", "'MCP-Protocol-Version'", "'Mcp-Method'",
+    foreach (array("'server/discover'", "'tools/list'", "'X-WP-Nonce'", "'MCP-Protocol-Version'", "'Mcp-Method'",
         "credentials: 'same-origin'", "cache: 'no-store'", 'response.ok',
         'testButton.disabled = true', 'testButton.disabled = false', 'textContent') as $needle) {
         $assert(strpos($js, $needle) !== false, 'MCP doctor misses secure browser transport: ' . $needle);

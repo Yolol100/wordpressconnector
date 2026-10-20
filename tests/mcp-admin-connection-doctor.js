@@ -27,15 +27,27 @@ const conf = {
     copied: 'Copied',
     copyFailed: 'Copy failed',
 };
-let fetcher = async (url, options) => ({
-    ok: true,
-    json: async () => ({
-        result: {
-            supportedVersions: ['2026-07-28'],
-            _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'webactueel-wordpress-connector' } },
-        },
-    }),
-});
+let fetcher = async (url, options) => {
+    const method = JSON.parse(options.body).method;
+    if (method === 'tools/list') {
+        return {
+            ok: true,
+            json: async () => ({ result: { tools: [
+                'wordpress_connector_actions', 'wordpress_connector_discover', 'wordpress_connector_execute'
+            ].map((name) => ({ name })) } }),
+        };
+    }
+    assert.equal(method, 'server/discover');
+    return {
+        ok: true,
+        json: async () => ({
+            result: {
+                supportedVersions: ['2026-07-28'],
+                _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'webactueel-wordpress-connector' } },
+            },
+        }),
+    };
+};
 vm.runInNewContext(source, {
     window: { WPConnectorDoctor: conf },
     document: { getElementById: (id) => elements[id] },
@@ -66,6 +78,17 @@ assert.equal(typeof handlers['copy:click'], 'function');
     await handlers['test:click']();
     assert.match(elements['wpconnector-mcp-doctor-result'].textContent, /^Failed/);
     assert.equal(elements['wpconnector-test-mcp'].disabled, false);
+
+    fetcher = async (url, options) => {
+        const method = JSON.parse(options.body).method;
+        if (method === 'tools/list') return { ok: true, json: async () => ({ result: { tools: [] } }) };
+        return { ok: true, json: async () => ({
+            result: { supportedVersions: ['2026-07-28'],
+                _meta: { 'io.modelcontextprotocol/serverInfo': { name: 'webactueel-wordpress-connector' } } },
+        }) };
+    };
+    await handlers['test:click']();
+    assert.match(elements['wpconnector-mcp-doctor-result'].textContent, /^Failed/);
 
     fetcher = async () => { throw new Error('Network blocked'); };
     await handlers['test:click']();
