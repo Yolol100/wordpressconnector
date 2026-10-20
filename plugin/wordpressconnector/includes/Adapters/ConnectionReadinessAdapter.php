@@ -19,9 +19,17 @@ final class ConnectionReadinessAdapter {
 	private const BACKUP_PROVIDERS = array(
 		'updraftplus/updraftplus.php'                     => 'UpdraftPlus',
 		'wpvivid-backuprestore/wpvivid-backuprestore.php' => 'WPvivid',
+		'wpvivid-backup-pro/wpvivid-backup-pro.php'       => 'WPvivid Pro',
 		'duplicator/duplicator.php'                       => 'Duplicator',
 		'backwpup/backwpup.php'                           => 'BackWPup',
 		'all-in-one-wp-migration/all-in-one-wp-migration.php' => 'All-in-One WP Migration',
+	);
+
+	/** Direct admin links only; not provider APIs or proof of recovery. */
+	private const BACKUP_ADMIN_PAGES = array(
+		'WPvivid'                => 'admin.php?page=WPvivid',
+		'WPvivid Pro'            => 'admin.php?page=wpvivid-dashboard',
+		'All-in-One WP Migration' => 'admin.php?page=ai1wm_backups',
 	);
 
 	public function register( Registry $registry ): void {
@@ -46,6 +54,7 @@ final class ConnectionReadinessAdapter {
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
 		$providers = $this->activeBackupProviders();
+		$provider = 1 === count( $providers ) ? $providers[0] : null;
 		$nativeMcpAdapter = in_array('mcp-adapter/mcp-adapter.php', $this->activePluginPaths(), true)
 			&& class_exists('WP\\MCP\\Core\\McpAdapter');
 
@@ -67,6 +76,10 @@ final class ConnectionReadinessAdapter {
 			),
 			'recovery'                  => array(
 				'active_backup_plugins_detected' => $providers,
+				'backup_provider_detected'         => $provider,
+				'backup_provider_admin_path'       => null === $provider ? null : ( self::BACKUP_ADMIN_PAGES[ $provider ] ?? null ),
+				'backup_provider_choice_required' => count( $providers ) > 1,
+				'backup_automation_verified'       => false,
 				'database_backup_verified'       => false,
 				'site_files_backup_verified'     => false,
 				'offsite_backup_verified'        => false,
@@ -82,12 +95,16 @@ final class ConnectionReadinessAdapter {
 		$detected = array();
 		foreach ( self::BACKUP_PROVIDERS as $file => $name ) {
 			if ( in_array( $file, $active, true ) ) {
-				$detected[] = $name;
+				$detected[ $name ] = true;
 			}
 		}
-		// Active plugins and Core's temporary update backup do not prove
-		// complete database/files, offsite copies or tested staging restores.
-		return $detected;
+		// WPvivid Pro extends the same family: do not treat Free + Pro as
+		// two independent backup providers or silently choose a competing one.
+		if ( isset( $detected['WPvivid Pro'] ) ) {
+			unset( $detected['WPvivid'] );
+		}
+		// Detection proves neither a complete backup nor a successful restore.
+		return array_keys( $detected );
 	}
 
 	private function activePluginPaths(): array {

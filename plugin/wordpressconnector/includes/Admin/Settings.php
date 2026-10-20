@@ -330,6 +330,17 @@ final class Settings
         }
 
         $providers = $recovery['active_backup_plugins_detected'];
+        $detectedBackup = $recovery['backup_provider_detected'];
+        if (is_string($detectedBackup)) {
+            $adminPath = $recovery['backup_provider_admin_path'];
+            if (is_string($adminPath)) {
+                echo '<p><a href="' . esc_url(admin_url($adminPath)) . '">' .
+                    esc_html(sprintf(__('Open %s backup screen', 'wordpressconnector'), $detectedBackup)) .
+                    '</a> — ' . esc_html__('Make a full files + database backup with your existing plugin, store a separate copy and verify a staging restore before risky updates. The Connector does not start or verify that backup.', 'wordpressconnector') . '</p>';
+            }
+        } elseif ($recovery['backup_provider_choice_required']) {
+            echo '<p>' . esc_html__('Several backup plugins are active. Choose one in WordPress; the Connector will not start a backup or pick a provider automatically.', 'wordpressconnector') . '</p>';
+        }
         if (count($providers) > 0) {
             echo '<p>' . esc_html__('Active backup plugin detected (not proof of a usable backup):', 'wordpressconnector') . ' <strong>' . esc_html(implode(', ', $providers)) . '</strong>.</p>';
         } else {

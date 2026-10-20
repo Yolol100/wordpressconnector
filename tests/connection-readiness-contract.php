@@ -60,6 +60,9 @@ namespace {
         && $status['chatgpt']['native_mcp_adapter_detected'] === false
         && $status['chatgpt']['native_mcp_server_candidate'] === null
         && $status['chatgpt']['native_mcp_server_verified'] === false
+        && $status['recovery']['backup_provider_detected'] === null
+        && $status['recovery']['backup_provider_choice_required'] === false
+        && $status['recovery']['backup_automation_verified'] === false
         && $status['recovery']['database_backup_verified'] === false
         && $status['recovery']['site_files_backup_verified'] === false
         && $status['recovery']['offsite_backup_verified'] === false
@@ -78,6 +81,8 @@ namespace {
     $status = $adapter->inspect();
     $assert($status['wordpress']['github_pairing_recorded'] === true
         && $status['recovery']['active_backup_plugins_detected'] === array('UpdraftPlus', 'Duplicator', 'All-in-One WP Migration')
+        && $status['recovery']['backup_provider_detected'] === null
+        && $status['recovery']['backup_provider_choice_required'] === true
         && $status['chatgpt']['native_mcp_adapter_detected'] === true
         && $status['chatgpt']['native_mcp_server_candidate'] === 'https://example.invalid/wp-json/mcp/mcp-adapter-default-server'
         && $status['chatgpt']['native_mcp_server_verified'] === false
@@ -85,6 +90,26 @@ namespace {
         && $status['recovery']['offsite_backup_verified'] === false
         && $status['chatgpt']['oauth_21_ready'] === false,
         'Active backup plugins and WordPress pairing cannot impersonate backup/ChatGPT proof.');
+
+    $GLOBALS['setup_readiness']['plugins'] = array(
+        'wpvivid-backuprestore/wpvivid-backuprestore.php',
+        'wpvivid-backup-pro/wpvivid-backup-pro.php',
+    );
+    $GLOBALS['setup_readiness']['network'] = array();
+    $status = $adapter->inspect();
+    $assert($status['recovery']['active_backup_plugins_detected'] === array('WPvivid Pro')
+        && $status['recovery']['backup_provider_detected'] === 'WPvivid Pro'
+        && $status['recovery']['backup_provider_admin_path'] === 'admin.php?page=wpvivid-dashboard'
+        && $status['recovery']['backup_provider_choice_required'] === false
+        && $status['recovery']['staging_restore_verified'] === false,
+        'WPvivid Pro must supersede Free without fabricating a verified backup.');
+
+    $GLOBALS['setup_readiness']['plugins'] = array('all-in-one-wp-migration/all-in-one-wp-migration.php');
+    $status = $adapter->inspect();
+    $assert($status['recovery']['backup_provider_detected'] === 'All-in-One WP Migration'
+        && $status['recovery']['backup_provider_admin_path'] === 'admin.php?page=ai1wm_backups'
+        && $status['recovery']['backup_automation_verified'] === false,
+        'Installed migration plugin must offer its own admin page, not a fake backup API.');
 
     $GLOBALS['setup_readiness']['plugins'] = array('unrelated/unrelated.php');
     $GLOBALS['setup_readiness']['network'] = array();
@@ -143,6 +168,7 @@ namespace {
         'trusted OAuth 2.1 provider',
         'Official WordPress MCP Adapter',
         'Installing the official MCP Adapter alone does not enable OAuth.',
+        'Open %s backup screen',
         'database',
         'separate staging site',
     ) as $needle) {
