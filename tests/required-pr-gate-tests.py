@@ -44,10 +44,16 @@ class RequiredPrGateTests(unittest.TestCase):
     def test_regular_code_and_documentation(self):
         self.assertTrue(gate.classify_paths(["plugin/wordpressconnector/file.php"]))
         self.assertTrue(gate.classify_paths([".wp-env.json"]))
-        self.assertTrue(gate.classify_paths([".github/workflows/docker-runtime-smoke.yml"]))
         self.assertTrue(gate.classify_paths(["docs/LOCAL-RUNTIME-TESTING.md"]))
         self.assertFalse(gate.classify_paths(["README.md"]))
         self.assertFalse(gate.classify_paths(["tests/test-a.php"]))
+
+    def test_untrusted_pr_cannot_modify_its_ci_or_release_authority(self):
+        for path in sorted(gate.PROTECTED_GOVERNANCE_PATHS):
+            with self.subTest(path=path), self.assertRaises(gate.GateError):
+                gate.classify_paths([path])
+            with self.subTest(mixed=path), self.assertRaises(gate.GateError):
+                gate.classify_paths(["plugin/wordpressconnector/new.php", path])
 
     def test_runtime_transport_is_never_mergeable(self):
         for path in ("requests/temp.json", "results/private.json", "receipts/public.json", "assets/inbox/image.png"):
