@@ -607,7 +607,12 @@ final class SystemAdapter
         $updates = get_core_updates(array('dismissed' => false));
         if (! is_array($updates)) throw new RuntimeException('No core update information available.');
         $candidate = null;
-        foreach ($updates as $update) if (isset($update->response) && 'upgrade' === $update->response) { $candidate = $update; break; }
+        foreach ($updates as $update) {
+            if (isset($update->response) && 'upgrade' === $update->response) {
+                $candidate = $update;
+                break;
+            }
+        }
         if (! $candidate) return array('updated' => false, 'message' => 'No core update available.');
         $upgrader = new \Core_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($candidate);
