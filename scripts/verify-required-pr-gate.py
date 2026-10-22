@@ -15,6 +15,20 @@ import urllib.request
 
 RUNTIME_PREFIXES = ("requests/", "results/", "receipts/", "assets/inbox/")
 DOCKER_PREFIX = "plugin/wordpressconnector/"
+# Treat CI, release and the gate's own trusted implementation as protected
+# governance surfaces: allowing a PR to rewrite these would let it fabricate
+# the required green checks. Review and bootstrap these independently.
+PROTECTED_GOVERNANCE_PATHS = frozenset({
+    ".github/workflows/ci.yml",
+    ".github/workflows/docker-runtime-smoke.yml",
+    ".github/workflows/required-pr-gate.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/wordpress-request.yml",
+    ".github/workflows/wordpress-zero-config-execute.yml",
+    "scripts/verify-required-pr-gate.py",
+    "tests/required-pr-gate-tests.py",
+})
+
 DOCKER_EXACT = {
     ".wp-env.json",
     ".github/workflows/docker-runtime-smoke.yml",
@@ -42,6 +56,11 @@ def classify_paths(paths):
         raise GateError(
             "Temporary OIDC request/result/receipt/asset state must remain on "
             "its runtime PR branch and must not be merged into main."
+        )
+    if any(p in PROTECTED_GOVERNANCE_PATHS for p in paths):
+        raise GateError(
+            "A release or CI trust-control file changed in this PR. "
+            "Use a separately validated governance bootstrap before enabling this gate."
         )
     return any(p.startswith(DOCKER_PREFIX) or p in DOCKER_EXACT for p in paths)
 
