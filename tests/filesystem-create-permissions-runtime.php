@@ -18,6 +18,12 @@ namespace Webactueel\WordPressConnector\Adapters {
         }
         return $closed;
     }
+    function file_get_contents($path, ...$args) {
+        if (! empty($GLOBALS['wpconn_create_readback_corrupt'])) {
+            return 'corrupted fixture bytes';
+        }
+        return \file_get_contents($path, ...$args);
+    }
     function unlink($path): bool {
         if (! empty($GLOBALS['wpconn_create_cleanup_denied'])) {
             return false;
@@ -58,6 +64,7 @@ namespace {
     $GLOBALS['wpconn_create_chmod_denied'] = false;
     $GLOBALS['wpconn_create_close_denied'] = false;
     $GLOBALS['wpconn_create_cleanup_denied'] = false;
+    $GLOBALS['wpconn_create_readback_corrupt'] = false;
 
     try {
         // An OS permission failure must not silently report a successful write.
@@ -102,6 +109,31 @@ namespace {
             throw new RuntimeException('Could not remove disposable fixture after controlled cleanup failure.');
         }
 
+        // Failed post-write readback needs verified removal, including when
+        // the host disallows rollback cleanup.
+        foreach (array(false, true) as $cleanupDenied) {
+            $GLOBALS['wpconn_create_readback_corrupt'] = true;
+            $GLOBALS['wpconn_create_cleanup_denied'] = $cleanupDenied;
+            $readbackRejected = false;
+            try {
+                $subject->createText(array('path' => $relative, 'content' => $content), array('dry_run' => false));
+            } catch (RuntimeException $error) {
+                $expected = $cleanupDenied ? 'manual recovery required' : 'readback failed';
+                $readbackRejected = false !== strpos($error->getMessage(), $expected);
+                if (! $readbackRejected) {
+                    throw new RuntimeException('Readback/cleanup failure was misleading: ' . $error->getMessage(), 0, $error);
+                }
+            }
+            if (! $readbackRejected || is_file($absolute) !== $cleanupDenied) {
+                throw new RuntimeException('Readback failure left incorrect cleanup state.');
+            }
+            $GLOBALS['wpconn_create_readback_corrupt'] = false;
+            $GLOBALS['wpconn_create_cleanup_denied'] = false;
+            if ($cleanupDenied && ! \unlink($absolute)) {
+                throw new RuntimeException('Failed to remove disposable unreadable fixture.');
+            }
+        }
+
         $created = $subject->createText(array('path' => $relative, 'content' => $content), array('dry_run' => false));
         if (! is_file($absolute)
             || file_get_contents($absolute) !== $content
@@ -117,6 +149,7 @@ namespace {
         $GLOBALS['wpconn_create_chmod_denied'] = false;
         $GLOBALS['wpconn_create_close_denied'] = false;
         $GLOBALS['wpconn_create_cleanup_denied'] = false;
+        $GLOBALS['wpconn_create_readback_corrupt'] = false;
         if (is_file($absolute)) { \unlink($absolute); }
         \unlink($admin . '/file.php');
         \rmdir($admin);
