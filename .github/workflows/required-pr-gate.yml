@@ -1,0 +1,34 @@
+name: Connector Required PR Gate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: connector-required-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Required PR Gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 29
+    steps:
+      - name: Checkout PR for read-only gate validation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate required gate decision logic
+        run: python3 -B tests/required-pr-gate-tests.py
+      - name: Enforce complete exact-head Connector CI and conditional Docker checks
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: python3 -B scripts/verify-required-pr-gate.py
