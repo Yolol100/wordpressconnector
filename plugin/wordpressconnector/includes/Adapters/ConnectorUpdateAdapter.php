@@ -47,11 +47,21 @@ final class ConnectorUpdateAdapter
             add_filter('plugin_action_links_' . self::PLUGIN_FILE, array($this, 'pluginActionLinks'));
         }
         if (function_exists('add_action')) {
-            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNotice'), 20);
-            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNotice'), 20);
+            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
+            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
             add_action('admin_post_wpconnector_check_updates', array($this, 'forceNativeUpdateCheck'));
             add_action('admin_notices', array($this, 'checkedNotice'));
         }
+    }
+
+    /**
+     * WordPress action callbacks do not consume an update-check result.
+     * Preserve the boolean API for direct callers and use this void wrapper
+     * only for wp-admin hooks.
+     */
+    public function refreshNativeUpdateNoticeAction(): void
+    {
+        $this->refreshNativeUpdateNotice();
     }
 
     /**
@@ -136,11 +146,10 @@ final class ConnectorUpdateAdapter
         }
         check_admin_referer('wpconnector_check_updates');
         $ok = $this->refreshNativeUpdateNotice(true);
-        wp_safe_redirect(add_query_arg(
-            'wpconnector_update_checked',
-            $ok ? '1' : '0',
-            admin_url('plugins.php')
-        ));
+        wp_safe_redirect(add_query_arg(array(
+            'wpconnector_update_checked' => $ok ? '1' : '0',
+            'wpconnector_update_notice_nonce' => wp_create_nonce('wpconnector_update_notice'),
+        ), admin_url('plugins.php')));
         exit;
     }
 
@@ -149,7 +158,22 @@ final class ConnectorUpdateAdapter
         if (! current_user_can('update_plugins') || ! isset($_GET['wpconnector_update_checked'])) {
             return;
         }
-        $ok = '1' === (string) $_GET['wpconnector_update_checked'];
+        // An informational success message must not be forgeable with a plain URL.
+        $rawNonce = isset($_GET['wpconnector_update_notice_nonce'])
+            && is_string($_GET['wpconnector_update_notice_nonce'])
+            ? sanitize_text_field(wp_unslash($_GET['wpconnector_update_notice_nonce']))
+            : '';
+        if ('' === $rawNonce || ! wp_verify_nonce($rawNonce, 'wpconnector_update_notice')) {
+            return;
+        }
+        // The notice is informational only. Reject malformed or array-valued query parameters.
+        $notice = is_string($_GET['wpconnector_update_checked'])
+            ? sanitize_text_field(wp_unslash($_GET['wpconnector_update_checked']))
+            : '';
+        if (! in_array($notice, array('0', '1'), true)) {
+            return;
+        }
+        $ok = '1' === $notice;
         echo '<div class="notice ' . ($ok ? 'notice-success' : 'notice-warning') .
             ' is-dismissible"><p>' .
             esc_html($ok

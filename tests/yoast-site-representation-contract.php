@@ -29,6 +29,7 @@ function wp_attachment_is_image($id): bool { return isset($GLOBALS['yoast_org_me
 function wp_get_attachment_metadata($id) { return isset($GLOBALS['yoast_org_media'][$id]) ? $GLOBALS['yoast_org_media'][$id] : false; }
 function wp_get_attachment_url($id) { return $GLOBALS['yoast_org_media'][$id]['url'] ?? false; }
 function esc_url_raw($url): string { return $url; }
+function wp_parse_url(string $url, int $component = -1) { return parse_url($url, $component); }
 function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
 
 $root = dirname(__DIR__) . '/plugin/wordpressconnector/includes/';

@@ -9,6 +9,9 @@ run_php() {
 
 find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
 run_php tests/policy-contract.php
+run_php tests/policy-asset-symlink-contract.php
+run_php tests/policy-object-redaction-contract.php
+run_php tests/json-atomic-write-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
 run_php tests/abilities-catalog-contract.php
@@ -23,8 +26,14 @@ run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
 run_php tests/woocommerce-settings-contract.php
 run_php tests/woocommerce-operations-contract.php
+run_php tests/woocommerce-attribute-delete-contract.php
+run_php tests/woocommerce-variation-readback-contract.php
+run_php tests/woocommerce-product-factory-readback-contract.php
 run_php tests/woocommerce-fulfillment-contract.php
 run_php tests/user-password-reset-contract.php
+run_php tests/system-user-role-authorization-contract.php
+run_php tests/system-user-role-preview-rollback-contract.php
+run_php tests/system-role-update-validation-contract.php
 run_php tests/custom-css-contract.php
 run_php tests/public-custom-css-contract.php
 run_php tests/code-snippets-contract.php
@@ -34,7 +43,9 @@ run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
 run_php tests/elementor-json-import-contract.php
+run_php tests/elementor-import-upload-boundary-runtime.php
 run_php tests/state-token-contract.php
+run_php tests/option-table-sql-contract.php
 run_php tests/read-batch-contract.php
 run_php tests/diagnostics-contract.php
 run_php tests/connector-core-backup-runtime.php
@@ -54,6 +65,7 @@ run_php tests/connector-update-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
+run_php tests/qa-admin-input-runtime-contract.php
 run_php tests/direct-mcp-admin-runtime.php
 run_php tests/connection-readiness-contract.php
 run_php tests/mcp-admin-connection-doctor-contract.php
@@ -65,11 +77,19 @@ run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
 run_php tests/runtime-preflight-contract.php
+run_php tests/system-doctor-runtime-contract.php
+run_php tests/cron-delete-failure-contract.php
 run_php tests/filesystem-control-contract.php
+run_php tests/filesystem-bounded-io-runtime.php
+run_php tests/filesystem-create-permissions-runtime.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
 run_php tests/theme-lifecycle-readback-contract.php
 run_php tests/repository-hygiene.php
 run_php tests/rest-transport-contract.php
+run_php tests/asset-private-permissions-contract.php
+run_php tests/asset-base-symlink-contract.php
+run_php tests/rest-asset-cleanup-contract.php
+run_php tests/rest-asset-upload-error-contract.php
 run_php tests/mcp-transport-contract.php
 run_php tests/site-editor-contract.php
 run_php tests/request-workflow-contract.php

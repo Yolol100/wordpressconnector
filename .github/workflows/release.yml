@@ -1,11 +1,23 @@
 name: Connector Release
 
 on:
-  workflow_run:
-    workflows: ["Connector CI"]
-    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: 'Approved plugin version (x.y.z, must match plugin and readme)'
+        required: true
+        type: string
+      expected_main_sha:
+        description: 'Exact approved 40-character main commit SHA'
+        required: true
+        type: string
+      publish_confirmation:
+        description: 'Type PUBLISH to approve creation of a public GitHub release'
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: write
   id-token: write
   attestations: write
@@ -13,20 +25,38 @@ permissions:
 jobs:
   release:
     if: >-
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main' &&
-      github.event.workflow_run.event == 'push'
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.publish_confirmation == 'PUBLISH'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION_INPUT: ${{ inputs.release_version }}
+      RELEASE_SHA_INPUT: ${{ inputs.expected_main_sha }}
+      PUBLISH_CONFIRMATION_INPUT: ${{ inputs.publish_confirmation }}
     steps:
       - name: Checkout exact tested revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ inputs.expected_main_sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Validate approved release version and current main commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/main'
+          test "$PUBLISH_CONFIRMATION_INPUT" = 'PUBLISH'
+          [[ "$RELEASE_VERSION_INPUT" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]
+          [[ "$RELEASE_SHA_INPUT" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA_INPUT"
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
+          test "$current_main" = "$RELEASE_SHA_INPUT"
+          # Only a completed, successful push CI for this exact main SHA is eligible.
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \
+            --jq '.workflow_runs[] | select(.conclusion == "success") | .head_sha' | grep -Fxq "$RELEASE_SHA_INPUT"
 
       - name: Read and validate release version
         id: version
@@ -36,6 +66,7 @@ jobs:
           version="$(php -r '$s=file_get_contents("plugin/wordpressconnector/wordpressconnector.php"); if(!preg_match("/^[ \\t*#\\/]*Version:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
           stable="$(php -r '$s=file_get_contents("plugin/wordpressconnector/readme.txt"); if(!preg_match("/^Stable tag:[ \\t]*([0-9]+\\.[0-9]+\\.[0-9]+)/mi",$s,$m)){exit(2);} echo $m[1];')"
           test "$version" = "$stable"
+          test "$version" = "$RELEASE_VERSION_INPUT"
           source_sha="$(git log -1 --format=%H -- plugin/wordpressconnector)"
           source_epoch="$(git show -s --format=%ct "$source_sha")"
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -103,14 +134,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Fail closed if main changed after the initial approval preflight.
+          current_main="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
+          test "$current_main" = "$RELEASE_SHA_INPUT"
+          # Only a completed, successful push CI for this exact main SHA is eligible.
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \
+            --jq '.workflow_runs[] | select(.conclusion == "success") | .head_sha' | grep -Fxq "$RELEASE_SHA_INPUT"
           gh release create "${{ steps.version.outputs.tag }}" \
             "$RUNNER_TEMP/wordpressconnector.zip" \
             "$RUNNER_TEMP/wordpressconnector.zip.sha256" \
             "$RUNNER_TEMP/wordpressconnector.spdx.json" \
             --repo "$GITHUB_REPOSITORY" \
-            --target "${{ github.event.workflow_run.head_sha }}" \
+            --target "$RELEASE_SHA_INPUT" \
             --title "WordPress Connector ${{ steps.version.outputs.version }}" \
-            --notes "Automated versioned release from a successful Connector CI run on main. Package and SBOM have GitHub artifact attestations."
+            --notes "Explicitly approved versioned release for an exact main commit. Package and SBOM have GitHub artifact attestations."
 
       - name: Verify published release bytes
         if: steps.existing.outputs.exists != 'true'

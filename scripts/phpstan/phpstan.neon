@@ -1,0 +1,24 @@
+# Development-only analysis; provider APIs are not bundled in release ZIP.
+# Keep optional WooCommerce/ACF symbols visible without hiding real code errors.
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - ../../plugin/wordpressconnector
+    scanFiles:
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+        - vendor/php-stubs/acf-pro-stubs/acf-pro-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-commands-stubs.php
+        - vendor/php-stubs/wp-cli-stubs/wp-cli-i18n-stubs.php
+        - code-snippets-3.10.2.stub.php
+    stubFiles:
+        - acf-return.stub
+    excludePaths:
+        analyse:
+            - ../../plugin/wordpressconnector/vendor/*
+            - ../../plugin/wordpressconnector/node_modules/*
+            - ../../plugin/wordpressconnector/build/*
+            - ../../plugin/wordpressconnector/dist/*

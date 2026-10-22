@@ -101,6 +101,26 @@ jobs:
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
 
+      - name: Stage reproducible plugin candidate for review
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector.zip"
+          (cd "$RUNNER_TEMP" && sha256sum wordpressconnector.zip > wordpressconnector.zip.sha256)
+          (cd "$RUNNER_TEMP" && sha256sum -c wordpressconnector.zip.sha256)
+
+      - name: Upload plugin candidate (not a production release)
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: wordpressconnector-qa-candidate
+          path: |
+            ${{ runner.temp }}/wordpressconnector.zip
+            ${{ runner.temp }}/wordpressconnector.zip.sha256
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
@@ -250,6 +270,13 @@ jobs:
           wp plugin activate wordpressconnector --path="$root"
           wp plugin is-active wordpressconnector --path="$root"
           wp eval 'if (!defined("WPCONNECTOR_VERSION")) { throw new RuntimeException("WordPress Connector did not bootstrap."); } echo WPCONNECTOR_VERSION . PHP_EOL;' --path="$root"
+          wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-system-doctor-runtime.php" --user=admin --path="$root"
+
+      - name: Test WordPress role previews and capability writes
+        if: matrix.wordpress == '7.1.3' && matrix.woocommerce == 'none'
+        run: |
+          root="$RUNNER_TEMP/wordpress"
+          wp eval-file "$GITHUB_WORKSPACE/tests/wordpress-user-role-runtime.php" --user=admin --path="$root"
 
       - name: Test WordPress Abilities bridge runtime
         shell: bash
@@ -355,11 +382,46 @@ jobs:
             echo 'changed=false' >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Review dependency changes
+      # This public repository currently has no GitHub Dependency Graph API.
+      # Audit the exact committed lockfiles instead of falsely declaring an
+      # unavailable remote review action successful or skipping advisories.
+      - name: Set up pinned dependency audit runtime
         if: steps.dependency_changes.outputs.changed == 'true'
-        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2.40.0
         with:
-          fail-on-severity: moderate
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate and audit changed dependency lockfiles
+        if: steps.dependency_changes.outputs.changed == 'true'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" --)"
+          mapfile -t composer_dirs < <(printf '%s\n' "$changed" | grep -E '(^|/)composer\.(json|lock)$' | xargs -r -n1 dirname | sort -u)
+          mapfile -t node_dirs < <(printf '%s\n' "$changed" | grep -E '(^|/)(package(-lock)?\.json|npm-shrinkwrap\.json)$' | xargs -r -n1 dirname | sort -u)
+          for dir in "${composer_dirs[@]}"; do
+            if test -f "$dir/composer.json"; then
+              test -s "$dir/composer.lock" || { echo "Missing Composer lockfile in $dir" >&2; exit 1; }
+              composer validate --no-check-publish --working-dir="$dir"
+              composer audit --locked --no-interaction --working-dir="$dir"
+            fi
+          done
+          for dir in "${node_dirs[@]}"; do
+            if test -f "$dir/package.json"; then
+              test -f "$dir/package-lock.json" -o -f "$dir/npm-shrinkwrap.json" || { echo "Missing npm lockfile in $dir" >&2; exit 1; }
+              (cd "$dir" && npm audit --package-lock-only --audit-level=moderate)
+            fi
+          done
+          if printf '%s\n' "$changed" | grep -Eq '(^|/)(pnpm-lock\.yaml|yarn\.lock)$'; then
+            echo "A changed pnpm/yarn lockfile requires a dedicated locked package-manager audit." >&2
+            exit 1
+          fi
+          echo 'Available exact dependency lockfiles passed security advisory checks.'
 
       - name: Dependency review not required
         if: steps.dependency_changes.outputs.changed != 'true'

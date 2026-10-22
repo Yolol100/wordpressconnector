@@ -41,8 +41,13 @@ $required = array(
     'applyPatch(',
 );
 
+// Normalize formatting only; keep every required API/capability/security marker.
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) {
+    throw new RuntimeException('Unable to normalize Additional CSS source.');
+}
 foreach ($required as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing Additional CSS contract marker: {$needle}\n");
         exit(1);
     }

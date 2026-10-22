@@ -35,6 +35,15 @@ function is_ssl(): bool { return $GLOBALS['direct_mcp']['https']; }
 function rest_url(string $path): string { return 'https://example.invalid/wp-json/' . $path; }
 function wp_parse_url(string $url, int $component) { return parse_url($url, $component); }
 function wp_is_application_passwords_available_for_user(int $userId): bool { return $GLOBALS['direct_mcp']['allowed']; }
+function wp_unslash($value) { return is_string($value) ? stripslashes($value) : $value; }
+function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
+function wp_kses($markup, array $allowed, array $protocols = array()): string {
+    if (! isset($allowed['input']['value'], $allowed['input']['readonly'], $allowed['label']['for'])
+        || $protocols !== array('https')) {
+        throw new RuntimeException('One-time credential response is not restricted to safe HTML.');
+    }
+    return (string) $markup;
+}
 function esc_html__($value, $domain = ''): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_attr($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }
 function esc_url($value): string { return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8'); }

@@ -80,6 +80,15 @@ function wp_get_abilities(): array
             'annotations' => array('readonly' => true, 'destructive' => false),
         )),
         'third-party-plugin/private-operation' => new ContractAbility(array()),
+        'third-party-plugin/rest-only' => new ContractAbility(array(
+            'show_in_rest' => true,
+            'annotations' => array('readonly' => true, 'destructive' => false),
+        )),
+        'third-party-plugin/malformed-mcp' => new ContractAbility(array(
+            'public' => true,
+            'mcp' => 'invalid',
+            'annotations' => array('readonly' => true, 'destructive' => false),
+        )),
         'third-party-plugin/mutating-operation' => new ContractAbility(array(
             'show_in_rest' => true,
             'mcp' => array('public' => false),
@@ -134,6 +143,7 @@ function wp_get_abilities(): array
             'annotations' => array('readonly' => false, 'destructive' => false, 'idempotent' => false),
         ), array(new \Elementor\Modules\Mcp\Abilities\Contract_Native_Ability('elementor/different-id'), 'execute_guarded')),
         'third-party-plugin/ambiguous-readonly' => new ContractAbility(array(
+            'public' => true,
             'show_in_rest' => true,
             'annotations' => array('readonly' => true),
         )),
@@ -141,6 +151,7 @@ function wp_get_abilities(): array
     );
     for ($i = 1; $i <= 12; $i++) {
         $abilities[sprintf('zzz-plugin/ability-%02d', $i)] = new ContractAbility(array(
+            'public' => true,
             'show_in_rest' => true,
             'large_schema' => 1 === $i,
             'annotations' => array('readonly' => true, 'destructive' => false),
@@ -177,6 +188,24 @@ if (5 !== $elementorCatalog['total'] || 'elementor' !== $elementorCatalog['names
     || ! isset($elementorCatalog['abilities']['elementor/mismatched-provider'])) {
     fwrite(STDERR, "Ability namespace filtering failed.\n"); exit(1);
 }
+$exact = $adapter->catalog(array('name' => 'elementor/list-posts'), array());
+if (1 !== $exact['total'] || 1 !== $exact['pages'] || count($exact['abilities']) !== 1
+    || ! isset($exact['abilities']['elementor/list-posts']['input_schema'])) {
+    throw new RuntimeException('One-Ability native schema lookup failed.');
+}
+foreach (array('third-party-plugin/rest-only', 'third-party-plugin/private-operation') as $hiddenName) {
+    $hidden = $adapter->catalog(array('name' => $hiddenName), array());
+    if (0 !== $hidden['total'] || array() !== $hidden['abilities']) {
+        throw new RuntimeException('Exact Ability schema lookup leaked a private/REST-only provider.');
+    }
+}
+foreach (array(array('name' => 'InvalidName'), array('name' => null), array('name' => 'elementor/list-posts', 'page' => 2)) as $invalidLookup) {
+    try {
+        $adapter->catalog($invalidLookup, array());
+        throw new \LogicException('Invalid exact-Ability schema lookup was accepted.');
+    } catch (RuntimeException $expected) {
+    }
+}
 try {
     $adapter->catalog(array('namespace' => 'Bad/Namespace'), array());
     fwrite(STDERR, "Malformed Ability namespace was accepted.\n"); exit(1);
@@ -207,7 +236,9 @@ $ability_catalog_overflow = false;
 if (! isset($catalog['abilities']['third-party-plugin/reindex-content'])) {
     fwrite(STDERR, "Public third-party ability was not discovered.\n"); exit(1);
 }
-if (isset($catalog['abilities']['third-party-plugin/private-operation'])
+if (isset($catalog['abilities']['third-party-plugin/rest-only'])
+    || isset($catalog['abilities']['third-party-plugin/malformed-mcp'])
+    || isset($catalog['abilities']['third-party-plugin/private-operation'])
     || isset($catalog['abilities']['third-party-plugin/mutating-operation'])
     || isset($catalog['abilities']['elementor/disabled-write'])
     || isset($catalog['abilities']['invalid-name'])) {
@@ -296,6 +327,18 @@ try {
 }
 if (7 !== ContractAbility::$executions) {
     fwrite(STDERR, "Ambiguous Ability metadata still reached execute().\n"); exit(1);
+}
+
+foreach (array('third-party-plugin/rest-only', 'third-party-plugin/malformed-mcp') as $restOnlyAbility) {
+    try {
+        $adapter->readAbility(array('name' => $restOnlyAbility), array());
+        throw new \LogicException('REST-only/malformed MCP Ability was executed: ' . $restOnlyAbility);
+    } catch (RuntimeException $expected) {
+        // Deliberate MCP exposure denial before the native execute callback.
+    }
+}
+if (7 !== ContractAbility::$executions) {
+    throw new RuntimeException('REST-only/malformed MCP Ability reached native execution.');
 }
 
 $dryRun = $adapter->executeAbility(

@@ -4,6 +4,8 @@
     const config = window.WPConnectorDoctor;
     const testButton = document.getElementById('wpconnector-test-mcp');
     const copyButton = document.getElementById('wpconnector-copy-mcp');
+    const oauthCopyButton = document.getElementById('wpconnector-copy-oauth-mcp');
+    const oauthAddress = document.getElementById('wpconnector-oauth-mcp-address');
     const result = document.getElementById('wpconnector-mcp-doctor-result');
     const address = document.getElementById('wpconnector-mcp-address');
     if (!config || !testButton || !copyButton || !result || !address) {
@@ -14,27 +16,33 @@
         result.textContent = message;
     }
 
-    copyButton.addEventListener('click', async function () {
+    async function copyAddress(field) {
         try {
             if (!navigator.clipboard || !navigator.clipboard.writeText) {
                 throw new Error('Clipboard API unavailable');
             }
-            await navigator.clipboard.writeText(address.value);
+            await navigator.clipboard.writeText(field.value);
             show(config.copied);
         } catch (error) {
-            address.focus();
-            address.select();
+            field.focus();
+            field.select();
             show(config.copyFailed);
         }
-    });
+    }
 
-    testButton.addEventListener('click', async function () {
-        testButton.disabled = true;
-        show(config.checking);
+    copyButton.addEventListener('click', function () { return copyAddress(address); });
+    if (oauthCopyButton && oauthAddress) {
+        oauthCopyButton.addEventListener('click', function () { return copyAddress(oauthAddress); });
+    }
+
+    async function readOnlyRequest(method) {
+        if (method !== 'server/discover' && method !== 'tools/list') {
+            throw new Error('Unsupported MCP diagnostic method');
+        }
         const envelope = {
             jsonrpc: '2.0',
-            id: 'wpconnector-browser-doctor',
-            method: 'server/discover',
+            id: 'wpconnector-browser-doctor-' + method,
+            method: method,
             params: {
                 _meta: {
                     'io.modelcontextprotocol/protocolVersion': '2026-07-28',
@@ -42,8 +50,7 @@
                 }
             }
         };
-        try {
-            const response = await fetch(config.url, {
+        const response = await fetch(config.url, {
                 method: 'POST',
                 mode: 'same-origin',
                 credentials: 'same-origin',
@@ -53,20 +60,37 @@
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': config.nonce,
                     'MCP-Protocol-Version': '2026-07-28',
-                    'Mcp-Method': 'server/discover'
+                    'Mcp-Method': method
                 },
                 body: JSON.stringify(envelope)
             });
-            const data = await response.json();
+        if (!response.ok) {
+            throw new Error('Authenticated MCP diagnostic request was rejected.');
+        }
+        return response.json();
+    }
+
+    testButton.addEventListener('click', async function () {
+        testButton.disabled = true;
+        show(config.checking);
+        try {
+            const data = await readOnlyRequest('server/discover');
             const resultData = data && data.result;
             const versions = resultData && resultData.supportedVersions;
             const isConnector = resultData && resultData._meta &&
                 resultData._meta['io.modelcontextprotocol/serverInfo'] &&
                 resultData._meta['io.modelcontextprotocol/serverInfo'].name ===
                     'webactueel-wordpress-connector';
-            if (!response.ok || !Array.isArray(versions) ||
+            if (!Array.isArray(versions) ||
                 versions.indexOf('2026-07-28') === -1 || !isConnector) {
                 throw new Error('MCP discovery did not match the expected authenticated server.');
+            }
+            const listing = await readOnlyRequest('tools/list');
+            const tools = listing && listing.result && listing.result.tools;
+            const names = Array.isArray(tools) ? tools.map((tool) => tool.name) : [];
+            if (!['wordpress_connector_actions', 'wordpress_connector_discover', 'wordpress_connector_execute']
+                .every((name) => names.includes(name))) {
+                throw new Error('MCP tool discovery did not match the expected Connector tools.');
             }
             show(config.success);
         } catch (error) {

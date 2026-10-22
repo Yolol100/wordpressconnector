@@ -90,7 +90,10 @@ final class Settings
      */
     public function createApplicationPassword(): void
     {
-        if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '')) {
+        $requestMethod = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD'])
+            ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
+            : '';
+        if ('POST' !== $requestMethod) {
             wp_die(esc_html__('Use the WordPress Connector settings form to create a credential.', 'wordpressconnector'),
                 esc_html__('Method not allowed', 'wordpressconnector'), array('response' => 405));
         }
@@ -99,7 +102,10 @@ final class Settings
                 esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
         }
         check_admin_referer('wpconnector_create_application_password');
-        if ('1' !== ($_POST['confirm_direct_access'] ?? null)) {
+        $confirmed = isset($_POST['confirm_direct_access']) && is_string($_POST['confirm_direct_access'])
+            ? sanitize_text_field(wp_unslash($_POST['confirm_direct_access']))
+            : '';
+        if ('1' !== $confirmed) {
             wp_die(esc_html__('Confirm that the credential will have your WordPress account permissions.', 'wordpressconnector'),
                 esc_html__('Confirmation required', 'wordpressconnector'), array('response' => 400));
         }
@@ -147,7 +153,23 @@ final class Settings
         $message .= '<input id="wpconnector-mcp-password" type="text" readonly="readonly" autocomplete="off" value="' . esc_attr($created[0]) . '" style="width:100%" /></p>';
         $message .= '<p>' . esc_html__('Enter the details only into a trusted HTTPS REST/MCP client that supports WordPress Application Passwords. ChatGPT web connections may require OAuth instead. Never put this password in a GitHub branch, workflow, chat or URL. GitHub Actions already uses password-free OIDC.', 'wordpressconnector') . '</p>';
         $message .= '<p><a href="' . esc_url(admin_url('profile.php')) . '">' . esc_html__('Manage or revoke this password in your profile', 'wordpressconnector') . '</a></p>';
-        wp_die($message, esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
+        // wp_die() accepts HTML. Re-filter the assembled, individually escaped
+        // markup while retaining the input fields needed to show the one-time secret.
+        $allowedHtml = array(
+            'h1' => array(),
+            'p' => array(),
+            'label' => array('for' => true),
+            'input' => array(
+                'id' => true,
+                'type' => true,
+                'readonly' => true,
+                'autocomplete' => true,
+                'value' => true,
+                'style' => true,
+            ),
+            'a' => array('href' => true),
+        );
+        wp_die(wp_kses($message, $allowedHtml, array('https')), esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
             array('response' => 200, 'back_link' => false));
     }
 
@@ -266,6 +288,7 @@ final class Settings
         $site = $status['wordpress'];
         $oauth = $status['chatgpt'];
         $recovery = $status['recovery'];
+        $sites = $status['site_management'];
 
         echo '<h2>' . esc_html__('ChatGPT connection and recovery setup', 'wordpressconnector') . '</h2>';
         echo '<p>' . esc_html__('This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector') . '</p>';
@@ -276,6 +299,12 @@ final class Settings
         echo '<button type="button" class="button button-secondary" id="wpconnector-test-mcp">' . esc_html__('Test MCP connection from this WordPress browser', 'wordpressconnector') . '</button></p>';
         echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
         echo '<p><small>' . esc_html__('This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector') . '</small></p>';
+        if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_oauth_server_candidate'])) {
+            echo '<p><label for="wpconnector-oauth-mcp-address"><strong>' . esc_html__('Possible OAuth MCP server (not verified):', 'wordpressconnector') . '</strong></label></p>';
+            echo '<input id="wpconnector-oauth-mcp-address" readonly="readonly" type="url" style="width:100%" value="' . esc_attr($oauth['native_mcp_oauth_server_candidate']) . '" />';
+            echo '<p><button type="button" class="button button-secondary" id="wpconnector-copy-oauth-mcp">' . esc_html__('Copy OAuth server candidate', 'wordpressconnector') . '</button></p>';
+            echo '<p><small>' . esc_html__('For OAuth-capable ChatGPT clients, this is a candidate address from the official MCP Adapter. Check authorization-server metadata, the requested scopes and account consent before connecting; no external connection was tested here.', 'wordpressconnector') . '</small></p>';
+        }
         echo '</div>';
         echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
         echo '<th scope="col">' . esc_html__('Setup step', 'wordpressconnector') . '</th>';
@@ -288,7 +317,17 @@ final class Settings
             __('GitHub site pairing', 'wordpressconnector') =>
                 $site['github_pairing_recorded'] ? __('Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector') : __('Not recorded', 'wordpressconnector'),
             __('Direct ChatGPT OAuth', 'wordpressconnector') =>
-                $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector'),
+                $oauth['oauth_21_ready'] ? __('Verified', 'wordpressconnector') : __('Not verified in Connector: a separate OAuth provider may already be configured; check its metadata and complete ChatGPT login', 'wordpressconnector'),
+            __('Official WordPress MCP Adapter', 'wordpressconnector') =>
+                $oauth['native_mcp_adapter_detected'] ? __('Detected (server and OAuth access not independently verified)', 'wordpressconnector') : __('Optional; WordPress Connector already has an MCP endpoint', 'wordpressconnector'),
+            __('Existing multi-site management', 'wordpressconnector') =>
+                $sites['mainwp_dashboard_detected']
+                    ? __('MainWP Dashboard detected; use its own authorized MCP tools, not a second Connector registry', 'wordpressconnector')
+                    : ($sites['mainwp_child_detected']
+                        ? __('MainWP Child detected; remote dashboard connection is not verified', 'wordpressconnector')
+                        : ($sites['wordpress_multisite_detected']
+                            ? __('WordPress multisite detected; only this site context has been inspected', 'wordpressconnector')
+                            : __('No MainWP integration detected; remote sites are not enrolled', 'wordpressconnector'))),
             __('Full database and files backup', 'wordpressconnector') =>
                 __('Not independently verified', 'wordpressconnector'),
             __('Copy stored outside this hosting account', 'wordpressconnector') =>
@@ -300,8 +339,33 @@ final class Settings
             echo '<tr><th scope="row">' . esc_html($label) . '</th><td>' . esc_html($value) . '</td></tr>';
         }
         echo '</tbody></table>';
+        echo '<p>' . esc_html__('For approved GitHub workflows, use the existing short-lived OIDC connection. Direct ChatGPT linking requires an independently verified OAuth provider and an actual ChatGPT sign-in test. Installing the official MCP Adapter alone does not enable OAuth.', 'wordpressconnector') . '</p>';
+        if ($oauth['native_mcp_adapter_detected'] && is_string($oauth['native_mcp_server_candidate'])) {
+            echo '<p><strong>' . esc_html__('Optional official WordPress MCP Adapter server (not verified):', 'wordpressconnector') . '</strong> <code>' . esc_html($oauth['native_mcp_server_candidate']) . '</code></p>';
+            if (is_string($oauth['native_mcp_oauth_server_candidate'])) {
+                echo '<p>' . esc_html__('An OAuth server candidate is shown in the connection panel above. This address does not prove a working sign-in or account permissions.', 'wordpressconnector') . '</p>';
+            }
+        }
 
+        echo '<p>' . esc_html__('To manage several sites, use an existing MainWP Dashboard and its official MCP connection. A Child plugin, network multisite, or accessible website does not authorize control of another site. This Connector does not collect customer site URLs or credentials.', 'wordpressconnector') . '</p>';
         $providers = $recovery['active_backup_plugins_detected'];
+        $detectedBackup = $recovery['backup_provider_detected'];
+        if (is_string($detectedBackup)) {
+            $adminPath = $recovery['backup_provider_admin_path'];
+            if (is_string($adminPath)) {
+                /* translators: %s: Name of the active WordPress backup plugin. */
+                $backupLinkText = sprintf(__('Open %s backup screen', 'wordpressconnector'), $detectedBackup);
+                // WPvivid's network settings live in network admin on multisite.
+                $networkBackup = $sites['wordpress_multisite_detected']
+                    && in_array($detectedBackup, array('WPvivid', 'WPvivid Pro'), true);
+                $backupAdminUrl = $networkBackup ? network_admin_url($adminPath) : admin_url($adminPath);
+                echo '<p><a href="' . esc_url($backupAdminUrl) . '">' .
+                    esc_html($backupLinkText) .
+                    '</a> — ' . esc_html__('Make a full files + database backup with your existing plugin, store a separate copy and verify a staging restore before risky updates. The Connector does not start or verify that backup.', 'wordpressconnector') . '</p>';
+            }
+        } elseif ($recovery['backup_provider_choice_required']) {
+            echo '<p>' . esc_html__('Several backup plugins are active. Choose one in WordPress; the Connector will not start a backup or pick a provider automatically.', 'wordpressconnector') . '</p>';
+        }
         if (count($providers) > 0) {
             echo '<p>' . esc_html__('Active backup plugin detected (not proof of a usable backup):', 'wordpressconnector') . ' <strong>' . esc_html(implode(', ', $providers)) . '</strong>.</p>';
         } else {
@@ -309,7 +373,7 @@ final class Settings
         }
 
         echo '<ol>';
-        echo '<li>' . esc_html__('First enable a trusted OAuth 2.1 provider or broker with PKCE, token validation and explicit WordPress-account linking. Do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector') . '</li>';
+        echo '<li>' . esc_html__('Verify or configure a trusted OAuth 2.1 provider with PKCE, token validation and explicit WordPress-account linking. An OAuth provider may already be active; do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('In a ChatGPT workspace that permits custom MCP connections, an admin must add the HTTPS MCP endpoint and approve OAuth linking.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('Configure a full backup with the hosting or backup provider: files plus database, with an independent offsite copy.', 'wordpressconnector') . '</li>';
         echo '<li>' . esc_html__('Restore that backup on a separate staging site and confirm that content, files, plugins and the database are intact before high-risk writes.', 'wordpressconnector') . '</li>';
