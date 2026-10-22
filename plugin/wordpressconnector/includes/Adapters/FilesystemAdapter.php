@@ -321,11 +321,16 @@ final class FilesystemAdapter
 		if (! @fflush($handle)) {
 			$ok = false;
 		}
-		@fclose($handle);
-		@chmod($absolute, defined('FS_CHMOD_FILE') ? FS_CHMOD_FILE : 0644);
-		if (! $ok || $offset !== $size) {
-			@unlink($absolute);
-			throw new RuntimeException('New file write failed; partial content was removed.');
+		$closed = @fclose($handle);
+		// A successful write is not safe to report unless the new file is
+		// also closed and its requested WordPress permissions are applied.
+		$secured = $ok && $closed && $offset === $size
+			&& @chmod($absolute, defined('FS_CHMOD_FILE') ? FS_CHMOD_FILE : 0644);
+		if (! $secured) {
+			if (! @unlink($absolute)) {
+				throw new RuntimeException('New text file write or permissions failed; cleanup failed and manual recovery required.');
+			}
+			throw new RuntimeException('New text file write or permissions failed; incomplete or unsafe file was removed.');
 		}
 		clearstatcache(true, $absolute);
 		$readback = @file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
