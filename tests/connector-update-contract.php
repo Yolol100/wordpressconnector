@@ -109,6 +109,9 @@ $workflowRequired = array(
     '[[ "$RELEASE_SHA_INPUT" =~ ^[a-f0-9]{40}$ ]]',
     'test "$(git rev-parse HEAD)" = "$RELEASE_SHA_INPUT"',
     'test "$current_main" = "$RELEASE_SHA_INPUT"',
+    'ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT',
+    'select(.conclusion == "success")',
+    'grep -Fxq "$RELEASE_SHA_INPUT"',
     'test "$version" = "$RELEASE_VERSION_INPUT"',
     'contents: write',
     'id-token: write',
@@ -139,7 +142,8 @@ if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'wor
 $approvalPosition = strpos($workflow, 'name: Validate approved release version and current main commit');
 $publishPosition = strpos($workflow, 'name: Publish versioned GitHub release');
 if (false === $approvalPosition || false === $publishPosition || $approvalPosition >= $publishPosition
-    || substr_count($workflow, 'current_main=') < 2) {
+    || substr_count($workflow, 'current_main=') < 2
+    || substr_count($workflow, 'ci.yml/runs?event=push&head_sha=') < 2) {
     fwrite(STDERR, "Release publication must revalidate the approved exact main SHA immediately before publishing.\n");
     exit(1);
 }
