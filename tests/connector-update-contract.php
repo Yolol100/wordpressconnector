@@ -35,7 +35,7 @@ $adapterRequired = array(
     'getExternalAttributesIndex',
     '0xA000',
     "current_user_can('update_plugins')",
-    "'temp_backup' => $backup",
+    "'temp_backup' => \$backup",
     "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
     "get_filesystem_method()",
     "restore_verified must be boolean.",
@@ -44,10 +44,14 @@ $adapterRequired = array(
     'is_plugin_active(self::PLUGIN_FILE)',
     'activate_plugin(self::PLUGIN_FILE',
     'wp_clean_plugins_cache(true)',
+    "wp_create_nonce('wpconnector_update_notice')",
+    'wp_verify_nonce(',
     "rollback_supported' => false",
 );
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) { throw new RuntimeException('Cannot normalize connector update source.'); }
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
@@ -85,21 +89,35 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
 if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
     ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
     $version[1] !== $stable[1] ||
-    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
+    ! preg_match('/define\s*\(\s*[\'"]WPCONNECTOR_VERSION[\'"]\s*,\s*[\'"]' . preg_quote($version[1], '/') . '[\'"]\s*\)/', $bootstrap)) {
     fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }
 
 $workflowRequired = array(
-    'workflow_run:',
-    'workflows: ["Connector CI"]',
-    "github.event.workflow_run.conclusion == 'success'",
-    "github.event.workflow_run.head_branch == 'main'",
-    "github.event.workflow_run.event == 'push'",
+    'workflow_dispatch:',
+    'release_version:',
+    'expected_main_sha:',
+    'publish_confirmation:',
+    "github.event_name == 'workflow_dispatch'",
+    "github.ref == 'refs/heads/main'",
+    "inputs.publish_confirmation == 'PUBLISH'",
+    'RELEASE_SHA_INPUT: ${{ inputs.expected_main_sha }}',
+    'RELEASE_VERSION_INPUT: ${{ inputs.release_version }}',
+    'test "$PUBLISH_CONFIRMATION_INPUT" = ',
+    '[[ "$RELEASE_VERSION_INPUT" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]',
+    '[[ "$RELEASE_SHA_INPUT" =~ ^[a-f0-9]{40}$ ]]',
+    'test "$(git rev-parse HEAD)" = "$RELEASE_SHA_INPUT"',
+    'test "$current_main" = "$RELEASE_SHA_INPUT"',
+    'ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT',
+    'select(.conclusion == "success")',
+    'grep -Fxq "$RELEASE_SHA_INPUT"',
+    'test "$version" = "$RELEASE_VERSION_INPUT"',
+    'actions: read',
     'contents: write',
     'id-token: write',
     'attestations: write',
-    'ref: ${{ github.event.workflow_run.head_sha }}',
+    'ref: ${{ inputs.expected_main_sha }}',
     'scripts/build-release-package.py',
     'wordpressconnector.zip.sha256',
     'wordpressconnector.spdx.json',
@@ -107,7 +125,7 @@ $workflowRequired = array(
     'Existing release ${tag} has different plugin bytes.',
     'cmp "$RUNNER_TEMP/wordpressconnector.zip"',
     'gh release create',
-    '--target "${{ github.event.workflow_run.head_sha }}"',
+    '--target "$RELEASE_SHA_INPUT"',
     'Verify published release bytes',
     'sha256sum -c wordpressconnector.zip.sha256',
 );
@@ -117,8 +135,17 @@ foreach ($workflowRequired as $needle) {
         exit(1);
     }
 }
-if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'Publish immutable GitHub release') !== false) {
+if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'workflow_run:') !== false || strpos($workflow, 'Publish immutable GitHub release') !== false) {
     fwrite(STDERR, "Connector release workflow contains a forbidden privileged event or false immutability claim.\n");
+    exit(1);
+}
+
+$approvalPosition = strpos($workflow, 'name: Validate approved release version and current main commit');
+$publishPosition = strpos($workflow, 'name: Publish versioned GitHub release');
+if (false === $approvalPosition || false === $publishPosition || $approvalPosition >= $publishPosition
+    || substr_count($workflow, 'current_main=') < 2
+    || substr_count($workflow, 'ci.yml/runs?event=push&head_sha=') < 2) {
+    fwrite(STDERR, "Release publication must revalidate the approved exact main SHA immediately before publishing.\n");
     exit(1);
 }
 
