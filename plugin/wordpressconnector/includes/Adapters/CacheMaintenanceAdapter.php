@@ -288,16 +288,19 @@ final class CacheMaintenanceAdapter
 
     public function handleAssetCleanupLoopback(): void
     {
-        if (! isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+        $requestMethod = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD'])
+            ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
+            : '';
+        if ('POST' !== $requestMethod) {
             wp_send_json_error(array('code' => 'method_not_allowed'), 405);
             return;
         }
 
-        $key = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
-            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
+        $key = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY']) && is_string($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
+            ? strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])))
             : '';
-        $token = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
-            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
+        $token = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN']) && is_string($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
+            ? strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])))
             : '';
 
         if (! preg_match('/^[a-f0-9]{32}\z/', $key) || ! preg_match('/^[a-f0-9]{64}\z/', $token)) {

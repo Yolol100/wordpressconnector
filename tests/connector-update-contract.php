@@ -35,7 +35,7 @@ $adapterRequired = array(
     'getExternalAttributesIndex',
     '0xA000',
     "current_user_can('update_plugins')",
-    "'temp_backup' => $backup",
+    "'temp_backup' => \$backup",
     "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
     "get_filesystem_method()",
     "restore_verified must be boolean.",
@@ -85,7 +85,7 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
 if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
     ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
     $version[1] !== $stable[1] ||
-    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
+    ! preg_match('/define\s*\(\s*[\'"]WPCONNECTOR_VERSION[\'"]\s*,\s*[\'"]' . preg_quote($version[1], '/') . '[\'"]\s*\)/', $bootstrap)) {
     fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }

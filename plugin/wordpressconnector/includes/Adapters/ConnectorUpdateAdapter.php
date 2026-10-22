@@ -149,7 +149,14 @@ final class ConnectorUpdateAdapter
         if (! current_user_can('update_plugins') || ! isset($_GET['wpconnector_update_checked'])) {
             return;
         }
-        $ok = '1' === (string) $_GET['wpconnector_update_checked'];
+        // The notice is informational only. Reject malformed or array-valued query parameters.
+        $notice = is_string($_GET['wpconnector_update_checked'])
+            ? sanitize_text_field(wp_unslash($_GET['wpconnector_update_checked']))
+            : '';
+        if (! in_array($notice, array('0', '1'), true)) {
+            return;
+        }
+        $ok = '1' === $notice;
         echo '<div class="notice ' . ($ok ? 'notice-success' : 'notice-warning') .
             ' is-dismissible"><p>' .
             esc_html($ok

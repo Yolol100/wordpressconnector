@@ -90,7 +90,10 @@ final class Settings
      */
     public function createApplicationPassword(): void
     {
-        if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '')) {
+        $requestMethod = isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD'])
+            ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
+            : '';
+        if ('POST' !== $requestMethod) {
             wp_die(esc_html__('Use the WordPress Connector settings form to create a credential.', 'wordpressconnector'),
                 esc_html__('Method not allowed', 'wordpressconnector'), array('response' => 405));
         }
@@ -99,7 +102,10 @@ final class Settings
                 esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
         }
         check_admin_referer('wpconnector_create_application_password');
-        if ('1' !== ($_POST['confirm_direct_access'] ?? null)) {
+        $confirmed = isset($_POST['confirm_direct_access']) && is_string($_POST['confirm_direct_access'])
+            ? sanitize_text_field(wp_unslash($_POST['confirm_direct_access']))
+            : '';
+        if ('1' !== $confirmed) {
             wp_die(esc_html__('Confirm that the credential will have your WordPress account permissions.', 'wordpressconnector'),
                 esc_html__('Confirmation required', 'wordpressconnector'), array('response' => 400));
         }
@@ -147,7 +153,23 @@ final class Settings
         $message .= '<input id="wpconnector-mcp-password" type="text" readonly="readonly" autocomplete="off" value="' . esc_attr($created[0]) . '" style="width:100%" /></p>';
         $message .= '<p>' . esc_html__('Enter the details only into a trusted HTTPS REST/MCP client that supports WordPress Application Passwords. ChatGPT web connections may require OAuth instead. Never put this password in a GitHub branch, workflow, chat or URL. GitHub Actions already uses password-free OIDC.', 'wordpressconnector') . '</p>';
         $message .= '<p><a href="' . esc_url(admin_url('profile.php')) . '">' . esc_html__('Manage or revoke this password in your profile', 'wordpressconnector') . '</a></p>';
-        wp_die($message, esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
+        // wp_die() accepts HTML. Re-filter the assembled, individually escaped
+        // markup while retaining the input fields needed to show the one-time secret.
+        $allowedHtml = array(
+            'h1' => array(),
+            'p' => array(),
+            'label' => array('for' => true),
+            'input' => array(
+                'id' => true,
+                'type' => true,
+                'readonly' => true,
+                'autocomplete' => true,
+                'value' => true,
+                'style' => true,
+            ),
+            'a' => array('href' => true),
+        );
+        wp_die(wp_kses($message, $allowedHtml, array('https')), esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
             array('response' => 200, 'back_link' => false));
     }
 

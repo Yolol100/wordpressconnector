@@ -6,7 +6,7 @@ if (! defined('WP_UNINSTALL_PLUGIN')) {
     exit;
 }
 
-$cleanupCurrentSite = static function (): void {
+$wpconnector_cleanup_current_site = static function (): void {
     foreach (array(
         'wpconnector_rest_enabled',
         'wpconnector_allow_writes',
@@ -30,7 +30,7 @@ $cleanupCurrentSite = static function (): void {
         '_transient_timeout_wpconnector_oidc_jti_',
     ) as $prefix) {
         $like = $wpdb->esc_like($prefix) . '%';
-        $names = $wpdb->get_col($wpdb->prepare("SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+        $names = $wpdb->get_col($wpdb->prepare('SELECT option_name FROM %i WHERE option_name LIKE %s', $wpdb->options, $like));
         foreach ((array) $names as $name) {
             if (is_string($name) && 0 === strpos($name, $prefix)) {
                 delete_option($name);
@@ -40,23 +40,23 @@ $cleanupCurrentSite = static function (): void {
 };
 
 if (is_multisite() && function_exists('get_sites')) {
-    $offset = 0;
+    $wpconnector_offset = 0;
     do {
-        $siteIds = get_sites(array(
+        $wpconnector_site_ids = get_sites(array(
             'fields' => 'ids',
             'number' => 100,
-            'offset' => $offset,
+            'offset' => $wpconnector_offset,
             'orderby' => 'id',
             'order' => 'ASC',
         ));
-        foreach ((array) $siteIds as $siteId) {
-            switch_to_blog((int) $siteId);
-            $cleanupCurrentSite();
+        foreach ((array) $wpconnector_site_ids as $wpconnector_site_id) {
+            switch_to_blog((int) $wpconnector_site_id);
+            $wpconnector_cleanup_current_site();
             restore_current_blog();
         }
-        $count = count((array) $siteIds);
-        $offset += $count;
-    } while (100 === $count);
+        $wpconnector_count = count((array) $wpconnector_site_ids);
+        $wpconnector_offset += $wpconnector_count;
+    } while (100 === $wpconnector_count);
 } else {
-    $cleanupCurrentSite();
+    $wpconnector_cleanup_current_site();
 }

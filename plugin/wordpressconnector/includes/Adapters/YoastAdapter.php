@@ -251,7 +251,7 @@ final class YoastAdapter
                     throw new RuntimeException('Organization logo image must be at least 112x112 pixels.');
                 }
                 $url = wp_get_attachment_url($value);
-                if (! is_string($url) || 'https' !== strtolower((string) parse_url($url, PHP_URL_SCHEME))) {
+                if (! is_string($url) || 'https' !== strtolower((string) wp_parse_url($url, PHP_URL_SCHEME))) {
                     throw new RuntimeException('Organization logo must have a valid HTTPS media URL.');
                 }
                 $afterOptions['company_logo_id'] = $value;

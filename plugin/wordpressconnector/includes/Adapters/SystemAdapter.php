@@ -67,7 +67,8 @@ final class SystemAdapter
         global $wpdb, $wp_version;
         $checks = array(
             'wordpress_bootstrap' => defined('ABSPATH'),
-            'database' => $wpdb instanceof \wpdb && null !== $wpdb->dbh,
+            // WordPress exposes ready publicly; dbh is protected and must never be accessed.
+            'database' => $wpdb instanceof \wpdb && (bool) $wpdb->ready,
             'wp_cli' => defined('WP_CLI') && WP_CLI,
             'uploads_writable' => wp_is_writable(wp_get_upload_dir()['basedir']),
             'plugin_dir_writable' => wp_is_writable(WP_PLUGIN_DIR),
@@ -606,7 +607,12 @@ final class SystemAdapter
         $updates = get_core_updates(array('dismissed' => false));
         if (! is_array($updates)) throw new RuntimeException('No core update information available.');
         $candidate = null;
-        foreach ($updates as $update) if (isset($update->response) && 'upgrade' === $update->response) { $candidate = $update; break; }
+        foreach ($updates as $update) {
+            if (isset($update->response) && 'upgrade' === $update->response) {
+                $candidate = $update;
+                break;
+            }
+        }
         if (! $candidate) return array('updated' => false, 'message' => 'No core update available.');
         $upgrader = new \Core_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($candidate);
@@ -759,7 +765,7 @@ final class SystemAdapter
         if (strlen($url) > 320 || ! in_array($kind, array('plugin', 'theme'), true)) {
             throw new RuntimeException('Invalid official directory package reference.');
         }
-        $parts = parse_url($url);
+        $parts = wp_parse_url($url);
         if (! is_array($parts) || ($parts['scheme'] ?? '') !== 'https' ||
             ($parts['host'] ?? '') !== 'downloads.wordpress.org' ||
             isset($parts['user']) || isset($parts['pass']) || isset($parts['query']) ||

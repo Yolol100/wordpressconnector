@@ -7,7 +7,7 @@ $source = (string) file_get_contents($root . '/plugin/wordpressconnector/include
 
 $required = array(
     '$groupId = $this->groupId($groupKey);',
-    "'parent' => $groupId",
+    "'parent' => \$groupId",
     'private function groupId(string $groupKey): int',
     'private function fieldMatchesDefinition(array $summary, array $definition, int $groupId): bool',
     "0 !== (int) (\$summary['parent'] ?? 0)",

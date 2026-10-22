@@ -21,6 +21,7 @@ run_php tests/approved-plugin-abilities-contract.php
 run_php tests/abilities-mutation-idempotency-contract.php
 run_php tests/woocommerce-orders-read-contract.php
 run_php tests/woocommerce-catalog-read-contract.php
+run_php tests/woocommerce-variation-readback-contract.php
 run_php tests/woocommerce-settings-contract.php
 run_php tests/woocommerce-operations-contract.php
 run_php tests/woocommerce-fulfillment-contract.php
@@ -34,7 +35,9 @@ run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
 run_php tests/elementor-json-import-contract.php
+run_php tests/elementor-import-upload-boundary-runtime.php
 run_php tests/state-token-contract.php
+run_php tests/option-table-sql-contract.php
 run_php tests/read-batch-contract.php
 run_php tests/diagnostics-contract.php
 run_php tests/connector-core-backup-runtime.php
@@ -54,6 +57,7 @@ run_php tests/connector-update-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
+run_php tests/qa-admin-input-runtime-contract.php
 run_php tests/direct-mcp-admin-runtime.php
 run_php tests/connection-readiness-contract.php
 run_php tests/mcp-admin-connection-doctor-contract.php
@@ -65,6 +69,7 @@ run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
 run_php tests/runtime-preflight-contract.php
+run_php tests/system-doctor-runtime-contract.php
 run_php tests/filesystem-control-contract.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
 run_php tests/theme-lifecycle-readback-contract.php

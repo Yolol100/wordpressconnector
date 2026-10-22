@@ -61,13 +61,16 @@ $require('uninstall', array(
     'wpconnector_mutation_lock',
     'wpconnector_snapshot_',
     'wpconnector_processed_',
-    "delete_transient('wpconnector_github_oidc_jwks_v1')",
     '_transient_wpconnector_oidc_jti_',
     '_transient_timeout_wpconnector_oidc_jti_',
     'get_sites(',
     'switch_to_blog(',
     'restore_current_blog(',
 ));
+// Whitespace-only formatting must not invalidate the OIDC uninstall safety contract.
+if (1 !== preg_match('/delete_transient\\s*\\(\\s*[\\x27\\x22]wpconnector_github_oidc_jwks_v1[\\x27\\x22]\\s*\\)/', $sources['uninstall'])) {
+    throw new RuntimeException('Uninstall must clear the OIDC JWKS transient.');
+}
 
 if (false !== strpos($sources['settings'], 'WP Agent')) {
     fwrite(STDERR, "Admin settings must not advertise the retired WP Agent preference.\n");

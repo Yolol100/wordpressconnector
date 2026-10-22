@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace {
     if (! defined('ABSPATH')) define('ABSPATH', dirname(__DIR__) . '/');
     if (! defined('WPCONNECTOR_FILE')) define('WPCONNECTOR_FILE', dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
-    if (! defined('WPCONNECTOR_VERSION')) define('WPCONNECTOR_VERSION', '1.19.18-test');
+    if (! defined('WPCONNECTOR_VERSION')) define('WPCONNECTOR_VERSION', '1.19.19-test');
 
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
 

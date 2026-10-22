@@ -47,7 +47,7 @@ final class SnapshotStore
     {
         global $wpdb;
         $like = $wpdb->esc_like(self::PREFIX) . '%';
-        $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+        $rows = $wpdb->get_results($wpdb->prepare('SELECT option_name, option_value FROM %i WHERE option_name LIKE %s', $wpdb->options, $like));
         $deleted = 0;
         foreach ($rows as $row) {
             $value = maybe_unserialize($row->option_value);
