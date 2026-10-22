@@ -65,6 +65,9 @@ final class SystemAdapter
     public function doctor(): array
     {
         global $wpdb, $wp_version;
+        $file_modifications_allowed = function_exists( 'wp_is_file_mod_allowed' )
+            ? (bool) wp_is_file_mod_allowed( 'plugin_update' )
+            : ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
         $checks = array(
             'wordpress_bootstrap' => defined('ABSPATH'),
             // WordPress exposes readiness publicly; dbh is protected.
@@ -78,9 +81,9 @@ final class SystemAdapter
             'elementor' => class_exists('Elementor\\Plugin'),
             'acf' => function_exists('get_fields'),
             'multisite' => is_multisite(),
-            'file_modifications_allowed' => function_exists('wp_is_file_mod_allowed') ? wp_is_file_mod_allowed('plugin_update') : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS),
+            'file_modifications_allowed' => $file_modifications_allowed,
             'file_editor_disabled' => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT,
-            'file_modifications_disabled' => defined('DISALLOW_FILE_MODS') && DISALLOW_FILE_MODS,
+            'file_modifications_disabled' => ! $file_modifications_allowed,
             'plugin_update_permission' => current_user_can('update_plugins'),
             'plugin_install_permission' => current_user_can('install_plugins'),
         );
@@ -607,7 +610,12 @@ final class SystemAdapter
         $updates = get_core_updates(array('dismissed' => false));
         if (! is_array($updates)) throw new RuntimeException('No core update information available.');
         $candidate = null;
-        foreach ($updates as $update) if (isset($update->response) && 'upgrade' === $update->response) { $candidate = $update; break; }
+        foreach ($updates as $update) {
+            if (isset($update->response) && 'upgrade' === $update->response) {
+                $candidate = $update;
+                break;
+            }
+        }
         if (! $candidate) return array('updated' => false, 'message' => 'No core update available.');
         $upgrader = new \Core_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($candidate);
