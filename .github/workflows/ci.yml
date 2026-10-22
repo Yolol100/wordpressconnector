@@ -24,6 +24,9 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      - name: Trusted required PR gate regression cases
+        run: python3 -B tests/required-pr-gate-tests.py
+
       - name: Zero-config policy contract
         run: php -d auto_prepend_file=tests/php-compat.php tests/policy-contract.php
       - name: GitHub OIDC contract
