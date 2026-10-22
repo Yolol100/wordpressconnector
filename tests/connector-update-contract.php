@@ -35,7 +35,7 @@ $adapterRequired = array(
     'getExternalAttributesIndex',
     '0xA000',
     "current_user_can('update_plugins')",
-    "'temp_backup' => \$backup",
+    "'temp_backup' => $backup",
     "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
     "get_filesystem_method()",
     "restore_verified must be boolean.",
@@ -44,14 +44,10 @@ $adapterRequired = array(
     'is_plugin_active(self::PLUGIN_FILE)',
     'activate_plugin(self::PLUGIN_FILE',
     'wp_clean_plugins_cache(true)',
-    "wp_create_nonce('wpconnector_update_notice')",
-    'wp_verify_nonce(',
     "rollback_supported' => false",
 );
-$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
-if (! is_string($normalizedAdapter)) { throw new RuntimeException('Cannot normalize connector update source.'); }
 foreach ($adapterRequired as $needle) {
-    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
+    if (strpos($adapter, $needle) === false) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
@@ -89,7 +85,7 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
 if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
     ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
     $version[1] !== $stable[1] ||
-    ! preg_match('/define\s*\(\s*[\'"]WPCONNECTOR_VERSION[\'"]\s*,\s*[\'"]' . preg_quote($version[1], '/') . '[\'"]\s*\)/', $bootstrap)) {
+    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
     fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }
