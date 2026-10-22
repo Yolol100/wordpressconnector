@@ -65,9 +65,9 @@ final class SystemAdapter
     public function doctor(): array
     {
         global $wpdb, $wp_version;
-        $fileModificationsAllowed = function_exists('wp_is_file_mod_allowed')
-            ? (bool) wp_is_file_mod_allowed('plugin_update')
-            : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS);
+        $file_modifications_allowed = function_exists( 'wp_is_file_mod_allowed' )
+            ? (bool) wp_is_file_mod_allowed( 'plugin_update' )
+            : ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
         $checks = array(
             'wordpress_bootstrap' => defined('ABSPATH'),
             // WordPress exposes readiness publicly; dbh is protected.
@@ -81,9 +81,9 @@ final class SystemAdapter
             'elementor' => class_exists('Elementor\\Plugin'),
             'acf' => function_exists('get_fields'),
             'multisite' => is_multisite(),
-            'file_modifications_allowed' => $fileModificationsAllowed,
+            'file_modifications_allowed' => $file_modifications_allowed,
             'file_editor_disabled' => defined('DISALLOW_FILE_EDIT') && DISALLOW_FILE_EDIT,
-            'file_modifications_disabled' => ! $fileModificationsAllowed,
+            'file_modifications_disabled' => ! $file_modifications_allowed,
             'plugin_update_permission' => current_user_can('update_plugins'),
             'plugin_install_permission' => current_user_can('install_plugins'),
         );
