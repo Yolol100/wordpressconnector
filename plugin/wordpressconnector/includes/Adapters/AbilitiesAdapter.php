@@ -216,7 +216,7 @@ final class AbilitiesAdapter
                 }
                 return $guard;
             };
-            add_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX, 2);
+            add_filter('elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX, 1);
         }
 
         try {
