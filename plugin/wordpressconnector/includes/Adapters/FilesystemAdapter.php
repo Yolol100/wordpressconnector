@@ -335,7 +335,9 @@ final class FilesystemAdapter
 		clearstatcache(true, $absolute);
 		$readback = @file_get_contents($absolute, false, null, 0, self::MAX_TEXT_BYTES + 1);
 		if (! is_string($readback) || ! hash_equals(hash('sha256', $content), hash('sha256', $readback))) {
-			@unlink($absolute);
+			if (! @unlink($absolute)) {
+				throw new RuntimeException('New file readback failed; cleanup failed and manual recovery required.');
+			}
 			throw new RuntimeException('New file readback failed; incomplete file was removed.');
 		}
 		$result['after'] = $this->state($relative, $readback, $absolute);
