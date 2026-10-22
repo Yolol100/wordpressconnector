@@ -113,6 +113,7 @@ $workflowRequired = array(
     'select(.conclusion == "success")',
     'grep -Fxq "$RELEASE_SHA_INPUT"',
     'test "$version" = "$RELEASE_VERSION_INPUT"',
+    'actions: read',
     'contents: write',
     'id-token: write',
     'attestations: write',
