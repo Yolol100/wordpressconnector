@@ -95,15 +95,25 @@ if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $boots
 }
 
 $workflowRequired = array(
-    'workflow_run:',
-    'workflows: ["Connector CI"]',
-    "github.event.workflow_run.conclusion == 'success'",
-    "github.event.workflow_run.head_branch == 'main'",
-    "github.event.workflow_run.event == 'push'",
+    'workflow_dispatch:',
+    'release_version:',
+    'expected_main_sha:',
+    'publish_confirmation:',
+    "github.event_name == 'workflow_dispatch'",
+    "github.ref == 'refs/heads/main'",
+    "inputs.publish_confirmation == 'PUBLISH'",
+    'RELEASE_SHA_INPUT: ${{ inputs.expected_main_sha }}',
+    'RELEASE_VERSION_INPUT: ${{ inputs.release_version }}',
+    'test "$PUBLISH_CONFIRMATION_INPUT" = ',
+    '[[ "$RELEASE_VERSION_INPUT" =~ ^[0-9]+[.][0-9]+[.][0-9]+$ ]]',
+    '[[ "$RELEASE_SHA_INPUT" =~ ^[a-f0-9]{40}$ ]]',
+    'test "$(git rev-parse HEAD)" = "$RELEASE_SHA_INPUT"',
+    'test "$current_main" = "$RELEASE_SHA_INPUT"',
+    'test "$version" = "$RELEASE_VERSION_INPUT"',
     'contents: write',
     'id-token: write',
     'attestations: write',
-    'ref: ${{ github.event.workflow_run.head_sha }}',
+    'ref: ${{ inputs.expected_main_sha }}',
     'scripts/build-release-package.py',
     'wordpressconnector.zip.sha256',
     'wordpressconnector.spdx.json',
@@ -111,7 +121,7 @@ $workflowRequired = array(
     'Existing release ${tag} has different plugin bytes.',
     'cmp "$RUNNER_TEMP/wordpressconnector.zip"',
     'gh release create',
-    '--target "${{ github.event.workflow_run.head_sha }}"',
+    '--target "$RELEASE_SHA_INPUT"',
     'Verify published release bytes',
     'sha256sum -c wordpressconnector.zip.sha256',
 );
@@ -121,8 +131,16 @@ foreach ($workflowRequired as $needle) {
         exit(1);
     }
 }
-if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'Publish immutable GitHub release') !== false) {
+if (strpos($workflow, 'pull_request_target') !== false || strpos($workflow, 'workflow_run:') !== false || strpos($workflow, 'Publish immutable GitHub release') !== false) {
     fwrite(STDERR, "Connector release workflow contains a forbidden privileged event or false immutability claim.\n");
+    exit(1);
+}
+
+$approvalPosition = strpos($workflow, 'name: Validate approved release version and current main commit');
+$publishPosition = strpos($workflow, 'name: Publish versioned GitHub release');
+if (false === $approvalPosition || false === $publishPosition || $approvalPosition >= $publishPosition
+    || substr_count($workflow, 'current_main=') < 2) {
+    fwrite(STDERR, "Release publication must revalidate the approved exact main SHA immediately before publishing.\n");
     exit(1);
 }
 
