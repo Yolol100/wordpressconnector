@@ -46,6 +46,7 @@ namespace {
 
     require_once $base . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once $base . '/plugin/wordpressconnector/includes/Security/FilesystemPolicy.php';
+    require_once $base . '/plugin/wordpressconnector/includes/Support/Json.php';
     require_once $base . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
     require_once $base . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php';
 
