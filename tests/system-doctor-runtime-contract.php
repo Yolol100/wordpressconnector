@@ -20,7 +20,7 @@ class wpdb
 
 function wp_is_writable(string $path): bool { return true; }
 function wp_get_upload_dir(): array { return array('basedir' => __DIR__); }
-function wp_is_file_mod_allowed(string $context): bool { return true; }
+function wp_is_file_mod_allowed(string $context): bool { return $GLOBALS['wpconn_file_mod_allowed'] ?? true; }
 function current_user_can(string $capability): bool { return true; }
 function is_multisite(): bool { return false; }
 
@@ -34,6 +34,22 @@ $ready = $doctor->doctor();
 if (true !== ($ready['database'] ?? null) || true !== ($ready['ok'] ?? null)
     || false !== ($ready['wp_cli'] ?? true)) {
     throw new RuntimeException('Doctor failed with a ready database and unavailable optional WP-CLI.');
+}
+
+// WordPress policy filters can deny file changes without DISALLOW_FILE_MODS.
+$GLOBALS['wpconn_file_mod_allowed'] = false;
+$denied = $doctor->doctor();
+if (false !== ($denied['file_modifications_allowed'] ?? null)
+    || true !== ($denied['file_modifications_disabled'] ?? null)
+    || true !== ($denied['database'] ?? null)
+    || true !== ($denied['ok'] ?? null)) {
+    throw new RuntimeException('Doctor must honor WordPress file modification policy filters.');
+}
+$GLOBALS['wpconn_file_mod_allowed'] = true;
+$permitted = $doctor->doctor();
+if (true !== ($permitted['file_modifications_allowed'] ?? null)
+    || false !== ($permitted['file_modifications_disabled'] ?? null)) {
+    throw new RuntimeException('Doctor must report permitted file modifications consistently.');
 }
 
 $wpdb->ready = false;
