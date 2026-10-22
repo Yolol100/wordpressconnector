@@ -54,7 +54,7 @@ jobs:
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
           test "$current_main" = "$RELEASE_SHA_INPUT"
           # Only a completed, successful push CI for this exact main SHA is eligible.
-          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \\
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \
             --jq '.workflow_runs[] | select(.conclusion == "success") | .head_sha' | grep -Fxq "$RELEASE_SHA_INPUT"
 
       - name: Read and validate release version
@@ -137,7 +137,7 @@ jobs:
           current_main="$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq '.commit.sha')"
           test "$current_main" = "$RELEASE_SHA_INPUT"
           # Only a completed, successful push CI for this exact main SHA is eligible.
-          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \\
+          gh api "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?event=push&head_sha=$RELEASE_SHA_INPUT&per_page=20" \
             --jq '.workflow_runs[] | select(.conclusion == "success") | .head_sha' | grep -Fxq "$RELEASE_SHA_INPUT"
           gh release create "${{ steps.version.outputs.tag }}" \
             "$RUNNER_TEMP/wordpressconnector.zip" \
