@@ -62,6 +62,14 @@ Repository CI is source/static or controlled-runtime proof only. Live compatibil
 
 A connector version that predates GitHub OIDC still needs a one-time plugin update before zero-config transport can exist on that site. Never add a generic remote-code workaround to bypass that bootstrap boundary.
 
+## Permanent GitHub PR and release governance
+
+- The `Connector Required PR Gate` workflow is a trusted-base, read-only `pull_request_target` check. It must evaluate the exact current PR head against successful eligible `ci.yml` runs and the conditional Docker requirement. Never check out or execute PR-head code in this privileged event.
+- `ci.yml` intentionally ignores request/result/receipt transport paths. Do not make a path-filtered or conditional job a universally required context. Transport-only runtime PRs must remain unmerged; their green transport workflows are not release acceptance.
+- The active `Protect main` deletion/force-push baseline alone does **not** require PR review, green checks, resolved comments or an up-to-date branch. A repository administrator must separately install and verify the compatible required-PR and exact-context rules, first proving positive/negative PR events, then a blocked direct push. An available workflow file is not proof of active branch-policy enforcement.
+- GitHub Actions event-policy availability must be verified for `pull_request_target`; if the event is unavailable, required-check enforcement must not be enabled under a missing check.
+- `Connector Release` is manual `workflow_dispatch` only and requires `PUBLISH`, the approved matching plugin version and exact CI-green `main` SHA. Never reintroduce unattended publish through a dependent `workflow_run` or bypass staging, backup/restore and independent Website QA.
+
 ## Agent capability and impact policy
 
 Before an agent changes repository or external state:
