@@ -67,7 +67,8 @@ final class SystemAdapter
         global $wpdb, $wp_version;
         $checks = array(
             'wordpress_bootstrap' => defined('ABSPATH'),
-            'database' => $wpdb instanceof \wpdb && null !== $wpdb->dbh,
+            // WordPress exposes readiness publicly; dbh is protected.
+            'database' => $wpdb instanceof \wpdb && (bool) $wpdb->ready,
             'wp_cli' => defined('WP_CLI') && WP_CLI,
             'uploads_writable' => wp_is_writable(wp_get_upload_dir()['basedir']),
             'plugin_dir_writable' => wp_is_writable(WP_PLUGIN_DIR),

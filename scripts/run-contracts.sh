@@ -37,6 +37,7 @@ run_php tests/elementor-json-import-contract.php
 run_php tests/state-token-contract.php
 run_php tests/read-batch-contract.php
 run_php tests/diagnostics-contract.php
+run_php tests/system-doctor-runtime-contract.php
 run_php tests/connector-core-backup-runtime.php
 run_php tests/plugin-control-contract.php
 run_php tests/plugin-list-multisite-contract.php
