@@ -15,7 +15,7 @@ spec.loader.exec_module(module)
 assert module.canonical_site("https://Example.COM") == "https://example.com"
 for bad in ("http://example.com", "https://user:pass@example.com", "https://localhost",
             "https://example.com/wp-admin", "https://example.com?token=secret",
-            "https://example.com:8443", "https://example.com.evil/path"):
+            "https://example.com:8443", "https://127.0.0.1", "https://intranet", "https://example.com.evil/path"):
     try:
         module.canonical_site(bad)
     except ValueError:
