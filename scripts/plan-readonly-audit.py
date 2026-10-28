@@ -36,7 +36,8 @@ def canonical_site(value):
     labels = url.hostname.lower().split(".")
     if (len(url.hostname) > 253 or len(labels) < 2 or any(
             not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?", label)
-            for label in labels):
+            for label in labels)):
+
         raise ValueError("Expected a valid public DNS hostname")
     return "https://" + url.hostname.lower()
 
