@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "iso-elementor-20261028",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 264
+  },
+  "dry_run": true,
+  "confirm": false
+}
