@@ -1,0 +1,97 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "iso-pages-20261028",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-28T16:12:05+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 264,
+            "type": "page",
+            "status": "publish",
+            "title": "Categories",
+            "slug": "categories",
+            "permalink": "https://isohulk.com/categories/"
+        },
+        {
+            "id": 256,
+            "type": "page",
+            "status": "publish",
+            "title": "Sitemap",
+            "slug": "sitemap",
+            "permalink": "https://isohulk.com/sitemap/"
+        },
+        {
+            "id": 254,
+            "type": "page",
+            "status": "publish",
+            "title": "Thank You for Your Quotation Request",
+            "slug": "thank-you-quotation",
+            "permalink": "https://isohulk.com/thank-you-quotation/"
+        },
+        {
+            "id": 253,
+            "type": "page",
+            "status": "publish",
+            "title": "Thank You for Your Message",
+            "slug": "thank-you-message",
+            "permalink": "https://isohulk.com/thank-you-message/"
+        },
+        {
+            "id": 252,
+            "type": "page",
+            "status": "publish",
+            "title": "Request a Quotation",
+            "slug": "request-a-quote",
+            "permalink": "https://isohulk.com/request-a-quote/"
+        },
+        {
+            "id": 251,
+            "type": "page",
+            "status": "publish",
+            "title": "Terms & Conditions",
+            "slug": "terms-and-conditions",
+            "permalink": "https://isohulk.com/terms-and-conditions/"
+        },
+        {
+            "id": 17,
+            "type": "page",
+            "status": "publish",
+            "title": "Contact",
+            "slug": "contact",
+            "permalink": "https://isohulk.com/contact/"
+        },
+        {
+            "id": 16,
+            "type": "page",
+            "status": "publish",
+            "title": "About Us",
+            "slug": "about-us",
+            "permalink": "https://isohulk.com/about-us/"
+        },
+        {
+            "id": 15,
+            "type": "page",
+            "status": "publish",
+            "title": "Custom Solutions",
+            "slug": "custom-solutions",
+            "permalink": "https://isohulk.com/custom-solutions/"
+        },
+        {
+            "id": 14,
+            "type": "page",
+            "status": "publish",
+            "title": "Products",
+            "slug": "products",
+            "permalink": "https://isohulk.com/products/"
+        }
+    ],
+    "page": 1,
+    "per_page": 10,
+    "total": 13,
+    "pages": 2,
+    "readback_verified": null
+}
