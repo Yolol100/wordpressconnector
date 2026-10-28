@@ -35,7 +35,7 @@ $adapterRequired = array(
     'getExternalAttributesIndex',
     '0xA000',
     "current_user_can('update_plugins')",
-    "'temp_backup' => $backup",
+    "'temp_backup' => \$backup",
     "'installation_failure_recovery' => 'wordpress_core_temp_backup'",
     "get_filesystem_method()",
     "restore_verified must be boolean.",
