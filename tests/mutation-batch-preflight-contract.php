@@ -28,7 +28,8 @@ use Webactueel\WordPressConnector\Security\Policy;
 
 function current_user_can(string $capability): bool
 {
-    return 'manage_options' === $capability;
+    return 'manage_options' === $capability
+        || ('delete_plugins' === $capability && ! empty($GLOBALS['test_allow_delete']));
 }
 
 function wp_json_encode($value): string
@@ -40,6 +41,7 @@ Policy::setPublicRepositoryContext(false);
 $registry = new Registry();
 $writes = 0;
 $rollbackState = 0;
+$GLOBALS['test_allow_delete'] = false;
 
 $registry->register('test.first', static function (array $payload, array $context) use (&$writes): array {
     if (empty($context['dry_run'])) {
@@ -69,6 +71,17 @@ $registry->register('wordpress.ability.execute_approved', static function () use
     ++$writes;
     return array('delegated' => true);
 }, array('mutation' => true, 'privileged' => true, 'sensitive' => true));
+
+$registry->register('test.revoke_permission', static function (array $payload, array $context): array {
+    $GLOBALS['test_allow_delete'] = false;
+    return array('revoked' => true, '_rollback' => array(
+        'action' => 'test.restore_permission', 'payload' => array(),
+    ));
+}, array('mutation' => true));
+$registry->register('test.restore_permission', static function (): array {
+    $GLOBALS['test_allow_delete'] = true;
+    return array('restored' => true);
+}, array('mutation' => true));
 
 $runner = new Runner($registry, new SnapshotStore(), new ProcessedStore());
 $first = array('action' => 'test.first', 'payload' => array());
@@ -127,4 +140,23 @@ if (! $failed || 0 !== $rollbackState) {
     throw new RuntimeException('Runtime failure must continue compensating an earlier reversible mutation.');
 }
 
-echo "Mutation batch: preflight-before-write, guarded delegated actions and compensation OK\n";
+
+// An earlier leaf may revoke a capability after preflight. Check again at
+// execution time, then compensate the earlier reversible change.
+$GLOBALS['test_allow_delete'] = true;
+$before = $writes;
+$blockedAfterRevocation = false;
+try {
+    $run(array(
+        array('action' => 'test.revoke_permission', 'payload' => array()),
+        array('action' => 'test.admin', 'payload' => array()),
+    ));
+} catch (RuntimeException $error) {
+    $blockedAfterRevocation = true;
+}
+if (! $blockedAfterRevocation || $writes !== $before
+    || $GLOBALS['test_allow_delete'] !== true) {
+    throw new RuntimeException('Batch must recheck capabilities immediately before execution and roll back a revoked permission.');
+}
+
+echo "Mutation batch: preflight-before-write, fresh permission checks and compensation OK\n";
