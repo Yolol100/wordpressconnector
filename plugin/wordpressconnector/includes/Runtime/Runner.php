@@ -198,40 +198,68 @@ final class Runner
     public function batch(array $payload, array $context): array
     {
         $operations = isset($payload['operations']) && is_array($payload['operations']) ? $payload['operations'] : array();
-        if (! $operations || count($operations) > 25) {
+        if (! $operations || count($operations) > 25 || array_keys($payload) !== array('operations')) {
             throw new RuntimeException('connector.batch requires 1-25 operations.');
         }
+
+        // Validate every leaf's shape and access policy before executing the first mutation.
+        // State fingerprints remain checked at execution time for sequential dependencies.
+        $prepared = array();
+        foreach ($operations as $index => $operation) {
+            if (! is_array($operation) || ! isset($operation['action']) || ! is_string($operation['action'])
+                || ! array_key_exists('payload', $operation) || ! is_array($operation['payload'])
+                || array_diff(array_keys($operation), array('action', 'payload', 'expected_fingerprint', 'expected_state_token'))) {
+                throw new RuntimeException('Batch operation at index ' . $index . ' is invalid.');
+            }
+            $action = $operation['action'];
+            if (in_array($action, array('connector.batch', 'connector.read_batch', 'connector.rollback', 'connector.cleanup'), true)) {
+                throw new RuntimeException('Nested batch, rollback or cleanup operations are not allowed.');
+            }
+            if (in_array($action, array('wordpress.ability.execute', 'wordpress.ability.execute_approved'), true)) {
+                throw new RuntimeException('Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.');
+            }
+            $expected = $operation['expected_fingerprint'] ?? null;
+            $expectedStateToken = $operation['expected_state_token'] ?? null;
+            foreach (array('expected_fingerprint' => $expected, 'expected_state_token' => $expectedStateToken) as $guard => $value) {
+                if (null !== $value && (! is_string($value) || ! preg_match('/^[a-f0-9]{64}\\z/', $value))) {
+                    throw new RuntimeException('Invalid ' . $guard . ' at batch index ' . $index . '.');
+                }
+            }
+            if (Policy::publicRepositoryContext() && empty($context['dry_run']) && null === $expected) {
+                throw new RuntimeException('Confirmed public batch operation requires expected_fingerprint at index ' . $index . '.');
+            }
+            $descriptor = $this->registry->descriptor($action);
+            if (Policy::publicRepositoryContext()) {
+                $descriptor = $this->publicDescriptor($action, $operation['payload'], $descriptor, ! empty($context['dry_run']), $expected);
+            }
+            Policy::assertActionAllowed($descriptor, ! empty($context['dry_run']), ! empty($context['confirm']));
+            $prepared[] = array(
+                'action' => $action,
+                'payload' => $operation['payload'],
+                'expected_fingerprint' => $expected,
+                'expected_state_token' => $expectedStateToken,
+            );
+        }
+
         $results = array();
         $rollbacks = array();
         try {
-            foreach ($operations as $index => $operation) {
-                if (! is_array($operation) || empty($operation['action']) || ! is_string($operation['action'])) {
-                    throw new RuntimeException('Batch operation at index ' . $index . ' is invalid.');
-                }
+            foreach ($prepared as $operation) {
                 $action = $operation['action'];
-                if (in_array($action, array('connector.batch', 'connector.read_batch', 'connector.rollback', 'connector.cleanup'), true)) {
-                    throw new RuntimeException('Nested batch, rollback or cleanup operations are not allowed.');
-                }
-                if ('wordpress.ability.execute' === $action) {
-                    throw new RuntimeException('Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.');
-                }
-                $operationPayload = isset($operation['payload']) && is_array($operation['payload']) ? $operation['payload'] : array();
-                // The GitHub guard is not the sole trust boundary: direct
-                // authenticated public requests must enforce this per leaf.
-                if (Policy::publicRepositoryContext() && empty($context['dry_run'])) {
-                    $fingerprint = $operation['expected_fingerprint'] ?? null;
-                    if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}\\z/', $fingerprint)) {
-                        throw new RuntimeException('Confirmed public batch operation requires expected_fingerprint at index ' . $index . '.');
-                    }
-                }
+                // Recheck authorization at execution time: a preceding operation
+                // may change the current user's capabilities or target visibility.
                 $descriptor = $this->registry->descriptor($action);
                 if (Policy::publicRepositoryContext()) {
-                    $descriptor = $this->publicDescriptor($action, $operationPayload, $descriptor, ! empty($context['dry_run']), isset($operation['expected_fingerprint']) && is_string($operation['expected_fingerprint']) ? $operation['expected_fingerprint'] : null);
+                    $descriptor = $this->publicDescriptor($action, $operation['payload'], $descriptor, ! empty($context['dry_run']), $operation['expected_fingerprint']);
                 }
                 Policy::assertActionAllowed($descriptor, ! empty($context['dry_run']), ! empty($context['confirm']));
-                $expected = isset($operation['expected_fingerprint']) && is_string($operation['expected_fingerprint']) ? $operation['expected_fingerprint'] : null;
-                $expectedStateToken = isset($operation['expected_state_token']) && is_string($operation['expected_state_token']) ? $operation['expected_state_token'] : null;
-                $result = $this->executeWithStateGuards($action, $operationPayload, $context, $expected, $expectedStateToken);
+                $result = $this->executeWithStateGuards(
+                    $action,
+                    $operation['payload'],
+                    $context,
+                    $operation['expected_fingerprint'],
+                    $operation['expected_state_token']
+                );
                 if (isset($result['_rollback']) && is_array($result['_rollback'])) {
                     array_unshift($rollbacks, $result['_rollback']);
                 }

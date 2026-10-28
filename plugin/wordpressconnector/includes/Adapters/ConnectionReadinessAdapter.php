@@ -7,6 +7,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\SitePairing;
+use Webactueel\WordPressConnector\Security\Policy;
 
 /**
  * Read-only administrative setup evidence.
@@ -65,7 +66,42 @@ final class ConnectionReadinessAdapter
                 'staging_restore_verified' => false,
                 'state' => 'independent_host_backup_and_staging_restore_required',
             ),
+            'management' => $this->managementReadiness(),
             'high_risk_changes_cleared' => false,
+        );
+    }
+
+    /**
+     * Capability and server-policy indicators are not proof that a write will succeed.
+     * The connected client's authentication, filesystem and hosting must be tested separately.
+     */
+    private function managementReadiness(): array
+    {
+        $capabilities = array();
+        foreach (array(
+            'manage_options', 'activate_plugins', 'install_plugins', 'update_plugins',
+            'delete_plugins', 'edit_plugins', 'switch_themes', 'install_themes',
+            'update_themes', 'delete_themes', 'edit_themes', 'edit_theme_options',
+            'update_core', 'list_users', 'edit_users', 'promote_users',
+        ) as $capability) {
+            $capabilities[$capability] = function_exists('current_user_can')
+                && current_user_can($capability);
+        }
+
+        return array(
+            'capabilities' => $capabilities,
+            'server_policy_gates' => array(
+                'writes' => Policy::flag('WPCONNECTOR_ALLOW_WRITES'),
+                'privileged' => Policy::flag('WPCONNECTOR_ALLOW_PRIVILEGED'),
+                'sensitive' => Policy::flag('WPCONNECTOR_ALLOW_SENSITIVE'),
+                'system_updates' => Policy::flag('WPCONNECTOR_ALLOW_SYSTEM_UPDATES'),
+                'filesystem_writes' => Policy::flag('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),
+            ),
+            'wordpress_file_modifications_allowed' => function_exists('wp_is_file_mod_allowed')
+                ? (bool) wp_is_file_mod_allowed('plugin_update') : null,
+            'wordpress_file_editor_disabled' => defined('DISALLOW_FILE_EDIT') && (bool) DISALLOW_FILE_EDIT,
+            'permission_check_only' => true,
+            'site_write_verified' => false,
         );
     }
 

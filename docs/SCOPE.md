@@ -2,6 +2,12 @@
 
 The connector covers the editable WordPress object model without becoming an unrestricted remote-code channel.
 
+## Batch mutation safety
+
+`connector.batch` runs up to 25 ordered operations within one authenticated request. Before the first mutation, it validates every operation's shape, registered action-level permissions, public-repository restrictions, and fingerprint/state-token types. It rechecks action-level authorization immediately before each operation; object-level and provider-specific permissions are still checked by the target handler when that operation executes. Delegated WordPress Abilities with no reliable connector compensation contract are not accepted in a batch. The per-operation current-state fingerprint is validated **when that operation executes** so a later operation may depend on an earlier action. The existing compensating rollback is best effort: an operation without a rollback snapshot (for example, an updater) can leave partial changes after a later failure. This is **not** an atomic database transaction, a cross-site deployment, or an authorization bypass. High-risk package/core changes still require external restore verification and a controlled staging workflow.
+
+The private administrator-only `connector.setup.inspect` reports capability and server-policy indicators for plugins, themes, core, options and guarded file operations. They show what current WordPress permission checks allow, not what an externally connected client has proved it can execute. Live write, ChatGPT OAuth, independent backup and hosting access remain separately unverified until tested.
+
 ## WordPress Core
 
 Pages, posts, registered custom post types, revisions, trash/restore, registered metadata, taxonomies, classic menus, theme mods, comments, options, network options and WordPress Additional CSS.
