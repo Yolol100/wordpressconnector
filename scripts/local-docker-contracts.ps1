@@ -5,6 +5,7 @@ param(
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[a-fA-F0-9]{40}$')]
     [string] $ExpectedSha,
+    [ValidatePattern('^[A-Za-z0-9][A-Za-z0-9._/-]*(?::[A-Za-z0-9_.-]+|@sha256:[A-Fa-f0-9]{64})?$')]
     [string] $Image = 'wordpress:php8.3-apache',
     [string] $EvidenceDirectory = ''
 )
@@ -15,24 +16,38 @@ $ErrorActionPreference = 'Stop'
 $root = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $expected = $ExpectedSha.ToLowerInvariant()
 if (-not (Get-Command git -ErrorAction SilentlyContinue)) { throw 'Git is unavailable.' }
-if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is unavailable.' }
 
 $head = (& git -C $root rev-parse HEAD).Trim().ToLowerInvariant()
 if ($LASTEXITCODE -ne 0 -or $head -ne $expected) {
     throw "Repository SHA mismatch: expected $expected, found $head. No Docker operation started."
 }
-$dirty = ((& git -C $root status --porcelain --untracked-files=no) -join '').Trim()
-if ($LASTEXITCODE -ne 0 -or $dirty) {
-    throw 'Tracked repository changes detected; test a clean exact revision.'
+function Assert-VerifiedSource {
+    param([string] $Phase)
+    $tracked = ((& git -C $root status --porcelain --untracked-files=no) -join '').Trim()
+    if ($LASTEXITCODE -ne 0 -or $tracked) {
+        throw "Tracked repository changes detected during $Phase; test a clean exact revision."
+    }
+    # The canonical contract runner recursively discovers PHP in these directories.
+    # Include Git-ignored PHP and ordinary untracked PHP.
+    $untracked = @(& git -C $root ls-files --others --exclude-standard -- plugin/wordpressconnector tests scripts)
+    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect untracked sources during $Phase." }
+    $ignored = @(& git -C $root ls-files --others --ignored --exclude-standard -- plugin/wordpressconnector tests scripts)
+    if ($LASTEXITCODE -ne 0) { throw "Cannot inspect ignored sources during $Phase." }
+    $unknownPhp = @($untracked + $ignored | Where-Object { $_ -match '(?i)\.php$' })
+    if ($unknownPhp.Count -gt 0) {
+        throw "Untracked PHP source input detected during $Phase; refusing SHA-bound evidence."
+    }
 }
+Assert-VerifiedSource -Phase 'preflight'
 if (-not (Test-Path -LiteralPath (Join-Path $root 'scripts/run-contracts.sh'))) {
     throw 'Canonical contract runner not found.'
 }
 
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is unavailable.' }
 $dockerVersion = (& docker info --format '{{.ServerVersion}}' 2>$null).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $dockerVersion) { throw 'Docker Engine is unavailable.' }
 $imageId = (& docker image inspect --format '{{.Id}}' $Image 2>$null).Trim()
-if ($LASTEXITCODE -ne 0 -or -not $imageId) {
+if ($LASTEXITCODE -ne 0 -or $imageId -notmatch '^sha256:[a-fA-F0-9]{64}$') {
     throw "Local Docker image $Image is missing. No automatic pull is allowed."
 }
 
@@ -79,14 +94,24 @@ try {
 
 $log = Get-Content -LiteralPath $logPath -Raw
 $warnings = [regex]::Matches($log, '(?m)^(?:PHP\s+)?(?:Warning|Notice|Deprecated|Fatal error):').Count
-$trackedAfter = ((& git -C $root status --porcelain --untracked-files=no) -join '').Trim()
-$pass = $exitCode -eq 0 -and $warnings -eq 0 -and -not $trackedAfter
+$headAfter = ((& git -C $root rev-parse HEAD 2>$null) -join '').Trim().ToLowerInvariant()
+$headStable = $LASTEXITCODE -eq 0 -and $headAfter -eq $expected
+$postflightOk = $false
+try {
+    Assert-VerifiedSource -Phase 'postflight'
+    $postflightOk = $true
+} catch {
+    $postflightError = $_.Exception.Message
+}
+$pass = $exitCode -eq 0 -and $warnings -eq 0 -and $headStable -and $postflightOk
 $receipt = [ordered]@{
     schema_version = '1.0'
     run_id = $runId
     started_at_utc = $started
     finished_at_utc = (Get-Date).ToUniversalTime().ToString('o')
     repository_head_sha = $head
+    repository_head_after_sha = $headAfter
+    repository_head_unchanged = $headStable
     docker_image = $Image
     docker_image_id = $imageId
     docker_engine_version = $dockerVersion
@@ -94,7 +119,8 @@ $receipt = [ordered]@{
     result = $(if ($pass) { 'PASS' } else { 'FAIL' })
     exit_code = $exitCode
     php_warning_count = $warnings
-    tracked_source_unchanged = -not [bool] $trackedAfter
+    tracked_source_unchanged = $postflightOk
+    postflight_error = $(if ($postflightOk) { $null } else { $postflightError })
     no_production_site_or_write_validation = $true
     log_file = 'docker-contracts.log'
     log_sha256 = (Get-FileHash -LiteralPath $logPath -Algorithm SHA256).Hash.ToLowerInvariant()
