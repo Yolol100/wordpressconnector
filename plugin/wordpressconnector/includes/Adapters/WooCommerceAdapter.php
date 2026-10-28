@@ -355,7 +355,11 @@ final class WooCommerceAdapter
         if (! empty($context['dry_run'])) return array('would_create' => $this->variationSnapshot($variation), '_current_fingerprint' => Fingerprint::make(array('new' => true, 'parent_id' => $parentId)));
         $id = $variation->save();
         if (! $id) throw new RuntimeException('Variation save failed.');
-        return array('variation' => $this->variationSnapshot(wc_get_product($id)), '_rollback' => array('action' => 'post.trash', 'payload' => array('id' => (int) $id)));
+        $savedVariation = wc_get_product($id);
+        if (! $savedVariation instanceof \WC_Product_Variation) {
+            throw new RuntimeException('Saved WooCommerce variation could not be read back.');
+        }
+        return array('variation' => $this->variationSnapshot($savedVariation), '_rollback' => array('action' => 'post.trash', 'payload' => array('id' => (int) $id)));
     }
 
     public function variationUpdate(array $payload, array $context): array
@@ -368,7 +372,11 @@ final class WooCommerceAdapter
         if (! empty($context['dry_run'])) return $result;
         $this->applyVariation($variation, $payload);
         $variation->save();
-        $result['after'] = $this->variationSnapshot(wc_get_product($variation->get_id()));
+        $updatedVariation = wc_get_product($variation->get_id());
+        if (! $updatedVariation instanceof \WC_Product_Variation) {
+            throw new RuntimeException('Updated WooCommerce variation could not be read back.');
+        }
+        $result['after'] = $this->variationSnapshot($updatedVariation);
         $result['_rollback'] = array('action' => 'woocommerce.variation.update', 'payload' => $this->variationRollbackPayload($before));
         return $result;
     }
