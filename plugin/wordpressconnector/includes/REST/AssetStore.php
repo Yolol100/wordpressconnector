@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webactueel\WordPressConnector\REST;
 
 use RuntimeException;
+use Webactueel\WordPressConnector\Security\Policy;
 
 final class AssetStore
 {
@@ -45,25 +46,24 @@ final class AssetStore
         if (! is_dir($parent) && ! wp_mkdir_p($parent)) {
             throw new RuntimeException('Could not create request asset directory.');
         }
-        @chmod($parent, 0700);
-
-        $rootReal = realpath($root);
-        $parentReal = realpath($parent);
-        if (false === $rootReal || false === $parentReal) {
-            throw new RuntimeException('Could not resolve request asset directory.');
-        }
-        $rootReal = rtrim($rootReal, DIRECTORY_SEPARATOR);
-        if ($parentReal !== $rootReal && 0 !== strpos($parentReal, $rootReal . DIRECTORY_SEPARATOR)) {
-            throw new RuntimeException('Asset path escapes the request asset root.');
+        // Validate symlinks before a chmod can follow an escaped path.
+        Policy::assertLocalAssetPath($parent, $root);
+        if (! @chmod($parent, 0700)) {
+            throw new RuntimeException('Could not secure request asset directory.');
         }
 
-        if (file_exists($destination)) {
+        if (file_exists($destination) || is_link($destination)) {
             throw new RuntimeException('Duplicate request asset path: ' . $relativePath);
         }
         if (! move_uploaded_file($tmpName, $destination)) {
             throw new RuntimeException('Could not store uploaded request asset.');
         }
-        @chmod($destination, 0600);
+        if (! @chmod($destination, 0600)) {
+            if (! @unlink($destination)) {
+                throw new RuntimeException('Could not secure or remove uploaded request asset; manual recovery is required.');
+            }
+            throw new RuntimeException('Could not secure uploaded request asset.');
+        }
         @touch($root);
 
         return array(
@@ -80,11 +80,14 @@ final class AssetStore
         $base = $this->baseRoot($create);
         $directory = $base . DIRECTORY_SEPARATOR . hash('sha256', home_url('/') . '|' . $requestId);
 
+        if (is_link($directory)) {
+            throw new RuntimeException('Refusing symbolic link request asset root.');
+        }
         if ($create && ! is_dir($directory) && ! wp_mkdir_p($directory)) {
             throw new RuntimeException('Could not create request asset root.');
         }
-        if ($create) {
-            @chmod($directory, 0700);
+        if ($create && ! @chmod($directory, 0700)) {
+            throw new RuntimeException('Could not secure request asset root directory.');
         }
 
         return $directory;
@@ -107,7 +110,8 @@ final class AssetStore
 
         $cutoff = time() - max(3600, $olderThanSeconds);
         foreach (scandir($base) ?: array() as $item) {
-            if ('.' === $item || '..' === $item) {
+            // Only Connector's own SHA-256 request roots may be expired.
+            if (! preg_match('/^[a-f0-9]{64}\z/', $item)) {
                 continue;
             }
             $path = $base . DIRECTORY_SEPARATOR . $item;
@@ -153,13 +157,18 @@ final class AssetStore
             $base = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $siteNamespace;
         }
 
+        if (is_link($base)) {
+            throw new RuntimeException('Refusing symbolic link connector asset base directory.');
+        }
         $this->assertOutsideWebRoot($base);
 
         if ($create && ! is_dir($base) && ! wp_mkdir_p($base)) {
             throw new RuntimeException('Could not create connector asset base directory.');
         }
         if ($create) {
-            @chmod($base, 0700);
+            if (! @chmod($base, 0700)) {
+                throw new RuntimeException('Could not secure connector asset base directory.');
+            }
             $resolved = realpath($base);
             if (false === $resolved) {
                 throw new RuntimeException('Could not resolve connector asset base directory.');
@@ -246,10 +255,13 @@ final class AssetStore
 
     private function removeTree(string $directory): void
     {
+        if (is_link($directory)) {
+            throw new RuntimeException('Refusing symbolic link request asset root.');
+        }
         $base = realpath($this->baseRoot(false));
         $real = realpath($directory);
         if (false === $base || false === $real) {
-            return;
+            throw new RuntimeException('Could not resolve private request asset cleanup path.');
         }
 
         $base = rtrim($base, DIRECTORY_SEPARATOR);
@@ -262,14 +274,16 @@ final class AssetStore
             \RecursiveIteratorIterator::CHILD_FIRST
         );
         foreach ($iterator as $entry) {
-            if ($entry->isLink()) {
-                @unlink($entry->getPathname());
-            } elseif ($entry->isDir()) {
-                @rmdir($entry->getPathname());
-            } else {
-                @unlink($entry->getPathname());
+            if ($entry->isDir() && ! $entry->isLink()) {
+                if (! @rmdir($entry->getPathname())) {
+                    throw new RuntimeException('Could not remove private request asset directory.');
+                }
+            } elseif (! @unlink($entry->getPathname())) {
+                throw new RuntimeException('Could not remove private request asset.');
             }
         }
-        @rmdir($real);
+        if (! @rmdir($real)) {
+            throw new RuntimeException('Could not remove private request asset root.');
+        }
     }
 }

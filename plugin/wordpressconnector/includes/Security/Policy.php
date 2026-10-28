@@ -213,11 +213,34 @@ final class Policy
 
     public static function assertLocalAssetPath(string $path, string $assetRoot): string
     {
-        $root = realpath($assetRoot); $real = realpath($path);
-        if (false === $root || false === $real) { throw new RuntimeException('Asset path does not exist.'); }
+        // Reject lexical symlinks before realpath() erases the path components.
+        $base = rtrim($assetRoot, DIRECTORY_SEPARATOR);
+        if ('' === $base || ($path !== $base && 0 !== strpos($path, $base . DIRECTORY_SEPARATOR))) {
+            throw new RuntimeException('Asset path does not belong to the request root.');
+        }
+        $cursor = $path;
+        while ($cursor !== $base) {
+            if (is_link($cursor)) {
+                throw new RuntimeException('Symlink assets are not allowed.');
+            }
+            $parent = dirname($cursor);
+            if ($cursor === $parent) {
+                throw new RuntimeException('Asset path does not belong to the request root.');
+            }
+            $cursor = $parent;
+        }
+        if (is_link($base)) {
+            throw new RuntimeException('Symlink assets are not allowed.');
+        }
+        $root = realpath($assetRoot);
+        $real = realpath($path);
+        if (false === $root || false === $real) {
+            throw new RuntimeException('Asset path does not exist.');
+        }
         $root = rtrim($root, DIRECTORY_SEPARATOR);
-        if ($real !== $root && 0 !== strpos($real, $root . DIRECTORY_SEPARATOR)) { throw new RuntimeException('Asset path escapes the allowed asset root.'); }
-        if (is_link($real)) { throw new RuntimeException('Symlink assets are not allowed.'); }
+        if ($real !== $root && 0 !== strpos($real, $root . DIRECTORY_SEPARATOR)) {
+            throw new RuntimeException('Asset path escapes the allowed asset root.');
+        }
         return $real;
     }
 

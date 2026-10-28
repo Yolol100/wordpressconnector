@@ -108,29 +108,88 @@ final class Controller
 
     public function uploadAsset(\WP_REST_Request $request)
     {
-        $files=$request->get_file_params();
-        if (!isset($files['file'])||!is_array($files['file'])) { return new \WP_Error('wpconnector_asset_missing','Multipart field "file" is required.',array('status'=>400)); }
+        $files = $request->get_file_params();
+        if (! isset($files['file']) || ! is_array($files['file'])) {
+            return new \WP_Error('wpconnector_asset_missing', 'Multipart field "file" is required.', array('status' => 400));
+        }
         try {
             $this->assets->cleanupExpired();
-            $stored=$this->assets->put((string)$request->get_param('request_id'),(string)$request->get_param('asset_path'),$files['file']);
-            return new \WP_REST_Response(array('ok'=>true,'asset'=>$stored),201);
-        } catch (Throwable $error) { return new \WP_Error('wpconnector_asset_rejected',$error->getMessage(),array('status'=>400)); }
+            $stored = $this->assets->put(
+                (string) $request->get_param('request_id'),
+                (string) $request->get_param('asset_path'),
+                $files['file']
+            );
+            return new \WP_REST_Response(array('ok' => true, 'asset' => $stored), 201);
+        } catch (Throwable $error) {
+            // Storage and provider exceptions may expose server paths.
+            $reason = $error->getMessage();
+            $clientError = $error instanceof RuntimeException && (
+                in_array($reason, array(
+                    'Asset upload is not a valid HTTP upload.',
+                    'Asset exceeds the per-file size limit.',
+                    'Request asset limit exceeded (max 10 files / 25 MiB total).',
+                    'Asset extension is not an allowed WordPress media type or connector plugin/theme package.',
+                    'asset_path must be a short relative path without whitespace or control characters.',
+                    'asset_path contains an invalid path segment.',
+                    'asset_path contains unsupported characters.',
+                    'request_id must be 8-100 safe characters.',
+                ), true)
+                || 1 === preg_match('/\AAsset upload failed with PHP upload error -?[0-9]+\.\z/', $reason)
+                || 1 === preg_match('#\ADuplicate request asset path: [A-Za-z0-9._/-]{1,240}\z#', $reason)
+            );
+            if ($clientError) {
+                return new \WP_Error('wpconnector_asset_rejected', $reason, array('status' => 400));
+            }
+            return new \WP_Error(
+                'wpconnector_asset_storage_unavailable',
+                'Private request asset storage is unavailable.',
+                array('status' => 503)
+            );
+        }
     }
 
     public function execute(\WP_REST_Request $request)
     {
-        $body=(string)$request->get_body();
-        if (''===$body||strlen($body)>self::MAX_REQUEST_BYTES) { return new \WP_Error('wpconnector_request_size','Request JSON is empty or exceeds 256 KiB.',array('status'=>413)); }
-        $data=$request->get_json_params();
-        if (!is_array($data)) { return new \WP_Error('wpconnector_invalid_json','Request body must be a JSON object.',array('status'=>400)); }
-        try { $connectorRequest=Request::fromArray($data); }
-        catch (RuntimeException $error) { return new \WP_Error('wpconnector_invalid_request',$error->getMessage(),array('status'=>400)); }
+        $body = (string) $request->get_body();
+        if ('' === $body || strlen($body) > self::MAX_REQUEST_BYTES) {
+            return new \WP_Error('wpconnector_request_size', 'Request JSON is empty or exceeds 256 KiB.', array('status' => 413));
+        }
+        $data = $request->get_json_params();
+        if (! is_array($data)) {
+            return new \WP_Error('wpconnector_invalid_json', 'Request body must be a JSON object.', array('status' => 400));
+        }
+        try {
+            $connectorRequest = Request::fromArray($data);
+        } catch (RuntimeException $error) {
+            return new \WP_Error('wpconnector_invalid_request', $error->getMessage(), array('status' => 400));
+        }
         try {
             $this->assets->cleanupExpired();
-            $result=$this->runner->run($connectorRequest,array('transport'=>'rest','authenticated_user_id'=>get_current_user_id(),'asset_root'=>$this->assets->rootForRequest($connectorRequest->id(),false)));
-            return new \WP_REST_Response($result,200);
+            $assetRoot = $this->assets->rootForRequest($connectorRequest->id(), false);
+        } catch (Throwable $storageError) {
+            return new \WP_Error(
+                'wpconnector_asset_storage_unavailable',
+                'Private request asset storage is unavailable.',
+                array('status' => 503)
+            );
+        }
+        try {
+            $result = $this->runner->run(
+                $connectorRequest,
+                array(
+                    'transport' => 'rest',
+                    'authenticated_user_id' => get_current_user_id(),
+                    'asset_root' => $assetRoot,
+                )
+            );
+            return new \WP_REST_Response($result, 200);
         } finally {
-            try { $this->assets->cleanup($connectorRequest->id()); } catch (Throwable $cleanupError) {}
+            try {
+                $this->assets->cleanup($connectorRequest->id());
+            } catch (Throwable $cleanupError) {
+                // Log a constant, never an upload path, request ID or credential.
+                error_log('WordPress Connector could not clear private request assets.');
+            }
         }
     }
 
