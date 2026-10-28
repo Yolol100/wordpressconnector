@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "vroom-elementor-20261028",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 112
+  },
+  "dry_run": true,
+  "confirm": false
+}
