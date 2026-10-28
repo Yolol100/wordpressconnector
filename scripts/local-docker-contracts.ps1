@@ -94,49 +94,7 @@ try {
     try {
         $inspection = @(& docker container inspect --format '{{.Id}} {{json .Config.Labels}}' $container 2>$null)
         if ($LASTEXITCODE -eq 0 -and $inspection.Count -eq 1 -and
-            $inspection[0] -match '^([a-f0-9]{64}) (.+)
-}
-
-$log = Get-Content -LiteralPath $logPath -Raw
-$warnings = [regex]::Matches($log, '(?m)^(?:PHP\s+)?(?:Warning|Notice|Deprecated|Fatal error):').Count
-$headAfter = ((& git -C $root rev-parse HEAD 2>$null) -join '').Trim().ToLowerInvariant()
-$headStable = $LASTEXITCODE -eq 0 -and $headAfter -eq $expected
-$postflightOk = $false
-try {
-    Assert-VerifiedSource -Phase 'postflight'
-    $postflightOk = $true
-} catch {
-    $postflightError = $_.Exception.Message
-}
-$pass = $exitCode -eq 0 -and $warnings -eq 0 -and $headStable -and $postflightOk
-$receipt = [ordered]@{
-    schema_version = '1.0'
-    run_id = $runId
-    started_at_utc = $started
-    finished_at_utc = (Get-Date).ToUniversalTime().ToString('o')
-    repository_head_sha = $head
-    repository_head_after_sha = $headAfter
-    repository_head_unchanged = $headStable
-    docker_image = $Image
-    docker_image_id = $imageId
-    docker_engine_version = $dockerVersion
-    evidence_level = 'controlled_runtime_contracts_only'
-    result = $(if ($pass) { 'PASS' } else { 'FAIL' })
-    exit_code = $exitCode
-    php_warning_count = $warnings
-    tracked_source_unchanged = $postflightOk
-    postflight_error = $(if ($postflightOk) { $null } else { $postflightError })
-    no_production_site_or_write_validation = $true
-    log_file = 'docker-contracts.log'
-    log_sha256 = (Get-FileHash -LiteralPath $logPath -Algorithm SHA256).Hash.ToLowerInvariant()
-}
-$receipt | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $receiptPath -Encoding UTF8
-Write-Output ("RESULT=" + $receipt.result)
-Write-Output ("SOURCE_SHA=" + $head)
-Write-Output ("LOG_SHA256=" + $receipt.log_sha256)
-Write-Output ("RECEIPT=" + $receiptPath)
-if (-not $pass) { exit 1 }
-) {
+            $inspection[0] -match '^([a-f0-9]{64}) (.+)$') {
             $ownedContainerId = $Matches[1]
             $labels = $Matches[2] | ConvertFrom-Json
             if ($labels.'webactueel.wpconnector.qa-run' -eq $runId) {
