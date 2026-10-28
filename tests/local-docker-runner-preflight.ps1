@@ -23,9 +23,21 @@ try {
     [System.IO.File]::WriteAllText($probe, '<?php // temporary untracked QA input')
     $blocked = $false
     try { & $runner -ExpectedSha $sha | Out-Null }
-    catch { $blocked = $_.Exception.Message -match 'Untracked PHP source input' }
+    catch { $blocked = $_.Exception.Message -match 'Untracked or ignored source input' }
     if (-not $blocked) { throw 'Untracked PHP must be rejected before Docker.' }
 } finally {
     Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
 }
-Write-Output 'Windows Docker parser, wrong SHA, image option and untracked PHP regressions OK'
+# The stricter source boundary must reject non-PHP files too.
+$probe = Join-Path $root 'tests/__local_docker_untracked_negative.js'
+if (Test-Path -LiteralPath $probe) { throw 'QA non-PHP probe already exists.' }
+try {
+    [System.IO.File]::WriteAllText($probe, '/* temporary untracked QA input */')
+    $blocked = $false
+    try { & $runner -ExpectedSha $sha | Out-Null }
+    catch { $blocked = $_.Exception.Message -match 'Untracked or ignored source input' }
+    if (-not $blocked) { throw 'Untracked non-PHP input must be rejected before Docker.' }
+} finally {
+    Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
+}
+Write-Output 'Windows Docker parser, wrong SHA, image option and untracked PHP/non-PHP regressions OK'
