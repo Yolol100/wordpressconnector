@@ -13,6 +13,7 @@ namespace Webactueel\WordPressConnector\Security {
 }
 
 namespace {
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectionReadinessAdapter.php';
 
@@ -20,6 +21,8 @@ namespace {
         'https' => true, 'url' => 'https://example.invalid/wp-json/',
         'paired' => false, 'plugins' => array(), 'network' => array(),
         'writes' => 0, 'outbound' => 0,
+        'permissions' => array('manage_options' => true, 'install_plugins' => true, 'update_plugins' => true),
+        'file_mod_allowed' => true,
     );
 
     function rest_url(string $path): string { return $GLOBALS['setup_readiness']['url'] . $path; }
@@ -31,6 +34,8 @@ namespace {
     function get_site_option(string $name, $default = false) {
         return 'active_sitewide_plugins' === $name ? $GLOBALS['setup_readiness']['network'] : $default;
     }
+    function current_user_can(string $capability): bool { return ! empty($GLOBALS['setup_readiness']['permissions'][$capability]); }
+    function wp_is_file_mod_allowed(string $context): bool { return $GLOBALS['setup_readiness']['file_mod_allowed']; }
     function update_option(): void { ++$GLOBALS['setup_readiness']['writes']; throw new RuntimeException('Unexpected write'); }
     function wp_remote_get(): void { ++$GLOBALS['setup_readiness']['outbound']; throw new RuntimeException('Unexpected external request'); }
 
@@ -58,6 +63,29 @@ namespace {
         && $status['recovery']['staging_restore_verified'] === false
         && $status['high_risk_changes_cleared'] === false,
         'The initial setup snapshot must never guess that OAuth or recovery works.');
+
+    $management = $status['management'] ?? array();
+    $assert(($management['permission_check_only'] ?? false) === true
+        && ($management['site_write_verified'] ?? true) === false
+        && ($management['capabilities']['manage_options'] ?? null) === true
+        && ($management['capabilities']['install_plugins'] ?? null) === true
+        && ($management['capabilities']['delete_plugins'] ?? null) === false
+        && ($management['server_policy_gates']['writes'] ?? null) === true
+        && ($management['server_policy_gates']['system_updates'] ?? null) === true
+        && ($management['wordpress_file_modifications_allowed'] ?? null) === true,
+        'Private readiness must report exact capability/flag indicators without claiming successful writes.');
+
+    $GLOBALS['setup_readiness']['permissions']['install_plugins'] = false;
+    $GLOBALS['setup_readiness']['file_mod_allowed'] = false;
+    putenv('WPCONNECTOR_ALLOW_WRITES=0');
+    $denied = $adapter->inspect();
+    $assert($denied['management']['capabilities']['install_plugins'] === false
+        && $denied['management']['server_policy_gates']['writes'] === false
+        && $denied['management']['wordpress_file_modifications_allowed'] === false
+        && $denied['management']['site_write_verified'] === false,
+        'Site restrictions must remain visible and never be interpreted as granted write access.');
+    putenv('WPCONNECTOR_ALLOW_WRITES');
+    $GLOBALS['setup_readiness']['file_mod_allowed'] = true;
 
     $GLOBALS['setup_readiness']['plugins'] = array('updraftplus/updraftplus.php', 'unrelated/unrelated.php');
     $GLOBALS['setup_readiness']['network'] = array('duplicator/duplicator.php' => 1);
