@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "iso-pages-20261028",
+  "action": "post.list",
+  "payload": {
+    "post_type": "page",
+    "per_page": 10,
+    "page": 1
+  },
+  "dry_run": true,
+  "confirm": false
+}
