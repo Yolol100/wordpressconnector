@@ -153,7 +153,21 @@ final class Settings
         $message .= '<input id="wpconnector-mcp-password" type="text" readonly="readonly" autocomplete="off" value="' . esc_attr($created[0]) . '" style="width:100%" /></p>';
         $message .= '<p>' . esc_html__('Enter the details only into a trusted HTTPS REST/MCP client that supports WordPress Application Passwords. ChatGPT web connections may require OAuth instead. Never put this password in a GitHub branch, workflow, chat or URL. GitHub Actions already uses password-free OIDC.', 'wordpressconnector') . '</p>';
         $message .= '<p><a href="' . esc_url(admin_url('profile.php')) . '">' . esc_html__('Manage or revoke this password in your profile', 'wordpressconnector') . '</a></p>';
-        wp_die($message, esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
+        $allowed_html = array(
+            'h1' => array(),
+            'p' => array(),
+            'label' => array('for' => true),
+            'input' => array(
+                'id' => true,
+                'type' => true,
+                'readonly' => true,
+                'autocomplete' => true,
+                'value' => true,
+                'style' => true,
+            ),
+            'a' => array('href' => true),
+        );
+        wp_die(wp_kses($message, $allowed_html), esc_html__('WordPress Connector direct MCP setup', 'wordpressconnector'),
             array('response' => 200, 'back_link' => false));
     }
 
