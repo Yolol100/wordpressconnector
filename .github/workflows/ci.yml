@@ -27,6 +27,21 @@ jobs:
       - name: Trusted required PR gate regression cases
         run: python3 -B tests/required-pr-gate-tests.py
 
+      - name: Validate Windows Docker contract runner syntax and deny wrong SHA
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile('scripts/local-docker-contracts.ps1', [ref]$tokens, [ref]$parseErrors)
+          if ($parseErrors.Count -ne 0) { throw 'Local Docker runner has PowerShell syntax errors.' }
+          $blocked = $false
+          try {
+            & ./scripts/local-docker-contracts.ps1 -ExpectedSha ('0' * 40)
+          } catch {
+            $blocked = $_.Exception.Message -match 'Repository SHA mismatch'
+          }
+          if (-not $blocked) { throw 'Local Docker runner failed to deny a mismatched commit.' }
+
       - name: Zero-config policy contract
         run: php -d auto_prepend_file=tests/php-compat.php tests/policy-contract.php
       - name: GitHub OIDC contract
