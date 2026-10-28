@@ -56,6 +56,7 @@ run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
 run_php tests/direct-mcp-admin-runtime.php
+python3 -B tests/plan-readonly-audit-tests.py
 run_php tests/connection-readiness-contract.php
 run_php tests/mcp-admin-connection-doctor-contract.php
 if command -v node >/dev/null 2>&1; then
