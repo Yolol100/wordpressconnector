@@ -181,7 +181,8 @@ Do not commit credentials, passwords, private plugin ZIPs, payment data, patient
 * Fix system.doctor protected wpdb readiness and consistent WordPress file-modification policy reporting.
 * Correct Elementor MCP guard callback arity and WordPress native update-action return contract.
 * Validate WooCommerce variation product type on post-save readback to avoid errors from missing or incorrect products.
-* Prepare WooCommerce shipping and tax table identifiers using the WordPress 6.2+ %i identifier placeholder, with PHP and real WooCommerce regressions.\n* Add focused regressions and retain GitHub OIDC authorization, write permissions and release gates.
+* Prepare WooCommerce shipping and tax table identifiers using the WordPress 6.2+ %i identifier placeholder, with PHP and real WooCommerce regressions.
+* Add focused regressions and retain GitHub OIDC authorization, write permissions and release gates.
 
 = 1.19.19 =
 * Preflight operation schemas, permissions and public-repository restrictions before connector.batch mutation begins.
