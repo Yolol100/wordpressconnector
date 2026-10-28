@@ -8,14 +8,12 @@ on:
       - 'plugin/wordpressconnector/**'
       - '.github/workflows/docker-runtime-smoke.yml'
       - 'docs/LOCAL-RUNTIME-TESTING.md'
-      - 'scripts/local-docker-contracts.ps1'
   pull_request:
     paths:
       - '.wp-env.json'
       - 'plugin/wordpressconnector/**'
       - '.github/workflows/docker-runtime-smoke.yml'
       - 'docs/LOCAL-RUNTIME-TESTING.md'
-      - 'scripts/local-docker-contracts.ps1'
   workflow_dispatch:
 
 permissions:
