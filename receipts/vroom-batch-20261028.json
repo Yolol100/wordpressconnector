@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "vroom-batch-20261028",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-28T16:12:43+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "permission_gate"
+}
