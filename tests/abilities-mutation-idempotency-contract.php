@@ -539,7 +539,7 @@ if (false !== ($batchResult['ok'] ?? true)
 
 if (empty($GLOBALS['connector_guard_filter_arities']) ||
     array_unique($GLOBALS['connector_guard_filter_arities']) !== array(1)) {
-    throw new \\RuntimeException('Elementor MCP guard filter must register exactly one accepted argument.');
+    throw new \RuntimeException('Elementor MCP guard filter must register exactly one accepted argument.');
 }
 
 echo "abilities mutation idempotency contract OK\n";
