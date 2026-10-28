@@ -246,6 +246,13 @@ final class Runner
         try {
             foreach ($prepared as $operation) {
                 $action = $operation['action'];
+                // Recheck authorization at execution time: a preceding operation
+                // may change the current user's capabilities or target visibility.
+                $descriptor = $this->registry->descriptor($action);
+                if (Policy::publicRepositoryContext()) {
+                    $descriptor = $this->publicDescriptor($action, $operation['payload'], $descriptor, ! empty($context['dry_run']), $operation['expected_fingerprint']);
+                }
+                Policy::assertActionAllowed($descriptor, ! empty($context['dry_run']), ! empty($context['confirm']));
                 $result = $this->executeWithStateGuards(
                     $action,
                     $operation['payload'],
