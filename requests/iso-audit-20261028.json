@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "iso-audit-20261028",
+  "action": "plugin.audit.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
