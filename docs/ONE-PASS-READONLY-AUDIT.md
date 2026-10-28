@@ -5,7 +5,7 @@ This is a bounded, repeatable **read-only** audit plan, not blanket WordPress ad
 ## Procedure
 
 1. Verify exact HTTPS site URL, plugin presence, GitHub repository, main SHA, Actions availability and site-specific OIDC approval. Presence is not authorization.
-2. Generate isolated request JSON files: python3 scripts/plan-readonly-audit.py --site https://example.com --prefix audit-20261028 --output /tmp/connector-audit-example. Add --elementor-id N only for a known published Elementor page.
+2. Generate isolated request JSON files: python3 scripts/plan-readonly-audit.py --site https://example.com --prefix audit-20261028 --output /tmp/connector-audit-example. Add --elementor-id N only for a known published Elementor page; use --acf-post-id N only with a valid positive WordPress post ID (required by the public ACF validator). Page inventory is limited to 25 sanitized items per receipt; select additional pages with --page N. The planner only generates requests and does not execute GitHub jobs.
 3. For EACH JSON file, create a separate short-lived branch from main, commit exactly one requests/*.json file, and open a same-repository PR. Never combine generated requests in one PR.
 4. Keep the PR OPEN until both request validation and trusted executor finish and a sanitized receipts/<request_id>.json is committed to the branch. A green request workflow is not site success. Require matching request_id/action and ok=true.
 5. If an action returns permission_gate, record it as a real denied permission. Inspect each action separately. Do not bypass WordPress capabilities or public GitHub policy. Private connector.setup.inspect requires a separately authenticated admin path.
