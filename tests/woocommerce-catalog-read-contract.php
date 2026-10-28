@@ -53,11 +53,26 @@ class WC_Tax
 class WooTaxWpdbStub
 {
     public $prefix = 'wp_';
+    public $identifierPrepares = 0;
     public function prepare(string $query, ...$values): string
     {
         foreach ($values as $value) {
-            $replacement = is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
-            $query = preg_replace('/%[sd]/', $replacement, $query, 1);
+            if (! preg_match('/%[isd]/', $query, $match)) {
+                throw new RuntimeException('Unexpected WooCommerce SQL placeholder argument.');
+            }
+            if ('%i' === $match[0]) {
+                if (! is_string($value) || ! preg_match('/^[a-zA-Z0-9_]+$/D', $value)) {
+                    throw new RuntimeException('Unsafe WooCommerce SQL identifier was provided.');
+                }
+                ++$this->identifierPrepares;
+                $replacement = '`' . $value . '`';
+            } else {
+                $replacement = is_int($value) ? (string) $value : "'" . addslashes((string) $value) . "'";
+            }
+            $query = preg_replace('/%[isd]/', $replacement, $query, 1);
+        }
+        if (preg_match('/%[isd]/', $query)) {
+            throw new RuntimeException('Unbound WooCommerce SQL placeholder.');
         }
         return $query;
     }
@@ -185,5 +200,8 @@ try {
     throw new RuntimeException('Unknown tax class was accepted.');
 } catch (RuntimeException $expected) {
     if ('Unknown WooCommerce tax class.' !== $expected->getMessage()) throw $expected;
+}
+if ($wpdb->identifierPrepares < 9) {
+    throw new RuntimeException('WooCommerce shipping/tax queries must prepare their table identifiers.');
 }
 echo "WooCommerce catalog read contract OK\n";
