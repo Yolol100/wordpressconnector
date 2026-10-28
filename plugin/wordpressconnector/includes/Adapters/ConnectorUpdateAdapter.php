@@ -47,11 +47,20 @@ final class ConnectorUpdateAdapter
             add_filter('plugin_action_links_' . self::PLUGIN_FILE, array($this, 'pluginActionLinks'));
         }
         if (function_exists('add_action')) {
-            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNotice'), 20);
-            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNotice'), 20);
+            add_action('load-plugins.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
+            add_action('load-update-core.php', array($this, 'refreshNativeUpdateNoticeAction'), 20);
             add_action('admin_post_wpconnector_check_updates', array($this, 'forceNativeUpdateCheck'));
             add_action('admin_notices', array($this, 'checkedNotice'));
         }
+    }
+
+    /**
+     * WordPress admin actions must return void while direct refresh callers
+     * retain the explicit boolean result of refreshNativeUpdateNotice().
+     */
+    public function refreshNativeUpdateNoticeAction(): void
+    {
+        $this->refreshNativeUpdateNotice();
     }
 
     /**
