@@ -5,6 +5,7 @@ No authentication, dispatch, PR creation or site modification occurs here.
 """
 import argparse
 import json
+import ipaddress
 import re
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -25,6 +26,14 @@ def canonical_site(value):
             or ".." in url.hostname or url.hostname.startswith(".")
             or url.hostname.endswith(".")):
         raise ValueError("Expected a canonical public HTTPS domain without path or credentials")
+    try:
+        ipaddress.ip_address(url.hostname)
+    except ValueError:
+        pass
+    else:
+        raise ValueError("IP literals are not permitted")
+    if "." not in url.hostname:
+        raise ValueError("Expected a public DNS hostname")
     return "https://" + url.hostname.lower()
 
 def plan(site, prefix, elementor_id=None):
