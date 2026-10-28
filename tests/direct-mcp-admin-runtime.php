@@ -43,6 +43,12 @@ function esc_url($value): string { return htmlspecialchars((string) $value, ENT_
 function admin_url(string $path): string { return 'https://example.invalid/wp-admin/' . $path; }
 function is_wp_error($value): bool { return false; }
 function nocache_headers(): void { ++$GLOBALS['direct_mcp']['no_cache']; }
+function wp_kses($html, array $allowed_html): string {
+    foreach (array('h1', 'p', 'label', 'input', 'a') as $tag) {
+        if (! array_key_exists($tag, $allowed_html)) throw new RuntimeException('Missing allowed credential HTML tag: ' . $tag);
+    }
+    return strip_tags((string) $html, '<h1><p><label><input><a>');
+}
 function wp_die($message = '', $title = '', $args = array()) {
     throw new ConnectorAdminStop($message, (int) ($args['response'] ?? 500));
 }
