@@ -90,7 +90,7 @@ final class Settings
      */
     public function createApplicationPassword(): void
     {
-        if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '')) {
+        if ('POST' !== (isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '')) {
             wp_die(esc_html__('Use the WordPress Connector settings form to create a credential.', 'wordpressconnector'),
                 esc_html__('Method not allowed', 'wordpressconnector'), array('response' => 405));
         }
@@ -99,7 +99,7 @@ final class Settings
                 esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
         }
         check_admin_referer('wpconnector_create_application_password');
-        if ('1' !== ($_POST['confirm_direct_access'] ?? null)) {
+        if ('1' !== (isset($_POST['confirm_direct_access']) && is_string($_POST['confirm_direct_access']) ? sanitize_text_field(wp_unslash($_POST['confirm_direct_access'])) : '')) {
             wp_die(esc_html__('Confirm that the credential will have your WordPress account permissions.', 'wordpressconnector'),
                 esc_html__('Confirmation required', 'wordpressconnector'), array('response' => 400));
         }
