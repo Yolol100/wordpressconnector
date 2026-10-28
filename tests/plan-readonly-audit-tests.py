@@ -47,7 +47,7 @@ with tempfile.TemporaryDirectory() as temp:
     files = list(Path(temp).glob("*.json"))
     assert len(files) == 6
     ids = {json.loads(p.read_text())["request_id"] for p in files}
-    assert len(ids) == 7
+    assert len(ids) == 6
     assert subprocess.run(cmd, capture_output=True).returncode != 0
     cmd_acf = [sys.executable, str(script), "--site", "https://example.com",
                "--prefix", "acf-audit-20261028", "--output", str(Path(temp) / "acf"),
