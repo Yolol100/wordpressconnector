@@ -12,6 +12,12 @@ The plugin immediately registers:
 - an informational `Settings -> WordPress Connector` page;
 - optional WP-CLI commands.
 
+## Inspecting private management access
+
+After authenticating as the administrator of the **exact** WordPress installation over HTTPS, invoke `connector.setup.inspect` with an empty payload through private REST/MCP. Its `management.capabilities` map reports the current WordPress user's install/update/delete and theme/file-edit capabilities. `management.server_policy_gates` reports connector policy toggles; `management.wordpress_file_modifications_allowed` reflects WordPress's file-update gate. A missing role permission, disabled server gate or filesystem restriction must be resolved by the site owner; never disable security protections as a workaround. Every `site_write_verified` claim stays false until a separately authorized real test and independent readback succeed. The same inspection does not grant ChatGPT OAuth, create a private website registry, or verify backup/restore.
+
+`connector.batch` now checks every leaf's authorization and request shape before beginning. This prevents predictable partial changes from a later denied leaf; unexpected runtime failures are compensated only where a leaf supplied a verified rollback action. Preview and back up high-risk changes, and do not interpret a successful dry-run as an atomic cross-site deployment.
+
 ## Native Plugins-screen updates (1.19.0+)
 
 After the one-time upgrade from 1.18.9 (which declares `Update URI: false`), WordPress Core checks the canonical GitHub release via the plugin's `Update URI` response filter. From 1.19.6, the Plugins/Updates admin screen also checks the verified release with a bounded two-minute throttle, without resetting other plugins' update transients. Administrators can click **Check GitHub update now** next to WordPress Connector for an explicit immediate refresh. The native **Update Now** row appears when a valid release version is higher than the installed plugin. The existing SHA-256 and plugin ZIP identity verification run again before Core receives the update package. Other GitHub plugins are not intercepted.

@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.18
+Stable tag: 1.19.19
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.19.19 preflights all connector.batch operation schemas, WordPress permissions and public-mode restrictions before the first mutation. Fingerprints are still checked at execution time because later operations can depend on earlier successful writes; compensation after a runtime failure is best effort, not a database transaction. Native and private administrator connection readiness now reports WordPress capability and server-policy indicators without claiming OAuth, hosting access or a successful live write. No private multi-site registry, automatic site deployment, or self-removal is introduced by this release.
 
 Version 1.19.10 makes existing-file replacements honor WordPress file-modification policies and requires explicit acknowledge_active_content=true for browser-active HTML, JavaScript and CSS replacements, including guarded rollback. Replacement content now receives the same embedded-secret check as file reads; PHP/INC parser validation and existing per-file SHA-256 readback remain. Disposable WordPress/Docker integration tests cover read, write, restore, create and delete. Public GitHub file access is not expanded. These tests do not prove private hosted-site filesystem access.
 
