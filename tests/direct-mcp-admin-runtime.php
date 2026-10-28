@@ -20,6 +20,8 @@ final class WP_Application_Passwords {
 }
 $GLOBALS['direct_mcp'] = array('method' => 'POST', 'user' => 77, 'admin' => true,
     'create' => true, 'nonce' => true, 'consent' => true, 'https' => true, 'allowed' => true, 'no_cache' => 0);
+function wp_unslash($value) { return is_string($value) ? stripslashes($value) : $value; }
+function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
 function current_user_can($capability, ...$args): bool {
     return 'manage_options' === $capability ? $GLOBALS['direct_mcp']['admin'] :
         ('create_app_password' === $capability && $args === array($GLOBALS['direct_mcp']['user']) && $GLOBALS['direct_mcp']['create']);
