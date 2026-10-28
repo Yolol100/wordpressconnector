@@ -226,12 +226,12 @@ namespace {
     foreach (array('load-plugins.php', 'load-update-core.php') as $hook) {
         $callback = $GLOBALS['notice_actions'][$hook]['callback'];
         if (! is_callable($callback) || null !== call_user_func($callback)) {
-            throw new \\RuntimeException('Registered WordPress update action must return void: ' . $hook);
+            throw new \RuntimeException('Registered WordPress update action must return void: ' . $hook);
         }
         $GLOBALS['test_can_update_plugins'] = false;
         $priorRequests = $GLOBALS['release_calls'];
         if (null !== call_user_func($callback) || $priorRequests !== $GLOBALS['release_calls']) {
-            throw new \\RuntimeException('WordPress update action must reject an unprivileged caller.');
+            throw new \RuntimeException('WordPress update action must reject an unprivileged caller.');
         }
         $GLOBALS['test_can_update_plugins'] = true;
     }
