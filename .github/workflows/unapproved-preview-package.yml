@@ -1,0 +1,38 @@
+name: Unapproved WordPress Connector preview ZIP
+on:
+  push:
+    branches:
+      - artifact/unapproved-1-19-20-preview-20261029
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout pinned preview
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Build deterministic preview without publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          source_sha="$(git log -1 --format=%H -- plugin/wordpressconnector)"
+          source_epoch="$(git show -s --format=%ct "$source_sha")"
+          python3 scripts/build-release-package.py \
+            --source plugin/wordpressconnector \
+            --zip dist/wordpressconnector-1.19.20-UNAPPROVED.zip \
+            --sbom dist/wordpressconnector-1.19.20-UNAPPROVED.spdx.json \
+            --source-commit "$source_sha" \
+            --source-date-epoch "$source_epoch"
+          unzip -t dist/wordpressconnector-1.19.20-UNAPPROVED.zip
+          sha256sum dist/wordpressconnector-1.19.20-UNAPPROVED.zip > dist/wordpressconnector-1.19.20-UNAPPROVED.zip.sha256
+          echo 'NOT APPROVED FOR PRODUCTION. Independent audit and restore gates failed or unverified.' > dist/UNAPPROVED-READ-ME.txt
+      - name: Upload preview for inspection only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: wordpressconnector-1.19.20-UNAPPROVED
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
