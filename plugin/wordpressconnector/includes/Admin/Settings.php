@@ -90,7 +90,10 @@ final class Settings
      */
     public function createApplicationPassword(): void
     {
-        if ('POST' !== (isset($_SERVER['REQUEST_METHOD']) && is_string($_SERVER['REQUEST_METHOD']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])) : '')) {
+        $request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
+            ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+            : '';
+        if ( 'POST' !== $request_method ) {
             wp_die(esc_html__('Use the WordPress Connector settings form to create a credential.', 'wordpressconnector'),
                 esc_html__('Method not allowed', 'wordpressconnector'), array('response' => 405));
         }
@@ -99,7 +102,10 @@ final class Settings
                 esc_html__('Permission denied', 'wordpressconnector'), array('response' => 403));
         }
         check_admin_referer('wpconnector_create_application_password');
-        if ('1' !== (isset($_POST['confirm_direct_access']) && is_string($_POST['confirm_direct_access']) ? sanitize_text_field(wp_unslash($_POST['confirm_direct_access'])) : '')) {
+        $confirmation = isset( $_POST['confirm_direct_access'] ) && is_string( $_POST['confirm_direct_access'] )
+            ? sanitize_text_field( wp_unslash( $_POST['confirm_direct_access'] ) )
+            : '';
+        if ( '1' !== $confirmation ) {
             wp_die(esc_html__('Confirm that the credential will have your WordPress account permissions.', 'wordpressconnector'),
                 esc_html__('Confirmation required', 'wordpressconnector'), array('response' => 400));
         }
