@@ -74,6 +74,9 @@ function add_filter($hook, $callback, $priority = 10, $acceptedArgs = 1): void
 {
     global $test_filters;
     $test_filters[(string) $hook][] = array($callback, (int) $priority, (int) $acceptedArgs);
+    if ('elementor/mcp/pre_execute_guard' === (string) $hook) {
+        $GLOBALS['connector_guard_filter_arities'][] = (int) $acceptedArgs;
+    }
 }
 
 function remove_filter($hook, $callback, $priority = 10): bool
@@ -532,6 +535,11 @@ if (false !== ($batchResult['ok'] ?? true)
     || 7 !== AbilityMutationContractAbility::$executions) {
     fwrite(STDERR, "Delegated Ability mutation was not blocked from connector.batch.\n");
     exit(1);
+}
+
+if (empty($GLOBALS['connector_guard_filter_arities']) ||
+    array_unique($GLOBALS['connector_guard_filter_arities']) !== array(1)) {
+    throw new \RuntimeException('Elementor MCP guard filter must register exactly one accepted argument.');
 }
 
 echo "abilities mutation idempotency contract OK\n";
