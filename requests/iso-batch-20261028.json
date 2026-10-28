@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "iso-batch-20261028",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "acf.field_groups",
+        "payload": {}
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      },
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
