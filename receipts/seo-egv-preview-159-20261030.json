@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-egv-preview-159-20261030",
+    "action": "yoast.snippet.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T22:55:26+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 159,
+    "updated_keys": [
+        "title",
+        "description"
+    ],
+    "before_fingerprint": "7c18c65d6363b8ea5983c0ee196d273d004ef6dac5732b0aa814097739fdbbc0",
+    "after_fingerprint": "c32100491e04f40c00c17d3ef5dbd3b965d7e5865efbc9562b49b56d04f3ab04",
+    "readback_verified": null
+}
