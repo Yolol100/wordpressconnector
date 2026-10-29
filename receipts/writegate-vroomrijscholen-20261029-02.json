@@ -1,0 +1,11 @@
+{
+    "version": 1,
+    "ok": false,
+    "request_id": "writegate-vroomrijscholen-20261029-02",
+    "action": "site.identity.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-29T12:11:41+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "error_code": "stale_target"
+}
