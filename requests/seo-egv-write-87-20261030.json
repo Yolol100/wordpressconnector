@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-87-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 87,
+    "fields": {
+      "title": "Veranda's voor jouw tuin of terras | EG Veranda",
+      "description": "Ontdek veranda's van EG Veranda. Vergelijk modellen en mogelijkheden voor extra leefruimte en vind een oplossing die bij jouw woning past."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "3e23048112a28d9054769f461843360c67487e8b66bb6bb91cf54cef2235f417"
+}
