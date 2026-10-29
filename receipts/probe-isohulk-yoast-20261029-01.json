@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "probe-isohulk-yoast-20261029-01",
+    "action": "yoast.site_representation.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:37:06+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "company_or_person": "company",
+        "company_name": "ISOHULK",
+        "org_description": "Specialist in adhesive tapes and packaging materials for industrial, food packaging and construction applications."
+    },
+    "settings_fingerprint": "237096fd08a1613d40760d31ff8f21d8df8755615f9a3d71b2720d88310ade92",
+    "readback_verified": null
+}
