@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-fix-egv-category-template-save-20261030",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% %%sep%% %%sitename%%"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "1cb55e9f2865cda23ff9523622569e5b4910b0ce25d0b15ac037ff7bff552638"
+}
