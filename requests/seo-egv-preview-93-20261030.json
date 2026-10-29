@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-93-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 93,
+    "fields": {
+      "title": "Pergola's voor tuin en terras | EG Veranda",
+      "description": "Ontdek pergola's van EG Veranda. Bekijk oplossingen aan de woning of vrijstaand en vind inspiratie voor jouw buitenruimte."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
