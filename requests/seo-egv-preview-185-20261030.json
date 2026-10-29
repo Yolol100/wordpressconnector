@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-185-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 185,
+    "fields": {
+      "title": "Tips en advies over veranda's | EG Veranda",
+      "description": "Lees tips en informatie over veranda's, zonwering en buitenleven. Bereid jouw keuze voor met ideeën en aandachtspunten."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
