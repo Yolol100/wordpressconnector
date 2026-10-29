@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "probe-egveranda-yoast-20261029-01",
+  "action": "yoast.site_representation.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
