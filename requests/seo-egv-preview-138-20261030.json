@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-138-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 138,
+    "fields": {
+      "title": "Oplossingen voor elke ruimte | EG Veranda",
+      "description": "Ontdek ideeën voor terras, balkon, tuin, oprit en woning. Bekijk welke veranda's en buitenoplossingen passen bij jouw ruimte."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
