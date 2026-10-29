@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "deep-egveranda-cache-20261029-01",
+  "action": "maintenance.cache_capabilities",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
