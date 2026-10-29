@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "deep-egveranda-cache-20261029-01",
+    "action": "maintenance.cache_capabilities",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:34:49+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layers": {
+        "elementor": {
+            "provider": "Elementor",
+            "available": false,
+            "version": ""
+        },
+        "wp_rocket": {
+            "provider": "WP Rocket",
+            "available": true,
+            "version": "3.23.5.1"
+        },
+        "asset_cleanup": {
+            "provider": "Asset CleanUp",
+            "available": true,
+            "version": "1.4.0.6"
+        }
+    },
+    "layers_fingerprint": "9d6abcd1e597449beed6486dddcad6e764c76763f535dee2a098c3b98512c0e4",
+    "readback_verified": null
+}
