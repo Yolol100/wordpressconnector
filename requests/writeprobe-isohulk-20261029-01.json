@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "writeprobe-isohulk-20261029-01",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogname": "ISOHULK"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
