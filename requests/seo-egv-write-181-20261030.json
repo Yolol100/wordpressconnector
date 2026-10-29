@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-181-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 181,
+    "fields": {
+      "title": "Samenwerken als dealer | EG Veranda",
+      "description": "Meer weten over samenwerken met EG Veranda? Bekijk informatie voor dealers en ontdek hoe je contact opneemt over de mogelijkheden."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "9cc1d46aceba6bb7554c306ded5bd4f89abbe5c1efbbbbf967e09f027ab9bc5a"
+}
