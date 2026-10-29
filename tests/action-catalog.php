@@ -84,6 +84,10 @@ $expected = array(
 $rows = array();
 foreach (preg_split('/\R/', $catalog) as $line) {
     if (preg_match('/^\| `([^`]+)` \| ([^|]+) \|/', $line, $matches) === 1) {
+        if (isset($rows[$matches[1]])) {
+            fwrite(STDERR, "Duplicate action catalog row: {$matches[1]}\n");
+            exit(1);
+        }
         $rows[$matches[1]] = trim($matches[2]);
     }
 }
