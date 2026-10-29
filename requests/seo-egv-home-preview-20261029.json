@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-home-preview-20261029",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 227,
+    "fields": {
+      "title": "EG Veranda | Veranda's en overkappingen voor meer ruimte",
+      "description": "Meer ruimte voor het échte leven. Ontdek veranda's en overkappingen bij EG Veranda. Bekijk modellen, projecten en inspiratie en vraag persoonlijk advies aan."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
