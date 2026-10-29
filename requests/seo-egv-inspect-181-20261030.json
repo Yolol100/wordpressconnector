@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-inspect-181-20261030",
+  "action": "yoast.snippet.inspect",
+  "payload": {
+    "id": 181
+  },
+  "dry_run": true,
+  "confirm": false
+}
