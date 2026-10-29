@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-188-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 188,
+    "fields": {
+      "title": "Voorbereid naar je adviesgesprek | EG Veranda",
+      "description": "Welke wensen en vragen neem je mee naar een adviesgesprek over een veranda of overkapping? Lees hoe je je goed voorbereidt."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "58803f7441ce35f43900043410bac7e8f2d3f84a12f4a4d105778b307b5488f1"
+}
