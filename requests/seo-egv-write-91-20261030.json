@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-91-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 91,
+    "fields": {
+      "title": "Zonwering voor veranda en terras | EG Veranda",
+      "description": "Ontdek zonwering voor veranda's en buitenruimtes, van boven- en onderdakzonwering tot screens. Bekijk de verschillende opties."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "3689d8229c9f4531b8bc6b60efc8d5e60e7b40bba8b60173ec94183d9430a291"
+}
