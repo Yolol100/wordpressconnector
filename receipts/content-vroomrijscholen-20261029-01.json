@@ -1,0 +1,97 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "content-vroomrijscholen-20261029-01",
+    "action": "post.list",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:14:22+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "items": [
+        {
+            "id": 3,
+            "type": "page",
+            "status": "publish",
+            "title": "Privacybeleid",
+            "slug": "privacybeleid",
+            "permalink": "https://vroomrijscholen.nl/privacybeleid/"
+        },
+        {
+            "id": 11,
+            "type": "page",
+            "status": "publish",
+            "title": "Home",
+            "slug": "home",
+            "permalink": "https://vroomrijscholen.nl/"
+        },
+        {
+            "id": 14,
+            "type": "page",
+            "status": "publish",
+            "title": "Spoedcursus",
+            "slug": "spoedcursus",
+            "permalink": "https://vroomrijscholen.nl/spoedcursus/"
+        },
+        {
+            "id": 16,
+            "type": "page",
+            "status": "publish",
+            "title": "Theorie",
+            "slug": "theorie",
+            "permalink": "https://vroomrijscholen.nl/theorie/"
+        },
+        {
+            "id": 18,
+            "type": "page",
+            "status": "publish",
+            "title": "Tarieven",
+            "slug": "tarieven",
+            "permalink": "https://vroomrijscholen.nl/tarieven/"
+        },
+        {
+            "id": 21,
+            "type": "page",
+            "status": "publish",
+            "title": "Help",
+            "slug": "help",
+            "permalink": "https://vroomrijscholen.nl/help/"
+        },
+        {
+            "id": 23,
+            "type": "page",
+            "status": "publish",
+            "title": "Over Vroom",
+            "slug": "over-vroom",
+            "permalink": "https://vroomrijscholen.nl/over-vroom/"
+        },
+        {
+            "id": 25,
+            "type": "page",
+            "status": "publish",
+            "title": "Werken met Vroom",
+            "slug": "werken-met-vroom",
+            "permalink": "https://vroomrijscholen.nl/werken-met-vroom/"
+        },
+        {
+            "id": 27,
+            "type": "page",
+            "status": "publish",
+            "title": "Meest gestelde vragen",
+            "slug": "meest-gestelde-vragen",
+            "permalink": "https://vroomrijscholen.nl/meest-gestelde-vragen/"
+        },
+        {
+            "id": 39,
+            "type": "page",
+            "status": "publish",
+            "title": "Bedankt contact",
+            "slug": "bedankt-contact",
+            "permalink": "https://vroomrijscholen.nl/bedankt-contact/"
+        }
+    ],
+    "page": 1,
+    "per_page": 10,
+    "total": 17,
+    "pages": 2,
+    "readback_verified": null
+}
