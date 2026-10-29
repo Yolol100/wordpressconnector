@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://acdrive.nl",
+  "request_id": "acdrive-media-canary-20261030-0518",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
