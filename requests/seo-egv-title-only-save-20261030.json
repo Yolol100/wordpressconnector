@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-title-only-save-20261030",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogname": "EG Veranda"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "d8bea3bb5cbcaf6b121a64d6d8d9de7706e3a1f851e4659fd1a7bc2309f265df"
+}
