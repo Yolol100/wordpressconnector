@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-187-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 187,
+    "fields": {
+      "title": "Zonwering kiezen: licht en schaduw | EG Veranda",
+      "description": "Hoe vind je de juiste balans tussen zonlicht en schaduw? Lees waar je op kunt letten bij zonwering voor jouw buitenruimte."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "ac9bc9a5cf3af7b92876d483db33b46b4abdd800159cff3789a188b464bfa500"
+}
