@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-180-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 180,
+    "fields": {
+      "title": "Ervaringen met EG Veranda | Klantverhalen",
+      "description": "Lees ervaringen van klanten met EG Veranda. Ontdek wat anderen vertellen over hun project en de samenwerking."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
