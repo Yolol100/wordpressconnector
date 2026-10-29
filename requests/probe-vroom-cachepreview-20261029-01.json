@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "probe-vroom-cachepreview-20261029-01",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket",
+    "regenerate": false
+  },
+  "dry_run": true,
+  "confirm": false
+}
