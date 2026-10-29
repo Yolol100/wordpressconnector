@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "deep-isohulk-elementor-20261029-01",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 13,
+    "element_ids": [
+      "wpconnector_nonmatching_probe_2026"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
