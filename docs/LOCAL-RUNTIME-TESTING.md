@@ -23,6 +23,27 @@ The configuration mounts only `plugin/wordpressconnector` into a disposable Word
 
 The isolated Docker check runs for changes in relevant paths on pull requests, again after those changes land on `main`, or with manual `workflow_dispatch`. Other file-only changes do not trigger this expensive runtime check. The existing main-branch Connector CI and release workflow remain separate; green Docker CI is not production deployment evidence.
 
+## Reproduce contract QA on an authorized Windows PC
+
+Use the existing Docker image and **exact clean Git commit**; this is optional, additional controlled-runtime evidence. It is not a second release runner or an alternative to the existing GitHub-hosted `wp-env` smoke test.
+
+In PowerShell, from the checked-out repository root (with Git and a running Docker Engine):
+
+```powershell
+# Check out the same commit that GitHub CI tested before running this command.
+$sha = (git rev-parse HEAD).Trim()
+docker image inspect wordpress:php8.3-apache
+.\scripts\local-docker-contracts.ps1 -ExpectedSha $sha
+```
+
+The image must already exist locally; the script never pulls. It requires clean tracked files, checks the full 40-character SHA, runs `scripts/run-contracts.sh` inside the **pre-existing** image with no network, a read-only repository bind mount, a read-only container root, dropped capabilities and a bounded temporary filesystem. A unique container is cleaned up. Only that uniquely named container may be removed; never delete shared Docker volumes, projects or other containers. No site URL, secrets, database, local WordPress installation, live plugin activation or admin credentials are required.
+
+Results and a compact `receipt.json` are stored outside the repository under the user's temporary `wordpressconnector-qa/<run-id>/` directory (or the explicit `-EvidenceDirectory`), with exact Git SHA, image ID, Docker version, status, warning count, log name and SHA-256. Fail on non-zero exit, PHP warnings or tracked source changes. A wrong SHA, option-like Docker image, or ignored/untracked PHP input must fail before Docker starts. The script also rechecks the Git HEAD and PHP inputs after Docker finishes. The canonical `run-contracts.sh` exercises the PowerShell parser and negative scenarios whenever `pwsh` is available, and always runs the static contract test.
+
+**Protected GitHub governance:** an ordinary PR cannot modify the existing CI or required-gate workflows. This PR uses the unmodified workflows; its documentation change triggers the existing Docker smoke. For a future *script-only* change, run the existing Docker workflow manually as an additional check, because its trusted path filter cannot be changed within an ordinary implementation PR. Inspect the raw log when a failure occurs. These local logs are not automatically uploaded to public GitHub.
+
+**Proof boundary:** this runner executes PHP contract fixtures under Docker, **not** a bootstrapped WordPress site. Use the existing GitHub `docker-runtime-smoke.yml` / `wp-env` for real disposable WordPress + database + plugin activation. A green result cannot establish a target site's OAuth/OIDC, WAF, file permissions, administration, deployment or tested restore. For a real installation or update, use separately authorized staging, an independent backup/restore test and readback; a blocked setup remains `not_run`, never `PASS`.
+
 ## Evidence and limitations
 
 - In addition to bootstrap, REST-route and anonymous HTTP/HTTPS denial, the Docker smoke now stages a verified ZIP outside Core's cleaned `wp-content/upgrade` scratch directory and installs a **disposable verified ZIP** through the real WordPress plugin upgrader, verifies `register_activation_hook()` execution, deactivates/reactivates the installed plugin, creates and deletes a confirmed browser-active HTML asset, and cleans up the temporary plugin. This is isolated Docker WordPress/MySQL proof, **not** live hosting, managed WAF, multisite or production deployment proof.

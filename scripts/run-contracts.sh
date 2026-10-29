@@ -75,6 +75,7 @@ run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
 run_php tests/security-boundary-contract.php
 run_php tests/runtime-preflight-contract.php
+run_php tests/local-docker-contract-runner-contract.php
 run_php tests/filesystem-control-contract.php
 run_php tests/plugin-directory-file-lifecycle-contract.php
 run_php tests/theme-lifecycle-readback-contract.php
@@ -111,3 +112,6 @@ run_php tests/workflow-security-contract.php
 run_php tests/mutation-lock-contract.php
 run_php tests/audit-hardening-contract.php
 run_php tests/single-plugin-contract.php
+if command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -NonInteractive -File tests/local-docker-runner-preflight.ps1
+fi
