@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "writegate-isohulk-20261029-02",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogname": "ISOHULK"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000"
+}
