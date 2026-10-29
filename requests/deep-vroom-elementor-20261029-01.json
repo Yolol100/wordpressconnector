@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "deep-vroom-elementor-20261029-01",
+  "action": "elementor.inspect",
+  "payload": {
+    "id": 11,
+    "element_ids": [
+      "wpconnector_nonmatching_probe_2026"
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
