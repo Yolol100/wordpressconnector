@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "deep-egveranda-elementor-20261029-01",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:34:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "5d56e26adb2d5357765cd3e2484c738979d2a70d62d249b3417e742f28afb1e3",
+    "post_id": 6,
+    "document_type": "",
+    "edit_mode": "",
+    "template_type": "",
+    "elementor_version": "",
+    "elements": [],
+    "readback_verified": null
+}
