@@ -1,0 +1,19 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-fix-egv-yoast-brand-save-20261030",
+    "action": "yoast.site_representation.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-29T22:42:22+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "company_or_person": "company",
+        "company_name": "EG Veranda",
+        "org_description": "EG Veranda biedt veranda's en overkappingen voor meer leefruimte. Ontdek modellen, projecten, showrooms en persoonlijk advies voor jouw plannen."
+    },
+    "before_fingerprint": "a110ea1a979a3f5318dbe85b13e8f8d7b436c3afd2f68aeb2b443821d1c4ac7b",
+    "after_fingerprint": "b0b2dc4b1f9091480d7cc72101733d64461a15a9988ff1ea2bdec7bf0841b971",
+    "readback_verified": true,
+    "rollback_available": true
+}
