@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-159-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 159,
+    "fields": {
+      "title": "Veelgestelde vragen over veranda's | EG Veranda",
+      "description": "Vind antwoorden op veelgestelde vragen over veranda's, overkappingen, advies en de werkwijze van EG Veranda."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "7c18c65d6363b8ea5983c0ee196d273d004ef6dac5732b0aa814097739fdbbc0"
+}
