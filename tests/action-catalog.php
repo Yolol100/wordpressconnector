@@ -88,6 +88,47 @@ foreach (preg_split('/\R/', $catalog) as $line) {
     }
 }
 
+// Every first-party action registration must have exactly one catalog row.
+// Scan only the canonical adapters and Runner, not WordPress extension hooks
+// or test fixtures, so source and documentation cannot silently drift.
+$registrationPaths = glob(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/*.php');
+if (! is_array($registrationPaths) || ! $registrationPaths) {
+    fwrite(STDERR, "Unable to locate Connector adapters.\n");
+    exit(1);
+}
+$registrationPaths[] = dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php';
+$registered = array();
+foreach ($registrationPaths as $registrationPath) {
+    $registrationSource = file_get_contents($registrationPath);
+    if ($registrationSource === false) {
+        fwrite(STDERR, "Unable to read action registration source.\n");
+        exit(1);
+    }
+    if (preg_match_all("/->register\\(\\s*'([^']+)'/s", $registrationSource, $matches) === false) {
+        fwrite(STDERR, "Unable to parse action registration source.\n");
+        exit(1);
+    }
+    foreach ($matches[1] as $name) {
+        if (isset($registered[$name])) {
+            fwrite(STDERR, "Duplicate first-party action registration: {$name}\n");
+            exit(1);
+        }
+        $registered[$name] = true;
+    }
+}
+foreach (array_keys($registered) as $name) {
+    if (! isset($rows[$name])) {
+        fwrite(STDERR, "Uncatalogued registered action: {$name}\n");
+        exit(1);
+    }
+}
+foreach (array_keys($rows) as $name) {
+    if (! isset($registered[$name])) {
+        fwrite(STDERR, "Stale action catalog entry: {$name}\n");
+        exit(1);
+    }
+}
+
 foreach ($expected as $action => $security) {
     if (! isset($rows[$action])) {
         fwrite(STDERR, "Missing action catalog row: {$action}\n");
