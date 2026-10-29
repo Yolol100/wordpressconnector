@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-151-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 151,
+    "fields": {
+      "title": "Inspiratie voor veranda's en buitenleven | EG Veranda",
+      "description": "Ideeën voor een veranda, tuinkamer of andere buitenoplossing? Ontdek inspiratie en mogelijkheden voor jouw huis, tuin of terras."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
