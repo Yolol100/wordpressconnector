@@ -1,0 +1,133 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "read-isohulk-full-20261029-01",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:31:12+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 13,
+                "type": "page",
+                "status": "publish",
+                "title": "Home",
+                "slug": "home",
+                "permalink": "https://isohulk.com/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "a1833090e9883ac5a12cee24a18af740c29103d5509cee95ad52d48fc4c07cba"
+        },
+        {
+            "index": 1,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 3,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Privacy Policy",
+                    "slug": "privacy-policy",
+                    "permalink": "https://isohulk.com/privacy-policy/"
+                },
+                {
+                    "id": 12,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Refund & Returns Policy",
+                    "slug": "refund-returns-policy",
+                    "permalink": "https://isohulk.com/refund-returns-policy/"
+                },
+                {
+                    "id": 13,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Home",
+                    "slug": "home",
+                    "permalink": "https://isohulk.com/"
+                },
+                {
+                    "id": 14,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Products",
+                    "slug": "products",
+                    "permalink": "https://isohulk.com/products/"
+                },
+                {
+                    "id": 15,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Custom Solutions",
+                    "slug": "custom-solutions",
+                    "permalink": "https://isohulk.com/custom-solutions/"
+                },
+                {
+                    "id": 16,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "About Us",
+                    "slug": "about-us",
+                    "permalink": "https://isohulk.com/about-us/"
+                },
+                {
+                    "id": 17,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Contact",
+                    "slug": "contact",
+                    "permalink": "https://isohulk.com/contact/"
+                },
+                {
+                    "id": 251,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Terms & Conditions",
+                    "slug": "terms-and-conditions",
+                    "permalink": "https://isohulk.com/terms-and-conditions/"
+                },
+                {
+                    "id": 252,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Request a Quotation",
+                    "slug": "request-a-quote",
+                    "permalink": "https://isohulk.com/request-a-quote/"
+                },
+                {
+                    "id": 253,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Thank You for Your Message",
+                    "slug": "thank-you-message",
+                    "permalink": "https://isohulk.com/thank-you-message/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 10,
+            "total": 13,
+            "pages": 2
+        },
+        {
+            "index": 2,
+            "action": "maintenance.cache_capabilities",
+            "result_fingerprint": "51fe1b5ff5c07d99e8225d7c23a3f125109b4e5c6fdf02552483ee3810ed8876"
+        },
+        {
+            "index": 3,
+            "action": "connector.update.check",
+            "result_fingerprint": "a74dc57a846919c1e71446c90f55f9d406bd2a5608e0f41a63afeae333435366"
+        },
+        {
+            "index": 4,
+            "action": "custom_css.inspect",
+            "result_fingerprint": "2fa940ed4e94dc6853f80489db47fa57f4e2e05dc76f4fe9b6964d63690f85da"
+        }
+    ],
+    "readback_verified": null
+}
