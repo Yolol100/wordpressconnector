@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-fix-egv-category-template-dry-20261030",
+  "action": "yoast.templates.update",
+  "payload": {
+    "fields": {
+      "category_title": "%%term_title%% %%page%% %%sep%% %%sitename%%"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
