@@ -1,0 +1,133 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "read-vroom-full-20261029-01",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:31:01+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.get",
+            "post": {
+                "id": 11,
+                "type": "page",
+                "status": "publish",
+                "title": "Home",
+                "slug": "home",
+                "permalink": "https://vroomrijscholen.nl/",
+                "excerpt": ""
+            },
+            "post_fingerprint": "c0dc85352b594095cef6819e4a5c870273e90cd39867ba01251a0265b5e45825"
+        },
+        {
+            "index": 1,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 3,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Privacybeleid",
+                    "slug": "privacybeleid",
+                    "permalink": "https://vroomrijscholen.nl/privacybeleid/"
+                },
+                {
+                    "id": 11,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Home",
+                    "slug": "home",
+                    "permalink": "https://vroomrijscholen.nl/"
+                },
+                {
+                    "id": 14,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Spoedcursus",
+                    "slug": "spoedcursus",
+                    "permalink": "https://vroomrijscholen.nl/spoedcursus/"
+                },
+                {
+                    "id": 16,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Theorie",
+                    "slug": "theorie",
+                    "permalink": "https://vroomrijscholen.nl/theorie/"
+                },
+                {
+                    "id": 18,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Tarieven",
+                    "slug": "tarieven",
+                    "permalink": "https://vroomrijscholen.nl/tarieven/"
+                },
+                {
+                    "id": 21,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Help",
+                    "slug": "help",
+                    "permalink": "https://vroomrijscholen.nl/help/"
+                },
+                {
+                    "id": 23,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Over Vroom",
+                    "slug": "over-vroom",
+                    "permalink": "https://vroomrijscholen.nl/over-vroom/"
+                },
+                {
+                    "id": 25,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Werken met Vroom",
+                    "slug": "werken-met-vroom",
+                    "permalink": "https://vroomrijscholen.nl/werken-met-vroom/"
+                },
+                {
+                    "id": 27,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Meest gestelde vragen",
+                    "slug": "meest-gestelde-vragen",
+                    "permalink": "https://vroomrijscholen.nl/meest-gestelde-vragen/"
+                },
+                {
+                    "id": 39,
+                    "type": "page",
+                    "status": "publish",
+                    "title": "Bedankt contact",
+                    "slug": "bedankt-contact",
+                    "permalink": "https://vroomrijscholen.nl/bedankt-contact/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 1,
+            "per_page": 10,
+            "total": 17,
+            "pages": 2
+        },
+        {
+            "index": 2,
+            "action": "maintenance.cache_capabilities",
+            "result_fingerprint": "51fe1b5ff5c07d99e8225d7c23a3f125109b4e5c6fdf02552483ee3810ed8876"
+        },
+        {
+            "index": 3,
+            "action": "connector.update.check",
+            "result_fingerprint": "a74dc57a846919c1e71446c90f55f9d406bd2a5608e0f41a63afeae333435366"
+        },
+        {
+            "index": 4,
+            "action": "custom_css.inspect",
+            "result_fingerprint": "c10356514b3416b23dff2813bab9727bd34612f25125a5c9f8a273afe889c603"
+        }
+    ],
+    "readback_verified": null
+}
