@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "deep-vroom-elementor-20261029-01",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:34:39+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "2ed0a4cc30900971c0deeafb67d97ed10b0afeb4ea8ecb2881eb0256679b8685",
+    "post_id": 11,
+    "document_type": "",
+    "edit_mode": "",
+    "template_type": "",
+    "elementor_version": "",
+    "elements": [],
+    "readback_verified": null
+}
