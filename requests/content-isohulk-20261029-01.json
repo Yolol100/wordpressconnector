@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "content-isohulk-20261029-01",
+  "action": "post.list",
+  "payload": {
+    "post_type": "page",
+    "status": "publish",
+    "per_page": 10,
+    "page": 1,
+    "orderby": "ID",
+    "order": "ASC"
+  },
+  "dry_run": true,
+  "confirm": false
+}
