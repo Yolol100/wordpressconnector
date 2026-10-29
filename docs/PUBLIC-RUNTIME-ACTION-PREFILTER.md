@@ -1,7 +1,7 @@
 # Public runtime action prefilter
 
-The public GitHub request transport accepts the historically explicit public-safe action set without an extra confirmation flag. Other syntactically valid connector actions may pass the transport prefilter only when the request contains `confirm=true`.
+The public GitHub request transport accepts **only** the explicitly allowed action names in `scripts/validate-public-request.php`. A request with `confirm=true` does not make an unlisted action available. Every supported action also has its own input-shape, dry-run, confirmation, target and fingerprint requirements; private-only operations must use an independently authorized private or direct transport.
 
-This change does not make every WordPress action unrestricted. The site runtime remains authoritative: OIDC identity binding, WordPress capability checks, sensitive-action blocking in public-repository context, privileged-action policy, mutation confirmation, idempotency, state guards, secret-like input rejection, public result sanitization, and rollback rules remain in force.
+The WordPress runtime remains the final authorization boundary: signed OIDC identity and site pairing, the `Security/Policy.php` public action allowlist, WordPress capabilities, privileged and sensitive-action policies, mutation locks, idempotency, stale-state guards, rollback and secret-safe public receipts. Public mode blocks sensitive actions and never exposes full result bodies.
 
-The purpose of the broader prefilter is to stop duplicating the entire connector action catalog in the GitHub transport layer while keeping the WordPress runtime as the final security boundary.
+Changes to public action availability require an explicit, reviewed update to both the transport validator and the WordPress runtime policy, with positive and negative contract tests. The transport is a dispatcher, not an authorization bypass.
