@@ -1,0 +1,19 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-fix-egv-site-brand-dry-20261030",
+    "action": "site.identity.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T22:22:26+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "EG Veranda",
+        "blogdescription": "Veranda's, glazen schuifwanden en buitenoplossingen",
+        "timezone_string": "",
+        "WPLANG": "nl_NL"
+    },
+    "before_fingerprint": "d8bea3bb5cbcaf6b121a64d6d8d9de7706e3a1f851e4659fd1a7bc2309f265df",
+    "after_fingerprint": "f7a6a5c13419b96cdb44ba9d764aedadb4c35362a91df9f5818278a298623f0b",
+    "readback_verified": null
+}
