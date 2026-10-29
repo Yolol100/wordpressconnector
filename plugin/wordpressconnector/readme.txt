@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.19
+Stable tag: 1.19.20
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Zero-config controlled WordPress automation bridge over authenticated HTTPS REST
 
 == Description ==
 
-Version 1.19.19 preflights all connector.batch operation schemas, registered WordPress action permissions and public-mode restrictions before the first mutation, then rechecks action-level permissions at execution time. Fingerprints are still checked at execution time because later operations can depend on earlier successful writes; compensation after a runtime failure is best effort, not a database transaction. Native and private administrator connection readiness now reports WordPress capability and server-policy indicators without claiming OAuth, hosting access or a successful live write. No private multi-site registry, automatic site deployment, or self-removal is introduced by this release.
+Version 1.19.20 hardens private Connector request assets against symlink traversal, unsafe permissions and partial file writes; REST storage errors return generic messages without exposing private paths. It also fixes WordPress database readiness/file-modification diagnostics, Elementor MCP callback arity, native update hooks, and WooCommerce variation readback failures. Version 1.19.19 preflights all connector.batch operation schemas, registered WordPress action permissions and public-mode restrictions before the first mutation, then rechecks action-level permissions at execution time. Fingerprints are still checked at execution time because later operations can depend on earlier successful writes; compensation after a runtime failure is best effort, not a database transaction. Native and private administrator connection readiness now reports WordPress capability and server-policy indicators without claiming OAuth, hosting access or a successful live write. No private multi-site registry, automatic site deployment, or self-removal is introduced by this release.
 
 Version 1.19.10 makes existing-file replacements honor WordPress file-modification policies and requires explicit acknowledge_active_content=true for browser-active HTML, JavaScript and CSS replacements, including guarded rollback. Replacement content now receives the same embedded-secret check as file reads; PHP/INC parser validation and existing per-file SHA-256 readback remain. Disposable WordPress/Docker integration tests cover read, write, restore, create and delete. Public GitHub file access is not expanded. These tests do not prove private hosted-site filesystem access.
 
@@ -173,6 +173,21 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.19.20 =
+* Reject symlink traversal in private request asset paths, roots and cleanup; fail closed on unsafe file permissions.
+* Do not expose server filesystem paths in private asset REST error responses; log failed cleanup with a fixed, non-sensitive message.
+* Require complete same-directory atomic JSON writes with rollback-safe temporary-file cleanup.
+* Fix system.doctor protected wpdb readiness and consistent WordPress file-modification policy reporting.
+* Correct Elementor MCP guard callback arity and WordPress native update-action return contract.
+* Validate WooCommerce variation product type on post-save readback to avoid errors from missing or incorrect products.
+* Prepare WooCommerce shipping and tax table identifiers using the WordPress 6.2+ %i identifier placeholder, with PHP and real WooCommerce regressions.
+* Add focused regressions and retain GitHub OIDC authorization, write permissions and release gates.
+
+= 1.19.19 =
+* Preflight operation schemas, permissions and public-repository restrictions before connector.batch mutation begins.
+* Add site-scoped dry-run and execution-time permission verification while retaining stale-state fingerprints and best-effort rollback.
+* Improve WordPress Connector read-only administrator connection readiness and optional backup provider detection without claiming a verified restore.
 
 = 1.19.18 =
 * Compare current OpenAI OAuth requirements and WordPress/Elementor/WooCommerce/MainWP/WP Umbrella MCP management patterns in a comprehensive evidence-backed repository report.
