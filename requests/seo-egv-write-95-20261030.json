@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-95-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 95,
+    "fields": {
+      "title": "Carports voor jouw oprit | EG Veranda",
+      "description": "Bekijk carportmogelijkheden voor jouw oprit. Ontdek hoe je met een passende overkapping extra ruimte maakt bij je woning."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "dd93fcf2e7eccf7d7f6943ff4dcd6e570a2eb0c653d00333de113be22e781869"
+}
