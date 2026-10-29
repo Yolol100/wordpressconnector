@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "probe-vroom-translate-20261029-01",
+  "action": "gtranslate.settings.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
