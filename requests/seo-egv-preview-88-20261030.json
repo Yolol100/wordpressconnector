@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-88-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 88,
+    "fields": {
+      "title": "Glazen schuifwanden voor buitenruimtes | EG Veranda",
+      "description": "Bekijk glazen schuifwanden van EG Veranda, van verschillende railsystemen tot oplossingen voor een veranda of tuinkamer. Ontdek de mogelijkheden."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
