@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "probe-vroom-yoast-20261029-01",
+    "action": "yoast.site_representation.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:37:00+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "company_or_person": "company",
+        "company_name": "Vroom Rijscholen",
+        "org_description": "Vroom Rijscholen biedt rijlessen en theorie met een vaste rijinstructeur, flexibele lespakketten en een vrijblijvende gratis proefles."
+    },
+    "settings_fingerprint": "eb361241c5011cefd20d4a6b53c11243038f74bb69c32a0273b6bf4ef1037c86",
+    "readback_verified": null
+}
