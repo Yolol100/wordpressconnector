@@ -40,4 +40,25 @@ try {
 } finally {
     Remove-Item -LiteralPath $probe -Force -ErrorAction SilentlyContinue
 }
-Write-Output 'Windows Docker parser, wrong SHA, image option and untracked PHP/non-PHP regressions OK'
+# Reproduce the index-flag bypass: git status reports clean, but HEAD bytes differ.
+$trackedRelative = 'tests/local-docker-contract-runner-contract.php'
+$trackedFile = Join-Path $root $trackedRelative
+$originalBytes = [System.IO.File]::ReadAllBytes($trackedFile)
+$flagSet = $false
+try {
+    & git -C $root update-index --assume-unchanged -- $trackedRelative | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot prepare index-flag regression.' }
+    $flagSet = $true
+    $extra = [System.Text.Encoding]::UTF8.GetBytes("hidden local change")
+    [System.IO.File]::WriteAllBytes($trackedFile, [byte[]]($originalBytes + $extra))
+    $reported = ((& git -C $root status --porcelain --untracked-files=no) -join '').Trim()
+    if ($LASTEXITCODE -ne 0 -or $reported) { throw 'Index-flag fixture did not hide the modified file.' }
+    $blocked = $false
+    try { & $runner -ExpectedSha $sha | Out-Null }
+    catch { $blocked = $_.Exception.Message -match 'Source blob mismatch' }
+    if (-not $blocked) { throw 'Modified tracked bytes must be rejected despite assume-unchanged.' }
+} finally {
+    [System.IO.File]::WriteAllBytes($trackedFile, $originalBytes)
+    if ($flagSet) { & git -C $root update-index --no-assume-unchanged -- $trackedRelative | Out-Null }
+}
+Write-Output 'Windows Docker parser, SHA-bound source blobs and negative input regressions OK'
