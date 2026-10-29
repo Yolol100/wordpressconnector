@@ -52,7 +52,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `elementor.form_inspect` | read-only | Read complete V3 and V4 Elementor form subtrees from one document. |
 | `elementor.form_upsert` | mutation | Insert or fully replace one complete V3 Form widget or V4 Atomic Form subtree with schema checks, readback and rollback. |
 | `elementor.header_links.inspect` | read-only | Inspect eligible Icon List links and exact-match counts in an existing Elementor header without modifying the template. |
-| `elementor.header_links.replace` | mutation | Replace bounded same-site Icon List links in a published Elementor header; requires edit_theme_options, confirmation and guarded readback/rollback. |
+| `elementor.header_links.replace` | mutation | Replace bounded same-site Icon List links in a published Elementor header; requires edit_theme_options, confirmation and verified readback. Failed saves attempt automatic restoration; successful writes do not expose a stored rollback. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
 | `elementor.inventory` | read-only | Inventory registered Elementor widget provenance and actual widget/element usage across Elementor documents. |
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
