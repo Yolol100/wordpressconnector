@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-198-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 198,
+    "fields": {
+      "title": "Contact met EG Veranda | Stel jouw vraag",
+      "description": "Vraag advies of neem contact op met EG Veranda over een veranda of andere buitenoplossing. Bekijk de contactmogelijkheden en stel je vraag."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "b7ec7a74f97b66c4fbc9bdc352dc395a6c818af6eee36d8db3de2d520069831d"
+}
