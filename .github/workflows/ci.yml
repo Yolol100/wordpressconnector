@@ -104,6 +104,27 @@ jobs:
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.zip"
           sha256sum "$RUNNER_TEMP/wordpressconnector-a.spdx.json"
 
+      - name: Stage exact reproducible WordPress Connector package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/wordpressconnector-a.zip" "$RUNNER_TEMP/wordpressconnector.zip"
+          cp "$RUNNER_TEMP/wordpressconnector-a.spdx.json" "$RUNNER_TEMP/wordpressconnector.spdx.json"
+          (cd "$RUNNER_TEMP" && sha256sum wordpressconnector.zip > wordpressconnector.zip.sha256)
+          unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
+          (cd "$RUNNER_TEMP" && sha256sum -c wordpressconnector.zip.sha256)
+
+      - name: Upload installable package and SBOM (PR artifact, not public release)
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wordpressconnector-1.19.20-install
+          path: |
+            ${{ runner.temp }}/wordpressconnector.zip
+            ${{ runner.temp }}/wordpressconnector.zip.sha256
+            ${{ runner.temp }}/wordpressconnector.spdx.json
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Reject dangerous execution primitives
         shell: bash
         run: |
