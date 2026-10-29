@@ -164,14 +164,17 @@ final class ConnectorUpdateAdapter
             return;
         }
 
-        $nonce = sanitize_text_field(wp_unslash($_GET['wpconnector_notice_nonce']));
-        if (! wp_verify_nonce($nonce, 'wpconnector_checked_notice')) {
+        $rawNonce = wp_unslash($_GET['wpconnector_notice_nonce']);
+        $nonce = sanitize_text_field($rawNonce);
+        if ($nonce !== $rawNonce || ! wp_verify_nonce($nonce, 'wpconnector_checked_notice')) {
             return;
         }
-        $noticeResult = sanitize_text_field(wp_unslash($_GET['wpconnector_update_checked']));
-        if (! in_array($noticeResult, array('0', '1'), true)) {
+        $rawNoticeResult = wp_unslash($_GET['wpconnector_update_checked']);
+        // Reject malformed values rather than normalizing markup into a trusted result.
+        if (! in_array($rawNoticeResult, array('0', '1'), true)) {
             return;
         }
+        $noticeResult = sanitize_text_field($rawNoticeResult);
         $ok = '1' === $noticeResult;
         echo '<div class="notice ' . ($ok ? 'notice-success' : 'notice-warning') .
             ' is-dismissible"><p>' .
