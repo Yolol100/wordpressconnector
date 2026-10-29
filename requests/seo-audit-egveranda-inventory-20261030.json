@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-audit-egveranda-inventory-20261030",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "per_page": 25,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "per_page": 25,
+          "page": 2,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "post",
+          "status": "publish",
+          "per_page": 25,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "product",
+          "status": "publish",
+          "per_page": 25,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "portfolio",
+          "status": "publish",
+          "per_page": 25,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
