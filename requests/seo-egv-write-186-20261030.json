@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-186-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 186,
+    "fields": {
+      "title": "Veranda of tuinkamer: wat past bij je? | EG Veranda",
+      "description": "Twijfel je tussen een veranda en een tuinkamer? Lees welke punten helpen om een keuze te maken voor jouw woning en buitenruimte."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "38d0eeaf2a3a2eaa0e9606664560120b117adeac1aeea6d196617f48aa1a80ba"
+}
