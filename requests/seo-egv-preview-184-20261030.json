@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-184-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 184,
+    "fields": {
+      "title": "Duurzaamheid bij EG Veranda | Onze aanpak",
+      "description": "Lees hoe EG Veranda kijkt naar duurzaamheid en ontdek welke keuzes en onderwerpen daarbij horen."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
