@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-products-preview-20261029",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 86,
+    "fields": {
+      "title": "Veranda's en overkappingen bekijken | EG Veranda",
+      "description": "Ontdek de productcategorieën van EG Veranda en bekijk modellen en mogelijkheden voor een veranda of overkapping die aansluit bij jouw wensen."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
