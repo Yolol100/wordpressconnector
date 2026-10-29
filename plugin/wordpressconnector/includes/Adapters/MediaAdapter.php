@@ -91,7 +91,7 @@ final class MediaAdapter
         $fileArray = array('name' => basename($real), 'tmp_name' => $tmp);
         $attachmentId = media_handle_sideload($fileArray, $planned['parent'], isset($payload['description']) ? (string) $payload['description'] : null);
         if (is_wp_error($attachmentId)) {
-            @unlink($tmp);
+            wp_delete_file($tmp);
             throw new RuntimeException($attachmentId->get_error_message());
         }
 

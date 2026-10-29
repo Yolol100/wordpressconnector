@@ -1,6 +1,6 @@
 === WordPress Connector ===
 Contributors: webactueel
-Tags: rest-api, github, automation, wp-cli, elementor, woocommerce, acf, yoast
+Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4

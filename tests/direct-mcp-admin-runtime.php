@@ -20,6 +20,8 @@ final class WP_Application_Passwords {
 }
 $GLOBALS['direct_mcp'] = array('method' => 'POST', 'user' => 77, 'admin' => true,
     'create' => true, 'nonce' => true, 'consent' => true, 'https' => true, 'allowed' => true, 'no_cache' => 0);
+function wp_unslash($value) { return is_string($value) ? stripslashes($value) : $value; }
+function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
 function current_user_can($capability, ...$args): bool {
     return 'manage_options' === $capability ? $GLOBALS['direct_mcp']['admin'] :
         ('create_app_password' === $capability && $args === array($GLOBALS['direct_mcp']['user']) && $GLOBALS['direct_mcp']['create']);
@@ -41,6 +43,12 @@ function esc_url($value): string { return htmlspecialchars((string) $value, ENT_
 function admin_url(string $path): string { return 'https://example.invalid/wp-admin/' . $path; }
 function is_wp_error($value): bool { return false; }
 function nocache_headers(): void { ++$GLOBALS['direct_mcp']['no_cache']; }
+function wp_kses($html, array $allowed_html): string {
+    foreach (array('h1', 'p', 'label', 'input', 'a') as $tag) {
+        if (! array_key_exists($tag, $allowed_html)) throw new RuntimeException('Missing allowed credential HTML tag: ' . $tag);
+    }
+    return strip_tags((string) $html, '<h1><p><label><input><a>');
+}
 function wp_die($message = '', $title = '', $args = array()) {
     throw new ConnectorAdminStop($message, (int) ($args['response'] ?? 500));
 }
