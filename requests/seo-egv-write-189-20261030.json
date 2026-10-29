@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-189-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 189,
+    "fields": {
+      "title": "Welke veranda past bij jouw ruimte? | EG Veranda",
+      "description": "Ontdek welke buitenoplossing bij jouw ruimte past. Verken mogelijkheden voor een veranda, tuinkamer, pergola of andere overkapping."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "3bfea046300c7ebadad8a87ea629968b19d7d5689da583f9f4b92de728258798"
+}
