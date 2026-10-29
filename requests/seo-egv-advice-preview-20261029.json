@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-advice-preview-20261029",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 157,
+    "fields": {
+      "title": "Persoonlijk advies voor jouw veranda | EG Veranda",
+      "description": "Op zoek naar een veranda of overkapping? Vraag persoonlijk advies aan EG Veranda en ontdek welke mogelijkheden passen bij jouw ruimte en wensen."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
