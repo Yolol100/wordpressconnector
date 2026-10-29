@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-egv-title-only-save-20261030",
+    "action": "site.identity.update",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-29T22:47:56+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "EG Veranda",
+        "blogdescription": "Egveranda",
+        "timezone_string": "",
+        "WPLANG": "nl_NL"
+    },
+    "before_fingerprint": "d8bea3bb5cbcaf6b121a64d6d8d9de7706e3a1f851e4659fd1a7bc2309f265df",
+    "after_fingerprint": "fd29af0b5e26c73df343dcdf98e49126c459968856659de99074b7a252c873f0",
+    "readback_verified": true,
+    "rollback_available": true
+}
