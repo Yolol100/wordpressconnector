@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-196-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 196,
+    "fields": {
+      "title": "Werkwijze van EG Veranda | Van advies tot montage",
+      "description": "Zo werkt EG Veranda: van kennismaking en persoonlijk advies via offerte en productie tot montage. Ontdek de stappen van jouw project."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
