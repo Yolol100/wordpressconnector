@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-89-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 89,
+    "fields": {
+      "title": "Kozijnen, ramen en deuren | EG Veranda",
+      "description": "Ontdek kozijnen, ramen en deuren voor woningen en veranda's. Bekijk de verschillende oplossingen en vind wat bij jouw plannen past."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
