@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "deep-vroom-version-20261029-01",
+  "action": "connector.update.check",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
