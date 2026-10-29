@@ -51,6 +51,8 @@ This catalog is generated from the connector action registrations. Security labe
 | `elementor.form_capabilities` | read-only | Inspect target-runtime V3 Form controls/actions and V4 Atomic Form element/prop schemas. |
 | `elementor.form_inspect` | read-only | Read complete V3 and V4 Elementor form subtrees from one document. |
 | `elementor.form_upsert` | mutation | Insert or fully replace one complete V3 Form widget or V4 Atomic Form subtree with schema checks, readback and rollback. |
+| `elementor.header_links.inspect` | read-only | Inspect eligible Icon List links and exact-match counts in an existing Elementor header without modifying the template. |
+| `elementor.header_links.replace` | mutation | Replace bounded same-site Icon List links in a published Elementor header; requires edit_theme_options, confirmation and guarded readback/rollback. |
 | `elementor.inspect` | read-only | Read Elementor document JSON and document metadata. |
 | `elementor.inventory` | read-only | Inventory registered Elementor widget provenance and actual widget/element usage across Elementor documents. |
 | `elementor.patch_element` | mutation | Patch an Elementor element by stable element id and save through the Elementor document API. |
@@ -98,6 +100,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `plugin.deactivate` | mutation, privileged | Deactivate an installed plugin. |
 | `plugin.delete` | mutation, privileged, system_update | Delete an inactive installed plugin. |
 | `plugin.install` | mutation, privileged, system_update | Install a plugin from WordPress.org by slug. |
+| `plugin.install_package` | mutation, privileged, system_update | Install or overwrite a plugin from an exact-checksum ZIP in the trusted request asset root; requires install_plugins and the active package safety policy. |
 | `plugin.list` | privileged | List installed plugins with activation, WordPress update state, and permitted actions. |
 | `gtranslate.settings.inspect` | privileged | Inspect a bounded nonsecret GTranslate 5.0.x language/settings snapshot. |
 | `gtranslate.settings.update` | mutation, privileged | Set Dutch/English language choices with strict provider/version checks, dry-run, readback and rollback. |
@@ -127,6 +130,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `site_editor.template.update` | mutation, privileged | Modify a previously customized template or part via Core REST with explicit server opt-in, fingerprint, readback and guarded rollback. |
 | `site.identity.inspect` | privileged, public-safe | Read four nonsecret WordPress identity fields, requiring manage_options. |
 | `site.identity.update` | mutation, privileged, public-safe | Update approved site identity fields with dry-run fingerprint, readback, rollback and locale-pack checks. |
+| `site.identity.restore` | mutation, privileged | Restore a prior site identity snapshot only through a verified, state-guarded Connector rollback. |
 | `gtranslate.settings.inspect` / `gtranslate.settings.update` | privileged, public-safe | Inspect or update only provider-supported Dutch/English language choices with manage_options, fingerprints, redacted receipts and rollback. |
 | `yoast.site_representation.inspect` / `yoast.site_representation.update` | privileged, public-safe | Inspect Yoast organization and patch only company_name/org_description via the guarded public runtime. Logos and arbitrary options remain blocked. |
 | `rewrite.flush` | mutation, privileged | Flush rewrite rules. |
@@ -143,6 +147,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `term.update` | mutation | Update a taxonomy term. |
 | `theme.delete` | mutation, privileged, system_update | Delete an inactive theme. |
 | `theme.install` | mutation, privileged, system_update | Install a theme from WordPress.org by slug. |
+| `theme.install_package` | mutation, privileged, system_update | Install or replace an inactive theme from a verified request ZIP; requires install_themes, checksum and overwrite protections. |
 | `theme.list` | privileged | List installed themes. |
 | `theme.switch` | mutation, privileged | Switch the active theme. |
 | `theme.update` | mutation, privileged, system_update | Update one installed theme. |
@@ -199,6 +204,14 @@ This catalog is generated from the connector action registrations. Security labe
 | `yoast.features.inspect` | privileged | Inspect typed, explicitly allowlisted Yoast site-feature, integration and archive switches; private manage_options only; no provider tokens or arbitrary option keys. |
 | `yoast.features.update` | mutation, privileged | Change up to eight bool switches from one Yoast option group after dry-run fingerprint, manage_options and explicit risk acknowledgement for indexation/sitemap/Schema/archives; provider readback and guarded rollback. |
 | `yoast.features.restore` | mutation, privileged | Internal rollback-only restore of previous allowlisted Yoast switches after exact state check; public GitHub transport forbidden. |
+| `yoast.native.capabilities` | privileged | Discover official Yoast SEO Abilities and version/availability through authenticated private transport. |
+| `yoast.native.scores` | privileged | Read bounded official Yoast SEO, readability and inclusive-language analysis scores. |
+| `yoast.native.post.inspect` | privileged | Read official Yoast post, page or WooCommerce product SEO metadata and rendered output with provider permissions. |
+| `yoast.native.post.update` | mutation, privileged | Update one post's Yoast SEO metadata via the official Ability with stale-state fingerprint, readback and rollback. |
+| `yoast.native.post.restore` | mutation, privileged | Rollback-only restore of a previous native Yoast SEO metadata update. |
+| `yoast.snippet.inspect` | privileged, public-safe | Inspect published content's bounded Yoast title and meta-description overrides; public transport uses restricted post targets. |
+| `yoast.snippet.update` | mutation, privileged, public-safe | Update only public Yoast title/meta-description overrides with edit_post permission, confirmation and state-guarded readback/rollback. |
+| `yoast.snippet.restore` | mutation, privileged | Internal stale-state-guarded rollback of an earlier Yoast snippet update. |
 | `yoast.templates.inspect` | privileged | Inspect allowlisted global Yoast title and meta-description templates with a settings fingerprint. |
 | `yoast.templates.update` | mutation, privileged | Patch supported site, page, post, product and product category snippet templates; dry-run and guarded readback/rollback. |
 | `yoast.templates.restore` | mutation, privileged | Internal rollback with expected-after fingerprint; cannot be called as a direct write. |
