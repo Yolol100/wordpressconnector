@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://www.vroomrijscholen.nl",
+  "request_id": "wpconn-verify-vroomrijscholen-20261029-01",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
