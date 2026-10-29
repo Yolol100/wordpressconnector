@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-156-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 156,
+    "fields": {
+      "title": "Showrooms van EG Veranda | Ontdek de mogelijkheden",
+      "description": "Bekijk de showrooms van EG Veranda en ontdek waar je veranda's en buitenoplossingen kunt ervaren. Bereid je bezoek voor en vind meer informatie."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "593d927d9965da2ceafb441148bae2565c22382b8ed29877191330f9511c3f66"
+}
