@@ -1,0 +1,13 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "editcheck-vroomrijscholen-20261029-02",
+    "action": "post.update",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:15:53+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "before_fingerprint": "ec8865671a446d77a933f1eae3e664f7805819d21073f8ead32135ecd0eb6841",
+    "after_fingerprint": "ec8865671a446d77a933f1eae3e664f7805819d21073f8ead32135ecd0eb6841"
+}
