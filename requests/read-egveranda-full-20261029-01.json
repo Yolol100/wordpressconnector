@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "read-egveranda-full-20261029-01",
+  "action": "connector.read_batch",
+  "payload": {
+    "operations": [
+      {
+        "action": "post.get",
+        "payload": {
+          "id": 6
+        }
+      },
+      {
+        "action": "post.list",
+        "payload": {
+          "post_type": "page",
+          "status": "publish",
+          "per_page": 10,
+          "page": 1,
+          "orderby": "ID",
+          "order": "ASC"
+        }
+      },
+      {
+        "action": "maintenance.cache_capabilities",
+        "payload": {}
+      },
+      {
+        "action": "connector.update.check",
+        "payload": {}
+      },
+      {
+        "action": "custom_css.inspect",
+        "payload": {}
+      }
+    ]
+  },
+  "dry_run": true,
+  "confirm": false
+}
