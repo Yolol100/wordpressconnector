@@ -1,0 +1,17 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-egv-inspect-95-20261030",
+    "action": "yoast.snippet.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T22:51:59+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "post_id": 95,
+    "fields": {
+        "title": null,
+        "description": null
+    },
+    "before_fingerprint": "dd93fcf2e7eccf7d7f6943ff4dcd6e570a2eb0c653d00333de113be22e781869",
+    "readback_verified": null
+}
