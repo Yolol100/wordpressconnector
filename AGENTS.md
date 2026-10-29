@@ -34,9 +34,9 @@ Preserve:
 - exact PR head-SHA revalidation before execution and before result/receipt writeback;
 - bounded request asset transport and public/private asset restrictions;
 - public mode limited to the explicit public-safe action contract;
-- only the canonical connector self-update actions may use the narrow `public_repository_safe` privileged exception;
+- a privileged public-safe action must be explicitly permitted by both the runtime public allowlist and the transport validator, retain its own WordPress capabilities and keep action-specific guards; self-update and verified package installs additionally require their dedicated system-update and asset safety checks;
 - public connector self-update accepts no caller-supplied package URL/version/archive and still requires normal WordPress capability, write/system-update policy, dry-run and fingerprint confirmation;
-- `plugin.install_package` and private/custom plugin ZIP bytes never routed through public request branches;
+- private, secret-bearing or client-confidential plugin/theme ZIP bytes never routed through public request branches; explicitly allowed public package requests must use nonsecret assets and strict path, SHA-256, plugin/theme identity, overwrite and capability validation;
 - public mode never persists full connector responses and never logs response bodies;
 - sanitized public receipts contain only bounded status/readback evidence, deterministic fingerprints and explicitly safe connector version/checksum evidence;
 - runtime request/result/receipt payloads never merged to `main`;
