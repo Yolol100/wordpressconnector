@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-preview-92-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 92,
+    "fields": {
+      "title": "Lamellendaken voor tuin en terras | EG Veranda",
+      "description": "Bekijk lamellendaken van EG Veranda en ontdek verschillende modellen, waaronder handmatige en elektrische uitvoeringen."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
