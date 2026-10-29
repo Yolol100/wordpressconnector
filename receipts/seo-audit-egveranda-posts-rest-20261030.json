@@ -1,0 +1,566 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-audit-egveranda-posts-rest-20261030",
+    "action": "connector.read_batch",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T22:21:58+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "operations": [
+        {
+            "index": 0,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 112,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Hefschuifpui",
+                    "slug": "kozijnen-hefschuifpui",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/kozijnen/hefschuifpui/"
+                },
+                {
+                    "id": 113,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Schuifpui",
+                    "slug": "kozijnen-schuifpui",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/kozijnen/schuifpui/"
+                },
+                {
+                    "id": 114,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Harmonicadeuren",
+                    "slug": "kozijnen-harmonicadeuren",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/kozijnen/harmonicadeuren/"
+                },
+                {
+                    "id": 115,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Spie- en zijwandglas",
+                    "slug": "kozijnen-spie-en-zijwandglas",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/kozijnen/spie-en-zijwandglas/"
+                },
+                {
+                    "id": 116,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Scharnierdeuren",
+                    "slug": "binnendeuren-scharnierdeuren",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/binnendeuren/scharnierdeuren/"
+                },
+                {
+                    "id": 117,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Taatsdeuren",
+                    "slug": "binnendeuren-taatsdeuren",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/binnendeuren/taatsdeuren/"
+                },
+                {
+                    "id": 118,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Bovendakzonwering",
+                    "slug": "zonwering-bovendakzonwering",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/zonwering/bovendakzonwering/"
+                },
+                {
+                    "id": 119,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Onderdakzonwering",
+                    "slug": "zonwering-onderdakzonwering",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/zonwering/onderdakzonwering/"
+                },
+                {
+                    "id": 120,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Ritsscreen",
+                    "slug": "zonwering-ritsscreen",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/zonwering/ritsscreen/"
+                },
+                {
+                    "id": 121,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Skyzip",
+                    "slug": "zonwering-skyzip",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/zonwering/skyzip/"
+                },
+                {
+                    "id": 122,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Eco Climatic handmatig",
+                    "slug": "lamellendaken-eco-climatic-handmatig",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/lamellendaken/eco-climatic-handmatig/"
+                },
+                {
+                    "id": 123,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Eco Climatic elektrisch",
+                    "slug": "lamellendaken-eco-climatic-elektrisch",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/lamellendaken/eco-climatic-elektrisch/"
+                },
+                {
+                    "id": 124,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Forte",
+                    "slug": "lamellendaken-forte",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/lamellendaken/forte/"
+                },
+                {
+                    "id": 125,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Luxeline",
+                    "slug": "lamellendaken-luxeline",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/lamellendaken/luxeline/"
+                },
+                {
+                    "id": 126,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Ultraline",
+                    "slug": "lamellendaken-ultraline",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/lamellendaken/ultraline/"
+                },
+                {
+                    "id": 127,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Aan de woning",
+                    "slug": "pergolas-aan-de-woning",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/pergolas/aan-de-woning/"
+                },
+                {
+                    "id": 128,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Vrijstaand",
+                    "slug": "pergolas-vrijstaand",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/pergolas/vrijstaand/"
+                },
+                {
+                    "id": 129,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Prime Line",
+                    "slug": "tuinkamers-prime-line",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/prime-line/"
+                },
+                {
+                    "id": 130,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Prime Plus",
+                    "slug": "tuinkamers-prime-plus",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/prime-plus/"
+                },
+                {
+                    "id": 131,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Prime R-Plus",
+                    "slug": "tuinkamers-prime-r-plus",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/prime-r-plus/"
+                },
+                {
+                    "id": 132,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Cubo Line",
+                    "slug": "tuinkamers-cubo-line",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/cubo-line/"
+                },
+                {
+                    "id": 133,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Cubo Plus",
+                    "slug": "tuinkamers-cubo-plus",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/cubo-plus/"
+                },
+                {
+                    "id": 134,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Cubo R-Plus",
+                    "slug": "tuinkamers-cubo-r-plus",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/cubo-r-plus/"
+                },
+                {
+                    "id": 135,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Cubo Extended",
+                    "slug": "tuinkamers-cubo-extended",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/cubo-extended/"
+                },
+                {
+                    "id": 136,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Diamond",
+                    "slug": "tuinkamers-diamond",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/tuinkamers/diamond/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 2,
+            "per_page": 25,
+            "total": 90,
+            "pages": 4
+        },
+        {
+            "index": 1,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 137,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Maatwerk voor uw oprit",
+                    "slug": "carport-maatwerk-voor-uw-oprit",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/producten/carport/maatwerk-voor-uw-oprit/"
+                },
+                {
+                    "id": 139,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Terras & balkon",
+                    "slug": "terras-en-balkon",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ruimtes/terras-en-balkon/"
+                },
+                {
+                    "id": 140,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Tuin",
+                    "slug": "tuin",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ruimtes/tuin/"
+                },
+                {
+                    "id": 141,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Oprit",
+                    "slug": "oprit",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ruimtes/oprit/"
+                },
+                {
+                    "id": 142,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Huis & appartement",
+                    "slug": "huis-en-appartement",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ruimtes/huis-en-appartement/"
+                },
+                {
+                    "id": 143,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Horeca",
+                    "slug": "horeca",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ruimtes/horeca/"
+                },
+                {
+                    "id": 144,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Architectuur die buiten uitnodigt.",
+                    "slug": "architectuur-die-buiten-uitnodigt",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/architectuur-die-buiten-uitnodigt/"
+                },
+                {
+                    "id": 145,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Ook als de avond valt.",
+                    "slug": "ook-als-de-avond-valt",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ook-als-de-avond-valt/"
+                },
+                {
+                    "id": 146,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Een ander licht op buitenleven.",
+                    "slug": "een-ander-licht-op-buitenleven",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/een-ander-licht-op-buitenleven/"
+                },
+                {
+                    "id": 147,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Meer tijd voor elkaar.",
+                    "slug": "meer-tijd-voor-elkaar",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/meer-tijd-voor-elkaar/"
+                },
+                {
+                    "id": 148,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Een rustige plek in de zon.",
+                    "slug": "een-rustige-plek-in-de-zon",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/een-rustige-plek-in-de-zon/"
+                },
+                {
+                    "id": 149,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Aan tafel. Midden in het leven.",
+                    "slug": "aan-tafel-midden-in-het-leven",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/aan-tafel-midden-in-het-leven/"
+                },
+                {
+                    "id": 152,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Best",
+                    "slug": "best",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/best/"
+                },
+                {
+                    "id": 153,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Venlo",
+                    "slug": "venlo",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/venlo/"
+                },
+                {
+                    "id": 154,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Rijswijk",
+                    "slug": "rijswijk",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/rijswijk/"
+                },
+                {
+                    "id": 155,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Zuidwolde",
+                    "slug": "zuidwolde",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/zuidwolde/"
+                },
+                {
+                    "id": 160,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "ok",
+                    "slug": "ok",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/ok/"
+                },
+                {
+                    "id": 161,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Mitch",
+                    "slug": "mitch",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/mitch/"
+                },
+                {
+                    "id": 162,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Gerard Lukken",
+                    "slug": "gerard-lukken",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/gerard-lukken/"
+                },
+                {
+                    "id": 163,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Sander de Wit",
+                    "slug": "sander-de-wit",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/sander-de-wit/"
+                },
+                {
+                    "id": 164,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Harry",
+                    "slug": "harry",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/harry/"
+                },
+                {
+                    "id": 165,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "MST Tupi",
+                    "slug": "mst-tupi",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/mst-tupi/"
+                },
+                {
+                    "id": 166,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "John Mertens",
+                    "slug": "john-mertens",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/john-mertens/"
+                },
+                {
+                    "id": 167,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Peter",
+                    "slug": "peter",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/peter/"
+                },
+                {
+                    "id": 168,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Nancy",
+                    "slug": "nancy",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/nancy/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 3,
+            "per_page": 25,
+            "total": 90,
+            "pages": 4
+        },
+        {
+            "index": 2,
+            "action": "post.list",
+            "items": [
+                {
+                    "id": 169,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Boerekamp",
+                    "slug": "boerekamp",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/boerekamp/"
+                },
+                {
+                    "id": 170,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Bart Hendrix",
+                    "slug": "bart-hendrix",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/bart-hendrix/"
+                },
+                {
+                    "id": 171,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "sake smit",
+                    "slug": "sake-smit",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/sake-smit/"
+                },
+                {
+                    "id": 172,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "William",
+                    "slug": "william",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/william/"
+                },
+                {
+                    "id": 173,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Jos de Wildt",
+                    "slug": "jos-de-wildt",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/jos-de-wildt/"
+                },
+                {
+                    "id": 174,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "R.J.A. de Leest",
+                    "slug": "r-j-a-de-leest",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/r-j-a-de-leest/"
+                },
+                {
+                    "id": 175,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Name",
+                    "slug": "name",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/name/"
+                },
+                {
+                    "id": 176,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Jaap van etten",
+                    "slug": "jaap-van-etten",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/jaap-van-etten/"
+                },
+                {
+                    "id": 177,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Rebecca Siersema",
+                    "slug": "rebecca-siersema",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/rebecca-siersema/"
+                },
+                {
+                    "id": 178,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Elena Staps",
+                    "slug": "elena-staps",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/elena-staps/"
+                },
+                {
+                    "id": 179,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Thomas van der Heuvel",
+                    "slug": "thomas-van-der-heuvel",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/thomas-van-der-heuvel/"
+                },
+                {
+                    "id": 182,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Heftruckchauffeur",
+                    "slug": "heftruckchauffeur",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/heftruckchauffeur/"
+                },
+                {
+                    "id": 186,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Veranda of tuinkamer: wat past bij u?",
+                    "slug": "veranda-of-tuinkamer",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/blog/veranda-of-tuinkamer/"
+                },
+                {
+                    "id": 187,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Zo denkt u vooraf na over zonwering",
+                    "slug": "licht-en-schaduw",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/blog/licht-en-schaduw/"
+                },
+                {
+                    "id": 188,
+                    "type": "post",
+                    "status": "publish",
+                    "title": "Goed voorbereid naar uw adviesgesprek",
+                    "slug": "voorbereiden-advies",
+                    "permalink": "https://egveranda.concept-webactueel-4.com/blog/voorbereiden-advies/"
+                }
+            ],
+            "items_truncated": false,
+            "page": 4,
+            "per_page": 25,
+            "total": 90,
+            "pages": 4
+        }
+    ],
+    "readback_verified": null
+}
