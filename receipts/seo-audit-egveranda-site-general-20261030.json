@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-audit-egveranda-site-general-20261030",
+    "action": "site.identity.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T22:19:54+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "fields": {
+        "blogname": "Egveranda",
+        "blogdescription": "Egveranda",
+        "timezone_string": "",
+        "WPLANG": "nl_NL"
+    },
+    "settings_fingerprint": "d8bea3bb5cbcaf6b121a64d6d8d9de7706e3a1f851e4659fd1a7bc2309f265df",
+    "readback_verified": null
+}
