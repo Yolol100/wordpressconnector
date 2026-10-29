@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "seo-egv-templates-inspect-20261029",
+    "action": "yoast.templates.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T13:23:23+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "taxonomy_titles": {
+        "category_title": "%%page%% %%sep%% %%sitename%%",
+        "product_category_title": null
+    },
+    "product_templates": {
+        "product_title": null,
+        "product_description": null
+    },
+    "before_fingerprint": "1cb55e9f2865cda23ff9523622569e5b4910b0ce25d0b15ac037ff7bff552638",
+    "readback_verified": null
+}
