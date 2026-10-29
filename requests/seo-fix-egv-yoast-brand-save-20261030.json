@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-fix-egv-yoast-brand-save-20261030",
+  "action": "yoast.site_representation.update",
+  "payload": {
+    "fields": {
+      "company_name": "EG Veranda"
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "a110ea1a979a3f5318dbe85b13e8f8d7b436c3afd2f68aeb2b443821d1c4ac7b"
+}
