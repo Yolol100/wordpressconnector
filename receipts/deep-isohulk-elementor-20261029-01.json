@@ -1,0 +1,18 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "deep-isohulk-elementor-20261029-01",
+    "action": "elementor.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-29T12:34:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "document_fingerprint": "4a0f2f645e99dc2ae769c19876dbaa10850fdc7df0fab5cdac8b2e0e4978b211",
+    "post_id": 13,
+    "document_type": "",
+    "edit_mode": "",
+    "template_type": "",
+    "elementor_version": "",
+    "elements": [],
+    "readback_verified": null
+}
