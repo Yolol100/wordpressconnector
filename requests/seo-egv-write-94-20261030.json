@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-94-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 94,
+    "fields": {
+      "title": "Tuinkamers en modellen bekijken | EG Veranda",
+      "description": "Ontdek tuinkamers van EG Veranda en vergelijk modellen zoals Prime en Cubo. Bekijk welke oplossing past bij jouw wensen."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "86fbe9e515b7e636c855c62669a5b325fe6285436596dd8040972c4bf12f9fbc"
+}
