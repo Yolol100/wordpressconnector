@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-write-90-20261030",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 90,
+    "fields": {
+      "title": "Binnendeuren: scharnier- en taatsdeuren | EG Veranda",
+      "description": "Bekijk binnendeuren van EG Veranda, zoals scharnierdeuren en taatsdeuren. Ontdek de mogelijkheden voor jouw interieur."
+    }
+  },
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "615f650cf07584df64b4dc9e0b535caf13eae69852994bf2c96243aa8f66d7fd"
+}
