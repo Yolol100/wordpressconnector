@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "probe-isohulk-cachepreview-20261029-01",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket",
+    "regenerate": false
+  },
+  "dry_run": true,
+  "confirm": false
+}
