@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "seo-egv-about-preview-20261029",
+  "action": "yoast.snippet.update",
+  "payload": {
+    "id": 197,
+    "fields": {
+      "title": "Over EG Veranda | Wie we zijn en hoe we werken",
+      "description": "Maak kennis met EG Veranda. Lees meer over het bedrijf, de werkwijze en de mogelijkheden voor veranda's en overkappingen."
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
