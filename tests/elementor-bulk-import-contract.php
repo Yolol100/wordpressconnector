@@ -17,7 +17,7 @@ foreach (array(
     'self::BULK_LIMIT',
     'self::BULK_BYTES',
     'get_posts(array(',
-    "'name'=>"+',
+    "'name'=>\$slug",
     "'posts_per_page'=>3",
     "'suppress_filters'=>true",
     'conflict: duplicate slug',
