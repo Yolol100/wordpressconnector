@@ -193,6 +193,13 @@ namespace {
         || ($themes['candidate-theme']['update_available'] ?? null) !== true
         || ($themes['candidate-theme']['can_update'] ?? null) !== true
         || ($themes['active-parent']['update_available'] ?? null) !== false
+        || ($themes['candidate-theme']['active'] ?? null) !== true
+        || ($themes['candidate-theme']['in_use'] ?? null) !== true
+        || ($themes['candidate-theme']['active_parent'] ?? null) !== false
+        || ($themes['active-parent']['active'] ?? null) !== false
+        || ($themes['active-parent']['in_use'] ?? null) !== true
+        || ($themes['active-parent']['active_parent'] ?? null) !== true
+        || ($themes['active-theme']['in_use'] ?? null) !== false
         || ($inventory['update_state'] ?? null) !== 'cached_wordpress_update_snapshot') {
         throw new \RuntimeException('Native theme inventory did not expose bounded update availability.');
     }

@@ -526,6 +526,7 @@ final class SystemAdapter
     public function themeList(): array
     {
         $active = get_stylesheet();
+        $activeParent = get_template();
         $transient = get_site_transient('update_themes');
         $offers = is_object($transient) && isset($transient->response) && is_array($transient->response)
             ? $transient->response : array();
@@ -544,6 +545,8 @@ final class SystemAdapter
                 'name' => $theme->get('Name'),
                 'version' => $theme->get('Version'),
                 'active' => $stylesheet === $active,
+                'active_parent' => $stylesheet !== $active && $stylesheet === $activeParent,
+                'in_use' => $stylesheet === $active || $stylesheet === $activeParent,
                 'template' => $theme->get_template(),
                 'update_available' => $checkedAt > 0 ? (is_string($newVersion) && '' !== $newVersion) : null,
                 'available_version' => is_string($newVersion) && '' !== $newVersion ? $newVersion : null,
