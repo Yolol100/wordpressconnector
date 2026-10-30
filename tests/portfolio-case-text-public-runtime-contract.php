@@ -44,6 +44,22 @@ function add_option($key,$value,$deprecated='',$autoload=false){
     return true;
 }
 function wp_cache_delete($key,$group=''){ return true; }
+final class PortfolioCaseOptionDb {
+    public string $options = 'wp_options';
+    public function delete($table, $where, $format = null): int {
+        $name = (string) ($where['option_name'] ?? '');
+        if (get_option($name, null) !== ($where['option_value'] ?? null)) return 0;
+        delete_option($name);
+        return 1;
+    }
+    public function update($table, $data, $where, $format = null, $whereFormat = null): int {
+        $name = (string) ($where['option_name'] ?? '');
+        if (get_option($name, null) !== ($where['option_value'] ?? null)) return 0;
+        update_option($name, $data['option_value']);
+        return 1;
+    }
+}
+$GLOBALS['wpdb'] = new PortfolioCaseOptionDb();
 
 $root=dirname(__DIR__);
 require_once $root.'/plugin/wordpressconnector/includes/Support/Json.php';
