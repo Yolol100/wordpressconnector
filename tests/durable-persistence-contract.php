@@ -232,4 +232,35 @@ $deleted = $proc->cleanup(30 * DAY_IN_SECONDS);
 durableAssert($deleted >= 0, 'Cleanup returned an invalid number.');
 durableAssert(($proc->get('cleanup-pending-001')['state'] ?? null) === 'pending', 'Unknown outcome was removed by expiry cleanup.');
 
+// A lock that exceeds the TTL is NOT safe to steal while its original
+// request still has a durable pending/unknown outcome.
+$oldLock = $proc->acquireMutationLock('lock-longrunning-01');
+durableAssert('' !== $oldLock, 'Could not acquire original mutation lock.');
+$proc->begin('lock-longrunning-01', 'lock-fingerprint', 'audit.mutate');
+$lockName = 'wpconnector_mutation_lock';
+$lockState = json_decode((string) get_option($lockName, ''), true);
+$lockState['created_at'] = time() - 601;
+update_option($lockName, wp_json_encode($lockState));
+durableAssert('' === $proc->acquireMutationLock('lock-new-request-02'),
+    'Long-running pending mutation allowed takeover after lock TTL.');
+$proc->put('lock-longrunning-01', 'lock-fingerprint', 'audit.mutate', 'completed-result');
+$newLock = $proc->acquireMutationLock('lock-new-request-02');
+durableAssert('' !== $newLock && $newLock !== $oldLock,
+    'Verified completed owner did not allow compare-and-swap stale-lock recovery.');
+$proc->releaseMutationLock($oldLock);
+durableAssert('' !== get_option($lockName, ''),
+    'Old lock token removed the newer lock.');
+$proc->releaseMutationLock($newLock);
+durableAssert('' === get_option($lockName, ''),
+    'The replacement lock was not released.');
+
+// Locks without an independently completed owner must not be stolen,
+// even after their timeout. This protects legacy and corrupted state.
+$GLOBALS['durable_options'][$lockName] = wp_json_encode(array(
+    'token' => 'legacy-lock', 'created_at' => time() - 601,
+));
+durableAssert('' === $proc->acquireMutationLock('lock-new-request-03'),
+    'An unverifiable legacy lock was stolen.');
+unset($GLOBALS['durable_options'][$lockName]);
+
 echo 'durable persistence, retry, rollback and cleanup contract OK (' . $GLOBALS['durable_assertions'] . " assertions)\n";

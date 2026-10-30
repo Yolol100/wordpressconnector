@@ -50,7 +50,7 @@ final class Runner
                 'expected_state_token' => $request->expectedStateToken(),
             ));
             if (! empty($descriptor['mutation']) && ! $request->dryRun()) {
-                $lockToken = $this->processed->acquireMutationLock();
+                $lockToken = $this->processed->acquireMutationLock($request->id());
                 if ('' === $lockToken) {
                     throw new RuntimeException('Another connector mutation is already in progress. Retry this request.');
                 }
