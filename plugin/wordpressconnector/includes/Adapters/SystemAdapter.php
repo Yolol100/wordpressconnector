@@ -468,6 +468,9 @@ final class SystemAdapter
             throw new RuntimeException('Update WordPress Connector through connector.update.apply or the verified native Plugins updater.');
         }
         $previousVersion = $this->pluginVersion($file);
+        if (null !== $expectedTarget && ! version_compare($expectedTarget, $previousVersion, '>')) {
+            throw new RuntimeException('Pinned plugin update target must be newer than the installed version.');
+        }
         $offeredVersion = $this->availableUpdateVersion('update_plugins', $file);
         if (! empty($context['dry_run'])) {
             if (null !== $expectedTarget && $offeredVersion !== $expectedTarget) {
@@ -579,6 +582,9 @@ final class SystemAdapter
         $theme = wp_get_theme($stylesheet);
         if (! $theme->exists()) throw new RuntimeException('Theme not found.');
         $previousVersion = (string) $theme->get('Version');
+        if (null !== $expectedTarget && ! version_compare($expectedTarget, $previousVersion, '>')) {
+            throw new RuntimeException('Pinned theme update target must be newer than the installed version.');
+        }
         $offeredVersion = $this->availableUpdateVersion('update_themes', $stylesheet);
         if (! empty($context['dry_run'])) {
             if (null !== $expectedTarget && $offeredVersion !== $expectedTarget) {
