@@ -160,6 +160,8 @@ final class ElementorJsonImport
                 $message .= 'Herstel moet handmatig worden gecontroleerd voor document-ID(s): '
                     . implode(', ', $failedRollbacks) . '. Controleer de back-up of revisies.';
             }
+            // wp_die() can terminate PHP without invoking finally: release first.
+            $store->releaseMutationLock($lock);
             wp_die(esc_html($message), '', array('response' => 409));
         } finally {
             $store->releaseMutationLock($lock);
