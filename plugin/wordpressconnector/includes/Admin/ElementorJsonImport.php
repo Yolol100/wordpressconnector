@@ -5,7 +5,7 @@ namespace Webactueel\WordPressConnector\Admin;
 use RuntimeException; use Throwable; use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
 final class ElementorJsonImport
 {
-    private const BULK_PREVIEW='wpconnector_elementor_bulk_preview'; private const BULK_CONFIRM='wpconnector_elementor_bulk_confirm'; private const BULK_LIMIT=20; private const BULK_BYTES=26214400; private const ACTION='wpconnector_import_elementor_json'; private const POST_TYPES=array('page','post','elementor_library'); private const MAX_BYTES=5242880;
+    private const BULK_PREVIEW='wpconnector_elementor_bulk_preview'; private const BULK_CONFIRM='wpconnector_elementor_bulk_confirm'; private const BULK_LIMIT=20; private const BULK_BYTES=8388608; private const ACTION='wpconnector_import_elementor_json'; private const POST_TYPES=array('page','post','elementor_library'); private const MAX_BYTES=5242880;
     public function register(): void{if(!is_admin()){return;}add_filter('page_row_actions',array($this,'rowActions'),99,2);add_filter('post_row_actions',array($this,'rowActions'),99,2);add_action('admin_menu',array($this,'registerImportPages'));add_action('admin_post_'.self::ACTION,array($this,'handleImport'));add_action('admin_post_'.self::BULK_PREVIEW,array($this,'previewBulk'));add_action('admin_post_'.self::BULK_CONFIRM,array($this,'confirmBulk'));}
     public function rowActions(array $actions,\WP_Post $post): array{if(!$this->supportsPostType((string)$post->post_type)||!current_user_can('edit_post',(int)$post->ID)){return $actions;}$actions['wpconnector_import_elementor_json']=sprintf('<a href="%1$s">%2$s</a>',esc_url($this->importUrl((string)$post->post_type,(int)$post->ID)),esc_html__('Import Elementor JSON','wordpressconnector'));return $actions;}
     public function registerImportPages(): void{add_management_page(__('Elementor bulkimport','wordpressconnector'),__('Elementor bulkimport','wordpressconnector'),'manage_options','wpconnector-elementor-bulk',array($this,'renderBulkPage'));add_submenu_page('edit.php?post_type=page',__('Import Elementor JSON','wordpressconnector'),__('Import Elementor JSON','wordpressconnector'),'edit_pages','wpconnector-import-elementor-page',function():void{$this->renderImportPage('page');});add_submenu_page('edit.php',__('Import Elementor JSON','wordpressconnector'),__('Import Elementor JSON','wordpressconnector'),'edit_posts','wpconnector-import-elementor-post',function():void{$this->renderImportPage('post');});if(post_type_exists('elementor_library')){add_submenu_page('edit.php?post_type=elementor_library',__('Import Elementor JSON','wordpressconnector'),__('Import Elementor JSON','wordpressconnector'),'edit_posts','wpconnector-import-elementor-template',function():void{$this->renderImportPage('elementor_library');});}}
@@ -28,7 +28,7 @@ final class ElementorJsonImport
     public function renderBulkPage(): void
     {
         if(!current_user_can('manage_options')){wp_die('Not allowed.', '', array('response'=>403));}
-        echo '<div class="wrap"><h1>Elementor JSON bulkimport</h1><p>Upload maximaal 20 losse Elementor JSON-bestanden. Elk bestand wordt alleen gekoppeld aan een <strong>unieke bestaande slug in het juiste berichttype</strong>. Er worden geen pagina’s op titelgelijkheid gekozen en er worden geen nieuwe berichten gemaakt. Eerst controleren, daarna afzonderlijk bevestigen.</p>';
+        echo '<div class="wrap"><h1>Elementor JSON bulkimport</h1><p>Upload maximaal 20 losse Elementor JSON-bestanden (totaal maximaal 8 MB). Elk bestand wordt alleen gekoppeld aan een <strong>unieke bestaande slug in het juiste berichttype</strong>. Er worden geen pagina’s op titelgelijkheid gekozen en er worden geen nieuwe berichten gemaakt. Eerst controleren, daarna afzonderlijk bevestigen.</p>';
         echo '<form action="'.esc_url(admin_url('admin-post.php')).'" method="post" enctype="multipart/form-data">';
         wp_nonce_field(self::BULK_PREVIEW);
         echo '<input type="hidden" name="action" value="'.esc_attr(self::BULK_PREVIEW).'">';
@@ -47,8 +47,10 @@ final class ElementorJsonImport
             $allOk=true;
             foreach($plan as $row){if('ready'!==$row['status']){$allOk=false;}}
             $token=wp_generate_password(48,false,false);
-            // WordPress private transient; never return uploaded JSON in page HTML.
-            set_transient('wpconnector_bulk_'.get_current_user_id().'_'.hash('sha256',$token),array('plan'=>$plan,'created'=>time()),10*MINUTE_IN_SECONDS);
+            // Store confirmed previews only: cap transient size to avoid large database writes.
+            if($allOk&&!set_transient('wpconnector_bulk_'.get_current_user_id().'_'.hash('sha256',$token),array('plan'=>$plan,'created'=>time()),10*MINUTE_IN_SECONDS)){
+                throw new RuntimeException('Could not store this import preview securely. No changes were made.');
+            }
             echo '<div class="wrap"><h1>Bulkimport controleren</h1><p>Alleen de hieronder getoonde bestaande Elementor-documenten kunnen worden overschreven. Bij een conflict wordt de hele batch geblokkeerd.</p><table class="widefat striped"><thead><tr><th>Bestand</th><th>Berichttype</th><th>Doel</th><th>Status</th></tr></thead><tbody>';
             foreach($plan as $row){echo '<tr><td>'.esc_html($row['name']).'</td><td>'.esc_html($row['post_type']).'</td><td>'.esc_html($row['target_label']).'</td><td>'.esc_html($row['status']).'</td></tr>';}
             echo '</tbody></table>';
@@ -175,13 +177,17 @@ final class ElementorJsonImport
             if((int)($files['error'][$i]??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK){throw new RuntimeException('One of the uploads failed.');}
             $name=sanitize_file_name((string)($files['name'][$i]??''));
             $size=(int)($files['size'][$i]??0);$total+=$size;
-            if(strtolower((string)pathinfo($name,PATHINFO_EXTENSION))!=='json'||$size<1||$size>self::MAX_BYTES||$total>self::BULK_BYTES){throw new RuntimeException('Only JSON files up to 5 MB each and 25 MB in total are allowed.');}
+            if(strtolower((string)pathinfo($name,PATHINFO_EXTENSION))!=='json'||$size<1||$size>self::MAX_BYTES||$total>self::BULK_BYTES){throw new RuntimeException('Only JSON files up to 5 MB each and 8 MB in total are allowed.');}
             $tmp=(string)($files['tmp_name'][$i]??'');
             if(!is_uploaded_file($tmp)){throw new RuntimeException('Invalid uploaded file.');}
             $raw=file_get_contents($tmp);if(!is_string($raw)||strlen($raw)>self::MAX_BYTES){throw new RuntimeException('Could not read upload.');}
             $payload=json_decode($raw,true);
             if(!is_array($payload)||json_last_error()!==JSON_ERROR_NONE){throw new RuntimeException('Invalid JSON in '.$name);}
-            if(isset($payload['format'])&&'wordpressconnector/elementor-site-parts-bundle'===$payload['format']){$payload=$payload['document']??array();}
+            if(isset($payload['format'])&&'wordpressconnector/elementor-site-parts-bundle'===$payload['format']){
+                $source=isset($payload['source'])&&is_array($payload['source'])?$payload['source']:array();
+                $payload=$payload['document']??array();
+                if(is_array($payload)&&!isset($payload['source'])){$payload['source']=$source;}
+            }
             if(!isset($payload['content'])||!is_array($payload['content'])||empty($payload['content'])){throw new RuntimeException('Missing Elementor content in '.$name);}
             $entries[]=array('name'=>$name,'payload'=>$payload);
         }
