@@ -41,6 +41,7 @@ run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
 run_php tests/elementor-json-import-contract.php
+run_php tests/elementor-bulk-import-contract.php
 run_php tests/state-token-contract.php
 run_php tests/read-batch-contract.php
 run_php tests/mutation-batch-preflight-contract.php
