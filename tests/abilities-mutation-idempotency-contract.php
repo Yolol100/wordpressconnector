@@ -385,11 +385,22 @@ if (false !== ($preflightFirst['ok'] ?? true)
 
 AbilityMutationContractAbility::$pre_execution_error = false;
 $preflightRetry = $runner->run($preflightRequest);
-if (true !== ($preflightRetry['ok'] ?? false)
-    || true !== ($preflightRetry['data']['execution_completed'] ?? false)
-    || true !== ($preflightRetry['data']['result_omitted'] ?? false)
+if (false !== ($preflightRetry['ok'] ?? true)
+    || false === strpos((string) ($preflightRetry['error'] ?? ''), 'pending')
+    || 2 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "A pre-execution Ability failure reused an uncertain request ID.\n");
+    exit(1);
+}
+$preflightRecovered = $runner->run(\Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1, 'request_id' => 'ability-preflight-recovered-01',
+    'action' => 'wordpress.ability.execute', 'dry_run' => false, 'confirm' => true,
+    'payload' => array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#333333')),
+)));
+if (true !== ($preflightRecovered['ok'] ?? false)
+    || true !== ($preflightRecovered['data']['execution_completed'] ?? false)
+    || true !== ($preflightRecovered['data']['result_omitted'] ?? false)
     || 3 !== AbilityMutationContractAbility::$executions) {
-    fwrite(STDERR, "Retry after a pre-execution Ability failure did not execute normally.\n");
+    fwrite(STDERR, "A separately reconciled Ability request did not execute normally.\n");
     exit(1);
 }
 
@@ -414,10 +425,21 @@ if (false !== ($availabilityFirst['ok'] ?? true)
 }
 \Elementor\Modules\Mcp\Abilities\Contract_Native_Ability::$available = true;
 $availabilityRetry = $runner->run($availabilityRequest);
-if (true !== ($availabilityRetry['ok'] ?? false)
-    || true !== ($availabilityRetry['data']['execution_completed'] ?? false)
+if (false !== ($availabilityRetry['ok'] ?? true)
+    || false === strpos((string) ($availabilityRetry['error'] ?? ''), 'pending')
+    || 3 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Unverified availability failure reused its original request ID.\n");
+    exit(1);
+}
+$availabilityRecovered = $runner->run(\Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1, 'request_id' => 'ability-availability-recovered-01',
+    'action' => 'wordpress.ability.execute', 'dry_run' => false, 'confirm' => true,
+    'payload' => array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#555555')),
+)));
+if (true !== ($availabilityRecovered['ok'] ?? false)
+    || true !== ($availabilityRecovered['data']['execution_completed'] ?? false)
     || 4 !== AbilityMutationContractAbility::$executions) {
-    fwrite(STDERR, "Retry after Elementor availability rejection did not execute normally.\n");
+    fwrite(STDERR, "Separately reconciled availability request did not execute normally.\n");
     exit(1);
 }
 
@@ -443,10 +465,21 @@ if (false !== ($guardFirst['ok'] ?? true)
 }
 AbilityMutationContractAbility::$guard_error = false;
 $guardRetry = $runner->run($guardRequest);
-if (true !== ($guardRetry['ok'] ?? false)
-    || true !== ($guardRetry['data']['execution_completed'] ?? false)
+if (false !== ($guardRetry['ok'] ?? true)
+    || false === strpos((string) ($guardRetry['error'] ?? ''), 'pending')
+    || 4 !== AbilityMutationContractAbility::$executions) {
+    fwrite(STDERR, "Uncertain guarded request was retried without reconciliation.\n");
+    exit(1);
+}
+$guardRecovered = $runner->run(\Webactueel\WordPressConnector\Runtime\Request::fromArray(array(
+    'version' => 1, 'request_id' => 'ability-guard-recovered-01',
+    'action' => 'wordpress.ability.execute', 'dry_run' => false, 'confirm' => true,
+    'payload' => array('name' => 'elementor/manage-global-variable', 'input' => array('value' => '#666666')),
+)));
+if (true !== ($guardRecovered['ok'] ?? false)
+    || true !== ($guardRecovered['data']['execution_completed'] ?? false)
     || 5 !== AbilityMutationContractAbility::$executions) {
-    fwrite(STDERR, "Retry after Elementor pre-execute guard rejection did not execute normally.\n");
+    fwrite(STDERR, "Separately reconciled guarded request did not execute normally.\n");
     exit(1);
 }
 AbilityMutationContractAbility::$destructive = false;
