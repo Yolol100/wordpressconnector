@@ -245,6 +245,40 @@ try{
 }catch(RuntimeException $e){if(false===strpos($e->getMessage(),'repository'))throw $e;}
 
 
+// Expired database replay claims are removed only via privileged bounded
+// cleanup. Fresh and malformed records must never be removed automatically.
+if (! defined('DAY_IN_SECONDS')) define('DAY_IN_SECONDS', 86400);
+function maybe_unserialize($value) { return is_string($value) ? @unserialize($value) : $value; }
+final class OidcCleanupContractDb {
+    public string $options = 'wp_options';
+    public function esc_like($value): string { return (string) $value; }
+    public function prepare($query, ...$params): string { return (string) $query; }
+    public function get_results($query): array {
+        $rows = array();
+        foreach (($GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']] ?? array()) as $name => $value) {
+            if (0 !== strpos((string) $name, 'wpconnector_oidc_replay_')) continue;
+            $rows[] = (object) array('option_name' => $name, 'option_value' => serialize($value));
+        }
+        return $rows;
+    }
+}
+$GLOBALS['wpdb'] = new OidcCleanupContractDb();
+$oldKey = 'wpconnector_oidc_replay_' . hash('sha256', 'long-expired');
+$invalidKey = 'wpconnector_oidc_replay_' . hash('sha256', 'malformed');
+$GLOBALS['wpconnector_site_options'][1][$oldKey] = array(
+    'created_at' => time() - 60 * DAY_IN_SECONDS,
+    'expires_at' => time() - 60 * DAY_IN_SECONDS + 300,
+);
+$GLOBALS['wpconnector_site_options'][1][$invalidKey] = array(
+    'created_at' => 'untrusted', 'expires_at' => 0,
+);
+$removed = GitHubOidc::cleanupReplayClaims(30 * DAY_IN_SECONDS);
+if ($removed !== 1 || null !== get_option($oldKey, null)
+    || ! is_array(get_option($claimed, null))
+    || ! is_array(get_option($invalidKey, null))) {
+    throw new RuntimeException('OIDC cleanup removed live or malformed replay claims, or retained expired claims.');
+}
+
 SitePairing::disable();
 if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Revoked OIDC pairing remained active.');
 try { $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token()))); throw new RuntimeException('Revoked OIDC authentication succeeded.'); }
