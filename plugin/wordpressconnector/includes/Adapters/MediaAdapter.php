@@ -224,7 +224,7 @@ final class MediaAdapter
             }
             return array('renamed' => $plan, 'after' => $readback,
                 'rollback_supported' => false, 'old_urls_preserved' => true);
-        } catch (\\Throwable $error) {
+        } catch (\Throwable $error) {
             update_attached_file($id, $sourceReal);
             wp_update_attachment_metadata($id, $metadata);
             foreach (array_reverse($created) as $createdFile) {
