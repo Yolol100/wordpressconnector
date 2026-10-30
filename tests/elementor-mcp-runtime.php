@@ -191,13 +191,25 @@ if (is_wp_error($probeId)) {
 try {
     update_post_meta((int) $probeId, '_elementor_edit_mode', 'builder');
     $probeDocument = \Elementor\Plugin::$instance->documents->get((int) $probeId);
-    $probeSave = $probeDocument->save(array('elements' => $documentData, 'settings' => array()));
+    $providerNormalized = null;
+    $listener = static function ($savedId, $elements) use ($probeId, &$providerNormalized): void {
+        if ((int) $savedId === (int) $probeId && is_array($elements)) {
+            $providerNormalized = $elements;
+        }
+    };
+    add_action('elementor/editor/after_save', $listener, 10, 2);
+    try {
+        $probeSave = $probeDocument->save(array('elements' => $documentData, 'settings' => array()));
+    } finally {
+        remove_action('elementor/editor/after_save', $listener, 10);
+    }
     $probeRaw = get_post_meta((int) $probeId, '_elementor_data', true);
     $probeDecoded = is_string($probeRaw) ? json_decode($probeRaw, true) : $probeRaw;
-    if (\Webactueel\WordPressConnector\Support\Fingerprint::make($documentData)
-        !== \Webactueel\WordPressConnector\Support\Fingerprint::make($probeDecoded)) {
-        throw new RuntimeException('Dummy Elementor normalized data differs: expected='
-            . wp_json_encode($documentData) . ' actual=' . wp_json_encode($probeDecoded)
+    if (! is_array($providerNormalized)
+        || \Webactueel\WordPressConnector\Support\Fingerprint::make($providerNormalized)
+            !== \Webactueel\WordPressConnector\Support\Fingerprint::make($probeDecoded)) {
+        throw new RuntimeException('Provider-normalized Elementor persistence differs from database: expected='
+            . wp_json_encode($providerNormalized) . ' actual=' . wp_json_encode($probeDecoded)
             . ' save_result_type=' . gettype($probeSave));
     }
 } finally {
