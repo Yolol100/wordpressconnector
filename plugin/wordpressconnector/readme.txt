@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.3
+Stable tag: 1.20.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.20.4 adds optional exact-version pinning to native plugin/theme update actions, preflight checks for changing WordPress update offers and post-upgrade version verification. It adds a non-executing private-site release planner for authorized inventory inputs. This does not enable direct ChatGPT OAuth, build a hosted site registry, publish a GitHub release, or deploy to websites automatically. Live deployments still need real authorization and a working recovery plan.
 
 Version 1.20.0 fixes false Elementor element readback failures by comparing the database with Elementor's normalized save data. It adds a guarded multiple-JSON preview/import for existing pages, posts and supported template types, and a private administrative media.rename operation that preserves old URLs. Bulk operations are permission-gated and compensation is best effort rather than fully atomic; filename renaming creates compatibility copies and intentionally does not rewrite third-party links. Use a backup and staging before installation on production sites.
 

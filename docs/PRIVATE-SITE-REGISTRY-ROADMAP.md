@@ -21,6 +21,54 @@ Status: design only. This repository does not operate a central site inventory o
 Plugin list, install via WordPress.org slug, activation, deactivation, single update, inactive deletion, verified ZIP install, Connector self-update, generic options with protected-key blocks, provider-specific settings adapters, and guarded existing theme/plugin text edits.
 Version 1.19.7 adds private WordPress.org directory search, update-aware installed-plugin status, and guarded non-PHP theme/plugin file creation/deletion. None are exposed as arbitrary public GitHub actions.
 
+## Read-only private release planning (initial implementation)
+`scripts/plan-fleet-release.py` creates a **non-executing** candidate plan from a separately prepared private site inventory. It is an offline planning and validation helper, **not** a hosted registry, an OAuth server, a live WordPress connection, GitHub webhook handling or a deployment executor. Do not pass real customer inventories to a public repository, branch, issue, pull request or workflow artifact.
+
+Use from a trusted private workspace:
+
+```sh
+python3 scripts/plan-fleet-release.py --input /private/enrolled-sites.json --output /private/release-plan.json
+```
+
+The input schema is version 1, with one release and a bounded list of site references. Example values are fictional:
+
+```json
+{
+  "schema_version": 1,
+  "release": {
+    "kind": "plugin",
+    "identity": "example-plugin/example-plugin.php",
+    "repository": "example-owner/example-plugin",
+    "version": "2.1.0",
+    "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "sites": [
+    {
+      "site_ref": "site-001",
+      "authorized": true,
+      "read_verified": true,
+      "components": [
+        {
+          "kind": "plugin",
+          "identity": "example-plugin/example-plugin.php",
+          "repository": "example-owner/example-plugin",
+          "version": "2.0.0",
+          "active": true,
+          "available_version": "2.1.0"
+        }
+      ]
+    }
+  ]
+}
+```
+
+The operator or a future private controller must independently prove each site's owner authorization, canonical HTTPS origin and authenticated readback **before** marking `authorized` and `read_verified` true. This script cannot validate self-reported flags, check a live site, authenticate a WordPress account or verify whether Hostinger backups can actually be restored. The release checksum describes a proposed package; it is not an actual signature verification.
+
+The planner selects only active, installed, exact-identity and exact-repository matches with safely comparable numeric versions. It distinguishes eligible native plugin/theme update offers, private verified plugin ZIP candidates, skipped sites and blocked sites. Different offers or unknown version metadata block, and an active theme without a matching native update offer is blocked. Output contains no credentials, cannot execute changes (`execution_enabled: false`) and is created as a new private file (0600 on POSIX). A real executor must recheck identity, site permissions, offer/version, artifact SHA-256, confirmation, and post-write readback at execution time, plus have an accepted recovery path. The existing private REST/MCP actions remain the only WordPress runtime action owners.
+
+### Pinned native updates
+The private `plugin.update` and `theme.update` actions now optionally accept `expected_target_version`. Dry-run exposes the cached native update offer and installed version. A confirmed pinned update refreshes the native offer, rejects a changed offer **before** invoking WordPress's upgrader, and verifies the actual installed version afterward. The legacy request without a pin remains supported but cannot promise an exact target version. Neither path guarantees rollback after an upgrade. Active theme package **replacement** stays prohibited by `theme.install_package`; a verified native `theme.update` offer is a different, supported WordPress Core path.
+
 ## Remaining deployment boundaries
 - public_html means the hosting document root; it may differ from WordPress ABSPATH. A WordPress plugin may safely operate within its WordPress root only, not arbitrary host files.
 - wp-config.php, core, credential files, backups, uploads, logs and PHP entrypoints require dedicated WordPress, deployment or hosting/SFTP workflows; never generic arbitrary public-repository file writes.

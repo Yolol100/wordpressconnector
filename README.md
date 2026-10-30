@@ -4,6 +4,8 @@
 
 WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients, native MCP clients and the guarded GitHub runtime.
 
+**1.20.4 candidate:** source-only release-preflight improvements and pinned native plugin/theme updates; no automatic deployment or direct ChatGPT OAuth. Full release still requires GitHub CI, explicit publish and site-level acceptance.
+
 **1.20.3 candidate:** critical media permissions/rollback hardening and exact bulk matching for known Elementor export suffixes, on top of Elementor-normalized readback verification, administrator preview/confirmation for safe multi-JSON import, and guarded media.rename for SEO-friendly filenames with old URLs retained. Existing multi-operation requests preflight registered action-level permissions and request shape before any change, and recheck authorization when each operation executes; private `connector.setup.inspect` now exposes read-only permission and server-policy indicators. Batch compensation is best effort, not atomic, and a private site registry, ChatGPT OAuth linking, hosting backup/restore and connector self-removal still require separate authorized infrastructure.
 
 **Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [GitHub project index](https://github.com/Yolol100?tab=repositories)
@@ -29,6 +31,12 @@ The canonical `Yolol100/wordpressconnector` GitHub OIDC executor is bound to its
 The legacy `Yolol100/Wordpress` private trust entry is separately pinned to its own repository ID and workflow and **never** accepts a public visibility claim. The separate repository is not required for canonical connector operation.
 
 **Security and lifecycle:** switching any repository that has stored private request/result branches, workflow artifacts or logs back to public may expose historical client information. Do **not** change private to public until a documented security audit removes sensitive history and verifies exposure risks. Do not publish private request results in public branches or logs. This code change does not update an already installed WordPress plugin by itself; deploy a verified plugin release to each site using an authorized update path before expecting private OIDC to work.
+
+## Guarded fleet release preflight (no automatic deployment)
+
+The canonical private WordPress API already exposes single-site `plugin.update` and `theme.update`. Both now accept optional `expected_target_version` for pinned native update offers and post-upgrade version readback. For multi-site release preparation, the repository includes an offline, non-executing `scripts/plan-fleet-release.py`, covered by the canonical contract tests. It operates only on an independently authorized private inventory. See `docs/PRIVATE-SITE-REGISTRY-ROADMAP.md`.
+
+This is **not** direct ChatGPT OAuth, site registration, a hosted private control plane, GitHub-to-website deployment or proof of a usable Hostinger backup. No automatic site updates, hosting changes, backups or staging environments are created.
 
 ## Native WordPress update notifications
 

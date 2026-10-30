@@ -74,7 +74,15 @@ function delete_plugins($files) {
     foreach ($files as $file) unset($GLOBALS['wpconn_plugins'][$file]);
     return true;
 }
-function wp_update_plugins(): void {}
+$GLOBALS['wpconn_offer_version'] = '1.1.0';
+$GLOBALS['wpconn_offer_after_refresh'] = null;
+$GLOBALS['wpconn_plugin_upgrade_calls'] = 0;
+function wp_update_plugins(): void {
+    if (null !== $GLOBALS['wpconn_offer_after_refresh']) {
+        $GLOBALS['wpconn_offer_version'] = $GLOBALS['wpconn_offer_after_refresh'];
+        $GLOBALS['wpconn_offer_after_refresh'] = null;
+    }
+}
 class Automatic_Upgrader_Skin {}
 class Plugin_Upgrader {
     public function __construct($skin) {}
@@ -83,6 +91,7 @@ class Plugin_Upgrader {
         return true;
     }
     public function upgrade($file): bool {
+        ++$GLOBALS['wpconn_plugin_upgrade_calls'];
         $GLOBALS['wpconn_plugins'][$file]['Version']='2.0.0';
         return true;
     }
@@ -90,7 +99,7 @@ class Plugin_Upgrader {
 function get_site_transient($key) {
     if ($key !== 'update_plugins') return false;
     return (object) array('last_checked'=>1760710000,
-        'response'=>array('sample/sample.php'=>(object) array('new_version'=>'1.1.0')));
+        'response'=>array('sample/sample.php'=>(object) array('new_version'=>$GLOBALS['wpconn_offer_version'])));
 }
 function plugins_api($action, $args = array()) {
     if ($action === 'plugin_information') return (object) array('slug'=>'new-plugin', 'download_link'=>$GLOBALS['wpconn_plugin_download_link']);
@@ -205,9 +214,55 @@ if (empty($installed['readback_verified']) ||
     !isset(get_plugins()['new-plugin/new-plugin.php'])) {
     throw new RuntimeException('WordPress.org plugin install was not verified.');
 }
-$updated = $system->pluginUpdate(array('file'=>'sample/sample.php'),array('dry_run'=>false));
+$preview = $system->pluginUpdate(array(
+    'file'=>'sample/sample.php', 'expected_target_version'=>'1.1.0',
+), array('dry_run'=>true));
+if (($preview['available_version'] ?? null) !== '1.1.0'
+    || ($preview['from_version'] ?? null) !== '1.0.0') {
+    throw new RuntimeException('Pinned plugin preview did not disclose available and installed versions.');
+}
+// A pinned native updater cannot be used for a downgrade or no-op release.
+foreach (array('1.0.0', '0.9.0') as $oldTarget) {
+    try {
+        $system->pluginUpdate(array('file'=>'sample/sample.php',
+            'expected_target_version'=>$oldTarget), array('dry_run'=>true));
+        throw new RuntimeException('Pinned downgrade/no-op update was accepted.');
+    } catch (RuntimeException $error) {
+        if (strpos($error->getMessage(), 'must be newer') === false) {
+            throw $error;
+        }
+    }
+}
+$beforeCalls = $GLOBALS['wpconn_plugin_upgrade_calls'];
+$fail(static function() use ($system) {
+    $system->pluginUpdate(array('file'=>'sample/sample.php', 'expected_target_version'=>'2.0.0'),array('dry_run'=>true));
+}, 'plugin dry-run mismatched target version');
+$fail(static function() use ($system) {
+    $system->pluginUpdate(array('file'=>'sample/sample.php', 'expected_target_version'=>'bad/version'),array('dry_run'=>true));
+}, 'plugin invalid target version');
+$fail(static function() use ($system) {
+    $system->pluginUpdate(array('file'=>'sample/sample.php', 'unexpected'=>'extra'),array('dry_run'=>true));
+}, 'plugin unexpected update argument');
+$GLOBALS['wpconn_offer_after_refresh'] = '2.1.0';
+$fail(static function() use ($system) {
+    $system->pluginUpdate(array('file'=>'sample/sample.php','expected_target_version'=>'1.1.0'),array('dry_run'=>false));
+}, 'plugin offer changed after preview');
+if ($beforeCalls !== $GLOBALS['wpconn_plugin_upgrade_calls']
+    || get_plugins()['sample/sample.php']['Version'] !== '1.0.0') {
+    throw new RuntimeException('Plugin with changed offer was upgraded despite the pinned target.');
+}
+$GLOBALS['wpconn_offer_version'] = '2.0.0';
+$updated = $system->pluginUpdate(array('file'=>'sample/sample.php','expected_target_version'=>'2.0.0'),array('dry_run'=>false));
 if ($updated['version'] !== '2.0.0' || empty($updated['readback_verified'])) {
-    throw new RuntimeException('Plugin update version change was not read back.');
+    throw new RuntimeException('Pinned plugin update was not verified.');
+}
+$GLOBALS['wpconn_plugins']['sample/sample.php']['Version']='1.0.0';
+$GLOBALS['wpconn_offer_version'] = '1.1.0';
+$fail(static function() use ($system) {
+    $system->pluginUpdate(array('file'=>'sample/sample.php','expected_target_version'=>'1.1.0'),array('dry_run'=>false));
+}, 'plugin install version mismatch after native updater');
+if (get_plugins()['sample/sample.php']['Version'] !== '2.0.0') {
+    throw new RuntimeException('Unexpected plugin update result was not observable for reconciliation.');
 }
 $deletedPlugin = $system->pluginDelete(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
 if (isset(get_plugins()['hello-dolly/hello.php']) || empty($deletedPlugin['readback_verified'])) {
