@@ -31,7 +31,7 @@ foreach (array(
         throw new RuntimeException('Bulk import safety marker missing: ' . $required);
     }
 }
-if (false === strpos($adapter, "get_post_meta($postId, '_elementor_data', true)")) {
+if (false === strpos($adapter, 'get_post_meta($postId, \'_elementor_data\', true)')) {
     throw new RuntimeException('Elementor snapshot must read persisted data.');
 }
 if (false !== strpos($adapter, "get_elements_data() : array()")) {
