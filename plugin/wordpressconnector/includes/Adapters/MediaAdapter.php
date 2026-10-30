@@ -211,16 +211,16 @@ final class MediaAdapter
                 $oldPath = $directory . DIRECTORY_SEPARATOR . $from;
                 $newPath = $directory . DIRECTORY_SEPARATOR . $to;
                 $input = @fopen($oldPath, 'rb');
-                // Exclusive create prevents racing with another upload or rename.
+                if (! is_resource($input)) {
+                    throw new RuntimeException('Image copy source is unavailable.');
+                }
+                // Open the destination only after the source; otherwise a failed
+                // source read could leave an untracked empty compatibility file.
+                // 'xb' prevents clobbering a concurrent upload or other rename.
                 $output = @fopen($newPath, 'xb');
-                if (! is_resource($input) || ! is_resource($output)) {
-                    if (is_resource($input)) {
-                        fclose($input);
-                    }
-                    if (is_resource($output)) {
-                        fclose($output);
-                    }
-                    throw new RuntimeException('Image copy source unavailable or new filename already exists.');
+                if (! is_resource($output)) {
+                    fclose($input);
+                    throw new RuntimeException('New filename already exists or cannot be created.');
                 }
                 $created[] = $newPath;
                 try {
@@ -255,14 +255,33 @@ final class MediaAdapter
             return array('renamed' => $plan, 'after' => $readback,
                 'rollback_supported' => false, 'old_urls_preserved' => true);
         } catch (\Throwable $error) {
+            // A metadata write can fail after another part already committed.
+            // Never delete new files unless BOTH original WordPress pointers
+            // were independently read back as restored.
             update_attached_file($id, $sourceReal);
             wp_update_attachment_metadata($id, $metadata);
+            clean_post_cache($id);
+            $restoredPath = get_attached_file($id, true);
+            $restoredMetadata = wp_get_attachment_metadata($id, true);
+            $restored = is_string($restoredPath)
+                && realpath($restoredPath) === $sourceReal
+                && is_array($restoredMetadata)
+                && hash_equals(Fingerprint::make($metadata), Fingerprint::make($restoredMetadata));
+            if (! $restored) {
+                throw new RuntimeException(
+                    'Image rename aborted and original WordPress attachment state could not be verified. '
+                    . 'New image copies have been retained to prevent broken references; restore from backup. '
+                    . 'Cause: ' . $error->getMessage(),
+                    0,
+                    $error
+                );
+            }
             foreach (array_reverse($created) as $createdFile) {
                 if (is_file($createdFile)) {
                     @unlink($createdFile);
                 }
             }
-            throw new RuntimeException('Image rename aborted; original image retained: ' . $error->getMessage(), 0, $error);
+            throw new RuntimeException('Image rename aborted; original attachment state verified as restored: ' . $error->getMessage(), 0, $error);
         }
     }
 
