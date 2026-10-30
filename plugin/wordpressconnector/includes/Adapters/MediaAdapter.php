@@ -16,6 +16,7 @@ final class MediaAdapter
         $registry->register('media.list', array($this, 'mediaList'), array('description' => 'List media attachments.'));
         $registry->register('media.get', array($this, 'mediaGet'), array('description' => 'Read one media attachment and metadata.'));
         $registry->register('media.import', array($this, 'mediaImport'), array('mutation' => true, 'description' => 'Import a file from the trusted request asset root into the media library.'));
+        $registry->register('media.rename', array($this, 'mediaRename'), array('mutation' => true, 'capability' => 'manage_options', 'description' => 'Safely rename an image with retained old-URL compatibility files, dry-run, and exact metadata readback.'));
         $registry->register('media.update', array($this, 'mediaUpdate'), array('mutation' => true, 'description' => 'Update attachment title, alt text, caption, description and parent.'));
         $registry->register('media.assign', array($this, 'mediaAssign'), array('mutation' => true, 'description' => 'Assign media as featured image, Woo gallery image, custom logo or site icon.'));
         $registry->register('media.regenerate', array($this, 'mediaRegenerate'), array('mutation' => true, 'description' => 'Regenerate attachment metadata and image subsizes.'));
@@ -126,6 +127,113 @@ final class MediaAdapter
             'parent' => $before['parent'],
         ));
         return $result;
+    }
+
+
+    public function mediaRename(array $payload, array $context): array
+    {
+        $id = $this->attachmentId($payload);
+        if (! current_user_can('manage_options') || ! current_user_can('edit_post', $id) || ! current_user_can('upload_files')) {
+            throw new RuntimeException('Administrator media permissions are required.');
+        }
+        if (! wp_attachment_is_image($id)) {
+            throw new RuntimeException('Only WordPress image attachments can be renamed.');
+        }
+        $requested = isset($payload['filename']) && is_string($payload['filename']) ? $payload['filename'] : '';
+        if (strlen($requested) < 5 || strlen($requested) > 150 || ! preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*\\.(?:jpg|jpeg|png|webp|gif)$/D', $requested)) {
+            throw new RuntimeException('Use a lowercase descriptive hyphen-separated image filename with the original extension.');
+        }
+
+        $source = get_attached_file($id);
+        $uploads = wp_get_upload_dir();
+        $root = isset($uploads['basedir']) ? realpath((string) $uploads['basedir']) : false;
+        $sourceReal = is_string($source) ? realpath($source) : false;
+        if (! is_string($root) || ! is_string($sourceReal) || ! is_file($sourceReal) ||
+            0 !== strpos($sourceReal, $root . DIRECTORY_SEPARATOR) || is_link($source)) {
+            throw new RuntimeException('Image must be a regular file inside WordPress uploads.');
+        }
+        $directory = dirname($sourceReal);
+        $extension = strtolower((string) pathinfo($sourceReal, PATHINFO_EXTENSION));
+        if (strtolower((string) pathinfo($requested, PATHINFO_EXTENSION)) !== $extension) {
+            throw new RuntimeException('Image format changes require a separate conversion.');
+        }
+        $oldName = basename($sourceReal);
+        if ($requested === $oldName) {
+            return array('unchanged' => true, 'attachment_id' => $id, '_current_fingerprint' => Fingerprint::make($this->snapshot($id)));
+        }
+        $metadata = wp_get_attachment_metadata($id);
+        if (! is_array($metadata) || ! isset($metadata['file']) || ! is_string($metadata['file']) ||
+            basename($metadata['file']) !== $oldName) {
+            throw new RuntimeException('Image metadata does not match the attachment file.');
+        }
+        $oldStem = pathinfo($oldName, PATHINFO_FILENAME);
+        $newStem = pathinfo($requested, PATHINFO_FILENAME);
+        $copies = array($oldName => $requested);
+        foreach (($metadata['sizes'] ?? array()) as $size) {
+            if (! is_array($size) || ! isset($size['file']) || ! is_string($size['file'])) {
+                throw new RuntimeException('Invalid image size metadata.');
+            }
+            $child = $size['file'];
+            if (! preg_match('/^'.preg_quote($oldStem, '/').'(-[0-9]+x[0-9]+(?:-[a-z0-9-]+)?)\\.([a-z0-9]+)$/iD', $child, $match)) {
+                throw new RuntimeException('Image derivative naming is unsupported; refusing unsafe rename.');
+            }
+            $copies[$child] = $newStem . $match[1] . '.' . $match[2];
+        }
+        $original = $metadata['original_image'] ?? null;
+        if (is_string($original) && '' !== $original) {
+            throw new RuntimeException('Images with a separate original_image require manual migration.');
+        }
+        foreach ($copies as $from => $to) {
+            if (basename($from) !== $from || basename($to) !== $to || is_link($directory . DIRECTORY_SEPARATOR . $from) ||
+                ! is_file($directory . DIRECTORY_SEPARATOR . $from) || file_exists($directory . DIRECTORY_SEPARATOR . $to)) {
+                throw new RuntimeException('Image derivative missing, symlinked, or filename collision.');
+            }
+        }
+        $before = $this->snapshot($id);
+        $plan = array('attachment_id' => $id, 'old_filename' => $oldName, 'new_filename' => $requested,
+            'copies' => count($copies), 'old_urls_preserved' => true);
+        if (! empty($context['dry_run'])) {
+            return array('would_rename' => $plan, '_current_fingerprint' => Fingerprint::make($before));
+        }
+        $created = array();
+        try {
+            foreach ($copies as $from => $to) {
+                $newPath = $directory . DIRECTORY_SEPARATOR . $to;
+                if (! copy($directory . DIRECTORY_SEPARATOR . $from, $newPath)) {
+                    throw new RuntimeException('Image file copy failed.');
+                }
+                $created[] = $newPath;
+            }
+            $afterMetadata = $metadata;
+            $afterMetadata['file'] = dirname($metadata['file']) === '.' ? $requested : dirname($metadata['file']) . '/' . $requested;
+            foreach (($afterMetadata['sizes'] ?? array()) as $sizeName => $size) {
+                $afterMetadata['sizes'][$sizeName]['file'] = $copies[$size['file']];
+            }
+            if (! update_attached_file($id, $directory . DIRECTORY_SEPARATOR . $requested)) {
+                throw new RuntimeException('WordPress could not update the attachment path.');
+            }
+            if (! wp_update_attachment_metadata($id, $afterMetadata)) {
+                throw new RuntimeException('WordPress could not update image metadata.');
+            }
+            clean_post_cache($id);
+            $readback = $this->snapshot($id);
+            if (realpath((string) $readback['file']) !== realpath($directory . DIRECTORY_SEPARATOR . $requested) ||
+                Fingerprint::make($readback['metadata']) !== Fingerprint::make($afterMetadata) ||
+                ! is_file($sourceReal)) {
+                throw new RuntimeException('Image rename readback verification failed.');
+            }
+            return array('renamed' => $plan, 'after' => $readback,
+                'rollback_supported' => false, 'old_urls_preserved' => true);
+        } catch (\\Throwable $error) {
+            update_attached_file($id, $sourceReal);
+            wp_update_attachment_metadata($id, $metadata);
+            foreach (array_reverse($created) as $createdFile) {
+                if (is_file($createdFile)) {
+                    @unlink($createdFile);
+                }
+            }
+            throw new RuntimeException('Image rename aborted; original image retained: ' . $error->getMessage(), 0, $error);
+        }
     }
 
     public function mediaAssign(array $payload, array $context): array
