@@ -28,8 +28,9 @@ $requiredImport = array(
     "'status']='ready'",
     'replaceDocument($payload',
 );
+$compactImport = preg_replace('/\\s+/', '', $import);
 foreach ($requiredImport as $needle) {
-    if (false === strpos($import, $needle)) {
+    if (false === strpos((string) $compactImport, (string) preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Elementor bulk import safety contract missing: ' . $needle);
     }
 }
