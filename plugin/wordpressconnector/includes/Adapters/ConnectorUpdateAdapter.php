@@ -146,8 +146,10 @@ final class ConnectorUpdateAdapter
         check_admin_referer('wpconnector_check_updates');
         $ok = $this->refreshNativeUpdateNotice(true);
         wp_safe_redirect(add_query_arg(
-            'wpconnector_update_checked',
-            $ok ? '1' : '0',
+            array(
+                'wpconnector_update_checked' => $ok ? '1' : '0',
+                'wpconnector_notice_nonce' => wp_create_nonce('wpconnector_checked_notice'),
+            ),
             admin_url('plugins.php')
         ));
         exit;
@@ -155,10 +157,25 @@ final class ConnectorUpdateAdapter
 
     public function checkedNotice(): void
     {
-        if (! current_user_can('update_plugins') || ! isset($_GET['wpconnector_update_checked'])) {
+        if (! current_user_can('update_plugins')
+            || ! isset($_GET['wpconnector_update_checked'], $_GET['wpconnector_notice_nonce'])
+            || ! is_string($_GET['wpconnector_update_checked'])
+            || ! is_string($_GET['wpconnector_notice_nonce'])) {
             return;
         }
-        $ok = '1' === (string) $_GET['wpconnector_update_checked'];
+
+        $rawNonce = wp_unslash($_GET['wpconnector_notice_nonce']);
+        $nonce = sanitize_text_field($rawNonce);
+        if ($nonce !== $rawNonce || ! wp_verify_nonce($nonce, 'wpconnector_checked_notice')) {
+            return;
+        }
+        $rawNoticeResult = wp_unslash($_GET['wpconnector_update_checked']);
+        // Reject malformed values rather than normalizing markup into a trusted result.
+        if (! in_array($rawNoticeResult, array('0', '1'), true)) {
+            return;
+        }
+        $noticeResult = sanitize_text_field($rawNoticeResult);
+        $ok = '1' === $noticeResult;
         echo '<div class="notice ' . ($ok ? 'notice-success' : 'notice-warning') .
             ' is-dismissible"><p>' .
             esc_html($ok

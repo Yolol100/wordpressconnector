@@ -47,6 +47,12 @@ namespace {
     function wp_nonce_url($url, $action): string { return $url . '&_wpnonce=fixture'; }
     function esc_url($url): string { return $url; }
     function esc_html__($text, $domain): string { return $text; }
+    function __($text, $domain = ''): string { return $text; }
+    function esc_html(string $text): string { return htmlspecialchars($text, ENT_QUOTES, 'UTF-8'); }
+    function wp_create_nonce(string $action): string { return 'fixture-' . $action; }
+    function wp_verify_nonce(string $nonce, string $action) { return hash_equals(wp_create_nonce($action), $nonce) ? 1 : false; }
+    function wp_unslash($value) { return stripslashes($value); }
+    function sanitize_text_field(string $value): string { return trim(strip_tags($value)); }
     function is_wp_error($value): bool { return $value instanceof WP_Error; }
     function wp_safe_remote_get(string $url, array $options = array())
     {
@@ -235,6 +241,40 @@ namespace {
         }
         $GLOBALS['test_can_update_plugins'] = true;
     }
+
+    // The checked notice must not be spoofable with a crafted plugins.php URL.
+    foreach (array(
+        array('wpconnector_update_checked' => '1'),
+        array('wpconnector_update_checked' => '1', 'wpconnector_notice_nonce' => 'invalid'),
+        array('wpconnector_update_checked' => '<b>1</b>', 'wpconnector_notice_nonce' => wp_create_nonce('wpconnector_checked_notice')),
+    ) as $forgedNotice) {
+        $_GET = $forgedNotice;
+        ob_start();
+        $adapter->checkedNotice();
+        $noticeHtml = ob_get_clean();
+        if ('' !== $noticeHtml) {
+            throw new \RuntimeException('Untrusted or malformed URL created a forged update success notice.');
+        }
+    }
+
+    $_GET = array(
+        'wpconnector_update_checked' => '1',
+        'wpconnector_notice_nonce' => wp_create_nonce('wpconnector_checked_notice'),
+    );
+    ob_start();
+    $adapter->checkedNotice();
+    $verifiedNotice = ob_get_clean();
+    if (false === strpos($verifiedNotice, 'GitHub release checked.')) {
+        throw new \RuntimeException('Verified update notice was suppressed.');
+    }
+    $GLOBALS['test_can_update_plugins'] = false;
+    ob_start();
+    $adapter->checkedNotice();
+    if ('' !== ob_get_clean()) {
+        throw new \RuntimeException('Unprivileged visitor saw the protected update notice.');
+    }
+    $GLOBALS['test_can_update_plugins'] = true;
+    unset($_GET['wpconnector_update_checked'], $_GET['wpconnector_notice_nonce']);
 
     echo "native plugin update offers, single and bulk verified download gates OK\n";
 }
