@@ -494,7 +494,7 @@ final class ElementorAdapter
             $this->writeSupplementalMeta($postId, $payload);
             $this->clearCache();
             $after = $this->snapshot($postId);
-            $this->assertDocumentReadback($after, $data, $pageSettings);
+            $this->assertDocumentReadback($after, $savedElements, $pageSettings);
             return $after;
         } catch (Throwable $error) {
             try {

@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.0
+Stable tag: 1.20.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,10 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.20.1 =
+* Fix existing Elementor page/post/template replacement readback: compare persisted data against Elementor-normalized save output instead of original JSON, preventing false import rollbacks.
+* Add an installed-Elementor regression that replaces a populated existing document with unnnormalized input and confirms the saved content.
 
 = 1.20.0 =
 * Compare persisted Elementor elements with Elementor's normalized after_save output, retaining strict verification and rollback.
