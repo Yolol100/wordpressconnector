@@ -526,11 +526,36 @@ final class SystemAdapter
     public function themeList(): array
     {
         $active = get_stylesheet();
+        $transient = get_site_transient('update_themes');
+        $offers = is_object($transient) && isset($transient->response) && is_array($transient->response)
+            ? $transient->response : array();
+        $checkedAt = is_object($transient) && isset($transient->last_checked)
+            ? (int) $transient->last_checked : 0;
+        $canModify = function_exists('wp_is_file_mod_allowed')
+            ? wp_is_file_mod_allowed('theme_update')
+            : (! defined('DISALLOW_FILE_MODS') || ! DISALLOW_FILE_MODS);
         $items = array();
         foreach (wp_get_themes() as $stylesheet => $theme) {
-            $items[] = array('stylesheet' => $stylesheet, 'name' => $theme->get('Name'), 'version' => $theme->get('Version'), 'active' => $stylesheet === $active, 'template' => $theme->get_template());
+            $offer = $offers[$stylesheet] ?? null;
+            $newVersion = is_array($offer) ? ($offer['new_version'] ?? $offer['version'] ?? null)
+                : (is_object($offer) ? ($offer->new_version ?? $offer->version ?? null) : null);
+            $items[] = array(
+                'stylesheet' => $stylesheet,
+                'name' => $theme->get('Name'),
+                'version' => $theme->get('Version'),
+                'active' => $stylesheet === $active,
+                'template' => $theme->get_template(),
+                'update_available' => $checkedAt > 0 ? (is_string($newVersion) && '' !== $newVersion) : null,
+                'available_version' => is_string($newVersion) && '' !== $newVersion ? $newVersion : null,
+                'can_update' => $canModify && current_user_can('update_themes'),
+            );
         }
-        return array('themes' => $items);
+        return array(
+            'themes' => $items,
+            'updates_checked_gmt' => $checkedAt > 0 ? gmdate('c', $checkedAt) : null,
+            'update_state' => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+            'update_listing_is_not_an_install_or_health_test' => true,
+        );
     }
 
     public function themeSwitch(array $payload, array $context): array
