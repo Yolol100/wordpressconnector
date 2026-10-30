@@ -61,35 +61,107 @@ final class ElementorJsonImport
     public function confirmBulk(): void
     {
         check_admin_referer(self::BULK_CONFIRM);
-        if(!current_user_can('manage_options')){wp_die('Not allowed.', '', array('response'=>403));}
-        $token=isset($_POST['token'])&&is_string($_POST['token'])?sanitize_text_field(wp_unslash($_POST['token'])):'';
-        if(!preg_match('/^[A-Za-z0-9]{48}$/D',$token)||!isset($_POST['confirmed'])||'yes'!==$_POST['confirmed']){wp_die('Bulkimport not confirmed.','',array('response'=>400));}
-        $key='wpconnector_bulk_'.get_current_user_id().'_'.hash('sha256',$token);
-        $state=get_transient($key);
-        if(!is_array($state)||!isset($state['plan'])||!is_array($state['plan'])){wp_die('Preview expired. Upload again.','',array('response'=>409));}
-        delete_transient($key); // Single-use confirmation: no replay.
-        $plan=$state['plan'];
-        if(count($plan)<1||count($plan)>self::BULK_LIMIT){wp_die('Invalid plan.','',array('response'=>400));}
-        try{
-            // Re-check every target and every snapshot before making the first write.
-            foreach($plan as $row){
-                if('ready'!==$row['status']||!current_user_can('edit_post',(int)$row['post_id'])){throw new RuntimeException('Target permission changed. No documents updated.');}
-                $post=get_post((int)$row['post_id']);
-                if(!$post instanceof \WP_Post||(string)$post->post_type!==$row['post_type']||(string)$post->post_name!==$row['slug']){throw new RuntimeException('Target changed since preview. No documents updated.');}
-                $current=(new ElementorAdapter())->inspect(array('id'=>(int)$row['post_id']));
-                if(!hash_equals($row['fingerprint'],(string)($current['fingerprint']??''))){throw new RuntimeException('Document changed since preview. No documents updated.');}
+        if (! current_user_can('manage_options')) {
+            wp_die('Not allowed.', '', array('response' => 403));
+        }
+        $token = isset($_POST['token']) && is_string($_POST['token']) ? sanitize_text_field(wp_unslash($_POST['token'])) : '';
+        if (! preg_match('/^[A-Za-z0-9]{48}$/D', $token) || ! isset($_POST['confirmed']) || 'yes' !== $_POST['confirmed']) {
+            wp_die('Bulkimport not confirmed.', '', array('response' => 400));
+        }
+        $key = 'wpconnector_bulk_' . get_current_user_id() . '_' . hash('sha256', $token);
+        $state = get_transient($key);
+        if (! is_array($state) || ! isset($state['plan']) || ! is_array($state['plan'])) {
+            wp_die('Preview expired. Upload again.', '', array('response' => 409));
+        }
+        delete_transient($key); // Single-use confirmation.
+        $plan = $state['plan'];
+        if (count($plan) < 1 || count($plan) > self::BULK_LIMIT) {
+            wp_die('Invalid plan.', '', array('response' => 400));
+        }
+
+        // Reuse the same mutation lock as authenticated REST/MCP requests.
+        $store = new \Webactueel\WordPressConnector\Runtime\ProcessedStore();
+        $lock = $store->acquireMutationLock();
+        if ('' === $lock) {
+            wp_die('Another connector mutation is running. Preview again after it finishes.', '', array('response' => 409));
+        }
+
+        $adapter = new ElementorAdapter();
+        $snapshots = array();
+        $updated = array();
+        try {
+            foreach ($plan as $row) {
+                $id = (int) ($row['post_id'] ?? 0);
+                if ('ready' !== ($row['status'] ?? '') || $id < 1 || ! current_user_can('edit_post', $id)) {
+                    throw new RuntimeException('Target permission changed.');
+                }
+                $post = get_post($id);
+                if (! $post instanceof \WP_Post || (string) $post->post_type !== $row['post_type']
+                    || (string) $post->post_name !== $row['slug']
+                    || 'builder' !== (string) get_post_meta($id, '_elementor_edit_mode', true)) {
+                    throw new RuntimeException('Target identity or Elementor editing mode changed.');
+                }
+                $current = $adapter->inspect(array('id' => $id));
+                if (! hash_equals((string) $row['fingerprint'], (string) ($current['fingerprint'] ?? ''))) {
+                    throw new RuntimeException('Document changed since preview.');
+                }
+                $snapshots[$id] = $current['document'];
             }
-            // A separate Elementor rollback snapshot is captured by each replaceDocument call.
-            // Do not claim cross-document atomicity: stop immediately on a failed write.
-            $updated=array();
-            foreach($plan as $row){
-                $payload=array('id'=>(int)$row['post_id'],'data'=>$row['content'],'page_settings'=>$row['settings'],'edit_mode'=>'builder');
-                if('elementor_library'===$row['post_type']){$payload['template_type']=$row['template_type'];}
-                (new ElementorAdapter())->replaceDocument($payload,array('dry_run'=>false));
-                $updated[]=$row['post_id'];
+
+            foreach ($plan as $row) {
+                $id = (int) $row['post_id'];
+                // A concurrent normal editor save is not protected by Connector locks.
+                // Check the target again immediately before overwriting it.
+                $current = $adapter->inspect(array('id' => $id));
+                if (! hash_equals((string) $row['fingerprint'], (string) ($current['fingerprint'] ?? ''))) {
+                    throw new RuntimeException('Document changed during bulk import.');
+                }
+                $payload = array(
+                    'id' => $id,
+                    'data' => $row['content'],
+                    'page_settings' => $row['settings'],
+                    'edit_mode' => 'builder',
+                );
+                if ('elementor_library' === $row['post_type']) {
+                    $payload['template_type'] = $row['template_type'];
+                }
+                $adapter->replaceDocument($payload, array('dry_run' => false));
+                $updated[] = $id;
             }
-            echo '<div class="wrap"><h1>Elementor bulkimport uitgevoerd</h1><p>'.count($updated).' documenten opgeslagen en door de Connector teruggelezen.</p><p>Controleer na import handmatig de frontend, formulieren en responsieve lay-out.</p></div>';
-        }catch(Throwable $error){wp_die('Bulkimport gestopt: '.esc_html($error->getMessage()).' Reeds geslaagde eerdere documenten zijn niet automatisch teruggezet; controleer de WordPress-revisies en back-up.','',array('response'=>409));}
+
+            echo '<div class="wrap"><h1>Elementor bulkimport voltooid</h1><p>'
+                . count($updated) . ' documenten zijn opgeslagen en gecontroleerd.</p>'
+                . '<p>Controleer vervolgens de frontend, formulieren en responsieve opmaak.</p></div>';
+        } catch (Throwable $error) {
+            $failedRollbacks = array();
+            foreach (array_reverse($updated) as $id) {
+                try {
+                    $before = $snapshots[$id];
+                    $adapter->replaceDocument(array(
+                        'id' => $id,
+                        'data' => $before['data'],
+                        'page_settings' => $before['page_settings'],
+                        'edit_mode' => $before['edit_mode'],
+                        'template_type' => $before['template_type'],
+                        'conditions' => $before['conditions'],
+                    ), array('dry_run' => false));
+                } catch (Throwable $rollbackError) {
+                    $failedRollbacks[] = $id;
+                }
+            }
+            $message = 'Bulkimport gestopt: ' . $error->getMessage() . '. ';
+            if (! $updated) {
+                $message .= 'Er is door deze batch geen document bijgewerkt.';
+            } elseif (! $failedRollbacks) {
+                $message .= 'Eerdere voltooide documenten zijn teruggezet en gecontroleerd.';
+            } else {
+                $message .= 'Herstel moet handmatig worden gecontroleerd voor document-ID(s): '
+                    . implode(', ', $failedRollbacks) . '. Controleer de back-up of revisies.';
+            }
+            wp_die(esc_html($message), '', array('response' => 409));
+        } finally {
+            $store->releaseMutationLock($lock);
+        }
     }
 
     private function bulkUploads(): array
