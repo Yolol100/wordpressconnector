@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.2
+Stable tag: 1.20.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,14 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.20.3 =
+* Verify WordPress edit_post capabilities for media assignment, updates, regeneration and attachment-parent changes; require theme/site settings permissions for logo and icon mutations.
+* Fix featured-image replacement when the prior thumbnail is empty and verify idempotent assignments and rollback readback.
+* Keep copied image files when metadata rollback readback cannot be proven, rather than deleting files that WordPress might still reference.
+* Recognize known Elementor JSON export filename suffixes when safely matching the exact existing post type and slug; never guess unfamiliar suffixes.
+* Report potentially modified in-flight Elementor documents separately from completed items during failed bulk imports.
+* Add source contracts and isolated WordPress/Elementor regression coverage for these critical paths.
 
 = 1.20.2 =
 * Verify Elementor page template setting against _wp_page_template instead of regular page settings; retain strict checks for other settings.

@@ -254,6 +254,26 @@ try {
         || $documentPostId !== ($matchPlan[0]['post_id'] ?? null)) {
         throw new RuntimeException('Elementor bulk import failed exact draft page and copy-suffix matching.');
     }
+    foreach (array(
+        (string) $pagePost->post_name . '-elementor-SEO-HERZIEN.json',
+        (string) $pagePost->post_name . '-elementor-LANG-MIN125.json',
+        (string) $pagePost->post_name . '-elementor-LANG-MIN125 (3).json',
+    ) as $exportFilename) {
+        $variantEntry = $entry;
+        $variantEntry['name'] = $exportFilename;
+        $variantPlan = $method->invoke($importer, array($variantEntry));
+        if (1 !== count($variantPlan) || 'ready' !== ($variantPlan[0]['status'] ?? '')
+            || $documentPostId !== ($variantPlan[0]['post_id'] ?? null)) {
+            throw new RuntimeException('Elementor bulk import did not match a known export suffix: ' . $exportFilename);
+        }
+    }
+    $unknownEntry = $entry;
+    $unknownEntry['name'] = (string) $pagePost->post_name . '-elementor-unrecognized-suffix.json';
+    $unknownPlan = $method->invoke($importer, array($unknownEntry));
+    if ('ready' === ($unknownPlan[0]['status'] ?? '')) {
+        throw new RuntimeException('Elementor bulk import guessed an unknown filename suffix.');
+    }
+
     $duplicatePlan = $method->invoke($importer, array($entry, $entry));
     if ('conflict: repeated target' !== ($duplicatePlan[0]['status'] ?? '')
         || 'conflict: repeated target' !== ($duplicatePlan[1]['status'] ?? '')) {
@@ -337,6 +357,7 @@ $mediaPrefix = 'wpconnector-runtime-' . substr(str_replace('-', '', wp_generate_
 $oldMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-before.png';
 $newMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-after.png';
 $mediaPostId = 0;
+$featurePostId = 0;
 try {
     $tinyPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBAAD2hGLhAAAAAElFTkSuQmCC', true);
     if (! is_string($tinyPng) || false === file_put_contents($oldMediaPath, $tinyPng)) {
@@ -368,7 +389,65 @@ try {
         || basename((string) (wp_get_attachment_metadata((int) $mediaPostId)['file'] ?? '')) !== basename($newMediaPath)) {
         throw new RuntimeException('Media rename did not persist while retaining the original filename.');
     }
+
+    $featurePostId = wp_insert_post(array(
+        'post_type' => 'post',
+        'post_status' => 'draft',
+        'post_title' => 'Connector featured image rollback runtime probe',
+    ), true);
+    if (is_wp_error($featurePostId) || $featurePostId <= 0) {
+        throw new RuntimeException('Could not create disposable featured-image target.');
+    }
+    $assignPayload = array(
+        'id' => (int) $mediaPostId,
+        'target_type' => 'featured_image',
+        'target_id' => (int) $featurePostId,
+    );
+    $assigned = $mediaAdapter->mediaAssign($assignPayload, array('dry_run' => false));
+    if ((int) get_post_thumbnail_id((int) $featurePostId) !== (int) $mediaPostId
+        || (int) ($assigned['before'] ?? -1) !== 0
+        || (int) ($assigned['_rollback']['payload']['id'] ?? -1) !== 0) {
+        throw new RuntimeException('Featured-image assignment did not produce a valid empty-state rollback.');
+    }
+    $noChange = $mediaAdapter->mediaAssign($assignPayload, array('dry_run' => false));
+    if (true !== ($noChange['unchanged'] ?? false)) {
+        throw new RuntimeException('An already-assigned featured image was not treated as unchanged.');
+    }
+    $mediaAdapter->mediaAssign($assigned['_rollback']['payload'], array(
+        'rollback_mode' => true, 'dry_run' => false,
+    ));
+    if (0 !== (int) get_post_thumbnail_id((int) $featurePostId)) {
+        throw new RuntimeException('Featured-image rollback to an empty original state failed.');
+    }
+
+    $zeroBlocked = false;
+    try {
+        $mediaAdapter->mediaAssign($assigned['_rollback']['payload'], array('dry_run' => true));
+    } catch (RuntimeException $expected) {
+        $zeroBlocked = true;
+    }
+    if (! $zeroBlocked) {
+        throw new RuntimeException('Non-rollback media assignment improperly accepted a zero attachment ID.');
+    }
+    $originalUser = get_current_user_id();
+    try {
+        wp_set_current_user(0);
+        $permissionDenied = false;
+        try {
+            $mediaAdapter->mediaAssign($assignPayload, array('dry_run' => true));
+        } catch (RuntimeException $expected) {
+            $permissionDenied = true;
+        }
+        if (! $permissionDenied) {
+            throw new RuntimeException('Unauthenticated media assignment was not blocked.');
+        }
+    } finally {
+        wp_set_current_user($originalUser);
+    }
 } finally {
+    if (is_int($featurePostId) && $featurePostId > 0) {
+        wp_delete_post($featurePostId, true);
+    }
     if (is_int($mediaPostId) && $mediaPostId > 0) {
         wp_delete_attachment($mediaPostId, true);
     }

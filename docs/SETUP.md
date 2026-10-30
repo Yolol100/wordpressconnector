@@ -186,3 +186,15 @@ Use `media.rename` on an individual WordPress attachment with `id` and `filename
 
 On confirmed execution the Connector **copies** the original image and recognized thumbnails to the new names, updates the attachment file path and image metadata using WordPress functions and checks saved data. Existing files and legacy URLs remain intact; this does not rewrite Elementor/HTML links and does not promise that every external URL is redirected. It consumes extra disk space and is intentionally not a destructive file-move operation. If an error happens, the connector attempts to restore the original metadata and removes new copies; verify site backup and front-end before enabling production use. `rollback_supported=false` means no automatic post-success rollback action is promised. Public GitHub request mode does not allow `media.rename`.
 
+
+## Hardened Elementor bulk filename matching (1.20.3)
+
+The administrator-only bulk importer matches an existing Elementor document by its **exact post type and slug**, never by a similar title. Prefer a trustworthy export `source.slug` and `source.post_type` when available. For ordinary Elementor JSON files without source metadata, these filename forms can be recognized: `<slug>-elementor.json`, `<slug>-elementor-with-site-parts.json`, `<slug>-elementor-SEO-HERZIEN.json`, `<slug>-elementor-LANG-MIN125.json`, and their WordPress-sanitized numeric copy suffixes. Unknown filename suffixes are **not stripped** and ambiguous/missing targets block the full preview. The preview displays the exact target ID and requires human confirmation.
+
+Bulk import uses a Connector mutation lock and per-document readback but is not a database transaction. A failed in-progress document can remain uncertain even if previously completed documents were compensated. Inspect Elementor history and backups before retrying. This contract does not imply site-specific import acceptance.
+
+## Media assignment and image rename safeguards (1.20.3)
+
+Mutating media requires appropriate WordPress upload and object-level permissions. Featured images require permission to edit their target post. Clearing a previously empty featured-image state is permitted only inside an authenticated Connector rollback, never by supplying `id: 0` to a normal media assignment. Logo and site-icon mutations require the WordPress theme/options capabilities respectively.
+
+On a rename failure, the Connector checks the original stored attachment path and metadata before deleting newly copied files. If the original database state cannot be verified, it retains the new copies and reports an explicitly uncertain recovery state; an operator must reconcile the media attachment using a backup. This does not imply every WordPress/plugin-generated URL has been rewritten.
