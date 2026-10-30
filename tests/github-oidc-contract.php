@@ -6,6 +6,8 @@ define('ABSPATH', __DIR__ . '/');
 define('HOUR_IN_SECONDS', 3600);
 $GLOBALS['wpconnector_transients'] = array();
 $GLOBALS['wpconnector_jwks'] = array();
+$GLOBALS['wpconnector_oidc_claim_fail'] = false;
+$GLOBALS['wpconnector_oidc_claim_read_fail'] = false;
 
 class WP_REST_Request
 {
@@ -17,7 +19,16 @@ $GLOBALS['wpconnector_base_url'] = 'https://example.com';
 $GLOBALS['wpconnector_blog_id'] = 1;
 $GLOBALS['wpconnector_site_options'] = array();
 function rest_url($path = ''): string { return $GLOBALS['wpconnector_base_url'] . '/wp-json/' . ltrim((string) $path, '/'); }
-function get_option($key, $default = false) { return $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key] ?? $default; }
+function get_option($key, $default = false) {
+    if ($GLOBALS['wpconnector_oidc_claim_read_fail'] && 0 === strpos((string) $key, 'wpconnector_oidc_replay_')) return $default;
+    return $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key] ?? $default;
+}
+function add_option($key, $value, $deprecated = '', $autoload = false): bool {
+    if ($GLOBALS['wpconnector_oidc_claim_fail'] && 0 === strpos((string) $key, 'wpconnector_oidc_replay_')) return false;
+    if (array_key_exists((string) $key, $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']] ?? array())) return false;
+    $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][(string) $key] = $value;
+    return true;
+}
 function update_option($key, $value, $autoload = null) { $old=get_option($key,null); $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]=$value; return $old!==$value; }
 function delete_option($key) { unset($GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]); return true; }
 function get_transient($key) { return $GLOBALS['wpconnector_transients'][$key] ?? false; }
@@ -100,6 +111,66 @@ $GLOBALS['wpconnector_base_url'] = 'https://example.com';
 $userId=$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));
 if(1!==$userId||!Policy::publicRepositoryContext()){fwrite(STDERR,"Valid GitHub OIDC token was not accepted.\n");exit(1);}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$jwt)));fwrite(STDERR,"Replayed token accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'already used'))throw $e;}
+
+// Database-backed one-use claims must survive cache loss and reject failed
+// writes, bad readback and tokens already consumed by the legacy transient.
+$readJti = static function (string $jwt): string {
+    $parts = explode('.', $jwt);
+    $claimSet = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+    return (string) ($claimSet['jti'] ?? '');
+};
+$claimed = 'wpconnector_oidc_replay_' . hash('sha256', $readJti($jwt));
+if (! is_array(get_option($claimed, null))) throw new RuntimeException('Signed token was accepted without a durable replay claim.');
+$GLOBALS['wpconnector_transients'] = array(); // loss of object cache cannot release an already consumed JWT.
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $jwt)));
+    throw new RuntimeException('Replay succeeded after transient cache loss.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'already used')) throw $error;
+}
+
+$GLOBALS['wpconnector_oidc_claim_fail'] = true;
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $token())));
+    throw new RuntimeException('OIDC accepted a token without database storage.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'storage unavailable')) throw $error;
+}
+$GLOBALS['wpconnector_oidc_claim_fail'] = false;
+
+$GLOBALS['wpconnector_oidc_claim_read_fail'] = true;
+$unreadableClaim = $token();
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $unreadableClaim)));
+    throw new RuntimeException('OIDC accepted unverified replay state.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'readback failed')) throw $error;
+}
+$GLOBALS['wpconnector_oidc_claim_read_fail'] = false;
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $unreadableClaim)));
+    throw new RuntimeException('Unverified consumed token was reused.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'already used')) throw $error;
+}
+
+$legacyJwt = $token();
+$legacyKey = 'wpconnector_oidc_jti_' . hash('sha256', $readJti($legacyJwt));
+$GLOBALS['wpconnector_transients'][$legacyKey] = '1';
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $legacyJwt)));
+    throw new RuntimeException('Legacy transient-consumed token was accepted after upgrade.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'already used')) throw $error;
+}
+unset($GLOBALS['wpconnector_transients'][$legacyKey]);
+
+try {
+    $auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc' => $token(array('exp' => time() + 50000)))));
+    throw new RuntimeException('Unbounded JWT expiry was accepted.');
+} catch (RuntimeException $error) {
+    if (false === strpos($error->getMessage(), 'lifetime')) throw $error;
+}
 try{$auth->authenticate(new WP_REST_Request(array('x-webactueel-github-oidc'=>$token(array('aud'=>'https://evil.example/wp-json/webactueel-wordpress-connector/v1')))));fwrite(STDERR,"Wrong audience accepted.\n");exit(1);}catch(RuntimeException $e){if(false===strpos($e->getMessage(),'audience'))throw $e;}
 
 // The canonical connector repository may be private while retaining exactly

@@ -26,6 +26,7 @@ $cleanupCurrentSite = static function (): void {
     foreach (array(
         'wpconnector_snapshot_',
         'wpconnector_processed_',
+        'wpconnector_oidc_replay_',
         '_transient_wpconnector_oidc_jti_',
         '_transient_timeout_wpconnector_oidc_jti_',
     ) as $prefix) {

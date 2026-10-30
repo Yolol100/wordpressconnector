@@ -11,6 +11,12 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 - `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES=1` is separately required for real `filesystem.write_text`, `filesystem.create_text` and `filesystem.delete_text` operations.
 - Secrets, arbitrary plugin-setting code execution and unrestricted filesystem access are not exposed.
 
+## Durable mutation and OIDC replay safety
+
+Before executing a confirmed mutation, the runtime creates a unique, durable `pending` record for its request ID. A retry of the same pending/unknown request is rejected, including after a timeout, database fault or PHP crash. Completed legacy idempotency records are still accepted. After the provider returns, the Connector requires database readback of the terminal result record; it also verifies any site-local rollback snapshot before advertising `rollback_request_id`. Database failure therefore produces an explicit uncertain outcome rather than a false success or rollback promise. These pending records are deliberately not removed by routine `connector.cleanup`: first inspect the exact target, request ID and storage state using authenticated administrator tools before any separate change or recovery.
+
+Signed GitHub OIDC JWT IDs are consumed using an atomic unique-key WordPress option, not a cache-only transient. Claims issued before this upgrade remain protected by the previous transient during its short remaining lifetime. The private `connector.cleanup` action also removes old, verifiably expired replay claims in bounded batches. This is not a hosted OAuth provider or a site registry. Native plugin/theme package upgrades still do not guarantee a post-success rollback; existing hosting backups must have independently verified restore access before a production release.
+
 ## Native update version pinning
 
 For `plugin.update` and `theme.update`, pass `expected_target_version` when the caller intends to deploy an exact release. The dry-run returns the installed version (`from_version`), the cached WordPress update offer (`available_version`), and the original state fingerprint. A pinned target must be newer than the installed version. A confirmed pinned update refreshes the WordPress offer, stops on drift before calling the upgrader, and checks the installed version after the operation.
