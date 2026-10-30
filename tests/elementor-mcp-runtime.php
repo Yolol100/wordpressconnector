@@ -165,6 +165,73 @@ try {
     }
 }
 
+// Exercise the Connector's real Elementor document API, persisted readback,
+// patch and rollback. This reproduces the previously false negative in
+// get_elements_data() on installed Elementor, not with a mocked provider.
+$documentAdapter = new \Webactueel\WordPressConnector\Adapters\ElementorAdapter();
+$documentPostId = 0;
+$documentData = array(array(
+    'id' => 'aabbcc01',
+    'elType' => 'container',
+    'settings' => array(),
+    'elements' => array(array(
+        'id' => 'aabbcc02',
+        'elType' => 'widget',
+        'widgetType' => 'heading',
+        'settings' => array('title' => 'Runtime before'),
+        'elements' => array(),
+    )),
+));
+try {
+    $created = $documentAdapter->createDocument(array(
+        'post_type' => 'page',
+        'title' => 'Connector Elementor persisted readback runtime',
+        'status' => 'draft',
+        'data' => $documentData,
+        'page_settings' => array(),
+    ), array('dry_run' => false));
+    $documentPostId = (int) ($created['document']['post_id'] ?? 0);
+    if ($documentPostId < 1) {
+        throw new RuntimeException('Elementor document creation did not produce a post ID.');
+    }
+
+    $before = $documentAdapter->inspect(array('id' => $documentPostId));
+    if (! isset($before['document']['data'][0]['elements'][0]['settings']['title'])
+        || 'Runtime before' !== $before['document']['data'][0]['elements'][0]['settings']['title']) {
+        throw new RuntimeException('Persisted Elementor initial element mismatch.');
+    }
+
+    $patch = $documentAdapter->patchElement(array(
+        'id' => $documentPostId,
+        'element_id' => 'aabbcc02',
+        'settings' => array('title' => 'Runtime after'),
+    ), array('dry_run' => false));
+    if ('Runtime after' !== ($patch['after_element']['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor document patch readback failed.');
+    }
+    $changed = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('Runtime after' !== ($changed['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor change was not persisted to the post.');
+    }
+    $previousDocument = $before['document'];
+    $documentAdapter->replaceDocument(array(
+        'id' => $documentPostId,
+        'data' => $previousDocument['data'],
+        'page_settings' => $previousDocument['page_settings'],
+        'edit_mode' => $previousDocument['edit_mode'],
+        'template_type' => $previousDocument['template_type'],
+        'conditions' => $previousDocument['conditions'],
+    ), array('dry_run' => false));
+    $restored = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('Runtime before' !== ($restored['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor document rollback did not persist original content.');
+    }
+} finally {
+    if ($documentPostId > 0) {
+        wp_delete_post($documentPostId, true);
+    }
+}
+
 // Verify the installed Elementor provider actually finishes the guarded CSS
 // regeneration. Contract-string tests alone cannot prove this runtime hook.
 $cache = new \Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter();
