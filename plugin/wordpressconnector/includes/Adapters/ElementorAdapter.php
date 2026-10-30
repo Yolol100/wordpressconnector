@@ -363,9 +363,10 @@ final class ElementorAdapter
     {
         $document = $this->documentOrNull($postId);
         if ($document) {
-            $data = method_exists($document, 'get_elements_data') ? $document->get_elements_data() : array();
+            // Verify the committed document, not the editor document instance which may
+            // keep an earlier in-memory elements tree after save() in this request.
+            $data = $this->normalizeData(get_post_meta($postId, '_elementor_data', true) ?: array());
             $settings = method_exists($document, 'get_db_document_settings') ? $document->get_db_document_settings() : array();
-            $data = is_array($data) ? $data : array();
             $settings = is_array($settings) ? $settings : array();
             $documentType = method_exists($document, 'get_name') ? (string) $document->get_name() : '';
         } else {
