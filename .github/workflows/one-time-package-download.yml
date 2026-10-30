@@ -1,0 +1,47 @@
+name: One-time WordPress Connector 1.20.2 package
+on:
+  push:
+    branches:
+      - package/wordpressconnector-1202-delivery-20261030
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact merged main revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: c9a5d25110273d9c7f592b98d668311d28a39372
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Build deterministic installable plugin ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "c9a5d25110273d9c7f592b98d668311d28a39372"
+          grep -Fq ' * Version: 1.20.2' plugin/wordpressconnector/wordpressconnector.php
+          grep -Fq "define('WPCONNECTOR_VERSION','1.20.2')" plugin/wordpressconnector/wordpressconnector.php
+          grep -Fxq 'Stable tag: 1.20.2' plugin/wordpressconnector/readme.txt
+          mkdir -p dist
+          source_sha="$(git log -1 --format=%H -- plugin/wordpressconnector)"
+          source_epoch="$(git show -s --format=%ct "$source_sha")"
+          python3 scripts/build-release-package.py \
+            --source plugin/wordpressconnector \
+            --zip dist/wordpressconnector.zip \
+            --sbom dist/wordpressconnector.spdx.json \
+            --source-commit "$source_sha" \
+            --source-date-epoch "$source_epoch"
+          unzip -t dist/wordpressconnector.zip
+          unzip -Z1 dist/wordpressconnector.zip | grep -qx 'wordpressconnector/wordpressconnector.php'
+          python3 -m json.tool dist/wordpressconnector.spdx.json >/dev/null
+          (cd dist && sha256sum wordpressconnector.zip > wordpressconnector.zip.sha256)
+      - name: Attach installable ZIP for user delivery
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wordpressconnector-1.20.2-download
+          path: dist/
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: error
