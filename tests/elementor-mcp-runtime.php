@@ -296,6 +296,59 @@ try {
     }
 }
 
+// Exercise media.rename on a disposable WordPress image attachment. This
+// verifies actual metadata and compatibility files, not only source markers.
+$uploads = wp_upload_dir();
+if (! empty($uploads['error']) || ! is_dir($uploads['path'])) {
+    throw new RuntimeException('Disposable media rename test cannot access WordPress uploads.');
+}
+$mediaPrefix = 'wpconnector-runtime-' . substr(str_replace('-', '', wp_generate_uuid4()), 0, 8);
+$oldMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-before.png';
+$newMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-after.png';
+$mediaPostId = 0;
+try {
+    $tinyPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBAAD2hGLhAAAAAElFTkSuQmCC', true);
+    if (! is_string($tinyPng) || false === file_put_contents($oldMediaPath, $tinyPng)) {
+        throw new RuntimeException('Could not write isolated image fixture.');
+    }
+    $mediaPostId = wp_insert_attachment(array(
+        'post_title' => 'Connector media rename runtime probe',
+        'post_mime_type' => 'image/png',
+        'post_status' => 'inherit',
+    ), $oldMediaPath, 0, true);
+    if (is_wp_error($mediaPostId) || $mediaPostId < 1) {
+        throw new RuntimeException('Could not create isolated media attachment.');
+    }
+    update_attached_file((int) $mediaPostId, $oldMediaPath);
+    $relativePath = ltrim($uploads['subdir'] . '/' . basename($oldMediaPath), '/');
+    wp_update_attachment_metadata((int) $mediaPostId, array(
+        'file' => $relativePath, 'width' => 1, 'height' => 1, 'sizes' => array(),
+    ));
+    $mediaAdapter = new \Webactueel\WordPressConnector\Adapters\MediaAdapter();
+    $mediaPayload = array('id' => (int) $mediaPostId, 'filename' => basename($newMediaPath));
+    $mediaDryRun = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => true));
+    if (! isset($mediaDryRun['would_rename']) || file_exists($newMediaPath)) {
+        throw new RuntimeException('Media rename dry-run unexpectedly changed the uploads folder.');
+    }
+    $mediaResult = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => false));
+    if (empty($mediaResult['old_urls_preserved']) || ! file_exists($oldMediaPath)
+        || ! file_exists($newMediaPath)
+        || realpath((string) get_attached_file((int) $mediaPostId)) !== realpath($newMediaPath)
+        || basename((string) (wp_get_attachment_metadata((int) $mediaPostId)['file'] ?? '')) !== basename($newMediaPath)) {
+        throw new RuntimeException('Media rename did not persist while retaining the original filename.');
+    }
+} finally {
+    if (is_int($mediaPostId) && $mediaPostId > 0) {
+        wp_delete_attachment($mediaPostId, true);
+    }
+    if (is_file($oldMediaPath)) {
+        unlink($oldMediaPath);
+    }
+    if (is_file($newMediaPath)) {
+        unlink($newMediaPath);
+    }
+}
+
 // Verify the installed Elementor provider actually finishes the guarded CSS
 // regeneration. Contract-string tests alone cannot prove this runtime hook.
 $cache = new \Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter();
