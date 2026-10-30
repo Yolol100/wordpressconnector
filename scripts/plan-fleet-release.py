@@ -85,13 +85,18 @@ def plan_release(inventory):
             object_with_keys(
                 component,
                 ("kind", "identity", "repository", "version", "active"),
-                ("available_version",),
+                ("available_version", "in_use"),
             )
             component_kind = component["kind"]
             component_id = component_identity(component_kind, component["identity"])
             require_string(component["repository"], REPOSITORY)
             if type(component["active"]) is not bool:
                 raise PlanError("Component active state must be boolean.")
+            if "in_use" in component:
+                if component_kind != "theme" or type(component["in_use"]) is not bool:
+                    raise PlanError("Only themes may report a boolean in_use state.")
+                if component["active"] and not component["in_use"]:
+                    raise PlanError("An active theme must also be reported as in use.")
             key = (component_kind, component_id)
             if key in component_keys:
                 raise PlanError("Duplicate component identity on one site.")
@@ -111,8 +116,9 @@ def plan_release(inventory):
             skipped.append({"site_ref": site_ref, "reason": "not_installed"})
             continue
         component = matches[0]
-        if not component["active"]:
-            skipped.append({"site_ref": site_ref, "reason": "not_active"})
+        active_or_in_use = component["active"] or (kind == "theme" and component.get("in_use", False))
+        if not active_or_in_use:
+            skipped.append({"site_ref": site_ref, "reason": "not_active_or_in_use"})
             continue
         if component["repository"] != repository:
             blocked.append({"site_ref": site_ref, "reason": "source_repository_mismatch"})

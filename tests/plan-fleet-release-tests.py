@@ -100,7 +100,7 @@ class FleetPlanTests(unittest.TestCase):
     def test_inactive_installation_skipped(self):
         self.request["sites"][0]["components"][0]["active"] = False
         result = self.plan()
-        self.assertEqual(result["skipped"][0]["reason"], "not_active")
+        self.assertEqual(result["skipped"][0]["reason"], "not_active_or_in_use")
 
     def test_uninstalled_target_skipped(self):
         self.request["sites"][0]["components"] = []
@@ -129,6 +129,28 @@ class FleetPlanTests(unittest.TestCase):
         self.block("active_theme_needs_native_update_offer")
         component["available_version"] = "2.1.0"
         self.assertEqual(self.plan()["candidates"][0]["action"], "theme.update")
+
+    def test_active_parent_theme_is_eligible(self):
+        self.request["release"]["kind"] = "theme"
+        self.request["release"]["identity"] = "parent-theme"
+        component = self.request["sites"][0]["components"][0]
+        component.update({"kind": "theme", "identity": "parent-theme", "active": False, "in_use": True})
+        self.assertEqual(self.plan()["candidates"][0]["action"], "theme.update")
+        component["in_use"] = False
+        self.assertEqual(self.plan()["skipped"][0]["reason"], "not_active_or_in_use")
+
+    def test_in_use_marker_is_theme_only_and_consistent(self):
+        component = self.request["sites"][0]["components"][0]
+        component["in_use"] = True
+        self.invalid()
+        component["kind"] = "theme"
+        component["identity"] = "sample-theme"
+        component["in_use"] = 1
+        self.invalid()
+        component["in_use"] = False
+        self.invalid()
+        component["in_use"] = True
+        self.assertEqual(self.plan()["skipped"][0]["reason"], "not_installed")
 
     def test_duplicate_sites_rejected(self):
         self.request["sites"].append(copy.deepcopy(self.request["sites"][0]))
