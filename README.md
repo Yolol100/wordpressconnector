@@ -4,7 +4,7 @@
 
 WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients, native MCP clients and the guarded GitHub runtime.
 
-**1.19.19 candidate:** multi-operation requests preflight registered action-level permissions and request shape before any change, and recheck authorization when each operation executes; private `connector.setup.inspect` now exposes read-only permission and server-policy indicators. Batch compensation is best effort, not atomic, and a private site registry, ChatGPT OAuth linking, hosting backup/restore and connector self-removal still require separate authorized infrastructure.
+**1.20.0 candidate:** Elementor-normalized readback verification, administrator preview/confirmation for safe multi-JSON import, and guarded media.rename for SEO-friendly filenames with old URLs retained. Existing multi-operation requests preflight registered action-level permissions and request shape before any change, and recheck authorization when each operation executes; private `connector.setup.inspect` now exposes read-only permission and server-policy indicators. Batch compensation is best effort, not atomic, and a private site registry, ChatGPT OAuth linking, hosting backup/restore and connector self-removal still require separate authorized infrastructure.
 
 **Developer profile:** [Andrew Baeten](https://github.com/Yolol100) · [GitHub project index](https://github.com/Yolol100?tab=repositories)
 
