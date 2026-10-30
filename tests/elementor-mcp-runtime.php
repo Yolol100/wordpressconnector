@@ -182,6 +182,28 @@ $documentData = array(array(
         'elements' => array(),
     )),
 ));
+// Diagnose Elementor's installed save() normalization using disposable dummy data.
+$probeId = wp_insert_post(array('post_type' => 'page', 'post_status' => 'draft',
+    'post_title' => 'Connector Elementor persistence probe'), true);
+if (is_wp_error($probeId)) {
+    throw new RuntimeException('Could not create disposable Elementor persistence probe.');
+}
+try {
+    update_post_meta((int) $probeId, '_elementor_edit_mode', 'builder');
+    $probeDocument = \Elementor\Plugin::$instance->documents->get((int) $probeId);
+    $probeSave = $probeDocument->save(array('elements' => $documentData, 'settings' => array()));
+    $probeRaw = get_post_meta((int) $probeId, '_elementor_data', true);
+    $probeDecoded = is_string($probeRaw) ? json_decode($probeRaw, true) : $probeRaw;
+    if (\Webactueel\WordPressConnector\Support\Fingerprint::make($documentData)
+        !== \Webactueel\WordPressConnector\Support\Fingerprint::make($probeDecoded)) {
+        throw new RuntimeException('Dummy Elementor normalized data differs: expected='
+            . wp_json_encode($documentData) . ' actual=' . wp_json_encode($probeDecoded)
+            . ' save_result_type=' . gettype($probeSave));
+    }
+} finally {
+    wp_delete_post((int) $probeId, true);
+}
+
 try {
     $created = $documentAdapter->createDocument(array(
         'post_type' => 'page',
