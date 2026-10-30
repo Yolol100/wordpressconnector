@@ -376,6 +376,13 @@ final class ElementorAdapter
             $documentType = '';
         }
 
+        // Elementor stores the WordPress page layout outside _elementor_page_settings.
+        // Retain it in snapshots so a failed import can restore that layout too.
+        $savedPageTemplate = (string) get_post_meta($postId, '_wp_page_template', true);
+        if ('' !== $savedPageTemplate || 'page' === get_post_type($postId)) {
+            $settings['template'] = '' !== $savedPageTemplate ? $savedPageTemplate : 'default';
+        }
+
         return array(
             'post_id' => $postId,
             'data' => $data,
@@ -568,6 +575,16 @@ final class ElementorAdapter
         }
 
         foreach ($expectedSettings as $key => $expectedValue) {
+            if ('template' === $key) {
+                // Elementor's Page Settings Manager saves this field in WordPress'
+                // _wp_page_template meta, not in _elementor_page_settings.
+                $saved = (string) get_post_meta((int) $actual['post_id'], '_wp_page_template', true);
+                $saved = '' !== $saved ? $saved : 'default';
+                if (! is_string($expectedValue) || ! hash_equals($expectedValue, $saved)) {
+                    throw new RuntimeException('Elementor page template readback verification failed.');
+                }
+                continue;
+            }
             if (! array_key_exists($key, $actual['page_settings'])) {
                 throw new RuntimeException('Elementor document readback is missing page setting: ' . (string) $key);
             }
