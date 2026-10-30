@@ -204,7 +204,8 @@ namespace {
     $GLOBALS['theme_fixture']['updates_checked'] = false;
     $inventory = $adapter->themeList();
     if (($inventory['update_state'] ?? null) !== 'not_checked'
-        || ($inventory['themes'][0]['update_available'] ?? false) !== null) {
+        || ! array_key_exists('update_available', $inventory['themes'][0])
+        || null !== $inventory['themes'][0]['update_available']) {
         throw new \RuntimeException('Unverified theme update cache was reported as an available update.');
     }
     $GLOBALS['theme_fixture']['updates_checked'] = true;
