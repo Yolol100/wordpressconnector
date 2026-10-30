@@ -15,6 +15,8 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 
 For `plugin.update` and `theme.update`, pass `expected_target_version` when the caller intends to deploy an exact release. The dry-run returns the installed version (`from_version`), the cached WordPress update offer (`available_version`), and the original state fingerprint. A pinned target must be newer than the installed version. A confirmed pinned update refreshes the WordPress offer, stops on drift before calling the upgrader, and checks the installed version after the operation.
 
+The private `theme.list` inventory also reports cached `update_available`, `available_version`, `can_update` and `updates_checked_gmt`. Unknown or never-checked update state remains `null`/`not_checked`, not a guaranteed healthy status. These fields are read-only WordPress Core cache indicators; they do not prove artifact provenance, website authorization, or actual update success.
+
 The check **does not** turn GitHub commits into WordPress update offers. The target plugin/theme still needs a compatible update provider. If no native offer exists, use the guarded private `plugin.install_package` for a vetted plugin ZIP, with the known non-rollbackability caveat. Active themes without native update offers are not a generic ZIP replacement target. This contract is tested with the existing PHP lifecycle fixtures and the private read-only fleet planner; it is not a substitute for live site verification.
 
 ## Plugin control matrix
