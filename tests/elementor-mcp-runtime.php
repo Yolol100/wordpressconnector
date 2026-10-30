@@ -220,6 +220,7 @@ try {
     $created = $documentAdapter->createDocument(array(
         'post_type' => 'page',
         'title' => 'Connector Elementor persisted readback runtime',
+        'slug' => 'connector-elementor-readback-fixture',
         'status' => 'draft',
         'data' => $documentData,
         'page_settings' => array(),
