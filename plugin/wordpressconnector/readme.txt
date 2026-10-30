@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.5
+Stable tag: 1.20.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.20.6 makes mutation-lock recovery fail closed. A lock older than ten minutes can be reclaimed only when its original request has a verified, durable completed outcome. A pending request, missing record or legacy lock is never considered finished based on elapsed time alone; administrator reconciliation is required for unresolved locks. No website deployment or hosted OAuth is introduced.
 
 Version 1.20.5 hardens mutations with durable, one-time request reservations before any write. Unknown outcomes remain blocked from automatic replay; verified rollback snapshots are required before reporting rollback availability. Signed GitHub OIDC tokens now use atomic, database-backed replay claims; expired claims can be cleared with the privileged connector.cleanup action. No automatic site deployments, Hostinger restore checks, or direct ChatGPT OAuth are added.
 

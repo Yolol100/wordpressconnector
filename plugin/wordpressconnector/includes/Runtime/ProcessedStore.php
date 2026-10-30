@@ -66,11 +66,12 @@ final class ProcessedStore
         return is_array($value) ? $value : null;
     }
 
-    public function acquireMutationLock(): string
+    public function acquireMutationLock(string $requestId = ''): string
     {
         $token = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
         $value = wp_json_encode(array(
             'token' => $token,
+            'request_id' => $requestId,
             'created_at' => time(),
         ));
         if (! is_string($value)) {
@@ -88,6 +89,23 @@ final class ProcessedStore
             || ! is_array($data)
             || time() - (int) ($data['created_at'] ?? time()) <= self::LOCK_TTL
         ) {
+            return '';
+        }
+
+        // Time alone does not prove that the previous request finished.
+        // A long-running upgrade may still be modifying the filesystem.
+        // Reclaim only when its unique persisted request ID has an explicit,
+        // successfully finalized outcome. Unknown/legacy locks are deliberately
+        // left for administrator reconciliation rather than a second write.
+        $ownerRequestId = isset($data['request_id']) && is_string($data['request_id'])
+            ? $data['request_id'] : '';
+        if ('' === $ownerRequestId) {
+            return '';
+        }
+        $owner = $this->get($ownerRequestId);
+        if (! is_array($owner) || ($owner['state'] ?? null) !== 'completed'
+            || ! is_string($owner['result_hash'] ?? null)
+            || '' === $owner['result_hash']) {
             return '';
         }
 
