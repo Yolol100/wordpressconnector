@@ -32,6 +32,7 @@ final class Runner
         $this->registry->register('connector.read_batch', array($this, 'readBatch'), array('description' => 'Read up to 25 supported actions with one permission-checked request and no mutations.'));
         $this->registry->register('connector.rollback', array($this, 'rollback'), array('mutation' => true, 'privileged' => true, 'description' => 'Execute a stored rollback snapshot by request_id.'));
         $this->registry->register('connector.cleanup', array($this, 'cleanup'), array('mutation' => true, 'privileged' => true, 'description' => 'Delete expired idempotency and rollback state.'));
+        $this->registry->register('connector.mutation_status', array($this, 'mutationStatus'), array('privileged' => true, 'capability' => 'manage_options', 'description' => 'Read a sanitized request outcome and lock status for private administrator reconciliation.'));
     }
 
     public function run(Request $request, array $context = array()): array
@@ -338,6 +339,65 @@ final class Runner
         $result = $this->registry->execute((string) $rollback['action'], $rollback['payload'], array_merge($context, array('rollback_mode' => true, 'expected_fingerprint' => null)));
         unset($result['_rollback'], $result['_current_fingerprint']);
         return array('restored_request_id' => $requestId, 'restored_with' => $rollback['action'], 'result' => $result);
+    }
+
+    /**
+     * Private administrator-only recovery inspection. No recovery write or
+     * retry is possible here; results are observations, not execution proof.
+     */
+    public function mutationStatus(array $payload, array $context): array
+    {
+        if (array_keys($payload) !== array('request_id')
+            || ! is_string($payload['request_id'] ?? null)
+            || 1 !== preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $payload['request_id'])) {
+            throw new RuntimeException('Mutation status requires only a valid request_id.');
+        }
+        $requestId = $payload['request_id'];
+        $record = $this->processed->get($requestId);
+        $state = 'not_verified';
+        $outcome = 'unknown';
+        $action = null;
+        $createdAtGmt = null;
+
+        if (is_array($record)) {
+            $action = isset($record['action']) && is_string($record['action'])
+                && 1 === preg_match('/^[a-z0-9][a-z0-9._-]*\z/', $record['action'])
+                ? $record['action'] : null;
+            $timestamp = $record['created_at'] ?? null;
+            if (is_int($timestamp) && $timestamp > 0 && $timestamp <= time() + 60) {
+                $createdAtGmt = gmdate('c', $timestamp);
+            }
+
+            if (($record['state'] ?? null) === 'pending') {
+                $state = 'pending';
+            } elseif (($record['state'] ?? null) === 'completed'
+                && is_bool($record['ok'] ?? null)
+                && is_string($record['result_hash'] ?? null)
+                && '' !== $record['result_hash']) {
+                $state = 'completed';
+                $outcome = $record['ok'] ? 'succeeded' : 'failed';
+            } elseif (! array_key_exists('state', $record)
+                && is_bool($record['ok'] ?? null)) {
+                $state = 'legacy_terminal_unverified';
+            } else {
+                $state = 'unverifiable';
+            }
+        }
+
+        // This is deliberately a boolean inventory observation, not
+        // the rollback payload or a promise that rollback can succeed.
+        return array(
+            'request_id' => $requestId,
+            'record_state' => $state,
+            'recorded_action' => $action,
+            'recorded_at_gmt' => $createdAtGmt,
+            'outcome' => $outcome,
+            'rollback_snapshot_recorded' => null !== $this->snapshots->getRecord($requestId),
+            'mutation_lock' => $this->processed->mutationLockStatus($requestId),
+            'manual_reconciliation_required' => 'completed' !== $state,
+            'safe_to_retry_automatically' => false,
+            'guidance' => 'Verify the exact site state and original request receipt before any new write or rollback. This inspection makes no changes.',
+        );
     }
 
     public function cleanup(array $payload, array $context): array

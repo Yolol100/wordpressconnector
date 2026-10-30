@@ -19,6 +19,12 @@ Before executing a confirmed mutation, the runtime creates a unique, durable `pe
 
 Signed GitHub OIDC JWT IDs are consumed using an atomic unique-key WordPress option, not a cache-only transient. Claims issued before this upgrade remain protected by the previous transient during its short remaining lifetime. The private `connector.cleanup` action also removes old, verifiably expired replay claims in bounded batches. This is not a hosted OAuth provider or a site registry. Native plugin/theme package upgrades still do not guarantee a post-success rollback; existing hosting backups must have independently verified restore access before a production release.
 
+## Read-only recovery inspection (1.20.7 candidate)
+
+Private authenticated WordPress administrators with `manage_options` can call `connector.mutation_status` using exactly `{"request_id":"<existing-id>"}`. The result reports only the persisted request state (`completed`, `pending`, `legacy_terminal_unverified`, `unverifiable` or `not_verified`), action name when well formed, recorded time, terminal success/failure when verified, whether a rollback snapshot record exists and whether a connector mutation lock is observed for this request, another request or cannot be verified. It never returns the original input, stored payload, rollback instructions, hashes, credentials or signing tokens. The action is read-only and **not available to the public GitHub route or to lower-privileged WordPress accounts**.
+
+A missing state record is **not** evidence that no write happened. A completed record is a stored execution outcome, **not** independent site readback. Every status reports `safe_to_retry_automatically: false`. Pending, missing, legacy and malformed states require manual reconciliation. Cleanup retains pending or unverifiable records and their site-local rollback snapshots; expired recovery data is removed only for verifiably completed records. This helper does **not** clear orphaned locks, redo any action or override host backup/restore checks.
+
 ## Native update version pinning
 
 For `plugin.update` and `theme.update`, pass `expected_target_version` when the caller intends to deploy an exact release. The dry-run returns the installed version (`from_version`), the cached WordPress update offer (`available_version`), and the original state fingerprint. A pinned target must be newer than the installed version. A confirmed pinned update refreshes the WordPress offer, stops on drift before calling the upgrader, and checks the installed version after the operation.
