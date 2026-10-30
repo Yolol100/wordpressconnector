@@ -266,6 +266,21 @@ try {
         throw new RuntimeException('Elementor bulk import accepted wrong source type.');
     }
 
+    // Existing-page Elementor JSON import must tolerate provider-added fields
+    // such as container isInner=false without falsely triggering rollback.
+    $replacementData = $documentData;
+    $replacementData[0]['elements'][0]['settings']['title'] = 'Runtime imported';
+    $documentAdapter->replaceDocument(array(
+        'id' => $documentPostId,
+        'data' => $replacementData,
+        'page_settings' => array(),
+        'edit_mode' => 'builder',
+    ), array('dry_run' => false));
+    $imported = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('Runtime imported' !== ($imported['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
+        throw new RuntimeException('Existing Elementor JSON import did not persist normalized content.');
+    }
+
     $patch = $documentAdapter->patchElement(array(
         'id' => $documentPostId,
         'element_id' => 'aabbcc02',
