@@ -448,7 +448,14 @@ final class MediaAdapter
         if (array_key_exists('title', $payload)) $postFields['post_title'] = sanitize_text_field((string) $payload['title']);
         if (array_key_exists('caption', $payload)) $postFields['post_excerpt'] = (string) $payload['caption'];
         if (array_key_exists('description', $payload)) $postFields['post_content'] = (string) $payload['description'];
-        if (array_key_exists('parent', $payload)) $postFields['post_parent'] = (int) $payload['parent'];
+        if (array_key_exists('parent', $payload)) {
+            $parentId = (int) $payload['parent'];
+            if ($parentId < 0 || ($parentId > 0
+                && (! get_post($parentId) || ! current_user_can('edit_post', $parentId)))) {
+                throw new RuntimeException('You cannot assign this media attachment to the requested parent.');
+            }
+            $postFields['post_parent'] = $parentId;
+        }
         if (count($postFields) > 1) {
             $updated = wp_update_post(wp_slash($postFields), true);
             if (is_wp_error($updated)) throw new RuntimeException($updated->get_error_message());
