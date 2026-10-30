@@ -23,8 +23,26 @@ function update_field($key,$value,$postId){ $GLOBALS['pct_fields'][$key]=$value;
 function wp_update_post($data,$wpError=false){ $GLOBALS['pct_post']->post_content=(string)$data['post_content']; return (int)$data['ID']; }
 function is_wp_error($value){ return false; }
 function wp_json_encode($value){ return json_encode($value); }
-function get_option($key,$default=false){ return $default; } function update_option($key,$value,$autoload=null){ return true; }
-function delete_option($key){ return true; } function add_option($key,$value,$deprecated='',$autoload=true){ return true; }
+$GLOBALS['pct_options'] = array();
+function get_option($key,$default=false){
+    return array_key_exists((string)$key, $GLOBALS['pct_options'])
+        ? $GLOBALS['pct_options'][(string)$key] : $default;
+}
+function update_option($key,$value,$autoload=null){
+    $old = get_option($key, null);
+    $GLOBALS['pct_options'][(string)$key] = $value;
+    return $old !== $value;
+}
+function delete_option($key){
+    if(!array_key_exists((string)$key, $GLOBALS['pct_options'])) return false;
+    unset($GLOBALS['pct_options'][(string)$key]);
+    return true;
+}
+function add_option($key,$value,$deprecated='',$autoload=false){
+    if(array_key_exists((string)$key, $GLOBALS['pct_options'])) return false;
+    $GLOBALS['pct_options'][(string)$key] = $value;
+    return true;
+}
 function wp_cache_delete($key,$group=''){ return true; }
 
 $root=dirname(__DIR__);
