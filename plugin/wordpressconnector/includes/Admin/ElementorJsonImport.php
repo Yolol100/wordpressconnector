@@ -190,33 +190,104 @@ final class ElementorJsonImport
 
     private function buildBulkPlan(array $entries): array
     {
-        $plan=array();$seenTargets=array();
-        foreach($entries as $entry){
-            $name=$entry['name'];$payload=$entry['payload'];
-            $source=isset($payload['source'])&&is_array($payload['source'])?$payload['source']:array();
-            $declaredType=sanitize_key((string)($source['post_type']??''));
-            $documentType=sanitize_key((string)($payload['type']??''));
-            $postType=$declaredType;
-            if(''===$postType){$postType='wp-post'===$documentType?'post':('wp-page'===$documentType||'page'===$documentType?'page':'');}
-            if(''===$postType||!post_type_exists($postType)||!is_post_type_viewable($postType)&&'elementor_library'!==$postType){
-                $postType=''; // Unknown type: never guess.
+        $plan = array();
+        $seenTargets = array();
+        $templateTypes = array('header', 'footer', 'section', 'single', 'single-post', 'single-page',
+            'archive', 'search-results', 'error-404', 'popup', 'loop-item', 'loop', 'kit');
+
+        foreach ($entries as $entry) {
+            $name = $entry['name'];
+            $payload = $entry['payload'];
+            $source = isset($payload['source']) && is_array($payload['source']) ? $payload['source'] : array();
+            $declaredType = sanitize_key((string) ($source['post_type'] ?? ''));
+            $documentType = sanitize_key((string) ($payload['type'] ?? ''));
+            $inferredType = '';
+            if (preg_match('/^wp-([a-z0-9_-]+)$/D', $documentType, $typeMatch)) {
+                $inferredType = $typeMatch[1];
+            } elseif ('page' === $documentType) {
+                $inferredType = 'page';
+            } elseif (in_array($documentType, $templateTypes, true)) {
+                $inferredType = 'elementor_library';
             }
-            $slug=isset($source['slug'])?sanitize_title((string)$source['slug']):'';
-            if(''===$slug){$slug=preg_replace('/-elementor(?:-with-site-parts)?\\.json$/i','',$name);$slug=sanitize_title((string)$slug);}
-            $row=array('name'=>$name,'post_type'=>$postType,'slug'=>$slug,'post_id'=>0,'target_label'=>'-', 'status'=>'conflict: unknown type or target','content'=>$payload['content'],'settings'=>isset($payload['page_settings'])&&is_array($payload['page_settings'])?$payload['page_settings']:(isset($payload['settings'])&&is_array($payload['settings'])?$payload['settings']:array()),'template_type'=>$documentType,'fingerprint'=>'');
-            if(''!==$postType&&''!==$slug){
-                $matches=get_posts(array('post_type'=>$postType,'post_status'=>'any','name'=>$slug,'posts_per_page'=>3,'fields'=>'ids','suppress_filters'=>true));
-                if(count($matches)===1){
-                    $id=(int)$matches[0];$post=get_post($id);
-                    if($post instanceof \WP_Post&&(string)$post->post_name===$slug&&current_user_can('edit_post',$id)){
-                        $row['post_id']=$id;$row['target_label']=(string)$post->post_title.' (#'.$id.')';
-                        try{$inspection=(new ElementorAdapter())->inspect(array('id'=>$id));$row['fingerprint']=(string)$inspection['fingerprint'];$row['status']='ready';}catch(Throwable $e){$row['status']='conflict: Elementor read unavailable';}
-                    }else{$row['status']='conflict: insufficient permission';}
-                }elseif(count($matches)>1){$row['status']='conflict: duplicate slug';}
-                else{$row['status']='conflict: no exact existing slug';}
+            $postType = '' !== $declaredType ? $declaredType : $inferredType;
+            $familyConflict = '' !== $declaredType && '' !== $inferredType
+                && $declaredType !== $inferredType
+                && ! ('elementor_library' === $declaredType && 'page' === $documentType);
+
+            if ('' === $postType || ! post_type_exists($postType)
+                || (! is_post_type_viewable($postType) && 'elementor_library' !== $postType)) {
+                $postType = '';
             }
-            if($row['post_id']>0){if(isset($seenTargets[$row['post_id']])){$row['status']='conflict: repeated target';$plan[$seenTargets[$row['post_id']]]['status']='conflict: repeated target';}else{$seenTargets[$row['post_id']]=count($plan);}}
-            $plan[]=$row;
+
+            $slug = isset($source['slug']) ? sanitize_title((string) $source['slug']) : '';
+            if ('' === $slug) {
+                // Files downloaded as "name-elementor (1).json" remain matchable.
+                $slug = (string) preg_replace('/-elementor(?:-with-site-parts)?(?:-[0-9]+)?\.json$/i', '', $name);
+                $slug = sanitize_title($slug);
+            }
+            $row = array(
+                'name' => $name, 'post_type' => $postType, 'slug' => $slug,
+                'post_id' => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
+                'content' => $payload['content'],
+                'settings' => isset($payload['page_settings']) && is_array($payload['page_settings'])
+                    ? $payload['page_settings']
+                    : (isset($payload['settings']) && is_array($payload['settings']) ? $payload['settings'] : array()),
+                'template_type' => $documentType, 'fingerprint' => '',
+            );
+            if ($familyConflict) {
+                $row['status'] = 'conflict: source post type does not match Elementor document type';
+            } elseif ('' !== $postType && '' !== $slug) {
+                $matches = get_posts(array(
+                    'post_type' => $postType, 'post_status' => 'any',
+                    'name' => $slug, 'posts_per_page' => 3, 'fields' => 'ids',
+                    'suppress_filters' => true,
+                ));
+                if (1 === count($matches)) {
+                    $id = (int) $matches[0];
+                    $post = get_post($id);
+                    if ($post instanceof \WP_Post && (string) $post->post_name === $slug
+                        && current_user_can('edit_post', $id)) {
+                        $row['post_id'] = $id;
+                        $row['target_label'] = (string) $post->post_title . ' (#' . $id . ')';
+                        $storedType = (string) get_post_meta($id, '_elementor_template_type', true);
+                        if ('builder' !== (string) get_post_meta($id, '_elementor_edit_mode', true)) {
+                            $row['status'] = 'conflict: existing item is not an Elementor document';
+                        } elseif ('elementor_library' === $postType
+                            && ('' === $documentType || $storedType !== $documentType)) {
+                            $row['status'] = 'conflict: Elementor template type differs';
+                        } else {
+                            try {
+                                $inspection = (new ElementorAdapter())->inspect(array('id' => $id));
+                                $doc = $inspection['document'] ?? null;
+                                if (! is_array($doc) || empty($doc['data'])) {
+                                    $row['status'] = 'conflict: existing Elementor document is empty';
+                                } else {
+                                    $row['fingerprint'] = (string) $inspection['fingerprint'];
+                                    $row['status'] = 'ready';
+                                }
+                            } catch (Throwable $error) {
+                                $row['status'] = 'conflict: Elementor document read unavailable';
+                            }
+                        }
+                    } else {
+                        $row['status'] = 'conflict: insufficient permission or wrong slug';
+                    }
+                } elseif (count($matches) > 1) {
+                    $row['status'] = 'conflict: duplicate slug';
+                } else {
+                    $row['status'] = 'conflict: no exact existing slug';
+                }
+            }
+
+            if ($row['post_id'] > 0) {
+                if (isset($seenTargets[$row['post_id']])) {
+                    $row['status'] = 'conflict: repeated target';
+                    $plan[$seenTargets[$row['post_id']]]['status'] = 'conflict: repeated target';
+                } else {
+                    $seenTargets[$row['post_id']] = count($plan);
+                }
+            }
+            $plan[] = $row;
         }
         return $plan;
     }
