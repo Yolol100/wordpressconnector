@@ -57,6 +57,13 @@ final class MediaAdapter
 
     public function mediaImport(array $payload, array $context): array
     {
+        if (! current_user_can('upload_files')) {
+            throw new RuntimeException('Uploading media requires upload_files permission.');
+        }
+        $parent = isset($payload['parent']) ? (int) $payload['parent'] : 0;
+        if ($parent > 0 && (! get_post($parent) || ! current_user_can('edit_post', $parent))) {
+            throw new RuntimeException('You cannot attach media to this parent item.');
+        }
         $assetRoot = isset($context['asset_root']) ? (string) $context['asset_root'] : '';
         if ('' === $assetRoot) throw new RuntimeException('media.import requires --asset-root in the CLI context.');
         $source = isset($payload['source_path']) ? (string) $payload['source_path'] : '';
@@ -111,6 +118,9 @@ final class MediaAdapter
     public function mediaUpdate(array $payload, array $context): array
     {
         $id = $this->attachmentId($payload);
+        if (! current_user_can('upload_files') || ! current_user_can('edit_post', $id)) {
+            throw new RuntimeException('You cannot edit this media attachment.');
+        }
         $before = $this->snapshot($id);
         $after = $before;
         foreach (array('title', 'alt', 'caption', 'description', 'parent') as $field) if (array_key_exists($field, $payload)) $after[$field] = $payload[$field];
@@ -258,44 +268,111 @@ final class MediaAdapter
 
     public function mediaAssign(array $payload, array $context): array
     {
-        $attachmentId = $this->attachmentId($payload);
         $targetType = isset($payload['target_type']) ? sanitize_key((string) $payload['target_type']) : '';
         $targetId = isset($payload['target_id']) ? (int) $payload['target_id'] : 0;
+        // A zero attachment ID can only clear a featured image during a
+        // connector-owned rollback. Normal callers cannot bypass attachment checks.
+        $clearFeatured = 'featured_image' === $targetType
+            && ! empty($context['rollback_mode'])
+            && isset($payload['id']) && 0 === (int) $payload['id'];
+        $attachmentId = $clearFeatured ? 0 : $this->attachmentId($payload);
+
+        if (! current_user_can('upload_files')
+            || ($attachmentId > 0 && ! current_user_can('edit_post', $attachmentId))) {
+            throw new RuntimeException('You cannot assign this media attachment.');
+        }
 
         switch ($targetType) {
             case 'featured_image':
+                if ($targetId <= 0 || ! get_post($targetId) || ! current_user_can('edit_post', $targetId)) {
+                    throw new RuntimeException('You cannot edit the featured-image target.');
+                }
                 $before = (int) get_post_thumbnail_id($targetId);
-                $result = array('before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make($before));
-                if (! empty($context['dry_run'])) return $result;
-                if (! set_post_thumbnail($targetId, $attachmentId)) throw new RuntimeException('Could not assign featured image.');
-                $result['_rollback'] = array('action' => 'media.assign', 'payload' => array('id' => $before, 'target_type' => 'featured_image', 'target_id' => $targetId));
+                $result = array(
+                    'before' => $before,
+                    'after' => $attachmentId,
+                    '_current_fingerprint' => Fingerprint::make($before),
+                );
+                if (! empty($context['dry_run'])) {
+                    return $result;
+                }
+                if ($before === $attachmentId) {
+                    $result['unchanged'] = true;
+                    return $result;
+                }
+                if ($clearFeatured) {
+                    if (! delete_post_thumbnail($targetId)) {
+                        throw new RuntimeException('Could not clear featured image during rollback.');
+                    }
+                } elseif (! set_post_thumbnail($targetId, $attachmentId)) {
+                    throw new RuntimeException('Could not assign featured image.');
+                }
+                if ((int) get_post_thumbnail_id($targetId) !== $attachmentId) {
+                    throw new RuntimeException('Featured-image assignment readback failed.');
+                }
+                if (empty($context['rollback_mode'])) {
+                    $result['_rollback'] = array('action' => 'media.assign', 'payload' => array(
+                        'id' => $before, 'target_type' => 'featured_image', 'target_id' => $targetId,
+                    ));
+                }
                 return $result;
 
             case 'product_gallery':
-                if (! function_exists('wc_get_product')) throw new RuntimeException('WooCommerce is not active.');
+                if ($targetId <= 0 || ! get_post($targetId) || ! current_user_can('edit_post', $targetId)) {
+                    throw new RuntimeException('You cannot edit the product gallery target.');
+                }
+                if (! function_exists('wc_get_product')) {
+                    throw new RuntimeException('WooCommerce is not active.');
+                }
                 $product = wc_get_product($targetId);
-                if (! $product instanceof \WC_Product) throw new RuntimeException('Product not found.');
+                if (! $product instanceof \WC_Product) {
+                    throw new RuntimeException('Product not found.');
+                }
                 $before = array_map('intval', $product->get_gallery_image_ids());
                 $mode = isset($payload['mode']) ? (string) $payload['mode'] : 'append';
+                if (! in_array($mode, array('append', 'replace'), true)) {
+                    throw new RuntimeException('Gallery mode must be append or replace.');
+                }
                 $after = 'replace' === $mode ? array($attachmentId) : array_values(array_unique(array_merge($before, array($attachmentId))));
                 $result = array('before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make($before));
-                if (! empty($context['dry_run'])) return $result;
+                if (! empty($context['dry_run'])) {
+                    return $result;
+                }
                 $product->set_gallery_image_ids($after);
                 $product->save();
-                $result['_rollback'] = array('action' => 'woocommerce.product.update', 'payload' => array('id' => $targetId, 'gallery_image_ids' => $before));
+                if (array_map('intval', $product->get_gallery_image_ids()) !== $after) {
+                    throw new RuntimeException('Product gallery assignment readback failed.');
+                }
+                $result['_rollback'] = array('action' => 'woocommerce.product.update', 'payload' => array(
+                    'id' => $targetId, 'gallery_image_ids' => $before,
+                ));
                 return $result;
 
             case 'custom_logo':
+                if (! current_user_can('edit_theme_options')) {
+                    throw new RuntimeException('Changing the custom logo requires edit_theme_options permission.');
+                }
                 $before = (int) get_theme_mod('custom_logo', 0);
-                if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make($before));
+                if (! empty($context['dry_run'])) {
+                    return array('before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make($before));
+                }
                 set_theme_mod('custom_logo', $attachmentId);
-                return array('after' => $attachmentId, '_rollback' => array('action' => 'theme_mod.update', 'payload' => array('name' => 'custom_logo', 'value' => $before)));
+                return array('after' => $attachmentId, '_rollback' => array(
+                    'action' => 'theme_mod.update', 'payload' => array('name' => 'custom_logo', 'value' => $before),
+                ));
 
             case 'site_icon':
+                if (! current_user_can('manage_options')) {
+                    throw new RuntimeException('Changing the site icon requires manage_options permission.');
+                }
                 $before = (int) get_option('site_icon', 0);
-                if (! empty($context['dry_run'])) return array('before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make($before));
+                if (! empty($context['dry_run'])) {
+                    return array('before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make($before));
+                }
                 update_option('site_icon', $attachmentId, false);
-                return array('after' => $attachmentId, '_rollback' => array('action' => 'option.update', 'payload' => array('name' => 'site_icon', 'value' => $before)));
+                return array('after' => $attachmentId, '_rollback' => array(
+                    'action' => 'option.update', 'payload' => array('name' => 'site_icon', 'value' => $before),
+                ));
 
             default:
                 throw new RuntimeException('target_type must be featured_image, product_gallery, custom_logo or site_icon. Use acf.update, elementor.patch_element or gutenberg.patch for builder-specific assignments.');
@@ -305,6 +382,9 @@ final class MediaAdapter
     public function mediaRegenerate(array $payload, array $context): array
     {
         $id = $this->attachmentId($payload);
+        if (! current_user_can('upload_files') || ! current_user_can('edit_post', $id)) {
+            throw new RuntimeException('You cannot regenerate this media attachment.');
+        }
         $before = wp_get_attachment_metadata($id);
         $file = get_attached_file($id);
         if (! $file || ! is_file($file)) throw new RuntimeException('Attachment file is missing.');
