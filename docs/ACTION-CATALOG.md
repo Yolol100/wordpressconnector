@@ -33,6 +33,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `connector.setup.inspect` | privileged | Read private OAuth/backup/staging readiness evidence; no remote authentication, backup or write is performed. |
 | `connector.rest_catalog` | privileged | Inventory bounded sanitized REST namespaces and route patterns with advertised HTTP methods. Does not dispatch endpoint or permission callbacks. Requires private, authenticated manage_options context. |
 | `connector.cleanup` | mutation, privileged | Delete expired idempotency and rollback state. |
+| `connector.mutation_status` | privileged | Inspect one private request ID: sanitized recorded outcome, snapshot presence and mutation-lock status. Requires manage_options; never retries, restores or exposes payloads, tokens or rollback instructions. |
 | `connector.discover` | read-only | Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities. |
 | `connector.update.check` | privileged | Check the canonical GitHub release for a newer verified WordPress Connector package. |
 | `connector.update.apply` | mutation, privileged, system_update | Verify the canonical release and apply via WordPress Core's temporary-backup update path; installation failures trigger Core restoration. Real updates require fingerprint confirmation but no externally tested restore attestation; `restore_verified` remains an ignored optional legacy boolean. Post-success rollback is not guaranteed. |

@@ -4,6 +4,8 @@
 
 WordPress Connector is the canonical Webactueel bridge for controlled WordPress automation from approved HTTPS clients, native MCP clients and the guarded GitHub runtime.
 
+**1.20.7 candidate:** private administrator-only `connector.mutation_status` for content-free inspection of confirmed/pending/unknown operation state, rollback-snapshot presence and lock status. Cleanup retains unverified recovery evidence. No auto-retry, unverified lock deletion, hosted OAuth or live deployment.
+
 **1.20.6 candidate:** stale mutation locks cannot be reclaimed solely because ten minutes have elapsed; request-bound records and durable completion proofs now govern safe recovery. Unknown/legacy locks require independent administrator reconciliation. No live site updates or automatic fleet distribution.
 
 **1.20.5 candidate:** fail-closed mutation reservations, verified rollback-state persistence and atomic database-backed GitHub OIDC replay claims; **not yet published or deployed**. A pending/unknown operation must be reconciled by an administrator, never automatically retried. No hosted OAuth or fleet deployment service is introduced.

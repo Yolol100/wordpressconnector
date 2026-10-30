@@ -66,6 +66,33 @@ final class ProcessedStore
         return is_array($value) ? $value : null;
     }
 
+    /**
+     * Read-only, sanitized observation for an authenticated recovery inspection.
+     * A missing option is not proof that a previous operation did not run.
+     */
+    public function mutationLockStatus(string $requestId): string
+    {
+        $value = get_option(self::LOCK_KEY, null);
+        if (null === $value) {
+            return 'not_observed';
+        }
+        if (! is_string($value)) {
+            return 'unverifiable';
+        }
+        $lock = json_decode($value, true);
+        if (! is_array($lock)
+            || ! is_string($lock['token'] ?? null)
+            || '' === $lock['token']
+            || ! is_numeric($lock['created_at'] ?? null)) {
+            return 'unverifiable';
+        }
+        $owner = $lock['request_id'] ?? null;
+        if (! is_string($owner) || '' === $owner) {
+            return 'legacy_or_unverifiable';
+        }
+        return hash_equals($owner, $requestId) ? 'held_for_request' : 'held_for_another_request';
+    }
+
     public function acquireMutationLock(string $requestId = ''): string
     {
         $token = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
@@ -128,14 +155,31 @@ final class ProcessedStore
         global $wpdb;
         $like = $wpdb->esc_like(self::PREFIX) . '%';
         $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
+        if (! is_array($rows)) {
+            throw new \RuntimeException('Mutation cleanup could not inspect WordPress options storage.');
+        }
         $deleted = 0;
         foreach ($rows as $row) {
+            $name = isset($row->option_name) && is_string($row->option_name) ? $row->option_name : '';
+            if (1 !== preg_match('/^wpconnector_processed_[a-f0-9]{64}\z/', $name)) {
+                continue;
+            }
             $value = maybe_unserialize($row->option_value);
-            if (is_array($value)
-                && ($value['state'] ?? null) !== 'pending'
-                && isset($value['created_at'])
-                && (int) $value['created_at'] < time() - $olderThanSeconds) {
-                delete_option((string) $row->option_name);
+            if (! is_array($value) || ! is_int($value['created_at'] ?? null)
+                || $value['created_at'] >= time() - $olderThanSeconds) {
+                continue;
+            }
+            // Only proven terminal states may expire. An unknown or malformed
+            // record is a replay barrier, not safe garbage to discard.
+            $completed = ($value['state'] ?? null) === 'completed'
+                || (! array_key_exists('state', $value) && is_bool($value['ok'] ?? null));
+            if (! $completed
+                || ! is_bool($value['ok'] ?? null)
+                || ! is_string($value['result_hash'] ?? null)
+                || '' === $value['result_hash']) {
+                continue;
+            }
+            if (delete_option((string) $row->option_name)) {
                 ++$deleted;
             }
         }

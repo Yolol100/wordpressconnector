@@ -13,6 +13,7 @@ $expected = array(
     'cache.flush' => 'mutation, privileged',
     'connector.rest_catalog' => 'privileged',
     'connector.setup.inspect' => 'privileged',
+    'connector.mutation_status' => 'privileged',
     'core.check_updates' => 'privileged',
     'core.update' => 'mutation, privileged, system_update',
     'cron.delete' => 'mutation, privileged',

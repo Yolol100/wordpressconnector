@@ -11,6 +11,13 @@ $GLOBALS['durable_fail_update'] = '';
 $GLOBALS['durable_fail_read'] = '';
 $GLOBALS['durable_mutations'] = 0;
 $GLOBALS['durable_assertions'] = 0;
+$GLOBALS['durable_admin_allowed'] = true;
+$GLOBALS['durable_fail_scan'] = false;
+
+function current_user_can($capability): bool
+{
+    return 'manage_options' === $capability && $GLOBALS['durable_admin_allowed'];
+}
 
 function durableAssert(bool $condition, string $message): void
 {
@@ -85,8 +92,9 @@ final class DurableTestDb
     }
     public function esc_like($value) { return $value; }
     public function prepare($query, ...$args) { return $query; }
-    public function get_results($query): array
+    public function get_results($query)
     {
+        if ($GLOBALS['durable_fail_scan']) return null;
         $results = array();
         foreach ($GLOBALS['durable_options'] as $name => $value) {
             if (0 !== strpos($name, 'wpconnector_processed_')
@@ -263,4 +271,120 @@ durableAssert('' === $proc->acquireMutationLock('lock-new-request-03'),
     'An unverifiable legacy lock was stolen.');
 unset($GLOBALS['durable_options'][$lockName]);
 
-echo 'durable persistence, retry, rollback and cleanup contract OK (' . $GLOBALS['durable_assertions'] . " assertions)\n";
+// Recovery inspection is private, administrator-only, read-only and
+// never returns stored payloads, rollback instructions, hashes or tokens.
+$statusRequest = static function (array $payload): Request {
+    return Request::fromArray(array(
+        'version' => 1,
+        'request_id' => 'status-inspection-0001',
+        'action' => 'connector.mutation_status',
+        'payload' => $payload,
+        'dry_run' => true,
+        'confirm' => false,
+    ));
+};
+$mutationCountBeforeInspection = $GLOBALS['durable_mutations'];
+$observed = $runner->run($statusRequest(array('request_id' => 'runner-contract-01')));
+durableAssert(($observed['ok'] ?? false) === true
+    && ($observed['data']['record_state'] ?? null) === 'completed'
+    && ($observed['data']['outcome'] ?? null) === 'succeeded'
+    && ($observed['data']['rollback_snapshot_recorded'] ?? false) === true
+    && ($observed['data']['safe_to_retry_automatically'] ?? true) === false
+    && ($observed['data']['manual_reconciliation_required'] ?? true) === false,
+    'Recorded successful mutation cannot be inspected safely.');
+$pendingStatus = $runner->run($statusRequest(array('request_id' => 'runner-contract-03')));
+durableAssert(($pendingStatus['data']['record_state'] ?? null) === 'pending'
+    && ($pendingStatus['data']['outcome'] ?? null) === 'unknown'
+    && ($pendingStatus['data']['manual_reconciliation_required'] ?? false) === true
+    && ($pendingStatus['data']['safe_to_retry_automatically'] ?? true) === false,
+    'Uncertain mutation was misreported as safe.');
+$missingStatus = $runner->run($statusRequest(array('request_id' => 'status-missing-0001')));
+durableAssert(($missingStatus['data']['record_state'] ?? null) === 'not_verified'
+    && ($missingStatus['data']['outcome'] ?? null) === 'unknown'
+    && ($missingStatus['data']['rollback_snapshot_recorded'] ?? true) === false,
+    'Missing mutation record was misreported as executed or safe.');
+$legacyStatus = $runner->run($statusRequest(array('request_id' => 'legacy-contract-01')));
+durableAssert(($legacyStatus['data']['record_state'] ?? null) === 'legacy_terminal_unverified'
+    && ($legacyStatus['data']['outcome'] ?? null) === 'unknown',
+    'Legacy mutation record was treated as fully verified.');
+$corruptId = 'status-corrupt-0001';
+$GLOBALS['durable_options']['wpconnector_processed_' . hash('sha256', $corruptId)] = array(
+    'created_at' => time(), 'state' => 'corrupt',
+    'action' => '../../private-secret', 'result_hash' => 'NEVER-EXPOSE-THIS',
+    'terminal_error' => 'MY-SECRET-TERMINAL-ERROR',
+    'payload' => array('password' => 'NEVER-EXPOSE-THIS'),
+);
+$corruptStatus = $runner->run($statusRequest(array('request_id' => $corruptId)));
+$rendered = json_encode($corruptStatus);
+durableAssert(($corruptStatus['data']['record_state'] ?? null) === 'unverifiable'
+    && array_key_exists('recorded_action', $corruptStatus['data'] ?? array())
+    && $corruptStatus['data']['recorded_action'] === null
+    && ! str_contains((string) $rendered, 'NEVER-EXPOSE-THIS')
+    && ! str_contains((string) $rendered, 'MY-SECRET-TERMINAL-ERROR'),
+    'Corrupt recovery state leaked private data or was misclassified.');
+$invalidStatus = $runner->run($statusRequest(array('request_id' => $corruptId, 'unexpected' => true)));
+durableAssert(($invalidStatus['ok'] ?? true) === false, 'Unexpected status request fields were accepted.');
+$badStatusId = $runner->run($statusRequest(array('request_id' => '../wp-config.php')));
+durableAssert(($badStatusId['ok'] ?? true) === false, 'Invalid status request identifier was accepted.');
+$GLOBALS['durable_admin_allowed'] = false;
+$unauthorizedStatus = $runner->run($statusRequest(array('request_id' => 'runner-contract-01')));
+durableAssert(($unauthorizedStatus['ok'] ?? true) === false,
+    'Unprivileged user could inspect private mutation state.');
+$GLOBALS['durable_admin_allowed'] = true;
+Policy::setPublicRepositoryContext(true);
+$publicStatus = $runner->run($statusRequest(array('request_id' => 'runner-contract-01')));
+durableAssert(($publicStatus['ok'] ?? true) === false, 'Public GitHub request accessed private recovery state.');
+Policy::setPublicRepositoryContext(false);
+
+$statusLockToken = $proc->acquireMutationLock('runner-contract-03');
+durableAssert('' !== $statusLockToken, 'Could not set up locked status test.');
+$lockedOwner = $runner->run($statusRequest(array('request_id' => 'runner-contract-03')));
+$lockedOther = $runner->run($statusRequest(array('request_id' => 'runner-contract-01')));
+durableAssert(($lockedOwner['data']['mutation_lock'] ?? null) === 'held_for_request'
+    && ($lockedOther['data']['mutation_lock'] ?? null) === 'held_for_another_request',
+    'Private inspection did not distinguish own and another request lock.');
+$proc->releaseMutationLock($statusLockToken);
+durableAssert($GLOBALS['durable_mutations'] === $mutationCountBeforeInspection,
+    'A recovery inspection unexpectedly executed a mutation.');
+
+// Cleanup is conservative: old pending, corrupt, and unpaired snapshots are
+// retained. Only snapshots tied to a verified completed result can expire.
+$cutoffTime = time() - 90 * DAY_IN_SECONDS;
+foreach (array('cleanup-pending-001', 'cleanup-orphan-001', 'cleanup-completed-001', 'cleanup-malformed-001') as $id) {
+    $snap->put($id, array('action' => 'audit.restore', 'payload' => array('sensitive' => 'not-output')));
+    $snapKey = 'wpconnector_snapshot_' . hash('sha256', $id);
+    $GLOBALS['durable_options'][$snapKey]['created_at'] = $cutoffTime;
+}
+$proc->begin('cleanup-completed-001', 'cleanup-fp', 'audit.mutate');
+$proc->put('cleanup-completed-001', 'cleanup-fp', 'audit.mutate', 'valid-final-result');
+$doneKey = 'wpconnector_processed_' . hash('sha256', 'cleanup-completed-001');
+$GLOBALS['durable_options'][$doneKey]['created_at'] = $cutoffTime;
+$malformedKey = 'wpconnector_processed_' . hash('sha256', 'cleanup-malformed-001');
+$GLOBALS['durable_options'][$malformedKey] = array(
+    'created_at' => $cutoffTime, 'state' => 'broken', 'ok' => true, 'result_hash' => 'unverified',
+);
+$snapshotCount = $snap->cleanup(30 * DAY_IN_SECONDS);
+durableAssert($snapshotCount === 1
+    && $snap->getRecord('cleanup-pending-001') !== null
+    && $snap->getRecord('cleanup-orphan-001') !== null
+    && $snap->getRecord('cleanup-malformed-001') !== null
+    && $snap->getRecord('cleanup-completed-001') === null,
+    'Snapshot cleanup discarded unverifiable recovery evidence.');
+$processedCount = $proc->cleanup(30 * DAY_IN_SECONDS);
+durableAssert($processedCount >= 1
+    && null === $proc->get('cleanup-completed-001')
+    && is_array($proc->get('cleanup-malformed-001'))
+    && is_array($proc->get('cleanup-pending-001')),
+    'Processed cleanup discarded an uncertain outcome or failed to expire a terminal record.');
+
+$GLOBALS['durable_fail_scan'] = true;
+durableThrows(static function () use ($proc): void {
+    $proc->cleanup(30 * DAY_IN_SECONDS);
+}, 'could not inspect');
+durableThrows(static function () use ($snap): void {
+    $snap->cleanup(30 * DAY_IN_SECONDS);
+}, 'could not inspect');
+$GLOBALS['durable_fail_scan'] = false;
+
+echo 'durable persistence, recovery inspection, privacy and cleanup contract OK (' . $GLOBALS['durable_assertions'] . " assertions)\n";
+
