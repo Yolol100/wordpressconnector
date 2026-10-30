@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.1
+Stable tag: 1.20.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -175,6 +175,11 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.20.2 =
+* Verify Elementor page template setting against _wp_page_template instead of regular page settings; retain strict checks for other settings.
+* Include the stored WordPress page template in Elementor document snapshots so an import rollback can restore the previous layout.
+* Test existing Elementor page template import and verified rollback on disposable WordPress runtime.
 
 = 1.20.1 =
 * Fix existing Elementor page/post/template replacement readback: compare persisted data against Elementor-normalized save output instead of original JSON, preventing false import rollbacks.

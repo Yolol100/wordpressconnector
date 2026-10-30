@@ -281,6 +281,18 @@ try {
         throw new RuntimeException('Existing Elementor JSON import did not persist normalized content.');
     }
 
+    // Elementor stores the page layout in _wp_page_template, not in regular
+    // document settings. This was rejected by Connector 1.20.1.
+    $documentAdapter->replaceDocument(array(
+        'id' => $documentPostId,
+        'data' => $replacementData,
+        'page_settings' => array('template' => 'elementor_canvas'),
+        'edit_mode' => 'builder',
+    ), array('dry_run' => false));
+    if ('elementor_canvas' !== (string) get_post_meta($documentPostId, '_wp_page_template', true)) {
+        throw new RuntimeException('Elementor template import was not saved in WordPress meta.');
+    }
+
     $patch = $documentAdapter->patchElement(array(
         'id' => $documentPostId,
         'element_id' => 'aabbcc02',
@@ -303,6 +315,9 @@ try {
         'conditions' => $previousDocument['conditions'],
     ), array('dry_run' => false));
     $restored = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('default' !== ($restored['document']['page_settings']['template'] ?? null)) {
+        throw new RuntimeException('Elementor rollback did not restore the original page template.');
+    }
     if ('Runtime before' !== ($restored['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
         throw new RuntimeException('Elementor document rollback did not persist original content.');
     }
