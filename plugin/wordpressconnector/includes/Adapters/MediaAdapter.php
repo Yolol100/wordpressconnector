@@ -198,11 +198,31 @@ final class MediaAdapter
         $created = array();
         try {
             foreach ($copies as $from => $to) {
+                $oldPath = $directory . DIRECTORY_SEPARATOR . $from;
                 $newPath = $directory . DIRECTORY_SEPARATOR . $to;
-                if (! copy($directory . DIRECTORY_SEPARATOR . $from, $newPath)) {
-                    throw new RuntimeException('Image file copy failed.');
+                $input = @fopen($oldPath, 'rb');
+                // Exclusive create prevents racing with another upload or rename.
+                $output = @fopen($newPath, 'xb');
+                if (! is_resource($input) || ! is_resource($output)) {
+                    if (is_resource($input)) {
+                        fclose($input);
+                    }
+                    if (is_resource($output)) {
+                        fclose($output);
+                    }
+                    throw new RuntimeException('Image copy source unavailable or new filename already exists.');
                 }
                 $created[] = $newPath;
+                try {
+                    $expectedSize = filesize($oldPath);
+                    $copied = stream_copy_to_stream($input, $output);
+                    if (false === $expectedSize || $expectedSize !== $copied) {
+                        throw new RuntimeException('Image file copy was incomplete.');
+                    }
+                } finally {
+                    fclose($input);
+                    fclose($output);
+                }
             }
             $afterMetadata = $metadata;
             $afterMetadata['file'] = dirname($metadata['file']) === '.' ? $requested : dirname($metadata['file']) . '/' . $requested;
