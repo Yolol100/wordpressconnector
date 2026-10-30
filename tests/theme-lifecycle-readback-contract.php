@@ -39,6 +39,8 @@ namespace {
         'upgrade_result' => true,
         'upgrade_version' => '2.5',
         'upgrade_calls' => 0,
+        'updates_checked' => true,
+        'can_update' => true,
     );
 
     final class ThemeLifecycleError
@@ -53,13 +55,27 @@ namespace {
         public function errors(): bool { return false; }
         public function get(string $key): string
         {
-            return 'Version' === $key ? (string) ($GLOBALS['theme_fixture']['installed'][$this->name] ?? '') : '';
+            if ('Version' === $key) {
+                return (string) ($GLOBALS['theme_fixture']['installed'][$this->name] ?? '');
+            }
+            return 'Name' === $key ? $this->name : '';
         }
+        public function get_template(): string { return $this->name; }
     }
     function sanitize_text_field($value): string { return trim((string) $value); }
     function get_stylesheet(): string { return $GLOBALS['theme_fixture']['active']; }
     function get_template(): string { return $GLOBALS['theme_fixture']['parent']; }
     function wp_get_theme(string $name): ThemeLifecycleTheme { return new ThemeLifecycleTheme($name); }
+    function wp_get_themes(): array
+    {
+        $themes = array();
+        foreach (array_keys($GLOBALS['theme_fixture']['installed']) as $name) {
+            $themes[$name] = wp_get_theme($name);
+        }
+        return $themes;
+    }
+    function current_user_can(string $cap): bool { return $GLOBALS['theme_fixture']['can_update']; }
+    function wp_is_file_mod_allowed(string $context): bool { return $GLOBALS['theme_fixture']['can_update']; }
     function is_wp_error($value): bool { return $value instanceof ThemeLifecycleError; }
     function wp_clean_themes_cache(): void { ++$GLOBALS['theme_fixture']['cache_clears']; }
     function delete_theme(string $name)
@@ -78,10 +94,13 @@ namespace {
         }
     }
     function get_site_transient(string $key) {
-        if ('update_themes' !== $key) return false;
-        return (object) array('response' => array(
-            'candidate-theme' => array('new_version' => $GLOBALS['theme_fixture']['update_offer']),
-        ));
+        if ('update_themes' !== $key || ! $GLOBALS['theme_fixture']['updates_checked']) return false;
+        return (object) array(
+            'last_checked' => 1760710000,
+            'response' => array(
+                'candidate-theme' => array('new_version' => $GLOBALS['theme_fixture']['update_offer']),
+            ),
+        );
     }
     function wp_update_themes(): void {
         if (null !== $GLOBALS['theme_fixture']['offer_after_refresh']) {
@@ -165,6 +184,30 @@ namespace {
         throw new \RuntimeException('Verified theme activation or rollback contract failed.');
     }
 
+    $inventory = $adapter->themeList();
+    $themes = array();
+    foreach ($inventory['themes'] as $theme) {
+        $themes[$theme['stylesheet']] = $theme;
+    }
+    if (($themes['candidate-theme']['available_version'] ?? null) !== '2.5'
+        || ($themes['candidate-theme']['update_available'] ?? null) !== true
+        || ($themes['candidate-theme']['can_update'] ?? null) !== true
+        || ($themes['active-parent']['update_available'] ?? null) !== false
+        || ($inventory['update_state'] ?? null) !== 'cached_wordpress_update_snapshot') {
+        throw new \RuntimeException('Native theme inventory did not expose bounded update availability.');
+    }
+    $GLOBALS['theme_fixture']['can_update'] = false;
+    if (($adapter->themeList()['themes'][0]['can_update'] ?? true) !== false) {
+        throw new \RuntimeException('Theme inventory ignored denied update permissions.');
+    }
+    $GLOBALS['theme_fixture']['can_update'] = true;
+    $GLOBALS['theme_fixture']['updates_checked'] = false;
+    $inventory = $adapter->themeList();
+    if (($inventory['update_state'] ?? null) !== 'not_checked'
+        || ($inventory['themes'][0]['update_available'] ?? false) !== null) {
+        throw new \RuntimeException('Unverified theme update cache was reported as an available update.');
+    }
+    $GLOBALS['theme_fixture']['updates_checked'] = true;
     $preview = $adapter->themeUpdate(array(
         'stylesheet' => 'candidate-theme', 'expected_target_version' => '2.5',
     ), array('dry_run' => true));
