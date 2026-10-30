@@ -221,6 +221,18 @@ if (($preview['available_version'] ?? null) !== '1.1.0'
     || ($preview['from_version'] ?? null) !== '1.0.0') {
     throw new RuntimeException('Pinned plugin preview did not disclose available and installed versions.');
 }
+// A pinned native updater cannot be used for a downgrade or no-op release.
+foreach (array('1.0.0', '0.9.0') as $oldTarget) {
+    try {
+        $system->pluginUpdate(array('file'=>'sample/sample.php',
+            'expected_target_version'=>$oldTarget), array('dry_run'=>true));
+        throw new RuntimeException('Pinned downgrade/no-op update was accepted.');
+    } catch (RuntimeException $error) {
+        if (strpos($error->getMessage(), 'must be newer') === false) {
+            throw $error;
+        }
+    }
+}
 $beforeCalls = $GLOBALS['wpconn_plugin_upgrade_calls'];
 $fail(static function() use ($system) {
     $system->pluginUpdate(array('file'=>'sample/sample.php', 'expected_target_version'=>'2.0.0'),array('dry_run'=>true));
