@@ -185,6 +185,17 @@ namespace {
             'extra' => 123), array('dry_run' => true));
     }, 'unknown theme update argument');
 
+    foreach (array('2.0', '1.9') as $oldTarget) {
+        try {
+            $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+                'expected_target_version' => $oldTarget), array('dry_run' => true));
+            throw new \RuntimeException('Pinned theme downgrade/no-op was accepted.');
+        } catch (\RuntimeException $error) {
+            if (strpos($error->getMessage(), 'must be newer') === false) {
+                throw $error;
+            }
+        }
+    }
     $calls = $GLOBALS['theme_fixture']['upgrade_calls'];
     $GLOBALS['theme_fixture']['offer_after_refresh'] = '2.6';
     $expectFailure(static function () use ($adapter): void {
