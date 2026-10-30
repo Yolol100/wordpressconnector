@@ -462,15 +462,31 @@ final class SystemAdapter
 
     public function pluginUpdate(array $payload, array $context): array
     {
+        $expectedTarget = $this->expectedUpdateVersion($payload, array('file', 'expected_target_version'));
         $file = $this->pluginFile($payload);
         if ('wordpressconnector/wordpressconnector.php' === $file) {
             throw new RuntimeException('Update WordPress Connector through connector.update.apply or the verified native Plugins updater.');
         }
         $previousVersion = $this->pluginVersion($file);
-        if (! empty($context['dry_run'])) return array('would_update' => $file, '_current_fingerprint' => Fingerprint::make($previousVersion));
+        $offeredVersion = $this->availableUpdateVersion('update_plugins', $file);
+        if (! empty($context['dry_run'])) {
+            if (null !== $expectedTarget && $offeredVersion !== $expectedTarget) {
+                throw new RuntimeException('Plugin update offer differs from the pinned target version.');
+            }
+            return array(
+                'would_update' => $file,
+                'from_version' => $previousVersion,
+                'available_version' => $offeredVersion,
+                '_current_fingerprint' => Fingerprint::make($previousVersion),
+            );
+        }
         require_once ABSPATH . 'wp-admin/includes/update.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         wp_update_plugins();
+        if (null !== $expectedTarget
+            && $this->availableUpdateVersion('update_plugins', $file) !== $expectedTarget) {
+            throw new RuntimeException('Plugin update offer changed before execution; no update was started.');
+        }
         $upgrader = new \Plugin_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($file);
         if (false === $updated || is_wp_error($updated)) throw new RuntimeException(is_wp_error($updated) ? $updated->get_error_message() : 'Plugin update failed or no update is available.');
@@ -478,6 +494,9 @@ final class SystemAdapter
         $version = $this->pluginVersion($file);
         if (! version_compare($version, $previousVersion, '>')) {
             throw new RuntimeException('Plugin update could not be verified: installed version did not increase.');
+        }
+        if (null !== $expectedTarget && ! hash_equals($expectedTarget, $version)) {
+            throw new RuntimeException('Plugin update installed an unexpected version; inspect live state before retrying.');
         }
         return array('updated' => $file, 'version' => $version, 'readback_verified' => true, 'rollback_supported' => false);
     }
@@ -555,17 +574,71 @@ final class SystemAdapter
 
     public function themeUpdate(array $payload, array $context): array
     {
+        $expectedTarget = $this->expectedUpdateVersion($payload, array('stylesheet', 'expected_target_version'));
         $stylesheet = isset($payload['stylesheet']) ? sanitize_text_field((string) $payload['stylesheet']) : '';
         $theme = wp_get_theme($stylesheet);
         if (! $theme->exists()) throw new RuntimeException('Theme not found.');
-        if (! empty($context['dry_run'])) return array('would_update' => $stylesheet, '_current_fingerprint' => Fingerprint::make($theme->get('Version')));
+        $previousVersion = (string) $theme->get('Version');
+        $offeredVersion = $this->availableUpdateVersion('update_themes', $stylesheet);
+        if (! empty($context['dry_run'])) {
+            if (null !== $expectedTarget && $offeredVersion !== $expectedTarget) {
+                throw new RuntimeException('Theme update offer differs from the pinned target version.');
+            }
+            return array(
+                'would_update' => $stylesheet,
+                'from_version' => $previousVersion,
+                'available_version' => $offeredVersion,
+                '_current_fingerprint' => Fingerprint::make($previousVersion),
+            );
+        }
         require_once ABSPATH . 'wp-admin/includes/update.php';
         require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
         wp_update_themes();
+        if (null !== $expectedTarget
+            && $this->availableUpdateVersion('update_themes', $stylesheet) !== $expectedTarget) {
+            throw new RuntimeException('Theme update offer changed before execution; no update was started.');
+        }
         $upgrader = new \Theme_Upgrader(new \Automatic_Upgrader_Skin());
         $updated = $upgrader->upgrade($stylesheet);
         if (false === $updated || is_wp_error($updated)) throw new RuntimeException(is_wp_error($updated) ? $updated->get_error_message() : 'Theme update failed or no update is available.');
-        return array('updated' => $stylesheet, 'version' => wp_get_theme($stylesheet)->get('Version'), 'rollback_supported' => false);
+        wp_clean_themes_cache();
+        $after = wp_get_theme($stylesheet);
+        $version = $after->exists() ? (string) $after->get('Version') : '';
+        if ('' === $version || ! version_compare($version, $previousVersion, '>')) {
+            throw new RuntimeException('Theme update could not be verified: installed version did not increase.');
+        }
+        if (null !== $expectedTarget && ! hash_equals($expectedTarget, $version)) {
+            throw new RuntimeException('Theme update installed an unexpected version; inspect live state before retrying.');
+        }
+        return array('updated' => $stylesheet, 'version' => $version, 'readback_verified' => true, 'rollback_supported' => false);
+    }
+
+    private function expectedUpdateVersion(array $payload, array $allowedFields): ?string
+    {
+        if (array_diff(array_keys($payload), $allowedFields)) {
+            throw new RuntimeException('Update request contains unsupported fields.');
+        }
+        if (! array_key_exists('expected_target_version', $payload)) {
+            return null;
+        }
+        $version = $payload['expected_target_version'];
+        if (! is_string($version) || ! preg_match('/^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}\\z/', $version)) {
+            throw new RuntimeException('expected_target_version must be an exact, bounded version string.');
+        }
+        return $version;
+    }
+
+    private function availableUpdateVersion(string $transientName, string $identity): ?string
+    {
+        $transient = get_site_transient($transientName);
+        $offers = is_object($transient) ? ($transient->response ?? null) : null;
+        if (! is_array($offers) || ! isset($offers[$identity])) {
+            return null;
+        }
+        $offer = $offers[$identity];
+        $version = is_array($offer) ? ($offer['new_version'] ?? $offer['version'] ?? null)
+            : (is_object($offer) ? ($offer->new_version ?? $offer->version ?? null) : null);
+        return is_string($version) && '' !== $version ? $version : null;
     }
 
     public function themeDelete(array $payload, array $context): array

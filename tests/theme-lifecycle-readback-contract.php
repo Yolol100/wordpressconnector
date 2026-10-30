@@ -7,13 +7,13 @@ namespace {
     if (! mkdir($tmp . '/wp-admin/includes', 0700, true)) {
         throw new \RuntimeException('Could not create theme lifecycle test fixture.');
     }
-    foreach (array('file.php', 'theme.php') as $file) {
+    foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php') as $file) {
         if (false === file_put_contents($tmp . '/wp-admin/includes/' . $file, "<?php\n")) {
             throw new \RuntimeException('Could not create WordPress include fixture.');
         }
     }
     register_shutdown_function(static function () use ($tmp): void {
-        foreach (array('file.php', 'theme.php') as $file) {
+        foreach (array('file.php', 'theme.php', 'update.php', 'class-wp-upgrader.php') as $file) {
             @unlink($tmp . '/wp-admin/includes/' . $file);
         }
         @rmdir($tmp . '/wp-admin/includes');
@@ -34,6 +34,11 @@ namespace {
         'delete_calls' => 0,
         'cache_clears' => 0,
         'switch_effect' => false,
+        'update_offer' => '2.5',
+        'offer_after_refresh' => null,
+        'upgrade_result' => true,
+        'upgrade_version' => '2.5',
+        'upgrade_calls' => 0,
     );
 
     final class ThemeLifecycleError
@@ -70,6 +75,31 @@ namespace {
     {
         if ($GLOBALS['theme_fixture']['switch_effect']) {
             $GLOBALS['theme_fixture']['active'] = $name;
+        }
+    }
+    function get_site_transient(string $key) {
+        if ('update_themes' !== $key) return false;
+        return (object) array('response' => array(
+            'candidate-theme' => array('new_version' => $GLOBALS['theme_fixture']['update_offer']),
+        ));
+    }
+    function wp_update_themes(): void {
+        if (null !== $GLOBALS['theme_fixture']['offer_after_refresh']) {
+            $GLOBALS['theme_fixture']['update_offer'] = $GLOBALS['theme_fixture']['offer_after_refresh'];
+            $GLOBALS['theme_fixture']['offer_after_refresh'] = null;
+        }
+    }
+    class Automatic_Upgrader_Skin {}
+    class Theme_Upgrader {
+        public function __construct($skin) {}
+        public function upgrade($stylesheet) {
+            ++$GLOBALS['theme_fixture']['upgrade_calls'];
+            $result = $GLOBALS['theme_fixture']['upgrade_result'];
+            if (true === $result) {
+                $GLOBALS['theme_fixture']['installed'][$stylesheet] =
+                    $GLOBALS['theme_fixture']['upgrade_version'];
+            }
+            return $result;
         }
     }
 
@@ -131,6 +161,63 @@ namespace {
         || ($switched['readback_verified'] ?? false) !== true
         || ($switched['_rollback']['payload']['stylesheet'] ?? null) !== 'active-theme') {
         throw new \RuntimeException('Verified theme activation or rollback contract failed.');
+    }
+
+    $preview = $adapter->themeUpdate(array(
+        'stylesheet' => 'candidate-theme', 'expected_target_version' => '2.5',
+    ), array('dry_run' => true));
+    if (($preview['available_version'] ?? null) !== '2.5'
+        || ($preview['from_version'] ?? null) !== '2.0') {
+        throw new \RuntimeException('Pinned theme preview did not disclose update offer.');
+    }
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => '2.6'), array('dry_run' => true));
+    }, 'different theme update offer');
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => 'dangerous/version'), array('dry_run' => true));
+    }, 'invalid theme target version');
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'extra' => 123), array('dry_run' => true));
+    }, 'unknown theme update argument');
+
+    $calls = $GLOBALS['theme_fixture']['upgrade_calls'];
+    $GLOBALS['theme_fixture']['offer_after_refresh'] = '2.6';
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => '2.5'), array('dry_run' => false));
+    }, 'theme offer changed before execution');
+    if ($GLOBALS['theme_fixture']['upgrade_calls'] !== $calls
+        || $GLOBALS['theme_fixture']['installed']['candidate-theme'] !== '2.0') {
+        throw new \RuntimeException('Theme update offer drift started an unapproved upgrade.');
+    }
+    $GLOBALS['theme_fixture']['update_offer'] = '2.5';
+    $GLOBALS['theme_fixture']['upgrade_result'] = false;
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => '2.5'), array('dry_run' => false));
+    }, 'failed native Theme_Upgrader');
+    $GLOBALS['theme_fixture']['upgrade_result'] = true;
+    $GLOBALS['theme_fixture']['upgrade_version'] = '2.0';
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => '2.5'), array('dry_run' => false));
+    }, 'theme updater no version change');
+    $GLOBALS['theme_fixture']['upgrade_version'] = '2.6';
+    $expectFailure(static function () use ($adapter): void {
+        $adapter->themeUpdate(array('stylesheet' => 'candidate-theme',
+            'expected_target_version' => '2.5'), array('dry_run' => false));
+    }, 'theme installed unexpected target');
+    $GLOBALS['theme_fixture']['installed']['candidate-theme'] = '2.0';
+    $GLOBALS['theme_fixture']['upgrade_version'] = '2.5';
+    $updated = $adapter->themeUpdate(array(
+        'stylesheet' => 'candidate-theme', 'expected_target_version' => '2.5',
+    ), array('dry_run' => false));
+    if (($updated['version'] ?? '') !== '2.5' || empty($updated['readback_verified'])
+        || ($updated['rollback_supported'] ?? true) !== false) {
+        throw new \RuntimeException('Pinned native theme update did not verify the exact version.');
     }
 
     echo "theme lifecycle readback contract OK\n";

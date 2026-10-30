@@ -11,6 +11,12 @@ This document records the generic ChatGPT -> GitHub -> WordPress Connector contr
 - `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES=1` is separately required for real `filesystem.write_text`, `filesystem.create_text` and `filesystem.delete_text` operations.
 - Secrets, arbitrary plugin-setting code execution and unrestricted filesystem access are not exposed.
 
+## Native update version pinning
+
+For `plugin.update` and `theme.update`, pass `expected_target_version` when the caller intends to deploy an exact release. The dry-run returns the installed version (`from_version`), the cached WordPress update offer (`available_version`), and the original state fingerprint. A confirmed pinned update refreshes the WordPress offer, stops on drift before calling the upgrader, and checks the installed version after the operation.
+
+The check **does not** turn GitHub commits into WordPress update offers. The target plugin/theme still needs a compatible update provider. If no native offer exists, use the guarded private `plugin.install_package` for a vetted plugin ZIP, with the known non-rollbackability caveat. Active themes without native update offers are not a generic ZIP replacement target. This contract is tested with the existing PHP lifecycle fixtures and the private read-only fleet planner; it is not a substitute for live site verification.
+
 ## Plugin control matrix
 
 | Plugin / integration | Control mode | Connector surface |

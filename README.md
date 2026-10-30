@@ -30,6 +30,12 @@ The legacy `Yolol100/Wordpress` private trust entry is separately pinned to its 
 
 **Security and lifecycle:** switching any repository that has stored private request/result branches, workflow artifacts or logs back to public may expose historical client information. Do **not** change private to public until a documented security audit removes sensitive history and verifies exposure risks. Do not publish private request results in public branches or logs. This code change does not update an already installed WordPress plugin by itself; deploy a verified plugin release to each site using an authorized update path before expecting private OIDC to work.
 
+## Guarded fleet release preflight (no automatic deployment)
+
+The canonical private WordPress API already exposes single-site `plugin.update` and `theme.update`. Both now accept optional `expected_target_version` for pinned native update offers and post-upgrade version readback. For multi-site release preparation, the repository includes an offline, non-executing `scripts/plan-fleet-release.py`, covered by the canonical contract tests. It operates only on an independently authorized private inventory. See `docs/PRIVATE-SITE-REGISTRY-ROADMAP.md`.
+
+This is **not** direct ChatGPT OAuth, site registration, a hosted private control plane, GitHub-to-website deployment or proof of a usable Hostinger backup. No automatic site updates, hosting changes, backups or staging environments are created.
+
 ## Native WordPress update notifications
 
 Starting with release 1.19.0, the plugin declares a canonical GitHub `Update URI` and offers newer, validated releases to WordPress Core through the native **Plugins → Update Now** flow. Only this plugin's updates are handled. The Core upgrader receives a temporary ZIP after the existing trusted GitHub release, SHA-256 and archive identity checks succeed; invalid or unavailable releases fail closed.
