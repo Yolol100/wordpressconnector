@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.19.20
+Stable tag: 1.20.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.20.0 fixes false Elementor element readback failures by comparing the database with Elementor's normalized save data. It adds a guarded multiple-JSON preview/import for existing pages, posts and supported template types, and a private administrative media.rename operation that preserves old URLs. Bulk operations are permission-gated and compensation is best effort rather than fully atomic; filename renaming creates compatibility copies and intentionally does not rewrite third-party links. Use a backup and staging before installation on production sites.
 
 Version 1.19.20 hardens private Connector request assets against symlink traversal, unsafe permissions and partial file writes; REST storage errors return generic messages without exposing private paths. It also fixes WordPress database readiness/file-modification diagnostics, Elementor MCP callback arity, native update hooks, and WooCommerce variation readback failures. Version 1.19.19 preflights all connector.batch operation schemas, registered WordPress action permissions and public-mode restrictions before the first mutation, then rechecks action-level permissions at execution time. Fingerprints are still checked at execution time because later operations can depend on earlier successful writes; compensation after a runtime failure is best effort, not a database transaction. Native and private administrator connection readiness now reports WordPress capability and server-policy indicators without claiming OAuth, hosting access or a successful live write. No private multi-site registry, automatic site deployment, or self-removal is introduced by this release.
 
@@ -173,6 +175,13 @@ Confirmed writes still require request confirmation. Sensitive actions require e
 Do not commit credentials, passwords, private plugin ZIPs, payment data, patient/medical records or other sensitive production records to GitHub.
 
 == Changelog ==
+
+= 1.20.0 =
+* Compare persisted Elementor elements with Elementor's normalized after_save output, retaining strict verification and rollback.
+* Add an administrator-only multi-JSON import preview that maps to exact existing slugs and post types, checks target IDs and fingerprints, and requires explicit confirmation.
+* Block ambiguous, duplicate, wrong-type or non-Elementor targets; share the connector mutation lock and attempt verified compensation of earlier completed items if a later file fails.
+* Add a guarded media.rename action with dry-run, WordPress metadata readback, collision checks and legacy URL compatibility copies; unsupported image layouts fail closed.
+* Add WordPress/Elementor and media runtime regression tests. Site-specific staging validation remains required.
 
 = 1.19.20 =
 * Reject symlink traversal in private request asset paths, roots and cleanup; fail closed on unsafe file permissions.

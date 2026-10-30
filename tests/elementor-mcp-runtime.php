@@ -165,6 +165,191 @@ try {
     }
 }
 
+// Exercise the Connector's real Elementor document API, persisted readback,
+// patch and rollback. This reproduces the previously false negative in
+// get_elements_data() on installed Elementor, not with a mocked provider.
+$documentAdapter = new \Webactueel\WordPressConnector\Adapters\ElementorAdapter();
+$documentPostId = 0;
+$documentData = array(array(
+    'id' => 'aabbcc01',
+    'elType' => 'container',
+    'settings' => array(),
+    'elements' => array(array(
+        'id' => 'aabbcc02',
+        'elType' => 'widget',
+        'widgetType' => 'heading',
+        'settings' => array('title' => 'Runtime before'),
+        'elements' => array(),
+    )),
+));
+// Diagnose Elementor's installed save() normalization using disposable dummy data.
+$probeId = wp_insert_post(array('post_type' => 'page', 'post_status' => 'draft',
+    'post_title' => 'Connector Elementor persistence probe'), true);
+if (is_wp_error($probeId)) {
+    throw new RuntimeException('Could not create disposable Elementor persistence probe.');
+}
+try {
+    update_post_meta((int) $probeId, '_elementor_edit_mode', 'builder');
+    $probeDocument = \Elementor\Plugin::$instance->documents->get((int) $probeId);
+    $providerNormalized = null;
+    $listener = static function ($savedId, $elements) use ($probeId, &$providerNormalized): void {
+        if ((int) $savedId === (int) $probeId && is_array($elements)) {
+            $providerNormalized = $elements;
+        }
+    };
+    add_action('elementor/editor/after_save', $listener, 10, 2);
+    try {
+        $probeSave = $probeDocument->save(array('elements' => $documentData, 'settings' => array()));
+    } finally {
+        remove_action('elementor/editor/after_save', $listener, 10);
+    }
+    $probeRaw = get_post_meta((int) $probeId, '_elementor_data', true);
+    $probeDecoded = is_string($probeRaw) ? json_decode($probeRaw, true) : $probeRaw;
+    if (! is_array($providerNormalized)
+        || \Webactueel\WordPressConnector\Support\Fingerprint::make($providerNormalized)
+            !== \Webactueel\WordPressConnector\Support\Fingerprint::make($probeDecoded)) {
+        throw new RuntimeException('Provider-normalized Elementor persistence differs from database: expected='
+            . wp_json_encode($providerNormalized) . ' actual=' . wp_json_encode($probeDecoded)
+            . ' save_result_type=' . gettype($probeSave));
+    }
+} finally {
+    wp_delete_post((int) $probeId, true);
+}
+
+try {
+    $created = $documentAdapter->createDocument(array(
+        'post_type' => 'page',
+        'title' => 'Connector Elementor persisted readback runtime',
+        'slug' => 'connector-elementor-readback-fixture',
+        'status' => 'draft',
+        'data' => $documentData,
+        'page_settings' => array(),
+    ), array('dry_run' => false));
+    $documentPostId = (int) ($created['document']['post_id'] ?? 0);
+    if ($documentPostId < 1) {
+        throw new RuntimeException('Elementor document creation did not produce a post ID.');
+    }
+
+    $before = $documentAdapter->inspect(array('id' => $documentPostId));
+    if (! isset($before['document']['data'][0]['elements'][0]['settings']['title'])
+        || 'Runtime before' !== $before['document']['data'][0]['elements'][0]['settings']['title']) {
+        throw new RuntimeException('Persisted Elementor initial element mismatch.');
+    }
+
+    // Verify the new bulk matcher against a real draft Elementor page:
+    // a copied filename resolves correctly, duplicate and mismatched targets fail closed.
+    $method = new \ReflectionMethod(
+        \Webactueel\WordPressConnector\Admin\ElementorJsonImport::class,
+        'buildBulkPlan'
+    );
+    $method->setAccessible(true);
+    $importer = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
+    $pagePost = get_post($documentPostId);
+    $entry = array(
+        'name' => (string) $pagePost->post_name . '-elementor-1.json',
+        'payload' => array('type' => 'wp-page', 'content' => $documentData),
+    );
+    $matchPlan = $method->invoke($importer, array($entry));
+    if (1 !== count($matchPlan) || 'ready' !== ($matchPlan[0]['status'] ?? '')
+        || $documentPostId !== ($matchPlan[0]['post_id'] ?? null)) {
+        throw new RuntimeException('Elementor bulk import failed exact draft page and copy-suffix matching.');
+    }
+    $duplicatePlan = $method->invoke($importer, array($entry, $entry));
+    if ('conflict: repeated target' !== ($duplicatePlan[0]['status'] ?? '')
+        || 'conflict: repeated target' !== ($duplicatePlan[1]['status'] ?? '')) {
+        throw new RuntimeException('Elementor bulk import accepted duplicate target mapping.');
+    }
+    $invalidEntry = $entry;
+    $invalidEntry['payload']['source'] = array('post_type' => 'post');
+    $mismatchPlan = $method->invoke($importer, array($invalidEntry));
+    if ('conflict: source post type does not match Elementor document type' !== ($mismatchPlan[0]['status'] ?? '')) {
+        throw new RuntimeException('Elementor bulk import accepted wrong source type.');
+    }
+
+    $patch = $documentAdapter->patchElement(array(
+        'id' => $documentPostId,
+        'element_id' => 'aabbcc02',
+        'settings' => array('title' => 'Runtime after'),
+    ), array('dry_run' => false));
+    if ('Runtime after' !== ($patch['after_element']['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor document patch readback failed.');
+    }
+    $changed = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('Runtime after' !== ($changed['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor change was not persisted to the post.');
+    }
+    $previousDocument = $before['document'];
+    $documentAdapter->replaceDocument(array(
+        'id' => $documentPostId,
+        'data' => $previousDocument['data'],
+        'page_settings' => $previousDocument['page_settings'],
+        'edit_mode' => $previousDocument['edit_mode'],
+        'template_type' => $previousDocument['template_type'],
+        'conditions' => $previousDocument['conditions'],
+    ), array('dry_run' => false));
+    $restored = $documentAdapter->inspect(array('id' => $documentPostId));
+    if ('Runtime before' !== ($restored['document']['data'][0]['elements'][0]['settings']['title'] ?? null)) {
+        throw new RuntimeException('Elementor document rollback did not persist original content.');
+    }
+} finally {
+    if ($documentPostId > 0) {
+        wp_delete_post($documentPostId, true);
+    }
+}
+
+// Exercise media.rename on a disposable WordPress image attachment. This
+// verifies actual metadata and compatibility files, not only source markers.
+$uploads = wp_upload_dir();
+if (! empty($uploads['error']) || ! is_dir($uploads['path'])) {
+    throw new RuntimeException('Disposable media rename test cannot access WordPress uploads.');
+}
+$mediaPrefix = 'wpconnector-runtime-' . substr(str_replace('-', '', wp_generate_uuid4()), 0, 8);
+$oldMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-before.png';
+$newMediaPath = trailingslashit($uploads['path']) . $mediaPrefix . '-after.png';
+$mediaPostId = 0;
+try {
+    $tinyPng = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMBAAD2hGLhAAAAAElFTkSuQmCC', true);
+    if (! is_string($tinyPng) || false === file_put_contents($oldMediaPath, $tinyPng)) {
+        throw new RuntimeException('Could not write isolated image fixture.');
+    }
+    $mediaPostId = wp_insert_attachment(array(
+        'post_title' => 'Connector media rename runtime probe',
+        'post_mime_type' => 'image/png',
+        'post_status' => 'inherit',
+    ), $oldMediaPath, 0, true);
+    if (is_wp_error($mediaPostId) || $mediaPostId < 1) {
+        throw new RuntimeException('Could not create isolated media attachment.');
+    }
+    update_attached_file((int) $mediaPostId, $oldMediaPath);
+    $relativePath = ltrim($uploads['subdir'] . '/' . basename($oldMediaPath), '/');
+    wp_update_attachment_metadata((int) $mediaPostId, array(
+        'file' => $relativePath, 'width' => 1, 'height' => 1, 'sizes' => array(),
+    ));
+    $mediaAdapter = new \Webactueel\WordPressConnector\Adapters\MediaAdapter();
+    $mediaPayload = array('id' => (int) $mediaPostId, 'filename' => basename($newMediaPath));
+    $mediaDryRun = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => true));
+    if (! isset($mediaDryRun['would_rename']) || file_exists($newMediaPath)) {
+        throw new RuntimeException('Media rename dry-run unexpectedly changed the uploads folder.');
+    }
+    $mediaResult = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => false));
+    if (empty($mediaResult['old_urls_preserved']) || ! file_exists($oldMediaPath)
+        || ! file_exists($newMediaPath)
+        || realpath((string) get_attached_file((int) $mediaPostId)) !== realpath($newMediaPath)
+        || basename((string) (wp_get_attachment_metadata((int) $mediaPostId)['file'] ?? '')) !== basename($newMediaPath)) {
+        throw new RuntimeException('Media rename did not persist while retaining the original filename.');
+    }
+} finally {
+    if (is_int($mediaPostId) && $mediaPostId > 0) {
+        wp_delete_attachment($mediaPostId, true);
+    }
+    if (is_file($oldMediaPath)) {
+        unlink($oldMediaPath);
+    }
+    if (is_file($newMediaPath)) {
+        unlink($newMediaPath);
+    }
+}
+
 // Verify the installed Elementor provider actually finishes the guarded CSS
 // regeneration. Contract-string tests alone cannot prove this runtime hook.
 $cache = new \Webactueel\WordPressConnector\Adapters\CacheMaintenanceAdapter();

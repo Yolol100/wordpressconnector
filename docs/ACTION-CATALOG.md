@@ -72,6 +72,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `media.import` | mutation | Import a file from the trusted request asset root into the media library. |
 | `media.list` | read-only | List media attachments. |
 | `media.regenerate` | mutation | Regenerate attachment metadata and image subsizes. |
+| `media.rename` | mutation, privileged | Rename an eligible image by copying original/subsizes to SEO filename, switching WordPress attachment metadata while preserving old URL files; unsupported image patterns fail closed. | 
 | `media.update` | mutation | Update attachment title, alt text, caption, description and parent. |
 | `maintenance.cache_capabilities` | privileged | Inspect bounded cache-maintenance availability for Elementor, WP Rocket and Asset CleanUp. |
 | `maintenance.cache_flush` | mutation, privileged | Flush exactly one bounded cache layer: Elementor generated files/data, WP Rocket domain cache or Asset CleanUp CSS/JS cache metadata. |

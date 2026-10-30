@@ -65,11 +65,11 @@ final class ElementorAdapter
 
         try {
             $this->prepareDocumentMeta((int) $id, $payload);
-            $this->saveDocumentViaApi((int) $id, $data, $pageSettings);
+            $savedElements = $this->saveDocumentViaApi((int) $id, $data, $pageSettings);
             $this->writeSupplementalMeta((int) $id, $payload);
             $this->clearCache();
             $after = $this->snapshot((int) $id);
-            $this->assertDocumentReadback($after, $data, $pageSettings);
+            $this->assertDocumentReadback($after, $savedElements, $pageSettings);
         } catch (Throwable $error) {
             wp_delete_post((int) $id, true);
             throw $error;
@@ -176,7 +176,7 @@ final class ElementorAdapter
         );
         $readbackData = $readback['data'];
         $readbackElement =& $this->findElement($readbackData, $elementId);
-        if (! hash_equals(Fingerprint::make($requestedElement), Fingerprint::make($readbackElement))) {
+        if (! $this->matchesRequestedElementPatch($requestedElement, $readbackElement, $payload)) {
             $this->restoreSnapshot($before);
             throw new RuntimeException('Elementor element readback verification failed; previous snapshot restored.');
         }
@@ -363,9 +363,10 @@ final class ElementorAdapter
     {
         $document = $this->documentOrNull($postId);
         if ($document) {
-            $data = method_exists($document, 'get_elements_data') ? $document->get_elements_data() : array();
+            // Verify the committed document, not the editor document instance which may
+            // keep an earlier in-memory elements tree after save() in this request.
+            $data = $this->normalizeData(get_post_meta($postId, '_elementor_data', true) ?: array());
             $settings = method_exists($document, 'get_db_document_settings') ? $document->get_db_document_settings() : array();
-            $data = is_array($data) ? $data : array();
             $settings = is_array($settings) ? $settings : array();
             $documentType = method_exists($document, 'get_name') ? (string) $document->get_name() : '';
         } else {
@@ -423,17 +424,31 @@ final class ElementorAdapter
         }
     }
 
-    private function saveDocumentViaApi(int $postId, array $data, array $pageSettings): void
+    private function saveDocumentViaApi(int $postId, array $data, array $pageSettings): array
     {
         if (function_exists('is_user_logged_in') && is_user_logged_in() && ! current_user_can('edit_post', $postId)) {
             throw new RuntimeException('You are not allowed to edit this Elementor document.');
         }
 
         $document = $this->document($postId);
-        $result = $document->save(array(
-            'elements' => $data,
-            'settings' => $pageSettings,
-        ));
+        $normalizedElements = null;
+        // Elementor normalizes widgets/containers through get_data_for_save().
+        // Its documented after_save event carries the canonical data submitted
+        // to update_metadata(). Compare that against the separately read DB data.
+        $listener = static function ($savedId, $elements) use ($postId, &$normalizedElements): void {
+            if ((int) $savedId === $postId && is_array($elements)) {
+                $normalizedElements = $elements;
+            }
+        };
+        add_action('elementor/editor/after_save', $listener, 10, 2);
+        try {
+            $result = $document->save(array(
+                'elements' => $data,
+                'settings' => $pageSettings,
+            ));
+        } finally {
+            remove_action('elementor/editor/after_save', $listener, 10);
+        }
 
         if (is_wp_error($result)) {
             throw new RuntimeException($result->get_error_message());
@@ -441,14 +456,41 @@ final class ElementorAdapter
         if (false === $result || null === $result) {
             throw new RuntimeException('Elementor rejected the document save.');
         }
+        if (! is_array($normalizedElements)) {
+            throw new RuntimeException('Elementor did not expose normalized saved elements for verification.');
+        }
 
         clean_post_cache($postId);
+        return $normalizedElements;
+    }
+
+    private function matchesRequestedElementPatch(array $requested, array $actual, array $payload): bool
+    {
+        foreach (array('id', 'elType', 'widgetType') as $field) {
+            if (isset($requested[$field]) && (! isset($actual[$field]) || (string) $requested[$field] !== (string) $actual[$field])) {
+                return false;
+            }
+        }
+        $settings = isset($payload['replace']) && is_array($payload['replace'])
+            ? ($payload['replace']['settings'] ?? array())
+            : ($payload['settings'] ?? array());
+        if (! is_array($settings)) {
+            return false;
+        }
+        foreach ($settings as $key => $value) {
+            if (! isset($actual['settings']) || ! is_array($actual['settings'])
+                || ! array_key_exists($key, $actual['settings'])
+                || ! hash_equals(Fingerprint::make($value), Fingerprint::make($actual['settings'][$key]))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private function applyExistingDocumentMutation(int $postId, array $payload, array $data, array $pageSettings, array $before): array
     {
         try {
-            $this->saveDocumentViaApi($postId, $data, $pageSettings);
+            $savedElements = $this->saveDocumentViaApi($postId, $data, $pageSettings);
             $this->writeSupplementalMeta($postId, $payload);
             $this->clearCache();
             $after = $this->snapshot($postId);
@@ -477,12 +519,12 @@ final class ElementorAdapter
 
         $payload = $this->rollbackPayload($snapshot);
         $this->prepareDocumentMeta($postId, $payload);
-        $this->saveDocumentViaApi($postId, $snapshot['data'], $snapshot['page_settings']);
+        $restoredElements = $this->saveDocumentViaApi($postId, $snapshot['data'], $snapshot['page_settings']);
         $this->writeSupplementalMeta($postId, $payload);
         $this->clearCache();
 
         $restored = $this->snapshot($postId);
-        $this->assertDocumentReadback($restored, $snapshot['data'], $snapshot['page_settings']);
+        $this->assertDocumentReadback($restored, $restoredElements, $snapshot['page_settings']);
         foreach (array('edit_mode', 'template_type', 'conditions') as $field) {
             if (! hash_equals(Fingerprint::make($snapshot[$field]), Fingerprint::make($restored[$field]))) {
                 throw new RuntimeException('Elementor rollback readback failed for: ' . $field);
