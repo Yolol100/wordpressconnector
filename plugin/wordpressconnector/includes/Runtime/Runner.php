@@ -59,6 +59,12 @@ final class Runner
                     if (! isset($existing['fingerprint']) || ! hash_equals((string) $existing['fingerprint'], $requestFingerprint)) {
                         throw new RuntimeException('request_id was already used for a different mutation.');
                     }
+                    if (($existing['state'] ?? null) === 'pending') {
+                        throw new RuntimeException('Mutation request is pending or its outcome is unknown. Do not retry automatically.');
+                    }
+                    if (isset($existing['state']) && 'completed' !== $existing['state']) {
+                        throw new RuntimeException('Mutation request has invalid stored state. Do not retry automatically.');
+                    }
                     if (array_key_exists('ok', $existing) && false === $existing['ok']) {
                         return Result::failure(
                             $request,
@@ -76,6 +82,10 @@ final class Runner
                     }
                     return Result::success($request, array('idempotent_replay' => true, 'original_result_hash' => $existing['result_hash'] ?? null), array('request_fingerprint' => $requestFingerprint));
                 }
+                // Durable reservation precedes every provider write. If PHP
+                // terminates or the result cannot be stored, future retries
+                // must reconcile the original request instead of repeating it.
+                $this->processed->begin($request->id(), $requestFingerprint, $request->action());
             }
             $context['dry_run'] = $request->dryRun();
             $context['confirm'] = $request->confirm();
@@ -337,7 +347,14 @@ final class Runner
             return array('would_delete_state_older_than_days' => $days);
         }
         $seconds = $days * DAY_IN_SECONDS;
-        return array('snapshots_deleted' => $this->snapshots->cleanup($seconds), 'processed_deleted' => $this->processed->cleanup($seconds));
+        $oidcReplayDeleted = class_exists(\Webactueel\WordPressConnector\Security\GitHubOidc::class)
+            ? \Webactueel\WordPressConnector\Security\GitHubOidc::cleanupReplayClaims($seconds)
+            : 0;
+        return array(
+            'snapshots_deleted' => $this->snapshots->cleanup($seconds),
+            'processed_deleted' => $this->processed->cleanup($seconds),
+            'oidc_replay_claims_deleted' => $oidcReplayDeleted,
+        );
     }
 
     private function publicDescriptor(string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint): array

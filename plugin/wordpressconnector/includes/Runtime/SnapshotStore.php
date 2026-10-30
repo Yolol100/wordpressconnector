@@ -10,12 +10,17 @@ final class SnapshotStore
 
     public function put(string $requestId, array $rollback, array $metadata = array()): void
     {
-        update_option(self::key($requestId), array(
+        $key = self::key($requestId);
+        $record = array(
             'created_at' => time(),
             'rollback' => $rollback,
             'source_action' => isset($metadata['source_action']) ? (string) $metadata['source_action'] : '',
             'public_repository_mode' => ! empty($metadata['public_repository_mode']),
-        ), false);
+        );
+        update_option($key, $record, false);
+        if (get_option($key, null) !== $record) {
+            throw new \RuntimeException('Rollback snapshot did not persist; the mutation outcome requires manual reconciliation.');
+        }
     }
 
     public function get(string $requestId): ?array

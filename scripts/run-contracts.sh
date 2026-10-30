@@ -114,6 +114,7 @@ run_php tests/acf-complex-schema-contract.php
 run_php tests/acf-complex-schema-runtime.php
 run_php tests/workflow-security-contract.php
 run_php tests/mutation-lock-contract.php
+run_php tests/durable-persistence-contract.php
 run_php tests/audit-hardening-contract.php
 run_php tests/single-plugin-contract.php
 if command -v pwsh >/dev/null 2>&1; then
