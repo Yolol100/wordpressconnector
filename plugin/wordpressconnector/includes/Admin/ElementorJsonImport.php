@@ -91,6 +91,7 @@ final class ElementorJsonImport
         $adapter = new ElementorAdapter();
         $snapshots = array();
         $updated = array();
+        $inFlightId = 0;
         try {
             foreach ($plan as $row) {
                 $id = (int) ($row['post_id'] ?? 0);
@@ -127,8 +128,10 @@ final class ElementorJsonImport
                 if ('elementor_library' === $row['post_type']) {
                     $payload['template_type'] = $row['template_type'];
                 }
+                $inFlightId = $id;
                 $adapter->replaceDocument($payload, array('dry_run' => false));
                 $updated[] = $id;
+                $inFlightId = 0;
             }
 
             echo '<div class="wrap"><h1>Elementor bulkimport voltooid</h1><p>'
@@ -152,13 +155,20 @@ final class ElementorJsonImport
                 }
             }
             $message = 'Bulkimport gestopt: ' . $error->getMessage() . '. ';
-            if (! $updated) {
+            if (! $updated && $inFlightId <= 0) {
                 $message .= 'Er is door deze batch geen document bijgewerkt.';
+            } elseif (! $updated) {
+                $message .= 'Een schrijfactie op document-ID ' . $inFlightId
+                    . ' kan gedeeltelijk zijn uitgevoerd. Controleer de Elementor-inhoud en back-up vóór opnieuw importeren.';
             } elseif (! $failedRollbacks) {
                 $message .= 'Eerdere voltooide documenten zijn teruggezet en gecontroleerd.';
             } else {
                 $message .= 'Herstel moet handmatig worden gecontroleerd voor document-ID(s): '
                     . implode(', ', $failedRollbacks) . '. Controleer de back-up of revisies.';
+            }
+            if ($inFlightId > 0 && $updated) {
+                $message .= ' Controleer ook het mislukte document-ID ' . $inFlightId
+                    . '; de interne Elementor-rollback kon hier niet onafhankelijk worden bevestigd.';
             }
             // wp_die() can terminate PHP without invoking finally: release first.
             $store->releaseMutationLock($lock);
@@ -229,9 +239,7 @@ final class ElementorJsonImport
 
             $slug = isset($source['slug']) ? sanitize_title((string) $source['slug']) : '';
             if ('' === $slug) {
-                // Files downloaded as "name-elementor (1).json" remain matchable.
-                $slug = (string) preg_replace('/-elementor(?:-with-site-parts)?(?:-[0-9]+)?\.json$/i', '', $name);
-                $slug = sanitize_title($slug);
+                $slug = $this->bulkFilenameSlug($name);
             }
             $row = array(
                 'name' => $name, 'post_type' => $postType, 'slug' => $slug,
@@ -298,6 +306,20 @@ final class ElementorJsonImport
             $plan[] = $row;
         }
         return $plan;
+    }
+
+    /**
+     * Infer only recognized export filename forms. Unknown suffixes are left
+     * untouched so an accidental filename never becomes a fuzzy target.
+     * Every inferred slug still requires exactly one matching post type.
+     */
+    private function bulkFilenameSlug(string $filename): string
+    {
+        $stem = sanitize_title((string) pathinfo($filename, PATHINFO_FILENAME));
+        if (preg_match('/^(.+)-elementor(?:-(?:with-site-parts|seo-herzien|lang-min125))?(?:-[1-9][0-9]*)?$/D', $stem, $match)) {
+            return $match[1];
+        }
+        return $stem;
     }
 
     private function importTitle(array $payload,string $postType): string{$title=isset($payload['title'])&&is_string($payload['title'])?sanitize_text_field($payload['title']):'';return ''!==$title?$title:('elementor_library'===$postType?'Imported Elementor Template':'Imported Elementor '.ucfirst($postType));} private function templateType(array $payload): string{$type=isset($payload['type'])&&is_string($payload['type'])?sanitize_key($payload['type']):'';return ''!==$type?$type:'page';} private function importUrl(string $postType,int $postId): string{$slug='page'===$postType?'wpconnector-import-elementor-page':('post'===$postType?'wpconnector-import-elementor-post':'wpconnector-import-elementor-template');$base='post'===$postType?admin_url('edit.php'):admin_url('edit.php?post_type='.$postType);return add_query_arg(array('page'=>$slug,'post_id'=>$postId),$base);} private function capabilityForPostType(string $postType): string{return 'page'===$postType?'edit_pages':'edit_posts';} private function supportsPostType(string $postType): bool{return in_array($postType,self::POST_TYPES,true);}
