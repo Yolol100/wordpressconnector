@@ -201,6 +201,36 @@ try {
         throw new RuntimeException('Persisted Elementor initial element mismatch.');
     }
 
+    // Verify the new bulk matcher against a real draft Elementor page:
+    // a copied filename resolves correctly, duplicate and mismatched targets fail closed.
+    $method = new \ReflectionMethod(
+        \Webactueel\WordPressConnector\Admin\ElementorJsonImport::class,
+        'buildBulkPlan'
+    );
+    $method->setAccessible(true);
+    $importer = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
+    $pagePost = get_post($documentPostId);
+    $entry = array(
+        'name' => (string) $pagePost->post_name . '-elementor-1.json',
+        'payload' => array('type' => 'wp-page', 'content' => $documentData),
+    );
+    $matchPlan = $method->invoke($importer, array($entry));
+    if (1 !== count($matchPlan) || 'ready' !== ($matchPlan[0]['status'] ?? '')
+        || $documentPostId !== ($matchPlan[0]['post_id'] ?? null)) {
+        throw new RuntimeException('Elementor bulk import failed exact draft page and copy-suffix matching.');
+    }
+    $duplicatePlan = $method->invoke($importer, array($entry, $entry));
+    if ('conflict: repeated target' !== ($duplicatePlan[0]['status'] ?? '')
+        || 'conflict: repeated target' !== ($duplicatePlan[1]['status'] ?? '')) {
+        throw new RuntimeException('Elementor bulk import accepted duplicate target mapping.');
+    }
+    $invalidEntry = $entry;
+    $invalidEntry['payload']['source'] = array('post_type' => 'post');
+    $mismatchPlan = $method->invoke($importer, array($invalidEntry));
+    if ('conflict: source post type does not match Elementor document type' !== ($mismatchPlan[0]['status'] ?? '')) {
+        throw new RuntimeException('Elementor bulk import accepted wrong source type.');
+    }
+
     $patch = $documentAdapter->patchElement(array(
         'id' => $documentPostId,
         'element_id' => 'aabbcc02',
