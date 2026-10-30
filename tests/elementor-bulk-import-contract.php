@@ -36,8 +36,10 @@ foreach ($requiredImport as $needle) {
 }
 foreach (array(
     "get_post_meta(\$postId, '_elementor_data', true)",
-    'assertDocumentReadback($after, $data, $pageSettings)',
+    'assertDocumentReadback($after, $savedElements, $pageSettings)',
     'assertDocumentReadback($restored,',
+    "add_action('elementor/editor/after_save'",
+    "remove_action('elementor/editor/after_save'",
 ) as $needle) {
     if (false === strpos($adapter, $needle)) {
         throw new RuntimeException('Elementor persisted readback contract missing: ' . $needle);
