@@ -25,8 +25,7 @@ $requiredImport = array(
     'conflict: repeated target',
     'delete_transient($key)',
     'hash_equals(',
-    "row['fingerprint']" ,
-    ',
+    "row['fingerprint']",
     "'status']='ready'",
     'replaceDocument($payload',
 );
