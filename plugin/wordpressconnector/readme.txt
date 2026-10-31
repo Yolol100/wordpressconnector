@@ -4,13 +4,15 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.7
+Stable tag: 1.20.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
 Zero-config controlled WordPress automation bridge over authenticated HTTPS REST, native MCP and optional local WP-CLI recovery.
 
 == Description ==
+
+Version 1.20.8 fixes the WP-CLI actions and doctor helpers by supplying the required request protocol version. Both commands are now covered by a CLI regression contract. This change does not alter REST/MCP behavior, deployment permissions or customer sites.
 
 Version 1.20.7 adds `connector.mutation_status`, a private administrator-only read action to inspect one request ID's sanitized recorded outcome and mutation-lock state without exposing its request or rollback payload. It does not retry or restore the operation. Expired idempotency and rollback cleanup now retains unverified, pending and orphaned recovery evidence. Live websites, customer inventories, backups, staging environments, ChatGPT OAuth and multi-site deployment are unchanged.
 
