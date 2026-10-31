@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "canary-20261031-isohulk-v1208-01",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
