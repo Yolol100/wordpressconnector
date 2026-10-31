@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "deploy-20261031-isohulk-wpc1208-01",
+  "action": "connector.update.apply",
+  "payload": {},
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "3c14b2f6f23366773a12165bd0a1f7af9cd01d71ed6bcb43f0bc37e477f35026"
+}
