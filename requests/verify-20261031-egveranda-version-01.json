@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "verify-20261031-egveranda-version-01",
+  "action": "connector.update.check",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
