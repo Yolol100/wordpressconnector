@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "deploy-20261031-vroom-wpc1208-01",
+    "action": "connector.update.apply",
+    "dry_run": false,
+    "completed_at_gmt": "2026-10-31T10:42:42+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "readback_verified": true,
+    "from_version": "1.19.20",
+    "to_version": "1.20.8",
+    "package_sha256": "b08ec5402647e44d2adff0e97e817955565e22fab5db43a0eb2d5e3c84eb4e81"
+}
