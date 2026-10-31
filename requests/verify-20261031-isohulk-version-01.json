@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://isohulk.com",
+  "request_id": "verify-20261031-isohulk-version-01",
+  "action": "connector.update.check",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
