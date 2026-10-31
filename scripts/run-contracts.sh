@@ -17,6 +17,7 @@ run_php tests/rest-asset-cleanup-contract.php
 run_php tests/rest-asset-upload-error-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/action-catalog.php
+run_php tests/cli-helper-contract.php
 run_php tests/abilities-catalog-contract.php
 run_php tests/rest-discovery-contract.php
 run_php tests/plugin-adapter-catalog-contract.php
