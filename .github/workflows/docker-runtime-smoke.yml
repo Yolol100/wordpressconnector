@@ -42,8 +42,8 @@ jobs:
         run: |
           wp-env run cli wp eval '
             global $wpdb;
-            if (get_bloginfo("version") !== "7.1.4") {
-              WP_CLI::error("Expected WordPress 7.1.4");
+            if (get_bloginfo("version") !== "7.1.3") {
+              WP_CLI::error("Expected WordPress 7.1.3");
             }
             if (PHP_MAJOR_VERSION !== 8 || PHP_MINOR_VERSION !== 3) {
               WP_CLI::error("Expected PHP 8.3");
