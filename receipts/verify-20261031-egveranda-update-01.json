@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "verify-20261031-egveranda-update-01",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-31T10:30:33+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.20.2",
+    "to_version": "1.20.8",
+    "before_fingerprint": "da754ca0eac7e911cf63de8cb83e288c452315adf10b9982669eade94ab85d31",
+    "rollback_supported": false,
+    "readback_verified": null
+}
