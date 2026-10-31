@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "canary-20261031-vroom-write-dryrun-01",
+  "action": "site.identity.update",
+  "payload": {
+    "fields": {
+      "blogname": "Vroom Rijscholen"
+    }
+  },
+  "dry_run": true,
+  "confirm": false
+}
