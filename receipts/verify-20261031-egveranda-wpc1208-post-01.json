@@ -1,0 +1,14 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "verify-20261031-egveranda-wpc1208-post-01",
+    "action": "connector.update.check",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-31T10:41:46+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "current_version": "1.20.8",
+    "latest_version": "1.20.8",
+    "update_available": false,
+    "readback_verified": null
+}
