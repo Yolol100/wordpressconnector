@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "deploy-20261031-egveranda-wpc1208-01",
+  "action": "connector.update.apply",
+  "payload": {},
+  "dry_run": false,
+  "confirm": true,
+  "expected_fingerprint": "da754ca0eac7e911cf63de8cb83e288c452315adf10b9982669eade94ab85d31"
+}
