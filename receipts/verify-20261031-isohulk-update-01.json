@@ -1,0 +1,16 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "verify-20261031-isohulk-update-01",
+    "action": "connector.update.apply",
+    "dry_run": true,
+    "completed_at_gmt": "2026-10-31T10:30:30+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "update_plan_verified": true,
+    "from_version": "1.19.20",
+    "to_version": "1.20.8",
+    "before_fingerprint": "3c14b2f6f23366773a12165bd0a1f7af9cd01d71ed6bcb43f0bc37e477f35026",
+    "rollback_supported": false,
+    "readback_verified": null
+}
