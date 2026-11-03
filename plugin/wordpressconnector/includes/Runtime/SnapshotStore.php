@@ -52,6 +52,7 @@ final class SnapshotStore
     {
         global $wpdb;
         $like = $wpdb->esc_like(self::PREFIX) . '%';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared compensation cleanup must observe fresh durable rollback snapshots.
         $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
         $deleted = 0;
         if (! is_array($rows)) {

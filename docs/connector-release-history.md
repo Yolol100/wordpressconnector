@@ -6,6 +6,8 @@ Content moved without deletion from the original plugin readme. The WordPress re
 
 = Release Notes =
 
+Version 1.20.10 prefixes only internal plugin-scope variables and adds narrow per-line PHPCS explanations for deliberate prepared, cache-free database operations that protect mutation locks, replay security and current WooCommerce state. Elementor's external hook names and published Connector hooks remain unchanged; no site has been modified. This documentation is a code-quality remediation, not independent evidence of production backup or rollback.
+
 Version 1.20.9 updates verified compatibility coverage for the WordPress 7.1.4 security patch (including isolated WordPress/MySQL runtime and plugin/theme upgrade and rollback checks), WordPress 7.0.8 legacy support, and stable WooCommerce 11.2.1 with both HPOS and legacy order storage. Elementor 4.3.5 MCP and its older 4.3.4 comparison remain independently tested. This release does not modify existing REST/MCP commands, permission checks, site content, customer installations, or update WordPress/PHP/WooCommerce/Elementor itself. Keep WordPress Core and your hosting PHP security patches current separately.
 
 Version 1.20.8 fixes the WP-CLI actions and doctor helpers by supplying the required request protocol version. Both commands are now covered by a CLI regression contract. This change does not alter REST/MCP behavior, deployment permissions or customer sites.
