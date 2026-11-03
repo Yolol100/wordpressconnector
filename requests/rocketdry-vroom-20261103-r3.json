@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "rocketdry-vroom-20261103-r3",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket"
+  },
+  "dry_run": true,
+  "confirm": false
+}
