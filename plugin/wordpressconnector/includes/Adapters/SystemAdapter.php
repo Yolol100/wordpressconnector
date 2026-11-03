@@ -746,6 +746,7 @@ final class SystemAdapter
         if (! $event) throw new RuntimeException('cron.run only accepts an existing scheduled hook with the exact argument set.');
         $state = array('hook' => $hook, 'timestamp' => (int) $event->timestamp, 'schedule' => $event->schedule, 'args' => $event->args);
         if (! empty($context['dry_run'])) return array('would_run' => $state, '_current_fingerprint' => Fingerprint::make($state));
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Only the exact existing scheduled WP-Cron hook is allowed after authorization.
         do_action_ref_array($hook, $event->args);
         return array('ran' => $state, 'rollback_supported' => false);
     }

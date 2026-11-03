@@ -154,6 +154,7 @@ final class ProcessedStore
     {
         global $wpdb;
         $like = $wpdb->esc_like(self::PREFIX) . '%';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared cleanup scan must see latest idempotency reservations; caching is unsafe.
         $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
         if (! is_array($rows)) {
             throw new \RuntimeException('Mutation cleanup could not inspect WordPress options storage.');
@@ -189,6 +190,7 @@ final class ProcessedStore
     private function compareAndSwapLock(string $expected, string $replacement): bool
     {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on the options row is necessary for the mutation lock; cache invalidated below.
         $updated = $wpdb->update(
             $wpdb->options,
             array('option_value' => $replacement),
@@ -207,6 +209,7 @@ final class ProcessedStore
     private function deleteLockIfValue(string $expected): bool
     {
         global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
         $deleted = $wpdb->delete(
             $wpdb->options,
             array('option_name' => self::LOCK_KEY, 'option_value' => $expected),

@@ -169,6 +169,7 @@ final class GitHubOidc
         }
         $cutoff = time() - max(self::MAX_TOKEN_AGE + 2 * self::CLOCK_SKEW, $olderThanSeconds);
         $like = $wpdb->esc_like(self::REPLAY_OPTION_PREFIX) . '%';
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded replay-claim cleanup needs a fresh prepared options read; do not cache security state.
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
             $like,
