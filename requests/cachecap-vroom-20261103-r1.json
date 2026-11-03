@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "cachecap-vroom-20261103-r1",
+  "action": "maintenance.cache_capabilities",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
