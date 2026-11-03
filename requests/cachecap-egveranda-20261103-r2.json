@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "cachecap-egveranda-20261103-r2",
+  "action": "maintenance.cache_capabilities",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
