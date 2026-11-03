@@ -1,0 +1,22 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "rocketdry-isohulk-20261103-r4",
+    "action": "maintenance.cache_flush",
+    "dry_run": true,
+    "completed_at_gmt": "2026-11-03T13:16:25+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layer": "wp_rocket",
+    "provider": "WP Rocket",
+    "provider_version": "3.24",
+    "rollback_supported": false,
+    "verification_scope": "provider_completion_only",
+    "regenerate_requested": false,
+    "regenerate_invoked": false,
+    "regeneration_verified": null,
+    "rebuild_mode": "wp_rocket_preload_if_enabled",
+    "readback_verified": null,
+    "before_fingerprint": "57b08ff50a4156d295629fec4671e6e83e08310f811de315579c42f2c35a1a84",
+    "would_flush": true
+}
