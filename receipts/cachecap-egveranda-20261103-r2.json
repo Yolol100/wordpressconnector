@@ -1,0 +1,29 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "cachecap-egveranda-20261103-r2",
+    "action": "maintenance.cache_capabilities",
+    "dry_run": true,
+    "completed_at_gmt": "2026-11-03T13:15:35+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "layers": {
+        "elementor": {
+            "provider": "Elementor",
+            "available": false,
+            "version": ""
+        },
+        "wp_rocket": {
+            "provider": "WP Rocket",
+            "available": true,
+            "version": "3.24"
+        },
+        "asset_cleanup": {
+            "provider": "Asset CleanUp",
+            "available": true,
+            "version": "1.4.0.6"
+        }
+    },
+    "layers_fingerprint": "487e435d7fd596061a4e2a655f780154ad2209e2300c2c14a59eba3c96455b0b",
+    "readback_verified": null
+}
