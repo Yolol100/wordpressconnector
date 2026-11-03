@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "site_url": "https://egveranda.concept-webactueel-4.com",
+  "request_id": "rocketdry-egveranda-20261103-r4",
+  "action": "maintenance.cache_flush",
+  "payload": {
+    "layer": "wp_rocket"
+  },
+  "dry_run": true,
+  "confirm": false
+}
