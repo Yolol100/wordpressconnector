@@ -1,0 +1,20 @@
+{
+    "version": 1,
+    "ok": true,
+    "request_id": "egverandaplugin20261106",
+    "action": "plugin.audit.inspect",
+    "dry_run": true,
+    "completed_at_gmt": "2026-11-06T07:24:45+00:00",
+    "public_repository_mode": true,
+    "full_result_persisted": false,
+    "installed_count": 22,
+    "active_count": 20,
+    "inactive_count": 2,
+    "unmodeled_count": 3,
+    "provider_checks_count": 6,
+    "must_use_count": 3,
+    "dropin_count": 1,
+    "private_settings_exported": false,
+    "inventory_details_exported": false,
+    "readback_verified": null
+}
