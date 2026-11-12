@@ -636,7 +636,6 @@ final class ElementorAdapter
                 try {
                     return $this->findElement($element['elements'], $elementId);
                 } catch (RuntimeException $error) {
-                    // Continue searching siblings.
                 }
             }
         }
