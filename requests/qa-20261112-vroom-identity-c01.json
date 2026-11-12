@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://vroomrijscholen.nl",
+  "request_id": "qa-20261112-vroom-identity-c01",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
