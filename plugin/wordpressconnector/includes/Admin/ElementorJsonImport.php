@@ -92,12 +92,7 @@ final class ElementorJsonImport {
 				if ( ! current_user_can( 'edit_post', $postId ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
-				$adapterPayload = array(
-					'id'            => $postId,
-					'data'          => $data,
-					'page_settings' => $settings,
-					'edit_mode'     => 'builder',
-				);
+				$adapterPayload = array( 'id' => $postId, 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -105,14 +100,7 @@ final class ElementorJsonImport {
 				$resultId = $postId;
 			}
 			else {
-				$adapterPayload = array(
-					'post_type'     => $postType,
-					'status'        => 'draft',
-					'title'         => $this->importTitle( $payload, $postType ),
-					'data'          => $data,
-					'page_settings' => $settings,
-					'edit_mode'     => 'builder',
-				);
+				$adapterPayload = array( 'post_type' => $postType, 'status' => 'draft', 'title' => $this->importTitle( $payload, $postType ), 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -392,10 +380,7 @@ final class ElementorJsonImport {
 			if ( ! isset( $payload['content'] ) || ! is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
 				throw new RuntimeException( 'Missing Elementor content in ' . $name );
 			}
-			$entries[] = array(
-				'name'    => $name,
-				'payload' => $payload,
-			);
+			$entries[] = array( 'name' => $name, 'payload' => $payload );
 		}
 		return $entries;
 	}
@@ -434,21 +419,21 @@ final class ElementorJsonImport {
 				$slug = $this->bulkFilenameSlug( $name );
 			}
 			$row = array(
-			'name'          => $name, 'post_type'     => $postType, 'slug'          => $slug,
-			'post_id'       => 0, 'target_label'  => '-', 'status'        => 'conflict: unknown type or target',
-			'content'       => $payload['content'],
-			'settings'      => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
+			'name'     => $name, 'post_type' => $postType, 'slug' => $slug,
+			'post_id'  => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
+			'content'                        => $payload['content'],
+			'settings'                       => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 			? $payload['page_settings']
 			: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
-			'template_type' => $documentType, 'fingerprint'   => '',
+			'template_type' => $documentType, 'fingerprint' => '',
 			);
 			if ( $familyConflict ) {
 				$row['status'] = 'conflict: source post type does not match Elementor document type';
 			}
 			elseif ( '' !== $postType && '' !== $slug ) {
 				$matches = get_posts( array(
-				'post_type'        => $postType, 'post_status'      => 'any',
-				'name'             => $slug, 'posts_per_page'   => 3, 'fields'           => 'ids',
+				'post_type'        => $postType, 'post_status' => 'any',
+				'name'             => $slug, 'posts_per_page' => 3, 'fields' => 'ids',
 				'suppress_filters' => true,
 				) );
 				if ( 1 === count( $matches ) ) {

@@ -27,10 +27,7 @@ final class WooCommerceOperationsAdapter {
 	private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant|bank|iban|routing|account|user[_-]?name|username|access[_-]?key|public[_-]?key|private[_-]?key|client|signature|certificate|authorization|webhook|private|license|smtp|auth|oauth)/i';
 
 	public function register( Registry $registry ): void {
-		$read  = array(
-			'privileged' => true,
-			'capability' => 'manage_woocommerce',
-		);
+		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
 			'description' => 'Read bounded provider-owned shipping zones/methods, tax rates and gateway summaries.',
@@ -70,10 +67,7 @@ final class WooCommerceOperationsAdapter {
  || ! is_int( $perPage ) || $perPage < 1 || $perPage > 100 ) {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
-		$query    = $area === 'tax_rates' ? array(
-			'page'     => $page,
-			'per_page' => $perPage,
-		) : array();
+		$query    = $area === 'tax_rates' ? array( 'page' => $page, 'per_page' => $perPage ) : array();
 		$response = $this->request( 'GET', $path, $query );
 		if ( count( $response ) > 150 ) {
 			throw new RuntimeException( 'WooCommerce operations inventory exceeds limit.' );
@@ -94,7 +88,7 @@ final class WooCommerceOperationsAdapter {
 			}
 		}
 		return array(
-			'area'     => $area, 'items'    => $out, 'count'    => count( $out ),
+			'area'     => $area, 'items' => $out, 'count' => count( $out ),
 			'page'     => $page, 'per_page' => $perPage,
 			'has_more' => $area === 'tax_rates' && count( $response ) >= $perPage,
 		);
@@ -213,10 +207,7 @@ final class WooCommerceOperationsAdapter {
 		if ( ! $this->matches( $this->request( 'GET', $path ), $changes ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback readback failed.' );
 		}
-		return array(
-			'restored' => true,
-			'area'     => $area,
-		);
+		return array( 'restored' => true, 'area' => $area );
 	}
 
 	private function summarize( array $data, string $area ): array {

@@ -27,10 +27,7 @@ final class ElementorAdapter {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
 		$snapshot = $this->snapshot( (int) $post->ID );
-		return array(
-			'document'    => $snapshot,
-			'fingerprint' => Fingerprint::make( $snapshot ),
-		);
+		return array( 'document' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
 
 	public function createDocument( array $payload, array $context ): array {
@@ -52,10 +49,7 @@ final class ElementorAdapter {
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => array(
-					'post'      => $postFields,
-					'elementor' => $this->requestedMeta( $payload, $data ),
-				),
+				'would_create'         => array( 'post' => $postFields, 'elementor' => $this->requestedMeta( $payload, $data ) ),
 				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'post_type' => $postType ) ),
 			);
 		}
@@ -117,10 +111,7 @@ final class ElementorAdapter {
 			$pageSettings,
 			$before
 		);
-		$result['_rollback'] = array(
-			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before ),
-		);
+		$result['_rollback'] = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
 		return $result;
 	}
 
@@ -185,10 +176,7 @@ final class ElementorAdapter {
 		}
 
 		$result['after_element'] = $readbackElement;
-		$result['_rollback'] = array(
-			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before ),
-		);
+		$result['_rollback'] = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
 		return $result;
 	}
 
@@ -200,10 +188,7 @@ final class ElementorAdapter {
 			return array( 'would_clear_elementor_cache' => true, '_current_fingerprint' => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) ) );
 		}
 		$this->clearCache();
-		return array(
-			'cleared'            => true,
-			'rollback_supported' => false,
-		);
+		return array( 'cleared' => true, 'rollback_supported' => false );
 	}
 
 	public function inspectHeaderLinks( array $payload ): array {
@@ -252,22 +237,18 @@ final class ElementorAdapter {
 			} catch ( RuntimeException $error ) {
 				// Missing Elementor ID is a bounded diagnostic, never a template export.
 			}
-			$matches[] = array(
-				'element_id'        =>$elementId,
-				'is_icon_list'      =>$isIconList,
-				'exact_url_matches' =>min( 2,$matchesCount ),
-			);
+			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$isIconList, 'exact_url_matches'=>min( 2,$matchesCount ) );
 		}
 		$eligible = $canEdit;
 		foreach ( $matches as $match ) {
 			$eligible = $eligible && $match['is_icon_list'] && 1 === $match['exact_url_matches'];
 		}
 		return array(
-			'post_id'              =>$id,
-			'eligible'             =>$eligible,
-			'reason_code'          =>!$canEdit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
-			'checks'               =>$matches,
-			'document_fingerprint' =>Fingerprint::make( $snapshot ),
+			'post_id'=>$id,
+			'eligible'=>$eligible,
+			'reason_code'=>!$canEdit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
+			'checks'=>$matches,
+			'document_fingerprint'=>Fingerprint::make( $snapshot ),
 		);
 	}
 
@@ -322,11 +303,7 @@ final class ElementorAdapter {
 			if ( 1 !== $matches ) {
 				throw new RuntimeException( 'Header link source URL must appear exactly once in the requested widget.' );
 			}
-			$results[] = array(
-				'element_id' => $elementId,
-				'from'       => $from,
-				'to'         => $to,
-			);
+			$results[] = array( 'element_id' => $elementId, 'from' => $from, 'to' => $to );
 		}
 		$result = array(
 			'post_id'              => $id,

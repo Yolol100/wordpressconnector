@@ -85,7 +85,7 @@ final class Controller {
 
 	public function health( \WP_REST_Request $request ): \WP_REST_Response {
 		return new \WP_REST_Response( array(
-			'ok'                     => true, 'transport'              => 'rest', 'version'                => defined( 'WPCONNECTOR_VERSION' )?WPCONNECTOR_VERSION:null, 'user_id'                => get_current_user_id(),
+			'ok'                     => true, 'transport' => 'rest', 'version' => defined( 'WPCONNECTOR_VERSION' )?WPCONNECTOR_VERSION:null, 'user_id' => get_current_user_id(),
 			'authentication'         => 'wordpress-or-github-oidc',
 			'public_repository_mode' => Policy::publicRepositoryContext(),
 			'gates'                  => array(
@@ -95,11 +95,7 @@ final class Controller {
 				'system_updates'    => Policy::flag( 'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' ),
 				'filesystem_writes' => Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ),
 			),
-			'limits'                 => array(
-				'request_bytes'     => self::MAX_REQUEST_BYTES,
-				'asset_files'       => 10,
-				'asset_total_bytes' => 26214400,
-			),
+			'limits' => array( 'request_bytes' => self::MAX_REQUEST_BYTES, 'asset_files' => 10, 'asset_total_bytes' => 26214400 ),
 		), 200 );
 	}
 

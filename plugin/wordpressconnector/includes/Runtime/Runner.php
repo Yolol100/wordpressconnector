@@ -186,10 +186,7 @@ final class Runner {
 				$descriptor = $this->publicDescriptor( $action, $operation['payload'], $descriptor, true, null );
 			}
 			Policy::assertActionAllowed( $descriptor, true, false );
-			$allowed[] = array(
-				'action'  => $action,
-				'payload' => $operation['payload'],
-			);
+			$allowed[] = array( 'action' => $action, 'payload' => $operation['payload'] );
 		}
 
 		$results = array();
@@ -199,10 +196,7 @@ final class Runner {
 				'confirm' => false,
 			) ) );
 			unset( $result['_rollback'], $result['_current_fingerprint'] );
-			$results[] = array(
-				'action' => $operation['action'],
-				'result' => $result,
-			);
+			$results[] = array( 'action' => $operation['action'], 'result' => $result );
 		}
 		return array( 'operations' => $results );
 	}
@@ -275,10 +269,7 @@ final class Runner {
 					array_unshift( $rollbacks, $result['_rollback'] );
 				}
 				unset( $result['_rollback'], $result['_current_fingerprint'] );
-				$results[] = array(
-					'action' => $action,
-					'result' => $result,
-				);
+				$results[] = array( 'action' => $action, 'result' => $result );
 			}
 		} catch ( Throwable $error ) {
 			$compensation = array();
@@ -287,11 +278,7 @@ final class Runner {
 					try {
 						$compensation[] = array( 'ok' => true, 'action' => $rollback['action'], 'result' => $this->registry->execute( (string) $rollback['action'], (array) $rollback['payload'], array_merge( $context, array( 'rollback_mode' => true, 'dry_run' => false ) ) ) );
 					} catch ( Throwable $rollbackError ) {
-						$compensation[] = array(
-							'ok'     => false,
-							'action' => $rollback['action'] ?? null,
-							'error'  => $rollbackError->getMessage(),
-						);
+						$compensation[] = array( 'ok' => false, 'action' => $rollback['action'] ?? null, 'error' => $rollbackError->getMessage() );
 					}
 				}
 			}
@@ -300,10 +287,7 @@ final class Runner {
 		$output = array( 'operations' => $results );
 		if ( $rollbacks ) {
 			$output['_rollback'] = array( 'action' => 'connector.batch', 'payload' => array( 'operations' => array_map( static function ( array $rollback ): array {
-				return array(
-					'action'  => $rollback['action'],
-					'payload' => $rollback['payload'],
-				);
+				return array( 'action' => $rollback['action'], 'payload' => $rollback['payload'] );
 			}, $rollbacks ) ) );
 		}
 		return $output;
@@ -347,11 +331,7 @@ final class Runner {
 		}
 		$result = $this->registry->execute( (string) $rollback['action'], $rollback['payload'], array_merge( $context, array( 'rollback_mode' => true, 'expected_fingerprint' => null ) ) );
 		unset( $result['_rollback'], $result['_current_fingerprint'] );
-		return array(
-			'restored_request_id' => $requestId,
-			'restored_with'       => $rollback['action'],
-			'result'              => $result,
-		);
+		return array( 'restored_request_id' => $requestId, 'restored_with' => $rollback['action'], 'result' => $result );
 	}
 
 	/**

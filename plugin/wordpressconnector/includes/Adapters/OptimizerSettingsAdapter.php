@@ -32,10 +32,7 @@ final class OptimizerSettingsAdapter {
 	);
 
 	public function register( Registry $registry ): void {
-		$read  = array(
-			'privileged' => true,
-			'capability' => 'manage_options',
-		);
+		$read  = array( 'privileged' => true, 'capability' => 'manage_options' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'optimizer.settings.update', array( $this, 'update' ), $write );
@@ -79,7 +76,7 @@ final class OptimizerSettingsAdapter {
 		$after[ $key ] = $value;
 		$this->conflicts( $provider, $key, $value );
 		$out = array(
-			'provider'             => $provider, 'before'               => $before, 'after'                => $after,
+			'provider'             => $provider, 'before' => $before, 'after' => $after,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -125,8 +122,8 @@ final class OptimizerSettingsAdapter {
 		}
 		$out['after'] = $this->publicFields( $provider, $next );
 		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore', 'payload' => array(
-			'provider'                   => $provider, 'field'                      => $key, 'exists'                     => $previousExists,
-			'value'                      => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
+			'provider' => $provider, 'field' => $key, 'exists' => $previousExists,
+			'value'    => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
 		) );
 		return $out;
 	}
@@ -163,11 +160,7 @@ final class OptimizerSettingsAdapter {
 		}elseif ( array_key_exists( $key, $readback ) ){
 			throw new RuntimeException( 'Optimizer rollback failed to remove the new field.' );
 		}
-		return array(
-			'restored' => true,
-			'provider' => $provider,
-			'field'    => $key,
-		);
+		return array( 'restored' => true, 'provider' => $provider, 'field' => $key );
 	}
 
 	private function state( string $provider ): array {
