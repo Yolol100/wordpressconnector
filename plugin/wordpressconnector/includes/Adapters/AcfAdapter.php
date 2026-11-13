@@ -1068,6 +1068,15 @@ final class AcfAdapter
             'wrapper' => isset($field['wrapper']) ? $this->normalizeWrapper($field['wrapper']) : array('width' => '', 'class' => '', 'id' => ''),
         );
 
+        $this->normalizeScalarSchemaProperties($field, $type, $key, $normalized);
+        $this->normalizeImageSchemaProperties($field, $type, $key, $normalized);
+        $this->normalizeRelationshipSchemaProperties($field, $type, $key, $normalized);
+        $this->normalizeNestedSchemaProperties($field, $type, $key, $depth, $total, $keys, $normalized);
+        return $normalized;
+    }
+
+    private function normalizeScalarSchemaProperties(array $field, string $type, string $key, array &$normalized): void
+    {
         if (in_array($type, array('text', 'textarea', 'email', 'url', 'number'), true)) {
             foreach (array('default_value', 'placeholder', 'prepend', 'append') as $property) {
                 if (! array_key_exists($property, $field)) {
@@ -1102,6 +1111,10 @@ final class AcfAdapter
                 }
             }
         }
+    }
+
+    private function normalizeImageSchemaProperties(array $field, string $type, string $key, array &$normalized): void
+    {
         if ('image' === $type) {
             if (array_key_exists('return_format', $field)) {
                 $normalized['return_format'] = $this->enumValue($field['return_format'], array('array', 'url', 'id'), $key . '.return_format');
@@ -1134,6 +1147,10 @@ final class AcfAdapter
                 $normalized['mime_types'] = $mime;
             }
         }
+    }
+
+    private function normalizeRelationshipSchemaProperties(array $field, string $type, string $key, array &$normalized): void
+    {
         if ('relationship' === $type) {
             if (array_key_exists('post_type', $field)) {
                 $normalized['post_type'] = $this->normalizeKeyList($field['post_type'], 30, $key . '.post_type');
@@ -1165,6 +1182,10 @@ final class AcfAdapter
                 $normalized['return_format'] = $this->enumValue($field['return_format'], array('object', 'id'), $key . '.return_format');
             }
         }
+    }
+
+    private function normalizeNestedSchemaProperties(array $field, string $type, string $key, int $depth, int &$total, array &$keys, array &$normalized): void
+    {
         if (in_array($type, array('group', 'repeater'), true)) {
             $subFields = isset($field['sub_fields']) && is_array($field['sub_fields']) ? array_values($field['sub_fields']) : array();
             if (! $subFields) {
@@ -1202,7 +1223,6 @@ final class AcfAdapter
                 $normalized['collapsed'] = $collapsed;
             }
         }
-        return $normalized;
     }
 
     private function normalizeWrapper($wrapper): array
