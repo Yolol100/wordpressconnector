@@ -206,10 +206,11 @@ final class WooCommerceFulfillmentAdapter {
 			// methods are forced disabled before the operation is accepted.
 			return array( 'method_id' => $method, 'enabled' => false );
 		}
-		foreach ( array( 'country', 'rate', 'name' )as $required )
+		foreach ( array( 'country', 'rate', 'name' ) as $required ) {
 			if ( ! isset( $fields[ $required ] ) ) {
 				throw new RuntimeException( 'Tax creation requires country, rate and name.' );
 			}
+		}
 		$country = $fields['country'];$rate = $fields['rate'];$name = $fields['name'];
 		if ( ! is_string( $country ) || ! preg_match( '/^[A-Z]{2}$/D', $country )
  || ! is_string( $rate ) || ! preg_match( '/^\\d{1,2}(?:\\.\\d{1,4})?$/D', $rate )
@@ -312,9 +313,9 @@ final class WooCommerceFulfillmentAdapter {
 		$path = self::TYPES[ $type ];
 		if ( $type === 'shipping_method' ) {
 			$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
-		}
-		elseif ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null )
+		} elseif ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null ) {
 			throw new RuntimeException( 'Provisioning zone_id is only valid for shipping methods.' );
+		}
 		return $path;
 	}
 	private function locationPath( array $payload ): string {

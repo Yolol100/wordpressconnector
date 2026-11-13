@@ -60,8 +60,9 @@ final class YoastTemplateSettingsAdapter {
 			foreach ( $changes as $key => $value ){
 				if ( null === $before[ $key ] ) {
 					unset( $options[self::KEYS[ $key ]] );
+				} else {
+					$options[self::KEYS[ $key ]] = $before[ $key ];
 				}
-				else $options[self::KEYS[ $key ]] = $before[ $key ];
 			}
 			update_option( 'wpseo_titles', $options );
 			throw new RuntimeException( 'Yoast template readback mismatch; requested fields restored.' );
@@ -88,8 +89,9 @@ final class YoastTemplateSettingsAdapter {
 		foreach ( $previous as $key => $value ){
 			if ( $value === null ) {
 				unset( $options[self::KEYS[ $key ]] );
+			} else {
+				$options[self::KEYS[ $key ]] = $value;
 			}
-			else $options[self::KEYS[ $key ]] = $value;
 		}
 		update_option( 'wpseo_titles', $options );
 		if ( array_intersect_key( $this->snapshot(), $previous ) !== $previous )
