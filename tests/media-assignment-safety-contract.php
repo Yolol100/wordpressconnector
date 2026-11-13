@@ -6,6 +6,9 @@ $source = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapter
 if (! is_string($source)) {
     throw new RuntimeException('MediaAdapter source missing.');
 }
+$compactSource = preg_replace('/\\s+/', '', $source);
+if (! is_string($compactSource)) { throw new RuntimeException('Could not normalize media source.'); }
+
 
 foreach (array(
     "current_user_can('upload_files')",
@@ -24,7 +27,7 @@ foreach (array(
     'wp_get_attachment_metadata($id, true)',
     "fopen(\$newPath, 'xb')",
 ) as $needle) {
-    if (false === strpos($source, $needle)) {
+    if (false === strpos($compactSource, preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Media assignment/rename safety guard missing: ' . $needle);
     }
 }
