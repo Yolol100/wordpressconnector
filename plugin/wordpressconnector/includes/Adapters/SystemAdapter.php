@@ -150,6 +150,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userCreate( array $payload, array $context ): array {
 		$login = isset( $payload['login'] ) ? sanitize_user( (string) $payload['login'], true ) : '';
@@ -184,6 +186,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userUpdate( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
@@ -230,6 +234,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userForcePasswordReset( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
@@ -297,6 +303,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userDelete( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
@@ -332,6 +340,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function roleCreate( array $payload, array $context ): array {
 		$role = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
@@ -362,6 +372,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function roleUpdate( array $payload, array $context ): array {
 		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
@@ -387,6 +399,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function roleDelete( array $payload, array $context ): array {
 		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
@@ -463,6 +477,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDirectorySearch( array $payload, array $context = array() ): array {
 		if ( array_diff( array_keys( $payload ), array( 'search', 'page', 'per_page' ) ) ) {
@@ -540,6 +556,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginActivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
@@ -572,6 +590,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDeactivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
@@ -605,6 +625,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginInstall( array $payload, array $context ): array {
 		$slug = isset( $payload['slug'] ) && is_string( $payload['slug'] ) ? $payload['slug'] : '';
@@ -657,6 +679,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginUpdate( array $payload, array $context ): array {
 		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
@@ -710,6 +734,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDelete( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
@@ -786,6 +812,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeSwitch( array $payload, array $context ): array {
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
@@ -812,6 +840,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeInstall( array $payload, array $context ): array {
 		$slug = isset( $payload['slug'] ) && is_string( $payload['slug'] ) ? $payload['slug'] : '';
@@ -850,6 +880,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeUpdate( array $payload, array $context ): array {
 		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
@@ -947,6 +979,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeDelete( array $payload, array $context ): array {
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
@@ -997,6 +1031,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function coreUpdate( array $payload, array $context ): array {
 		global $wp_version;
@@ -1054,6 +1090,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function cronRun( array $payload, array $context ): array {
 		$hook = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
@@ -1081,6 +1119,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function cronDelete( array $payload, array $context ): array {
 		$hook = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
@@ -1104,6 +1144,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function cronSchedule( array $payload, array $context ): array {
 		$hook       = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
@@ -1166,6 +1208,8 @@ final class SystemAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function siteList( array $payload ): array {
 		if ( ! is_multisite() ) {
@@ -1182,6 +1226,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function siteCreate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
@@ -1210,6 +1256,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function siteUpdate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
@@ -1241,6 +1289,8 @@ final class SystemAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function siteDelete( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
@@ -1271,6 +1321,8 @@ final class SystemAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return \WP_User Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function user( array $payload ): \WP_User {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -1306,8 +1358,10 @@ final class SystemAdapter {
 	/**
 	 * Handle internal apply user fields logic.
 	 *
-	 * @param int $id Value used by this operation.
+	 * @param int   $id Value used by this operation.
 	 * @param array $payload Request parameters.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function applyUserFields( int $id, array $payload ): void {
 		$fields = array( 'ID' => $id );
@@ -1351,6 +1405,8 @@ final class SystemAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return string Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function pluginFile( array $payload ): string {
 		$file = isset( $payload['file'] ) ? str_replace( '\\', '/', (string) $payload['file'] ) : '';

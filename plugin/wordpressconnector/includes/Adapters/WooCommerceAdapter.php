@@ -107,6 +107,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function orderList( array $payload ): array {
 		$this->assertWoo();
@@ -154,6 +156,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function orderGet( array $payload ): array {
 		$this->assertWoo();
@@ -180,6 +184,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function customerGet( array $payload ): array {
 		$this->assertWoo();
@@ -227,6 +233,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function shippingZoneList( array $payload = array() ): array {
 		global $wpdb;
@@ -283,6 +291,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function shippingZoneGet( array $payload ): array {
 		$this->assertWoo();
@@ -332,6 +342,8 @@ final class WooCommerceAdapter {
 	 * Handle the tax class list connector action.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function taxClassList(): array {
 		$this->assertWoo();
@@ -353,6 +365,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function taxRateList( array $payload ): array {
 		global $wpdb;
@@ -521,6 +535,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function productCreate( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -572,6 +588,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function variationList( array $payload ): array {
 		$this->assertWoo();
@@ -610,6 +628,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function variationCreate( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -642,6 +662,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function variationUpdate( array $payload, array $context ): array {
 		$variation = $this->variation( $payload );
@@ -684,6 +706,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeCreate( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -706,6 +730,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeUpdate( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -734,6 +760,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeDelete( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -782,6 +810,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function couponGet( array $payload ): array {
 		$this->assertWoo();
@@ -819,6 +849,8 @@ final class WooCommerceAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function couponUpdate( array $payload, array $context ): array {
 		$this->assertWoo();
@@ -842,6 +874,8 @@ final class WooCommerceAdapter {
 
 	/**
 	 * Require the WooCommerce runtime to be available.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function assertWoo(): void {
 		if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_product' ) ) {
@@ -855,6 +889,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return \WC_Product Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function product( array $payload ): \WC_Product {
 		$this->assertWoo();
@@ -872,6 +908,8 @@ final class WooCommerceAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return \WC_Product_Variation Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function variation( array $payload ): \WC_Product_Variation {
 		$this->assertWoo();
@@ -889,6 +927,8 @@ final class WooCommerceAdapter {
 	 * @param string $type Value used by this operation.
 	 *
 	 * @return \WC_Product Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function newProduct( string $type ): \WC_Product {
 		switch ( $type ) {
@@ -909,7 +949,7 @@ final class WooCommerceAdapter {
 	 * Handle internal apply product logic.
 	 *
 	 * @param \WC_Product $product Value used by this operation.
-	 * @param array $payload Request parameters.
+	 * @param array       $payload Request parameters.
 	 */
 	private function applyProduct( \WC_Product $product, array $payload ): void {
 		$setters = array(
@@ -975,7 +1015,7 @@ final class WooCommerceAdapter {
 	 * Handle internal apply variation logic.
 	 *
 	 * @param \WC_Product_Variation $variation Value used by this operation.
-	 * @param array $payload Request parameters.
+	 * @param array                 $payload Request parameters.
 	 */
 	private function applyVariation( \WC_Product_Variation $variation, array $payload ): void {
 		$setters = array(
@@ -1005,8 +1045,8 @@ final class WooCommerceAdapter {
 	 * Handle internal order snapshot logic.
 	 *
 	 * @param \WC_Order $order Value used by this operation.
-	 * @param bool $includePersonalData Value used by this operation.
-	 * @param bool $includeItems Value used by this operation.
+	 * @param bool      $includePersonalData Value used by this operation.
+	 * @param bool      $includeItems Value used by this operation.
 	 *
 	 * @return array Result of this operation.
 	 */
@@ -1068,6 +1108,8 @@ final class WooCommerceAdapter {
 	 * @param \WC_Order $order Value used by this operation.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function orderItemsSnapshot( \WC_Order $order ): array {
 		$selection   = $this->boundedCoreOrderItemIds( $order );
@@ -1111,6 +1153,8 @@ final class WooCommerceAdapter {
 	 * @param \WC_Order $order Value used by this operation.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function boundedCoreOrderItemIds( \WC_Order $order ): array {
 		if ( ! method_exists( $order, 'get_data_store' ) ) {
@@ -1210,10 +1254,12 @@ final class WooCommerceAdapter {
 	/**
 	 * Handle internal positive integer id logic.
 	 *
-	 * @param mixed $value Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
 	 * @param string $message Value used by this operation.
 	 *
 	 * @return int Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function positiveIntegerId( $value, string $message ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
@@ -1246,11 +1292,13 @@ final class WooCommerceAdapter {
 	/**
 	 * Handle internal shipping zone snapshot logic.
 	 *
-	 * @param int $zoneId Value used by this operation.
+	 * @param int    $zoneId Value used by this operation.
 	 * @param string $zoneName Value used by this operation.
-	 * @param int $zoneOrder Value used by this operation.
+	 * @param int    $zoneOrder Value used by this operation.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function shippingZoneSnapshot( int $zoneId, string $zoneName, int $zoneOrder ): array {
 		global $wpdb;
@@ -1481,9 +1529,11 @@ final class WooCommerceAdapter {
 	 * Handle internal attribute args logic.
 	 *
 	 * @param array $payload Request parameters.
-	 * @param bool $partial Whether partial updates are allowed.
+	 * @param bool  $partial Whether partial updates are allowed.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function attributeArgs( array $payload, bool $partial ): array {
 		$args = array();
@@ -1536,7 +1586,7 @@ final class WooCommerceAdapter {
 	 * Handle internal apply coupon logic.
 	 *
 	 * @param \WC_Coupon $coupon Value used by this operation.
-	 * @param array $payload Request parameters.
+	 * @param array      $payload Request parameters.
 	 */
 	private function applyCoupon( \WC_Coupon $coupon, array $payload ): void {
 		$setters = array(

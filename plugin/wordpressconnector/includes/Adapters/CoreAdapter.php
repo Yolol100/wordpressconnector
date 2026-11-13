@@ -135,6 +135,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postCreate( array $payload, array $context ): array {
 		$fields = $this->sanitizePostFields( $payload, false );
@@ -170,6 +172,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postUpdate( array $payload, array $context ): array {
 		$post = $this->requirePost( $payload );
@@ -273,6 +277,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postTrash( array $payload, array $context ): array {
 		$post   = $this->requirePost( $payload );
@@ -298,6 +304,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestore( array $payload, array $context ): array {
 		$post   = $this->requirePost( $payload );
@@ -341,6 +349,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
 		$revisionId = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
@@ -386,6 +396,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function metaUpdate( array $payload, array $context ): array {
 		list( $type, $id, $key ) = $this->metaTarget( $payload );
@@ -433,6 +445,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termList( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : 'category';
@@ -463,6 +477,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termGet( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
@@ -486,6 +502,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termCreate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
@@ -520,6 +538,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termUpdate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
@@ -562,6 +582,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termDelete( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
@@ -590,6 +612,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termAssign( array $payload, array $context ): array {
 		$objectId = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
@@ -635,6 +659,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuGet( array $payload ): array {
 		$menu = wp_get_nav_menu_object( $payload['id'] ?? ( $payload['name'] ?? 0 ) );
@@ -666,6 +692,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuCreate( array $payload, array $context ): array {
 		$name = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : '';
@@ -689,6 +717,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuUpdate( array $payload, array $context ): array {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -715,6 +745,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuDelete( array $payload, array $context ): array {
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -736,6 +768,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
 		$menuId = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
@@ -781,6 +815,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuLocationSet( array $payload, array $context ): array {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
@@ -857,6 +893,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function networkOptionGet( array $payload ): array {
 		if ( ! is_multisite() ) {
@@ -874,6 +912,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function networkOptionUpdate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
@@ -897,6 +937,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function networkOptionDelete( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
@@ -987,6 +1029,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentGet( array $payload ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
@@ -1003,6 +1047,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentUpdate( array $payload, array $context ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
@@ -1034,6 +1080,8 @@ final class CoreAdapter {
 	 * @param array $context Execution context, including dry-run state.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentTrash( array $payload, array $context ): array {
 		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -1057,6 +1105,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return \WP_Post Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function requirePost( array $payload ): \WP_Post {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -1172,6 +1222,8 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function metaTarget( array $payload ): array {
 		$type = isset( $payload['object_type'] ) ? sanitize_key( (string) $payload['object_type'] ) : '';
@@ -1216,10 +1268,12 @@ final class CoreAdapter {
 	/**
 	 * Handle internal require key logic.
 	 *
-	 * @param array $payload Request parameters.
+	 * @param array  $payload Request parameters.
 	 * @param string $field Value used by this operation.
 	 *
 	 * @return string Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function requireKey( array $payload, string $field ): string {
 		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
