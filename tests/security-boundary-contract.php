@@ -61,6 +61,10 @@ foreach (array('connector.update.check', 'connector.update.apply') as $action) {
 $system = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/SystemAdapter.php');
 $core = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CoreAdapter.php');
 $filesystem = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
+$systemCompact = preg_replace('/\\s+/', '', $system);
+$coreCompact = preg_replace('/\\s+/', '', $core);
+$filesystemCompact = preg_replace('/\\s+/', '', $filesystem);
+if (! is_string($systemCompact) || ! is_string($coreCompact) || ! is_string($filesystemCompact)) { throw new RuntimeException('Could not normalize security-boundary sources.'); }
 
 foreach (array(
     "'capability' => 'create_users'",
@@ -84,25 +88,25 @@ foreach (array(
     'cron.schedule only reschedules an existing hook with the exact argument set.',
     "Input::boolValue(\$grant, 'payload.capabilities.' . \$cap)",
 ) as $needle) {
-    if (strpos($system, $needle) === false) {
+    if (strpos($systemCompact, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing SystemAdapter boundary: {$needle}\n");
         exit(1);
     }
 }
-if (substr_count($system, 'wp_get_scheduled_event($hook, $args)') < 2) {
+if (substr_count($systemCompact, 'wp_get_scheduled_event($hook,$args)') < 2) {
     fwrite(STDERR, "Cron run and schedule must both bind to an existing exact event.\n");
     exit(1);
 }
-if (substr_count($core, 'Policy::assertMetaKeyAllowed($key);') !== 3) {
+if (substr_count($coreCompact, 'Policy::assertMetaKeyAllowed($key);') !== 3) {
     fwrite(STDERR, "All three generic meta actions must reject protected/internal metadata.\n");
     exit(1);
 }
-if (substr_count($core, 'Policy::assertOptionKeyAllowed($name);') !== 6) {
+if (substr_count($coreCompact, 'Policy::assertOptionKeyAllowed($name);') !== 6) {
     fwrite(STDERR, "Site and network generic option actions must reject system-owned options.\n");
     exit(1);
 }
 foreach (array("'edit_plugins'", "'edit_themes'", 'Current user lacks the required filesystem capability') as $needle) {
-    if (strpos($filesystem, $needle) === false) {
+    if (strpos($filesystemCompact, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing filesystem capability boundary: {$needle}\n");
         exit(1);
     }

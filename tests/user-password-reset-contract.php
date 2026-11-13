@@ -16,6 +16,11 @@ if ($start === false || $end === false || $end <= $start) {
     exit(1);
 }
 $method = substr($source, $start, $end - $start);
+$normalizedSource = preg_replace('/\\s+/', '', $source);
+$normalizedMethod = preg_replace('/\\s+/', '', $method);
+if (! is_string($normalizedSource) || ! is_string($normalizedMethod)) {
+    throw new RuntimeException('Could not normalize emergency password reset contract source.');
+}
 
 if (preg_match("/->register\\(\\s*'user\\.force_password_reset'\\s*,/", $source) !== 1) {
     fwrite(STDERR, "Missing emergency password reset action registration.\n");
@@ -37,19 +42,19 @@ $required = array(
 );
 
 foreach ($required as $needle) {
-    if (strpos($source, $needle) === false) {
+    if (strpos($normalizedSource, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing emergency password reset contract marker: {$needle}\n");
         exit(1);
     }
 }
 
-if (strpos($method, 'retrieve_password(') !== false) {
+if (strpos($normalizedMethod, 'retrieve_password(') !== false) {
     fwrite(STDERR, "Emergency reset must not use the normal retrieve_password() email flow after rotating the password.\n");
     exit(1);
 }
 
 foreach (array("'password' =>", "'reset_key' =>", "'key' =>") as $forbidden) {
-    if (strpos($method, $forbidden) !== false) {
+    if (strpos($normalizedMethod, preg_replace('/\\s+/', '', $forbidden)) !== false) {
         fwrite(STDERR, "Emergency reset response must not expose password/reset-key material: {$forbidden}\n");
         exit(1);
     }

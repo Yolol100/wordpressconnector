@@ -26,7 +26,9 @@ foreach ($files as $name => $path) {
 
 $require = static function (string $name, array $needles) use ($sources): void {
     foreach ($needles as $needle) {
-        if (false === strpos($sources[$name], $needle)) {
+        $haystack = 'updater' === $name ? preg_replace('/\\s+/', '', $sources[$name]) : $sources[$name];
+        $match = 'updater' === $name ? preg_replace('/\\s+/', '', $needle) : $needle;
+        if (! is_string($haystack) || ! is_string($match) || false === strpos($haystack, $match)) {
             fwrite(STDERR, "Audit hardening contract missing in {$name}: {$needle}\n");
             exit(1);
         }
@@ -43,7 +45,7 @@ $require('updater', array(
     "hash_equals(\$expectedAssetDigest, \$actualAssetDigest)",
     "hash_equals(\$release['package_digest'], 'sha256:' . strtolower(\$actualSha256))",
 ));
-if (2 !== substr_count($sources['updater'], "'capability' => 'update_plugins'")) {
+if (2 !== substr_count(preg_replace('/\\s+/', '', $sources['updater']), "'capability'=>'update_plugins'")) {
     fwrite(STDERR, "Both canonical connector updater actions must declare update_plugins capability.\n");
     exit(1);
 }

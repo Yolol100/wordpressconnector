@@ -31,7 +31,9 @@ if (! is_string($bootstrap) || ! is_string($readme) || ! preg_match('/^[ \t*#\/]
 $settingsAdapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php');
 $autoImageAdapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/AutoImageAttributesAdapter.php');
 if ($settingsAdapter === false || $autoImageAdapter === false) { fwrite(STDERR, "Unable to read plugin settings adapters.\n"); exit(1); }
+$normalizedSettingsAdapter = preg_replace('/\\s+/', '', $settingsAdapter);
+if (! is_string($normalizedSettingsAdapter)) { throw new RuntimeException('Could not normalize plugin settings source.'); }
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(') as $forbidden) { if (strpos($settingsAdapter, $forbidden) !== false || strpos($autoImageAdapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden execution primitive in plugin settings bridge: {$forbidden}\n"); exit(1); } }
-if (strpos($settingsAdapter, "unset(\$settings['api_key']") === false) { fwrite(STDERR, "Imagify API-key redaction contract missing.\n"); exit(1); }
-if (strpos($settingsAdapter, "'arbitrary_filesystem' => false") === false) { fwrite(STDERR, "Unrestricted filesystem boundary is missing from plugin catalog.\n"); exit(1); }
+if (strpos($normalizedSettingsAdapter, "unset(\$settings['api_key']") === false) { fwrite(STDERR, "Imagify API-key redaction contract missing.\n"); exit(1); }
+if (strpos($normalizedSettingsAdapter, "'arbitrary_filesystem'=>false") === false) { fwrite(STDERR, "Unrestricted filesystem boundary is missing from plugin catalog.\n"); exit(1); }
 echo "plugin control contract OK\n";

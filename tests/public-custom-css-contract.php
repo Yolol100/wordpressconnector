@@ -178,6 +178,11 @@ if (true !== ($patchReceipt['readback_verified'] ?? null) || empty($patchReceipt
 $policy = (string) file_get_contents($policyPath);
 $runner = (string) file_get_contents($runnerPath);
 $adapter = (string) file_get_contents($adapterPath);
+$normalizedRunner = preg_replace('/\\s+/', '', $runner);
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedRunner) || ! is_string($normalizedAdapter)) {
+    throw new RuntimeException('Could not normalize public CSS contract sources.');
+}
 foreach (array("'custom_css.inspect'", "'custom_css.patch'") as $needle) {
     if (! str_contains($policy, $needle)) {
         fwrite(STDERR, "Public policy is missing {$needle}.\n");
@@ -193,7 +198,7 @@ foreach (array(
     "if ('custom_css.patch' === " . '$action' . ")",
     "'custom_css.patch' => array('custom_css.update')",
 ) as $needle) {
-    if (! str_contains($runner, $needle)) {
+    if (! str_contains($normalizedRunner, preg_replace('/\\s+/', '', $needle))) {
         fwrite(STDERR, "Runner is missing public CSS guard marker: {$needle}\n");
         exit(1);
     }
@@ -204,7 +209,7 @@ foreach (array(
     'wp_update_custom_css_post(',
     "'_rollback'",
 ) as $needle) {
-    if (! str_contains($adapter, $needle)) {
+    if (! str_contains($normalizedAdapter, preg_replace('/\\s+/', '', $needle))) {
         fwrite(STDERR, "Custom CSS adapter is missing marker: {$needle}\n");
         exit(1);
     }

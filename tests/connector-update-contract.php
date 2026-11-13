@@ -10,6 +10,8 @@ $readme = file_get_contents($root . '/plugin/wordpressconnector/readme.txt');
 $workflow = file_get_contents($root . '/.github/workflows/release.yml');
 $builder = file_get_contents($root . '/scripts/build-release-package.py');
 $catalog = file_get_contents($root . '/docs/ACTION-CATALOG.md');
+$adapterCompact = is_string($adapter) ? preg_replace('/\\s+/', '', $adapter) : false;
+if (! is_string($adapterCompact)) { throw new RuntimeException('Could not normalize connector update source.'); }
 
 foreach (array('adapter' => $adapter, 'bootstrap' => $bootstrap, 'plugin' => $plugin, 'readme' => $readme, 'release workflow' => $workflow, 'release builder' => $builder, 'catalog' => $catalog) as $name => $source) {
     if (false === $source) {
@@ -47,7 +49,7 @@ $adapterRequired = array(
     "rollback_supported' => false",
 );
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($adapterCompact, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
@@ -58,23 +60,23 @@ if (preg_match('/add_filter\\(\\s*[\\x27\\x22]upgrader_pre_install[\\x27\\x22]\\
 }
 
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_remote_get(', 'wp_remote_request(') as $forbidden) {
-    if (strpos($adapter, $forbidden) !== false) {
+    if (strpos($adapterCompact, preg_replace('/\\s+/', '', $forbidden)) !== false) {
         fwrite(STDERR, "Forbidden connector update primitive: {$forbidden}\n");
         exit(1);
     }
 }
 
-if (strpos($adapter, 'Confirmed Connector self-update requires a tested external site restore') !== false ||
-    strpos($adapter, "'external_restore_required' => true") !== false) {
+if (strpos($adapterCompact, 'ConfirmedConnectorself-updaterequiresatestedexternalsiterestore') !== false ||
+    strpos($adapterCompact, "'external_restore_required'=>true") !== false) {
     fwrite(STDERR, "Connector updater still requires externally tested restore confirmation.\n");
     exit(1);
 }
 
-if (substr_count($adapter, "'public_repository_safe' => true") !== 2) {
+if (substr_count($adapterCompact, "'public_repository_safe'=>true") !== 2) {
     fwrite(STDERR, "Only the two canonical connector self-update actions may carry the public_repository_safe marker in ConnectorUpdateAdapter.\n");
     exit(1);
 }
-if (strpos($adapter, "Yolol100/wordpressconnector/releases/download/") === false) {
+if (strpos($adapterCompact, "Yolol100/wordpressconnector/releases/download/") === false) {
     fwrite(STDERR, "Connector updater is not pinned to the canonical GitHub release path.\n");
     exit(1);
 }
