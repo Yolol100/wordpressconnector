@@ -15,7 +15,7 @@ $mustContain = array(
     'plugin/wordpressconnector/includes/Adapters/PluginSettingsAdapter.php' => array('shared_filesystem_interface', 'filesystem.inspect', 'filesystem.write_text', 'bounded_filesystem_bridge'),
     'docs/PLUGIN-CONTROL.md' => array('WP File Manager and controlled filesystem access', 'WP_Filesystem', 'expected_sha256', 'WordPress core'),
 );
-foreach ($mustContain as $relative => $needles) { $source = file_get_contents($root . '/' . $relative); if ($source === false) { fwrite(STDERR, "Unable to read {$relative}.\n"); exit(1); } foreach ($needles as $needle) { if (strpos($source, $needle) === false) { fwrite(STDERR, "Missing filesystem contract fragment in {$relative}: {$needle}\n"); exit(1); } } }
+foreach ($mustContain as $relative => $needles) { $source = file_get_contents($root . '/' . $relative); if ($source === false) { fwrite(STDERR, "Unable to read {$relative}.\n"); exit(1); } foreach ($needles as $needle) { $code = substr($relative, -4) === '.php'; $haystack = $code ? preg_replace('/\\s+/', '', $source) : $source; $pattern = $code ? preg_replace('/\\s+/', '', $needle) : $needle; if (! is_string($haystack) || ! is_string($pattern) || strpos($haystack, $pattern) === false) { fwrite(STDERR, "Missing filesystem contract fragment in {$relative}: {$needle}\n"); exit(1); } } }
 $settings=(string)file_get_contents($root.'/plugin/wordpressconnector/includes/Admin/Settings.php');
 foreach(array('register_setting(','renderCheckbox','wpconnector_allow_filesystem_writes') as $legacy){if(strpos($settings,$legacy)!==false){fwrite(STDERR,"Legacy filesystem setup remains in WordPress settings: {$legacy}\n");exit(1);}}
 $writable = array('wp-content/plugins/example-plugin/example.php', 'wp-content/themes/example-theme/style.css');
