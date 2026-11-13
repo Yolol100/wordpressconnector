@@ -38,11 +38,13 @@ foreach ($required as $needle) {
     }
 }
 if (strpos($controller, "get_option('wpconnector_rest_enabled'") !== false) { fwrite(STDERR,"REST transport still depends on a checkbox.\n"); exit(1); }
+$compactSettings = preg_replace('/\\s+/', '', $settings);
+if (! is_string($compactSettings)) { throw new RuntimeException('Could not normalize REST settings source.'); }
 foreach (array('After a WordPress administrator clicks Activate,','Reconnect trusted GitHub Actions','wp_nonce_field(\'wpconnector_site_pairing\')','check_admin_referer(\'wpconnector_site_pairing\')','SitePairing::enableForAdministrator','SitePairing::disable','Short-lived GitHub Actions OIDC token','Persistent connector secrets','None required') as $needle) {
-    if (strpos($settings,$needle)===false) { fwrite(STDERR,"Missing zero-config settings contract: {$needle}\n"); exit(1); }
+    if (strpos($compactSettings, preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing zero-config settings contract: {$needle}\n"); exit(1); }
 }
 foreach (array('register_setting(','renderCheckbox','wpconnector_allow_writes','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_SITE_URL') as $needle) {
-    if (strpos($settings,$needle)!==false) { fwrite(STDERR,"Manual setup remains in settings: {$needle}\n"); exit(1); }
+    if (strpos($compactSettings, preg_replace('/\\s+/', '', $needle))!==false) { fwrite(STDERR,"Manual setup remains in settings: {$needle}\n"); exit(1); }
 }
 foreach (array('AUTO_ENABLED_FLAGS',"'WPCONNECTOR_ALLOW_WRITES'",'Sensitive actions require confirm=true','setPublicRepositoryContext','public_repository_safe') as $needle) {
     if (strpos($policy,$needle)===false) { fwrite(STDERR,"Missing zero-config policy boundary: {$needle}\n"); exit(1); }
