@@ -38,6 +38,7 @@ run_php tests/public-custom-css-contract.php
 run_php tests/code-snippets-contract.php
 run_php tests/code-snippets-catalog-preset-contract.php
 run_php tests/cache-maintenance-contract.php
+run_php tests/cache-loopback-security-contract.php
 run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
