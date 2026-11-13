@@ -63,7 +63,7 @@ final class PluginPackageAdapter {
 		if ( ! current_user_can( 'install_themes' ) || ( $overwrite && ! current_user_can( 'update_themes' ) ) ) {
 			throw new RuntimeException( 'Current user lacks theme install or replacement capabilities.' );
 		}
-		$root = isset( $context['asset_root'] ) ? ( string ) $context['asset_root'] : '';
+		$root = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $root ) {
 			throw new RuntimeException( 'Theme ZIP requires a trusted, private request asset root.' );
 		}
@@ -80,7 +80,7 @@ final class PluginPackageAdapter {
 		}
 		$sha256 = isset( $payload['sha256'] ) && is_string( $payload['sha256'] ) ? $payload['sha256'] : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $sha256 )
-			|| ! hash_equals( $sha256, ( string ) hash_file( 'sha256', $package ) ) ) {
+			|| ! hash_equals( $sha256, (string) hash_file( 'sha256', $package ) ) ) {
 			throw new RuntimeException( 'Theme package SHA-256 does not match.' );
 		}
 		$info = $this->inspectThemePackage( $package, $expected );
@@ -99,14 +99,14 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Custom theme roots cannot be overwritten via the connector.' );
 			}
 			foreach ( wp_get_themes() as $name => $theme ) {
-				if ( $name !== $expected && ( string ) $theme->get( 'Template' ) === $expected ) {
+				if ( $name !== $expected && (string) $theme->get( 'Template' ) === $expected ) {
 					throw new RuntimeException( 'Refusing to overwrite a parent theme used by an installed child.' );
 				}
 			}
 		}
-		$before = array( 'stylesheet' => $expected, 'installed' => $installed, 'version' => $installed ? ( string ) $current->get( 'Version' ) : null );
+		$before = array( 'stylesheet' => $expected, 'installed' => $installed, 'version' => $installed ? (string) $current->get( 'Version' ) : null );
 		$plan   = array( 'stylesheet' => $expected, 'source_path' => $source,
-			'sha256'          => $sha256, 'bytes' => ( int ) $size, 'overwrite' => $overwrite,
+			'sha256'          => $sha256, 'bytes' => (int) $size, 'overwrite' => $overwrite,
 			'archive_entries' => $info['entries'], 'uncompressed_bytes' => $info['uncompressed_bytes'] );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_install_theme_package' => $plan, 'before' => $before,
@@ -173,7 +173,7 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
 			$after = array( 'stylesheet' => $expected,
-				'version' => ( string ) $afterTheme->get( 'Version' ) );
+				'version' => (string) $afterTheme->get( 'Version' ) );
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
 				$restored       = $upgrader->restore_temp_backup( array( $backup ) );
@@ -226,7 +226,7 @@ final class PluginPackageAdapter {
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
 					throw new RuntimeException( 'Unreadable theme ZIP member.' );
 				}
-				$path = ( string ) $stat['name'];
+				$path = (string) $stat['name'];
 				if ( strlen( $path ) > 512 || false !== strpos( $path, "\0" )
 					|| preg_match( '/[\x01-\x1F\x7F]/', $path )
 					|| false !== strpos( $path, '\\' ) || '/' === substr( $path, 0, 1 )
@@ -235,7 +235,7 @@ final class PluginPackageAdapter {
 				}
 				$normal   = rtrim( $path, '/' );
 				$segments = explode( '/', $normal );
-				if ( count( $segments ) < 1 || $segments[0] !== $expected || isset( $seen[$normal] ) ) {
+				if ( count( $segments ) < 1 || $segments[0] !== $expected || isset( $seen[ $normal ] ) ) {
 					throw new RuntimeException( 'Theme ZIP folder or duplicate path mismatch.' );
 				}
 				foreach ( $segments as $segment ) {
@@ -243,8 +243,8 @@ final class PluginPackageAdapter {
 						throw new RuntimeException( 'Theme ZIP contains traversal or invalid path.' );
 					}
 				}
-				$seen[$normal] = true;
-				$bytes = isset( $stat['size'] ) ? ( int ) $stat['size'] : -1;
+				$seen[ $normal ] = true;
+				$bytes = isset( $stat['size'] ) ? (int) $stat['size'] : -1;
 				if ( $bytes < 0 ) throw new RuntimeException( 'Invalid theme ZIP entry size.' );
 				$total += $bytes;
 				if ( $total > self::MAX_UNCOMPRESSED_BYTES ) throw new RuntimeException( 'Theme ZIP exceeds extracted size budget.' );
@@ -254,7 +254,7 @@ final class PluginPackageAdapter {
 					throw new RuntimeException( 'Theme ZIP must not contain symbolic links.' );
 				}
 				if ( $normal === $expected . '/style.css' && '/' !== substr( $path, -1 ) ) {
-					$style = ( string ) $zip->getFromIndex( $i, min( 8192, $bytes ), \ZipArchive::FL_UNCHANGED );
+					$style = (string) $zip->getFromIndex( $i, min( 8192, $bytes ), \ZipArchive::FL_UNCHANGED );
 				}
 			}
 			if ( '' === $style || ! preg_match( '/(?:^|\n)[ \t\/\*#@]*Theme Name:\s*\S/i', $style ) ) {
@@ -267,12 +267,12 @@ final class PluginPackageAdapter {
 	}
 
 	public function installPackage( array $payload, array $context ): array {
-		$assetRoot = isset( $context['asset_root'] ) ? ( string ) $context['asset_root'] : '';
+		$assetRoot = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $assetRoot ) {
 			throw new RuntimeException( 'plugin.install_package requires a trusted request asset root.' );
 		}
 
-		$sourcePath = isset( $payload['source_path'] ) ? str_replace( '\\', '/', ( string ) $payload['source_path'] ) : '';
+		$sourcePath = isset( $payload['source_path'] ) ? str_replace( '\\', '/', (string) $payload['source_path'] ) : '';
 		if ( ! preg_match( '#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $sourcePath ) ) {
 			throw new RuntimeException( 'source_path must be plugin-packages/<safe-name>.zip.' );
 		}
@@ -288,18 +288,18 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Plugin ZIP is in WordPress upgrade scratch storage, which Core clears during installation; upload it to the trusted asset store outside wp-content/upgrade.' );
 			}
 		}
-		if ( 'zip' !== strtolower( ( string ) pathinfo( $package, PATHINFO_EXTENSION ) ) ) {
+		if ( 'zip' !== strtolower( (string) pathinfo( $package, PATHINFO_EXTENSION ) ) ) {
 			throw new RuntimeException( 'Plugin package must be a ZIP file.' );
 		}
 
-		$maxBytes = ( int ) ( getenv( 'WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES' ) ?: self::MAX_PACKAGE_BYTES );
+		$maxBytes = (int) ( getenv( 'WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES' ) ?: self::MAX_PACKAGE_BYTES );
 		$maxBytes = max( 1048576, min( self::MAX_PACKAGE_BYTES, $maxBytes ) );
 		$size     = filesize( $package );
 		if ( false === $size || $size <= 0 || $size > $maxBytes ) {
 			throw new RuntimeException( 'Plugin package is empty or exceeds the configured size limit.' );
 		}
 
-		$expectedSha256 = isset( $payload['sha256'] ) ? strtolower( ( string ) $payload['sha256'] ) : '';
+		$expectedSha256 = isset( $payload['sha256'] ) ? strtolower( (string) $payload['sha256'] ) : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expectedSha256 ) ) {
 			throw new RuntimeException( 'sha256 must be a 64-character lowercase hexadecimal checksum.' );
 		}
@@ -308,7 +308,7 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin package SHA-256 checksum does not match.' );
 		}
 
-		$expectedPlugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', ( string ) $payload['expected_plugin'] ) : '';
+		$expectedPlugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', (string) $payload['expected_plugin'] ) : '';
 		if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expectedPlugin ) ) {
 			throw new RuntimeException( 'expected_plugin must be an exact plugin file such as plugin-slug/plugin.php.' );
 		}
@@ -326,7 +326,7 @@ final class PluginPackageAdapter {
 
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins   = get_plugins();
-		$installed = isset( $plugins[$expectedPlugin] );
+		$installed = isset( $plugins[ $expectedPlugin ] );
 
 		if ( $overwrite && ! $installed ) {
 			throw new RuntimeException( 'overwrite=true requires expected_plugin to already be installed.' );
@@ -344,7 +344,7 @@ final class PluginPackageAdapter {
 		$plan   = array(
 			'source_path'        => $sourcePath,
 			'sha256'             => $actualSha256,
-			'bytes'              => ( int ) $size,
+			'bytes'              => (int) $size,
 			'plugin_file'        => $expectedPlugin,
 			'plugin_name'        => $packageInfo['plugin_name'],
 			'archive_entries'    => $packageInfo['entries'],
@@ -373,7 +373,7 @@ final class PluginPackageAdapter {
 		if ( true !== $result ) {
 			$errors = isset( $upgrader->skin ) && method_exists( $upgrader->skin, 'get_errors' )
 				? $upgrader->skin->get_errors() : null;
-			$details = is_wp_error( $errors ) ? ( array ) $errors->get_error_messages() : array();
+			$details = is_wp_error( $errors ) ? (array) $errors->get_error_messages() : array();
 			$message = $details ? substr( sanitize_text_field( implode( '; ', $details ) ), 0, 280 )
 				: 'WordPress Core upgrader returned an unsuccessful result; verify filesystem, target directory and host restrictions.';
 			throw new RuntimeException( 'Plugin package installation failed: ' . $message );
@@ -401,7 +401,7 @@ final class PluginPackageAdapter {
 
 		wp_clean_plugins_cache( true );
 		$afterPlugins = get_plugins();
-		if ( ! isset( $afterPlugins[$expectedPlugin] ) ) {
+		if ( ! isset( $afterPlugins[ $expectedPlugin ] ) ) {
 			throw new RuntimeException( 'Plugin package readback failed: expected plugin is not installed.' );
 		}
 
@@ -445,7 +445,7 @@ final class PluginPackageAdapter {
 					throw new RuntimeException( 'Plugin ZIP contains an unreadable entry.' );
 				}
 
-				$name = ( string ) $stat['name'];
+				$name = (string) $stat['name'];
 				if ( '' === $name || strlen( $name ) > 512 || false !== strpos( $name, "\0" ) || preg_match( '/[\x01-\x1F\x7F]/', $name ) || false !== strpos( $name, '\\' ) || '/' === $name[0] || preg_match( '/^[A-Za-z]:/', $name ) ) {
 					throw new RuntimeException( 'Plugin ZIP contains an unsafe entry path.' );
 				}
@@ -464,12 +464,12 @@ final class PluginPackageAdapter {
 				}
 				$roots[$segments[0]] = true;
 
-				if ( isset( $paths[$normalized] ) ) {
+				if ( isset( $paths[ $normalized ] ) ) {
 					throw new RuntimeException( 'Plugin ZIP contains duplicate entry paths.' );
 				}
-				$paths[$normalized] = true;
+				$paths[ $normalized ] = true;
 
-				$entryBytes = isset( $stat['size'] ) ? ( int ) $stat['size'] : 0;
+				$entryBytes = isset( $stat['size'] ) ? (int) $stat['size'] : 0;
 				if ( $entryBytes < 0 ) {
 					throw new RuntimeException( 'Plugin ZIP contains an invalid entry size.' );
 				}
@@ -487,7 +487,7 @@ final class PluginPackageAdapter {
 					}
 				}
 
-				if ( $directory || 1 !== substr_count( $normalized, '/' ) || 'php' !== strtolower( ( string ) pathinfo( $normalized, PATHINFO_EXTENSION ) ) ) {
+				if ( $directory || 1 !== substr_count( $normalized, '/' ) || 'php' !== strtolower( (string) pathinfo( $normalized, PATHINFO_EXTENSION ) ) ) {
 					continue;
 				}
 
@@ -495,7 +495,7 @@ final class PluginPackageAdapter {
 				if ( is_string( $header ) && preg_match( '/(?:^|\n)[ \t\/*#@]*Plugin Name:\s*(.+?)(?:\r?\n|$)/i', $header, $matches ) ) {
 					$headers[] = array(
 						'path' => $normalized,
-						'name' => trim( ( string ) $matches[1] ),
+						'name' => trim( (string) $matches[1] ),
 					);
 				}
 			}
@@ -507,15 +507,15 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Plugin ZIP must contain exactly one detectable main plugin file directly inside that directory.' );
 			}
 
-			$pluginFile = ( string ) $headers[0]['path'];
+			$pluginFile = (string) $headers[0]['path'];
 			if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $pluginFile ) ) {
 				throw new RuntimeException( 'Main plugin file must use a safe plugin directory and PHP filename.' );
 			}
 
 			return array(
 				'plugin_file'        => $pluginFile,
-				'plugin_name'        => sanitize_text_field( ( string ) $headers[0]['name'] ),
-				'entries'            => ( int ) $zip->numFiles,
+				'plugin_name'        => sanitize_text_field( (string) $headers[0]['name'] ),
+				'entries'            => (int) $zip->numFiles,
 				'uncompressed_bytes' => $uncompressedBytes,
 			);
 		} finally {
@@ -551,7 +551,7 @@ final class PluginPackageAdapter {
 
 	private function snapshot( string $pluginFile, array $plugins ): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		if ( ! isset( $plugins[$pluginFile] ) ) {
+		if ( ! isset( $plugins[ $pluginFile ] ) ) {
 			return array(
 				'file'           => $pluginFile,
 				'installed'      => false,
@@ -564,8 +564,8 @@ final class PluginPackageAdapter {
 		return array(
 			'file'           => $pluginFile,
 			'installed'      => true,
-			'name'           => isset( $plugins[$pluginFile]['Name'] ) ? ( string ) $plugins[$pluginFile]['Name'] : $pluginFile,
-			'version'        => isset( $plugins[$pluginFile]['Version'] ) ? ( string ) $plugins[$pluginFile]['Version'] : '',
+			'name'           => isset( $plugins[ $pluginFile ]['Name'] ) ? (string) $plugins[ $pluginFile ]['Name'] : $pluginFile,
+			'version'        => isset( $plugins[ $pluginFile ]['Version'] ) ? (string) $plugins[ $pluginFile ]['Version'] : '',
 			'active'         => is_plugin_active( $pluginFile ),
 			'network_active' => is_multisite() ? is_plugin_active_for_network( $pluginFile ) : false,
 		);

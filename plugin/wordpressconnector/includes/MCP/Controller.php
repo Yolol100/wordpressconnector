@@ -48,7 +48,7 @@ final class Controller {
 	}
 
 	public function handle( \WP_REST_Request $request ): \WP_REST_Response {
-		$body    = ( string ) $request->get_body();
+		$body    = (string) $request->get_body();
 		$trimmed = ltrim( $body );
 		if ( '' === $trimmed || strlen( $body ) > self::MAX_REQUEST_BYTES || '{' !== $trimmed[0] ) {
 			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
@@ -94,7 +94,7 @@ final class Controller {
 				return $this->errorResponse( $id, -32020, $error->getMessage(), 400 );
 			}
 		} else {
-			$headerVersion = ( string ) $request->get_header( 'mcp-protocol-version' );
+			$headerVersion = (string) $request->get_header( 'mcp-protocol-version' );
 			if ( '' !== $headerVersion && self::LEGACY_VERSION !== $headerVersion ) {
 				return $this->errorResponse( $id, -32600, 'Unsupported MCP protocol version.', 400 );
 			}
@@ -146,24 +146,24 @@ final class Controller {
 		if ( 'server/discover' === $method ) {
 			return true;
 		}
-		if ( self::MODERN_VERSION === ( string ) $request->get_header( 'mcp-protocol-version' ) ) {
+		if ( self::MODERN_VERSION === (string) $request->get_header( 'mcp-protocol-version' ) ) {
 			return true;
 		}
 		$meta = isset( $params['_meta'] ) && is_array( $params['_meta'] ) ? $params['_meta'] : array();
-		return self::MODERN_VERSION === ( string ) ( $meta['io.modelcontextprotocol/protocolVersion'] ?? '' );
+		return self::MODERN_VERSION === (string) ( $meta['io.modelcontextprotocol/protocolVersion'] ?? '' );
 	}
 
 	private function validateModernEnvelope( \WP_REST_Request $request, string $method, array $params ): void {
-		if ( self::MODERN_VERSION !== ( string ) $request->get_header( 'mcp-protocol-version' ) ) {
+		if ( self::MODERN_VERSION !== (string) $request->get_header( 'mcp-protocol-version' ) ) {
 			throw new RuntimeException( 'MCP-Protocol-Version header is missing or does not match the request.' );
 		}
-		if ( $method !== ( string ) $request->get_header( 'mcp-method' ) ) {
+		if ( $method !== (string) $request->get_header( 'mcp-method' ) ) {
 			throw new RuntimeException( 'Mcp-Method header is missing or does not match the request.' );
 		}
 
 		$meta = isset( $params['_meta'] ) && is_array( $params['_meta'] ) ? $params['_meta'] : null;
 		if ( null === $meta
-			|| self::MODERN_VERSION !== ( string ) ( $meta['io.modelcontextprotocol/protocolVersion'] ?? '' )
+			|| self::MODERN_VERSION !== (string) ( $meta['io.modelcontextprotocol/protocolVersion'] ?? '' )
 			|| ! array_key_exists( 'io.modelcontextprotocol/clientCapabilities', $meta )
 			|| ! is_array( $meta['io.modelcontextprotocol/clientCapabilities'] ) ) {
 			throw new RuntimeException( 'Modern MCP requests require protocolVersion and clientCapabilities in params._meta.' );
@@ -171,7 +171,7 @@ final class Controller {
 
 		if ( 'tools/call' === $method ) {
 			$name = isset( $params['name'] ) && is_string( $params['name'] ) ? $params['name'] : '';
-			if ( '' === $name || $name !== ( string ) $request->get_header( 'mcp-name' ) ) {
+			if ( '' === $name || $name !== (string) $request->get_header( 'mcp-name' ) ) {
 				throw new RuntimeException( 'Mcp-Name header is missing or does not match params.name.' );
 			}
 		}
@@ -569,13 +569,13 @@ final class Controller {
 	}
 
 	private function optionalHash( array $arguments, string $key ) {
-		if ( ! array_key_exists( $key, $arguments ) || null === $arguments[$key] ) {
+		if ( ! array_key_exists( $key, $arguments ) || null === $arguments[ $key ] ) {
 			return null;
 		}
-		if ( ! is_string( $arguments[$key] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $arguments[$key] ) ) {
+		if ( ! is_string( $arguments[ $key ] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $arguments[ $key ] ) ) {
 			return false;
 		}
-		return $arguments[$key];
+		return $arguments[ $key ];
 	}
 
 	private function assertNoArguments( array $arguments, string $toolName ): void {
@@ -627,7 +627,7 @@ final class Controller {
 		return array(
 			'name'        => 'webactueel-wordpress-connector',
 			'title'       => 'WordPress Connector',
-			'version'     => defined( 'WPCONNECTOR_VERSION' ) ? ( string ) WPCONNECTOR_VERSION : 'unknown',
+			'version'     => defined( 'WPCONNECTOR_VERSION' ) ? (string) WPCONNECTOR_VERSION : 'unknown',
 			'description' => 'Authenticated WordPress MCP transport over the existing semantic connector action registry.',
 		);
 	}

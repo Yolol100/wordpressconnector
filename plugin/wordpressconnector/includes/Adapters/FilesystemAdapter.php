@@ -52,13 +52,13 @@ final class FilesystemAdapter {
 
 		$plugins         = get_plugins();
 		$fileManagerFile = 'wp-file-manager/file_folder_manager.php';
-		$fileManager     = isset( $plugins[$fileManagerFile] ) ? $plugins[$fileManagerFile] : array();
+		$fileManager     = isset( $plugins[ $fileManagerFile ] ) ? $plugins[ $fileManagerFile ] : array();
 		$settings        = get_option( 'wp_file_manager_settings', array() );
-		$configuredPath  = is_array( $settings ) && isset( $settings['public_path'] ) ? ( string ) $settings['public_path'] : '';
+		$configuredPath  = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
 
 		return array(
 			'root'              => 'wordpress_root',
-			'filesystem_method' => ( string ) get_filesystem_method( array(), ABSPATH ),
+			'filesystem_method' => (string) get_filesystem_method( array(), ABSPATH ),
 			'write_gate'        => Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ),
 			'read'              => array(
 				'root_listing'       => true,
@@ -79,7 +79,7 @@ final class FilesystemAdapter {
 			'wp_file_manager' => array(
 				'installed'            => ! empty( $fileManager ),
 				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $fileManagerFile ),
-				'version'              => isset( $fileManager['Version'] ) ? ( string ) $fileManager['Version'] : null,
+				'version'              => isset( $fileManager['Version'] ) ? (string) $fileManager['Version'] : null,
 				'configured_root_mode' => $this->fileManagerRootMode( $configuredPath ),
 				'connector_transport'  => 'WP_Filesystem',
 				'private_ajax_reused'  => false,
@@ -88,7 +88,7 @@ final class FilesystemAdapter {
 	}
 
 	public function listPath( array $payload, array $context = array() ): array {
-		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? ( string ) $payload['path'] : '.' );
+		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
 		$absolute = $this->resolveExisting( $relative, true );
 		if ( ! is_dir( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a directory.' );
@@ -120,7 +120,7 @@ final class FilesystemAdapter {
 				'name'                => $name,
 				'path'                => $child,
 				'type'                => is_dir( $childAbsolute ) ? 'directory' : 'file',
-				'bytes'               => is_file( $childAbsolute ) ? ( int ) filesize( $childAbsolute ) : null,
+				'bytes'               => is_file( $childAbsolute ) ? (int) filesize( $childAbsolute ) : null,
 				'modified_gmt'        => $this->modifiedGmt( $childAbsolute ),
 				'writable_text_scope' => is_file( $childAbsolute ) && FilesystemPolicy::isWritableText( $child ),
 			);
@@ -135,7 +135,7 @@ final class FilesystemAdapter {
 	}
 
 	public function readText( array $payload, array $context = array() ): array {
-		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? ( string ) $payload['path'] : '' );
+		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$absolute = $this->resolveExisting( $relative, false );
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a regular file.' );
@@ -163,7 +163,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
 		}
 
-		$relative           = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? ( string ) $payload['path'] : '' );
+		$relative           = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$activeContent      = FilesystemPolicy::affectsBrowserExecution( $relative );
 		$requiredCapability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
 		if ( ! current_user_can( $requiredCapability ) ) {
@@ -215,7 +215,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'WordPress or a policy plugin disallows file modifications; check DISALLOW_FILE_MODS and file_mod_allowed.' );
 		}
 
-		$expectedSha = isset( $payload['expected_sha256'] ) ? strtolower( ( string ) $payload['expected_sha256'] ) : '';
+		$expectedSha = isset( $payload['expected_sha256'] ) ? strtolower( (string) $payload['expected_sha256'] ) : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}$/', $expectedSha ) ) {
 			throw new RuntimeException( 'Non-dry-run filesystem writes require payload.expected_sha256.' );
 		}
@@ -267,7 +267,7 @@ final class FilesystemAdapter {
 
 	public function createText( array $payload, array $context ): array {
 		$this->assertLifecyclePermission( $payload, $context );
-		$relative = FilesystemPolicy::assertLifecycleText( ( string ) ( $payload['path'] ?? '' ) );
+		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
 			throw new RuntimeException( 'filesystem.create_text requires UTF-8 content.' );
 		}
@@ -331,7 +331,7 @@ final class FilesystemAdapter {
 
 	public function deleteText( array $payload, array $context ): array {
 		$this->assertLifecyclePermission( $payload, $context );
-		$relative = FilesystemPolicy::assertLifecycleText( ( string ) ( $payload['path'] ?? '' ) );
+		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		$absolute = $this->resolveExisting( $relative, false );
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Text deletion requires a regular non-symlink file.' );
@@ -359,7 +359,7 @@ final class FilesystemAdapter {
 		$filesystem = $this->filesystem();
 		clearstatcache( true, $absolute );
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ||
-			! hash_equals( $expected, ( string ) @hash_file( 'sha256', $absolute ) ) ) {
+			! hash_equals( $expected, (string) @hash_file( 'sha256', $absolute ) ) ) {
 			throw new RuntimeException( 'Delete target changed before filesystem action.' );
 		}
 		if ( ! $filesystem->delete( $absolute, false, 'f' ) ) {
@@ -383,7 +383,7 @@ final class FilesystemAdapter {
 		if ( empty( $context['dry_run'] ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ) ) {
 			throw new RuntimeException( 'Filesystem writes are disabled by server policy.' );
 		}
-		$relative = FilesystemPolicy::assertLifecycleText( ( string ) ( $payload['path'] ?? '' ) );
+		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		if ( empty( $context['dry_run'] ) && FilesystemPolicy::affectsBrowserExecution( $relative ) &&
 			( $payload['acknowledge_active_content'] ?? null ) !== true ) {
 			throw new RuntimeException( 'Browser-active HTML, JavaScript and CSS assets require acknowledge_active_content=true and normal confirmed change approval.' );
@@ -412,7 +412,7 @@ final class FilesystemAdapter {
 
 	private function filesystem(): \WP_Filesystem_Base {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
-		$method = ( string ) get_filesystem_method( array(), ABSPATH );
+		$method = (string) get_filesystem_method( array(), ABSPATH );
 		if ( 'direct' !== $method ) {
 			throw new RuntimeException( 'Automated filesystem writes require WordPress direct filesystem mode; interactive FTP/SSH credentials are never accepted through GitHub.' );
 		}
@@ -473,11 +473,11 @@ final class FilesystemAdapter {
 
 	private function modifiedGmt( string $absolute ): ?string {
 		$modified = @filemtime( $absolute );
-		return false === $modified ? null : gmdate( 'c', ( int ) $modified );
+		return false === $modified ? null : gmdate( 'c', (int) $modified );
 	}
 
 	private function validateText( string $relative, string $content ): void {
-		$extension = strtolower( ( string ) pathinfo( $relative, PATHINFO_EXTENSION ) );
+		$extension = strtolower( (string) pathinfo( $relative, PATHINFO_EXTENSION ) );
 		if ( 'php' === $extension || 'inc' === $extension ) {
 			try {
 				token_get_all( $content, TOKEN_PARSE );
@@ -502,7 +502,7 @@ final class FilesystemAdapter {
 		);
 		foreach ( $patterns as $pattern ) {
 			if ( preg_match( $pattern, $content, $matches ) ) {
-				$value = strtolower( trim( ( string ) ( $matches[1] ?? '' ) ) );
+				$value = strtolower( trim( (string) ( $matches[1] ?? '' ) ) );
 				if ( ! preg_match( '/^(your|example|sample|dummy|changeme|replace|placeholder|test|xxxx|none|null)/', $value ) ) {
 					throw new RuntimeException( 'File appears to contain an embedded credential or secret literal and cannot be exported or rewritten through the connector.' );
 				}

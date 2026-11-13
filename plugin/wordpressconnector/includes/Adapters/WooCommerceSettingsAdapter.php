@@ -79,7 +79,7 @@ final class WooCommerceSettingsAdapter {
 			if ( ! is_array( $group ) || empty( $group['id'] ) ) {
 				continue;
 			}
-			$id = ( string ) $group['id'];
+			$id = (string) $group['id'];
 			if ( ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $id ) ) {
 				continue;
 			}
@@ -120,8 +120,8 @@ final class WooCommerceSettingsAdapter {
 			if ( ! is_array( $option ) ) {
 				continue;
 			}
-			$id   = isset( $option['id'] ) ? ( string ) $option['id'] : '';
-			$type = isset( $option['type'] ) ? ( string ) $option['type'] : '';
+			$id   = isset( $option['id'] ) ? (string) $option['id'] : '';
+			$type = isset( $option['type'] ) ? (string) $option['type'] : '';
 			if ( ! preg_match( '/^[a-z][a-z0-9_]{0,119}$/D', $id ) ) {
 				continue;
 			}
@@ -171,7 +171,7 @@ final class WooCommerceSettingsAdapter {
 		}
 		$this->assertGroupExists( $group );
 		$before = $this->item( $group, $id );
-		if ( $this->isPrivate( $id, ( string ) ( $before['type'] ?? '' ) ) ) {
+		if ( $this->isPrivate( $id, (string) ( $before['type'] ?? '' ) ) ) {
 			throw new RuntimeException( 'Private WooCommerce setting cannot be read or written through GitHub.' );
 		}
 		$desired     = $this->validateValue( $payload['value'], $before );
@@ -290,10 +290,10 @@ final class WooCommerceSettingsAdapter {
 			if ( ! is_array( $definition ) ) {
 				continue;
 			}
-			$id   = isset( $definition['id'] ) && is_scalar( $definition['id'] ) ? ( string ) $definition['id'] : '';
+			$id   = isset( $definition['id'] ) && is_scalar( $definition['id'] ) ? (string) $definition['id'] : '';
 			$type = isset( $definition['type'] ) && is_string( $definition['type'] ) ? $definition['type'] : '';
 			// Structural headings are not editable controls.
-			$providerField = ( bool ) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
+			$providerField = (bool) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
 			$private       = $this->isPrivate( $id, $type );
 			$editable      = $providerField && ! $private && $this->editable( $tab, $id );
 			$entry         = array(
@@ -351,7 +351,7 @@ final class WooCommerceSettingsAdapter {
 					|| ! method_exists( $page, 'get_label' ) || ! method_exists( $page, 'get_sections' ) ) {
 					continue;
 				}
-				$tabId = ( string ) $page->get_id();
+				$tabId = (string) $page->get_id();
 				if ( ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $tabId ) ) {
 					continue;
 				}
@@ -359,7 +359,7 @@ final class WooCommerceSettingsAdapter {
 				$subtabs  = array();
 				if ( is_array( $sections ) ) {
 					foreach ( array_slice( $sections, 0, 60, true ) as $id => $label ) {
-						$subtabs[] = array( 'id' => $this->shortText( ( string ) $id ), 'label' => $this->shortText( $label ) );
+						$subtabs[] = array( 'id' => $this->shortText( (string) $id ), 'label' => $this->shortText( $label ) );
 					}
 				}
 				$tabs[] = array(
@@ -413,7 +413,7 @@ final class WooCommerceSettingsAdapter {
 			throw new RuntimeException( 'WooCommerce Settings REST API did not return a valid response.' );
 		}
 		if ( $response->get_status() < 200 || $response->get_status() >= 300 ) {
-			throw new RuntimeException( 'WooCommerce Settings REST request was rejected; HTTP ' . ( int ) $response->get_status() . '.' );
+			throw new RuntimeException( 'WooCommerce Settings REST request was rejected; HTTP ' . (int) $response->get_status() . '.' );
 		}
 		$data = $response->get_data();
 		if ( ! is_array( $data ) ) {
@@ -423,7 +423,7 @@ final class WooCommerceSettingsAdapter {
 	}
 
 	private function validateValue( $value, array $option ) {
-		$type = ( string ) ( $option['type'] ?? '' );
+		$type = (string) ( $option['type'] ?? '' );
 		if ( $type === 'multiselect' ) {
 			if ( ! is_array( $value ) || count( $value ) > 24 || ! isset( $option['options'] )
 				|| ! is_array( $option['options'] ) ) {
@@ -512,11 +512,11 @@ final class WooCommerceSettingsAdapter {
 	}
 
 	private function editable( string $group, string $id ): bool {
-		return isset( self::EDITABLE[$group][$id] );
+		return isset( self::EDITABLE[ $group ][ $id ] );
 	}
 
 	private function isPrivate( string $id, string $type ): bool {
-		return 'password' === $type || ( bool ) preg_match( self::PRIVATE_PATTERN, $id );
+		return 'password' === $type || (bool) preg_match( self::PRIVATE_PATTERN, $id );
 	}
 
 	private function safeValue( $value ) {
@@ -530,7 +530,7 @@ final class WooCommerceSettingsAdapter {
 	}
 
 	private function shortText( $value ): string {
-		return is_scalar( $value ) ? substr( sanitize_text_field( ( string ) $value ), 0, 160 ) : '';
+		return is_scalar( $value ) ? substr( sanitize_text_field( (string) $value ), 0, 160 ) : '';
 	}
 
 	private function stringIds( $value, int $limit ): array {

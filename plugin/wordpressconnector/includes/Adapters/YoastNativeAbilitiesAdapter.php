@@ -18,10 +18,10 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class YoastNativeAbilitiesAdapter {
 	private const ABILITIES = array(
-		'post_read' => 'yoast-seo/get-post-seo-data',
-		'post_update' => 'yoast-seo/update-post-seo-data',
-		'seo_scores' => 'yoast-seo/get-seo-scores',
-		'readability_scores' => 'yoast-seo/get-readability-scores',
+		'post_read'                 => 'yoast-seo/get-post-seo-data',
+		'post_update'               => 'yoast-seo/update-post-seo-data',
+		'seo_scores'                => 'yoast-seo/get-seo-scores',
+		'readability_scores'        => 'yoast-seo/get-readability-scores',
 		'inclusive_language_scores' => 'yoast-seo/get-inclusive-language-scores',
 	);
 
@@ -39,30 +39,30 @@ final class YoastNativeAbilitiesAdapter {
 
 	public function register( Registry $registry ): void {
 		$registry->register( 'yoast.native.capabilities', array( $this, 'capabilities' ), array(
-			'privileged' => true,
-			'capability' => 'manage_options',
+			'privileged'  => true,
+			'capability'  => 'manage_options',
 			'description' => 'Discover the five official Yoast SEO Abilities with exact version/availability; private transport only.',
 		) );
 		$registry->register( 'yoast.native.scores', array( $this, 'scores' ), array(
-			'privileged' => true,
-			'capability' => 'wpseo_manage_options',
+			'privileged'  => true,
+			'capability'  => 'wpseo_manage_options',
 			'description' => 'Read bounded official Yoast SEO, readability or inclusive-language analysis scores.',
 		) );
 		$registry->register( 'yoast.native.post.inspect', array( $this, 'inspect' ), array(
-			'privileged' => true,
-			'capability' => 'wpseo_edit_advanced_metadata',
+			'privileged'  => true,
+			'capability'  => 'wpseo_edit_advanced_metadata',
 			'description' => 'Read native Yoast post, page or WooCommerce product SEO metadata and rendered output.',
 		) );
 		$registry->register( 'yoast.native.post.update', array( $this, 'update' ), array(
-			'mutation' => true,
-			'privileged' => true,
-			'capability' => 'wpseo_edit_advanced_metadata',
+			'mutation'    => true,
+			'privileged'  => true,
+			'capability'  => 'wpseo_edit_advanced_metadata',
 			'description' => 'Guarded single-post Yoast metadata update via official Ability, with fingerprint, readback and rollback.',
 		) );
 		$registry->register( 'yoast.native.post.restore', array( $this, 'restore' ), array(
-			'mutation' => true,
-			'privileged' => true,
-			'capability' => 'wpseo_edit_advanced_metadata',
+			'mutation'    => true,
+			'privileged'  => true,
+			'capability'  => 'wpseo_edit_advanced_metadata',
 			'description' => 'Rollback-only restore of an earlier native Yoast SEO metadata change.',
 		) );
 	}
@@ -74,18 +74,18 @@ final class YoastNativeAbilitiesAdapter {
 		}
 		$available = function_exists( 'wp_get_ability' ) &&
 			( defined( 'WPSEO_VERSION' ) || defined( 'YOAST_SEO_VERSION' ) );
-		$actions = array();
+		$actions   = array();
 		foreach ( self::ABILITIES as $kind => $name ) {
-			$ability = $available ? wp_get_ability( $name ) : null;
-			$actions[$kind] = is_object( $ability ) && method_exists( $ability, 'execute' );
+			$ability        = $available ? wp_get_ability( $name ) : null;
+			$actions[ $kind ] = is_object( $ability ) && method_exists( $ability, 'execute' );
 		}
 		return array(
-			'available' => $available,
-			'yoast_version' => defined( 'WPSEO_VERSION' ) ? ( string ) WPSEO_VERSION :
-				( defined( 'YOAST_SEO_VERSION' ) ? ( string ) YOAST_SEO_VERSION : null ),
-			'abilities' => $actions,
+			'available'     => $available,
+			'yoast_version' => defined( 'WPSEO_VERSION' ) ? (string) WPSEO_VERSION :
+				( defined( 'YOAST_SEO_VERSION' ) ? (string) YOAST_SEO_VERSION : null ),
+			'abilities'     => $actions,
 			'requires' => array( 'wordpress' => '6.9', 'yoast' => '28.6' ),
-			'transport' => 'private_authenticated_only',
+			'transport'     => 'private_authenticated_only',
 		);
 	}
 
@@ -94,7 +94,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'wpseo_manage_options' ) ) {
 			throw new RuntimeException( 'Yoast analysis scores require wpseo_manage_options.' );
 		}
-		$kind = isset( $payload['kind'] ) ? ( string ) $payload['kind'] : '';
+		$kind = isset( $payload['kind'] ) ? (string) $payload['kind'] : '';
 		if ( ! in_array( $kind, array( 'seo_scores', 'readability_scores', 'inclusive_language_scores' ), true ) ) {
 			throw new RuntimeException( 'Unsupported Yoast analysis kind.' );
 		}
@@ -102,7 +102,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! is_int( $number ) || $number < 1 || $number > 100 ) {
 			throw new RuntimeException( 'number_of_posts must be an integer from 1 through 100.' );
 		}
-		$result = $this->invoke( self::ABILITIES[$kind], array( 'number_of_posts' => $number ) );
+		$result = $this->invoke( self::ABILITIES[ $kind ], array( 'number_of_posts' => $number ) );
 		if ( ! is_array( $result ) || count( $result ) > $number ) {
 			throw new RuntimeException( 'Yoast analysis response shape was invalid.' );
 		}
@@ -110,13 +110,13 @@ final class YoastNativeAbilitiesAdapter {
 	}
 
 	public function inspect( array $payload, array $context = array() ): array {
-		$id = $this->assertPostAccess( $payload );
+		$id   = $this->assertPostAccess( $payload );
 		$data = $this->postData( $id );
 		return array(
-			'post_id' => $id,
-			'fields' => $this->snapshot( $data ),
-			'rendered' => $this->renderedFields( $data ),
-			'analysis' => array_intersect_key( $data, array_flip( array(
+			'post_id'     => $id,
+			'fields'      => $this->snapshot( $data ),
+			'rendered'    => $this->renderedFields( $data ),
+			'analysis'    => array_intersect_key( $data, array_flip( array(
 				'focus_keyphrase', 'seo_score', 'readability_score', 'inclusive_language_score',
 			) ) ),
 			'fingerprint' => Fingerprint::make( $this->snapshot( $data ) ),
@@ -124,20 +124,20 @@ final class YoastNativeAbilitiesAdapter {
 	}
 
 	public function update( array $payload, array $context = array() ): array {
-		$id = $this->assertPostAccess( $payload );
-		$fields = $this->validatedFields( $payload['fields'] ?? null );
+		$id         = $this->assertPostAccess( $payload );
+		$fields     = $this->validatedFields( $payload['fields'] ?? null );
 		$highImpact = array_values( array_intersect( array_keys( $fields ), self::HIGH_IMPACT ) );
 		if ( $highImpact && true !== ( $payload['risk_acknowledged'] ?? false ) ) {
 			throw new RuntimeException( 'High-impact Yoast metadata requires risk_acknowledged=true.' );
 		}
 
-		$before = $this->snapshot( $this->postData( $id ) );
+		$before   = $this->snapshot( $this->postData( $id ) );
 		$proposed = array_replace( $before, $fields );
-		$result = array(
-			'post_id' => $id,
-			'before' => array_intersect_key( $before, $fields ),
-			'after' => array_intersect_key( $proposed, $fields ),
-			'high_impact_fields' => $highImpact,
+		$result   = array(
+			'post_id'              => $id,
+			'before'               => array_intersect_key( $before, $fields ),
+			'after'                => array_intersect_key( $proposed, $fields ),
+			'high_impact_fields'   => $highImpact,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -153,7 +153,7 @@ final class YoastNativeAbilitiesAdapter {
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $fields ) );
 		$after = $this->snapshot( $this->postData( $id ) );
 		foreach ( $fields as $field => $value ) {
-			if ( $after[$field] !== $value ) {
+			if ( $after[ $field ] !== $value ) {
 				try {
 					$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $restoreFields ) );
 					$restored = $this->snapshot( $this->postData( $id ) );
@@ -170,10 +170,10 @@ final class YoastNativeAbilitiesAdapter {
 		$result['after'] = array_intersect_key( $after, $fields );
 		$result['readback_verified'] = true;
 		$result['_rollback'] = array(
-			'action' => 'yoast.native.post.restore',
+			'action'  => 'yoast.native.post.restore',
 			'payload' => array(
-				'post_id' => $id,
-				'fields' => $restoreFields,
+				'post_id'                    => $id,
+				'fields'                     => $restoreFields,
 				'expected_after_fingerprint' => Fingerprint::make( $after ),
 			),
 		);
@@ -184,7 +184,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Yoast native restore is rollback-only.' );
 		}
-		$id = $this->assertPostAccess( $payload );
+		$id       = $this->assertPostAccess( $payload );
 		$previous = $this->validatedFields( $payload['fields'] ?? null );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || 1 !== preg_match( '/^[a-f0-9]{64}$/D', $expected ) ) {
@@ -200,7 +200,7 @@ final class YoastNativeAbilitiesAdapter {
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $previous ) );
 		$after = $this->snapshot( $this->postData( $id ) );
 		foreach ( $previous as $field => $value ) {
-			if ( $after[$field] !== $value ) {
+			if ( $after[ $field ] !== $value ) {
 				throw new RuntimeException( 'Yoast native rollback readback mismatch.' );
 			}
 		}
@@ -244,7 +244,7 @@ final class YoastNativeAbilitiesAdapter {
 		}
 		$rows = isset( $result['post_id'] ) ? array( $result ) : array_values( $result );
 		if ( count( $rows ) !== 1 || ! is_array( $rows[0] ) ||
-			( int ) ( $rows[0]['post_id'] ?? 0 ) !== $id ) {
+			(int) ( $rows[0]['post_id'] ?? 0 ) !== $id ) {
 			throw new RuntimeException( 'Yoast native post response did not match the exact target.' );
 		}
 		return $rows[0];
@@ -273,7 +273,7 @@ final class YoastNativeAbilitiesAdapter {
 	private function snapshot( array $data ): array {
 		$fields = array();
 		foreach ( self::WRITABLE as $name ) {
-			$fields[$name] = array_key_exists( $name, $data ) ? $data[$name] : null;
+			$fields[ $name ] = array_key_exists( $name, $data ) ? $data[ $name ] : null;
 		}
 		return $fields;
 	}
@@ -283,8 +283,8 @@ final class YoastNativeAbilitiesAdapter {
 		foreach ( array( 'seo_title_rendered', 'meta_description_rendered', 'canonical_rendered',
 			'open_graph_title_rendered', 'open_graph_description_rendered',
 			'twitter_title_rendered', 'twitter_description_rendered' ) as $name ) {
-			$fields[$name] = isset( $data[$name] ) && is_scalar( $data[$name] ) ?
-				( string ) $data[$name] : null;
+			$fields[ $name ] = isset( $data[ $name ] ) && is_scalar( $data[ $name ] ) ?
+				(string) $data[ $name ] : null;
 		}
 		return $fields;
 	}
@@ -323,7 +323,7 @@ final class YoastNativeAbilitiesAdapter {
 					}
 				}
 			}
-			$normalized[$name] = $value;
+			$normalized[ $name ] = $value;
 		}
 		return $normalized;
 	}

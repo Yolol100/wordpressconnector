@@ -23,6 +23,8 @@ if ($adapter === false || $plugin === false || $bootstrap === false) {
     exit(1);
 }
 
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) { throw new RuntimeException('Could not normalize Additional CSS implementation.'); }
 $required = array(
     "register('custom_css.inspect'",
     "register('custom_css.update'",
@@ -42,13 +44,13 @@ $required = array(
 );
 
 foreach ($required as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing Additional CSS contract marker: {$needle}\n");
         exit(1);
     }
 }
 
-if (strpos($adapter, 'eval(') !== false || strpos($adapter, 'file_put_contents(') !== false) {
+if (strpos($normalizedAdapter, 'eval(') !== false || strpos($normalizedAdapter, 'file_put_contents(') !== false) {
     fwrite(STDERR, "Additional CSS adapter must use WordPress APIs, not execution or direct filesystem writes.\n");
     exit(1);
 }

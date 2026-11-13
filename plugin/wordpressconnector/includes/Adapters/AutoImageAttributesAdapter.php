@@ -46,7 +46,7 @@ final class AutoImageAttributesAdapter {
 		$fields = $this->snapshot();
 		return array(
 			'active' => defined( 'IAFF_VERSION_NUM' ) || function_exists( 'iaff_get_settings' ),
-			'version' => defined( 'IAFF_VERSION_NUM' ) ? ( string ) IAFF_VERSION_NUM : null,
+			'version' => defined( 'IAFF_VERSION_NUM' ) ? (string) IAFF_VERSION_NUM : null,
 			'fields' => $fields,
 			'fingerprint' => Fingerprint::make( $fields ),
 		);
@@ -62,7 +62,7 @@ final class AutoImageAttributesAdapter {
 		$clean = array();
 		foreach ( $updates as $key => $value ) {
 			if ( ! is_string( $key ) || ! in_array( $key, self::BOOLEAN_FIELDS, true ) ) {
-				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . ( string ) $key );
+				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . (string) $key );
 			}
 			$clean[$key] = $this->booleanString( $value );
 		}
@@ -93,7 +93,7 @@ final class AutoImageAttributesAdapter {
 		update_option( 'iaff_settings', $raw, false );
 		$readback = $this->snapshot();
 		foreach ( $clean as $key => $value ) {
-			if ( ! isset( $readback[$key] ) || ( string ) $readback[$key] !== $value ) {
+			if ( ! isset( $readback[$key] ) || (string) $readback[$key] !== $value ) {
 				throw new RuntimeException( 'Auto Image Attributes readback verification failed for: ' . $key );
 			}
 		}
@@ -129,10 +129,10 @@ final class AutoImageAttributesAdapter {
 	}
 
 	private function booleanString( $value ): string {
-		if ( true === $value || 1 === $value || '1' === $value || 'true' === strtolower( ( string ) $value ) || 'yes' === strtolower( ( string ) $value ) || 'on' === strtolower( ( string ) $value ) ) {
+		if ( true === $value || 1 === $value || '1' === $value || 'true' === strtolower( (string) $value ) || 'yes' === strtolower( (string) $value ) || 'on' === strtolower( (string) $value ) ) {
 			return '1';
 		}
-		if ( false === $value || 0 === $value || '0' === $value || 'false' === strtolower( ( string ) $value ) || 'no' === strtolower( ( string ) $value ) || 'off' === strtolower( ( string ) $value ) ) {
+		if ( false === $value || 0 === $value || '0' === $value || 'false' === strtolower( (string) $value ) || 'no' === strtolower( (string) $value ) || 'off' === strtolower( (string) $value ) ) {
 			return '0';
 		}
 		throw new RuntimeException( 'Auto Image Attributes boolean settings require true/false or 1/0.' );

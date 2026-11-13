@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types=1);
+declare( strict_types = 1 );
 
 namespace Webactueel\WordPressConnector\Adapters;
 
@@ -82,8 +82,8 @@ final class AcfAdapter {
 		if ( isset( $payload['fields'] ) && is_array( $payload['fields'] ) ) {
 			$selected = array();
 			foreach ( $payload['fields'] as $field ) {
-				$key = ( string ) $field;
-				$selected[$key] = get_field( $key, $target, false );
+				$key            = (string) $field;
+				$selected[ $key ] = get_field( $key, $target, false );
 			}
 			$fields = $selected;
 		}
@@ -105,7 +105,7 @@ final class AcfAdapter {
 
 		$before = array();
 		foreach ( $fields as $field => $value ) {
-			$before[( string ) $field] = get_field( ( string ) $field, $target, false );
+			$before[(string) $field] = get_field( (string) $field, $target, false );
 		}
 
 		$result = array(
@@ -120,17 +120,17 @@ final class AcfAdapter {
 		}
 
 		foreach ( $fields as $field => $value ) {
-			if ( false === update_field( ( string ) $field, $value, $target ) ) {
-				$current = get_field( ( string ) $field, $target, false );
+			if ( false === update_field( (string) $field, $value, $target ) ) {
+				$current = get_field( (string) $field, $target, false );
 				if ( $current !== $value ) {
-					throw new RuntimeException( 'ACF update failed for field: ' . ( string ) $field );
+					throw new RuntimeException( 'ACF update failed for field: ' . (string) $field );
 				}
 			}
 		}
 
 		$result['after'] = array();
 		foreach ( $fields as $field => $value ) {
-			$result['after'][( string ) $field] = get_field( ( string ) $field, $target, false );
+			$result['after'][(string) $field] = get_field( (string) $field, $target, false );
 		}
 		$result['_rollback'] = array( 'action' => 'acf.update', 'payload' => array( 'target' => $target, 'fields' => $before ) );
 		return $result;
@@ -146,7 +146,7 @@ final class AcfAdapter {
 
 		$before = array();
 		foreach ( $fields as $field ) {
-			$before[( string ) $field] = get_field( ( string ) $field, $target, false );
+			$before[(string) $field] = get_field( (string) $field, $target, false );
 		}
 		$result = array( 'target' => $target, 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -154,7 +154,7 @@ final class AcfAdapter {
 		}
 
 		foreach ( $fields as $field ) {
-			delete_field( ( string ) $field, $target );
+			delete_field( (string) $field, $target );
 		}
 		$result['_rollback'] = array( 'action' => 'acf.update', 'payload' => array( 'target' => $target, 'fields' => $before ) );
 		return $result;
@@ -164,7 +164,7 @@ final class AcfAdapter {
 		$this->assertAcfSchema();
 		$args = array();
 		if ( isset( $payload['post_id'] ) ) {
-			$postId = ( int ) $payload['post_id'];
+			$postId = (int) $payload['post_id'];
 			if ( $postId <= 0 ) {
 				throw new RuntimeException( 'acf.field_groups post_id must be a positive integer.' );
 			}
@@ -182,8 +182,8 @@ final class AcfAdapter {
 
 		$groups = acf_get_field_groups( $args );
 		$result = array();
-		foreach ( ( array ) $groups as $group ) {
-			$fields = acf_get_fields( $group );
+		foreach ( (array) $groups as $group ) {
+			$fields   = acf_get_fields( $group );
 			$result[] = array(
 				'key'    => $group['key'] ?? null,
 				'title'  => $group['title'] ?? null,
@@ -203,8 +203,8 @@ final class AcfAdapter {
 
 	public function ensureTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
-		$postId    = isset( $payload['post_id'] ) ? ( int ) $payload['post_id'] : 0;
-		$groupKey  = isset( $payload['group_key'] ) ? ( string ) $payload['group_key'] : '';
+		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
+		$groupKey  = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		if ( $postId <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey ) ) {
 			throw new RuntimeException( 'acf.schema.ensure_text_fields requires a valid post_id and group_key.' );
@@ -222,12 +222,12 @@ final class AcfAdapter {
 		$nextMenuOrder  = 0;
 		foreach ( $existingFields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
-				$existingByKey[( string ) $field['key']] = $field;
+				$existingByKey[(string) $field['key']] = $field;
 			}
 			if ( ! empty( $field['name'] ) ) {
-				$existingByName[( string ) $field['name']] = $field;
+				$existingByName[(string) $field['name']] = $field;
 			}
-			$nextMenuOrder = max( $nextMenuOrder, ( ( int ) ( $field['menu_order'] ?? -1 ) ) + 1 );
+			$nextMenuOrder = max( $nextMenuOrder, ( (int) ( $field['menu_order'] ?? -1 ) ) + 1 );
 		}
 
 		$before      = array();
@@ -236,17 +236,17 @@ final class AcfAdapter {
 		foreach ( $normalized as $definition ) {
 			$key    = $definition['key'];
 			$name   = $definition['name'];
-			$byKey  = $existingByKey[$key] ?? null;
-			$byName = $existingByName[$name] ?? null;
+			$byKey  = $existingByKey[ $key ] ?? null;
+			$byName = $existingByName[ $name ] ?? null;
 			if ( is_array( $byKey ) ) {
 				$summary = $this->fieldSummary( $byKey );
 				if ( ! $this->fieldMatchesDefinition( $summary, $definition, $groupId ) ) {
 					throw new RuntimeException( 'Existing ACF field key conflicts with requested text field: ' . $key );
 				}
-				if ( is_array( $byName ) && ( string ) ( $byName['key'] ?? '' ) !== $key ) {
+				if ( is_array( $byName ) && (string) ( $byName['key'] ?? '' ) !== $key ) {
 					throw new RuntimeException( 'Existing ACF field name belongs to a different field: ' . $name );
 				}
-				$before[$key] = $summary;
+				$before[ $key ] = $summary;
 				continue;
 			}
 			if ( is_array( $byName ) ) {
@@ -256,21 +256,21 @@ final class AcfAdapter {
 			$global = acf_get_field( $key );
 			if ( is_array( $global ) ) {
 				$summary  = $this->fieldSummary( $global );
-				$globalId = isset( $global['ID'] ) ? ( int ) $global['ID'] : 0;
+				$globalId = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
 				if ( $globalId <= 0
-					|| 0 !== ( int ) ( $summary['parent'] ?? 0 )
-					|| ( string ) ( $summary['name'] ?? '' ) !== $name
-					|| 'text' !== ( string ) ( $summary['type'] ?? '' )
-					|| ! empty( $summary['required'] ) ) {
+ || 0 !== (int) ( $summary['parent'] ?? 0 )
+ || (string) ( $summary['name'] ?? '' ) !== $name
+ || 'text' !== (string) ( $summary['type'] ?? '' )
+ || ! empty( $summary['required'] ) ) {
 					throw new RuntimeException( 'Existing global ACF field conflicts with requested text field: ' . $key );
 				}
-				$before[$key] = $summary;
-				$recoverable[$key] = $globalId;
+				$before[ $key ] = $summary;
+				$recoverable[ $key ] = $globalId;
 				$wouldCreate[] = $definition;
 				continue;
 			}
 
-			$before[$key] = null;
+			$before[ $key ] = null;
 			$wouldCreate[] = $definition;
 		}
 
@@ -307,7 +307,7 @@ final class AcfAdapter {
 				'menu_order'        => $nextMenuOrder++,
 			);
 			if ( isset( $recoverable[$definition['key']] ) ) {
-				$field['ID'] = ( int ) $recoverable[$definition['key']];
+				$field['ID'] = (int) $recoverable[$definition['key']];
 			}
 			$saved = acf_update_field( $field );
 			if ( ! is_array( $saved ) ) {
@@ -322,7 +322,7 @@ final class AcfAdapter {
 
 		$after = array();
 		foreach ( $normalized as $definition ) {
-			$readback = acf_get_field( $definition['key'] );
+			$readback                  = acf_get_field( $definition['key'] );
 			$after[$definition['key']] = is_array( $readback ) ? $this->fieldSummary( $readback ) : null;
 		}
 		$result['after'] = $after;
@@ -338,8 +338,8 @@ final class AcfAdapter {
 
 	public function removeTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
-		$postId    = isset( $payload['post_id'] ) ? ( int ) $payload['post_id'] : 0;
-		$groupKey  = isset( $payload['group_key'] ) ? ( string ) $payload['group_key'] : '';
+		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
+		$groupKey  = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		if ( $postId <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey ) || ! $requested || count( $requested ) > 12 ) {
 			throw new RuntimeException( 'acf.schema.remove_text_fields requires a valid post_id, group_key and 1-12 field definitions.' );
@@ -378,7 +378,7 @@ final class AcfAdapter {
 			if ( ! is_array( $existing ) ) {
 				continue;
 			}
-			$id = isset( $existing['ID'] ) ? ( int ) $existing['ID'] : 0;
+			$id = isset( $existing['ID'] ) ? (int) $existing['ID'] : 0;
 			if ( $id <= 0 || false === acf_delete_field( $id ) ) {
 				throw new RuntimeException( 'ACF field removal failed for: ' . $definition['key'] );
 			}
@@ -390,12 +390,12 @@ final class AcfAdapter {
 
 	public function ensureFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
-		$postId    = isset( $payload['post_id'] ) ? ( int ) $payload['post_id'] : 0;
-		$groupKey  = isset( $payload['group_key'] ) ? ( string ) $payload['group_key'] : '';
+		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
+		$groupKey  = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		foreach ( array_keys( $payload ) as $key ) {
-			if ( ! in_array( ( string ) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF complex schema payload property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
+				throw new RuntimeException( 'Unknown ACF complex schema payload property: ' . (string) $key );
 			}
 		}
 		if ( $postId <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey ) ) {
@@ -415,12 +415,12 @@ final class AcfAdapter {
 		$nextMenuOrder  = 0;
 		foreach ( $existingFields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
-				$existingByKey[( string ) $field['key']] = $field;
+				$existingByKey[(string) $field['key']] = $field;
 			}
 			if ( ! empty( $field['name'] ) ) {
-				$existingByName[( string ) $field['name']] = $field;
+				$existingByName[(string) $field['name']] = $field;
 			}
-			$nextMenuOrder = max( $nextMenuOrder, ( ( int ) ( $field['menu_order'] ?? -1 ) ) + 1 );
+			$nextMenuOrder = max( $nextMenuOrder, ( (int) ( $field['menu_order'] ?? -1 ) ) + 1 );
 		}
 
 		$before      = array();
@@ -428,27 +428,27 @@ final class AcfAdapter {
 		foreach ( $normalized as $definition ) {
 			$key    = $definition['key'];
 			$name   = $definition['name'];
-			$byKey  = $existingByKey[$key] ?? null;
-			$byName = $existingByName[$name] ?? null;
+			$byKey  = $existingByKey[ $key ] ?? null;
+			$byName = $existingByName[ $name ] ?? null;
 			if ( is_array( $byKey ) ) {
-				if ( ( int ) ( $byKey['parent'] ?? 0 ) !== $groupId ) {
+				if ( (int) ( $byKey['parent'] ?? 0 ) !== $groupId ) {
 					throw new RuntimeException( 'Existing ACF field key belongs to a different parent: ' . $key );
 				}
 				$tree = $this->hydrateFieldTree( $byKey );
 				if ( ! $this->schemaContains( $definition, $tree ) ) {
 					throw new RuntimeException( 'Existing ACF field key conflicts with requested complex field: ' . $key );
 				}
-				if ( is_array( $byName ) && ( string ) ( $byName['key'] ?? '' ) !== $key ) {
+				if ( is_array( $byName ) && (string) ( $byName['key'] ?? '' ) !== $key ) {
 					throw new RuntimeException( 'Existing ACF field name belongs to a different field: ' . $name );
 				}
-				$before[$key] = $tree;
+				$before[ $key ] = $tree;
 				continue;
 			}
 			if ( is_array( $byName ) ) {
 				throw new RuntimeException( 'Existing ACF field name conflicts with requested complex field: ' . $name );
 			}
 			$this->assertFieldTreeKeysAvailable( $definition );
-			$before[$key] = null;
+			$before[ $key ] = null;
 			$wouldCreate[] = $definition;
 		}
 
@@ -513,12 +513,12 @@ final class AcfAdapter {
 
 	public function removeFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
-		$postId    = isset( $payload['post_id'] ) ? ( int ) $payload['post_id'] : 0;
-		$groupKey  = isset( $payload['group_key'] ) ? ( string ) $payload['group_key'] : '';
+		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
+		$groupKey  = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$requested = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		foreach ( array_keys( $payload ) as $key ) {
-			if ( ! in_array( ( string ) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF complex schema rollback property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, array( 'post_id', 'group_key', 'fields' ), true ) ) {
+				throw new RuntimeException( 'Unknown ACF complex schema rollback property: ' . (string) $key );
 			}
 		}
 		if ( $postId <= 0 || ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey ) || ! $requested || count( $requested ) > 12 ) {
@@ -537,7 +537,7 @@ final class AcfAdapter {
 				$before[$definition['key']] = null;
 				continue;
 			}
-			if ( ( int ) ( $field['parent'] ?? 0 ) !== $groupId ) {
+			if ( (int) ( $field['parent'] ?? 0 ) !== $groupId ) {
 				throw new RuntimeException( 'Refusing to remove an ACF field that moved to another parent: ' . $definition['key'] );
 			}
 			$tree = $this->hydrateFieldTree( $field );
@@ -586,8 +586,8 @@ final class AcfAdapter {
 	public function createFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		foreach ( array_keys( $payload ) as $key ) {
-			if ( ! in_array( ( string ) $key, array( 'group', 'fields' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group schema payload property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, array( 'group', 'fields' ), true ) ) {
+				throw new RuntimeException( 'Unknown ACF field-group schema payload property: ' . (string) $key );
 			}
 		}
 		$groupInput  = isset( $payload['group'] ) && is_array( $payload['group'] ) ? $payload['group'] : array();
@@ -619,11 +619,11 @@ final class AcfAdapter {
 			return $result;
 		}
 
-		$import = $group;
+		$import           = $group;
 		$import['fields'] = $fields;
 		try {
 			$saved = acf_import_field_group( $import );
-			if ( ! is_array( $saved ) || ( int ) ( $saved['ID'] ?? 0 ) <= 0 ) {
+			if ( ! is_array( $saved ) || (int) ( $saved['ID'] ?? 0 ) <= 0 ) {
 				throw new RuntimeException( 'ACF field group creation failed: ' . $groupKey );
 			}
 			$after = $this->fieldGroupSnapshot( $groupKey );
@@ -652,16 +652,16 @@ final class AcfAdapter {
 	public function deleteFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		foreach ( array_keys( $payload ) as $key ) {
-			if ( ! in_array( ( string ) $key, array( 'group_key', 'expected_schema' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group deletion payload property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, array( 'group_key', 'expected_schema' ), true ) ) {
+				throw new RuntimeException( 'Unknown ACF field-group deletion payload property: ' . (string) $key );
 			}
 		}
-		$groupKey = isset( $payload['group_key'] ) ? ( string ) $payload['group_key'] : '';
+		$groupKey = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$expected = isset( $payload['expected_schema'] ) && is_array( $payload['expected_schema'] ) ? $payload['expected_schema'] : array();
 		if ( ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey )
-			|| ! isset( $expected['group'], $expected['fields'] )
-			|| ! is_array( $expected['group'] )
-			|| ! is_array( $expected['fields'] ) ) {
+ || ! isset( $expected['group'], $expected['fields'] )
+ || ! is_array( $expected['group'] )
+ || ! is_array( $expected['fields'] ) ) {
 			throw new RuntimeException( 'acf.schema.delete_field_group requires group_key and expected_schema.' );
 		}
 		$group = $this->normalizeFieldGroup( $expected['group'] );
@@ -728,8 +728,8 @@ final class AcfAdapter {
 			throw new RuntimeException( 'ACF field group is missing or inactive: ' . $groupKey );
 		}
 		$applies = false;
-		foreach ( ( array ) acf_get_field_groups( array( 'post_id' => $postId ) ) as $candidate ) {
-			if ( is_array( $candidate ) && ( string ) ( $candidate['key'] ?? '' ) === $groupKey ) {
+		foreach ( (array) acf_get_field_groups( array( 'post_id' => $postId ) ) as $candidate ) {
+			if ( is_array( $candidate ) && (string) ( $candidate['key'] ?? '' ) === $groupKey ) {
 				$applies = true;
 				break;
 			}
@@ -741,7 +741,7 @@ final class AcfAdapter {
 
 	private function groupId( string $groupKey ): int {
 		$group   = acf_get_field_group( $groupKey );
-		$groupId = is_array( $group ) && isset( $group['ID'] ) ? ( int ) $group['ID'] : 0;
+		$groupId = is_array( $group ) && isset( $group['ID'] ) ? (int) $group['ID'] : 0;
 		if ( $groupId <= 0 ) {
 			throw new RuntimeException( 'ACF field group has no persistent database ID: ' . $groupKey );
 		}
@@ -766,13 +766,13 @@ final class AcfAdapter {
 				throw new RuntimeException( 'ACF schema field at index ' . $index . ' must be an object.' );
 			}
 			foreach ( array_keys( $field ) as $key ) {
-				if ( ! in_array( ( string ) $key, array( 'key', 'name', 'label' ), true ) ) {
-					throw new RuntimeException( 'Unknown ACF schema field property: ' . ( string ) $key );
+				if ( ! in_array( (string) $key, array( 'key', 'name', 'label' ), true ) ) {
+					throw new RuntimeException( 'Unknown ACF schema field property: ' . (string) $key );
 				}
 			}
-			$key   = isset( $field['key'] ) ? ( string ) $field['key'] : '';
-			$name  = isset( $field['name'] ) ? ( string ) $field['name'] : '';
-			$label = isset( $field['label'] ) ? trim( ( string ) $field['label'] ) : '';
+			$key   = isset( $field['key'] ) ? (string) $field['key'] : '';
+			$name  = isset( $field['name'] ) ? (string) $field['name'] : '';
+			$label = isset( $field['label'] ) ? trim( (string) $field['label'] ) : '';
 			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
 				throw new RuntimeException( 'Invalid ACF field key: ' . $key );
 			}
@@ -782,13 +782,13 @@ final class AcfAdapter {
 			if ( '' === $label || strlen( $label ) > 80 || preg_match( '/[\x00-\x1F\x7F]/', $label ) ) {
 				throw new RuntimeException( 'Invalid ACF field label for: ' . $key );
 			}
-			if ( isset( $keys[$key] ) || isset( $names[$name] ) ) {
+			if ( isset( $keys[ $key ] ) || isset( $names[ $name ] ) ) {
 				throw new RuntimeException( 'Duplicate ACF field key or name in schema request.' );
 			}
 			Policy::assertKeyAllowed( $key );
 			Policy::assertKeyAllowed( $name );
-			$keys[$key] = true;
-			$names[$name] = true;
+			$keys[ $key ] = true;
+			$names[ $name ] = true;
 			$normalized[] = array( 'key' => $key, 'name' => $name, 'label' => $label, 'type' => 'text' );
 		}
 		return $normalized;
@@ -796,22 +796,22 @@ final class AcfAdapter {
 
 	private function fieldSummary( array $field ): array {
 		return array(
-			'key'      => isset( $field['key'] ) ? ( string ) $field['key'] : '',
-			'name'     => isset( $field['name'] ) ? ( string ) $field['name'] : '',
-			'label'    => isset( $field['label'] ) ? ( string ) $field['label'] : '',
-			'type'     => isset( $field['type'] ) ? ( string ) $field['type'] : '',
-			'parent'   => isset( $field['parent'] ) ? ( string ) $field['parent'] : '',
+			'key'      => isset( $field['key'] ) ? (string) $field['key'] : '',
+			'name'     => isset( $field['name'] ) ? (string) $field['name'] : '',
+			'label'    => isset( $field['label'] ) ? (string) $field['label'] : '',
+			'type'     => isset( $field['type'] ) ? (string) $field['type'] : '',
+			'parent'   => isset( $field['parent'] ) ? (string) $field['parent'] : '',
 			'required' => ! empty( $field['required'] ),
 		);
 	}
 
 	private function fieldMatchesDefinition( array $summary, array $definition, int $groupId ): bool {
-		return ( string ) ( $summary['key'] ?? '' ) === ( string ) $definition['key']
-			&& ( string ) ( $summary['name'] ?? '' ) === ( string ) $definition['name']
-			&& ( string ) ( $summary['label'] ?? '' ) === ( string ) $definition['label']
-			&& 'text' === ( string ) ( $summary['type'] ?? '' )
-			&& ( string ) $groupId === ( string ) ( $summary['parent'] ?? '' )
-			&& empty( $summary['required'] );
+		return (string) ( $summary['key'] ?? '' ) === (string) $definition['key']
+ && (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
+ && (string) ( $summary['label'] ?? '' ) === (string) $definition['label']
+ && 'text' === (string) ( $summary['type'] ?? '' )
+ && (string) $groupId === (string) ( $summary['parent'] ?? '' )
+ && empty( $summary['required'] );
 	}
 
 	private function assertAcfComplexSchema(): void {
@@ -836,12 +836,12 @@ final class AcfAdapter {
 			'active', 'show_in_rest',
 		);
 		foreach ( array_keys( $group ) as $key ) {
-			if ( ! in_array( ( string ) $key, $allowed, true ) ) {
-				throw new RuntimeException( 'Unknown ACF field-group property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, $allowed, true ) ) {
+				throw new RuntimeException( 'Unknown ACF field-group property: ' . (string) $key );
 			}
 		}
-		$key   = isset( $group['key'] ) ? ( string ) $group['key'] : '';
-		$title = isset( $group['title'] ) ? trim( ( string ) $group['title'] ) : '';
+		$key   = isset( $group['key'] ) ? (string) $group['key'] : '';
+		$title = isset( $group['title'] ) ? trim( (string) $group['title'] ) : '';
 		if ( ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
 			throw new RuntimeException( 'Invalid ACF field-group key: ' . $key );
 		}
@@ -860,10 +860,10 @@ final class AcfAdapter {
 			'key'                   => $key,
 			'title'                 => $title,
 			'location'              => $location,
-			'position'              => isset( $group['position'] ) ? ( string ) $group['position'] : 'normal',
-			'style'                 => isset( $group['style'] ) ? ( string ) $group['style'] : 'default',
-			'label_placement'       => isset( $group['label_placement'] ) ? ( string ) $group['label_placement'] : 'top',
-			'instruction_placement' => isset( $group['instruction_placement'] ) ? ( string ) $group['instruction_placement'] : 'label',
+			'position'              => isset( $group['position'] ) ? (string) $group['position'] : 'normal',
+			'style'                 => isset( $group['style'] ) ? (string) $group['style'] : 'default',
+			'label_placement'       => isset( $group['label_placement'] ) ? (string) $group['label_placement'] : 'top',
+			'instruction_placement' => isset( $group['instruction_placement'] ) ? (string) $group['instruction_placement'] : 'label',
 			'active'                => array_key_exists( 'active', $group ) ? $this->requireBoolean( $group['active'], 'group.active' ) : true,
 			'show_in_rest'          => array_key_exists( 'show_in_rest', $group ) ? $this->requireBoolean( $group['show_in_rest'], 'group.show_in_rest' ) : false,
 		);
@@ -880,7 +880,7 @@ final class AcfAdapter {
 			throw new RuntimeException( 'Invalid ACF field-group instruction placement.' );
 		}
 		if ( isset( $group['description'] ) ) {
-			$description = ( string ) $group['description'];
+			$description = (string) $group['description'];
 			if ( strlen( $description ) > 1000 || $this->hasInvalidControl( $description, true ) ) {
 				throw new RuntimeException( 'Invalid ACF field-group description.' );
 			}
@@ -895,7 +895,7 @@ final class AcfAdapter {
 				'comments', 'revisions', 'slug', 'author', 'format', 'page_attributes',
 				'featured_image', 'categories', 'tags', 'send-trackbacks',
 			);
-			$hidden = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
+			$hidden        = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
 			foreach ( $hidden as $item ) {
 				if ( ! in_array( $item, $allowedHidden, true ) ) {
 					throw new RuntimeException( 'Invalid ACF hide_on_screen item: ' . $item );
@@ -911,12 +911,12 @@ final class AcfAdapter {
 			throw new RuntimeException( 'ACF field-group location requires 1-8 OR groups.' );
 		}
 		$types = array();
-		foreach ( ( array ) acf_get_location_rule_types() as $category ) {
+		foreach ( (array) acf_get_location_rule_types() as $category ) {
 			if ( ! is_array( $category ) ) {
 				continue;
 			}
 			foreach ( $category as $param => $label ) {
-				$types[( string ) $param] = true;
+				$types[(string) $param] = true;
 			}
 		}
 		$normalized = array();
@@ -930,18 +930,18 @@ final class AcfAdapter {
 					throw new RuntimeException( 'ACF location rule must be an object.' );
 				}
 				foreach ( array_keys( $rule ) as $key ) {
-					if ( ! in_array( ( string ) $key, array( 'param', 'operator', 'value' ), true ) ) {
-						throw new RuntimeException( 'Unknown ACF location rule property: ' . ( string ) $key );
+					if ( ! in_array( (string) $key, array( 'param', 'operator', 'value' ), true ) ) {
+						throw new RuntimeException( 'Unknown ACF location rule property: ' . (string) $key );
 					}
 				}
-				$param    = isset( $rule['param'] ) ? ( string ) $rule['param'] : '';
-				$operator = isset( $rule['operator'] ) ? ( string ) $rule['operator'] : '';
-				$value    = isset( $rule['value'] ) ? ( string ) $rule['value'] : '';
-				if ( ! isset( $types[$param] ) ) {
+				$param    = isset( $rule['param'] ) ? (string) $rule['param'] : '';
+				$operator = isset( $rule['operator'] ) ? (string) $rule['operator'] : '';
+				$value    = isset( $rule['value'] ) ? (string) $rule['value'] : '';
+				if ( ! isset( $types[ $param ] ) ) {
 					throw new RuntimeException( 'Unsupported ACF location parameter: ' . $param );
 				}
-				$operators = ( array ) acf_get_location_rule_operators( array( 'param' => $param ) );
-				if ( ! isset( $operators[$operator] ) ) {
+				$operators = (array) acf_get_location_rule_operators( array( 'param' => $param ) );
+				if ( ! isset( $operators[ $operator ] ) ) {
 					throw new RuntimeException( 'Unsupported ACF location operator for ' . $param . ': ' . $operator );
 				}
 				if ( '' === $value || strlen( $value ) > 200 || $this->hasInvalidControl( $value, false ) ) {
@@ -983,7 +983,7 @@ final class AcfAdapter {
 	}
 
 	private function normalizeSchemaField( array $field, int $depth, int &$total, array &$keys ): array {
-		$type           = isset( $field['type'] ) ? ( string ) $field['type'] : '';
+		$type           = isset( $field['type'] ) ? (string) $field['type'] : '';
 		$typeProperties = array(
 			'text'         => array( 'default_value', 'placeholder', 'prepend', 'append', 'maxlength' ),
 			'textarea'     => array( 'default_value', 'placeholder', 'maxlength', 'rows', 'new_lines' ),
@@ -995,7 +995,7 @@ final class AcfAdapter {
 			'group'        => array( 'sub_fields', 'layout' ),
 			'repeater'     => array( 'sub_fields', 'min', 'max', 'layout', 'button_label', 'collapsed', 'rows_per_page' ),
 		);
-		if ( ! isset( $typeProperties[$type] ) ) {
+		if ( ! isset( $typeProperties[ $type ] ) ) {
 			throw new RuntimeException( 'Unsupported ACF complex schema field type: ' . $type );
 		}
 		if ( ! acf_get_field_type( $type ) ) {
@@ -1004,16 +1004,16 @@ final class AcfAdapter {
 
 		$allowed = array_merge(
 			array( 'key', 'name', 'label', 'type', 'instructions', 'required', 'conditional_logic', 'wrapper' ),
-			$typeProperties[$type]
+			$typeProperties[ $type ]
 		);
 		foreach ( array_keys( $field ) as $property ) {
-			if ( ! in_array( ( string ) $property, $allowed, true ) ) {
-				throw new RuntimeException( 'Unknown ACF ' . $type . ' field property: ' . ( string ) $property );
+			if ( ! in_array( (string) $property, $allowed, true ) ) {
+				throw new RuntimeException( 'Unknown ACF ' . $type . ' field property: ' . (string) $property );
 			}
 		}
-		$key   = isset( $field['key'] ) ? ( string ) $field['key'] : '';
-		$name  = isset( $field['name'] ) ? ( string ) $field['name'] : '';
-		$label = isset( $field['label'] ) ? trim( ( string ) $field['label'] ) : '';
+		$key   = isset( $field['key'] ) ? (string) $field['key'] : '';
+		$name  = isset( $field['name'] ) ? (string) $field['name'] : '';
+		$label = isset( $field['label'] ) ? trim( (string) $field['label'] ) : '';
 		if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $key ) ) {
 			throw new RuntimeException( 'Invalid ACF field key: ' . $key );
 		}
@@ -1025,10 +1025,10 @@ final class AcfAdapter {
 		}
 		Policy::assertKeyAllowed( $key );
 		Policy::assertKeyAllowed( $name );
-		if ( isset( $keys[$key] ) ) {
+		if ( isset( $keys[ $key ] ) ) {
 			throw new RuntimeException( 'Duplicate ACF field key in schema request: ' . $key );
 		}
-		$keys[$key] = true;
+		$keys[ $key ] = true;
 
 		$normalized = array(
 			'key'               => $key,
@@ -1056,10 +1056,10 @@ final class AcfAdapter {
 				if ( ! array_key_exists( $property, $field ) ) {
 					continue;
 				}
-				if ( 'number' === $type && 'default_value' === $property && is_numeric( $field[$property] ) ) {
-					$normalized[$property] = $field[$property] + 0;
+				if ( 'number' === $type && 'default_value' === $property && is_numeric( $field[ $property ] ) ) {
+					$normalized[ $property ] = $field[ $property ] + 0;
 				} else {
-					$normalized[$property] = $this->boundedText( $field[$property], 2000, true, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedText( $field[ $property ], 2000, true, $key . '.' . $property );
 				}
 			}
 		}
@@ -1071,7 +1071,7 @@ final class AcfAdapter {
 				$normalized['rows'] = $this->boundedInteger( $field['rows'], 1, 100, $key . '.rows' );
 			}
 			if ( array_key_exists( 'new_lines', $field ) ) {
-				$newLines = ( string ) $field['new_lines'];
+				$newLines = (string) $field['new_lines'];
 				if ( ! in_array( $newLines, array( '', 'wpautop', 'br' ), true ) ) {
 					throw new RuntimeException( 'Invalid textarea new_lines setting for: ' . $key );
 				}
@@ -1081,7 +1081,7 @@ final class AcfAdapter {
 		if ( 'number' === $type ) {
 			foreach ( array( 'min', 'max', 'step' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedNumber( $field[$property], -1000000000, 1000000000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedNumber( $field[ $property ], -1000000000, 1000000000, $key . '.' . $property );
 				}
 			}
 		}
@@ -1093,7 +1093,7 @@ final class AcfAdapter {
 				$normalized['return_format'] = $this->enumValue( $field['return_format'], array( 'array', 'url', 'id' ), $key . '.return_format' );
 			}
 			if ( array_key_exists( 'preview_size', $field ) ) {
-				$preview = ( string ) $field['preview_size'];
+				$preview = (string) $field['preview_size'];
 				if ( ! preg_match( '/^[A-Za-z0-9_-]{1,80}\z/', $preview ) ) {
 					throw new RuntimeException( 'Invalid image preview_size for: ' . $key );
 				}
@@ -1104,12 +1104,12 @@ final class AcfAdapter {
 			}
 			foreach ( array( 'min_width', 'min_height', 'max_width', 'max_height' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 100000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 100000, $key . '.' . $property );
 				}
 			}
 			foreach ( array( 'min_size', 'max_size' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedNumber( $field[$property], 0, 10000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedNumber( $field[ $property ], 0, 10000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'mime_types', $field ) ) {
@@ -1132,7 +1132,7 @@ final class AcfAdapter {
 			}
 			foreach ( array( 'min', 'max' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 1000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 1000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'filters', $field ) ) {
@@ -1163,7 +1163,7 @@ final class AcfAdapter {
 				throw new RuntimeException( 'ACF ' . $type . ' field requires sub_fields: ' . $key );
 			}
 			$normalized['sub_fields'] = $this->normalizeSchemaFields( $subFields, $depth + 1, $total, $keys );
-			$layouts = 'group' === $type ? array( 'block', 'table', 'row' ) : array( 'table', 'block', 'row' );
+			$layouts                  = 'group' === $type ? array( 'block', 'table', 'row' ) : array( 'table', 'block', 'row' );
 			if ( array_key_exists( 'layout', $field ) ) {
 				$normalized['layout'] = $this->enumValue( $field['layout'], $layouts, $key . '.layout' );
 			}
@@ -1171,7 +1171,7 @@ final class AcfAdapter {
 		if ( 'repeater' === $type ) {
 			foreach ( array( 'min', 'max' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 1000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 1000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'button_label', $field ) ) {
@@ -1181,12 +1181,12 @@ final class AcfAdapter {
 				$normalized['rows_per_page'] = $this->boundedInteger( $field['rows_per_page'], 1, 200, $key . '.rows_per_page' );
 			}
 			if ( array_key_exists( 'collapsed', $field ) ) {
-				$collapsed = ( string ) $field['collapsed'];
+				$collapsed = (string) $field['collapsed'];
 				if ( '' !== $collapsed && ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $collapsed ) ) {
 					throw new RuntimeException( 'Invalid repeater collapsed field key for: ' . $key );
 				}
 				if ( '' !== $collapsed ) {
-					$directKeys = array_map( static function ( array $subField ): string { return ( string ) $subField['key']; }, $normalized['sub_fields'] );
+					$directKeys = array_map( static function ( array $subField ): string { return (string) $subField['key']; }, $normalized['sub_fields'] );
 					if ( ! in_array( $collapsed, $directKeys, true ) ) {
 						throw new RuntimeException( 'Repeater collapsed field must reference a direct sub field: ' . $key );
 					}
@@ -1201,14 +1201,14 @@ final class AcfAdapter {
 			throw new RuntimeException( 'ACF field wrapper must be an object.' );
 		}
 		foreach ( array_keys( $wrapper ) as $key ) {
-			if ( ! in_array( ( string ) $key, array( 'width', 'class', 'id' ), true ) ) {
-				throw new RuntimeException( 'Unknown ACF wrapper property: ' . ( string ) $key );
+			if ( ! in_array( (string) $key, array( 'width', 'class', 'id' ), true ) ) {
+				throw new RuntimeException( 'Unknown ACF wrapper property: ' . (string) $key );
 			}
 		}
-		$width = isset( $wrapper['width'] ) ? ( string ) $wrapper['width'] : '';
-		$class = isset( $wrapper['class'] ) ? ( string ) $wrapper['class'] : '';
-		$id    = isset( $wrapper['id'] ) ? ( string ) $wrapper['id'] : '';
-		if ( '' !== $width && ( ! ctype_digit( $width ) || ( int ) $width < 1 || ( int ) $width > 100 ) ) {
+		$width = isset( $wrapper['width'] ) ? (string) $wrapper['width'] : '';
+		$class = isset( $wrapper['class'] ) ? (string) $wrapper['class'] : '';
+		$id    = isset( $wrapper['id'] ) ? (string) $wrapper['id'] : '';
+		if ( '' !== $width && ( ! ctype_digit( $width ) || (int) $width < 1 || (int) $width > 100 ) ) {
 			throw new RuntimeException( 'ACF wrapper width must be between 1 and 100.' );
 		}
 		if ( strlen( $class ) > 200 || $this->hasInvalidControl( $class, false ) ) {
@@ -1238,13 +1238,13 @@ final class AcfAdapter {
 					throw new RuntimeException( 'ACF conditional_logic rule must be an object.' );
 				}
 				foreach ( array_keys( $rule ) as $key ) {
-					if ( ! in_array( ( string ) $key, array( 'field', 'operator', 'value' ), true ) ) {
-						throw new RuntimeException( 'Unknown ACF conditional_logic property: ' . ( string ) $key );
+					if ( ! in_array( (string) $key, array( 'field', 'operator', 'value' ), true ) ) {
+						throw new RuntimeException( 'Unknown ACF conditional_logic property: ' . (string) $key );
 					}
 				}
-				$field    = isset( $rule['field'] ) ? ( string ) $rule['field'] : '';
-				$operator = isset( $rule['operator'] ) ? ( string ) $rule['operator'] : '';
-				$value    = isset( $rule['value'] ) ? ( string ) $rule['value'] : '';
+				$field    = isset( $rule['field'] ) ? (string) $rule['field'] : '';
+				$operator = isset( $rule['operator'] ) ? (string) $rule['operator'] : '';
+				$value    = isset( $rule['value'] ) ? (string) $rule['value'] : '';
 				if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $field ) || ! in_array( $operator, array( '==', '!=' ), true ) ) {
 					throw new RuntimeException( 'Invalid ACF conditional_logic rule.' );
 				}
@@ -1264,19 +1264,19 @@ final class AcfAdapter {
 		unset( $field['sub_fields'] );
 		$field['parent'] = $parentId;
 		$field['menu_order'] = $menuOrder;
-		$saved = acf_update_field( $field );
+		$saved               = acf_update_field( $field );
 		if ( ! is_array( $saved ) ) {
 			throw new RuntimeException( 'ACF complex field creation failed for: ' . $definition['key'] );
 		}
-		$savedId = isset( $saved['ID'] ) ? ( int ) $saved['ID'] : 0;
+		$savedId = isset( $saved['ID'] ) ? (int) $saved['ID'] : 0;
 		if ( $savedId <= 0 ) {
 			$readback = acf_get_field( $definition['key'] );
-			$savedId  = is_array( $readback ) && isset( $readback['ID'] ) ? ( int ) $readback['ID'] : 0;
+			$savedId  = is_array( $readback ) && isset( $readback['ID'] ) ? (int) $readback['ID'] : 0;
 		}
 		if ( $savedId <= 0 ) {
 			throw new RuntimeException( 'ACF complex field creation returned no persistent ID: ' . $definition['key'] );
 		}
-		$createdNodes[] = array( 'key' => ( string ) $definition['key'], 'id' => $savedId );
+		$createdNodes[] = array( 'key' => (string) $definition['key'], 'id' => $savedId );
 		foreach ( array_values( $children ) as $index => $child ) {
 			$this->createFieldTree( $child, $savedId, $index, $createdNodes );
 		}
@@ -1285,8 +1285,8 @@ final class AcfAdapter {
 	private function cleanupCreatedFieldNodes( array $createdNodes ): array {
 		$failures = array();
 		foreach ( array_reverse( $createdNodes ) as $node ) {
-			$key = isset( $node['key'] ) ? ( string ) $node['key'] : '';
-			$id  = isset( $node['id'] ) ? ( int ) $node['id'] : 0;
+			$key = isset( $node['key'] ) ? (string) $node['key'] : '';
+			$id  = isset( $node['id'] ) ? (int) $node['id'] : 0;
 			if ( '' === $key || $id <= 0 ) {
 				$failures[] = '' !== $key ? $key : '(unknown)';
 				continue;
@@ -1295,7 +1295,7 @@ final class AcfAdapter {
 			if ( ! is_array( $field ) ) {
 				continue;
 			}
-			if ( ( int ) ( $field['ID'] ?? 0 ) !== $id ) {
+			if ( (int) ( $field['ID'] ?? 0 ) !== $id ) {
 				$failures[] = $key;
 				continue;
 			}
@@ -1304,7 +1304,7 @@ final class AcfAdapter {
 				continue;
 			}
 			$readback = acf_get_field( $key );
-			if ( is_array( $readback ) && ( int ) ( $readback['ID'] ?? 0 ) === $id ) {
+			if ( is_array( $readback ) && (int) ( $readback['ID'] ?? 0 ) === $id ) {
 				$failures[] = $key;
 			}
 		}
@@ -1320,11 +1320,11 @@ final class AcfAdapter {
 		if ( is_array( $children ) ) {
 			foreach ( array_reverse( $children ) as $child ) {
 				if ( is_array( $child ) && ! empty( $child['key'] ) ) {
-					$this->deleteFieldTreeByKey( ( string ) $child['key'] );
+					$this->deleteFieldTreeByKey( (string) $child['key'] );
 				}
 			}
 		}
-		$id = isset( $field['ID'] ) ? ( int ) $field['ID'] : 0;
+		$id = isset( $field['ID'] ) ? (int) $field['ID'] : 0;
 		if ( $id <= 0 || false === acf_delete_field( $id ) ) {
 			throw new RuntimeException( 'ACF complex field deletion failed for: ' . $key );
 		}
@@ -1359,7 +1359,7 @@ final class AcfAdapter {
 	}
 
 	private function assertFieldTreeKeysAvailable( array $definition ): void {
-		$key = ( string ) $definition['key'];
+		$key = (string) $definition['key'];
 		if ( is_array( acf_get_field( $key ) ) ) {
 			throw new RuntimeException( 'Existing global ACF field conflicts with requested schema field: ' . $key );
 		}
@@ -1380,27 +1380,27 @@ final class AcfAdapter {
 				}
 				$actualValues = array_values( $actual );
 				foreach ( $expected as $index => $value ) {
-					if ( ! $this->schemaContains( $value, $actualValues[$index] ) ) {
+					if ( ! $this->schemaContains( $value, $actualValues[ $index ] ) ) {
 						return false;
 					}
 				}
 				return true;
 			}
 			foreach ( $expected as $key => $value ) {
-				if ( ! array_key_exists( $key, $actual ) || ! $this->schemaContains( $value, $actual[$key] ) ) {
+				if ( ! array_key_exists( $key, $actual ) || ! $this->schemaContains( $value, $actual[ $key ] ) ) {
 					return false;
 				}
 			}
 			return true;
 		}
 		if ( is_bool( $expected ) ) {
-			return ( bool ) $actual === $expected;
+			return (bool) $actual === $expected;
 		}
 		if ( is_int( $expected ) ) {
-			return is_numeric( $actual ) && ( int ) $actual === $expected;
+			return is_numeric( $actual ) && (int) $actual === $expected;
 		}
 		if ( is_float( $expected ) ) {
-			return is_numeric( $actual ) && abs( ( float ) $actual - $expected ) < 0.0000001;
+			return is_numeric( $actual ) && abs( (float) $actual - $expected ) < 0.0000001;
 		}
 		return $expected === $actual;
 	}
@@ -1409,7 +1409,7 @@ final class AcfAdapter {
 		if ( ! is_string( $value ) && ! is_int( $value ) && ! is_float( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be text.' );
 		}
-		$text = ( string ) $value;
+		$text = (string) $value;
 		if ( strlen( $text ) > $maxLength || $this->hasInvalidControl( $text, $allowNewlines ) ) {
 			throw new RuntimeException( 'Invalid ACF text value for ' . $context . '.' );
 		}
@@ -1418,7 +1418,7 @@ final class AcfAdapter {
 
 	private function hasInvalidControl( string $value, bool $allowNewlines ): bool {
 		$pattern = $allowNewlines ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/';
-		return ( bool ) preg_match( $pattern, $value );
+		return (bool) preg_match( $pattern, $value );
 	}
 
 	private function requireBoolean( $value, string $context ): bool {
@@ -1439,7 +1439,7 @@ final class AcfAdapter {
 		if ( ! is_int( $value ) && ! is_float( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be numeric.' );
 		}
-		$number = ( float ) $value;
+		$number = (float) $value;
 		if ( $number < $min || $number > $max ) {
 			throw new RuntimeException( 'ACF ' . $context . ' is outside the supported range.' );
 		}
@@ -1447,7 +1447,7 @@ final class AcfAdapter {
 	}
 
 	private function enumValue( $value, array $allowed, string $context ): string {
-		$value = ( string ) $value;
+		$value = (string) $value;
 		if ( ! in_array( $value, $allowed, true ) ) {
 			throw new RuntimeException( 'Invalid ACF enum value for ' . $context . '.' );
 		}
@@ -1460,7 +1460,7 @@ final class AcfAdapter {
 		}
 		$result = array();
 		foreach ( array_values( $value ) as $item ) {
-			$item = ( string ) $item;
+			$item = (string) $item;
 			if ( ! preg_match( '/^[A-Za-z0-9_-]{1,80}\z/', $item ) ) {
 				throw new RuntimeException( 'Invalid ACF key in ' . $context . '.' );
 			}
@@ -1493,7 +1493,7 @@ final class AcfAdapter {
 			}
 		}
 		if ( isset( $payload['post_id'] ) ) {
-			return ( int ) $payload['post_id'];
+			return (int) $payload['post_id'];
 		}
 		throw new RuntimeException( 'ACF target is required. Use payload.target or payload.post_id.' );
 	}

@@ -11,6 +11,7 @@ $workflow = file_get_contents($root . '/.github/workflows/release.yml');
 $builder = file_get_contents($root . '/scripts/build-release-package.py');
 $catalog = file_get_contents($root . '/docs/ACTION-CATALOG.md');
 $adapterCompact = is_string($adapter) ? preg_replace('/\\s+/', '', $adapter) : false;
+$bootstrapCompact = is_string($bootstrap) ? preg_replace('/\\s+/', '', $bootstrap) : false;
 if (! is_string($adapterCompact)) { throw new RuntimeException('Could not normalize connector update source.'); }
 
 foreach (array('adapter' => $adapter, 'bootstrap' => $bootstrap, 'plugin' => $plugin, 'readme' => $readme, 'release workflow' => $workflow, 'release builder' => $builder, 'catalog' => $catalog) as $name => $source) {
@@ -87,7 +88,7 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
 if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
     ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
     $version[1] !== $stable[1] ||
-    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
+    strpos($bootstrapCompact, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
     fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }

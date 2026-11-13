@@ -74,12 +74,12 @@ final class ElementorFormsAdapter {
 	public function inspect( array $payload, array $context = array() ): array {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
-		$snapshot = $this->snapshot( ( int ) $post->ID );
+		$snapshot = $this->snapshot( (int) $post->ID );
 		$forms    = array();
 		$this->collectForms( $snapshot['data'], $forms, array(), null );
 
 		return array(
-			'post_id'              => ( int ) $post->ID,
+			'post_id'              => (int) $post->ID,
 			'forms'                => $forms,
 			'form_count'           => count( $forms ),
 			'document_fingerprint' => Fingerprint::make( $snapshot ),
@@ -88,7 +88,7 @@ final class ElementorFormsAdapter {
 
 	public function upsert( array $payload, array $context ): array {
 		$post   = $this->post( $payload );
-		$before = $this->snapshot( ( int ) $post->ID );
+		$before = $this->snapshot( (int) $post->ID );
 		$data   = $before['data'];
 
 		if ( ! isset( $payload['form'] ) || ! is_array( $payload['form'] ) ) {
@@ -101,7 +101,7 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'form must be a V3 widgetType=form element or a V4 elType=e-form element.' );
 		}
 
-		$requestedFamily = isset( $payload['family'] ) ? strtolower( ( string ) $payload['family'] ) : 'auto';
+		$requestedFamily = isset( $payload['family'] ) ? strtolower( (string) $payload['family'] ) : 'auto';
 		if ( ! in_array( $requestedFamily, array( 'auto', 'v3', 'v4' ), true ) ) {
 			throw new RuntimeException( 'family must be auto, v3 or v4.' );
 		}
@@ -110,17 +110,17 @@ final class ElementorFormsAdapter {
 		}
 
 		$capabilities              = $this->capabilities( array(), array() );
-		$expectedSchemaFingerprint = isset( $payload['expected_schema_fingerprint'] ) ? ( string ) $payload['expected_schema_fingerprint'] : '';
-		if ( '' !== $expectedSchemaFingerprint && ! hash_equals( ( string ) $capabilities['schema_fingerprint'], $expectedSchemaFingerprint ) ) {
+		$expectedSchemaFingerprint = isset( $payload['expected_schema_fingerprint'] ) ? (string) $payload['expected_schema_fingerprint'] : '';
+		if ( '' !== $expectedSchemaFingerprint && ! hash_equals( (string) $capabilities['schema_fingerprint'], $expectedSchemaFingerprint ) ) {
 			throw new RuntimeException( 'Elementor form schema fingerprint changed; refresh form capabilities before writing.' );
 		}
 
 		$this->validateForm( $form, $family, $capabilities );
-		$formId          = ( string ) $form['id'];
+		$formId          = (string) $form['id'];
 		$existing        = $this->findElementCopy( $data, $formId );
 		$existingFamily  = is_array( $existing ) ? $this->formFamily( $existing ) : null;
-		$parentElementId = isset( $payload['parent_element_id'] ) ? ( string ) $payload['parent_element_id'] : '';
-		$position        = array_key_exists( 'position', $payload ) ? ( int ) $payload['position'] : null;
+		$parentElementId = isset( $payload['parent_element_id'] ) ? (string) $payload['parent_element_id'] : '';
+		$position        = array_key_exists( 'position', $payload ) ? (int) $payload['position'] : null;
 		$operation       = 'insert';
 		$beforeForm      = null;
 
@@ -156,7 +156,7 @@ final class ElementorFormsAdapter {
 		$this->assertNoNestedForms( $data );
 
 		$result = array(
-			'post_id'              => ( int ) $post->ID,
+			'post_id'              => (int) $post->ID,
 			'operation'            => $operation,
 			'family'               => $family,
 			'form_id'              => $formId,
@@ -173,9 +173,9 @@ final class ElementorFormsAdapter {
 		}
 
 		try {
-			$this->saveDocument( ( int ) $post->ID, $data, $before['page_settings'] );
+			$this->saveDocument( (int) $post->ID, $data, $before['page_settings'] );
 			$this->clearCache();
-			$after    = $this->snapshot( ( int ) $post->ID );
+			$after    = $this->snapshot( (int) $post->ID );
 			$readback = $this->findElementCopy( $after['data'], $formId );
 			if ( ! is_array( $readback ) || ! hash_equals( Fingerprint::make( $form ), Fingerprint::make( $readback ) ) ) {
 				throw new RuntimeException( 'Elementor form readback verification failed.' );
@@ -200,7 +200,7 @@ final class ElementorFormsAdapter {
 		$result['_rollback'] = array(
 			'action'  => 'elementor.replace_document',
 			'payload' => array(
-				'id'            => ( int ) $post->ID,
+				'id'            => (int) $post->ID,
 				'data'          => $before['data'],
 				'page_settings' => $before['page_settings'],
 			),
@@ -212,8 +212,8 @@ final class ElementorFormsAdapter {
 		return array(
 			'elementor'     => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
 			'elementor_pro' => defined( 'ELEMENTOR_PRO_VERSION' ) ? ELEMENTOR_PRO_VERSION : null,
-			'theme'         => function_exists( 'wp_get_theme' ) ? ( string ) wp_get_theme()->get( 'Name' ) : null,
-			'theme_version' => function_exists( 'wp_get_theme' ) ? ( string ) wp_get_theme()->get( 'Version' ) : null,
+			'theme'         => function_exists( 'wp_get_theme' ) ? (string) wp_get_theme()->get( 'Name' ) : null,
+			'theme_version' => function_exists( 'wp_get_theme' ) ? (string) wp_get_theme()->get( 'Version' ) : null,
 		);
 	}
 
@@ -252,7 +252,7 @@ final class ElementorFormsAdapter {
 			if ( 'e-form' !== $name && 0 !== strpos( $name, 'e-form-' ) ) {
 				continue;
 			}
-			$types[$name] = array(
+			$types[ $name ] = array(
 				'class'  => get_class( $component ),
 				'config' => $this->collectAtomicConfig( $component, $warnings, $name ),
 			);
@@ -280,7 +280,7 @@ final class ElementorFormsAdapter {
 			return array();
 		}
 		try {
-			$raw = ( array ) $component->get_controls();
+			$raw = (array) $component->get_controls();
 		} catch ( Throwable $error ) {
 			$warnings[] = 'form_controls_inventory_failed';
 			return array();
@@ -289,7 +289,7 @@ final class ElementorFormsAdapter {
 		$result = array();
 		foreach ( $raw as $name => $control ) {
 			if ( is_array( $control ) ) {
-				$result[( string ) $name] = $this->controlRecord( ( string ) $name, $control );
+				$result[(string) $name] = $this->controlRecord( (string) $name, $control );
 			}
 		}
 		ksort( $result, SORT_STRING );
@@ -299,7 +299,7 @@ final class ElementorFormsAdapter {
 	private function controlRecord( string $name, array $control ): array {
 		$record = array(
 			'name'           => $name,
-			'type'           => isset( $control['type'] ) && is_scalar( $control['type'] ) ? ( string ) $control['type'] : null,
+			'type'           => isset( $control['type'] ) && is_scalar( $control['type'] ) ? (string) $control['type'] : null,
 			'responsive'     => ! empty( $control['responsive'] ) || ! empty( $control['is_responsive'] ),
 			'dynamic_active' => ! empty( $control['dynamic']['active'] ),
 		);
@@ -315,8 +315,8 @@ final class ElementorFormsAdapter {
 				if ( ! is_array( $field ) ) {
 					continue;
 				}
-				$key = isset( $field['name'] ) && is_scalar( $field['name'] ) ? ( string ) $field['name'] : ( string ) $fieldName;
-				$record['fields'][$key] = $this->controlRecord( $key, $field );
+				$key = isset( $field['name'] ) && is_scalar( $field['name'] ) ? (string) $field['name'] : (string) $fieldName;
+				$record['fields'][ $key ] = $this->controlRecord( $key, $field );
 			}
 			ksort( $record['fields'], SORT_STRING );
 		}
@@ -328,7 +328,7 @@ final class ElementorFormsAdapter {
 			return array();
 		}
 		try {
-			$config = ( array ) $component->get_config();
+			$config = (array) $component->get_config();
 		} catch ( Throwable $error ) {
 			$warnings[] = 'atomic_form_config_failed:' . sanitize_key( $name );
 			return array();
@@ -339,9 +339,9 @@ final class ElementorFormsAdapter {
 			if ( ! array_key_exists( $key, $config ) ) {
 				continue;
 			}
-			$normalized = $this->normalizeJsonValue( $config[$key] );
+			$normalized = $this->normalizeJsonValue( $config[ $key ] );
 			if ( null !== $normalized ) {
-				$result[$key] = $this->redactSecrets( $normalized );
+				$result[ $key ] = $this->redactSecrets( $normalized );
 			}
 		}
 		return $result;
@@ -352,7 +352,7 @@ final class ElementorFormsAdapter {
 			return array();
 		}
 		try {
-			return ( array ) $elementor->{$managerName}->{$method}();
+			return (array) $elementor->{$managerName}->{$method}();
 		} catch ( Throwable $error ) {
 			$warnings[] = $warningPrefix . '_inventory_failed';
 			return array();
@@ -368,7 +368,7 @@ final class ElementorFormsAdapter {
 			$types = $this->managerTypes( $elementor, $source[0], $source[1], $warnings, $source[2] );
 			foreach ( $types as $name => $component ) {
 				if ( is_object( $component ) ) {
-					$result[( string ) $name] = $component;
+					$result[(string) $name] = $component;
 				}
 			}
 		}
@@ -402,7 +402,7 @@ final class ElementorFormsAdapter {
 	}
 
 	private function validateClassicForm( array $form, array $capabilities ): void {
-		if ( 'widget' !== ( string ) ( $form['elType'] ?? '' ) || 'form' !== ( string ) ( $form['widgetType'] ?? '' ) ) {
+		if ( 'widget' !== (string) ( $form['elType'] ?? '' ) || 'form' !== (string) ( $form['widgetType'] ?? '' ) ) {
 			throw new RuntimeException( 'V3 forms must use elType=widget and widgetType=form.' );
 		}
 		if ( ! empty( $form['elements'] ) ) {
@@ -420,19 +420,19 @@ final class ElementorFormsAdapter {
 				if ( ! is_array( $field ) ) {
 					throw new RuntimeException( 'Each V3 form field must be an object/array.' );
 				}
-				$id = isset( $field['_id'] ) ? ( string ) $field['_id'] : '';
+				$id = isset( $field['_id'] ) ? (string) $field['_id'] : '';
 				if ( '' !== $id ) {
-					if ( isset( $seenIds[$id] ) ) {
+					if ( isset( $seenIds[ $id ] ) ) {
 						throw new RuntimeException( 'Duplicate V3 form field _id: ' . $id );
 					}
-					$seenIds[$id] = true;
+					$seenIds[ $id ] = true;
 				}
-				$customId = isset( $field['custom_id'] ) ? ( string ) $field['custom_id'] : '';
+				$customId = isset( $field['custom_id'] ) ? (string) $field['custom_id'] : '';
 				if ( '' !== $customId ) {
-					if ( isset( $seenCustomIds[$customId] ) ) {
+					if ( isset( $seenCustomIds[ $customId ] ) ) {
 						throw new RuntimeException( 'Duplicate V3 form field custom_id: ' . $customId );
 					}
-					$seenCustomIds[$customId] = true;
+					$seenCustomIds[ $customId ] = true;
 				}
 			}
 		}
@@ -448,15 +448,15 @@ final class ElementorFormsAdapter {
 				throw new RuntimeException( 'V3 submit actions cannot be validated against the target runtime.' );
 			}
 			foreach ( $settings['submit_actions'] as $action ) {
-				if ( ! in_array( ( string ) $action, $available, true ) ) {
-					throw new RuntimeException( 'V3 submit action is not registered in the target runtime: ' . ( string ) $action );
+				if ( ! in_array( (string) $action, $available, true ) ) {
+					throw new RuntimeException( 'V3 submit action is not registered in the target runtime: ' . (string) $action );
 				}
 			}
 		}
 	}
 
 	private function validateAtomicForm( array $form, array $capabilities ): void {
-		if ( 'e-form' !== ( string ) ( $form['elType'] ?? '' ) ) {
+		if ( 'e-form' !== (string) ( $form['elType'] ?? '' ) ) {
 			throw new RuntimeException( 'V4 Atomic forms must use elType=e-form.' );
 		}
 		$registeredTypes = $this->registeredTypeNames();
@@ -464,11 +464,11 @@ final class ElementorFormsAdapter {
 		$this->validateAtomicNode( $form, $registeredTypes, $counts, true );
 
 		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $required ) {
-			if ( empty( $counts[$required] ) ) {
+			if ( empty( $counts[ $required ] ) ) {
 				throw new RuntimeException( 'V4 Atomic Form is missing required descendant: ' . $required );
 			}
 		}
-		$submitCount = isset( $counts['e-form-submit-button'] ) ? ( int ) $counts['e-form-submit-button'] : 0;
+		$submitCount = isset( $counts['e-form-submit-button'] ) ? (int) $counts['e-form-submit-button'] : 0;
 		if ( 1 !== $submitCount ) {
 			throw new RuntimeException( 'V4 Atomic Form must contain exactly one e-form-submit-button.' );
 		}
@@ -482,7 +482,7 @@ final class ElementorFormsAdapter {
 
 	private function validateAtomicNode( array $node, array $registered, array &$counts, bool $root ): void {
 		$this->assertElementId( $node, $root ? 'atomic form' : 'atomic form child' );
-		$type = isset( $node['elType'] ) ? ( string ) $node['elType'] : '';
+		$type = isset( $node['elType'] ) ? (string) $node['elType'] : '';
 		if ( '' === $type || 0 !== strpos( $type, 'e-' ) ) {
 			throw new RuntimeException( 'V4 Atomic Form descendants must use registered Atomic e-* element types.' );
 		}
@@ -492,13 +492,13 @@ final class ElementorFormsAdapter {
 		if ( ! in_array( $type, $registered, true ) ) {
 			throw new RuntimeException( 'Atomic element type is not registered in the target runtime: ' . $type );
 		}
-		$counts[$type] = isset( $counts[$type] ) ? $counts[$type] + 1 : 1;
+		$counts[ $type ] = isset( $counts[ $type ] ) ? $counts[ $type ] + 1 : 1;
 
-		if ( ! isset( $node['version'] ) || '' === ( string ) $node['version'] ) {
+		if ( ! isset( $node['version'] ) || '' === (string) $node['version'] ) {
 			throw new RuntimeException( 'Atomic element ' . $type . ' is missing its schema version.' );
 		}
 		foreach ( array( 'settings', 'editor_settings', 'styles', 'elements' ) as $key ) {
-			if ( ! array_key_exists( $key, $node ) || ! is_array( $node[$key] ) ) {
+			if ( ! array_key_exists( $key, $node ) || ! is_array( $node[ $key ] ) ) {
 				throw new RuntimeException( 'Atomic element ' . $type . ' must contain array/object key: ' . $key );
 			}
 		}
@@ -518,12 +518,12 @@ final class ElementorFormsAdapter {
 	private function validateAtomicSettings( array $settings, string $type ): void {
 		foreach ( $settings as $key => $value ) {
 			if ( ! is_array( $value ) ) {
-				throw new RuntimeException( 'Atomic setting ' . ( string ) $key . ' on ' . $type . ' must be a typed prop object.' );
+				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' must be a typed prop object.' );
 			}
 			$isTyped = isset( $value['$$type'] ) && is_string( $value['$$type'] ) && array_key_exists( 'value', $value );
 			$isMulti = ! empty( $value['$$multi-props'] ) && array_key_exists( 'value', $value );
 			if ( ! $isTyped && ! $isMulti ) {
-				throw new RuntimeException( 'Atomic setting ' . ( string ) $key . ' on ' . $type . ' is missing $$type/value metadata.' );
+				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' is missing $$type/value metadata.' );
 			}
 		}
 	}
@@ -534,7 +534,7 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'V4 Atomic Form is missing ' . $messageType . '.' );
 		}
 		foreach ( $message['elements'] as $child ) {
-			if ( is_array( $child ) && 'e-paragraph' === ( string ) ( $child['elType'] ?? '' ) ) {
+			if ( is_array( $child ) && 'e-paragraph' === (string) ( $child['elType'] ?? '' ) ) {
 				return;
 			}
 		}
@@ -550,8 +550,8 @@ final class ElementorFormsAdapter {
 	}
 
 	private function formFamily( array $element ): ?string {
-		$elType     = isset( $element['elType'] ) ? ( string ) $element['elType'] : '';
-		$widgetType = isset( $element['widgetType'] ) ? ( string ) $element['widgetType'] : '';
+		$elType     = isset( $element['elType'] ) ? (string) $element['elType'] : '';
+		$widgetType = isset( $element['widgetType'] ) ? (string) $element['widgetType'] : '';
 		if ( 'widget' === $elType && 'form' === $widgetType ) {
 			return 'v3';
 		}
@@ -566,11 +566,11 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			$elementPath = array_merge( $path, array( ( int ) $index ) );
+			$elementPath = array_merge( $path, array( (int) $index ) );
 			$family      = $this->formFamily( $element );
 			if ( null !== $family ) {
 				$forms[] = array(
-					'id'                => isset( $element['id'] ) ? ( string ) $element['id'] : '',
+					'id'                => isset( $element['id'] ) ? (string) $element['id'] : '',
 					'family'            => $family,
 					'parent_element_id' => $parentId,
 					'path'              => $elementPath,
@@ -582,7 +582,7 @@ final class ElementorFormsAdapter {
 					$element['elements'],
 					$forms,
 					array_merge( $elementPath, array( 'elements' ) ),
-					isset( $element['id'] ) ? ( string ) $element['id'] : $parentId
+					isset( $element['id'] ) ? (string) $element['id'] : $parentId
 				);
 			}
 		}
@@ -593,7 +593,7 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			if ( isset( $element['id'] ) && hash_equals( ( string ) $element['id'], $id ) ) {
+			if ( isset( $element['id'] ) && hash_equals( (string) $element['id'], $id ) ) {
 				return $element;
 			}
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
@@ -611,8 +611,8 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			if ( isset( $element['id'] ) && hash_equals( ( string ) $element['id'], $id ) ) {
-				$elements[$index] = $replacement;
+			if ( isset( $element['id'] ) && hash_equals( (string) $element['id'], $id ) ) {
+				$elements[ $index ] = $replacement;
 				unset( $element );
 				return true;
 			}
@@ -630,7 +630,7 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			if ( isset( $element['id'] ) && hash_equals( ( string ) $element['id'], $parentId ) ) {
+			if ( isset( $element['id'] ) && hash_equals( (string) $element['id'], $parentId ) ) {
 				if ( ! isset( $element['elements'] ) || ! is_array( $element['elements'] ) ) {
 					throw new RuntimeException( 'Target parent cannot contain Elementor child elements.' );
 				}
@@ -669,11 +669,11 @@ final class ElementorFormsAdapter {
 
 	private function collectElementIds( array $element, array &$ids, string $context ): void {
 		$this->assertElementId( $element, $context );
-		$id = ( string ) $element['id'];
-		if ( isset( $ids[$id] ) ) {
+		$id = (string) $element['id'];
+		if ( isset( $ids[ $id ] ) ) {
 			throw new RuntimeException( 'Duplicate Elementor element id: ' . $id );
 		}
-		$ids[$id] = true;
+		$ids[ $id ] = true;
 		if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
 			foreach ( $element['elements'] as $child ) {
 				if ( is_array( $child ) ) {
@@ -699,14 +699,14 @@ final class ElementorFormsAdapter {
 	}
 
 	private function assertElementId( array $element, string $context ): void {
-		$id = isset( $element['id'] ) ? ( string ) $element['id'] : '';
+		$id = isset( $element['id'] ) ? (string) $element['id'] : '';
 		if ( '' === $id || ! preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $id ) ) {
 			throw new RuntimeException( 'Invalid or missing Elementor element id in ' . $context . '.' );
 		}
 	}
 
 	private function findFirstByType( array $node, string $type ): ?array {
-		if ( isset( $node['elType'] ) && $type === ( string ) $node['elType'] ) {
+		if ( isset( $node['elType'] ) && $type === (string) $node['elType'] ) {
 			return $node;
 		}
 		if ( isset( $node['elements'] ) && is_array( $node['elements'] ) ) {
@@ -723,11 +723,11 @@ final class ElementorFormsAdapter {
 	}
 
 	private function post( array $payload ): \WP_Post {
-		$post = get_post( isset( $payload['id'] ) ? ( int ) $payload['id'] : 0 );
+		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Post not found.' );
 		}
-		Policy::assertReadablePostType( ( string ) $post->post_type );
+		Policy::assertReadablePostType( (string) $post->post_type );
 		return $post;
 	}
 
@@ -743,7 +743,7 @@ final class ElementorFormsAdapter {
 			);
 		}
 		$raw  = get_post_meta( $postId, '_elementor_data', true );
-		$data = is_array( $raw ) ? $raw : json_decode( ( string ) $raw, true );
+		$data = is_array( $raw ) ? $raw : json_decode( (string) $raw, true );
 		return array(
 			'post_id'       => $postId,
 			'data'          => is_array( $data ) ? $data : array(),
@@ -793,9 +793,9 @@ final class ElementorFormsAdapter {
 	}
 
 	private function restoreSnapshot( array $snapshot ): void {
-		$this->saveDocument( ( int ) $snapshot['post_id'], $snapshot['data'], $snapshot['page_settings'] );
+		$this->saveDocument( (int) $snapshot['post_id'], $snapshot['data'], $snapshot['page_settings'] );
 		$this->clearCache();
-		$restored = $this->snapshot( ( int ) $snapshot['post_id'] );
+		$restored = $this->snapshot( (int) $snapshot['post_id'] );
 		if ( ! hash_equals( Fingerprint::make( $snapshot['data'] ), Fingerprint::make( $restored['data'] ) )
 			|| ! hash_equals( Fingerprint::make( $snapshot['page_settings'] ), Fingerprint::make( $restored['page_settings'] ) ) ) {
 			throw new RuntimeException( 'Elementor form rollback readback verification failed.' );
@@ -838,11 +838,11 @@ final class ElementorFormsAdapter {
 		}
 		$result = array();
 		foreach ( $value as $key => $item ) {
-			if ( preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', ( string ) $key ) ) {
-				$result[$key] = '[redacted]';
+			if ( preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', (string) $key ) ) {
+				$result[ $key ] = '[redacted]';
 				continue;
 			}
-			$result[$key] = $this->redactSecrets( $item );
+			$result[ $key ] = $this->redactSecrets( $item );
 		}
 		return $result;
 	}

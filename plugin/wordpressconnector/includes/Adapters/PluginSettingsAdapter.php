@@ -64,7 +64,7 @@ final class PluginSettingsAdapter {
 			'mode'    => 'project_specific',
 			'actions' => array( 'acf.get', 'acf.update' )
 		),
-		'advanced-custom-fields/acf.php' => array(
+		'advanced-custom-fields/acf.php'                  => array(
 			'id'      => 'acf',
 			'mode'    => 'native_adapter',
 			'actions' => array( 'acf.field_groups', 'acf.get', 'acf.update' )
@@ -75,7 +75,7 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'AIOS firewall, login protection and 2FA require version-specific safe APIs and lockout recovery before settings writes.'
 		),
-		'woocommerce/woocommerce.php' => array(
+		'woocommerce/woocommerce.php'                     => array(
 			'id'      => 'woocommerce',
 			'mode'    => 'native_risk_gated',
 			'actions' => array(
@@ -96,7 +96,7 @@ final class PluginSettingsAdapter {
 				'woocommerce.fulfillment.locations.update',
 				'woocommerce.fulfillment.create'
 			),
-			'note' => 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.'
+			'note'    => 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.'
 		),
 		'mollie-payments-for-woocommerce/mollie-payments-for-woocommerce.php' => array(
 			'id'      => 'mollie',
@@ -104,7 +104,7 @@ final class PluginSettingsAdapter {
 			'actions' => array( 'woocommerce.operations.list', 'woocommerce.operations.inspect', 'woocommerce.operations.update' ),
 			'note'    => 'Only WooCommerce-exposed gateway fields; live/test mode, payment credentials and actual payments require provider-native authenticated setup and sandbox verification.'
 		),
-		'ewww-image-optimizer/ewww-image-optimizer.php' => array(
+		'ewww-image-optimizer/ewww-image-optimizer.php'   => array(
 			'id'      => 'ewww_image_optimizer',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update' ),
@@ -123,7 +123,7 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'Backup/import/export operations require a separate high-risk staging-first contract.'
 		),
-		'wp-asset-clean-up/wpacu.php' => array(
+		'wp-asset-clean-up/wpacu.php'                     => array(
 			'id'      => 'asset_cleanup',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update', 'maintenance.cache_capabilities', 'maintenance.cache_flush' ),
@@ -134,40 +134,40 @@ final class PluginSettingsAdapter {
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'auto_image_attributes.inspect', 'auto_image_attributes.update', 'media.get', 'media.update' )
 		),
-		'broken-link-checker/broken-link-checker.php' => array(
+		'broken-link-checker/broken-link-checker.php'     => array(
 			'id'      => 'broken_link_checker',
 			'mode'    => 'version_bound',
 			'actions' => array(),
 			'note'    => 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.'
 		),
-		'code-snippets/code-snippets.php' => array(
+		'code-snippets/code-snippets.php'                 => array(
 			'id'      => 'code_snippets',
 			'mode'    => 'bounded_exact_patch_and_catalog_preset',
 			'actions' => array( 'code_snippets.patch', 'code_snippets.catalog_only.inspect', 'code_snippets.catalog_only.ensure', 'code_snippets.catalog_only.undo' ),
 			'note'    => 'Caller-supplied arbitrary PHP creation remains blocked. One fixed vetted WooCommerce catalogue-only preset supports inspection, guarded creation/activation and rollback; existing snippets support bounded exact replacements.'
 		),
-		'content-sync-manager/content-sync-manager.php' => array(
+		'content-sync-manager/content-sync-manager.php'   => array(
 			'id'      => 'content_sync_manager',
 			'mode'    => 'project_specific',
 			'actions' => array()
 		),
-		'classic-editor/classic-editor.php' => array(
+		'classic-editor/classic-editor.php'               => array(
 			'id'      => 'classic_editor',
 			'mode'    => 'core_editor_option',
 			'actions' => array(),
 			'note'    => 'A dedicated editor-preference contract is required; no raw options are exposed.'
 		),
-		'duplicate-page/duplicatepage.php' => array(
+		'duplicate-page/duplicatepage.php'                => array(
 			'id'      => 'duplicate_page',
 			'mode'    => 'no_special_adapter_needed',
 			'actions' => array( 'post.get', 'post.create' )
 		),
-		'elementor/elementor.php' => array(
+		'elementor/elementor.php'                         => array(
 			'id'      => 'elementor',
 			'mode'    => 'native_adapter',
 			'actions' => array( 'elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document' )
 		),
-		'elementor-pro/elementor-pro.php' => array(
+		'elementor-pro/elementor-pro.php'                 => array(
 			'id'      => 'elementor_pro',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -180,7 +180,7 @@ final class PluginSettingsAdapter {
 				'elementor.form_upsert'
 			)
 		),
-		'elementor-pro-2/elementor-pro.php' => array(
+		'elementor-pro-2/elementor-pro.php'               => array(
 			'id'      => 'elementor_pro',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -193,7 +193,7 @@ final class PluginSettingsAdapter {
 				'elementor.form_upsert'
 			)
 		),
-		'gtranslate/gtranslate.php' => array(
+		'gtranslate/gtranslate.php'                       => array(
 			'id'      => 'gtranslate',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'gtranslate.settings.inspect', 'gtranslate.settings.update' ),
@@ -211,47 +211,47 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'Hostinger onboarding is detected only; readiness and vendor progress state cannot be inferred from plugin activation.'
 		),
-		'hostinger-reach/hostinger-reach.php' => array(
+		'hostinger-reach/hostinger-reach.php'             => array(
 			'id'      => 'hostinger_reach',
 			'mode'    => 'external_account_bound',
 			'actions' => array(),
 			'note'    => 'Hostinger Reach email-marketing integration requires a vendor account and consent-aware end-to-end verification. Never export contacts, tokens or campaign settings.'
 		),
-		'hostinger/hostinger.php' => array(
+		'hostinger/hostinger.php'                         => array(
 			'id'      => 'hostinger_tools',
 			'mode'    => 'security_provider_contract_needed',
 			'actions' => array(),
 			'note'    => 'Hostinger Tools maintenance, cache, XML-RPC, HTTPS redirects and hosting service state are not safe to mutate without provider-backed inspection and lockout recovery.'
 		),
-		'imagify/imagify.php' => array(
+		'imagify/imagify.php'                             => array(
 			'id'      => 'imagify',
 			'mode'    => 'wordpress_ability',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' )
 		),
-		'creame-whatsapp-me/joinchat.php' => array(
+		'creame-whatsapp-me/joinchat.php'                 => array(
 			'id'      => 'joinchat',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' ),
 			'note'    => 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.'
 		),
-		'litespeed-cache/litespeed-cache.php' => array(
+		'litespeed-cache/litespeed-cache.php'             => array(
 			'id'      => 'litespeed_cache',
 			'mode'    => 'inactive_or_version_bound',
 			'actions' => array()
 		),
-		'loco-translate/loco.php' => array(
+		'loco-translate/loco.php'                         => array(
 			'id'      => 'loco_translate',
 			'mode'    => 'filesystem_bound',
 			'actions' => array(),
 			'note'    => 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.'
 		),
-		'redirection/redirection.php' => array(
+		'redirection/redirection.php'                     => array(
 			'id'      => 'redirection',
 			'mode'    => 'provider_api_required',
 			'actions' => array(),
 			'note'    => 'Redirect writes require a dedicated provider-owned API contract and redirect-loop validation.'
 		),
-		'under-construction-page/under-construction.php' => array(
+		'under-construction-page/under-construction.php'  => array(
 			'id'      => 'under_construction',
 			'mode'    => 'maintenance_gate',
 			'actions' => array(),
@@ -262,41 +262,41 @@ final class PluginSettingsAdapter {
 			'mode'    => 'native_settings_api',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' )
 		),
-		'google-site-kit/google-site-kit.php' => array(
+		'google-site-kit/google-site-kit.php'             => array(
 			'id'      => 'site_kit',
 			'mode'    => 'oauth_bound',
 			'actions' => array(),
 			'note'    => 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.'
 		),
-		'wordfence/wordfence.php' => array(
+		'wordfence/wordfence.php'                         => array(
 			'id'      => 'wordfence',
 			'mode'    => 'limited_stable_api',
 			'actions' => array(),
 			'note'    => 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.'
 		),
-		'wordpressconnector/wordpressconnector.php' => array(
+		'wordpressconnector/wordpressconnector.php'       => array(
 			'id'      => 'wordpress_connector',
 			'mode'    => 'canonical_bridge',
 			'actions' => array( 'connector.discover', 'connector.actions', 'connector.update.check', 'connector.update.apply' )
 		),
-		'wp-file-manager/file_folder_manager.php' => array(
+		'wp-file-manager/file_folder_manager.php'         => array(
 			'id'      => 'wp_file_manager',
 			'mode'    => 'shared_filesystem_interface',
 			'actions' => array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ),
 			'note'    => 'WP File Manager remains the visual admin UI. The connector does not reuse its private AJAX/elFinder protocol; both operate on the same WordPress filesystem, with connector writes bounded to existing plugin/theme text files.',
 		),
-		'wp-mail-smtp/wp_mail_smtp.php' => array(
+		'wp-mail-smtp/wp_mail_smtp.php'                   => array(
 			'id'      => 'wp_mail_smtp',
 			'mode'    => 'secret_bound',
 			'actions' => array(),
 			'note'    => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'
 		),
-		'wp-rocket/wp-rocket.php' => array(
+		'wp-rocket/wp-rocket.php'                         => array(
 			'id'      => 'wp_rocket',
 			'mode'    => 'native_settings_api',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update', 'maintenance.cache_flush' )
 		),
-		'wordpress-seo/wp-seo.php' => array(
+		'wordpress-seo/wp-seo.php'                        => array(
 			'id'      => 'yoast',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -308,7 +308,7 @@ final class PluginSettingsAdapter {
 				'yoast.site_representation.update'
 			)
 		),
-		'wordpress-seo-premium/wp-seo-premium.php' => array(
+		'wordpress-seo-premium/wp-seo-premium.php'        => array(
 			'id'      => 'yoast_premium',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -365,7 +365,7 @@ final class PluginSettingsAdapter {
 		}
 
 		$inventory = $this->catalog( array(), $context );
-		$installed = ( array ) ( $inventory['plugins'] ?? array() );
+		$installed = (array) ( $inventory['plugins'] ?? array() );
 		if ( count( $installed ) > 150 ) {
 			throw new RuntimeException( 'Plugin inventory exceeds the bounded audit limit.' );
 		}
@@ -377,24 +377,24 @@ final class PluginSettingsAdapter {
 		$activeIds    = array();
 		$indicators   = array();
 		foreach ( $installed as $plugin ) {
-			$known = ( string ) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
-			$id    = $known ? ( string ) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknownCount );
+			$known = (string) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
+			$id    = $known ? (string) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknownCount );
 			if ( ! preg_match( '/^[a-z][a-z0-9_-]{1,79}\\z/', $id ) ) {
 				throw new RuntimeException( 'Plugin integration identifier is invalid.' );
 			}
-			$active = true === ( $plugin['active'] ?? null );
+			$active       = true === ( $plugin['active'] ?? null );
 			$activeCount += $active ? 1 : 0;
 			if ( $active ) {
-				$activeIds[$id] = true;
+				$activeIds[ $id ] = true;
 			}
 
-			$registration = ( string ) ( $plugin['registered_action_status'] ?? 'not_checked' );
-			$coverage     = !$known ? 'unmodeled'
+			$registration = (string) ( $plugin['registered_action_status'] ?? 'not_checked' );
+			$coverage     = ! $known ? 'unmodeled'
 				: ( empty( $plugin['actions'] ) ? 'inventory_only'
 					: ( $registration === 'complete' ? 'registered'
 						: ( $registration === 'partial' ? 'partial' : 'not_checked' ) ) );
 			// Provider-version restrictions take precedence over generic action registration.
-			if ( $known && in_array( ( string ) ( $plugin['mode'] ?? '' ), array(
+			if ( $known && in_array( (string) ( $plugin['mode'] ?? '' ), array(
 				'version_bound_unsupported', 'optimizer_version_unsupported',
 				'security_provider_contract_needed', 'external_account_bound',
 				'secret_bound', 'filesystem_bound', 'system_operation',
@@ -405,7 +405,7 @@ final class PluginSettingsAdapter {
 			$checks = array();
 			if ( $active ) {
 				try {
-					$checks = $this->auditNonsecretChecks( $id, ( string ) ( $plugin['mode'] ?? '' ) );
+					$checks = $this->auditNonsecretChecks( $id, (string) ( $plugin['mode'] ?? '' ) );
 				} catch ( \Throwable $error ) {
 					// One provider failure must not erase the rest of the audit.
 					// Do not serialize the exception: provider errors may include secrets.
@@ -414,7 +414,7 @@ final class PluginSettingsAdapter {
 			}
 			if ( $checks ) {
 				++$checkedCount;
-				$indicators[$id] = $checks;
+				$indicators[ $id ] = $checks;
 			}
 			$items[] = array(
 				'id'       => $id,
@@ -480,7 +480,7 @@ final class PluginSettingsAdapter {
 			$languages = $raw['incl_langs'] ?? null;
 			$fallback  = $raw['fincl_langs'] ?? null;
 			return array(
-				'english_source' => ! isset( $raw['default_language'] ) ? 'unknown'
+				'english_source'  => ! isset( $raw['default_language'] ) ? 'unknown'
 					: ( 'en' === $raw['default_language'] ? 'matches' : 'mismatch' ),
 				'nl_en_languages' => ! is_array( $languages ) || ! is_array( $fallback ) ? 'unknown'
 					: ( $languages === array( 'nl', 'en' ) && $fallback === array( 'nl', 'en' ) ? 'matches' : 'mismatch' ),
@@ -494,7 +494,7 @@ final class PluginSettingsAdapter {
 			}
 			$company = $raw['company_name'] ?? null;
 			return array(
-				'organization_name' => ! is_string( $title ) || '' === trim( $title ) || ! is_string( $company ) || '' === trim( $company )
+				'organization_name'        => ! is_string( $title ) || '' === trim( $title ) || ! is_string( $company ) || '' === trim( $company )
 					? 'unknown' : ( 0 === strcasecmp( trim( $title ), trim( $company ) ) ? 'matches' : 'mismatch' ),
 				'organization_description' => $this->auditTextPresence( $raw['org-description'] ?? null ),
 				'organization_logo'        => $this->auditPageAssignment( $raw['company_logo_id'] ?? null ),
@@ -550,7 +550,7 @@ final class PluginSettingsAdapter {
 
 	private function auditPageAssignment( $value ): string {
 		if ( is_int( $value ) || ( is_string( $value ) && preg_match( '/^[0-9]{1,10}\\z/', $value ) ) ) {
-			return ( int ) $value > 0 ? 'present' : 'missing';
+			return (int) $value > 0 ? 'present' : 'missing';
 		}
 		return 'unknown';
 	}
@@ -594,17 +594,17 @@ final class PluginSettingsAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$registeredActions = isset( $context['registry'] ) && $context['registry'] instanceof Registry
 			? $context['registry']->catalog() : null;
-		$items = array();
+		$items             = array();
 		foreach ( get_plugins() as $file => $data ) {
-			$integration = self::INTEGRATIONS[$file] ?? array(
-				'id'      => sanitize_key( ( string ) dirname( $file ) ),
+			$integration = self::INTEGRATIONS[ $file ] ?? array(
+				'id'      => sanitize_key( (string) dirname( $file ) ),
 				'mode'    => 'unmodeled',
 				'actions' => array(),
 				'note'    => 'No safe plugin-specific write contract has been modeled yet.',
 			);
 			// Only advertise optimizer controls that the installed provider can actually support.
 			if ( 'ewww-image-optimizer/ewww-image-optimizer.php' === $file ) {
-				if ( ! is_plugin_active( $file ) || ! preg_match( '/^8\\.8\\.[0-9]+$/D', ( string ) ( $data['Version'] ?? '' ) ) ) {
+				if ( ! is_plugin_active( $file ) || ! preg_match( '/^8\\.8\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
 					$integration['mode'] = 'version_bound_unsupported';
 					$integration['actions'] = array();
 					$integration['note'] = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
@@ -614,7 +614,7 @@ final class PluginSettingsAdapter {
 					$integration['mode'] = 'inactive';
 					$integration['actions'] = array();
 					$integration['note'] = 'Asset CleanUp is inactive.';
-				} elseif ( ! preg_match( '/^1\\.4\\.0\\.[0-9]+$/D', ( string ) ( $data['Version'] ?? '' ) ) ) {
+				} elseif ( ! preg_match( '/^1\\.4\\.0\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
 					$integration['mode'] = 'optimizer_version_unsupported';
 					$integration['actions'] = array( 'maintenance.cache_capabilities', 'maintenance.cache_flush' );
 					$integration['note'] = 'Optimizer inspection requires a verified 1.4.0.x provider; cache availability is checked independently.';
@@ -625,14 +625,14 @@ final class PluginSettingsAdapter {
 				}
 			}
 			$item = array_merge( array(
-				'file'    => ( string ) $file,
-				'name'    => isset( $data['Name'] ) ? ( string ) $data['Name'] : ( string ) $file,
-				'version' => isset( $data['Version'] ) ? ( string ) $data['Version'] : '',
+				'file'    => (string) $file,
+				'name'    => isset( $data['Name'] ) ? (string) $data['Name'] : (string) $file,
+				'version' => isset( $data['Version'] ) ? (string) $data['Version'] : '',
 				'active'  => is_plugin_active( $file ),
 			), $integration );
 			if ( null !== $registeredActions ) {
-				$missing = array_values( array_filter( ( array ) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
-					return ! is_string( $action ) || ! isset( $registeredActions[$action] );
+				$missing                            = array_values( array_filter( (array) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
+					return ! is_string( $action ) || ! isset( $registeredActions[ $action ] );
 				} ) );
 				$item['registered_action_status'] = ! $item['actions'] ? 'not_modeled' : ( $missing ? 'partial' : 'complete' );
 				$item['missing_registered_actions'] = $missing;
@@ -640,7 +640,7 @@ final class PluginSettingsAdapter {
 			$items[] = $item;
 		}
 		usort( $items, static function ( array $a, array $b ): int {
-			return strcasecmp( ( string ) $a['name'], ( string ) $b['name'] );
+			return strcasecmp( (string) $a['name'], (string) $b['name'] );
 		} );
 
 		return array(
@@ -677,7 +677,7 @@ final class PluginSettingsAdapter {
 		$clean  = $this->validateUpdates( $plugin, $updates, $before );
 		$after  = $before;
 		foreach ( $clean as $key => $value ) {
-			$after[$key] = $value;
+			$after[ $key ] = $value;
 		}
 
 		$result = array(
@@ -693,7 +693,7 @@ final class PluginSettingsAdapter {
 		$this->writeProfile( $plugin, $clean );
 		$readback = $this->readProfile( $plugin );
 		foreach ( $clean as $key => $value ) {
-			if ( ! array_key_exists( $key, $readback ) || $this->normalizeForCompare( $readback[$key] ) !== $this->normalizeForCompare( $value ) ) {
+			if ( ! array_key_exists( $key, $readback ) || $this->normalizeForCompare( $readback[ $key ] ) !== $this->normalizeForCompare( $value ) ) {
 				throw new RuntimeException( 'Plugin settings readback verification failed for ' . $plugin . ':' . $key . '.' );
 			}
 		}
@@ -701,7 +701,7 @@ final class PluginSettingsAdapter {
 		$rollback = array();
 		foreach ( $clean as $key => $value ) {
 			if ( array_key_exists( $key, $before ) ) {
-				$rollback[$key] = $before[$key];
+				$rollback[ $key ] = $before[ $key ];
 			}
 		}
 		$result['after'] = Policy::redact( $readback );
@@ -715,7 +715,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function profile( array $payload ): string {
-		$plugin = isset( $payload['plugin'] ) ? sanitize_key( ( string ) $payload['plugin'] ) : '';
+		$plugin = isset( $payload['plugin'] ) ? sanitize_key( (string) $payload['plugin'] ) : '';
 		if ( ! in_array( $plugin, array( 'wp_rocket', 'imagify', 'really_simple_security', 'joinchat' ), true ) ) {
 			throw new RuntimeException( 'Unsupported plugin settings profile: ' . $plugin . '.' );
 		}
@@ -760,25 +760,25 @@ final class PluginSettingsAdapter {
 			}
 
 			if ( 'wp_rocket' === $plugin ) {
-				if ( ! isset( self::WP_ROCKET_FIELDS[$key] ) ) {
+				if ( ! isset( self::WP_ROCKET_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported WP Rocket setting: ' . $key . '.' );
 				}
-				$clean[$key] = $this->sanitizeWpRocketValue( self::WP_ROCKET_FIELDS[$key], $value );
+				$clean[ $key ] = $this->sanitizeWpRocketValue( self::WP_ROCKET_FIELDS[ $key ], $value );
 				continue;
 			}
 
 			if ( 'joinchat' === $plugin ) {
-				if ( ! isset( self::JOINCHAT_FIELDS[$key] ) ) {
+				if ( ! isset( self::JOINCHAT_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported Joinchat setting: ' . $key . '.' );
 				}
-				$clean[$key] = $this->sanitizeJoinchatValue( self::JOINCHAT_FIELDS[$key], $value );
+				$clean[ $key ] = $this->sanitizeJoinchatValue( self::JOINCHAT_FIELDS[ $key ], $value );
 				continue;
 			}
 
 			if ( 'really_simple_security' === $plugin && $this->isHighRiskSecuritySetting( $key ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ) ) {
 				throw new RuntimeException( 'This Really Simple Security setting requires the connector sensitive-action gate: ' . $key . '.' );
 			}
-			$clean[$key] = $this->sanitizeLike( $before[$key], $value );
+			$clean[ $key ] = $this->sanitizeLike( $before[ $key ], $value );
 		}
 		return $clean;
 	}
@@ -789,7 +789,7 @@ final class PluginSettingsAdapter {
 		}
 		$settings = array();
 		foreach ( self::WP_ROCKET_FIELDS as $key => $type ) {
-			$settings[$key] = get_rocket_option( $key, null );
+			$settings[ $key ] = get_rocket_option( $key, null );
 		}
 		return $settings;
 	}
@@ -813,7 +813,7 @@ final class PluginSettingsAdapter {
 		unset( $updates['api_key'], $updates['version'] );
 		$result = $this->executeAbility( 'imagify/update-settings', $updates );
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
-			throw new RuntimeException( isset( $result['error_message'] ) ? ( string ) $result['error_message'] : 'Imagify settings update failed.' );
+			throw new RuntimeException( isset( $result['error_message'] ) ? (string) $result['error_message'] : 'Imagify settings update failed.' );
 		}
 	}
 
@@ -837,7 +837,7 @@ final class PluginSettingsAdapter {
 
 
 	private function readJoinchat(): array {
-		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', ( string ) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
+		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
 			throw new RuntimeException( 'Joinchat settings require an active supported 6.4.x installation.' );
 		}
 		$provider = jc_common();
@@ -853,7 +853,7 @@ final class PluginSettingsAdapter {
 		$settings  = array();
 		foreach ( self::JOINCHAT_FIELDS as $key => $type ) {
 			if ( array_key_exists( $key, $effective ) ) {
-				$settings[$key] = $effective[$key];
+				$settings[ $key ] = $effective[ $key ];
 			}
 		}
 		return $settings;
@@ -922,7 +922,7 @@ final class PluginSettingsAdapter {
 			throw new RuntimeException( 'Really Simple Security settings API is not available.' );
 		}
 		$settings = array();
-		foreach ( ( array ) rsssl_fields( true ) as $field ) {
+		foreach ( (array) rsssl_fields( true ) as $field ) {
 			if ( ! is_array( $field ) || empty( $field['id'] ) || ! is_string( $field['id'] ) ) {
 				continue;
 			}
@@ -939,7 +939,7 @@ final class PluginSettingsAdapter {
 			if ( is_object( $value ) || is_resource( $value ) ) {
 				continue;
 			}
-			$settings[$id] = $value;
+			$settings[ $id ] = $value;
 		}
 		ksort( $settings, SORT_STRING );
 		return $settings;
@@ -959,14 +959,14 @@ final class PluginSettingsAdapter {
 			return $this->toBoolInt( $value );
 		}
 		if ( 'positive_int' === $type ) {
-			$value = ( int ) $value;
+			$value = (int) $value;
 			if ( $value < 1 || $value > 10080 ) {
 				throw new RuntimeException( 'WP Rocket interval must be between 1 and 10080.' );
 			}
 			return $value;
 		}
 		if ( 'rocket_cron_unit' === $type ) {
-			$value = strtoupper( sanitize_text_field( ( string ) $value ) );
+			$value = strtoupper( sanitize_text_field( (string) $value ) );
 			if ( ! in_array( $value, array( 'HOUR_IN_SECONDS', 'DAY_IN_SECONDS' ), true ) ) {
 				throw new RuntimeException( 'WP Rocket purge_cron_unit must be HOUR_IN_SECONDS or DAY_IN_SECONDS.' );
 			}
@@ -976,11 +976,11 @@ final class PluginSettingsAdapter {
 			$values = is_array( $value ) ? $value : array( $value );
 			$clean  = array();
 			foreach ( $values as $host ) {
-				$host = trim( sanitize_text_field( ( string ) $host ) );
+				$host = trim( sanitize_text_field( (string) $host ) );
 				if ( '' === $host ) {
 					continue;
 				}
-				if ( ( bool ) preg_match( '/\s/', $host ) ) {
+				if ( (bool) preg_match( '/\s/', $host ) ) {
 					throw new RuntimeException( 'WP Rocket CDN CNAME entries may not contain whitespace.' );
 				}
 				$clean[] = $host;
@@ -992,13 +992,13 @@ final class PluginSettingsAdapter {
 
 	private function sanitizeLike( $current, $value ) {
 		if ( is_bool( $current ) ) {
-			return ( bool ) $this->toBoolInt( $value );
+			return (bool) $this->toBoolInt( $value );
 		}
 		if ( is_int( $current ) ) {
-			return ( int ) $value;
+			return (int) $value;
 		}
 		if ( is_float( $current ) ) {
-			return ( float ) $value;
+			return (float) $value;
 		}
 		if ( is_array( $current ) ) {
 			if ( ! is_array( $value ) ) {
@@ -1017,16 +1017,16 @@ final class PluginSettingsAdapter {
 		if ( ! is_scalar( $value ) && null !== $value ) {
 			throw new RuntimeException( 'Plugin setting values must be scalar, array or null.' );
 		}
-		return null === $value ? null : sanitize_text_field( ( string ) $value );
+		return null === $value ? null : sanitize_text_field( (string) $value );
 	}
 
 	private function sanitizeArray( array $value ): array {
 		$clean = array();
 		foreach ( $value as $key => $item ) {
 			if ( is_array( $item ) ) {
-				$clean[$key] = $this->sanitizeArray( $item );
+				$clean[ $key ] = $this->sanitizeArray( $item );
 			} elseif ( is_scalar( $item ) || null === $item ) {
-				$clean[$key] = is_string( $item ) ? sanitize_text_field( $item ) : $item;
+				$clean[ $key ] = is_string( $item ) ? sanitize_text_field( $item ) : $item;
 			} else {
 				throw new RuntimeException( 'Nested plugin setting values may not contain objects or resources.' );
 			}
@@ -1035,7 +1035,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function toBoolInt( $value ): int {
-		$normalized = strtolower( ( string ) $value );
+		$normalized = strtolower( (string) $value );
 		if ( true === $value || 1 === $value || '1' === $normalized || 'true' === $normalized || 'yes' === $normalized || 'on' === $normalized ) {
 			return 1;
 		}
@@ -1046,7 +1046,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function normalizeForCompare( $value ): string {
-		return ( string ) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		return (string) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	}
 
 	private function isSecretSetting( string $key ): bool {
