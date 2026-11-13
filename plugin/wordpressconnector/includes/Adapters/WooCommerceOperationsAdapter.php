@@ -54,7 +54,7 @@ final class WooCommerceOperationsAdapter {
 			'shipping_zones'   => '/wc/v3/shipping/zones',
 			'tax_rates'        => '/wc/v3/taxes',
 			'payment_gateways' => '/wc/v3/payment_gateways',
-		)[$area] ?? '';
+		)[ $area ] ?? '';
 		if ( $area === 'shipping_methods' ) {
 			$zoneId = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
 			$path   = '/wc/v3/shipping/zones/' . $zoneId . '/methods';
@@ -114,7 +114,7 @@ final class WooCommerceOperationsAdapter {
 		$area   = $this->area( $payload );
 		$path   = $this->path( $area, $payload );
 		$fields = $payload['fields'] ?? null;
-		if ( ! is_array( $fields ) || !$fields || count( $fields ) > 12 ) {
+		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 12 ) {
 			throw new RuntimeException( 'WooCommerce operations write requires 1-12 explicitly selected fields.' );
 		}
 		$raw         = $this->request( 'GET', $path );
@@ -141,18 +141,18 @@ final class WooCommerceOperationsAdapter {
 		$previous = array();
 		foreach ( $updates as $key => $value ) {
 			if ( $key === 'settings' ) {
-				$previous[$key] = array();
+				$previous[ $key ] = array();
 				foreach ( $value as $setting => $newValue ) {
-					if ( ! isset( $raw['settings'][$setting] ) || ! array_key_exists( 'value', $raw['settings'][$setting] ) ) {
+					if ( ! isset( $raw['settings'][ $setting ] ) || ! array_key_exists( 'value', $raw['settings'][ $setting ] ) ) {
 						throw new RuntimeException( 'Provider settings readback cannot produce rollback data.' );
 					}
-					$previous[$key][$setting] = $raw['settings'][$setting]['value'];
+					$previous[ $key ][ $setting ] = $raw['settings'][ $setting ]['value'];
 				}
 			} else {
 				if ( ! array_key_exists( $key, $raw ) ) {
 					throw new RuntimeException( 'Provider option is missing rollback data.' );
 				}
-				$previous[$key] = $raw[$key];
+				$previous[ $key ] = $raw[ $key ];
 			}
 		}
 		$this->request( 'PUT', $path, $updates );
@@ -216,7 +216,7 @@ final class WooCommerceOperationsAdapter {
 			: array( 'id', 'title', 'description', 'order', 'enabled', 'method_title' ) ) );
 		foreach ( $keys as $key ) {
 			if ( array_key_exists( $key, $data ) ) {
-				$out[$key] = $this->safePublicValue( $data[$key] );
+				$out[ $key ] = $this->safePublicValue( $data[ $key ] );
 			}
 		}
 		if ( in_array( $area, array( 'shipping_method', 'payment_gateway' ), true )
@@ -238,7 +238,7 @@ final class WooCommerceOperationsAdapter {
 				if ( $visible && array_key_exists( 'value', $setting ) ) {
 					$option['value'] = $this->safePublicValue( $setting['value'] );
 				}
-				$options[$id] = $option;
+				$options[ $id ] = $option;
 			}
 			$out['settings'] = $options;
 		}
@@ -246,31 +246,31 @@ final class WooCommerceOperationsAdapter {
 	}
 
 	private function validateChanges( string $area, $fields, array $before ): array {
-		if ( ! is_array( $fields ) || !$fields || count( $fields ) > 12 ) {
+		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 12 ) {
 			throw new RuntimeException( 'Invalid WooCommerce provider settings payload.' );
 		}
 		$updates = array();
 		foreach ( $fields as $key => $value ) {
-			if ( ! is_string( $key ) || ! in_array( $key, self::AREAS[$area], true )
+			if ( ! is_string( $key ) || ! in_array( $key, self::AREAS[ $area ], true )
  || ! array_key_exists( $key, $before ) ) {
 				throw new RuntimeException( 'WooCommerce provider setting is unavailable or disallowed.' );
 			}
 			if ( $key === 'settings' ) {
 				if ( ! in_array( $area, array( 'payment_gateway', 'shipping_method' ), true )
- || ! is_array( $value ) || !$value || count( $value ) > 12 || ! is_array( $before['settings'] ) ) {
+ || ! is_array( $value ) || ! $value || count( $value ) > 12 || ! is_array( $before['settings'] ) ) {
 					throw new RuntimeException( 'Unsupported WooCommerce provider-specific settings payload.' );
 				}
 				$options = array();
 				foreach ( $value as $optionId => $desired ) {
 					if ( ! is_string( $optionId ) || ! preg_match( '/^[a-z0-9_\-]{1,100}$/D', $optionId )
- || ! isset( $before['settings'][$optionId] )
- || $this->secret( $optionId, (string) ( $before['settings'][$optionId]['type'] ?? '' ) )
+ || ! isset( $before['settings'][ $optionId ] )
+ || $this->secret( $optionId, (string) ( $before['settings'][ $optionId ]['type'] ?? '' ) )
  || ! $this->exposableSetting( $area, $optionId )
  || ( $area === 'payment_gateway'
  && preg_match( '/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $optionId ) ) ) {
 						throw new RuntimeException( 'Protected WooCommerce provider credential or setting.' );
 					}
-					$field = $before['settings'][$optionId];
+					$field = $before['settings'][ $optionId ];
 					$type  = (string) ( $field['type'] ?? '' );
 					if ( ! is_string( $desired ) || strlen( $desired ) > 300 ) {
 						throw new RuntimeException( 'Provider setting value must be a bounded string.' );
@@ -289,9 +289,9 @@ final class WooCommerceOperationsAdapter {
  && ! array_key_exists( $desired, $field['options'] ) ) {
 						throw new RuntimeException( 'Provider dropdown value is not recognized.' );
 					}
-					$options[$optionId] = $desired;
+					$options[ $optionId ] = $desired;
 				}
-				$updates[$key] = $options;
+				$updates[ $key ] = $options;
 				continue;
 			}
 			if ( $key === 'enabled' || $key === 'compound' || $key === 'shipping' ) {
@@ -323,7 +323,7 @@ final class WooCommerceOperationsAdapter {
 					throw new RuntimeException( 'Tax state exceeds safe length.' );
 				}
 			}
-			$updates[$key] = $value;
+			$updates[ $key ] = $value;
 		}
 		return $updates;
 	}
@@ -332,12 +332,12 @@ final class WooCommerceOperationsAdapter {
 		foreach ( $expected as $key => $value ) {
 			if ( $key === 'settings' ) {
 				foreach ( $value as $optionId => $wanted ) {
-					if ( ! isset( $actual['settings'][$optionId] )
- || ( $actual['settings'][$optionId]['value'] ?? null ) !== $wanted ) {
+					if ( ! isset( $actual['settings'][ $optionId ] )
+ || ( $actual['settings'][ $optionId ]['value'] ?? null ) !== $wanted ) {
 						return false;
 					}
 				}
-			} elseif ( ! array_key_exists( $key, $actual ) || $actual[$key] !== $value ) {
+			} elseif ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $value ) {
 				return false;
 			}
 		}
@@ -389,7 +389,7 @@ final class WooCommerceOperationsAdapter {
 
 	private function area( array $payload ): string {
 		$area = $payload['area'] ?? null;
-		if ( ! is_string( $area ) || ! isset( self::AREAS[$area] ) ) {
+		if ( ! is_string( $area ) || ! isset( self::AREAS[ $area ] ) ) {
 			throw new RuntimeException( 'Unknown WooCommerce provider settings area.' );
 		}
 		return $area;

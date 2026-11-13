@@ -67,10 +67,10 @@ final class CodeSnippetsAdapter {
 
 	private function catalogFind(): ?object {
 		$found = array();
-		foreach ( ( array ) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
+		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
 			if ( is_object( $snippet ) &&
-				( ( string ) ( $snippet->name ?? '' ) === self::CATALOG_NAME ||
-                 false !== strpos( ( string ) ( $snippet->code ?? '' ), self::CATALOG_MARKER ) ) ) {
+				( (string) ( $snippet->name ?? '' ) === self::CATALOG_NAME ||
+                 false !== strpos( (string) ( $snippet->code ?? '' ), self::CATALOG_MARKER ) ) ) {
 				$found[] = $snippet;
 			}
 		}
@@ -83,15 +83,15 @@ final class CodeSnippetsAdapter {
 	private static function catalogState( ?object $snippet ): array {
 		return array(
 			'present'     => null !== $snippet,
-			'id'          => $snippet ? ( int ) ( $snippet->id ?? 0 ) : 0,
-			'name'        => $snippet ? ( string ) ( $snippet->name ?? '' ) : '',
-			'type'        => $snippet ? ( string ) ( $snippet->type ?? '' ) : '',
-			'scope'       => $snippet ? ( string ) ( $snippet->scope ?? '' ) : '',
+			'id'          => $snippet ? (int) ( $snippet->id ?? 0 ) : 0,
+			'name'        => $snippet ? (string) ( $snippet->name ?? '' ) : '',
+			'type'        => $snippet ? (string) ( $snippet->type ?? '' ) : '',
+			'scope'       => $snippet ? (string) ( $snippet->scope ?? '' ) : '',
 			'active'      => $snippet ? ! empty( $snippet->active ) : false,
 			'network'     => $snippet ? ! empty( $snippet->network ) : false,
 			'trashed'     => $snippet ? ! empty( $snippet->trashed ) : false,
 			'locked'      => $snippet ? ! empty( $snippet->locked ) : false,
-			'code_sha256' => $snippet ? hash( 'sha256', trim( ( string ) ( $snippet->code ?? '' ) ) ) : '',
+			'code_sha256' => $snippet ? hash( 'sha256', trim( (string) ( $snippet->code ?? '' ) ) ) : '',
 		);
 	}
 
@@ -150,7 +150,7 @@ final class CodeSnippetsAdapter {
 		}
 
 		$created = null === $existing;
-		$id      = $created ? 0 : ( int ) $existing->id;
+		$id      = $created ? 0 : (int) $existing->id;
 		if ( $created ) {
 			// Only source shipped in the verified connector ZIP reaches this provider API.
 			$snippet = new \Code_Snippets\Model\Snippet( array(
@@ -160,10 +160,10 @@ final class CodeSnippetsAdapter {
 				'active' => false, 'network' => false,
 			) );
 			$saved   = \Code_Snippets\save_snippet( $snippet );
-			if ( ! is_object( $saved ) || ( int ) ( $saved->id ?? 0 ) <= 0 ) {
+			if ( ! is_object( $saved ) || (int) ( $saved->id ?? 0 ) <= 0 ) {
 				throw new RuntimeException( 'Code Snippets provider could not save the audited preset.' );
 			}
-			$id = ( int ) $saved->id;
+			$id = (int) $saved->id;
 		}
 		try {
 			$new = $this->getSnippet( $id );
@@ -215,7 +215,7 @@ final class CodeSnippetsAdapter {
 		}
 		$snippet = $this->catalogFind();
 		$this->catalogGuard( $snippet, $code );
-		if ( ! $snippet || ( int ) $snippet->id !== $payload['snippet_id'] || empty( $snippet->active ) ) {
+		if ( ! $snippet || (int) $snippet->id !== $payload['snippet_id'] || empty( $snippet->active ) ) {
 			throw new RuntimeException( 'Catalogue snippet changed since creation; rollback refused.' );
 		}
 		$state = self::catalogState( $snippet );
@@ -223,8 +223,8 @@ final class CodeSnippetsAdapter {
 			return array( 'would_undo' => $state, '_current_fingerprint' => Fingerprint::make( $state ) );
 		}
 		$ok = $payload['created']
-			? \Code_Snippets\delete_snippet( ( int ) $snippet->id, false )
-			: ( bool ) \Code_Snippets\deactivate_snippet( ( int ) $snippet->id, false );
+			? \Code_Snippets\delete_snippet( (int) $snippet->id, false )
+			: (bool) \Code_Snippets\deactivate_snippet( (int) $snippet->id, false );
 		if ( ! $ok ) {
 			throw new RuntimeException( 'Code Snippets rejected managed preset rollback.' );
 		}
@@ -247,12 +247,12 @@ final class CodeSnippetsAdapter {
 		if ( ! empty( $before['trashed'] ) ) {
 			throw new RuntimeException( 'Code Snippets target is trashed and cannot be modified.' );
 		}
-		if ( 'php' !== ( string ) $before['type'] ) {
+		if ( 'php' !== (string) $before['type'] ) {
 			throw new RuntimeException( 'Only PHP Code Snippets may be patched through this action.' );
 		}
 
 		$replacements = $this->replacements( $payload );
-		$newCode      = ( string ) $before['code'];
+		$newCode      = (string) $before['code'];
 
 		foreach ( $replacements as $index => $replacement ) {
 			$occurrences = substr_count( $newCode, $replacement['find'] );
@@ -262,7 +262,7 @@ final class CodeSnippetsAdapter {
 			$newCode = str_replace( $replacement['find'], $replacement['replace'], $newCode );
 		}
 
-		if ( $newCode === ( string ) $before['code'] ) {
+		if ( $newCode === (string) $before['code'] ) {
 			throw new RuntimeException( 'Code Snippets patch does not change the target code.' );
 		}
 		if ( strlen( $newCode ) > self::MAX_CODE_BYTES ) {
@@ -275,7 +275,7 @@ final class CodeSnippetsAdapter {
 		$result = array(
 			'snippet'                 => $this->publicSnapshot( $before ),
 			'replacement_count'       => count( $replacements ),
-			'before_code_fingerprint' => hash( 'sha256', ( string ) $before['code'] ),
+			'before_code_fingerprint' => hash( 'sha256', (string) $before['code'] ),
 			'after_code_fingerprint'  => hash( 'sha256', $newCode ),
 			'before_fingerprint'      => Fingerprint::make( $before ),
 			'after_fingerprint'       => Fingerprint::make( $afterPlanned ),
@@ -287,13 +287,13 @@ final class CodeSnippetsAdapter {
 			return $result;
 		}
 
-		$this->writeCode( ( int ) $before['id'], $newCode );
-		$after = $this->snapshot( $this->getSnippet( ( int ) $before['id'] ) );
+		$this->writeCode( (int) $before['id'], $newCode );
+		$after = $this->snapshot( $this->getSnippet( (int) $before['id'] ) );
 
-		if ( ! $this->sameMetadata( $before, $after ) || $newCode !== ( string ) $after['code'] ) {
-			$this->writeCode( ( int ) $before['id'], ( string ) $before['code'] );
-			$restored = $this->snapshot( $this->getSnippet( ( int ) $before['id'] ) );
-			if ( ( string ) $restored['code'] !== ( string ) $before['code'] ) {
+		if ( ! $this->sameMetadata( $before, $after ) || $newCode !== (string) $after['code'] ) {
+			$this->writeCode( (int) $before['id'], (string) $before['code'] );
+			$restored = $this->snapshot( $this->getSnippet( (int) $before['id'] ) );
+			if ( (string) $restored['code'] !== (string) $before['code'] ) {
 				throw new RuntimeException( 'Code Snippets patch readback failed and automatic restore also failed.' );
 			}
 			throw new RuntimeException( 'Code Snippets patch readback failed; previous code was restored.' );
@@ -304,8 +304,8 @@ final class CodeSnippetsAdapter {
 		$result['_rollback'] = array(
 			'action'  => 'code_snippets.restore_code',
 			'payload' => array(
-				'snippet_id'                => ( int ) $before['id'],
-				'code'                      => ( string ) $before['code'],
+				'snippet_id'                => (int) $before['id'],
+				'code'                      => (string) $before['code'],
 				'expected_code_fingerprint' => hash( 'sha256', $newCode ),
 			),
 		);
@@ -316,9 +316,9 @@ final class CodeSnippetsAdapter {
 	public function restoreCode( array $payload, array $context ): array {
 		$this->assertAvailable();
 
-		$snippetId = isset( $payload['snippet_id'] ) ? ( int ) $payload['snippet_id'] : 0;
+		$snippetId = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
 		$code      = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
-		$expected  = isset( $payload['expected_code_fingerprint'] ) ? strtolower( ( string ) $payload['expected_code_fingerprint'] ) : '';
+		$expected  = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
 
 		if ( $snippetId <= 0 || null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets rollback payload is invalid.' );
@@ -331,13 +331,13 @@ final class CodeSnippetsAdapter {
 		if ( ! empty( $before['locked'] ) ) {
 			throw new RuntimeException( 'Code Snippets rollback target is locked.' );
 		}
-		if ( ! hash_equals( $expected, hash( 'sha256', ( string ) $before['code'] ) ) ) {
+		if ( ! hash_equals( $expected, hash( 'sha256', (string) $before['code'] ) ) ) {
 			throw new RuntimeException( 'Stale target: Code Snippets rollback fingerprint does not match current code.' );
 		}
 
 		$result = array(
 			'snippet'                 => $this->publicSnapshot( $before ),
-			'before_code_fingerprint' => hash( 'sha256', ( string ) $before['code'] ),
+			'before_code_fingerprint' => hash( 'sha256', (string) $before['code'] ),
 			'after_code_fingerprint'  => hash( 'sha256', $code ),
 			'_current_fingerprint'    => Fingerprint::make( $before ),
 		);
@@ -350,7 +350,7 @@ final class CodeSnippetsAdapter {
 		$this->writeCode( $snippetId, $code );
 		$after = $this->snapshot( $this->getSnippet( $snippetId ) );
 
-		if ( ! $this->sameMetadata( $before, $after ) || $code !== ( string ) $after['code'] ) {
+		if ( ! $this->sameMetadata( $before, $after ) || $code !== (string) $after['code'] ) {
 			throw new RuntimeException( 'Code Snippets rollback readback verification failed.' );
 		}
 
@@ -376,7 +376,7 @@ final class CodeSnippetsAdapter {
 	}
 
 	private function findTarget( array $payload ) {
-		$snippetId = isset( $payload['snippet_id'] ) ? ( int ) $payload['snippet_id'] : 0;
+		$snippetId = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
 		$marker    = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
 			? $payload['match_code_contains']
 			: '';
@@ -394,11 +394,11 @@ final class CodeSnippetsAdapter {
 		}
 
 		$matches = array();
-		foreach ( ( array ) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
+		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
 			if ( ! is_object( $snippet ) || empty( $snippet->id ) || ! isset( $snippet->code ) ) {
 				continue;
 			}
-			if ( false !== strpos( ( string ) $snippet->code, $marker ) ) {
+			if ( false !== strpos( (string) $snippet->code, $marker ) ) {
 				$matches[] = $snippet;
 			}
 		}
@@ -412,7 +412,7 @@ final class CodeSnippetsAdapter {
 
 	private function getSnippet( int $snippetId ) {
 		$snippet = \Code_Snippets\get_snippet( $snippetId, false );
-		if ( ! is_object( $snippet ) || ( int ) ( $snippet->id ?? 0 ) !== $snippetId ) {
+		if ( ! is_object( $snippet ) || (int) ( $snippet->id ?? 0 ) !== $snippetId ) {
 			throw new RuntimeException( 'Code Snippets target was not found.' );
 		}
 		return $snippet;
@@ -431,8 +431,8 @@ final class CodeSnippetsAdapter {
 				throw new RuntimeException( 'Replacement ' . $index . ' must be an object.' );
 			}
 			foreach ( array_keys( $replacement ) as $key ) {
-				if ( ! in_array( ( string ) $key, array( 'find', 'replace' ), true ) ) {
-					throw new RuntimeException( 'Replacement ' . $index . ' contains unsupported key: ' . ( string ) $key . '.' );
+				if ( ! in_array( (string) $key, array( 'find', 'replace' ), true ) ) {
+					throw new RuntimeException( 'Replacement ' . $index . ' contains unsupported key: ' . (string) $key . '.' );
 				}
 			}
 
@@ -462,19 +462,19 @@ final class CodeSnippetsAdapter {
 
 	private function snapshot( $snippet ): array {
 		return array(
-			'id'             => ( int ) ( $snippet->id ?? 0 ),
-			'name'           => ( string ) ( $snippet->name ?? '' ),
-			'desc'           => ( string ) ( $snippet->desc ?? '' ),
-			'code'           => ( string ) ( $snippet->code ?? '' ),
+			'id'             => (int) ( $snippet->id ?? 0 ),
+			'name'           => (string) ( $snippet->name ?? '' ),
+			'desc'           => (string) ( $snippet->desc ?? '' ),
+			'code'           => (string) ( $snippet->code ?? '' ),
 			'tags'           => isset( $snippet->tags ) && is_array( $snippet->tags ) ? array_values( $snippet->tags ) : array(),
-			'scope'          => ( string ) ( $snippet->scope ?? '' ),
-			'priority'       => ( int ) ( $snippet->priority ?? 0 ),
+			'scope'          => (string) ( $snippet->scope ?? '' ),
+			'priority'       => (int) ( $snippet->priority ?? 0 ),
 			'active'         => ! empty( $snippet->active ),
 			'network'        => ! empty( $snippet->network ),
 			'shared_network' => ! empty( $snippet->shared_network ),
 			'locked'         => ! empty( $snippet->locked ),
 			'trashed'        => ! empty( $snippet->trashed ),
-			'type'           => ( string ) ( $snippet->type ?? '' ),
+			'type'           => (string) ( $snippet->type ?? '' ),
 		);
 	}
 
@@ -485,7 +485,7 @@ final class CodeSnippetsAdapter {
 
 	private function sameMetadata( array $before, array $after ): bool {
 		foreach ( array( 'id','name','desc','tags','scope','priority','active','network','shared_network','locked','trashed','type' ) as $key ) {
-			if ( ( $before[$key] ?? null ) !== ( $after[$key] ?? null ) ) {
+			if ( ( $before[ $key ] ?? null ) !== ( $after[ $key ] ?? null ) ) {
 				return false;
 			}
 		}
