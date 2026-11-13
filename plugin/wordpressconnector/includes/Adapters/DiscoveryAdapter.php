@@ -13,8 +13,8 @@ final class DiscoveryAdapter {
 			'description' => 'Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities.',
 		) );
 		$registry->register( 'connector.rest_catalog', array( $this, 'restCatalog' ), array(
-			'privileged' => true,
-			'capability' => 'manage_options',
+			'privileged'  => true,
+			'capability'  => 'manage_options',
 			'description' => 'Discover bounded WordPress REST namespaces, route patterns and methods without calling endpoints.',
 		) );
 	}
@@ -25,37 +25,37 @@ final class DiscoveryAdapter {
 		$postTypes = array();
 		foreach ( get_post_types( array(), 'objects' ) as $name => $object ) {
 			$postTypes[$name] = array(
-				'label' => $object->label,
-				'public' => ( bool ) $object->public,
-				'show_ui' => ( bool ) $object->show_ui,
+				'label'        => $object->label,
+				'public'       => ( bool ) $object->public,
+				'show_ui'      => ( bool ) $object->show_ui,
 				'show_in_rest' => ( bool ) $object->show_in_rest,
 				'hierarchical' => ( bool ) $object->hierarchical,
-				'supports' => get_all_post_type_supports( $name ),
-				'taxonomies' => get_object_taxonomies( $name ),
+				'supports'     => get_all_post_type_supports( $name ),
+				'taxonomies'   => get_object_taxonomies( $name ),
 			);
 		}
 
 		$taxonomies = array();
 		foreach ( get_taxonomies( array(), 'objects' ) as $name => $object ) {
 			$taxonomies[$name] = array(
-				'label' => $object->label,
-				'public' => ( bool ) $object->public,
-				'show_ui' => ( bool ) $object->show_ui,
+				'label'        => $object->label,
+				'public'       => ( bool ) $object->public,
+				'show_ui'      => ( bool ) $object->show_ui,
 				'show_in_rest' => ( bool ) $object->show_in_rest,
 				'hierarchical' => ( bool ) $object->hierarchical,
-				'object_type' => array_values( ( array ) $object->object_type ),
+				'object_type'  => array_values( ( array ) $object->object_type ),
 			);
 		}
 
 		$plugins = array();
-		$theme = wp_get_theme();
+		$theme   = wp_get_theme();
 		if ( ! Policy::publicRepositoryContext() ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			foreach ( get_plugins() as $file => $data ) {
 				$plugins[$file] = array(
-					'name' => $data['Name'] ?? $file,
-					'version' => $data['Version'] ?? '',
-					'active' => is_plugin_active( $file ),
+					'name'           => $data['Name'] ?? $file,
+					'version'        => $data['Version'] ?? '',
+					'active'         => is_plugin_active( $file ),
 					'network_active' => is_multisite() ? is_plugin_active_for_network( $file ) : false,
 				);
 			}
@@ -64,9 +64,9 @@ final class DiscoveryAdapter {
 		$imageSizes = array();
 		foreach ( wp_get_registered_image_subsizes() as $name => $size ) {
 			$imageSizes[$name] = array(
-				'width' => ( int ) $size['width'],
+				'width'  => ( int ) $size['width'],
 				'height' => ( int ) $size['height'],
-				'crop' => $size['crop'],
+				'crop'   => $size['crop'],
 			);
 		}
 
@@ -75,53 +75,53 @@ final class DiscoveryAdapter {
 			: ( defined( 'YOAST_SEO_VERSION' ) ? YOAST_SEO_VERSION : null );
 
 		$builders = array(
-			'gutenberg' => function_exists( 'parse_blocks' ),
-			'elementor' => class_exists( 'Elementor\\Plugin' ),
-			'elementor_version' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
-			'elementor_pro' => defined( 'ELEMENTOR_PRO_VERSION' ),
+			'gutenberg'             => function_exists( 'parse_blocks' ),
+			'elementor'             => class_exists( 'Elementor\\Plugin' ),
+			'elementor_version'     => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
+			'elementor_pro'         => defined( 'ELEMENTOR_PRO_VERSION' ),
 			'elementor_pro_version' => defined( 'ELEMENTOR_PRO_VERSION' ) ? ELEMENTOR_PRO_VERSION : null,
-			'woocommerce' => class_exists( 'WooCommerce' ),
-			'woocommerce_version' => defined( 'WC_VERSION' ) ? WC_VERSION : null,
-			'acf' => function_exists( 'get_fields' ),
-			'acf_version' => defined( 'ACF_VERSION' ) ? ACF_VERSION : null,
-			'yoast' => null !== $yoastVersion || class_exists( 'WPSEO_Options' ),
-			'yoast_version' => $yoastVersion,
-			'wordpress_abilities' => function_exists( 'wp_get_abilities' ),
+			'woocommerce'           => class_exists( 'WooCommerce' ),
+			'woocommerce_version'   => defined( 'WC_VERSION' ) ? WC_VERSION : null,
+			'acf'                   => function_exists( 'get_fields' ),
+			'acf_version'           => defined( 'ACF_VERSION' ) ? ACF_VERSION : null,
+			'yoast'                 => null !== $yoastVersion || class_exists( 'WPSEO_Options' ),
+			'yoast_version'         => $yoastVersion,
+			'wordpress_abilities'   => function_exists( 'wp_get_abilities' ),
 		);
 
 		return array(
-			'wordpress' => array(
-				'version' => ( string ) $wp_version,
-				'php_version' => PHP_VERSION,
-				'multisite' => is_multisite(),
+			'wordpress'              => array(
+				'version'          => ( string ) $wp_version,
+				'php_version'      => PHP_VERSION,
+				'multisite'        => is_multisite(),
 				'environment_type' => function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : null,
-				'site_url' => Policy::publicRepositoryContext() ? null : site_url(),
-				'home_url' => Policy::publicRepositoryContext() ? null : home_url(),
+				'site_url'         => Policy::publicRepositoryContext() ? null : site_url(),
+				'home_url'         => Policy::publicRepositoryContext() ? null : home_url(),
 			),
-			'theme' => array(
+			'theme'                  => array(
 				'stylesheet' => ( string ) $theme->get_stylesheet(),
-				'template' => ( string ) $theme->get_template(),
-				'name' => ( string ) $theme->get( 'Name' ),
-				'version' => ( string ) $theme->get( 'Version' ),
+				'template'   => ( string ) $theme->get_template(),
+				'name'       => ( string ) $theme->get( 'Name' ),
+				'version'    => ( string ) $theme->get( 'Version' ),
 			),
-			'plugins' => $plugins,
-			'post_types' => $postTypes,
-			'taxonomies' => $taxonomies,
-			'post_statuses' => get_post_stati( array(), 'objects' ),
-			'image_sizes' => $imageSizes,
-			'builders' => $builders,
-			'rest_api_discovery' => array(
-				'available' => function_exists( 'rest_get_server' ),
-				'action' => 'connector.rest_catalog',
+			'plugins'                => $plugins,
+			'post_types'             => $postTypes,
+			'taxonomies'             => $taxonomies,
+			'post_statuses'          => get_post_stati( array(), 'objects' ),
+			'image_sizes'            => $imageSizes,
+			'builders'               => $builders,
+			'rest_api_discovery'     => array(
+				'available'         => function_exists( 'rest_get_server' ),
+				'action'            => 'connector.rest_catalog',
 				'execution_enabled' => false,
 			),
-			'menus' => array(
+			'menus'                  => array(
 				'registered_locations' => get_registered_nav_menus(),
-				'assigned_locations' => get_nav_menu_locations(),
+				'assigned_locations'   => get_nav_menu_locations(),
 			),
-			'actions' => isset( $context['registry'] ) && $context['registry'] instanceof Registry ? $context['registry']->catalog() : array(),
+			'actions'                => isset( $context['registry'] ) && $context['registry'] instanceof Registry ? $context['registry']->catalog() : array(),
 			'public_repository_mode' => Policy::publicRepositoryContext(),
-			'connector_mode' => 'single_canonical_bridge',
+			'connector_mode'         => 'single_canonical_bridge',
 		);
 	}
 
@@ -136,8 +136,8 @@ final class DiscoveryAdapter {
 			}
 		}
 
-		$page = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
-		$perPage = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
+		$page            = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
+		$perPage         = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
 		$namespaceFilter = $payload['namespace'] ?? null;
 		if ( null !== $namespaceFilter &&
 			( ! is_string( $namespaceFilter ) || strlen( $namespaceFilter ) > 120 ||
@@ -146,15 +146,15 @@ final class DiscoveryAdapter {
 		}
 
 		$result = array(
-			'available' => false,
-			'discovery_only' => true,
+			'available'         => false,
+			'discovery_only'    => true,
 			'execution_enabled' => false,
-			'page' => $page,
-			'per_page' => $perPage,
-			'pages' => 1,
-			'total' => 0,
-			'namespaces' => array(),
-			'routes' => array(),
+			'page'              => $page,
+			'per_page'          => $perPage,
+			'pages'             => 1,
+			'total'             => 0,
+			'namespaces'        => array(),
+			'routes'            => array(),
 		);
 		if ( ! function_exists( 'rest_get_server' ) ) {
 			return $result;
@@ -180,7 +180,7 @@ final class DiscoveryAdapter {
 			return strlen( $b ) <=> strlen( $a );
 		} );
 
-		$safeRoutes = array();
+		$safeRoutes        = array();
 		$visibleNamespaces = array();
 		foreach ( $registered as $route => $endpoints ) {
 			if ( ! is_string( $route ) || 1 !== preg_match( '/^[\x21-\x7e]{1,240}$/D', $route ) ||
@@ -241,10 +241,10 @@ final class DiscoveryAdapter {
 			$methods = array_keys( $verbs );
 			sort( $methods, SORT_STRING );
 			$safeRoutes[] = array(
-				'namespace' => $routeNamespace,
-				'route_pattern' => $route,
+				'namespace'          => $routeNamespace,
+				'route_pattern'      => $route,
 				'advertised_methods' => $methods,
-				'execution_enabled' => false,
+				'execution_enabled'  => false,
 			);
 			$visibleNamespaces[$routeNamespace] = true;
 		}
@@ -259,7 +259,7 @@ final class DiscoveryAdapter {
 		$result['total'] = count( $safeRoutes );
 		$result['pages'] = max( 1, ( int ) ceil( $result['total'] / $perPage ) );
 		$result['routes'] = array_slice( $safeRoutes, ( $page - 1 ) * $perPage, $perPage );
-		$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $result ) : json_encode( $result );
+		$encoded              = function_exists( 'wp_json_encode' ) ? wp_json_encode( $result ) : json_encode( $result );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 131072 ) {
 			throw new \RuntimeException( 'REST discovery output exceeds its transport budget.' );
 		}

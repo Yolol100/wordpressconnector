@@ -131,8 +131,8 @@ final class CoreAdapter {
 	public function postUpdate( array $payload, array $context ): array {
 		$post = $this->requirePost( $payload );
 		Policy::assertReadablePostType( (string) $post->post_type );
-		$before = $this->postSnapshot( $post );
-		$fields = $this->sanitizePostFields( $payload, true );
+		$before       = $this->postSnapshot( $post );
+		$fields       = $this->sanitizePostFields( $payload, true );
 		$fields['ID'] = (int) $post->ID;
 
 		$after  = array_merge( $before, $this->snapshotFromUpdateFields( $fields ) );
@@ -339,7 +339,7 @@ final class CoreAdapter {
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomyObject || ! $taxonomyObject->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
 		}
-		$args = array(
+		$args  = array(
 			'taxonomy'   => $taxonomy,
 			'hide_empty' => Input::bool( $payload, 'hide_empty' ),
 			'number'     => isset( $payload['per_page'] ) ? max( 1, min( 200, (int) $payload['per_page'] ) ) : 100,

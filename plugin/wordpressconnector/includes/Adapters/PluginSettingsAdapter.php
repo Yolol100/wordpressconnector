@@ -64,7 +64,7 @@ final class PluginSettingsAdapter {
 			'mode'    => 'project_specific',
 			'actions' => array( 'acf.get', 'acf.update' )
 		),
-		'advanced-custom-fields/acf.php' => array(
+		'advanced-custom-fields/acf.php'                  => array(
 			'id'      => 'acf',
 			'mode'    => 'native_adapter',
 			'actions' => array( 'acf.field_groups', 'acf.get', 'acf.update' )
@@ -75,7 +75,7 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'AIOS firewall, login protection and 2FA require version-specific safe APIs and lockout recovery before settings writes.'
 		),
-		'woocommerce/woocommerce.php' => array(
+		'woocommerce/woocommerce.php'                     => array(
 			'id'      => 'woocommerce',
 			'mode'    => 'native_risk_gated',
 			'actions' => array(
@@ -96,7 +96,7 @@ final class PluginSettingsAdapter {
 				'woocommerce.fulfillment.locations.update',
 				'woocommerce.fulfillment.create'
 			),
-			'note' => 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.'
+			'note'    => 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.'
 		),
 		'mollie-payments-for-woocommerce/mollie-payments-for-woocommerce.php' => array(
 			'id'      => 'mollie',
@@ -104,7 +104,7 @@ final class PluginSettingsAdapter {
 			'actions' => array( 'woocommerce.operations.list', 'woocommerce.operations.inspect', 'woocommerce.operations.update' ),
 			'note'    => 'Only WooCommerce-exposed gateway fields; live/test mode, payment credentials and actual payments require provider-native authenticated setup and sandbox verification.'
 		),
-		'ewww-image-optimizer/ewww-image-optimizer.php' => array(
+		'ewww-image-optimizer/ewww-image-optimizer.php'   => array(
 			'id'      => 'ewww_image_optimizer',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update' ),
@@ -123,7 +123,7 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'Backup/import/export operations require a separate high-risk staging-first contract.'
 		),
-		'wp-asset-clean-up/wpacu.php' => array(
+		'wp-asset-clean-up/wpacu.php'                     => array(
 			'id'      => 'asset_cleanup',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update', 'maintenance.cache_capabilities', 'maintenance.cache_flush' ),
@@ -134,40 +134,40 @@ final class PluginSettingsAdapter {
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'auto_image_attributes.inspect', 'auto_image_attributes.update', 'media.get', 'media.update' )
 		),
-		'broken-link-checker/broken-link-checker.php' => array(
+		'broken-link-checker/broken-link-checker.php'     => array(
 			'id'      => 'broken_link_checker',
 			'mode'    => 'version_bound',
 			'actions' => array(),
 			'note'    => 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.'
 		),
-		'code-snippets/code-snippets.php' => array(
+		'code-snippets/code-snippets.php'                 => array(
 			'id'      => 'code_snippets',
 			'mode'    => 'bounded_exact_patch_and_catalog_preset',
 			'actions' => array( 'code_snippets.patch', 'code_snippets.catalog_only.inspect', 'code_snippets.catalog_only.ensure', 'code_snippets.catalog_only.undo' ),
 			'note'    => 'Caller-supplied arbitrary PHP creation remains blocked. One fixed vetted WooCommerce catalogue-only preset supports inspection, guarded creation/activation and rollback; existing snippets support bounded exact replacements.'
 		),
-		'content-sync-manager/content-sync-manager.php' => array(
+		'content-sync-manager/content-sync-manager.php'   => array(
 			'id'      => 'content_sync_manager',
 			'mode'    => 'project_specific',
 			'actions' => array()
 		),
-		'classic-editor/classic-editor.php' => array(
+		'classic-editor/classic-editor.php'               => array(
 			'id'      => 'classic_editor',
 			'mode'    => 'core_editor_option',
 			'actions' => array(),
 			'note'    => 'A dedicated editor-preference contract is required; no raw options are exposed.'
 		),
-		'duplicate-page/duplicatepage.php' => array(
+		'duplicate-page/duplicatepage.php'                => array(
 			'id'      => 'duplicate_page',
 			'mode'    => 'no_special_adapter_needed',
 			'actions' => array( 'post.get', 'post.create' )
 		),
-		'elementor/elementor.php' => array(
+		'elementor/elementor.php'                         => array(
 			'id'      => 'elementor',
 			'mode'    => 'native_adapter',
 			'actions' => array( 'elementor.capabilities', 'elementor.inspect', 'elementor.inventory', 'elementor.patch_element', 'elementor.replace_document' )
 		),
-		'elementor-pro/elementor-pro.php' => array(
+		'elementor-pro/elementor-pro.php'                 => array(
 			'id'      => 'elementor_pro',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -180,7 +180,7 @@ final class PluginSettingsAdapter {
 				'elementor.form_upsert'
 			)
 		),
-		'elementor-pro-2/elementor-pro.php' => array(
+		'elementor-pro-2/elementor-pro.php'               => array(
 			'id'      => 'elementor_pro',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -193,7 +193,7 @@ final class PluginSettingsAdapter {
 				'elementor.form_upsert'
 			)
 		),
-		'gtranslate/gtranslate.php' => array(
+		'gtranslate/gtranslate.php'                       => array(
 			'id'      => 'gtranslate',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'gtranslate.settings.inspect', 'gtranslate.settings.update' ),
@@ -211,47 +211,47 @@ final class PluginSettingsAdapter {
 			'actions' => array(),
 			'note'    => 'Hostinger onboarding is detected only; readiness and vendor progress state cannot be inferred from plugin activation.'
 		),
-		'hostinger-reach/hostinger-reach.php' => array(
+		'hostinger-reach/hostinger-reach.php'             => array(
 			'id'      => 'hostinger_reach',
 			'mode'    => 'external_account_bound',
 			'actions' => array(),
 			'note'    => 'Hostinger Reach email-marketing integration requires a vendor account and consent-aware end-to-end verification. Never export contacts, tokens or campaign settings.'
 		),
-		'hostinger/hostinger.php' => array(
+		'hostinger/hostinger.php'                         => array(
 			'id'      => 'hostinger_tools',
 			'mode'    => 'security_provider_contract_needed',
 			'actions' => array(),
 			'note'    => 'Hostinger Tools maintenance, cache, XML-RPC, HTTPS redirects and hosting service state are not safe to mutate without provider-backed inspection and lockout recovery.'
 		),
-		'imagify/imagify.php' => array(
+		'imagify/imagify.php'                             => array(
 			'id'      => 'imagify',
 			'mode'    => 'wordpress_ability',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' )
 		),
-		'creame-whatsapp-me/joinchat.php' => array(
+		'creame-whatsapp-me/joinchat.php'                 => array(
 			'id'      => 'joinchat',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' ),
 			'note'    => 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.'
 		),
-		'litespeed-cache/litespeed-cache.php' => array(
+		'litespeed-cache/litespeed-cache.php'             => array(
 			'id'      => 'litespeed_cache',
 			'mode'    => 'inactive_or_version_bound',
 			'actions' => array()
 		),
-		'loco-translate/loco.php' => array(
+		'loco-translate/loco.php'                         => array(
 			'id'      => 'loco_translate',
 			'mode'    => 'filesystem_bound',
 			'actions' => array(),
 			'note'    => 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.'
 		),
-		'redirection/redirection.php' => array(
+		'redirection/redirection.php'                     => array(
 			'id'      => 'redirection',
 			'mode'    => 'provider_api_required',
 			'actions' => array(),
 			'note'    => 'Redirect writes require a dedicated provider-owned API contract and redirect-loop validation.'
 		),
-		'under-construction-page/under-construction.php' => array(
+		'under-construction-page/under-construction.php'  => array(
 			'id'      => 'under_construction',
 			'mode'    => 'maintenance_gate',
 			'actions' => array(),
@@ -262,41 +262,41 @@ final class PluginSettingsAdapter {
 			'mode'    => 'native_settings_api',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' )
 		),
-		'google-site-kit/google-site-kit.php' => array(
+		'google-site-kit/google-site-kit.php'             => array(
 			'id'      => 'site_kit',
 			'mode'    => 'oauth_bound',
 			'actions' => array(),
 			'note'    => 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.'
 		),
-		'wordfence/wordfence.php' => array(
+		'wordfence/wordfence.php'                         => array(
 			'id'      => 'wordfence',
 			'mode'    => 'limited_stable_api',
 			'actions' => array(),
 			'note'    => 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.'
 		),
-		'wordpressconnector/wordpressconnector.php' => array(
+		'wordpressconnector/wordpressconnector.php'       => array(
 			'id'      => 'wordpress_connector',
 			'mode'    => 'canonical_bridge',
 			'actions' => array( 'connector.discover', 'connector.actions', 'connector.update.check', 'connector.update.apply' )
 		),
-		'wp-file-manager/file_folder_manager.php' => array(
+		'wp-file-manager/file_folder_manager.php'         => array(
 			'id'      => 'wp_file_manager',
 			'mode'    => 'shared_filesystem_interface',
 			'actions' => array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ),
 			'note'    => 'WP File Manager remains the visual admin UI. The connector does not reuse its private AJAX/elFinder protocol; both operate on the same WordPress filesystem, with connector writes bounded to existing plugin/theme text files.',
 		),
-		'wp-mail-smtp/wp_mail_smtp.php' => array(
+		'wp-mail-smtp/wp_mail_smtp.php'                   => array(
 			'id'      => 'wp_mail_smtp',
 			'mode'    => 'secret_bound',
 			'actions' => array(),
 			'note'    => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'
 		),
-		'wp-rocket/wp-rocket.php' => array(
+		'wp-rocket/wp-rocket.php'                         => array(
 			'id'      => 'wp_rocket',
 			'mode'    => 'native_settings_api',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update', 'maintenance.cache_flush' )
 		),
-		'wordpress-seo/wp-seo.php' => array(
+		'wordpress-seo/wp-seo.php'                        => array(
 			'id'      => 'yoast',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -308,7 +308,7 @@ final class PluginSettingsAdapter {
 				'yoast.site_representation.update'
 			)
 		),
-		'wordpress-seo-premium/wp-seo-premium.php' => array(
+		'wordpress-seo-premium/wp-seo-premium.php'        => array(
 			'id'      => 'yoast_premium',
 			'mode'    => 'native_adapter',
 			'actions' => array(
@@ -382,7 +382,7 @@ final class PluginSettingsAdapter {
 			if ( ! preg_match( '/^[a-z][a-z0-9_-]{1,79}\\z/', $id ) ) {
 				throw new RuntimeException( 'Plugin integration identifier is invalid.' );
 			}
-			$active = true === ( $plugin['active'] ?? null );
+			$active       = true === ( $plugin['active'] ?? null );
 			$activeCount += $active ? 1 : 0;
 			if ( $active ) {
 				$activeIds[$id] = true;
@@ -480,7 +480,7 @@ final class PluginSettingsAdapter {
 			$languages = $raw['incl_langs'] ?? null;
 			$fallback  = $raw['fincl_langs'] ?? null;
 			return array(
-				'english_source' => ! isset( $raw['default_language'] ) ? 'unknown'
+				'english_source'  => ! isset( $raw['default_language'] ) ? 'unknown'
 					: ( 'en' === $raw['default_language'] ? 'matches' : 'mismatch' ),
 				'nl_en_languages' => ! is_array( $languages ) || ! is_array( $fallback ) ? 'unknown'
 					: ( $languages === array( 'nl', 'en' ) && $fallback === array( 'nl', 'en' ) ? 'matches' : 'mismatch' ),
@@ -494,7 +494,7 @@ final class PluginSettingsAdapter {
 			}
 			$company = $raw['company_name'] ?? null;
 			return array(
-				'organization_name' => ! is_string( $title ) || '' === trim( $title ) || ! is_string( $company ) || '' === trim( $company )
+				'organization_name'        => ! is_string( $title ) || '' === trim( $title ) || ! is_string( $company ) || '' === trim( $company )
 					? 'unknown' : ( 0 === strcasecmp( trim( $title ), trim( $company ) ) ? 'matches' : 'mismatch' ),
 				'organization_description' => $this->auditTextPresence( $raw['org-description'] ?? null ),
 				'organization_logo'        => $this->auditPageAssignment( $raw['company_logo_id'] ?? null ),
@@ -594,7 +594,7 @@ final class PluginSettingsAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$registeredActions = isset( $context['registry'] ) && $context['registry'] instanceof Registry
 			? $context['registry']->catalog() : null;
-		$items = array();
+		$items             = array();
 		foreach ( get_plugins() as $file => $data ) {
 			$integration = self::INTEGRATIONS[$file] ?? array(
 				'id'      => sanitize_key( ( string ) dirname( $file ) ),
@@ -631,7 +631,7 @@ final class PluginSettingsAdapter {
 				'active'  => is_plugin_active( $file ),
 			), $integration );
 			if ( null !== $registeredActions ) {
-				$missing = array_values( array_filter( ( array ) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
+				$missing                            = array_values( array_filter( ( array ) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
 					return ! is_string( $action ) || ! isset( $registeredActions[$action] );
 				} ) );
 				$item['registered_action_status'] = ! $item['actions'] ? 'not_modeled' : ( $missing ? 'partial' : 'complete' );

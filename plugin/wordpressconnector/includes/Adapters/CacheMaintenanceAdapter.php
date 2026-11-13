@@ -19,16 +19,16 @@ final class CacheMaintenanceAdapter {
 		add_action( 'admin_post_nopriv_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array( $this, 'handleAssetCleanupLoopback' ) );
 
 		$registry->register( 'maintenance.cache_capabilities', array( $this, 'capabilities' ), array(
-			'privileged' => true,
+			'privileged'             => true,
 			'public_repository_safe' => true,
-			'capability' => 'manage_options',
-			'description' => 'Inspect availability and versions for the bounded Elementor, WP Rocket and Asset CleanUp cache maintenance layers.',
+			'capability'             => 'manage_options',
+			'description'            => 'Inspect availability and versions for the bounded Elementor, WP Rocket and Asset CleanUp cache maintenance layers.',
 		) );
 
 		$registry->register( 'maintenance.cache_flush', array( $this, 'flush' ), array(
-			'mutation' => true,
-			'privileged' => true,
-			'capability' => 'manage_options',
+			'mutation'    => true,
+			'privileged'  => true,
+			'capability'  => 'manage_options',
 			'description' => 'Flush one bounded cache layer: Elementor files/data, WP Rocket full-domain page cache, or Asset CleanUp CSS/JS cache metadata.',
 		) );
 	}
@@ -40,7 +40,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		return array(
-			'layers' => $layers,
+			'layers'      => $layers,
 			'fingerprint' => Fingerprint::make( $layers ),
 		);
 	}
@@ -64,7 +64,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		if ( $regenerate ) {
-			$plugin = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 			$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 			if ( ! is_object( $filesManager ) || ! method_exists( $filesManager, 'generate_css' ) ) {
 				throw new RuntimeException( 'Elementor CSS regeneration API is unavailable.' );
@@ -72,17 +72,17 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$result = array(
-			'layer' => $layer,
-			'provider' => $before['provider'],
-			'version' => $before['version'],
-			'available' => true,
-			'rollback_supported' => false,
-			'rebuild_mode' => $regenerate ? 'generate_css_after_clear' : $this->rebuildMode( $layer ),
-			'verification_scope' => 'provider_completion_only',
-			'regenerate_requested' => $regenerate,
-			'regenerate_invoked' => false,
+			'layer'                 => $layer,
+			'provider'              => $before['provider'],
+			'version'               => $before['version'],
+			'available'             => true,
+			'rollback_supported'    => false,
+			'rebuild_mode'          => $regenerate ? 'generate_css_after_clear' : $this->rebuildMode( $layer ),
+			'verification_scope'    => 'provider_completion_only',
+			'regenerate_requested'  => $regenerate,
+			'regenerate_invoked'    => false,
 			'regeneration_verified' => null,
-			'_current_fingerprint' => Fingerprint::make( $before ),
+			'_current_fingerprint'  => Fingerprint::make( $before ),
 		);
 
 		if ( 'asset_cleanup' === $layer ) {
@@ -103,7 +103,7 @@ final class CacheMaintenanceAdapter {
 				// A provider event confirms the generator reached its completion
 				// boundary. It does not prove that frontend CSS URLs return HTTP 200.
 				$regenerated = false;
-				$callback = static function () use ( &$regenerated ): void {
+				$callback    = static function () use ( &$regenerated ): void {
 					$regenerated = true;
 				};
 				add_action( 'elementor/core/files/after_generate_css', $callback, PHP_INT_MAX, 0 );
@@ -134,36 +134,36 @@ final class CacheMaintenanceAdapter {
 
 	private function layerState( string $layer ): array {
 		if ( 'elementor' === $layer ) {
-			$plugin = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 			$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 			return array(
-				'provider' => 'Elementor',
+				'provider'  => 'Elementor',
 				'available' => is_object( $filesManager ) && method_exists( $filesManager, 'clear_cache' ),
-				'version' => defined( 'ELEMENTOR_VERSION' ) ? ( string ) ELEMENTOR_VERSION : '',
+				'version'   => defined( 'ELEMENTOR_VERSION' ) ? ( string ) ELEMENTOR_VERSION : '',
 			);
 		}
 
 		if ( 'wp_rocket' === $layer ) {
 			return array(
-				'provider' => 'WP Rocket',
+				'provider'  => 'WP Rocket',
 				'available' => function_exists( 'rocket_clean_domain' ),
-				'version' => defined( 'WP_ROCKET_VERSION' ) ? ( string ) WP_ROCKET_VERSION : '',
+				'version'   => defined( 'WP_ROCKET_VERSION' ) ? ( string ) WP_ROCKET_VERSION : '',
 			);
 		}
 
 		$class = $this->ensureAssetCleanupClass();
 		return array(
-			'provider' => 'Asset CleanUp',
+			'provider'  => 'Asset CleanUp',
 			'available' => '' !== $class && (
 				is_callable( array( $class, 'clearCache' ) )
 				|| is_callable( array( $class, 'clearAllCache' ) )
 			),
-			'version' => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
+			'version'   => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
 		);
 	}
 
 	private function flushElementor(): bool {
-		$plugin = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+		$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 		$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 		if ( ! is_object( $filesManager ) || ! method_exists( $filesManager, 'clear_cache' ) ) {
 			throw new RuntimeException( 'Elementor cache API is unavailable.' );
@@ -233,10 +233,10 @@ final class CacheMaintenanceAdapter {
 	}
 
 	private function flushAssetCleanupViaLoopback(): bool {
-		$token = bin2hex( random_bytes( 32 ) );
-		$key = substr( hash( 'sha256', $token ), 0, 32 );
+		$token     = bin2hex( random_bytes( 32 ) );
+		$key       = substr( hash( 'sha256', $token ), 0, 32 );
 		$transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
-		$digest = hash( 'sha256', $token );
+		$digest    = hash( 'sha256', $token );
 
 		if ( ! set_transient( $transient, $digest, self::ASSET_CLEANUP_TOKEN_TTL ) ) {
 			throw new RuntimeException( 'Could not create the one-time Asset CleanUp loopback authorization.' );
@@ -244,18 +244,18 @@ final class CacheMaintenanceAdapter {
 
 		try {
 			$response = wp_remote_post( admin_url( 'admin-post.php' ), array(
-				'timeout' => 30,
+				'timeout'     => 30,
 				'redirection' => 0,
-				'blocking' => true,
-				'sslverify' => true,
-				'headers' => array(
-					'Accept' => 'application/json',
-					'Cache-Control' => 'no-store',
-					'User-Agent' => 'Webactueel-WordPressConnector/asset-cleanup-loopback',
-					'X-WPConnector-Cache-Key' => $key,
+				'blocking'    => true,
+				'sslverify'   => true,
+				'headers'     => array(
+					'Accept'                    => 'application/json',
+					'Cache-Control'             => 'no-store',
+					'User-Agent'                => 'Webactueel-WordPressConnector/asset-cleanup-loopback',
+					'X-WPConnector-Cache-Key'   => $key,
 					'X-WPConnector-Cache-Token' => $token,
 				),
-				'body' => array(
+				'body'        => array(
 					'action' => self::ASSET_CLEANUP_LOOPBACK_ACTION,
 				),
 			) );
@@ -284,7 +284,7 @@ final class CacheMaintenanceAdapter {
 			return;
 		}
 
-		$key = $this->loopbackHexHeader( 'HTTP_X_WPCONNECTOR_CACHE_KEY', 32 );
+		$key   = $this->loopbackHexHeader( 'HTTP_X_WPCONNECTOR_CACHE_KEY', 32 );
 		$token = $this->loopbackHexHeader( 'HTTP_X_WPCONNECTOR_CACHE_TOKEN', 64 );
 
 		if ( '' === $key || '' === $token ) {
@@ -293,7 +293,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
-		$expected = get_transient( $transient );
+		$expected  = get_transient( $transient );
 		delete_transient( $transient );
 
 		if ( ! is_string( $expected ) || ! hash_equals( $expected, hash( 'sha256', $token ) ) ) {
@@ -317,7 +317,7 @@ final class CacheMaintenanceAdapter {
 		wp_send_json_success( array(
 			'verified' => true,
 			'provider' => 'Asset CleanUp',
-			'version' => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
+			'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
 		) );
 	}
 
@@ -333,7 +333,7 @@ final class CacheMaintenanceAdapter {
 	}
 
 	private function flushAssetCleanupDirect(): bool {
-		$class = $this->ensureAssetCleanupClass();
+		$class  = $this->ensureAssetCleanupClass();
 		$method = '';
 
 		if ( '' !== $class && is_callable( array( $class, 'clearCache' ) ) ) {
@@ -360,11 +360,11 @@ final class CacheMaintenanceAdapter {
          * not required to purge arbitrary transient names, which caused false
          * negatives even when the provider flush completed successfully.
          */
-		$transient = ( string ) WPACU_PLUGIN_ID . '_last_clear_cache';
-		$before = get_transient( $transient );
-		$startedAt = time();
+		$transient      = ( string ) WPACU_PLUGIN_ID . '_last_clear_cache';
+		$before         = get_transient( $transient );
+		$startedAt      = time();
 		$verifiedByHook = false;
-		$callback = static function () use ( &$verifiedByHook ): void {
+		$callback       = static function () use ( &$verifiedByHook ): void {
 			$verifiedByHook = true;
 		};
 
@@ -375,9 +375,9 @@ final class CacheMaintenanceAdapter {
 			remove_action( 'wpacu_clear_cache_after', $callback, PHP_INT_MAX );
 		}
 
-		$after = get_transient( $transient );
-		$beforeValue = is_numeric( $before ) ? ( int ) $before : 0;
-		$afterValue = is_numeric( $after ) ? ( int ) $after : 0;
+		$after             = get_transient( $transient );
+		$beforeValue       = is_numeric( $before ) ? ( int ) $before : 0;
+		$afterValue        = is_numeric( $after ) ? ( int ) $after : 0;
 		$timestampVerified = $afterValue >= ( $startedAt - 1 )
 			&& $afterValue >= $beforeValue;
 
@@ -417,9 +417,9 @@ final class CacheMaintenanceAdapter {
 						return;
 					}
 
-					$relative = str_replace( '\\', DIRECTORY_SEPARATOR, $relative ) . '.php';
+					$relative  = str_replace( '\\', DIRECTORY_SEPARATOR, $relative ) . '.php';
 					$candidate = $base . DIRECTORY_SEPARATOR . $relative;
-					$real = realpath( $candidate );
+					$real      = realpath( $candidate );
 
 					if (
 						false === $real

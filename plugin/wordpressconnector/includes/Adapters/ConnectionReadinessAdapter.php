@@ -17,16 +17,16 @@ use Webactueel\WordPressConnector\Security\Policy;
  */
 final class ConnectionReadinessAdapter {
 	private const BACKUP_PROVIDERS = array(
-		'updraftplus/updraftplus.php' => 'UpdraftPlus',
+		'updraftplus/updraftplus.php'                     => 'UpdraftPlus',
 		'wpvivid-backuprestore/wpvivid-backuprestore.php' => 'WPvivid',
-		'duplicator/duplicator.php' => 'Duplicator',
-		'backwpup/backwpup.php' => 'BackWPup',
+		'duplicator/duplicator.php'                       => 'Duplicator',
+		'backwpup/backwpup.php'                           => 'BackWPup',
 	);
 
 	public function register( Registry $registry ): void {
 		$registry->register( 'connector.setup.inspect', array( $this, 'inspect' ), array(
-			'privileged' => true,
-			'capability' => 'manage_options',
+			'privileged'  => true,
+			'capability'  => 'manage_options',
 			'description' => 'Read private setup readiness evidence for ChatGPT OAuth and full-site backup/recovery; detection does not prove authorization or restore.',
 		) );
 	}
@@ -36,34 +36,34 @@ final class ConnectionReadinessAdapter {
 			throw new RuntimeException( 'Connection readiness does not accept parameters.' );
 		}
 
-		$endpoint = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
-		$https = is_ssl() && is_string( $endpoint )
+		$endpoint  = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
+		$https     = is_ssl() && is_string( $endpoint )
 			&& 'https' === strtolower( ( string ) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
-		$paired = SitePairing::pairedAdministratorId() > 0;
+		$paired    = SitePairing::pairedAdministratorId() > 0;
 		$providers = $this->activeBackupProviders();
 
 		return array(
-			'read_only' => true,
-			'wordpress' => array(
-				'https_ready' => $https,
-				'github_pairing_recorded' => $paired,
+			'read_only'                 => true,
+			'wordpress'                 => array(
+				'https_ready'                    => $https,
+				'github_pairing_recorded'        => $paired,
 				'github_oidc_execution_verified' => false,
 			),
-			'chatgpt' => array(
-				'mcp_endpoint_https' => $https,
-				'oauth_21_ready' => false,
+			'chatgpt'                   => array(
+				'mcp_endpoint_https'           => $https,
+				'oauth_21_ready'               => false,
 				'oauth_authorization_verified' => false,
-				'state' => 'requires_trusted_oauth_provider_and_explicit_account_consent',
+				'state'                        => 'requires_trusted_oauth_provider_and_explicit_account_consent',
 			),
-			'recovery' => array(
+			'recovery'                  => array(
 				'active_backup_plugins_detected' => $providers,
-				'database_backup_verified' => false,
-				'site_files_backup_verified' => false,
-				'offsite_backup_verified' => false,
-				'staging_restore_verified' => false,
-				'state' => 'independent_host_backup_and_staging_restore_required',
+				'database_backup_verified'       => false,
+				'site_files_backup_verified'     => false,
+				'offsite_backup_verified'        => false,
+				'staging_restore_verified'       => false,
+				'state'                          => 'independent_host_backup_and_staging_restore_required',
 			),
-			'management' => $this->managementReadiness(),
+			'management'                => $this->managementReadiness(),
 			'high_risk_changes_cleared' => false,
 		);
 	}
@@ -85,19 +85,19 @@ final class ConnectionReadinessAdapter {
 		}
 
 		return array(
-			'capabilities' => $capabilities,
-			'server_policy_gates' => array(
-				'writes' => Policy::flag( 'WPCONNECTOR_ALLOW_WRITES' ),
-				'privileged' => Policy::flag( 'WPCONNECTOR_ALLOW_PRIVILEGED' ),
-				'sensitive' => Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ),
-				'system_updates' => Policy::flag( 'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' ),
+			'capabilities'                         => $capabilities,
+			'server_policy_gates'                  => array(
+				'writes'            => Policy::flag( 'WPCONNECTOR_ALLOW_WRITES' ),
+				'privileged'        => Policy::flag( 'WPCONNECTOR_ALLOW_PRIVILEGED' ),
+				'sensitive'         => Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ),
+				'system_updates'    => Policy::flag( 'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' ),
 				'filesystem_writes' => Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ),
 			),
 			'wordpress_file_modifications_allowed' => function_exists( 'wp_is_file_mod_allowed' )
 				? ( bool ) wp_is_file_mod_allowed( 'plugin_update' ) : null,
-			'wordpress_file_editor_disabled' => defined( 'DISALLOW_FILE_EDIT' ) && ( bool ) DISALLOW_FILE_EDIT,
-			'permission_check_only' => true,
-			'site_write_verified' => false,
+			'wordpress_file_editor_disabled'       => defined( 'DISALLOW_FILE_EDIT' ) && ( bool ) DISALLOW_FILE_EDIT,
+			'permission_check_only'                => true,
+			'site_write_verified'                  => false,
 		);
 	}
 

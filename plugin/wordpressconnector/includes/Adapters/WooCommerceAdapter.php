@@ -576,7 +576,7 @@ final class WooCommerceAdapter {
 		) );
 		$items = array();
 		foreach ( $query->posts as $post ) {
-			$coupon = new \WC_Coupon( (int) $post->ID );
+			$coupon  = new \WC_Coupon( (int) $post->ID );
 			$items[] = $this->couponSnapshot( $coupon );
 		}
 		return array( 'coupons' => $items, 'total' => (int) $query->found_posts, 'pages' => (int) $query->max_num_pages );
@@ -704,7 +704,7 @@ final class WooCommerceAdapter {
 		$itemDetails = $includeItems
 			? $this->orderItemsSnapshot( $order )
 			: array( 'items' => array(), 'item_count' => 0, 'items_truncated' => false );
-		$snapshot = array(
+		$snapshot    = array(
 			'id'              => (int) $order->get_id(),
 			'status'          => (string) $order->get_status(),
 			'currency'        => (string) $order->get_currency(),
@@ -939,8 +939,8 @@ final class WooCommerceAdapter {
 	}
 
 	private function taxRateSnapshot( $rate ): array {
-		$values = is_object( $rate ) ? get_object_vars( $rate ) : ( is_array( $rate ) ? $rate : array() );
-		$fields = array(
+		$values   = is_object( $rate ) ? get_object_vars( $rate ) : ( is_array( $rate ) ? $rate : array() );
+		$fields   = array(
 			'tax_rate_id'       => 'id', 'tax_rate_country' => 'country', 'tax_rate_state' => 'state',
 			'tax_rate'          => 'rate', 'tax_rate_name' => 'name', 'tax_rate_priority' => 'priority',
 			'tax_rate_compound' => 'compound', 'tax_rate_shipping' => 'shipping', 'tax_rate_order' => 'order',
