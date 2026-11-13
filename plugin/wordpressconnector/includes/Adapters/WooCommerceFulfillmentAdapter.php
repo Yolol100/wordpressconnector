@@ -17,7 +17,10 @@ final class WooCommerceFulfillmentAdapter {
 		'tax_rate'        => '/wc/v3/taxes',
 	);
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'manage_woocommerce',
+		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.fulfillment.locations.inspect', array( $this, 'inspectLocations' ), $read );
 		$registry->register( 'woocommerce.fulfillment.locations.update', array( $this, 'updateLocations' ), $write );
@@ -42,7 +45,9 @@ final class WooCommerceFulfillmentAdapter {
 		$fingerprint = Fingerprint::make( $before );
 		$result      = array( 'zone_id' => $payload['zone_id'], 'before' => $before, 'after' => $new,
 			'_current_fingerprint' => $fingerprint );
-		if ( ! empty( $context['dry_run'] ) )return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$this->gate( $payload, $fingerprint );
 		$this->api( 'PUT', $path, $new, true );
 		$after = $this->locationSnapshot( $this->api( 'GET', $path ) );
@@ -59,7 +64,9 @@ final class WooCommerceFulfillmentAdapter {
 	}
 
 	public function restoreLocations( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Location restoration is rollback-only.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Location restoration is rollback-only.' );
+		}
 		$this->keys( $payload, array( 'zone_id', 'locations', 'expected_after_fingerprint' ) );
 		$path     = $this->locationPath( $payload );
 		$current  = $this->locationSnapshot( $this->api( 'GET', $path ) );
@@ -68,11 +75,16 @@ final class WooCommerceFulfillmentAdapter {
  || ! hash_equals( Fingerprint::make( $current ), $expected ) )
 			throw new RuntimeException( 'Shipping locations changed after the original write.' );
 		$previous = $this->normalizeLocations( $payload['locations'] ?? null, true );
-		if ( ! empty( $context['dry_run'] ) )return array( 'would_restore' => $previous );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_restore' => $previous );
+		}
 		$this->api( 'PUT', $path, $previous, true );
 		if ( $this->locationSnapshot( $this->api( 'GET', $path ) ) !== $previous )
 			throw new RuntimeException( 'Shipping location rollback readback failed.' );
-		return array( 'restored' => true, 'zone_id' => $payload['zone_id'] );
+		return array(
+			'restored' => true,
+			'zone_id' => $payload['zone_id'],
+		);
 	}
 
 	public function create( array $payload, array $context ): array {
@@ -85,7 +97,9 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Provider inventory is incomplete; cannot safely prevent duplicate creation.' );
 		}
 		foreach ( $inventory as $candidate ){
-			if ( ! is_array( $candidate ) )continue;
+			if ( ! is_array( $candidate ) ) {
+				continue;
+			}
 			if ( $type === 'shipping_zone' && strcasecmp( (string) ( $candidate['name'] ?? '' ), $fields['name'] ) === 0 )
 				throw new RuntimeException( 'Shipping zone name already exists.' );
 			if ( $type === 'shipping_method' && ( $candidate['method_id'] ?? '' ) === $fields['method_id'] )
@@ -96,8 +110,15 @@ final class WooCommerceFulfillmentAdapter {
 				throw new RuntimeException( 'A matching tax rate already exists.' );
 		}
 		$fp     = Fingerprint::make( $this->inventorySnapshot( $type, $inventory ) );
-		$result = array( 'type' => $type, 'fields' => $fields, 'would_create' => true, '_current_fingerprint' => $fp );
-		if ( ! empty( $context['dry_run'] ) )return $result;
+		$result = array(
+			'type' => $type,
+			'fields' => $fields,
+			'would_create' => true,
+			'_current_fingerprint' => $fp,
+		);
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$this->gate( $payload, $fp );
 		if ( $type === 'tax_rate' && ( ! defined( 'WPCONNECTOR_ALLOW_WOO_TAX_CREATE' )
  || WPCONNECTOR_ALLOW_WOO_TAX_CREATE !== true ) ){
@@ -105,7 +126,9 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		$created = $this->api( 'POST', $path, $fields );
 		$id      = $type === 'shipping_method' ? ( $created['instance_id'] ?? null ) : ( $created['id'] ?? null );
-		if ( ! is_int( $id ) || $id < 1 )throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
+		if ( ! is_int( $id ) || $id < 1 ) {
+			throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
+		}
 		$resourcePath = $path . '/' . $id;
 		try {
 			$current = $this->api( 'GET', $resourcePath );
@@ -140,7 +163,9 @@ final class WooCommerceFulfillmentAdapter {
 	}
 
 	public function restoreCreated( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Created resources may only be restored through connector rollback.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Created resources may only be restored through connector rollback.' );
+		}
 		$this->keys( $payload, array( 'type', 'zone_id', 'id', 'expected_after_fingerprint' ) );
 		$type     = $this->type( $payload );
 		$id       = $this->positive( $payload['id'] ?? null, 'id' );
@@ -154,11 +179,19 @@ final class WooCommerceFulfillmentAdapter {
 		if ( $type === 'shipping_zone' ){
 			$methods   = $this->api( 'GET', $path . '/methods' );
 			$locations = $this->api( 'GET', $path . '/locations' );
-			if ( $methods || $locations )throw new RuntimeException( 'Created zone now has methods or locations; cannot automatically remove.' );
+			if ( $methods || $locations ) {
+				throw new RuntimeException( 'Created zone now has methods or locations; cannot automatically remove.' );
+			}
 		}
-		if ( ! empty( $context['dry_run'] ) )return array( 'would_remove_created_id' => $id );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_remove_created_id' => $id );
+		}
 		$this->api( 'DELETE', $path, array( 'force' => true ) );
-		return array( 'restored_created_resource' => true, 'type' => $type, 'id' => $id );
+		return array(
+			'restored_created_resource' => true,
+			'type' => $type,
+			'id' => $id,
+		);
 	}
 
 	private function creationFields( string $type, $fields ): array {
@@ -186,22 +219,37 @@ final class WooCommerceFulfillmentAdapter {
 				throw new RuntimeException( 'Invalid shipping method provider ID.' );
 			// Provider decides which method IDs are supported. Newly created
 			// methods are forced disabled before the operation is accepted.
-			return array( 'method_id' => $method, 'enabled' => false );
+			return array(
+				'method_id' => $method,
+				'enabled' => false,
+			);
 		}
 		foreach ( array( 'country', 'rate', 'name' )as $required )
-			if ( ! isset( $fields[ $required ] ) )throw new RuntimeException( 'Tax creation requires country, rate and name.' );
+			if ( ! isset( $fields[ $required ] ) ) {
+				throw new RuntimeException( 'Tax creation requires country, rate and name.' );
+			}
 		$country = $fields['country'];$rate = $fields['rate'];$name = $fields['name'];
 		if ( ! is_string( $country ) || ! preg_match( '/^[A-Z]{2}$/D', $country )
  || ! is_string( $rate ) || ! preg_match( '/^\\d{1,2}(?:\\.\\d{1,4})?$/D', $rate )
  || ! is_string( $name ) || strlen( $name ) > 100 || strlen( trim( $name ) ) < 2 || preg_match( '/[<>\\x00-\\x1F]/', $name ) )
 			throw new RuntimeException( 'Tax rate country/percentage/name is invalid.' );
-		$clean = array( 'country' => $country, 'rate' => $rate, 'name' => sanitize_text_field( $name ) );
+		$clean = array(
+			'country' => $country,
+			'rate' => $rate,
+			'name' => sanitize_text_field( $name ),
+		);
 		foreach ( $fields as $key => $value ){
-			if ( isset( $clean[ $key ] ) )continue;
+			if ( isset( $clean[ $key ] ) ) {
+				continue;
+			}
 			if ( in_array( $key, array( 'priority', 'order' ), true ) ){
-				if ( ! is_int( $value ) || $value < 0 || $value > 1000 )throw new RuntimeException( 'Invalid tax priority.' );
+				if ( ! is_int( $value ) || $value < 0 || $value > 1000 ) {
+					throw new RuntimeException( 'Invalid tax priority.' );
+				}
 			}elseif ( in_array( $key, array( 'compound', 'shipping' ), true ) ){
-				if ( ! is_bool( $value ) )throw new RuntimeException( 'Tax boolean must be strict.' );
+				if ( ! is_bool( $value ) ) {
+					throw new RuntimeException( 'Tax boolean must be strict.' );
+				}
 			}else{
 				if ( ! is_string( $value ) || strlen( $value ) > 80 || preg_match( '/[<>\\x00-\\x1F]/', $value ) )
 					throw new RuntimeException( 'Invalid tax class or state.' );
@@ -214,8 +262,13 @@ final class WooCommerceFulfillmentAdapter {
 	private function locationSnapshot( array $response ): array {
 		$result = array();
 		foreach ( $response as $value ){
-			if ( ! is_array( $value ) || ! isset( $value['type'], $value['code'] ) )continue;
-			$result[] = array( 'type' => (string) $value['type'], 'code' => (string) $value['code'] );
+			if ( ! is_array( $value ) || ! isset( $value['type'], $value['code'] ) ) {
+				continue;
+			}
+			$result[] = array(
+				'type' => (string) $value['type'],
+				'code' => (string) $value['code'],
+			);
 		}
 		return $this->normalizeLocations( $result, true );
 	}
@@ -232,7 +285,10 @@ final class WooCommerceFulfillmentAdapter {
  || ! is_string( $code ) || strlen( $code ) > 24 || ! preg_match( '/^[A-Za-z0-9 :*\\-]{1,24}$/D', $code ) ){
 				throw new RuntimeException( 'Invalid shipping zone geographic location.' );
 			}
-			$key = $type . ':' . $code;$result[ $key ] = array( 'type' => $type, 'code' => $code );
+			$key = $type . ':' . $code;$result[ $key ] = array(
+				'type' => $type,
+				'code' => $code,
+			);
 		}
 		ksort( $result, SORT_STRING );
 		return array_values( $result );
@@ -241,7 +297,9 @@ final class WooCommerceFulfillmentAdapter {
 	private function inventorySnapshot( string $type, array $data ): array {
 		$out = array();
 		foreach ( $data as $item ){
-			if ( ! is_array( $item ) )continue;
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
 			$out[] = $this->resourceSnapshot( $type, $item );
 		}
 		return $out;
@@ -273,12 +331,16 @@ final class WooCommerceFulfillmentAdapter {
 
 	private function type( array $payload ): string {
 		$type = $payload['type'] ?? null;
-		if ( ! is_string( $type ) || ! isset( self::TYPES[ $type ] ) )throw new RuntimeException( 'Unsupported WooCommerce provisioning type.' );
+		if ( ! is_string( $type ) || ! isset( self::TYPES[ $type ] ) ) {
+			throw new RuntimeException( 'Unsupported WooCommerce provisioning type.' );
+		}
 		return $type;
 	}
 	private function collectionPath( string $type, array $payload ): string {
 		$path = self::TYPES[ $type ];
-		if ( $type === 'shipping_method' )$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
+		if ( $type === 'shipping_method' ) {
+			$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
+		}
 		elseif ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null )
 			throw new RuntimeException( 'Provisioning zone_id is only valid for shipping methods.' );
 		return $path;
@@ -287,11 +349,15 @@ final class WooCommerceFulfillmentAdapter {
 		return '/wc/v3/shipping/zones/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/locations';
 	}
 	private function positive( $id, string $name ): int {
-		if ( ! is_int( $id ) || $id < 1 || $id > 2147483647 )throw new RuntimeException( $name . ' must be a positive integer.' );
+		if ( ! is_int( $id ) || $id < 1 || $id > 2147483647 ) {
+			throw new RuntimeException( $name . ' must be a positive integer.' );
+		}
 		return $id;
 	}
 	private function keys( array $payload, array $allowed ): void {
-		if ( array_diff( array_keys( $payload ), $allowed ) )throw new RuntimeException( 'Unexpected WooCommerce provisioning arguments.' );
+		if ( array_diff( array_keys( $payload ), $allowed ) ) {
+			throw new RuntimeException( 'Unexpected WooCommerce provisioning arguments.' );
+		}
 	}
 
 	private function api( string $method, string $path, array $body = array(), bool $listBody = false ): array {

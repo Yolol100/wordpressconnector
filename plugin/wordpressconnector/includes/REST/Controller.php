@@ -95,7 +95,11 @@ final class Controller {
 				'system_updates'    => Policy::flag( 'WPCONNECTOR_ALLOW_SYSTEM_UPDATES' ),
 				'filesystem_writes' => Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ),
 			),
-			'limits' => array( 'request_bytes' => self::MAX_REQUEST_BYTES, 'asset_files' => 10, 'asset_total_bytes' => 26214400 ),
+			'limits' => array(
+				'request_bytes' => self::MAX_REQUEST_BYTES,
+				'asset_files' => 10,
+				'asset_total_bytes' => 26214400,
+			),
 		), 200 );
 	}
 

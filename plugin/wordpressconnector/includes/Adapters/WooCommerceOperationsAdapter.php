@@ -27,7 +27,10 @@ final class WooCommerceOperationsAdapter {
 	private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant|bank|iban|routing|account|user[_-]?name|username|access[_-]?key|public[_-]?key|private[_-]?key|client|signature|certificate|authorization|webhook|private|license|smtp|auth|oauth)/i';
 
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'manage_woocommerce',
+		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
 			'description' => 'Read bounded provider-owned shipping zones/methods, tax rates and gateway summaries.',
@@ -67,14 +70,19 @@ final class WooCommerceOperationsAdapter {
  || ! is_int( $perPage ) || $perPage < 1 || $perPage > 100 ) {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
-		$query    = $area === 'tax_rates' ? array( 'page' => $page, 'per_page' => $perPage ) : array();
+		$query    = $area === 'tax_rates' ? array(
+			'page' => $page,
+			'per_page' => $perPage,
+		) : array();
 		$response = $this->request( 'GET', $path, $query );
 		if ( count( $response ) > 150 ) {
 			throw new RuntimeException( 'WooCommerce operations inventory exceeds limit.' );
 		}
 		$out = array();
 		foreach ( $response as $item ) {
-			if ( ! is_array( $item ) ) continue;
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
 			if ( $area === 'tax_rates' ) {
 				$out[] = $this->summarize( $item, 'tax_rate' );
 			} elseif ( $area === 'payment_gateways' ) {
@@ -205,7 +213,10 @@ final class WooCommerceOperationsAdapter {
 		if ( ! $this->matches( $this->request( 'GET', $path ), $changes ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback readback failed.' );
 		}
-		return array( 'restored' => true, 'area' => $area );
+		return array(
+			'restored' => true,
+			'area' => $area,
+		);
 	}
 
 	private function summarize( array $data, string $area ): array {
@@ -295,7 +306,9 @@ final class WooCommerceOperationsAdapter {
 				continue;
 			}
 			if ( $key === 'enabled' || $key === 'compound' || $key === 'shipping' ) {
-				if ( ! is_bool( $value ) ) throw new RuntimeException( 'Provider boolean setting must be true or false.' );
+				if ( ! is_bool( $value ) ) {
+					throw new RuntimeException( 'Provider boolean setting must be true or false.' );
+				}
 			} elseif ( in_array( $key, array( 'order', 'priority' ), true ) ) {
 				if ( ! is_int( $value ) || $value < 0 || $value > 100000 ) {
 					throw new RuntimeException( 'Provider sort order or priority is outside bounds.' );
@@ -358,12 +371,20 @@ final class WooCommerceOperationsAdapter {
 	}
 
 	private function safePublicValue( $value ) {
-		if ( is_null( $value ) || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) return $value;
-		if ( is_string( $value ) ) return strlen( $value ) > 800 ? '[long_value_withheld]' : sanitize_text_field( $value );
+		if ( is_null( $value ) || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
+			return $value;
+		}
+		if ( is_string( $value ) ) {
+			return strlen( $value ) > 800 ? '[long_value_withheld]' : sanitize_text_field( $value );
+		}
 		if ( is_array( $value ) ) {
-			if ( count( $value ) > 80 ) return '[large_array_withheld]';
+			if ( count( $value ) > 80 ) {
+				return '[large_array_withheld]';
+			}
 			foreach ( $value as $v ) {
-				if ( ! is_scalar( $v ) ) return '[complex_array_withheld]';
+				if ( ! is_scalar( $v ) ) {
+					return '[complex_array_withheld]';
+				}
 			}
 			return $value;
 		}
@@ -411,7 +432,9 @@ final class WooCommerceOperationsAdapter {
 		if ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null ) {
 			throw new RuntimeException( 'Unexpected zone ID.' );
 		}
-		if ( $area === 'shipping_zone' ) return '/wc/v3/shipping/zones/' . $id;
+		if ( $area === 'shipping_zone' ) {
+			return '/wc/v3/shipping/zones/' . $id;
+		}
 		return '/wc/v3/taxes/' . $id;
 	}
 

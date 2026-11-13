@@ -475,7 +475,10 @@ final class PluginSettingsAdapter {
 		if ( 'gtranslate' === $id ) {
 			$raw = get_option( 'GTranslate', null );
 			if ( ! is_array( $raw ) ) {
-				return array( 'english_source' => 'unknown', 'nl_en_languages' => 'unknown' );
+				return array(
+					'english_source' => 'unknown',
+					'nl_en_languages' => 'unknown',
+				);
 			}
 			$languages = $raw['incl_langs'] ?? null;
 			$fallback  = $raw['fincl_langs'] ?? null;
@@ -490,7 +493,11 @@ final class PluginSettingsAdapter {
 			$raw   = get_option( 'wpseo_titles', null );
 			$title = get_option( 'blogname', null );
 			if ( ! is_array( $raw ) ) {
-				return array( 'organization_name' => 'unknown', 'organization_description' => 'unknown', 'organization_logo' => 'unknown' );
+				return array(
+					'organization_name' => 'unknown',
+					'organization_description' => 'unknown',
+					'organization_logo' => 'unknown',
+				);
 			}
 			$company = $raw['company_name'] ?? null;
 			return array(
@@ -503,7 +510,10 @@ final class PluginSettingsAdapter {
 		if ( 'joinchat' === $id ) {
 			$raw = get_option( 'joinchat', null );
 			if ( ! is_array( $raw ) ) {
-				return array( 'button_tip_saved' => 'unknown', 'message_saved' => 'unknown' );
+				return array(
+					'button_tip_saved' => 'unknown',
+					'message_saved' => 'unknown',
+				);
 			}
 			// Saved values are not necessarily the effective default/translations.
 			return array(
@@ -528,12 +538,18 @@ final class PluginSettingsAdapter {
 		if ( 'asset_cleanup' === $id && 'inspect_only_provider_api_required' === $mode ) {
 			// Stored settings are not proof of Asset CleanUp effective runtime settings.
 			$raw = get_option( 'wpassetcleanup_settings', null );
-			return array( 'settings_record' => null === $raw ? 'missing' : 'present', 'effective_settings' => 'unverified' );
+			return array(
+				'settings_record' => null === $raw ? 'missing' : 'present',
+				'effective_settings' => 'unverified',
+			);
 		}
 		if ( 'wp_mail_smtp' === $id ) {
 			// Never inspect, copy or hash the credential-containing option value.
 			$raw = get_option( 'wp_mail_smtp', null );
-			return array( 'settings_record' => is_array( $raw ) ? 'present' : 'unknown', 'delivery' => 'unverified' );
+			return array(
+				'settings_record' => is_array( $raw ) ? 'present' : 'unknown',
+				'delivery' => 'unverified',
+			);
 		}
 		return array();
 	}
@@ -708,7 +724,10 @@ final class PluginSettingsAdapter {
 		if ( $rollback ) {
 			$result['_rollback'] = array(
 				'action'  => 'plugin.settings.update',
-				'payload' => array( 'plugin' => $plugin, 'fields' => $rollback ),
+				'payload' => array(
+					'plugin' => $plugin,
+					'fields' => $rollback,
+				),
 			);
 		}
 		return $result;

@@ -92,7 +92,12 @@ final class ElementorJsonImport {
 				if ( ! current_user_can( 'edit_post', $postId ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
-				$adapterPayload = array( 'id' => $postId, 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
+				$adapterPayload = array(
+					'id' => $postId,
+					'data' => $data,
+					'page_settings' => $settings,
+					'edit_mode' => 'builder',
+				);
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -100,7 +105,14 @@ final class ElementorJsonImport {
 				$resultId = $postId;
 			}
 			else {
-				$adapterPayload = array( 'post_type' => $postType, 'status' => 'draft', 'title' => $this->importTitle( $payload, $postType ), 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
+				$adapterPayload = array(
+					'post_type' => $postType,
+					'status' => 'draft',
+					'title' => $this->importTitle( $payload, $postType ),
+					'data' => $data,
+					'page_settings' => $settings,
+					'edit_mode' => 'builder',
+				);
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -380,7 +392,10 @@ final class ElementorJsonImport {
 			if ( ! isset( $payload['content'] ) || ! is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
 				throw new RuntimeException( 'Missing Elementor content in ' . $name );
 			}
-			$entries[] = array( 'name' => $name, 'payload' => $payload );
+			$entries[] = array(
+				'name' => $name,
+				'payload' => $payload,
+			);
 		}
 		return $entries;
 	}

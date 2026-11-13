@@ -32,7 +32,10 @@ final class YoastTemplateSettingsAdapter {
 		'product_category_title'       => 'title-tax-product_cat',
 		'product_category_description' => 'metadesc-tax-product_cat' );
 	public function register( Registry $registry ): void {
-		$security = array( 'privileged' => true, 'capability' => 'manage_options' );
+		$security = array(
+			'privileged' => true,
+			'capability' => 'manage_options',
+		);
 		$registry->register( 'yoast.templates.inspect', array( $this, 'inspect' ), $security );
 		$registry->register( 'yoast.templates.update', array( $this, 'update' ), array_merge( $security, array( 'mutation' => true ) ) );
 		$registry->register( 'yoast.templates.restore', array( $this, 'restore' ), array_merge( $security, array( 'mutation' => true ) ) );
@@ -42,21 +45,32 @@ final class YoastTemplateSettingsAdapter {
 		if ( Policy::publicRepositoryContext() ) {
 			return array( 'fields' => array_intersect_key( $fields, array_flip( array( 'category_title', 'product_category_title', 'product_title', 'product_description' ) ) ), 'fingerprint' => Fingerprint::make( $fields ) );
 		}
-		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
+		return array(
+			'fields' => $fields,
+			'fingerprint' => Fingerprint::make( $fields ),
+		);
 	}
 	public function update( array $payload, array $context ): array {
 		$changes = $this->validateFields( $payload['fields'] ?? null, false );
 		$this->assertProviderSupportsFields( $changes );
 		$before = $this->snapshot();$after = array_replace( $before, $changes );
-		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) )return $result;
+		$result = array(
+			'before' => $before,
+			'after' => $after,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$options = $this->options();
 		foreach ( $changes as $key => $value )$options[self::KEYS[ $key ]] = $value;
 		update_option( 'wpseo_titles', $options );
 		$verified = $this->snapshot();
 		if ( $verified !== $after ){
 			foreach ( $changes as $key => $value ){
-				if ( null === $before[ $key ] )unset( $options[self::KEYS[ $key ]] );
+				if ( null === $before[ $key ] ) {
+					unset( $options[self::KEYS[ $key ]] );
+				}
 				else $options[self::KEYS[ $key ]] = $before[ $key ];
 			}
 			update_option( 'wpseo_titles', $options );
@@ -69,16 +83,22 @@ final class YoastTemplateSettingsAdapter {
 		return $result;
 	}
 	public function restore( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Rollback only.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Rollback only.' );
+		}
 		$current  = $this->snapshot();
 		$expected = $payload['expected_after_fingerprint'] ?? '';
 		if ( ! is_string( $expected ) || ! hash_equals( Fingerprint::make( $current ), $expected ) )
 			throw new RuntimeException( 'Yoast templates changed since write.' );
 		$previous = $this->validateFields( $payload['fields'] ?? null, true );
-		if ( ! empty( $context['dry_run'] ) )return array( 'would_restore' => array_keys( $previous ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_restore' => array_keys( $previous ) );
+		}
 		$options = $this->options();
 		foreach ( $previous as $key => $value ){
-			if ( $value === null )unset( $options[self::KEYS[ $key ]] );
+			if ( $value === null ) {
+				unset( $options[self::KEYS[ $key ]] );
+			}
 			else $options[self::KEYS[ $key ]] = $value;
 		}
 		update_option( 'wpseo_titles', $options );
@@ -105,7 +125,9 @@ final class YoastTemplateSettingsAdapter {
 					( ! $restore && trim( $value ) === '' ) )
 					throw new RuntimeException( 'Invalid template length.' );
 				$value = $restore?$value:sanitize_text_field( $value );
-				if ( ! $restore && trim( $value ) === '' )throw new RuntimeException( 'Invalid template text.' );
+				if ( ! $restore && trim( $value ) === '' ) {
+					throw new RuntimeException( 'Invalid template text.' );
+				}
 			}
 			$clean[ $key ] = $value;
 		}
@@ -152,7 +174,9 @@ final class YoastTemplateSettingsAdapter {
 
 	private function options(): array {
 		$value = get_option( 'wpseo_titles', null );
-		if ( ! is_array( $value ) )throw new RuntimeException( 'Yoast settings unavailable.' );
+		if ( ! is_array( $value ) ) {
+			throw new RuntimeException( 'Yoast settings unavailable.' );
+		}
 		return $value;
 	}
 	private function snapshot(): array {

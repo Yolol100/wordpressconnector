@@ -220,7 +220,10 @@ final class CodeSnippetsAdapter {
 		}
 		$state = self::catalogState( $snippet );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_undo' => $state, '_current_fingerprint' => Fingerprint::make( $state ) );
+			return array(
+				'would_undo' => $state,
+				'_current_fingerprint' => Fingerprint::make( $state ),
+			);
 		}
 		$ok = $payload['created']
 			? \Code_Snippets\delete_snippet( (int) $snippet->id, false )
@@ -232,7 +235,10 @@ final class CodeSnippetsAdapter {
 		if ( $payload['created'] ? null !== $after : ( null === $after || ! empty( $after->active ) ) ) {
 			throw new RuntimeException( 'Managed catalogue rollback readback failed.' );
 		}
-		return array( 'undone' => true, 'readback_verified' => true );
+		return array(
+			'undone' => true,
+			'readback_verified' => true,
+		);
 	}
 
 	public function patch( array $payload, array $context ): array {
@@ -446,7 +452,10 @@ final class CodeSnippetsAdapter {
 				throw new RuntimeException( 'Replacement ' . $index . ' may not contain NUL bytes.' );
 			}
 
-			$replacements[] = array( 'find' => $find, 'replace' => $replace );
+			$replacements[] = array(
+				'find' => $find,
+				'replace' => $replace,
+			);
 		}
 
 		return $replacements;

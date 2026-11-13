@@ -32,7 +32,10 @@ final class OptimizerSettingsAdapter {
 	);
 
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'manage_options' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'manage_options',
+		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'optimizer.settings.update', array( $this, 'update' ), $write );
@@ -65,7 +68,9 @@ final class OptimizerSettingsAdapter {
 		if ( ! is_array( $fields ) || count( $fields ) !== 1 )
 			throw new RuntimeException( 'Optimizer updates must change exactly one approved setting.' );
 		$key = array_key_first( $fields );
-		if ( ! is_string( $key ) )throw new RuntimeException( 'Invalid optimizer setting field.' );
+		if ( ! is_string( $key ) ) {
+			throw new RuntimeException( 'Invalid optimizer setting field.' );
+		}
 		$value       = $this->validate( $provider, $key, $fields[ $key ] );
 		$old         = $this->state( $provider );
 		$fingerprint = Fingerprint::make( $old );
@@ -77,7 +82,9 @@ final class OptimizerSettingsAdapter {
 			'provider'             => $provider, 'before' => $before, 'after' => $after,
 			'_current_fingerprint' => $fingerprint,
 		);
-		if ( ! empty( $context['dry_run'] ) )return $out;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $out;
+		}
 		// Revalidate the snapshot used by Runner at the actual adapter baseline.
 		// Passing a boolean here would permit a change between preview and write.
 		if ( isset( $context['expected_prewrite_fingerprint'] ) )
@@ -89,7 +96,9 @@ final class OptimizerSettingsAdapter {
 		if ( $provider === 'ewww' && ( $old[ $key ] === null || ! $this->ewwwStoredOptionExists( $key ) ) ){
 			throw new RuntimeException( 'EWWW option must exist before a guarded write.' );
 		}
-		if ( $provider === 'ewww' )$this->assertEwwwWriteCapability();
+		if ( $provider === 'ewww' ) {
+			$this->assertEwwwWriteCapability();
+		}
 		$previousExists = array_key_exists( $key, $old );
 		$previousValue  = $previousExists ? $old[ $key ] : null;
 		try {
@@ -123,7 +132,9 @@ final class OptimizerSettingsAdapter {
 	}
 
 	public function restore( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Optimizer restoration is rollback-only.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Optimizer restoration is rollback-only.' );
+		}
 		$this->keys( $payload, array( 'provider', 'field', 'exists', 'value', 'expected_after_fingerprint' ) );
 		$provider = $this->provider( $payload );
 		// Old rollback snapshots are not permission to bypass the provider API gate.
@@ -138,8 +149,12 @@ final class OptimizerSettingsAdapter {
 		}
 		$current = $this->state( $provider );
 		$this->expected( $payload['expected_after_fingerprint'] ?? null, Fingerprint::make( $current ) );
-		if ( ! empty( $context['dry_run'] ) )return array( 'would_restore' => $key );
-		if ( $provider === 'ewww' )$this->assertEwwwWriteCapability();
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_restore' => $key );
+		}
+		if ( $provider === 'ewww' ) {
+			$this->assertEwwwWriteCapability();
+		}
 		$this->write( $provider, $current, $key, $payload['value'] ?? null, $payload['exists'] );
 		$readback = $this->state( $provider );
 		if ( $payload['exists'] === true ){
@@ -148,7 +163,11 @@ final class OptimizerSettingsAdapter {
 		}elseif ( array_key_exists( $key, $readback ) ){
 			throw new RuntimeException( 'Optimizer rollback failed to remove the new field.' );
 		}
-		return array( 'restored' => true, 'provider' => $provider, 'field' => $key );
+		return array(
+			'restored' => true,
+			'provider' => $provider,
+			'field' => $key,
+		);
 	}
 
 	private function state( string $provider ): array {
@@ -156,7 +175,9 @@ final class OptimizerSettingsAdapter {
 		if ( $provider === 'asset_cleanup' ){
 			$stored = get_option( 'wpassetcleanup_settings', null );
 			if ( is_array( $stored ) ){
-				if ( count( $stored ) > 250 )throw new RuntimeException( 'Asset CleanUp settings have unexpected size.' );
+				if ( count( $stored ) > 250 ) {
+					throw new RuntimeException( 'Asset CleanUp settings have unexpected size.' );
+				}
 				return $stored;
 			}
 			if ( ! is_string( $stored ) || strlen( $stored ) > 250000 || $stored === '' ){
@@ -183,7 +204,9 @@ final class OptimizerSettingsAdapter {
 	private function write( string $provider, array $state, string $key, $value, bool $exists = true ): void {
 		if ( $provider === 'asset_cleanup' )
 			throw new RuntimeException( 'Asset CleanUp settings writes require a verified provider API.' );
-		if ( ! $exists )throw new RuntimeException( 'EWWW provider option removal is not supported.' );
+		if ( ! $exists ) {
+			throw new RuntimeException( 'EWWW provider option removal is not supported.' );
+		}
 		if ( ! function_exists( 'ewww_image_optimizer_set_option' ) )
 			throw new RuntimeException( 'EWWW provider option writer is unavailable.' );
 		ewww_image_optimizer_set_option( $key, $value );
@@ -209,19 +232,33 @@ final class OptimizerSettingsAdapter {
 		$value = is_bool( $value ) ? ( $value ? '1' : '0' ) : (string) $value;
 		if ( $provider === 'asset_cleanup' ){
 			if ( $restore ){
-				if ( $key === 'critical_css_status' && in_array( $value, array( 'on', 'off' ), true ) )return $value;
-				if ( $key !== 'critical_css_status' && in_array( $value, array( '0', '1' ), true ) )return $value;
+				if ( $key === 'critical_css_status' && in_array( $value, array( 'on', 'off' ), true ) ) {
+					return $value;
+				}
+				if ( $key !== 'critical_css_status' && in_array( $value, array( '0', '1' ), true ) ) {
+					return $value;
+				}
 			}
-			if ( $key === 'critical_css_status' && $value === 'off' )return $value;
-			if ( $key !== 'critical_css_status' && $value === '0' )return $value;
+			if ( $key === 'critical_css_status' && $value === 'off' ) {
+				return $value;
+			}
+			if ( $key !== 'critical_css_status' && $value === '0' ) {
+				return $value;
+			}
 			throw new RuntimeException( 'Asset CleanUp may only disable duplicate CSS/JS optimization.' );
 		}
 		if ( $key === 'ewww_image_optimizer_ll_abovethefold' ){
-			if ( preg_match( '/^[0-6]$/D', $value ) )return $value;
+			if ( preg_match( '/^[0-6]$/D', $value ) ) {
+				return $value;
+			}
 			throw new RuntimeException( 'EWWW above-fold count must be between 0 and 6.' );
 		}
-		if ( $restore && $value === '' )return $value;
-		if ( $value !== '0' && $value !== '1' )throw new RuntimeException( 'EWWW toggle accepts only zero or one.' );
+		if ( $restore && $value === '' ) {
+			return $value;
+		}
+		if ( $value !== '0' && $value !== '1' ) {
+			throw new RuntimeException( 'EWWW toggle accepts only zero or one.' );
+		}
 		return $value;
 	}
 
@@ -245,7 +282,9 @@ final class OptimizerSettingsAdapter {
 
 	private function conflicts( string $provider, string $key, string $value ): void {
 		$rocket = $this->rocketSummary();
-		if ( $provider !== 'ewww' || $value !== '1' )return;
+		if ( $provider !== 'ewww' || $value !== '1' ) {
+			return;
+		}
 		if ( $key === 'ewww_image_optimizer_lazy_load'
  && ( $rocket['lazyload'] ?? null ) === '1' )
 			throw new RuntimeException( 'WP Rocket image LazyLoad is already active.' );
@@ -255,7 +294,9 @@ final class OptimizerSettingsAdapter {
 	}
 
 	private function rocketSummary(): array {
-		if ( ! function_exists( 'get_rocket_option' ) )return array( 'available' => false );
+		if ( ! function_exists( 'get_rocket_option' ) ) {
+			return array( 'available' => false );
+		}
 		return array(
 			'available'         => true,
 			'lazyload'          => (string) get_rocket_option( 'lazyload', 0 ),

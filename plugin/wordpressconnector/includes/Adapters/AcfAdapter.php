@@ -148,7 +148,11 @@ final class AcfAdapter {
 		foreach ( $fields as $field ) {
 			$before[(string) $field] = get_field( (string) $field, $target, false );
 		}
-		$result = array( 'target' => $target, 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'target' => $target,
+			'before' => $before,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -274,7 +278,11 @@ final class AcfAdapter {
 			$wouldCreate[] = $definition;
 		}
 
-		$state  = array( 'post_id' => $postId, 'group_key' => $groupKey, 'fields' => $before );
+		$state  = array(
+			'post_id' => $postId,
+			'group_key' => $groupKey,
+			'fields' => $before,
+		);
 		$result = array(
 			'post_id'              => $postId,
 			'group_key'            => $groupKey,
@@ -297,7 +305,11 @@ final class AcfAdapter {
 				'instructions'      => '',
 				'required'          => 0,
 				'conditional_logic' => 0,
-				'wrapper'           => array( 'width' => '', 'class' => '', 'id' => '' ),
+				'wrapper'           => array(
+					'width' => '',
+					'class' => '',
+					'id' => '',
+				),
 				'default_value'     => '',
 				'maxlength'         => '',
 				'placeholder'       => '',
@@ -330,7 +342,11 @@ final class AcfAdapter {
 		if ( $created ) {
 			$result['_rollback'] = array(
 				'action'  => 'acf.schema.remove_text_fields',
-				'payload' => array( 'post_id' => $postId, 'group_key' => $groupKey, 'fields' => $created ),
+				'payload' => array(
+					'post_id' => $postId,
+					'group_key' => $groupKey,
+					'fields' => $created,
+				),
 			);
 		}
 		return $result;
@@ -361,7 +377,11 @@ final class AcfAdapter {
 			}
 			$before[$definition['key']] = $summary;
 		}
-		$state  = array( 'post_id' => $postId, 'group_key' => $groupKey, 'fields' => $before );
+		$state  = array(
+			'post_id' => $postId,
+			'group_key' => $groupKey,
+			'fields' => $before,
+		);
 		$result = array(
 			'post_id'              => $postId,
 			'group_key'            => $groupKey,
@@ -452,7 +472,11 @@ final class AcfAdapter {
 			$wouldCreate[] = $definition;
 		}
 
-		$state  = array( 'post_id' => $postId, 'group_key' => $groupKey, 'fields' => $before );
+		$state  = array(
+			'post_id' => $postId,
+			'group_key' => $groupKey,
+			'fields' => $before,
+		);
 		$result = array(
 			'post_id'              => $postId,
 			'group_key'            => $groupKey,
@@ -547,7 +571,11 @@ final class AcfAdapter {
 			$before[$definition['key']] = $tree;
 		}
 
-		$state  = array( 'post_id' => $postId, 'group_key' => $groupKey, 'fields' => $before );
+		$state  = array(
+			'post_id' => $postId,
+			'group_key' => $groupKey,
+			'fields' => $before,
+		);
 		$result = array(
 			'post_id'              => $postId,
 			'group_key'            => $groupKey,
@@ -607,8 +635,14 @@ final class AcfAdapter {
 			$this->assertFieldTreeKeysAvailable( $definition );
 		}
 
-		$state  = array( 'group_key' => $groupKey, 'current' => null );
-		$schema = array( 'group' => $group, 'fields' => $fields );
+		$state  = array(
+			'group_key' => $groupKey,
+			'current' => null,
+		);
+		$schema = array(
+			'group' => $group,
+			'fields' => $fields,
+		);
 		$result = array(
 			'group_key'            => $groupKey,
 			'requested_schema'     => $schema,
@@ -671,7 +705,10 @@ final class AcfAdapter {
 		$total              = 0;
 		$keys               = array();
 		$fields             = $this->normalizeSchemaFields( array_values( $expected['fields'] ), 0, $total, $keys );
-		$normalizedExpected = array( 'group' => $group, 'fields' => $fields );
+		$normalizedExpected = array(
+			'group' => $group,
+			'fields' => $fields,
+		);
 		$current            = $this->fieldGroupSnapshot( $groupKey );
 		if ( is_array( $current ) && ! $this->schemaContains( $normalizedExpected, $current ) ) {
 			throw new RuntimeException( 'Refusing to delete an ACF field group that no longer matches the expected schema: ' . $groupKey );
@@ -789,7 +826,12 @@ final class AcfAdapter {
 			Policy::assertKeyAllowed( $name );
 			$keys[ $key ] = true;
 			$names[ $name ] = true;
-			$normalized[] = array( 'key' => $key, 'name' => $name, 'label' => $label, 'type' => 'text' );
+			$normalized[] = array(
+				'key' => $key,
+				'name' => $name,
+				'label' => $label,
+				'type' => 'text',
+			);
 		}
 		return $normalized;
 	}
@@ -948,7 +990,11 @@ final class AcfAdapter {
 					throw new RuntimeException( 'Invalid ACF location value at group ' . $groupIndex . ', rule ' . $ruleIndex . '.' );
 				}
 				Policy::assertKeyAllowed( $param );
-				$normalizedRules[] = array( 'param' => $param, 'operator' => $operator, 'value' => $value );
+				$normalizedRules[] = array(
+					'param' => $param,
+					'operator' => $operator,
+					'value' => $value,
+				);
 			}
 			$normalized[] = $normalizedRules;
 		}
@@ -1217,7 +1263,11 @@ final class AcfAdapter {
 		if ( '' !== $id && ! preg_match( '/^[A-Za-z][A-Za-z0-9_-]{0,99}\z/', $id ) ) {
 			throw new RuntimeException( 'Invalid ACF wrapper id.' );
 		}
-		return array( 'width' => $width, 'class' => $class, 'id' => $id );
+		return array(
+			'width' => $width,
+			'class' => $class,
+			'id' => $id,
+		);
 	}
 
 	private function normalizeConditionalLogic( $logic ) {
@@ -1251,7 +1301,11 @@ final class AcfAdapter {
 				if ( strlen( $value ) > 500 || $this->hasInvalidControl( $value, true ) ) {
 					throw new RuntimeException( 'Invalid ACF conditional_logic value.' );
 				}
-				$group[] = array( 'field' => $field, 'operator' => $operator, 'value' => $value );
+				$group[] = array(
+					'field' => $field,
+					'operator' => $operator,
+					'value' => $value,
+				);
 			}
 			$normalized[] = $group;
 		}
@@ -1276,7 +1330,10 @@ final class AcfAdapter {
 		if ( $savedId <= 0 ) {
 			throw new RuntimeException( 'ACF complex field creation returned no persistent ID: ' . $definition['key'] );
 		}
-		$createdNodes[] = array( 'key' => (string) $definition['key'], 'id' => $savedId );
+		$createdNodes[] = array(
+			'key' => (string) $definition['key'],
+			'id' => $savedId,
+		);
 		foreach ( array_values( $children ) as $index => $child ) {
 			$this->createFieldTree( $child, $savedId, $index, $createdNodes );
 		}
@@ -1355,7 +1412,10 @@ final class AcfAdapter {
 				$trees[] = $this->hydrateFieldTree( $field );
 			}
 		}
-		return array( 'group' => $group, 'fields' => $trees );
+		return array(
+			'group' => $group,
+			'fields' => $trees,
+		);
 	}
 
 	private function assertFieldTreeKeysAvailable( array $definition ): void {
