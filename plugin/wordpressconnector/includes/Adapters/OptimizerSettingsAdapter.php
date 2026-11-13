@@ -50,7 +50,7 @@ final class OptimizerSettingsAdapter {
 			'fingerprint'              => Fingerprint::make( $state ),
 			'wp_rocket'                => $this->rocketSummary(),
 			'effective_state_verified' => $provider === 'ewww',
-			'settings_source'          => $provider === 'ewww'?'ewww_provider_accessor':'stored_option_only',
+			'settings_source'          => $provider === 'ewww' ? 'ewww_provider_accessor' : 'stored_option_only',
 		);
 	}
 
@@ -91,11 +91,11 @@ final class OptimizerSettingsAdapter {
 		}
 		if ( $provider === 'ewww' )$this->assertEwwwWriteCapability();
 		$previousExists = array_key_exists( $key, $old );
-		$previousValue  = $previousExists?$old[ $key ]:null;
+		$previousValue  = $previousExists ? $old[ $key ] : null;
 		try {
 			$this->write( $provider, $old, $key, $value );
 			$next = $this->state( $provider );
-			if ( ! array_key_exists( $key, $next ) || (string)$next[ $key ] !== $value ){
+			if ( ! array_key_exists( $key, $next ) || (string) $next[ $key ] !== $value ){
 				throw new RuntimeException( 'Optimizer settings readback did not match.' );
 			}
 			foreach ( $old as $other => $oldValue ){
@@ -105,7 +105,7 @@ final class OptimizerSettingsAdapter {
 			}
 		}catch ( Throwable $error ){
 			try{
-				$this->write( $provider, $this->state( $provider ), $key, $previousExists?$previousValue:null, $previousExists );
+				$this->write( $provider, $this->state( $provider ), $key, $previousExists ? $previousValue : null, $previousExists );
 			}catch ( Throwable $recoverError ){
 				throw new RuntimeException( 'Optimizer write failed; previous state restoration not verified.' );
 			}
@@ -156,14 +156,14 @@ final class OptimizerSettingsAdapter {
 		if ( $provider === 'asset_cleanup' ){
 			$stored = get_option( 'wpassetcleanup_settings', null );
 			if ( is_array( $stored ) ){
-				if ( count( $stored )>250 )throw new RuntimeException( 'Asset CleanUp settings have unexpected size.' );
+				if ( count( $stored ) > 250 )throw new RuntimeException( 'Asset CleanUp settings have unexpected size.' );
 				return $stored;
 			}
-			if ( ! is_string( $stored ) || strlen( $stored )>250000 || $stored === '' ){
+			if ( ! is_string( $stored ) || strlen( $stored ) > 250000 || $stored === '' ){
 				throw new RuntimeException( 'Asset CleanUp has no supported serialized settings baseline.' );
 			}
 			$data = json_decode( $stored, true );
-			if ( ! is_array( $data ) || json_last_error() !== JSON_ERROR_NONE || count( $data )>250 )
+			if ( ! is_array( $data ) || json_last_error() !== JSON_ERROR_NONE || count( $data ) > 250 )
 				throw new RuntimeException( 'Asset CleanUp stored settings are not valid JSON.' );
 			return $data;
 		}
@@ -190,14 +190,14 @@ final class OptimizerSettingsAdapter {
 	}
 
 	private function publicFields( string $provider, array $state ): array {
-		$keys = $provider === 'asset_cleanup'?self::ASSET_FIELDS:self::EWWW_FIELDS;
+		$keys = $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_FIELDS;
 		$out  = array();
 		foreach ( $keys as $key ){
 			if ( ! array_key_exists( $key, $state ) ){
 				$out[ $key ] = null;
 			}else{
 				$raw = $state[ $key ];
-				$out[ $key ] = is_scalar( $raw ) || $raw === null?$raw:'[unsupported_value_withheld]';
+				$out[ $key ] = is_scalar( $raw ) || $raw === null ? $raw : '[unsupported_value_withheld]';
 			}
 		}
 		return $out;
@@ -206,7 +206,7 @@ final class OptimizerSettingsAdapter {
 	private function validate( string $provider, string $key, $value, bool $restore = false ): string {
 		if ( ! $this->isWritable( $provider, $key ) || ( ! is_string( $value ) && ! is_int( $value ) && ! is_bool( $value ) ) )
 			throw new RuntimeException( 'Optimizer setting is not in the safe write allowlist.' );
-		$value = is_bool( $value )?( $value?'1':'0' ):(string)$value;
+		$value = is_bool( $value ) ? ( $value ? '1' : '0' ) : (string) $value;
 		if ( $provider === 'asset_cleanup' ){
 			if ( $restore ){
 				if ( $key === 'critical_css_status' && in_array( $value, array( 'on', 'off' ), true ) )return $value;
@@ -231,7 +231,7 @@ final class OptimizerSettingsAdapter {
  && function_exists( 'is_plugin_active_for_network' )
  && is_plugin_active_for_network( 'ewww-image-optimizer/ewww-image-optimizer.php' )
  && ! get_site_option( 'ewww_image_optimizer_allow_multisite_override' );
-		return ( $network?get_site_option( $key, $missing ):get_option( $key, $missing ) ) !== $missing;
+		return ( $network ? get_site_option( $key, $missing ) : get_option( $key, $missing ) ) !== $missing;
 	}
 
 	private function assertEwwwWriteCapability(): void {
@@ -258,24 +258,24 @@ final class OptimizerSettingsAdapter {
 		if ( ! function_exists( 'get_rocket_option' ) )return array( 'available' => false );
 		return array(
 			'available'         => true,
-			'lazyload'          => (string)get_rocket_option( 'lazyload', 0 ),
-			'image_dimensions'  => (string)get_rocket_option( 'image_dimensions', 0 ),
-			'remove_unused_css' => (string)get_rocket_option( 'remove_unused_css', 0 ),
+			'lazyload'          => (string) get_rocket_option( 'lazyload', 0 ),
+			'image_dimensions'  => (string) get_rocket_option( 'image_dimensions', 0 ),
+			'remove_unused_css' => (string) get_rocket_option( 'remove_unused_css', 0 ),
 		);
 	}
 
 	private function isWritable( string $provider, string $key ): bool {
-		return in_array( $key, $provider === 'asset_cleanup'?self::ASSET_FIELDS:self::EWWW_WRITE, true );
+		return in_array( $key, $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_WRITE, true );
 	}
 
 	private function version( string $provider ): void {
 		if ( ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) )
- && defined( 'ABSPATH' ) )require_once ABSPATH.'wp-admin/includes/plugin.php';
+ && defined( 'ABSPATH' ) )require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) )
 			throw new RuntimeException( 'WordPress plugin inventory is unavailable.' );
-		$file    = $provider === 'asset_cleanup'?'wp-asset-clean-up/wpacu.php':'ewww-image-optimizer/ewww-image-optimizer.php';
+		$file    = $provider === 'asset_cleanup' ? 'wp-asset-clean-up/wpacu.php' : 'ewww-image-optimizer/ewww-image-optimizer.php';
 		$version = get_plugins()[ $file ]['Version'] ?? '';
-		$pattern = $provider === 'asset_cleanup'?'/^1\\.4\\.0\\.[0-9]+$/D':'/^8\\.8\\.[0-9]+$/D';
+		$pattern = $provider === 'asset_cleanup' ? '/^1\\.4\\.0\\.[0-9]+$/D' : '/^8\\.8\\.[0-9]+$/D';
 		if ( ! is_plugin_active( $file ) || ! is_string( $version ) || ! preg_match( $pattern, $version ) )
 			throw new RuntimeException( 'Unsupported or inactive optimizer plugin version.' );
 	}
