@@ -1,0 +1,106 @@
+name: WordPress Coding Standards Audit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  full-wpcs-audit:
+    name: Full WordPress PHP standards scan (baseline)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact event revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up audit PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xmlreader, xml, dom
+          coverage: none
+
+      - name: Install pinned audit-only tools outside the plugin
+        shell: bash
+        run: |
+          set -euo pipefail
+          tools_dir="$RUNNER_TEMP/wordpress-coding-standards"
+          mkdir -p "$tools_dir"
+          cat > "$tools_dir/composer.json" <<'JSON'
+          {
+            "name": "webactueel/wordpressconnector-wpcs-audit-tools",
+            "description": "Ephemeral audit dependencies, not plugin runtime dependencies",
+            "type": "project",
+            "require-dev": {
+              "squizlabs/php_codesniffer": "3.13.6",
+              "wp-coding-standards/wpcs": "3.4.1"
+            },
+            "config": {
+              "allow-plugins": {
+                "dealerdirect/phpcodesniffer-composer-installer": true
+              }
+            }
+          }
+          JSON
+          composer install --working-dir="$tools_dir" --prefer-dist --no-interaction --no-progress
+          "$tools_dir/vendor/bin/phpcs" --version
+          "$tools_dir/vendor/bin/phpcs" -i | grep -F 'WordPress'
+          echo "WPCS_TOOLS=$tools_dir" >> "$GITHUB_ENV"
+
+      - name: Scan every shipped PHP file with the full WordPress ruleset
+        shell: bash
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/wordpress-coding-standards-report.json"
+          scan_status=0
+          "$WPCS_TOOLS/vendor/bin/phpcs" --standard=phpcs.xml.dist --report=json > "$report" || scan_status=$?
+          # Existing code violations are baseline findings, not a tooling success claim.
+          # Only a well-formed, non-empty report counts as an executed audit.
+          python3 - "$report" "$GITHUB_STEP_SUMMARY" "$scan_status" <<'PY'
+          import collections
+          import json
+          import sys
+
+          report = json.load(open(sys.argv[1], encoding="utf-8"))
+          files = report.get("files", {})
+          totals = report.get("totals", {})
+          if not isinstance(files, dict) or not files:
+              raise SystemExit("No PHP files were scanned.")
+          if not isinstance(totals.get("errors"), int) or not isinstance(totals.get("warnings"), int):
+              raise SystemExit("The PHPCS report lacks valid error/warning totals.")
+          sources = collections.Counter(
+              item.get("source", "unknown")
+              for entry in files.values()
+              for item in entry.get("messages", [])
+          )
+          summary = [
+              "## Full WordPress Coding Standards audit",
+              "",
+              f"- Scanned PHP files: {len(files)}",
+              f"- Errors: {totals['errors']}",
+              f"- Warnings: {totals['warnings']}",
+              f"- PHPCS exit status: {sys.argv[3]}",
+              "- Baseline-only: existing violations remain visible in the JSON artifact.",
+              "- No sniff groups are excluded. This audit does not mark violations as compliant.",
+              "",
+              "### Most frequent reported sniffs",
+          ]
+          summary += [f"- `{name}`: {count}" for name, count in sources.most_common(15)]
+          print("\n".join(summary))
+          with open(sys.argv[2], "a", encoding="utf-8") as output:
+              output.write("\n".join(summary) + "\n")
+          PY
+
+      - name: Preserve the complete report for reviewers
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
+        with:
+          name: wordpress-coding-standards-baseline
+          path: ${{ runner.temp }}/wordpress-coding-standards-report.json
+          if-no-files-found: warn
