@@ -102,6 +102,7 @@ run_php tests/public-site-identity-contract.php
 run_php tests/public-provider-settings-contract.php
 run_php tests/public-elementor-runtime-contract.php
 run_php tests/public-elementor-target-boundary-contract.php
+run_php tests/public-header-link-policy-contract.php
 run_php tests/public-acf-schema-contract.php
 run_php tests/public-acf-update-boundary-contract.php
 run_php tests/portfolio-stats-unpublished-contract.php
