@@ -44,8 +44,12 @@ $adapterRequired = array(
     "WordPress Connector cannot replace its own active runtime",
     "rollback_supported' => false",
 );
+$compactAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($compactAdapter)) {
+    throw new RuntimeException('Could not normalize plugin-package source.');
+}
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing plugin package contract fragment: {$needle}\n");
         exit(1);
     }
@@ -73,13 +77,13 @@ if (strpos($plugin, 'new PluginPackageAdapter()') === false) {
 }
 
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_remote_get(', 'wp_remote_request(') as $primitive) {
-    if (strpos($adapter, $primitive) !== false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $primitive)) !== false) {
         fwrite(STDERR, "Forbidden execution/fetch primitive in plugin package adapter: {$primitive}\n");
         exit(1);
     }
 }
 
-if (strpos($adapter, "false !== strpos(\$name, \"\\0\")") === false || strpos($adapter, "preg_match('/[\\x01-\\x1F\\x7F]/', \$name)") === false || strpos($adapter, "'.' === \$segment || '..' === \$segment") === false) {
+if (strpos($compactAdapter, preg_replace('/\\s+/', '', "false !== strpos(\$name, \"\\0\")")) === false || strpos($compactAdapter, preg_replace('/\\s+/', '', "preg_match('/[\\x01-\\x1F\\x7F]/', \$name)")) === false || strpos($compactAdapter, preg_replace('/\\s+/', '', "'.' === \$segment || '..' === \$segment")) === false) {
     fwrite(STDERR, "ZIP path traversal/control-character contract is incomplete.\n");
     exit(1);
 }
@@ -117,7 +121,7 @@ $themeRequired = array(
     "readback_verified' => true",
 );
 foreach ($themeRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing guarded theme package contract: {$needle}\n");
         exit(1);
     }
