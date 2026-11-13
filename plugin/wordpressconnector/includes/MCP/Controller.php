@@ -1,4 +1,9 @@
 <?php
+/**
+ * Implements Controller handling for the connector MCP endpoint.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
 
+/**
+ * Implements Controller handling for the connector MCP endpoint.
+ */
 final class Controller {
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 	private const ROUTE = '/mcp';

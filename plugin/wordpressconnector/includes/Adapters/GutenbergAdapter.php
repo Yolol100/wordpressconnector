@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Gutenberg connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles Gutenberg connector actions.
+ */
 final class GutenbergAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'gutenberg.inspect', array( $this, 'inspect' ), array( 'description' => 'Parse Gutenberg/block content into a block tree.' ) );

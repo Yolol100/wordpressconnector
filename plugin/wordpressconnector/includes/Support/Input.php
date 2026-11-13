@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Input utilities shared by connector services.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types=1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Support;
 
 use RuntimeException;
 
+/**
+ * Provides Input utilities shared by connector services.
+ */
 final class Input
 {
 	public static function bool( array $input, string $key, bool $default = false ): bool

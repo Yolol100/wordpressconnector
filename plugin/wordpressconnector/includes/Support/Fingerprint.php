@@ -1,9 +1,17 @@
 <?php
+/**
+ * Provides Fingerprint utilities shared by connector services.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Support;
 
+/**
+ * Provides Fingerprint utilities shared by connector services.
+ */
 final class Fingerprint
 {
 	public static function make($value): string

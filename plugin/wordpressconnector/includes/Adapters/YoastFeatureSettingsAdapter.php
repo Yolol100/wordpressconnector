@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Yoast Feature Settings connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 

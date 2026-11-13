@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Auto Image Attributes connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Auto Image Attributes connector actions.
+ */
 final class AutoImageAttributesAdapter {
 	private const BOOLEAN_FIELDS = array(
 		'image_title',

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Applies Filesystem Policy safeguards to connector operations.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+/**
+ * Applies Filesystem Policy safeguards to connector operations.
+ */
 final class FilesystemPolicy {
 	private const TEXT_EXTENSIONS = array(
 		'css', 'htm', 'html', 'inc', 'js', 'json', 'md', 'mjs', 'php', 'txt', 'xml', 'yaml', 'yml',

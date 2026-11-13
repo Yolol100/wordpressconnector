@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Diagnostics behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 

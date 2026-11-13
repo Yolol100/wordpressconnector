@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Connector Update connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Connector Update connector actions.
+ */
 final class ConnectorUpdateAdapter {
 	private const RELEASE_API = 'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest';
 	private const PACKAGE_ASSET = 'wordpressconnector.zip';

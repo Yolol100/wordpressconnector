@@ -1,4 +1,9 @@
 <?php
+/**
+ * Implements Controller handling for authenticated REST requests.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -11,6 +16,9 @@ use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Security\GitHubOidc;
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Implements Controller handling for authenticated REST requests.
+ */
 final class Controller {
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 	private const MAX_REQUEST_BYTES = 262144;

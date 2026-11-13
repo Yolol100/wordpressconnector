@@ -1,9 +1,17 @@
 <?php
+/**
+ * Provides Processed Store behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
 namespace Webactueel\WordPressConnector\Runtime;
 
+/**
+ * Provides Processed Store behavior for connector request processing.
+ */
 final class ProcessedStore {
 	private const PREFIX = 'wpconnector_processed_';
 	private const LOCK_KEY = 'wpconnector_mutation_lock';

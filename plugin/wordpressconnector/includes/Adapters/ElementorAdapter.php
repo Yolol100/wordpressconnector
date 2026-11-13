@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Elementor connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -12,6 +17,9 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Json;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles Elementor connector actions.
+ */
 final class ElementorAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );

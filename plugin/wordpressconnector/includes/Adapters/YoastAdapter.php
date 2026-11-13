@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Yoast connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -9,6 +14,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Yoast connector actions.
+ */
 final class YoastAdapter {
 	private const FIELDS = array(
 		'title'                    => '_yoast_wpseo_title',

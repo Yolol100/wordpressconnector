@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Plugin Settings connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -9,6 +14,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Plugin Settings connector actions.
+ */
 final class PluginSettingsAdapter {
 	private const WP_ROCKET_FIELDS = array(
 		'emoji'                   => 'bool',

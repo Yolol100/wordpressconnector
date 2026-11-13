@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Custom Css connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Custom Css connector actions.
+ */
 final class CustomCssAdapter {
 	private const MAX_CSS_BYTES = 524288;
 	private const MAX_PATCH_BYTES = 65536;

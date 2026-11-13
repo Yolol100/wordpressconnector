@@ -1,4 +1,9 @@
 <?php
+/**
+ * Applies Git Hub Oidc safeguards to connector operations.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+/**
+ * Applies Git Hub Oidc safeguards to connector operations.
+ */
 final class GitHubOidc {
 	private const HEADER = 'x-webactueel-github-oidc';
 	private const ISSUER = 'https://token.actions.githubusercontent.com';

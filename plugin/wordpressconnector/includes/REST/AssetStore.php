@@ -1,4 +1,9 @@
 <?php
+/**
+ * Implements Asset Store handling for authenticated REST requests.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -7,6 +12,9 @@ namespace Webactueel\WordPressConnector\REST;
 use RuntimeException;
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Implements Asset Store handling for authenticated REST requests.
+ */
 final class AssetStore {
 	private const MAX_FILES = 10;
 	private const MAX_TOTAL_BYTES = 26214400;

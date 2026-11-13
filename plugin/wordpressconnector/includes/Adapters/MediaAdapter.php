@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Media connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -9,6 +14,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Media connector actions.
+ */
 final class MediaAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'media.list', array( $this, 'mediaList' ), array( 'description' => 'List media attachments.' ) );

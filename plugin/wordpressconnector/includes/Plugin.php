@@ -1,4 +1,9 @@
 <?php
+/**
+ * Bootstraps and connects WordPress Connector services.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -49,6 +54,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Runtime\SnapshotStore;
 
+/**
+ * Bootstraps and connects WordPress Connector services.
+ */
 final class Plugin {
 	public static function boot(): void {
 		add_action( 'before_woocommerce_init', static function (): void {
