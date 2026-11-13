@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<ruleset name="WordPress Connector full PHP audit">
+    <description>Entire shipped plugin PHP source with the full WordPress sniffs; no ignored categories or baseline suppressions.</description>
+    <file>plugin/wordpressconnector</file>
+    <arg name="extensions" value="php"/>
+    <rule ref="WordPress"/>
+</ruleset>
