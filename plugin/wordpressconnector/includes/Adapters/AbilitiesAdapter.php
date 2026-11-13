@@ -47,7 +47,7 @@ final class AbilitiesAdapter {
 		$page       = $this->catalogPositiveInteger( $payload['page'] ?? 1, 100000, 'page' );
 		$namespace  = $this->catalogNamespace( $payload['namespace'] ?? null );
 
-		$registered = ( array ) wp_get_abilities();
+		$registered = (array) wp_get_abilities();
 		if ( count( $registered ) > 10000 ) {
 			throw new \RuntimeException( 'WordPress Ability catalog exceeds the discovery limit.' );
 		}
@@ -59,7 +59,7 @@ final class AbilitiesAdapter {
 			}
 
 			if ( ! is_string( $name ) || '' === $name ) {
-				$name = method_exists( $ability, 'get_name' ) ? ( string ) $ability->get_name() : '';
+				$name = method_exists( $ability, 'get_name' ) ? (string) $ability->get_name() : '';
 			}
 
 			if ( ! $this->isValidName( $name ) || ! $this->isExposed( $ability ) ) {
@@ -69,17 +69,17 @@ final class AbilitiesAdapter {
 				continue;
 			}
 
-			$eligible[$name] = $ability;
+			$eligible[ $name ] = $ability;
 		}
 
 		ksort( $eligible, SORT_STRING );
 		$total    = count( $eligible );
-		$pages    = max( 1, ( int ) ceil( $total / $perPage ) );
+		$pages    = max( 1, (int) ceil( $total / $perPage ) );
 		$selected = array_slice( $eligible, ( $page - 1 ) * $perPage, $perPage, true );
 
 		$result   = array();
 		foreach ( $selected as $name => $ability ) {
-			$result[$name] = $this->descriptor( $name, $ability );
+			$result[ $name ] = $this->descriptor( $name, $ability );
 		}
 
 		$response = array(
@@ -228,7 +228,7 @@ final class AbilitiesAdapter {
 
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
 			if ( $mutation && $executionStarted && ! $providerPreExecutionRejected ) {
-				$errorCode = method_exists( $result, 'get_error_code' ) ? ( string ) $result->get_error_code() : null;
+				$errorCode = method_exists( $result, 'get_error_code' ) ? (string) $result->get_error_code() : null;
 				return $this->terminalMutationFailure( $name, $annotations, $errorCode );
 			}
 			throw new \RuntimeException( 'WordPress Ability failed.' );
@@ -237,8 +237,8 @@ final class AbilitiesAdapter {
 		if ( $mutation && is_array( $result ) && 'error' === ( $result['status'] ?? null ) ) {
 			$errorCode = null;
 			foreach ( array( 'code', 'error_code' ) as $key ) {
-				if ( isset( $result[$key] ) && ( is_string( $result[$key] ) || is_int( $result[$key] ) ) ) {
-					$errorCode = ( string ) $result[$key];
+				if ( isset( $result[ $key ] ) && ( is_string( $result[ $key ] ) || is_int( $result[ $key ] ) ) ) {
+					$errorCode = (string) $result[ $key ];
 					break;
 				}
 			}
@@ -314,7 +314,7 @@ final class AbilitiesAdapter {
 					$budget['bytes'] += strlen( $key );
 					if ( $budget['bytes'] > 262144 ) throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
 				}
-				$value[$key] = $this->redactAbilityResult( $item, $depth + 1, $seen, $budget );
+				$value[ $key ] = $this->redactAbilityResult( $item, $depth + 1, $seen, $budget );
 			}
 			$value = Policy::redact( $value );
 			if ( null !== $object ) $seen->detach( $object );
@@ -390,10 +390,10 @@ final class AbilitiesAdapter {
 		}
 
 		$approved = $this->approvedAbilityProviders();
-		if ( ! isset( $approved[$name] ) ) {
+		if ( ! isset( $approved[ $name ] ) ) {
 			return false;
 		}
-		$pluginFile = $approved[$name];
+		$pluginFile = $approved[ $name ];
 
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_option' ) ) {
 			return false;
@@ -407,7 +407,7 @@ final class AbilitiesAdapter {
 			return false;
 		}
 
-		$pluginRoot = rtrim( ( string ) WP_PLUGIN_DIR, '/\\' );
+		$pluginRoot = rtrim( (string) WP_PLUGIN_DIR, '/\\' );
 		$mainFile   = realpath( $pluginRoot . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $pluginFile ) );
 		if ( ! is_string( $mainFile ) || ! is_file( $mainFile ) ) {
 			return false;
@@ -440,7 +440,7 @@ final class AbilitiesAdapter {
 				|| ! preg_match( '#^[A-Za-z0-9][A-Za-z0-9._-]{0,79}/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.php\z#D', $pluginFile ) ) {
 				return array();
 			}
-			$approved[$name] = $pluginFile;
+			$approved[ $name ] = $pluginFile;
 		}
 		return $approved;
 	}
@@ -479,12 +479,12 @@ final class AbilitiesAdapter {
 		if ( ! is_array( $callback )
 			|| 2 !== count( $callback )
 			|| ! is_object( $callback[0] )
-			|| 'execute_guarded' !== ( string ) $callback[1] ) {
+			|| 'execute_guarded' !== (string) $callback[1] ) {
 			return false;
 		}
 
 		$provider = $callback[0];
-		if ( ! method_exists( $provider, 'get_id' ) || $name !== ( string ) $provider->get_id() ) {
+		if ( ! method_exists( $provider, 'get_id' ) || $name !== (string) $provider->get_id() ) {
 			return false;
 		}
 
@@ -547,7 +547,7 @@ final class AbilitiesAdapter {
 				continue;
 			}
 
-			$mainFile = realpath( rtrim( ( string ) WP_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $pluginFile ) );
+			$mainFile = realpath( rtrim( (string) WP_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $pluginFile ) );
 			if ( false === $mainFile || ! is_file( $mainFile ) ) {
 				continue;
 			}
@@ -599,8 +599,8 @@ final class AbilitiesAdapter {
 			: array();
 		$safeAnnotations = array();
 		foreach ( array( 'readonly', 'destructive', 'idempotent' ) as $key ) {
-			if ( array_key_exists( $key, $annotations ) && ( is_bool( $annotations[$key] ) || null === $annotations[$key] ) ) {
-				$safeAnnotations[$key] = $annotations[$key];
+			if ( array_key_exists( $key, $annotations ) && ( is_bool( $annotations[ $key ] ) || null === $annotations[ $key ] ) ) {
+				$safeAnnotations[ $key ] = $annotations[ $key ];
 			}
 		}
 		return $safeAnnotations;
@@ -621,9 +621,9 @@ final class AbilitiesAdapter {
 
 		return array(
 			'name'                       => $name,
-			'label'                      => $this->boundedCatalogText( method_exists( $ability, 'get_label' ) ? ( string ) $ability->get_label() : $name, 512 ),
-			'description'                => $this->boundedCatalogText( method_exists( $ability, 'get_description' ) ? ( string ) $ability->get_description() : '', 4096 ),
-			'category'                   => $this->boundedCatalogText( method_exists( $ability, 'get_category' ) ? ( string ) $ability->get_category() : '', 512 ),
+			'label'                      => $this->boundedCatalogText( method_exists( $ability, 'get_label' ) ? (string) $ability->get_label() : $name, 512 ),
+			'description'                => $this->boundedCatalogText( method_exists( $ability, 'get_description' ) ? (string) $ability->get_description() : '', 4096 ),
+			'category'                   => $this->boundedCatalogText( method_exists( $ability, 'get_category' ) ? (string) $ability->get_category() : '', 512 ),
 			'input_schema'               => $inputSchema,
 			'input_schema_omitted'       => $inputSchemaOmitted,
 			'output_schema'              => $outputSchema,
@@ -641,11 +641,11 @@ final class AbilitiesAdapter {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
 			throw new \RuntimeException( $field . ' must be a positive integer.' );
 		}
-		$validated = filter_var( ( string ) $value, FILTER_VALIDATE_INT );
+		$validated = filter_var( (string) $value, FILTER_VALIDATE_INT );
 		if ( false === $validated || $validated < 1 ) {
 			throw new \RuntimeException( $field . ' must be a positive integer.' );
 		}
-		return min( $max, ( int ) $validated );
+		return min( $max, (int) $validated );
 	}
 
 	private function boundedCatalogText( string $value, int $maxBytes ): string {
@@ -656,7 +656,7 @@ final class AbilitiesAdapter {
 			return mb_strcut( $value, 0, $maxBytes, 'UTF-8' );
 		}
 		$cut = $maxBytes;
-		while ( $cut > 0 && isset( $value[$cut] ) && ( ord( $value[$cut] ) & 0xC0 ) === 0x80 ) {
+		while ( $cut > 0 && isset( $value[ $cut ] ) && ( ord( $value[ $cut ] ) & 0xC0 ) === 0x80 ) {
 			--$cut;
 		}
 		return substr( $value, 0, $cut );
@@ -700,7 +700,7 @@ final class AbilitiesAdapter {
 				if ( $budget['bytes'] > 8192 ) {
 					throw new \RuntimeException( 'catalog value limit' );
 				}
-				$value[$key] = $this->boundedCatalogWalk( $item, $depth + 1, $seen, $budget );
+				$value[ $key ] = $this->boundedCatalogWalk( $item, $depth + 1, $seen, $budget );
 			}
 			$value = Policy::redact( $value );
 			if ( null !== $object ) {

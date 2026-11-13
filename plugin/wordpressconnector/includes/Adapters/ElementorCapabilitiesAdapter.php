@@ -72,8 +72,8 @@ final class ElementorCapabilitiesAdapter {
 		$registeredWidgets = $this->widgets( $elementor, $warnings );
 		$postTypes         = $this->inventoryPostTypes( $payload, $warnings );
 		$statuses          = $this->inventoryStatuses( $payload );
-		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, ( int ) $payload['limit'] ) ) : 1000;
-		$offset            = isset( $payload['offset'] ) ? max( 0, ( int ) $payload['offset'] ) : 0;
+		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
+		$offset            = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
 
 		if ( empty( $postTypes ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
@@ -132,7 +132,7 @@ final class ElementorCapabilitiesAdapter {
 		$widgetInstances    = 0;
 
 		foreach ( $ids as $postId ) {
-			$post = get_post( ( int ) $postId );
+			$post = get_post( (int) $postId );
 			if ( ! $post instanceof \WP_Post ) {
 				continue;
 			}
@@ -140,11 +140,11 @@ final class ElementorCapabilitiesAdapter {
 			try {
 				Policy::assertPostReadable( $post );
 			} catch ( Throwable $error ) {
-				$warnings[] = 'document_skipped_by_policy:' . ( int ) $postId;
+				$warnings[] = 'document_skipped_by_policy:' . (int) $postId;
 				continue;
 			}
 
-			$data = $this->elementorData( ( int ) $postId, $warnings );
+			$data = $this->elementorData( (int) $postId, $warnings );
 			if ( $data === null ) {
 				continue;
 			}
@@ -157,37 +157,37 @@ final class ElementorCapabilitiesAdapter {
 			$documentWidgetInstances = array_sum( $documentWidgets );
 			$widgetInstances += $documentWidgetInstances;
 			foreach ( $documentWidgets as $widgetName => $count ) {
-				if ( ! isset( $usedWidgets[$widgetName] ) ) {
-					$usedWidgets[$widgetName] = array(
+				if ( ! isset( $usedWidgets[ $widgetName ] ) ) {
+					$usedWidgets[ $widgetName ] = array(
 						'instances'    => 0,
 						'documents'    => 0,
 						'document_ids' => array(),
 					);
 				}
-				$usedWidgets[$widgetName]['instances'] += $count;
-				$usedWidgets[$widgetName]['documents']++;
-				$usedWidgets[$widgetName]['document_ids'][] = ( int ) $postId;
+				$usedWidgets[ $widgetName ]['instances'] += $count;
+				$usedWidgets[ $widgetName ]['documents']++;
+				$usedWidgets[ $widgetName ]['document_ids'][] = (int) $postId;
 			}
 
 			foreach ( $documentElementTypes as $elementType => $count ) {
-				if ( ! isset( $elementTypes[$elementType] ) ) {
-					$elementTypes[$elementType] = array( 'instances' => 0, 'documents' => 0 );
+				if ( ! isset( $elementTypes[ $elementType ] ) ) {
+					$elementTypes[ $elementType ] = array( 'instances' => 0, 'documents' => 0 );
 				}
-				$elementTypes[$elementType]['instances'] += $count;
-				$elementTypes[$elementType]['documents']++;
+				$elementTypes[ $elementType ]['instances'] += $count;
+				$elementTypes[ $elementType ]['documents']++;
 			}
 
 			$architecture = $this->architectureLabel( $families );
-			if ( isset( $architectureTotals[$architecture] ) ) {
-				$architectureTotals[$architecture]++;
+			if ( isset( $architectureTotals[ $architecture ] ) ) {
+				$architectureTotals[ $architecture ]++;
 			}
 
 			$documents[] = array(
-				'id'               => ( int ) $postId,
-				'post_type'        => ( string ) $post->post_type,
-				'status'           => ( string ) $post->post_status,
-				'title'            => wp_strip_all_tags( ( string ) get_the_title( $post ) ),
-				'slug'             => ( string ) $post->post_name,
+				'id'               => (int) $postId,
+				'post_type'        => (string) $post->post_type,
+				'status'           => (string) $post->post_status,
+				'title'            => wp_strip_all_tags( (string) get_the_title( $post ) ),
+				'slug'             => (string) $post->post_name,
 				'architecture'     => $architecture,
 				'families'         => array_values( array_keys( array_filter( $families ) ) ),
 				'widget_instances' => $documentWidgetInstances,
@@ -200,8 +200,8 @@ final class ElementorCapabilitiesAdapter {
 		ksort( $elementTypes, SORT_STRING );
 		$missingWidgets = array();
 		foreach ( $usedWidgets as $widgetName => $usage ) {
-			if ( ! isset( $registeredWidgets[$widgetName] ) ) {
-				$missingWidgets[$widgetName] = $usage;
+			if ( ! isset( $registeredWidgets[ $widgetName ] ) ) {
+				$missingWidgets[ $widgetName ] = $usage;
 			}
 		}
 
@@ -236,8 +236,8 @@ final class ElementorCapabilitiesAdapter {
 		return array(
 			'elementor'     => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
 			'elementor_pro' => defined( 'ELEMENTOR_PRO_VERSION' ) ? ELEMENTOR_PRO_VERSION : null,
-			'theme'         => ( string ) wp_get_theme()->get( 'Name' ),
-			'theme_version' => ( string ) wp_get_theme()->get( 'Version' ),
+			'theme'         => (string) wp_get_theme()->get( 'Name' ),
+			'theme_version' => (string) wp_get_theme()->get( 'Version' ),
 		);
 	}
 
@@ -255,21 +255,21 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( ( array ) $types as $type => $className ) {
+		foreach ( (array) $types as $type => $className ) {
 			if ( ! is_string( $className ) || ! class_exists( $className ) ) {
 				continue;
 			}
 
 			try {
-				$properties               = method_exists( $className, 'get_properties' ) ? ( array ) $className::get_properties() : array();
-				$result[( string ) $type] = array(
-					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( ( string ) $className::get_title() ) : ( string ) $type,
-					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', ( array ) $properties['cpt'] ) ) : array(),
-					'show_in_library' => isset( $properties['show_in_library'] ) ? ( bool ) $properties['show_in_library'] : null,
-					'is_editable'     => isset( $properties['is_editable'] ) ? ( bool ) $properties['is_editable'] : null,
+				$properties               = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
+				$result[(string) $type] = array(
+					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( (string) $className::get_title() ) : (string) $type,
+					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', (array) $properties['cpt'] ) ) : array(),
+					'show_in_library' => isset( $properties['show_in_library'] ) ? (bool) $properties['show_in_library'] : null,
+					'is_editable'     => isset( $properties['is_editable'] ) ? (bool) $properties['is_editable'] : null,
 				);
 			} catch ( Throwable $error ) {
-				$warnings[] = 'document_type_skipped:' . sanitize_key( ( string ) $type );
+				$warnings[] = 'document_type_skipped:' . sanitize_key( (string) $type );
 			}
 		}
 
@@ -291,22 +291,22 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( ( array ) $widgets as $name => $widget ) {
+		foreach ( (array) $widgets as $name => $widget ) {
 			if ( ! is_object( $widget ) ) {
 				continue;
 			}
 			try {
-				$controls                 = method_exists( $widget, 'get_controls' ) ? ( array ) $widget->get_controls() : array();
-				$categories               = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', ( array ) $widget->get_categories() ) ) : array();
-				$result[( string ) $name] = array(
-					'name'          => method_exists( $widget, 'get_name' ) ? ( string ) $widget->get_name() : ( string ) $name,
-					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( ( string ) $widget->get_title() ) : ( string ) $name,
+				$controls                 = method_exists( $widget, 'get_controls' ) ? (array) $widget->get_controls() : array();
+				$categories               = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', (array) $widget->get_categories() ) ) : array();
+				$result[(string) $name] = array(
+					'name'          => method_exists( $widget, 'get_name' ) ? (string) $widget->get_name() : (string) $name,
+					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( (string) $widget->get_title() ) : (string) $name,
 					'categories'    => $categories,
 					'control_count' => count( $controls ),
 					'source'        => $this->widgetSource( $widget ),
 				);
 			} catch ( Throwable $error ) {
-				$warnings[] = 'widget_skipped:' . sanitize_key( ( string ) $name );
+				$warnings[] = 'widget_skipped:' . sanitize_key( (string) $name );
 			}
 		}
 
@@ -328,18 +328,18 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( ( array ) $elements as $name => $element ) {
+		foreach ( (array) $elements as $name => $element ) {
 			if ( ! is_object( $element ) ) {
 				continue;
 			}
 			try {
-				$result[( string ) $name] = array(
-					'name'       => method_exists( $element, 'get_name' ) ? ( string ) $element->get_name() : ( string ) $name,
-					'title'      => method_exists( $element, 'get_title' ) ? wp_strip_all_tags( ( string ) $element->get_title() ) : ( string ) $name,
-					'categories' => method_exists( $element, 'get_categories' ) ? array_values( array_map( 'strval', ( array ) $element->get_categories() ) ) : array(),
+				$result[(string) $name] = array(
+					'name'       => method_exists( $element, 'get_name' ) ? (string) $element->get_name() : (string) $name,
+					'title'      => method_exists( $element, 'get_title' ) ? wp_strip_all_tags( (string) $element->get_title() ) : (string) $name,
+					'categories' => method_exists( $element, 'get_categories' ) ? array_values( array_map( 'strval', (array) $element->get_categories() ) ) : array(),
 				);
 			} catch ( Throwable $error ) {
-				$warnings[] = 'element_skipped:' . sanitize_key( ( string ) $name );
+				$warnings[] = 'element_skipped:' . sanitize_key( (string) $name );
 			}
 		}
 
@@ -360,20 +360,20 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( ( array ) $tags as $name => $tagInfo ) {
+		foreach ( (array) $tags as $name => $tagInfo ) {
 			$tag = is_array( $tagInfo ) && isset( $tagInfo['instance'] ) && is_object( $tagInfo['instance'] ) ? $tagInfo['instance'] : null;
 			if ( ! $tag ) {
 				continue;
 			}
 			try {
-				$result[( string ) $name] = array(
-					'name'       => method_exists( $tag, 'get_name' ) ? ( string ) $tag->get_name() : ( string ) $name,
-					'title'      => method_exists( $tag, 'get_title' ) ? wp_strip_all_tags( ( string ) $tag->get_title() ) : ( string ) $name,
-					'group'      => method_exists( $tag, 'get_group' ) && is_scalar( $tag->get_group() ) ? ( string ) $tag->get_group() : null,
-					'categories' => method_exists( $tag, 'get_categories' ) ? array_values( array_map( 'strval', ( array ) $tag->get_categories() ) ) : array(),
+				$result[(string) $name] = array(
+					'name'       => method_exists( $tag, 'get_name' ) ? (string) $tag->get_name() : (string) $name,
+					'title'      => method_exists( $tag, 'get_title' ) ? wp_strip_all_tags( (string) $tag->get_title() ) : (string) $name,
+					'group'      => method_exists( $tag, 'get_group' ) && is_scalar( $tag->get_group() ) ? (string) $tag->get_group() : null,
+					'categories' => method_exists( $tag, 'get_categories' ) ? array_values( array_map( 'strval', (array) $tag->get_categories() ) ) : array(),
 				);
 			} catch ( Throwable $error ) {
-				$warnings[] = 'dynamic_tag_skipped:' . sanitize_key( ( string ) $name );
+				$warnings[] = 'dynamic_tag_skipped:' . sanitize_key( (string) $name );
 			}
 		}
 
@@ -394,14 +394,14 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( ( array ) $breakpoints as $name => $breakpoint ) {
+		foreach ( (array) $breakpoints as $name => $breakpoint ) {
 			if ( ! is_object( $breakpoint ) ) {
 				continue;
 			}
-			$result[( string ) $name] = array(
-				'label'     => method_exists( $breakpoint, 'get_label' ) ? ( string ) $breakpoint->get_label() : ( string ) $name,
-				'value'     => method_exists( $breakpoint, 'get_value' ) ? ( int ) $breakpoint->get_value() : null,
-				'direction' => method_exists( $breakpoint, 'get_direction' ) ? ( string ) $breakpoint->get_direction() : null,
+			$result[(string) $name] = array(
+				'label'     => method_exists( $breakpoint, 'get_label' ) ? (string) $breakpoint->get_label() : (string) $name,
+				'value'     => method_exists( $breakpoint, 'get_value' ) ? (int) $breakpoint->get_value() : null,
+				'direction' => method_exists( $breakpoint, 'get_direction' ) ? (string) $breakpoint->get_direction() : null,
 			);
 		}
 
@@ -421,10 +421,10 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PRO_PATH' ) ) {
-			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? ( string ) ELEMENTOR_PRO_VERSION : null, 'runtime_file', $className );
+			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'runtime_file', $className );
 		}
 		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PATH' ) ) {
-			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? ( string ) ELEMENTOR_VERSION : null, 'runtime_file', $className );
+			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'runtime_file', $className );
 		}
 
 		$plugin = $this->pluginForFile( $file );
@@ -438,10 +438,10 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		if ( 0 === strpos( $className, 'ElementorPro\\' ) ) {
-			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? ( string ) ELEMENTOR_PRO_VERSION : null, 'namespace', $className );
+			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'namespace', $className );
 		}
 		if ( 0 === strpos( $className, 'Elementor\\' ) ) {
-			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? ( string ) ELEMENTOR_VERSION : null, 'namespace', $className );
+			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'namespace', $className );
 		}
 
 		return $this->source( 'unknown', null, null, null, 'unknown', $className );
@@ -459,7 +459,7 @@ final class ElementorCapabilitiesAdapter {
 	}
 
 	private function pathWithinDefinedRoot( string $file, string $constant ): bool {
-		return '' !== $file && defined( $constant ) && $this->pathWithin( $file, ( string ) constant( $constant ) );
+		return '' !== $file && defined( $constant ) && $this->pathWithin( $file, (string) constant( $constant ) );
 	}
 
 	private function pathWithin( string $file, string $root ): bool {
@@ -478,10 +478,10 @@ final class ElementorCapabilitiesAdapter {
 
 		$roots = array();
 		if ( defined( 'WP_PLUGIN_DIR' ) ) {
-			$roots[] = array( 'path' => ( string ) WP_PLUGIN_DIR, 'mu' => false );
+			$roots[] = array( 'path' => (string) WP_PLUGIN_DIR, 'mu' => false );
 		}
 		if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
-			$roots[] = array( 'path' => ( string ) WPMU_PLUGIN_DIR, 'mu' => true );
+			$roots[] = array( 'path' => (string) WPMU_PLUGIN_DIR, 'mu' => true );
 		}
 
 		foreach ( $roots as $root ) {
@@ -491,19 +491,19 @@ final class ElementorCapabilitiesAdapter {
 			$relative = ltrim( substr( str_replace( '\\', '/', $file ), strlen( rtrim( str_replace( '\\', '/', $root['path'] ), '/' ) ) ), '/' );
 			$parts    = explode( '/', $relative );
 			$slug     = count( $parts ) > 1 ? $parts[0] : preg_replace( '/\.php$/', '', $parts[0] );
-			$plugins  = $this->installedPlugins( ( bool ) $root['mu'] );
+			$plugins  = $this->installedPlugins( (bool) $root['mu'] );
 			foreach ( $plugins as $pluginFile => $data ) {
-				$pluginFile = str_replace( '\\', '/', ( string ) $pluginFile );
+				$pluginFile = str_replace( '\\', '/', (string) $pluginFile );
 				if ( $pluginFile !== $slug . '.php' && 0 !== strpos( $pluginFile, $slug . '/' ) ) {
 					continue;
 				}
 				return array(
-					'slug'    => ( string ) $slug,
-					'name'    => isset( $data['Name'] ) ? ( string ) $data['Name'] : ( string ) $slug,
-					'version' => isset( $data['Version'] ) && '' !== ( string ) $data['Version'] ? ( string ) $data['Version'] : null,
+					'slug'    => (string) $slug,
+					'name'    => isset( $data['Name'] ) ? (string) $data['Name'] : (string) $slug,
+					'version' => isset( $data['Version'] ) && '' !== (string) $data['Version'] ? (string) $data['Version'] : null,
 				);
 			}
-			return array( 'slug' => ( string ) $slug, 'name' => ( string ) $slug, 'version' => null );
+			return array( 'slug' => (string) $slug, 'name' => (string) $slug, 'version' => null );
 		}
 
 		return null;
@@ -520,7 +520,7 @@ final class ElementorCapabilitiesAdapter {
 			if ( ! function_exists( 'get_mu_plugins' ) && defined( 'ABSPATH' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
-			$mustUse = function_exists( 'get_mu_plugins' ) ? ( array ) get_mu_plugins() : array();
+			$mustUse = function_exists( 'get_mu_plugins' ) ? (array) get_mu_plugins() : array();
 			return $mustUse;
 		}
 
@@ -530,7 +530,7 @@ final class ElementorCapabilitiesAdapter {
 		if ( ! function_exists( 'get_plugins' ) && defined( 'ABSPATH' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		}
-		$regular = function_exists( 'get_plugins' ) ? ( array ) get_plugins() : array();
+		$regular = function_exists( 'get_plugins' ) ? (array) get_plugins() : array();
 		return $regular;
 	}
 
@@ -538,30 +538,30 @@ final class ElementorCapabilitiesAdapter {
 		if ( '' === $file || ! function_exists( 'get_theme_root' ) ) {
 			return null;
 		}
-		$root = ( string ) get_theme_root();
+		$root = (string) get_theme_root();
 		if ( ! $this->pathWithin( $file, $root ) ) {
 			return null;
 		}
 		$relative = ltrim( substr( str_replace( '\\', '/', $file ), strlen( rtrim( str_replace( '\\', '/', $root ), '/' ) ) ), '/' );
 		$parts    = explode( '/', $relative );
-		$slug     = ( string ) $parts[0];
+		$slug     = (string) $parts[0];
 		$theme    = wp_get_theme( $slug );
 		return array(
 			'slug'    => $slug,
-			'name'    => ( string ) $theme->get( 'Name' ),
-			'version' => ( string ) $theme->get( 'Version' ),
+			'name'    => (string) $theme->get( 'Name' ),
+			'version' => (string) $theme->get( 'Version' ),
 		);
 	}
 
 	private function inventoryPostTypes( array $payload, array &$warnings ): array {
-		$requested = isset( $payload['post_types'] ) ? ( array ) $payload['post_types'] : array();
+		$requested = isset( $payload['post_types'] ) ? (array) $payload['post_types'] : array();
 		if ( empty( $requested ) ) {
-			$requested = array_values( ( array ) get_post_types( array( 'show_ui' => true ), 'names' ) );
+			$requested = array_values( (array) get_post_types( array( 'show_ui' => true ), 'names' ) );
 		}
 
 		$result = array();
 		foreach ( $requested as $postType ) {
-			$postType = sanitize_key( ( string ) $postType );
+			$postType = sanitize_key( (string) $postType );
 			if ( '' === $postType || 'attachment' === $postType || ! post_type_exists( $postType ) ) {
 				continue;
 			}
@@ -580,10 +580,10 @@ final class ElementorCapabilitiesAdapter {
 	}
 
 	private function inventoryStatuses( array $payload ): array {
-		$requested = isset( $payload['post_statuses'] ) ? ( array ) $payload['post_statuses'] : array( 'publish', 'draft', 'pending', 'private', 'future' );
+		$requested = isset( $payload['post_statuses'] ) ? (array) $payload['post_statuses'] : array( 'publish', 'draft', 'pending', 'private', 'future' );
 		$result    = array();
 		foreach ( $requested as $status ) {
-			$status = sanitize_key( ( string ) $status );
+			$status = sanitize_key( (string) $status );
 			if ( '' !== $status && get_post_status_object( $status ) ) {
 				$result[] = $status;
 			}
@@ -612,12 +612,12 @@ final class ElementorCapabilitiesAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			$elementType = isset( $element['elType'] ) ? ( string ) $element['elType'] : '';
-			if ( 'widget' === $elementType && isset( $element['widgetType'] ) && '' !== ( string ) $element['widgetType'] ) {
-				$widgetName           = ( string ) $element['widgetType'];
-				$widgets[$widgetName] = isset( $widgets[$widgetName] ) ? $widgets[$widgetName] + 1 : 1;
+			$elementType = isset( $element['elType'] ) ? (string) $element['elType'] : '';
+			if ( 'widget' === $elementType && isset( $element['widgetType'] ) && '' !== (string) $element['widgetType'] ) {
+				$widgetName           = (string) $element['widgetType'];
+				$widgets[ $widgetName ] = isset( $widgets[ $widgetName ] ) ? $widgets[ $widgetName ] + 1 : 1;
 			} elseif ( '' !== $elementType ) {
-				$elementTypes[$elementType] = isset( $elementTypes[$elementType] ) ? $elementTypes[$elementType] + 1 : 1;
+				$elementTypes[ $elementType ] = isset( $elementTypes[ $elementType ] ) ? $elementTypes[ $elementType ] + 1 : 1;
 			}
 
 			if ( 'section' === $elementType || 'column' === $elementType ) {
@@ -642,13 +642,13 @@ final class ElementorCapabilitiesAdapter {
 		if ( count( $active ) > 1 ) {
 			return 'mixed';
 		}
-		return isset( $active[0] ) ? ( string ) $active[0] : 'widget-only';
+		return isset( $active[0] ) ? (string) $active[0] : 'widget-only';
 	}
 
 	private function mergeUsageIntoWidgets( array $registeredWidgets, array $usedWidgets ): array {
 		foreach ( $registeredWidgets as $name => &$widget ) {
-			$widget['usage'] = isset( $usedWidgets[$name] )
-				? $usedWidgets[$name]
+			$widget['usage'] = isset( $usedWidgets[ $name ] )
+				? $usedWidgets[ $name ]
 				: array( 'instances' => 0, 'documents' => 0, 'document_ids' => array() );
 		}
 		unset( $widget );

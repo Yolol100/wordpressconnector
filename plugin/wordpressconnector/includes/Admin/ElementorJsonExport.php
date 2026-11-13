@@ -13,7 +13,7 @@ final class ElementorJsonExport {
 	private const BUNDLE_VERSION = 1;
 
 	public function register(): void {
-		if ( !is_admin() ) {
+		if ( ! is_admin() ) {
 			return;
 		}
 		add_filter( 'page_row_actions', array( $this, 'rowActions' ), 99, 2 );
@@ -22,7 +22,7 @@ final class ElementorJsonExport {
 	}
 
 	public function rowActions( array $actions, \WP_Post $post ): array {
-		if ( !$this->supportsPostType( (string)$post->post_type ) || !current_user_can( 'edit_post', (int)$post->ID ) || !$this->isElementorDocument( (int)$post->ID ) ) {
+		if ( ! $this->supportsPostType( (string)$post->post_type ) || ! current_user_can( 'edit_post', (int)$post->ID ) || ! $this->isElementorDocument( (int)$post->ID ) ) {
 			return $actions;
 		}
 		if ( 'elementor_library' === (string)$post->post_type && isset( $actions['export-template'] ) ) {
@@ -43,20 +43,20 @@ final class ElementorJsonExport {
 		}
 		check_admin_referer( self::ACTION.'_'.$postId );
 		$post = get_post( $postId );
-		if ( !$post instanceof \WP_Post || !$this->supportsPostType( (string)$post->post_type ) ) {
+		if ( ! $post instanceof \WP_Post || ! $this->supportsPostType( (string)$post->post_type ) ) {
 			wp_die( esc_html__( 'This item cannot be exported as Elementor JSON.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
-		if ( !current_user_can( 'edit_post', $postId ) ) {
+		if ( ! current_user_can( 'edit_post', $postId ) ) {
 			wp_die( esc_html__( 'You are not allowed to export this Elementor document.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
-		if ( $includeSiteParts && !in_array( (string)$post->post_type, array( 'page', 'post' ), true ) ) {
+		if ( $includeSiteParts && ! in_array( (string)$post->post_type, array( 'page', 'post' ), true ) ) {
 			wp_die( esc_html__( 'Site-parts export is available only for pages and posts.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
 			$documentPayload = $this->exportPayload( $this->document( $postId ), $post );
 			$payload         = $includeSiteParts?$this->bundleWithSiteParts( $post, $documentPayload ):$documentPayload;
 			$json            = wp_json_encode( $payload );
-			if ( !is_string( $json ) || '' === $json ) {
+			if ( ! is_string( $json ) || '' === $json ) {
 				throw new RuntimeException( 'WordPress could not encode the Elementor export as JSON.' );
 			}
 		}
@@ -82,11 +82,11 @@ final class ElementorJsonExport {
 	}
 
 	private function exportPayload( object $document, \WP_Post $post ): array {
-		if ( !method_exists( $document, 'get_export_data' ) ) {
+		if ( ! method_exists( $document, 'get_export_data' ) ) {
 			throw new RuntimeException( 'This Elementor version does not expose document export data.' );
 		}
 		$templateData = $document->get_export_data();
-		if ( !is_array( $templateData ) ) {
+		if ( ! is_array( $templateData ) ) {
 			throw new RuntimeException( 'Elementor returned invalid export data.' );
 		}
 		$content  = isset( $templateData['content'] ) && is_array( $templateData['content'] )?$templateData['content']:array();
@@ -96,7 +96,7 @@ final class ElementorJsonExport {
 		}
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing export-elements filter must retain its hook name.
 		$content = apply_filters( 'elementor/template_library/sources/local/export/elements', $content );
-		if ( !is_array( $content ) ) {
+		if ( ! is_array( $content ) ) {
 			throw new RuntimeException( 'Elementor export filters returned invalid document content.' );
 		}
 		$type = 'elementor_library' === (string)$post->post_type?(string)get_post_meta( (int)$post->ID, '_elementor_template_type', true ):'';
@@ -110,10 +110,10 @@ final class ElementorJsonExport {
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing snapshot filter must retain its hook name.
 		$snapshots = apply_filters( 'elementor/template_library/export/build_snapshots', array(), $content, (int)$post->ID, $payload );
 		if ( is_array( $snapshots ) ) {
-			if ( !empty( $snapshots['global_classes'] ) ) {
+			if ( ! empty( $snapshots['global_classes'] ) ) {
 				$payload['global_classes'] = $snapshots['global_classes'];
 			}
-			if ( !empty( $snapshots['global_variables'] ) ) {
+			if ( ! empty( $snapshots['global_variables'] ) ) {
 				$payload['global_variables'] = $snapshots['global_variables'];
 			}
 		}
@@ -135,16 +135,16 @@ final class ElementorJsonExport {
 	}
 
 	private function sitePartsForPost( \WP_Post $sourcePost ): array {
-		if ( !class_exists( 'ElementorPro\\Modules\\ThemeBuilder\\Module' ) ) {
+		if ( ! class_exists( 'ElementorPro\\Modules\\ThemeBuilder\\Module' ) ) {
 			return array( 'header' => null, 'footer' => null, 'warnings' => array( 'Elementor Pro Theme Builder is not active.' ) );
 		}
 		try {
 			$module = \ElementorPro\Modules\ThemeBuilder\Module::instance();
-			if ( !is_object( $module ) || !method_exists( $module, 'get_conditions_manager' ) ) {
+			if ( ! is_object( $module ) || ! method_exists( $module, 'get_conditions_manager' ) ) {
 				return $this->unsupportedSiteParts();
 			}
 			$conditions = $module->get_conditions_manager();
-			if ( !is_object( $conditions ) || !method_exists( $conditions, 'get_documents_for_location' ) ) {
+			if ( ! is_object( $conditions ) || ! method_exists( $conditions, 'get_documents_for_location' ) ) {
 				return $this->unsupportedSiteParts();
 			}
 			$matches = $this->withSingularQuery( $sourcePost, static function()use( $conditions ):array {
@@ -167,7 +167,7 @@ final class ElementorJsonExport {
 	}
 
 	private function firstSitePart( $matches, string $location ): ?array {
-		if ( !is_array( $matches ) || empty( $matches ) ) {
+		if ( ! is_array( $matches ) || empty( $matches ) ) {
 			return null;
 		}
 		foreach ( $matches as $key => $document ) {
@@ -189,11 +189,11 @@ final class ElementorJsonExport {
 				continue;
 			}
 			$template = $template instanceof \WP_Post?$template:get_post( $templateId );
-			if ( !$template instanceof \WP_Post || !current_user_can( 'edit_post', $templateId ) ) {
+			if ( ! $template instanceof \WP_Post || ! current_user_can( 'edit_post', $templateId ) ) {
 				continue;
 			}
 			$payload = $this->exportPayload( $this->document( $templateId ), $template );
-			if ( (string)( $payload['type'] ?? '' ) !== $location ) {
+			if ( (string) ( $payload['type'] ?? '' ) !== $location ) {
 				continue;
 			}
 			return array( 'id' => $templateId, 'title' => (string)$template->post_title, 'payload' => $payload );
@@ -214,7 +214,7 @@ final class ElementorJsonExport {
 			$args['p'] = (int)$sourcePost->ID;
 		}
 		$query = new \WP_Query( $args );
-		if ( !$query->have_posts() ) {
+		if ( ! $query->have_posts() ) {
 			throw new RuntimeException( 'The document context could not be prepared for Theme Builder conditions.' );
 		}
 		$wp_query     = $query;
@@ -239,7 +239,7 @@ final class ElementorJsonExport {
 	}
 
 	private function sitePartMeta( ?array $part ): ?array {
-		return null === $part?null:array( 'id' => (int)( $part['id'] ?? 0 ), 'title' => (string)( $part['title'] ?? '' ) );
+		return null === $part?null:array( 'id' => (int) ( $part['id'] ?? 0 ), 'title' => (string) ( $part['title'] ?? '' ) );
 	}
 
 	private function isElementorDocument( int $postId ): bool {
@@ -256,16 +256,16 @@ final class ElementorJsonExport {
 	}
 
 	private function document( int $postId ): object {
-		if ( !class_exists( 'Elementor\\Plugin' ) ) {
+		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
 		}
 		$plugin  = \Elementor\Plugin::$instance;
 		$manager = isset( $plugin->documents )?$plugin->documents:null;
-		if ( !is_object( $manager ) || !method_exists( $manager, 'get' ) ) {
+		if ( ! is_object( $manager ) || ! method_exists( $manager, 'get' ) ) {
 			throw new RuntimeException( 'Elementor document manager is unavailable.' );
 		}
 		$document = $manager->get( $postId );
-		if ( !is_object( $document ) || !method_exists( $document, 'get_elements_data' ) || !method_exists( $document, 'get_export_data' ) ) {
+		if ( ! is_object( $document ) || ! method_exists( $document, 'get_elements_data' ) || ! method_exists( $document, 'get_export_data' ) ) {
 			throw new RuntimeException( 'This item is not an exportable Elementor document.' );
 		}
 		return $document;

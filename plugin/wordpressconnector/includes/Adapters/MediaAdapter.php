@@ -24,10 +24,10 @@ final class MediaAdapter {
 		$query = new \WP_Query( array(
 			'post_type'      => 'attachment',
 			'post_status'    => 'inherit',
-			'posts_per_page' => isset( $payload['per_page'] ) ? max( 1, min( 100, ( int ) $payload['per_page'] ) ) : 50,
-			'paged'          => isset( $payload['page'] ) ? max( 1, ( int ) $payload['page'] ) : 1,
-			'post_mime_type' => isset( $payload['mime_type'] ) ? sanitize_mime_type( ( string ) $payload['mime_type'] ) : '',
-			's'              => isset( $payload['search'] ) ? sanitize_text_field( ( string ) $payload['search'] ) : '',
+			'posts_per_page' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+			'paged'          => isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1,
+			'post_mime_type' => isset( $payload['mime_type'] ) ? sanitize_mime_type( (string) $payload['mime_type'] ) : '',
+			's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
 		) );
 
 		$items = array();
@@ -35,12 +35,12 @@ final class MediaAdapter {
 			if ( ! $post instanceof \WP_Post ) continue;
 			try {
 				Policy::assertPostReadable( $post );
-				$items[] = $this->snapshot( ( int ) $post->ID );
+				$items[] = $this->snapshot( (int) $post->ID );
 			} catch ( RuntimeException $error ) {
 				continue;
 			}
 		}
-		return array( 'media' => $items, 'total' => ( int ) $query->found_posts, 'pages' => ( int ) $query->max_num_pages );
+		return array( 'media' => $items, 'total' => (int) $query->found_posts, 'pages' => (int) $query->max_num_pages );
 	}
 
 	public function mediaGet( array $payload ): array {
@@ -55,18 +55,18 @@ final class MediaAdapter {
 		if ( ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Uploading media requires upload_files permission.' );
 		}
-		$parent = isset( $payload['parent'] ) ? ( int ) $payload['parent'] : 0;
+		$parent = isset( $payload['parent'] ) ? (int) $payload['parent'] : 0;
 		if ( $parent > 0 && ( ! get_post( $parent ) || ! current_user_can( 'edit_post', $parent ) ) ) {
 			throw new RuntimeException( 'You cannot attach media to this parent item.' );
 		}
-		$assetRoot = isset( $context['asset_root'] ) ? ( string ) $context['asset_root'] : '';
+		$assetRoot = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $assetRoot ) throw new RuntimeException( 'media.import requires --asset-root in the CLI context.' );
-		$source = isset( $payload['source_path'] ) ? ( string ) $payload['source_path'] : '';
+		$source = isset( $payload['source_path'] ) ? (string) $payload['source_path'] : '';
 		if ( '' === $source ) throw new RuntimeException( 'source_path is required.' );
 		$candidate = $assetRoot . DIRECTORY_SEPARATOR . ltrim( str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $source ), DIRECTORY_SEPARATOR );
 		$real      = Policy::assertLocalAssetPath( $candidate, $assetRoot );
 
-		$maxBytes  = ( int ) ( getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' ) ?: 20971520 );
+		$maxBytes  = (int) ( getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' ) ?: 20971520 );
 		$size      = filesize( $real );
 		if ( false === $size || $size <= 0 || $size > $maxBytes ) throw new RuntimeException( 'Media file size is invalid or exceeds the configured limit.' );
 
@@ -77,8 +77,8 @@ final class MediaAdapter {
 			'source_path' => $source,
 			'filename'    => basename( $real ),
 			'mime_type'   => $checked['type'],
-			'bytes'       => ( int ) $size,
-			'parent'      => isset( $payload['parent'] ) ? ( int ) $payload['parent'] : 0,
+			'bytes'       => (int) $size,
+			'parent'      => isset( $payload['parent'] ) ? (int) $payload['parent'] : 0,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_import' => $planned, '_current_fingerprint' => Fingerprint::make( array( 'source' => $source, 'size' => $size, 'mtime' => filemtime( $real ) ) ) );
@@ -92,21 +92,21 @@ final class MediaAdapter {
 		if ( ! $tmp || ! copy( $real, $tmp ) ) throw new RuntimeException( 'Could not prepare temporary media file.' );
 
 		$fileArray    = array( 'name' => basename( $real ), 'tmp_name' => $tmp );
-		$attachmentId = media_handle_sideload( $fileArray, $planned['parent'], isset( $payload['description'] ) ? ( string ) $payload['description'] : null );
+		$attachmentId = media_handle_sideload( $fileArray, $planned['parent'], isset( $payload['description'] ) ? (string) $payload['description'] : null );
 		if ( is_wp_error( $attachmentId ) ) {
 			wp_delete_file( $tmp );
 			throw new RuntimeException( $attachmentId->get_error_message() );
 		}
 
-		$update = array( 'id' => ( int ) $attachmentId );
+		$update = array( 'id' => (int) $attachmentId );
 		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) {
-			if ( array_key_exists( $field, $payload ) ) $update[$field] = $payload[$field];
+			if ( array_key_exists( $field, $payload ) ) $update[ $field ] = $payload[ $field ];
 		}
 		if ( count( $update ) > 1 ) $this->applyUpdate( $update );
 
 		return array(
-			'media'     => $this->snapshot( ( int ) $attachmentId ),
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => ( int ) $attachmentId ) ),
+			'media'     => $this->snapshot( (int) $attachmentId ),
+			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $attachmentId ) ),
 		);
 	}
 
@@ -117,7 +117,7 @@ final class MediaAdapter {
 		}
 		$before = $this->snapshot( $id );
 		$after  = $before;
-		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) if ( array_key_exists( $field, $payload ) ) $after[$field] = $payload[$field];
+		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) if ( array_key_exists( $field, $payload ) ) $after[ $field ] = $payload[ $field ];
 		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 		$this->applyUpdate( $payload );
@@ -149,15 +149,15 @@ final class MediaAdapter {
 
 		$source     = get_attached_file( $id );
 		$uploads    = wp_get_upload_dir();
-		$root       = isset( $uploads['basedir'] ) ? realpath( ( string ) $uploads['basedir'] ) : false;
+		$root       = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
 		$sourceReal = is_string( $source ) ? realpath( $source ) : false;
 		if ( ! is_string( $root ) || ! is_string( $sourceReal ) || ! is_file( $sourceReal ) ||
 			0 !== strpos( $sourceReal, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
 			throw new RuntimeException( 'Image must be a regular file inside WordPress uploads.' );
 		}
 		$directory = dirname( $sourceReal );
-		$extension = strtolower( ( string ) pathinfo( $sourceReal, PATHINFO_EXTENSION ) );
-		if ( strtolower( ( string ) pathinfo( $requested, PATHINFO_EXTENSION ) ) !== $extension ) {
+		$extension = strtolower( (string) pathinfo( $sourceReal, PATHINFO_EXTENSION ) );
+		if ( strtolower( (string) pathinfo( $requested, PATHINFO_EXTENSION ) ) !== $extension ) {
 			throw new RuntimeException( 'Image format changes require a separate conversion.' );
 		}
 		$oldName = basename( $sourceReal );
@@ -180,7 +180,7 @@ final class MediaAdapter {
 			if ( ! preg_match( '/^'.preg_quote( $oldStem, '/' ).'(-[0-9]+x[0-9]+(?:-[a-z0-9-]+)?)\\.([a-z0-9]+)$/iD', $child, $match ) ) {
 				throw new RuntimeException( 'Image derivative naming is unsupported; refusing unsafe rename.' );
 			}
-			$copies[$child] = $newStem . $match[1] . '.' . $match[2];
+			$copies[ $child ] = $newStem . $match[1] . '.' . $match[2];
 		}
 		$original = $metadata['original_image'] ?? null;
 		if ( is_string( $original ) && '' !== $original ) {
@@ -230,7 +230,7 @@ final class MediaAdapter {
 			$afterMetadata = $metadata;
 			$afterMetadata['file'] = dirname( $metadata['file'] ) === '.' ? $requested : dirname( $metadata['file'] ) . '/' . $requested;
 			foreach ( ( $afterMetadata['sizes'] ?? array() ) as $sizeName => $size ) {
-				$afterMetadata['sizes'][$sizeName]['file'] = $copies[$size['file']];
+				$afterMetadata['sizes'][ $sizeName ]['file'] = $copies[$size['file']];
 			}
 			if ( ! update_attached_file( $id, $directory . DIRECTORY_SEPARATOR . $requested ) ) {
 				throw new RuntimeException( 'WordPress could not update the attachment path.' );
@@ -240,7 +240,7 @@ final class MediaAdapter {
 			}
 			clean_post_cache( $id );
 			$readback = $this->snapshot( $id );
-			if ( realpath( ( string ) $readback['file'] ) !== realpath( $directory . DIRECTORY_SEPARATOR . $requested ) ||
+			if ( realpath( (string) $readback['file'] ) !== realpath( $directory . DIRECTORY_SEPARATOR . $requested ) ||
 				Fingerprint::make( $readback['metadata'] ) !== Fingerprint::make( $afterMetadata ) ||
 				! is_file( $sourceReal ) ) {
 				throw new RuntimeException( 'Image rename readback verification failed.' );
@@ -279,13 +279,13 @@ final class MediaAdapter {
 	}
 
 	public function mediaAssign( array $payload, array $context ): array {
-		$targetType = isset( $payload['target_type'] ) ? sanitize_key( ( string ) $payload['target_type'] ) : '';
-		$targetId   = isset( $payload['target_id'] ) ? ( int ) $payload['target_id'] : 0;
+		$targetType = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
+		$targetId   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clearFeatured = 'featured_image' === $targetType
 			&& ! empty( $context['rollback_mode'] )
-			&& isset( $payload['id'] ) && 0 === ( int ) $payload['id'];
+			&& isset( $payload['id'] ) && 0 === (int) $payload['id'];
 		$attachmentId = $clearFeatured ? 0 : $this->attachmentId( $payload );
 
 		if ( ! current_user_can( 'upload_files' )
@@ -298,7 +298,7 @@ final class MediaAdapter {
 				if ( $targetId <= 0 || ! get_post( $targetId ) || ! current_user_can( 'edit_post', $targetId ) ) {
 					throw new RuntimeException( 'You cannot edit the featured-image target.' );
 				}
-				$before = ( int ) get_post_thumbnail_id( $targetId );
+				$before = (int) get_post_thumbnail_id( $targetId );
 				$result = array(
 					'before'               => $before,
 					'after'                => $attachmentId,
@@ -318,7 +318,7 @@ final class MediaAdapter {
 				} elseif ( ! set_post_thumbnail( $targetId, $attachmentId ) ) {
 					throw new RuntimeException( 'Could not assign featured image.' );
 				}
-				if ( ( int ) get_post_thumbnail_id( $targetId ) !== $attachmentId ) {
+				if ( (int) get_post_thumbnail_id( $targetId ) !== $attachmentId ) {
 					throw new RuntimeException( 'Featured-image assignment readback failed.' );
 				}
 				if ( empty( $context['rollback_mode'] ) ) {
@@ -340,7 +340,7 @@ final class MediaAdapter {
 					throw new RuntimeException( 'Product not found.' );
 				}
 				$before = array_map( 'intval', $product->get_gallery_image_ids() );
-				$mode   = isset( $payload['mode'] ) ? ( string ) $payload['mode'] : 'append';
+				$mode   = isset( $payload['mode'] ) ? (string) $payload['mode'] : 'append';
 				if ( ! in_array( $mode, array( 'append', 'replace' ), true ) ) {
 					throw new RuntimeException( 'Gallery mode must be append or replace.' );
 				}
@@ -363,7 +363,7 @@ final class MediaAdapter {
 				if ( ! current_user_can( 'edit_theme_options' ) ) {
 					throw new RuntimeException( 'Changing the custom logo requires edit_theme_options permission.' );
 				}
-				$before = ( int ) get_theme_mod( 'custom_logo', 0 );
+				$before = (int) get_theme_mod( 'custom_logo', 0 );
 				if ( ! empty( $context['dry_run'] ) ) {
 					return array( 'before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make( $before ) );
 				}
@@ -376,7 +376,7 @@ final class MediaAdapter {
 				if ( ! current_user_can( 'manage_options' ) ) {
 					throw new RuntimeException( 'Changing the site icon requires manage_options permission.' );
 				}
-				$before = ( int ) get_option( 'site_icon', 0 );
+				$before = (int) get_option( 'site_icon', 0 );
 				if ( ! empty( $context['dry_run'] ) ) {
 					return array( 'before' => $before, 'after' => $attachmentId, '_current_fingerprint' => Fingerprint::make( $before ) );
 				}
@@ -407,7 +407,7 @@ final class MediaAdapter {
 	}
 
 	private function attachmentId( array $payload ): int {
-		$id   = isset( $payload['id'] ) ? ( int ) $payload['id'] : 0;
+		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type ) throw new RuntimeException( 'Attachment not found.' );
 		return $id;
@@ -418,12 +418,12 @@ final class MediaAdapter {
 		if ( ! $post instanceof \WP_Post ) throw new RuntimeException( 'Attachment not found.' );
 		return array(
 			'id'          => $id,
-			'title'       => ( string ) $post->post_title,
-			'alt'         => ( string ) get_post_meta( $id, '_wp_attachment_image_alt', true ),
-			'caption'     => ( string ) $post->post_excerpt,
-			'description' => ( string ) $post->post_content,
-			'parent'      => ( int ) $post->post_parent,
-			'mime_type'   => ( string ) $post->post_mime_type,
+			'title'       => (string) $post->post_title,
+			'alt'         => (string) get_post_meta( $id, '_wp_attachment_image_alt', true ),
+			'caption'     => (string) $post->post_excerpt,
+			'description' => (string) $post->post_content,
+			'parent'      => (int) $post->post_parent,
+			'mime_type'   => (string) $post->post_mime_type,
 			'url'         => wp_get_attachment_url( $id ),
 			'file'        => get_attached_file( $id ),
 			'metadata'    => wp_get_attachment_metadata( $id ),
@@ -433,11 +433,11 @@ final class MediaAdapter {
 	private function applyUpdate( array $payload ): void {
 		$id         = $this->attachmentId( $payload );
 		$postFields = array( 'ID' => $id );
-		if ( array_key_exists( 'title', $payload ) ) $postFields['post_title'] = sanitize_text_field( ( string ) $payload['title'] );
-		if ( array_key_exists( 'caption', $payload ) ) $postFields['post_excerpt'] = ( string ) $payload['caption'];
-		if ( array_key_exists( 'description', $payload ) ) $postFields['post_content'] = ( string ) $payload['description'];
+		if ( array_key_exists( 'title', $payload ) ) $postFields['post_title'] = sanitize_text_field( (string) $payload['title'] );
+		if ( array_key_exists( 'caption', $payload ) ) $postFields['post_excerpt'] = (string) $payload['caption'];
+		if ( array_key_exists( 'description', $payload ) ) $postFields['post_content'] = (string) $payload['description'];
 		if ( array_key_exists( 'parent', $payload ) ) {
-			$parentId = ( int ) $payload['parent'];
+			$parentId = (int) $payload['parent'];
 			if ( $parentId < 0 || ( $parentId > 0
 				&& ( ! get_post( $parentId ) || ! current_user_can( 'edit_post', $parentId ) ) ) ) {
 				throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
@@ -448,6 +448,6 @@ final class MediaAdapter {
 			$updated = wp_update_post( wp_slash( $postFields ), true );
 			if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
 		}
-		if ( array_key_exists( 'alt', $payload ) ) update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( ( string ) $payload['alt'] ) );
+		if ( array_key_exists( 'alt', $payload ) ) update_post_meta( $id, '_wp_attachment_image_alt', sanitize_text_field( (string) $payload['alt'] ) );
 	}
 }

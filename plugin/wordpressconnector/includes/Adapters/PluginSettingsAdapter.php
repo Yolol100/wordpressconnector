@@ -365,7 +365,7 @@ final class PluginSettingsAdapter {
 		}
 
 		$inventory = $this->catalog( array(), $context );
-		$installed = ( array ) ( $inventory['plugins'] ?? array() );
+		$installed = (array) ( $inventory['plugins'] ?? array() );
 		if ( count( $installed ) > 150 ) {
 			throw new RuntimeException( 'Plugin inventory exceeds the bounded audit limit.' );
 		}
@@ -377,24 +377,24 @@ final class PluginSettingsAdapter {
 		$activeIds    = array();
 		$indicators   = array();
 		foreach ( $installed as $plugin ) {
-			$known = ( string ) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
-			$id    = $known ? ( string ) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknownCount );
+			$known = (string) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
+			$id    = $known ? (string) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknownCount );
 			if ( ! preg_match( '/^[a-z][a-z0-9_-]{1,79}\\z/', $id ) ) {
 				throw new RuntimeException( 'Plugin integration identifier is invalid.' );
 			}
 			$active       = true === ( $plugin['active'] ?? null );
 			$activeCount += $active ? 1 : 0;
 			if ( $active ) {
-				$activeIds[$id] = true;
+				$activeIds[ $id ] = true;
 			}
 
-			$registration = ( string ) ( $plugin['registered_action_status'] ?? 'not_checked' );
-			$coverage     = !$known ? 'unmodeled'
+			$registration = (string) ( $plugin['registered_action_status'] ?? 'not_checked' );
+			$coverage     = ! $known ? 'unmodeled'
 				: ( empty( $plugin['actions'] ) ? 'inventory_only'
 					: ( $registration === 'complete' ? 'registered'
 						: ( $registration === 'partial' ? 'partial' : 'not_checked' ) ) );
 			// Provider-version restrictions take precedence over generic action registration.
-			if ( $known && in_array( ( string ) ( $plugin['mode'] ?? '' ), array(
+			if ( $known && in_array( (string) ( $plugin['mode'] ?? '' ), array(
 				'version_bound_unsupported', 'optimizer_version_unsupported',
 				'security_provider_contract_needed', 'external_account_bound',
 				'secret_bound', 'filesystem_bound', 'system_operation',
@@ -405,7 +405,7 @@ final class PluginSettingsAdapter {
 			$checks = array();
 			if ( $active ) {
 				try {
-					$checks = $this->auditNonsecretChecks( $id, ( string ) ( $plugin['mode'] ?? '' ) );
+					$checks = $this->auditNonsecretChecks( $id, (string) ( $plugin['mode'] ?? '' ) );
 				} catch ( \Throwable $error ) {
 					// One provider failure must not erase the rest of the audit.
 					// Do not serialize the exception: provider errors may include secrets.
@@ -414,7 +414,7 @@ final class PluginSettingsAdapter {
 			}
 			if ( $checks ) {
 				++$checkedCount;
-				$indicators[$id] = $checks;
+				$indicators[ $id ] = $checks;
 			}
 			$items[] = array(
 				'id'       => $id,
@@ -550,7 +550,7 @@ final class PluginSettingsAdapter {
 
 	private function auditPageAssignment( $value ): string {
 		if ( is_int( $value ) || ( is_string( $value ) && preg_match( '/^[0-9]{1,10}\\z/', $value ) ) ) {
-			return ( int ) $value > 0 ? 'present' : 'missing';
+			return (int) $value > 0 ? 'present' : 'missing';
 		}
 		return 'unknown';
 	}
@@ -596,15 +596,15 @@ final class PluginSettingsAdapter {
 			? $context['registry']->catalog() : null;
 		$items             = array();
 		foreach ( get_plugins() as $file => $data ) {
-			$integration = self::INTEGRATIONS[$file] ?? array(
-				'id'      => sanitize_key( ( string ) dirname( $file ) ),
+			$integration = self::INTEGRATIONS[ $file ] ?? array(
+				'id'      => sanitize_key( (string) dirname( $file ) ),
 				'mode'    => 'unmodeled',
 				'actions' => array(),
 				'note'    => 'No safe plugin-specific write contract has been modeled yet.',
 			);
 			// Only advertise optimizer controls that the installed provider can actually support.
 			if ( 'ewww-image-optimizer/ewww-image-optimizer.php' === $file ) {
-				if ( ! is_plugin_active( $file ) || ! preg_match( '/^8\\.8\\.[0-9]+$/D', ( string ) ( $data['Version'] ?? '' ) ) ) {
+				if ( ! is_plugin_active( $file ) || ! preg_match( '/^8\\.8\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
 					$integration['mode'] = 'version_bound_unsupported';
 					$integration['actions'] = array();
 					$integration['note'] = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
@@ -614,7 +614,7 @@ final class PluginSettingsAdapter {
 					$integration['mode'] = 'inactive';
 					$integration['actions'] = array();
 					$integration['note'] = 'Asset CleanUp is inactive.';
-				} elseif ( ! preg_match( '/^1\\.4\\.0\\.[0-9]+$/D', ( string ) ( $data['Version'] ?? '' ) ) ) {
+				} elseif ( ! preg_match( '/^1\\.4\\.0\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
 					$integration['mode'] = 'optimizer_version_unsupported';
 					$integration['actions'] = array( 'maintenance.cache_capabilities', 'maintenance.cache_flush' );
 					$integration['note'] = 'Optimizer inspection requires a verified 1.4.0.x provider; cache availability is checked independently.';
@@ -625,14 +625,14 @@ final class PluginSettingsAdapter {
 				}
 			}
 			$item = array_merge( array(
-				'file'    => ( string ) $file,
-				'name'    => isset( $data['Name'] ) ? ( string ) $data['Name'] : ( string ) $file,
-				'version' => isset( $data['Version'] ) ? ( string ) $data['Version'] : '',
+				'file'    => (string) $file,
+				'name'    => isset( $data['Name'] ) ? (string) $data['Name'] : (string) $file,
+				'version' => isset( $data['Version'] ) ? (string) $data['Version'] : '',
 				'active'  => is_plugin_active( $file ),
 			), $integration );
 			if ( null !== $registeredActions ) {
-				$missing                            = array_values( array_filter( ( array ) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
-					return ! is_string( $action ) || ! isset( $registeredActions[$action] );
+				$missing                            = array_values( array_filter( (array) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
+					return ! is_string( $action ) || ! isset( $registeredActions[ $action ] );
 				} ) );
 				$item['registered_action_status'] = ! $item['actions'] ? 'not_modeled' : ( $missing ? 'partial' : 'complete' );
 				$item['missing_registered_actions'] = $missing;
@@ -640,7 +640,7 @@ final class PluginSettingsAdapter {
 			$items[] = $item;
 		}
 		usort( $items, static function ( array $a, array $b ): int {
-			return strcasecmp( ( string ) $a['name'], ( string ) $b['name'] );
+			return strcasecmp( (string) $a['name'], (string) $b['name'] );
 		} );
 
 		return array(
@@ -677,7 +677,7 @@ final class PluginSettingsAdapter {
 		$clean  = $this->validateUpdates( $plugin, $updates, $before );
 		$after  = $before;
 		foreach ( $clean as $key => $value ) {
-			$after[$key] = $value;
+			$after[ $key ] = $value;
 		}
 
 		$result = array(
@@ -693,7 +693,7 @@ final class PluginSettingsAdapter {
 		$this->writeProfile( $plugin, $clean );
 		$readback = $this->readProfile( $plugin );
 		foreach ( $clean as $key => $value ) {
-			if ( ! array_key_exists( $key, $readback ) || $this->normalizeForCompare( $readback[$key] ) !== $this->normalizeForCompare( $value ) ) {
+			if ( ! array_key_exists( $key, $readback ) || $this->normalizeForCompare( $readback[ $key ] ) !== $this->normalizeForCompare( $value ) ) {
 				throw new RuntimeException( 'Plugin settings readback verification failed for ' . $plugin . ':' . $key . '.' );
 			}
 		}
@@ -701,7 +701,7 @@ final class PluginSettingsAdapter {
 		$rollback = array();
 		foreach ( $clean as $key => $value ) {
 			if ( array_key_exists( $key, $before ) ) {
-				$rollback[$key] = $before[$key];
+				$rollback[ $key ] = $before[ $key ];
 			}
 		}
 		$result['after'] = Policy::redact( $readback );
@@ -715,7 +715,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function profile( array $payload ): string {
-		$plugin = isset( $payload['plugin'] ) ? sanitize_key( ( string ) $payload['plugin'] ) : '';
+		$plugin = isset( $payload['plugin'] ) ? sanitize_key( (string) $payload['plugin'] ) : '';
 		if ( ! in_array( $plugin, array( 'wp_rocket', 'imagify', 'really_simple_security', 'joinchat' ), true ) ) {
 			throw new RuntimeException( 'Unsupported plugin settings profile: ' . $plugin . '.' );
 		}
@@ -760,25 +760,25 @@ final class PluginSettingsAdapter {
 			}
 
 			if ( 'wp_rocket' === $plugin ) {
-				if ( ! isset( self::WP_ROCKET_FIELDS[$key] ) ) {
+				if ( ! isset( self::WP_ROCKET_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported WP Rocket setting: ' . $key . '.' );
 				}
-				$clean[$key] = $this->sanitizeWpRocketValue( self::WP_ROCKET_FIELDS[$key], $value );
+				$clean[ $key ] = $this->sanitizeWpRocketValue( self::WP_ROCKET_FIELDS[ $key ], $value );
 				continue;
 			}
 
 			if ( 'joinchat' === $plugin ) {
-				if ( ! isset( self::JOINCHAT_FIELDS[$key] ) ) {
+				if ( ! isset( self::JOINCHAT_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported Joinchat setting: ' . $key . '.' );
 				}
-				$clean[$key] = $this->sanitizeJoinchatValue( self::JOINCHAT_FIELDS[$key], $value );
+				$clean[ $key ] = $this->sanitizeJoinchatValue( self::JOINCHAT_FIELDS[ $key ], $value );
 				continue;
 			}
 
 			if ( 'really_simple_security' === $plugin && $this->isHighRiskSecuritySetting( $key ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ) ) {
 				throw new RuntimeException( 'This Really Simple Security setting requires the connector sensitive-action gate: ' . $key . '.' );
 			}
-			$clean[$key] = $this->sanitizeLike( $before[$key], $value );
+			$clean[ $key ] = $this->sanitizeLike( $before[ $key ], $value );
 		}
 		return $clean;
 	}
@@ -789,7 +789,7 @@ final class PluginSettingsAdapter {
 		}
 		$settings = array();
 		foreach ( self::WP_ROCKET_FIELDS as $key => $type ) {
-			$settings[$key] = get_rocket_option( $key, null );
+			$settings[ $key ] = get_rocket_option( $key, null );
 		}
 		return $settings;
 	}
@@ -813,7 +813,7 @@ final class PluginSettingsAdapter {
 		unset( $updates['api_key'], $updates['version'] );
 		$result = $this->executeAbility( 'imagify/update-settings', $updates );
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
-			throw new RuntimeException( isset( $result['error_message'] ) ? ( string ) $result['error_message'] : 'Imagify settings update failed.' );
+			throw new RuntimeException( isset( $result['error_message'] ) ? (string) $result['error_message'] : 'Imagify settings update failed.' );
 		}
 	}
 
@@ -837,7 +837,7 @@ final class PluginSettingsAdapter {
 
 
 	private function readJoinchat(): array {
-		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', ( string ) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
+		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
 			throw new RuntimeException( 'Joinchat settings require an active supported 6.4.x installation.' );
 		}
 		$provider = jc_common();
@@ -853,7 +853,7 @@ final class PluginSettingsAdapter {
 		$settings  = array();
 		foreach ( self::JOINCHAT_FIELDS as $key => $type ) {
 			if ( array_key_exists( $key, $effective ) ) {
-				$settings[$key] = $effective[$key];
+				$settings[ $key ] = $effective[ $key ];
 			}
 		}
 		return $settings;
@@ -922,7 +922,7 @@ final class PluginSettingsAdapter {
 			throw new RuntimeException( 'Really Simple Security settings API is not available.' );
 		}
 		$settings = array();
-		foreach ( ( array ) rsssl_fields( true ) as $field ) {
+		foreach ( (array) rsssl_fields( true ) as $field ) {
 			if ( ! is_array( $field ) || empty( $field['id'] ) || ! is_string( $field['id'] ) ) {
 				continue;
 			}
@@ -939,7 +939,7 @@ final class PluginSettingsAdapter {
 			if ( is_object( $value ) || is_resource( $value ) ) {
 				continue;
 			}
-			$settings[$id] = $value;
+			$settings[ $id ] = $value;
 		}
 		ksort( $settings, SORT_STRING );
 		return $settings;
@@ -959,14 +959,14 @@ final class PluginSettingsAdapter {
 			return $this->toBoolInt( $value );
 		}
 		if ( 'positive_int' === $type ) {
-			$value = ( int ) $value;
+			$value = (int) $value;
 			if ( $value < 1 || $value > 10080 ) {
 				throw new RuntimeException( 'WP Rocket interval must be between 1 and 10080.' );
 			}
 			return $value;
 		}
 		if ( 'rocket_cron_unit' === $type ) {
-			$value = strtoupper( sanitize_text_field( ( string ) $value ) );
+			$value = strtoupper( sanitize_text_field( (string) $value ) );
 			if ( ! in_array( $value, array( 'HOUR_IN_SECONDS', 'DAY_IN_SECONDS' ), true ) ) {
 				throw new RuntimeException( 'WP Rocket purge_cron_unit must be HOUR_IN_SECONDS or DAY_IN_SECONDS.' );
 			}
@@ -976,11 +976,11 @@ final class PluginSettingsAdapter {
 			$values = is_array( $value ) ? $value : array( $value );
 			$clean  = array();
 			foreach ( $values as $host ) {
-				$host = trim( sanitize_text_field( ( string ) $host ) );
+				$host = trim( sanitize_text_field( (string) $host ) );
 				if ( '' === $host ) {
 					continue;
 				}
-				if ( ( bool ) preg_match( '/\s/', $host ) ) {
+				if ( (bool) preg_match( '/\s/', $host ) ) {
 					throw new RuntimeException( 'WP Rocket CDN CNAME entries may not contain whitespace.' );
 				}
 				$clean[] = $host;
@@ -992,13 +992,13 @@ final class PluginSettingsAdapter {
 
 	private function sanitizeLike( $current, $value ) {
 		if ( is_bool( $current ) ) {
-			return ( bool ) $this->toBoolInt( $value );
+			return (bool) $this->toBoolInt( $value );
 		}
 		if ( is_int( $current ) ) {
-			return ( int ) $value;
+			return (int) $value;
 		}
 		if ( is_float( $current ) ) {
-			return ( float ) $value;
+			return (float) $value;
 		}
 		if ( is_array( $current ) ) {
 			if ( ! is_array( $value ) ) {
@@ -1017,16 +1017,16 @@ final class PluginSettingsAdapter {
 		if ( ! is_scalar( $value ) && null !== $value ) {
 			throw new RuntimeException( 'Plugin setting values must be scalar, array or null.' );
 		}
-		return null === $value ? null : sanitize_text_field( ( string ) $value );
+		return null === $value ? null : sanitize_text_field( (string) $value );
 	}
 
 	private function sanitizeArray( array $value ): array {
 		$clean = array();
 		foreach ( $value as $key => $item ) {
 			if ( is_array( $item ) ) {
-				$clean[$key] = $this->sanitizeArray( $item );
+				$clean[ $key ] = $this->sanitizeArray( $item );
 			} elseif ( is_scalar( $item ) || null === $item ) {
-				$clean[$key] = is_string( $item ) ? sanitize_text_field( $item ) : $item;
+				$clean[ $key ] = is_string( $item ) ? sanitize_text_field( $item ) : $item;
 			} else {
 				throw new RuntimeException( 'Nested plugin setting values may not contain objects or resources.' );
 			}
@@ -1035,7 +1035,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function toBoolInt( $value ): int {
-		$normalized = strtolower( ( string ) $value );
+		$normalized = strtolower( (string) $value );
 		if ( true === $value || 1 === $value || '1' === $normalized || 'true' === $normalized || 'yes' === $normalized || 'on' === $normalized ) {
 			return 1;
 		}
@@ -1046,7 +1046,7 @@ final class PluginSettingsAdapter {
 	}
 
 	private function normalizeForCompare( $value ): string {
-		return ( string ) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		return (string) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	}
 
 	private function isSecretSetting( string $key ): bool {
