@@ -26,8 +26,8 @@ foreach ($files as $name => $path) {
 
 $require = static function (string $name, array $needles) use ($sources): void {
     foreach ($needles as $needle) {
-        $haystack = 'updater' === $name ? preg_replace('/\\s+/', '', $sources[$name]) : $sources[$name];
-        $match = 'updater' === $name ? preg_replace('/\\s+/', '', $needle) : $needle;
+        $haystack = in_array($name, array('updater', 'package adapter'), true) ? preg_replace('/\\s+/', '', $sources[$name]) : $sources[$name];
+        $match = in_array($name, array('updater', 'package adapter'), true) ? preg_replace('/\\s+/', '', $needle) : $needle;
         if (! is_string($haystack) || ! is_string($match) || false === strpos($haystack, $match)) {
             fwrite(STDERR, "Audit hardening contract missing in {$name}: {$needle}\n");
             exit(1);
