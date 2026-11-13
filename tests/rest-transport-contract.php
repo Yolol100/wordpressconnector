@@ -46,11 +46,13 @@ foreach (array('After a WordPress administrator clicks Activate,','Reconnect tru
 foreach (array('register_setting(','renderCheckbox','wpconnector_allow_writes','WPCONNECTOR_REST_APPLICATION_PASSWORD','WPCONNECTOR_SITE_URL') as $needle) {
     if (strpos($compactSettings, preg_replace('/\\s+/', '', $needle))!==false) { fwrite(STDERR,"Manual setup remains in settings: {$needle}\n"); exit(1); }
 }
+$compactPolicy = preg_replace('/\\s+/', '', $policy);
+if (! is_string($compactPolicy)) { throw new RuntimeException('Unable to normalize REST policy source.'); }
 foreach (array('AUTO_ENABLED_FLAGS',"'WPCONNECTOR_ALLOW_WRITES'",'Sensitive actions require confirm=true','setPublicRepositoryContext','public_repository_safe') as $needle) {
     if (strpos($compactPolicy,preg_replace('/\\s+/', '', $needle))===false) { fwrite(STDERR,"Missing zero-config policy boundary: {$needle}\n"); exit(1); }
 }
 $compactOidc = preg_replace('/\\s+/', '', $oidc);
-$compactPolicy = preg_replace('/\\s+/', '', $policy);
+
 $compactAssetStore = preg_replace('/\\s+/', '', $assetStore);
 if (! is_string($compactOidc) || ! is_string($compactPolicy) || ! is_string($compactAssetStore)) {
     throw new RuntimeException('REST security contract source normalization failed.');
