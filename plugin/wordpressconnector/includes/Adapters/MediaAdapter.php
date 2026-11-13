@@ -55,7 +55,7 @@ final class MediaAdapter {
 		Policy::assertPostReadable( $post );
 		$snapshot = $this->snapshot( $id );
 		return array(
-			'media' => $snapshot,
+			'media'       => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
@@ -111,7 +111,7 @@ final class MediaAdapter {
 		}
 
 		$fileArray    = array(
-			'name' => basename( $real ),
+			'name'     => basename( $real ),
 			'tmp_name' => $tmp,
 		);
 		$attachmentId = media_handle_sideload( $fileArray, $planned['parent'], isset( $payload['description'] ) ? (string) $payload['description'] : null );
@@ -145,8 +145,8 @@ final class MediaAdapter {
 		$after  = $before;
 		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) if ( array_key_exists( $field, $payload ) ) $after[ $field ] = $payload[ $field ];
 		$result = array(
-			'before' => $before,
-			'after' => $after,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -195,8 +195,8 @@ final class MediaAdapter {
 		$oldName = basename( $sourceReal );
 		if ( $requested === $oldName ) {
 			return array(
-				'unchanged' => true,
-				'attachment_id' => $id,
+				'unchanged'            => true,
+				'attachment_id'        => $id,
 				'_current_fingerprint' => Fingerprint::make( $this->snapshot( $id ) ),
 			);
 		}
@@ -233,7 +233,7 @@ final class MediaAdapter {
 			'copies' => count( $copies ), 'old_urls_preserved' => true );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_rename' => $plan,
+				'would_rename'         => $plan,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -362,7 +362,7 @@ final class MediaAdapter {
 				}
 				if ( empty( $context['rollback_mode'] ) ) {
 					$result['_rollback'] = array( 'action' => 'media.assign', 'payload' => array(
-						'id' => $before, 'target_type' => 'featured_image', 'target_id' => $targetId,
+						'id'          => $before, 'target_type' => 'featured_image', 'target_id'   => $targetId,
 					) );
 				}
 				return $result;
@@ -385,8 +385,8 @@ final class MediaAdapter {
 				}
 				$after  = 'replace' === $mode ? array( $attachmentId ) : array_values( array_unique( array_merge( $before, array( $attachmentId ) ) ) );
 				$result = array(
-					'before' => $before,
-					'after' => $after,
+					'before'               => $before,
+					'after'                => $after,
 					'_current_fingerprint' => Fingerprint::make( $before ),
 				);
 				if ( ! empty( $context['dry_run'] ) ) {
@@ -398,7 +398,7 @@ final class MediaAdapter {
 					throw new RuntimeException( 'Product gallery assignment readback failed.' );
 				}
 				$result['_rollback'] = array( 'action' => 'woocommerce.product.update', 'payload' => array(
-					'id' => $targetId, 'gallery_image_ids' => $before,
+					'id'                => $targetId, 'gallery_image_ids' => $before,
 				) );
 				return $result;
 
@@ -409,15 +409,15 @@ final class MediaAdapter {
 				$before = (int) get_theme_mod( 'custom_logo', 0 );
 				if ( ! empty( $context['dry_run'] ) ) {
 					return array(
-						'before' => $before,
-						'after' => $attachmentId,
+						'before'               => $before,
+						'after'                => $attachmentId,
 						'_current_fingerprint' => Fingerprint::make( $before ),
 					);
 				}
 				set_theme_mod( 'custom_logo', $attachmentId );
 				return array( 'after' => $attachmentId, '_rollback' => array(
-					'action' => 'theme_mod.update', 'payload' => array(
-						'name' => 'custom_logo',
+					'action'  => 'theme_mod.update', 'payload' => array(
+						'name'  => 'custom_logo',
 						'value' => $before,
 					),
 				) );
@@ -429,15 +429,15 @@ final class MediaAdapter {
 				$before = (int) get_option( 'site_icon', 0 );
 				if ( ! empty( $context['dry_run'] ) ) {
 					return array(
-						'before' => $before,
-						'after' => $attachmentId,
+						'before'               => $before,
+						'after'                => $attachmentId,
 						'_current_fingerprint' => Fingerprint::make( $before ),
 					);
 				}
 				update_option( 'site_icon', $attachmentId, false );
 				return array( 'after' => $attachmentId, '_rollback' => array(
-					'action' => 'option.update', 'payload' => array(
-						'name' => 'site_icon',
+					'action'  => 'option.update', 'payload' => array(
+						'name'  => 'site_icon',
 						'value' => $before,
 					),
 				) );
@@ -462,8 +462,8 @@ final class MediaAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_regenerate' => $id,
-				'before' => $before,
+				'would_regenerate'     => $id,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -473,8 +473,8 @@ final class MediaAdapter {
 			throw new RuntimeException( 'Image metadata regeneration failed.' );
 		}
 		return array(
-			'attachment_id' => $id,
-			'metadata' => wp_get_attachment_metadata( $id ),
+			'attachment_id'      => $id,
+			'metadata'           => wp_get_attachment_metadata( $id ),
 			'rollback_supported' => false,
 		);
 	}

@@ -187,7 +187,7 @@ final class Runner {
 			}
 			Policy::assertActionAllowed( $descriptor, true, false );
 			$allowed[] = array(
-				'action' => $action,
+				'action'  => $action,
 				'payload' => $operation['payload'],
 			);
 		}
@@ -288,9 +288,9 @@ final class Runner {
 						$compensation[] = array( 'ok' => true, 'action' => $rollback['action'], 'result' => $this->registry->execute( (string) $rollback['action'], (array) $rollback['payload'], array_merge( $context, array( 'rollback_mode' => true, 'dry_run' => false ) ) ) );
 					} catch ( Throwable $rollbackError ) {
 						$compensation[] = array(
-							'ok' => false,
+							'ok'     => false,
 							'action' => $rollback['action'] ?? null,
-							'error' => $rollbackError->getMessage(),
+							'error'  => $rollbackError->getMessage(),
 						);
 					}
 				}
@@ -301,7 +301,7 @@ final class Runner {
 		if ( $rollbacks ) {
 			$output['_rollback'] = array( 'action' => 'connector.batch', 'payload' => array( 'operations' => array_map( static function ( array $rollback ): array {
 				return array(
-					'action' => $rollback['action'],
+					'action'  => $rollback['action'],
 					'payload' => $rollback['payload'],
 				);
 			}, $rollbacks ) ) );
@@ -349,8 +349,8 @@ final class Runner {
 		unset( $result['_rollback'], $result['_current_fingerprint'] );
 		return array(
 			'restored_request_id' => $requestId,
-			'restored_with' => $rollback['action'],
-			'result' => $result,
+			'restored_with'       => $rollback['action'],
+			'result'              => $result,
 		);
 	}
 

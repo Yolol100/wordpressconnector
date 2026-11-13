@@ -42,7 +42,7 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Site Editor page must be an integer between 1 and 100.' );
 		}
 		$response = $this->request( 'GET', $this->route( $kind ), array(
-			'context' => 'edit', 'per_page' => 20, 'page' => $page,
+			'context'  => 'edit', 'per_page' => 20, 'page'     => $page,
 		) );
 		$data     = $this->data( $response );
 		if ( ! is_array( $data ) ) {
@@ -107,13 +107,13 @@ final class SiteEditorAdapter {
 		$this->expected( $payload['expected_before_fingerprint'] ?? null, $before['fingerprint'] );
 
 		$result = array(
-			'kind'                 => $kind, 'id' => $id, 'theme' => get_stylesheet(),
-			'would_change'                        => $before['content_sha256'] !== hash( 'sha256', $content ),
+			'kind'                 => $kind, 'id'                   => $id, 'theme'                => get_stylesheet(),
+			'would_change'         => $before['content_sha256'] !== hash( 'sha256', $content ),
 			'before'               => array(
 				'content_sha256' => $before['content_sha256'],
-				'modified' => $before['modified'],
+				'modified'       => $before['modified'],
 			),
-			'_current_fingerprint'                => $before['fingerprint'],
+			'_current_fingerprint' => $before['fingerprint'],
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -140,7 +140,7 @@ final class SiteEditorAdapter {
 		$result['updated'] = true;
 		$result['after'] = array(
 			'content_sha256' => $after['content_sha256'],
-			'modified' => $after['modified'],
+			'modified'       => $after['modified'],
 		);
 		$result['_rollback'] = array(
 			'action'  => 'site_editor.template.restore',
@@ -163,7 +163,7 @@ final class SiteEditorAdapter {
 		$this->expected( $payload['expected_after_fingerprint'] ?? null, $before['fingerprint'] );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_restore' => $id,
+				'would_restore'        => $id,
 				'_current_fingerprint' => $before['fingerprint'],
 			);
 		}
@@ -174,7 +174,7 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Site Editor rollback readback failed.' );
 		}
 		return array(
-			'restored' => $id,
+			'restored'          => $id,
 			'readback_verified' => true,
 		);
 	}

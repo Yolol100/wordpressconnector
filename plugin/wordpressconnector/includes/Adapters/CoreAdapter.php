@@ -99,7 +99,7 @@ final class CoreAdapter {
 		$post = $this->requirePost( $payload );
 		Policy::assertPostReadable( $post );
 		return array(
-			'post' => $this->postSnapshot( $post ),
+			'post'        => $this->postSnapshot( $post ),
 			'fingerprint' => Fingerprint::make( $this->postSnapshot( $post ) ),
 		);
 	}
@@ -156,7 +156,7 @@ final class CoreAdapter {
 
 		$result['after'] = $this->postSnapshot( get_post( (int) $updated ) );
 		$result['_rollback'] = array(
-			'action' => 'post.update',
+			'action'  => 'post.update',
 			'payload' => $this->postRollbackPayload( $before ),
 		);
 		return $result;
@@ -198,8 +198,8 @@ final class CoreAdapter {
 			throw new RuntimeException( 'Literal match count is missing, changed or outside the safe range.' );
 		}
 		$state             = array(
-			'id' => (int) $post->ID,
-			'status' => (string) $post->post_status,
+			'id'      => (int) $post->ID,
+			'status'  => (string) $post->post_status,
 			'content' => $original,
 		);
 		$beforeFingerprint = Fingerprint::make( $state );
@@ -237,8 +237,8 @@ final class CoreAdapter {
 		$post   = $this->requirePost( $payload );
 		$before = $this->postSnapshot( $post );
 		$result = array(
-			'before' => $before,
-			'would_status' => 'trash',
+			'before'               => $before,
+			'would_status'         => 'trash',
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -258,7 +258,7 @@ final class CoreAdapter {
 		$post   = $this->requirePost( $payload );
 		$before = $this->postSnapshot( $post );
 		$result = array(
-			'before' => $before,
+			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -297,8 +297,8 @@ final class CoreAdapter {
 		}
 		$before = $this->postSnapshot( $post );
 		$result = array(
-			'before' => $before,
-			'revision' => $this->postSnapshot( $revision ),
+			'before'               => $before,
+			'revision'             => $this->postSnapshot( $revision ),
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -310,7 +310,7 @@ final class CoreAdapter {
 		}
 		$result['after'] = $this->postSnapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array(
-			'action' => 'post.update',
+			'action'  => 'post.update',
 			'payload' => $this->postRollbackPayload( $before ),
 		);
 		return $result;
@@ -328,8 +328,8 @@ final class CoreAdapter {
 		$before = get_metadata( $type, $id, $key, true );
 		$after  = array_key_exists( 'value', $payload ) ? $payload['value'] : null;
 		$result = array(
-			'before' => $before,
-			'after' => $after,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -350,7 +350,7 @@ final class CoreAdapter {
 		Policy::assertMetaKeyAllowed( $key );
 		$before = get_metadata( $type, $id, $key, true );
 		$result = array(
-			'before' => $before,
+			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -397,7 +397,7 @@ final class CoreAdapter {
 		}
 		$snapshot = $this->termSnapshot( $term );
 		return array(
-			'term' => $snapshot,
+			'term'        => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
@@ -450,8 +450,8 @@ final class CoreAdapter {
 			$args['parent'] = (int) $payload['parent'];
 		}
 		$result = array(
-			'before' => $before,
-			'changes' => $args,
+			'before'               => $before,
+			'changes'              => $args,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -475,7 +475,7 @@ final class CoreAdapter {
 		}
 		$before = $this->termSnapshot( $term );
 		$result = array(
-			'before' => $before,
+			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -503,8 +503,8 @@ final class CoreAdapter {
 		}
 		$termIds = array_map( 'intval', $terms );
 		$result  = array(
-			'before' => $before,
-			'after' => $append ? array_values( array_unique( array_merge( $before, $termIds ) ) ) : $termIds,
+			'before'               => $before,
+			'after'                => $append ? array_values( array_unique( array_merge( $before, $termIds ) ) ) : $termIds,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -523,14 +523,14 @@ final class CoreAdapter {
 		foreach ( wp_get_nav_menus() as $menu ) {
 			$menus[] = array(
 				'term_id' => (int) $menu->term_id,
-				'name' => (string) $menu->name,
-				'slug' => (string) $menu->slug,
-				'count' => (int) $menu->count,
+				'name'    => (string) $menu->name,
+				'slug'    => (string) $menu->slug,
+				'count'   => (int) $menu->count,
 			);
 		}
 		return array(
-			'menus' => $menus,
-			'locations' => get_nav_menu_locations(),
+			'menus'                => $menus,
+			'locations'            => get_nav_menu_locations(),
 			'registered_locations' => get_registered_nav_menus(),
 		);
 	}
@@ -581,7 +581,7 @@ final class CoreAdapter {
 		}
 		$name   = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : (string) $menu->name;
 		$before = array(
-			'id' => $id,
+			'id'   => $id,
 			'name' => (string) $menu->name,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -599,7 +599,7 @@ final class CoreAdapter {
 		$snapshot = $this->menuGet( array( 'id' => $id ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $snapshot,
+				'before'               => $snapshot,
 				'_current_fingerprint' => Fingerprint::make( $snapshot ),
 			);
 		}
@@ -608,7 +608,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $deleted->get_error_message() );
 		}
 		return array(
-			'deleted' => $id,
+			'deleted'            => $id,
 			'rollback_supported' => false,
 		);
 	}
@@ -622,9 +622,9 @@ final class CoreAdapter {
 		$before = $itemId ? get_post( $itemId ) : null;
 		$args   = array();
 		$map    = array(
-			'title'      => 'menu-item-title', 'url' => 'menu-item-url', 'description' => 'menu-item-description',
-			'attr_title' => 'menu-item-attr-title', 'target' => 'menu-item-target', 'xfn' => 'menu-item-xfn',
-			'status'     => 'menu-item-status', 'type' => 'menu-item-type', 'object' => 'menu-item-object',
+			'title'       => 'menu-item-title', 'url'         => 'menu-item-url', 'description' => 'menu-item-description',
+			'attr_title'  => 'menu-item-attr-title', 'target'      => 'menu-item-target', 'xfn'         => 'menu-item-xfn',
+			'status'      => 'menu-item-status', 'type'        => 'menu-item-type', 'object'      => 'menu-item-object',
 		);
 		foreach ( $map as $source => $target ) {
 			if ( isset( $payload[ $source ] ) ) {
@@ -648,7 +648,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		return array(
-			'item_id' => (int) $updated,
+			'item_id'            => (int) $updated,
 			'rollback_supported' => false,
 		);
 	}
@@ -664,8 +664,8 @@ final class CoreAdapter {
 		$before    = isset( $locations[ $location ] ) ? (int) $locations[ $location ] : 0;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after' => $menuId,
+				'before'               => $before,
+				'after'                => $menuId,
 				'_current_fingerprint' => Fingerprint::make( $locations ),
 			);
 		}
@@ -678,7 +678,7 @@ final class CoreAdapter {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array(
-			'name' => $name,
+			'name'  => $name,
 			'value' => get_option( $name, null ),
 		);
 	}
@@ -690,8 +690,8 @@ final class CoreAdapter {
 		$value  = $payload['value'] ?? null;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after' => $value,
+				'before'               => $before,
+				'after'                => $value,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -705,7 +705,7 @@ final class CoreAdapter {
 		$before = get_option( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -720,7 +720,7 @@ final class CoreAdapter {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array(
-			'name' => $name,
+			'name'  => $name,
 			'value' => get_site_option( $name, null ),
 		);
 	}
@@ -735,8 +735,8 @@ final class CoreAdapter {
 		$value  = $payload['value'] ?? null;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after' => $value,
+				'before'               => $before,
+				'after'                => $value,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -753,7 +753,7 @@ final class CoreAdapter {
 		$before = get_site_option( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -765,7 +765,7 @@ final class CoreAdapter {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		return array(
-			'name' => $name,
+			'name'  => $name,
 			'value' => get_theme_mod( $name, null ),
 		);
 	}
@@ -777,8 +777,8 @@ final class CoreAdapter {
 		$value  = $payload['value'] ?? null;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after' => $value,
+				'before'               => $before,
+				'after'                => $value,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -792,7 +792,7 @@ final class CoreAdapter {
 		$before = get_theme_mod( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -826,11 +826,11 @@ final class CoreAdapter {
 		$before = $this->commentSnapshot( $comment );
 		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
 		$map    = array(
-			'content' => 'comment_content',
-			'author' => 'comment_author',
+			'content'      => 'comment_content',
+			'author'       => 'comment_author',
 			'author_email' => 'comment_author_email',
-			'author_url' => 'comment_author_url',
-			'approved' => 'comment_approved',
+			'author_url'   => 'comment_author_url',
+			'approved'     => 'comment_approved',
 		);
 		foreach ( $map as $source => $target ) {
 			if ( isset( $payload[ $source ] ) ) {
@@ -839,8 +839,8 @@ final class CoreAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'changes' => $fields,
+				'before'               => $before,
+				'changes'              => $fields,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -860,7 +860,7 @@ final class CoreAdapter {
 		$before = $this->commentSnapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -868,7 +868,7 @@ final class CoreAdapter {
 			throw new RuntimeException( 'Could not trash comment.' );
 		}
 		return array(
-			'trashed' => $id,
+			'trashed'            => $id,
 			'rollback_supported' => false,
 		);
 	}
@@ -885,9 +885,9 @@ final class CoreAdapter {
 	private function sanitizePostFields( array $payload, bool $partial ): array {
 		$fields    = array();
 		$stringMap = array(
-			'title'       => 'post_title', 'content' => 'post_content', 'excerpt' => 'post_excerpt', 'status' => 'post_status',
-			'slug'        => 'post_name', 'type' => 'post_type', 'password' => 'post_password', 'comment_status' => 'comment_status',
-			'ping_status' => 'ping_status', 'date' => 'post_date', 'date_gmt' => 'post_date_gmt',
+			'title'          => 'post_title', 'content'        => 'post_content', 'excerpt'        => 'post_excerpt', 'status'         => 'post_status',
+			'slug'           => 'post_name', 'type'           => 'post_type', 'password'       => 'post_password', 'comment_status' => 'comment_status',
+			'ping_status'    => 'ping_status', 'date'           => 'post_date', 'date_gmt'       => 'post_date_gmt',
 		);
 		foreach ( $stringMap as $source => $target ) {
 			if ( array_key_exists( $source, $payload ) ) {
@@ -935,24 +935,24 @@ final class CoreAdapter {
 
 	private function postRollbackPayload( array $snapshot ): array {
 		return array(
-			'id'         => $snapshot['id'], 'title' => $snapshot['title'], 'content' => $snapshot['content'], 'excerpt' => $snapshot['excerpt'],
-			'status'     => $snapshot['status'], 'slug' => $snapshot['slug'], 'author' => $snapshot['author'], 'parent' => $snapshot['parent'],
-			'menu_order' => $snapshot['menu_order'], 'comment_status' => $snapshot['comment_status'], 'ping_status' => $snapshot['ping_status'],
+			'id'             => $snapshot['id'], 'title'          => $snapshot['title'], 'content'        => $snapshot['content'], 'excerpt'        => $snapshot['excerpt'],
+			'status'         => $snapshot['status'], 'slug'           => $snapshot['slug'], 'author'         => $snapshot['author'], 'parent'         => $snapshot['parent'],
+			'menu_order'     => $snapshot['menu_order'], 'comment_status' => $snapshot['comment_status'], 'ping_status'    => $snapshot['ping_status'],
 		);
 	}
 
 	private function snapshotFromUpdateFields( array $fields ): array {
 		$reverse = array(
-			'post_title' => 'title',
-			'post_content' => 'content',
-			'post_excerpt' => 'excerpt',
-			'post_status' => 'status',
-			'post_name' => 'slug',
-			'post_author' => 'author',
-			'post_parent' => 'parent',
-			'menu_order' => 'menu_order',
+			'post_title'     => 'title',
+			'post_content'   => 'content',
+			'post_excerpt'   => 'excerpt',
+			'post_status'    => 'status',
+			'post_name'      => 'slug',
+			'post_author'    => 'author',
+			'post_parent'    => 'parent',
+			'menu_order'     => 'menu_order',
 			'comment_status' => 'comment_status',
-			'ping_status' => 'ping_status',
+			'ping_status'    => 'ping_status',
 		);
 		$result  = array();
 		foreach ( $reverse as $field => $key ) {
@@ -978,22 +978,22 @@ final class CoreAdapter {
 
 	private function termSnapshot( \WP_Term $term ): array {
 		return array(
-			'id' => (int) $term->term_id,
-			'taxonomy' => (string) $term->taxonomy,
-			'name' => (string) $term->name,
-			'slug' => (string) $term->slug,
+			'id'          => (int) $term->term_id,
+			'taxonomy'    => (string) $term->taxonomy,
+			'name'        => (string) $term->name,
+			'slug'        => (string) $term->slug,
 			'description' => (string) $term->description,
-			'parent' => (int) $term->parent,
-			'count' => (int) $term->count,
+			'parent'      => (int) $term->parent,
+			'count'       => (int) $term->count,
 		);
 	}
 
 	private function commentSnapshot( \WP_Comment $comment ): array {
 		return array(
-			'id'           => (int) $comment->comment_ID, 'post_id' => (int) $comment->comment_post_ID, 'author' => (string) $comment->comment_author,
-			'author_email' => (string) $comment->comment_author_email, 'author_url' => (string) $comment->comment_author_url,
-			'author_ip'    => (string) $comment->comment_author_IP, 'date' => (string) $comment->comment_date, 'content' => (string) $comment->comment_content,
-			'approved'     => (string) $comment->comment_approved, 'type' => (string) $comment->comment_type, 'parent' => (int) $comment->comment_parent, 'user_id' => (int) $comment->user_id,
+			'id'           => (int) $comment->comment_ID, 'post_id'      => (int) $comment->comment_post_ID, 'author'       => (string) $comment->comment_author,
+			'author_email' => (string) $comment->comment_author_email, 'author_url'   => (string) $comment->comment_author_url,
+			'author_ip'    => (string) $comment->comment_author_IP, 'date'         => (string) $comment->comment_date, 'content'      => (string) $comment->comment_content,
+			'approved'     => (string) $comment->comment_approved, 'type'         => (string) $comment->comment_type, 'parent'       => (int) $comment->comment_parent, 'user_id'      => (int) $comment->user_id,
 		);
 	}
 

@@ -14,11 +14,11 @@ final class SystemAdapter {
 		$privileged   = array( 'privileged' => true );
 		$sensitive    = array(
 			'privileged' => true,
-			'sensitive' => true,
+			'sensitive'  => true,
 		);
 		$systemUpdate = array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'      => true,
+			'privileged'    => true,
 			'system_update' => true,
 		);
 
@@ -116,7 +116,7 @@ final class SystemAdapter {
 		$user     = $this->user( $payload );
 		$snapshot = $this->userSnapshot( $user );
 		return array(
-			'user' => $snapshot,
+			'user'        => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
@@ -130,7 +130,7 @@ final class SystemAdapter {
 		$plan = array(
 			'login' => $login,
 			'email' => $email,
-			'role' => isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : get_option( 'default_role' ),
+			'role'  => isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : get_option( 'default_role' ),
 		);
 		if ( isset( $payload['role'] ) && ! current_user_can( 'promote_users' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to assign roles.' );
@@ -163,8 +163,8 @@ final class SystemAdapter {
 			$after['roles'] = array( sanitize_key( (string) $payload['role'] ) );
 		}
 		$result = array(
-			'before' => $before,
-			'after' => $after,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -261,8 +261,8 @@ final class SystemAdapter {
 		$reassign = isset( $payload['reassign'] ) ? (int) $payload['reassign'] : null;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'reassign' => $reassign,
+				'before'               => $before,
+				'reassign'             => $reassign,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -271,7 +271,7 @@ final class SystemAdapter {
 			throw new RuntimeException( 'User deletion failed.' );
 		}
 		return array(
-			'deleted' => (int) $user->ID,
+			'deleted'            => (int) $user->ID,
 			'rollback_supported' => false,
 		);
 	}
@@ -318,8 +318,8 @@ final class SystemAdapter {
 		}
 		foreach ( (array) ( $payload['remove'] ?? array() ) as $cap ) $role->remove_cap( (string) $cap );
 		return array(
-			'role' => $roleName,
-			'capabilities' => get_role( $roleName )->capabilities,
+			'role'               => $roleName,
+			'capabilities'       => get_role( $roleName )->capabilities,
 			'rollback_supported' => false,
 		);
 	}
@@ -336,13 +336,13 @@ final class SystemAdapter {
 		$before = $role->capabilities;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
 		remove_role( $roleName );
 		return array(
-			'deleted' => $roleName,
+			'deleted'            => $roleName,
 			'rollback_supported' => false,
 		);
 	}
@@ -386,9 +386,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'plugins'             => $items,
-			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'plugins'                                         => $items,
+			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -413,8 +413,8 @@ final class SystemAdapter {
 			'page'     => $page,
 			'per_page' => $limit,
 			'fields'   => array(
-				'sections' => false,
-				'description' => false,
+				'sections'          => false,
+				'description'       => false,
 				'short_description' => true,
 			),
 		) );
@@ -473,9 +473,9 @@ final class SystemAdapter {
 		$networkWide = Input::bool( $payload, 'network_wide' );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before_active' => $before,
-				'after_active' => true,
-				'network_wide' => $networkWide,
+				'before_active'        => $before,
+				'after_active'         => true,
+				'network_wide'         => $networkWide,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -511,9 +511,9 @@ final class SystemAdapter {
 		$before = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before_active' => $before,
-				'after_active' => false,
-				'network_wide' => $networkWide,
+				'before_active'        => $before,
+				'after_active'         => false,
+				'network_wide'         => $networkWide,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -567,9 +567,9 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Plugin installer returned success, but the requested WordPress.org slug was not found afterward.' );
 		}
 		return array(
-			'installed' => $slug,
-			'installed_files' => $installedFiles,
-			'readback_verified' => true,
+			'installed'          => $slug,
+			'installed_files'    => $installedFiles,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -617,9 +617,9 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Plugin update installed an unexpected version; inspect live state before retrying.' );
 		}
 		return array(
-			'updated' => $file,
-			'version' => $version,
-			'readback_verified' => true,
+			'updated'            => $file,
+			'version'            => $version,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -635,7 +635,7 @@ final class SystemAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_delete' => $file,
+				'would_delete'         => $file,
 				'_current_fingerprint' => Fingerprint::make( $this->pluginVersion( $file ) ),
 			);
 		}
@@ -651,8 +651,8 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Plugin deletion did not persist: plugin still appears in WordPress inventory.' );
 		}
 		return array(
-			'deleted' => $file,
-			'readback_verified' => true,
+			'deleted'            => $file,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -687,9 +687,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'themes'              => $items,
-			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'themes'                                          => $items,
+			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -703,8 +703,8 @@ final class SystemAdapter {
 		$before = get_stylesheet();
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after' => $stylesheet,
+				'before'               => $before,
+				'after'                => $stylesheet,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -744,7 +744,7 @@ final class SystemAdapter {
 			throw new RuntimeException( 'WordPress theme installation failed; check filesystem permissions.' );
 		}
 		return array(
-			'installed' => $slug,
+			'installed'          => $slug,
 			'rollback_supported' => false,
 		);
 	}
@@ -794,9 +794,9 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Theme update installed an unexpected version; inspect live state before retrying.' );
 		}
 		return array(
-			'updated' => $stylesheet,
-			'version' => $version,
-			'readback_verified' => true,
+			'updated'            => $stylesheet,
+			'version'            => $version,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -838,7 +838,7 @@ final class SystemAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_delete' => $stylesheet,
+				'would_delete'         => $stylesheet,
 				'_current_fingerprint' => Fingerprint::make( $theme->get( 'Version' ) ),
 			);
 		}
@@ -856,8 +856,8 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Theme deletion readback failed: the theme is still installed.' );
 		}
 		return array(
-			'deleted' => $stylesheet,
-			'readback_verified' => true,
+			'deleted'            => $stylesheet,
+			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -875,8 +875,8 @@ final class SystemAdapter {
 		global $wp_version;
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'current_version' => $wp_version,
-				'would_update' => true,
+				'current_version'      => $wp_version,
+				'would_update'         => true,
 				'_current_fingerprint' => Fingerprint::make( $wp_version ),
 			);
 		}
@@ -906,8 +906,8 @@ final class SystemAdapter {
 			throw new RuntimeException( is_wp_error( $updated ) ? $updated->get_error_message() : 'Core update failed.' );
 		}
 		return array(
-			'updated' => true,
-			'target_version' => $candidate->current ?? null,
+			'updated'            => true,
+			'target_version'     => $candidate->current ?? null,
 			'rollback_supported' => false,
 		);
 	}
@@ -937,21 +937,21 @@ final class SystemAdapter {
 			throw new RuntimeException( 'cron.run only accepts an existing scheduled hook with the exact argument set.' );
 		}
 		$state = array(
-			'hook' => $hook,
+			'hook'      => $hook,
 			'timestamp' => (int) $event->timestamp,
-			'schedule' => $event->schedule,
-			'args' => $event->args,
+			'schedule'  => $event->schedule,
+			'args'      => $event->args,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_run' => $state,
+				'would_run'            => $state,
 				'_current_fingerprint' => Fingerprint::make( $state ),
 			);
 		}
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.DynamicHooknameFound -- Only the exact existing scheduled WP-Cron hook is allowed after authorization.
 		do_action_ref_array( $hook, $event->args );
 		return array(
-			'ran' => $state,
+			'ran'                => $state,
 			'rollback_supported' => false,
 		);
 	}
@@ -963,7 +963,7 @@ final class SystemAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_clear' => $hook,
+				'would_clear'          => $hook,
 				'_current_fingerprint' => Fingerprint::make( wp_next_scheduled( $hook ) ),
 			);
 		}
@@ -972,7 +972,7 @@ final class SystemAdapter {
 			throw new RuntimeException( $count->get_error_message() );
 		}
 		return array(
-			'cleared' => (int) $count,
+			'cleared'            => (int) $count,
 			'rollback_supported' => false,
 		);
 	}
@@ -990,10 +990,10 @@ final class SystemAdapter {
 			throw new RuntimeException( 'cron.schedule only reschedules an existing hook with the exact argument set.' );
 		}
 		$state = array(
-			'hook' => $hook,
-			'timestamp' => $timestamp,
-			'recurrence' => $recurrence,
-			'args' => $args,
+			'hook'               => $hook,
+			'timestamp'          => $timestamp,
+			'recurrence'         => $recurrence,
+			'args'               => $args,
 			'existing_timestamp' => (int) $existing->timestamp,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -1004,8 +1004,8 @@ final class SystemAdapter {
 			throw new RuntimeException( $result->get_error_message() );
 		}
 		return array(
-			'scheduled' => true,
-			'event' => $state,
+			'scheduled'          => true,
+			'event'              => $state,
 			'rollback_supported' => false,
 		);
 	}
@@ -1017,7 +1017,7 @@ final class SystemAdapter {
 		}
 		flush_rewrite_rules( $hard );
 		return array(
-			'flushed' => true,
+			'flushed'            => true,
 			'rollback_supported' => false,
 		);
 	}
@@ -1027,7 +1027,7 @@ final class SystemAdapter {
 			return array( 'would_flush' => true, '_current_fingerprint' => Fingerprint::make( array( 'cache' => 'current' ) ) );
 		}
 		return array(
-			'flushed' => wp_cache_flush(),
+			'flushed'            => wp_cache_flush(),
 			'rollback_supported' => false,
 		);
 	}
@@ -1075,8 +1075,8 @@ final class SystemAdapter {
 		foreach ( array( 'public', 'archived', 'mature', 'spam', 'deleted' ) as $field ) if ( array_key_exists( $field, $payload ) ) $data[ $field ] = (int) Input::bool( $payload, $field );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'changes' => $data,
+				'before'               => $before,
+				'changes'              => $data,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -1102,7 +1102,7 @@ final class SystemAdapter {
 		$before = $this->siteSnapshot( $site );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
+				'before'               => $before,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -1111,7 +1111,7 @@ final class SystemAdapter {
 			throw new RuntimeException( $deleted->get_error_message() );
 		}
 		return array(
-			'deleted' => $id,
+			'deleted'            => $id,
 			'rollback_supported' => false,
 		);
 	}
@@ -1143,12 +1143,12 @@ final class SystemAdapter {
 	private function applyUserFields( int $id, array $payload ): void {
 		$fields = array( 'ID' => $id );
 		$map    = array(
-			'email' => 'user_email',
+			'email'        => 'user_email',
 			'display_name' => 'display_name',
-			'first_name' => 'first_name',
-			'last_name' => 'last_name',
-			'description' => 'description',
-			'url' => 'user_url',
+			'first_name'   => 'first_name',
+			'last_name'    => 'last_name',
+			'description'  => 'description',
+			'url'          => 'user_url',
 		);
 		foreach ( $map as $source => $target ) if ( array_key_exists( $source, $payload ) ) $fields[ $target ] = (string) $payload[ $source ];
 		if ( count( $fields ) > 1 ) {

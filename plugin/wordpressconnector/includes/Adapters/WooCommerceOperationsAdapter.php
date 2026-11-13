@@ -71,7 +71,7 @@ final class WooCommerceOperationsAdapter {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
 		$query    = $area === 'tax_rates' ? array(
-			'page' => $page,
+			'page'     => $page,
 			'per_page' => $perPage,
 		) : array();
 		$response = $this->request( 'GET', $path, $query );
@@ -94,7 +94,7 @@ final class WooCommerceOperationsAdapter {
 			}
 		}
 		return array(
-			'area'     => $area, 'items' => $out, 'count' => count( $out ),
+			'area'     => $area, 'items'    => $out, 'count'    => count( $out ),
 			'page'     => $page, 'per_page' => $perPage,
 			'has_more' => $area === 'tax_rates' && count( $response ) >= $perPage,
 		);
@@ -215,7 +215,7 @@ final class WooCommerceOperationsAdapter {
 		}
 		return array(
 			'restored' => true,
-			'area' => $area,
+			'area'     => $area,
 		);
 	}
 

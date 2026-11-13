@@ -83,7 +83,7 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Shipping location rollback readback failed.' );
 		return array(
 			'restored' => true,
-			'zone_id' => $payload['zone_id'],
+			'zone_id'  => $payload['zone_id'],
 		);
 	}
 
@@ -111,9 +111,9 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		$fp     = Fingerprint::make( $this->inventorySnapshot( $type, $inventory ) );
 		$result = array(
-			'type' => $type,
-			'fields' => $fields,
-			'would_create' => true,
+			'type'                 => $type,
+			'fields'               => $fields,
+			'would_create'         => true,
 			'_current_fingerprint' => $fp,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -156,7 +156,7 @@ final class WooCommerceFulfillmentAdapter {
 		$snapshot = $this->resourceSnapshot( $type, $current );
 		$result['created'] = $snapshot;
 		$result['_rollback'] = array( 'action' => 'woocommerce.fulfillment.restore_created', 'payload' => array(
-			'type'                       => $type, 'zone_id' => $payload['zone_id'] ?? null, 'id' => $id,
+			'type'                       => $type, 'zone_id'                    => $payload['zone_id'] ?? null, 'id'                         => $id,
 			'expected_after_fingerprint' => Fingerprint::make( $snapshot ),
 		) );
 		return $result;
@@ -189,8 +189,8 @@ final class WooCommerceFulfillmentAdapter {
 		$this->api( 'DELETE', $path, array( 'force' => true ) );
 		return array(
 			'restored_created_resource' => true,
-			'type' => $type,
-			'id' => $id,
+			'type'                      => $type,
+			'id'                        => $id,
 		);
 	}
 
@@ -221,7 +221,7 @@ final class WooCommerceFulfillmentAdapter {
 			// methods are forced disabled before the operation is accepted.
 			return array(
 				'method_id' => $method,
-				'enabled' => false,
+				'enabled'   => false,
 			);
 		}
 		foreach ( array( 'country', 'rate', 'name' )as $required )
@@ -235,8 +235,8 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Tax rate country/percentage/name is invalid.' );
 		$clean = array(
 			'country' => $country,
-			'rate' => $rate,
-			'name' => sanitize_text_field( $name ),
+			'rate'    => $rate,
+			'name'    => sanitize_text_field( $name ),
 		);
 		foreach ( $fields as $key => $value ){
 			if ( isset( $clean[ $key ] ) ) {

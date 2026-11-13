@@ -79,7 +79,7 @@ final class OptimizerSettingsAdapter {
 		$after[ $key ] = $value;
 		$this->conflicts( $provider, $key, $value );
 		$out = array(
-			'provider'             => $provider, 'before' => $before, 'after' => $after,
+			'provider'             => $provider, 'before'               => $before, 'after'                => $after,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -125,8 +125,8 @@ final class OptimizerSettingsAdapter {
 		}
 		$out['after'] = $this->publicFields( $provider, $next );
 		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore', 'payload' => array(
-			'provider' => $provider, 'field' => $key, 'exists' => $previousExists,
-			'value'    => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
+			'provider'                   => $provider, 'field'                      => $key, 'exists'                     => $previousExists,
+			'value'                      => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
 		) );
 		return $out;
 	}
@@ -166,7 +166,7 @@ final class OptimizerSettingsAdapter {
 		return array(
 			'restored' => true,
 			'provider' => $provider,
-			'field' => $key,
+			'field'    => $key,
 		);
 	}
 

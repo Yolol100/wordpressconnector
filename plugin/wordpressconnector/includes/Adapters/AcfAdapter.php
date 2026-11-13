@@ -149,8 +149,8 @@ final class AcfAdapter {
 			$before[(string) $field] = get_field( (string) $field, $target, false );
 		}
 		$result = array(
-			'target' => $target,
-			'before' => $before,
+			'target'               => $target,
+			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -279,9 +279,9 @@ final class AcfAdapter {
 		}
 
 		$state  = array(
-			'post_id' => $postId,
+			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields' => $before,
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -308,7 +308,7 @@ final class AcfAdapter {
 				'wrapper'           => array(
 					'width' => '',
 					'class' => '',
-					'id' => '',
+					'id'    => '',
 				),
 				'default_value'     => '',
 				'maxlength'         => '',
@@ -343,9 +343,9 @@ final class AcfAdapter {
 			$result['_rollback'] = array(
 				'action'  => 'acf.schema.remove_text_fields',
 				'payload' => array(
-					'post_id' => $postId,
+					'post_id'   => $postId,
 					'group_key' => $groupKey,
-					'fields' => $created,
+					'fields'    => $created,
 				),
 			);
 		}
@@ -378,9 +378,9 @@ final class AcfAdapter {
 			$before[$definition['key']] = $summary;
 		}
 		$state  = array(
-			'post_id' => $postId,
+			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields' => $before,
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -473,9 +473,9 @@ final class AcfAdapter {
 		}
 
 		$state  = array(
-			'post_id' => $postId,
+			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields' => $before,
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -572,9 +572,9 @@ final class AcfAdapter {
 		}
 
 		$state  = array(
-			'post_id' => $postId,
+			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields' => $before,
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -637,10 +637,10 @@ final class AcfAdapter {
 
 		$state  = array(
 			'group_key' => $groupKey,
-			'current' => null,
+			'current'   => null,
 		);
 		$schema = array(
-			'group' => $group,
+			'group'  => $group,
 			'fields' => $fields,
 		);
 		$result = array(
@@ -706,7 +706,7 @@ final class AcfAdapter {
 		$keys               = array();
 		$fields             = $this->normalizeSchemaFields( array_values( $expected['fields'] ), 0, $total, $keys );
 		$normalizedExpected = array(
-			'group' => $group,
+			'group'  => $group,
 			'fields' => $fields,
 		);
 		$current            = $this->fieldGroupSnapshot( $groupKey );
@@ -827,10 +827,10 @@ final class AcfAdapter {
 			$keys[ $key ] = true;
 			$names[ $name ] = true;
 			$normalized[] = array(
-				'key' => $key,
-				'name' => $name,
+				'key'   => $key,
+				'name'  => $name,
 				'label' => $label,
-				'type' => 'text',
+				'type'  => 'text',
 			);
 		}
 		return $normalized;
@@ -991,9 +991,9 @@ final class AcfAdapter {
 				}
 				Policy::assertKeyAllowed( $param );
 				$normalizedRules[] = array(
-					'param' => $param,
+					'param'    => $param,
 					'operator' => $operator,
-					'value' => $value,
+					'value'    => $value,
 				);
 			}
 			$normalized[] = $normalizedRules;
@@ -1086,7 +1086,7 @@ final class AcfAdapter {
 			'conditional_logic' => array_key_exists( 'conditional_logic', $field )
 				? $this->normalizeConditionalLogic( $field['conditional_logic'] )
 				: false,
-			'wrapper' => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array( 'width' => '', 'class' => '', 'id' => '' ),
+			'wrapper'           => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array( 'width' => '', 'class' => '', 'id' => '' ),
 		);
 
 		$this->normalizeScalarSchemaProperties( $field, $type, $key, $normalized );
@@ -1266,7 +1266,7 @@ final class AcfAdapter {
 		return array(
 			'width' => $width,
 			'class' => $class,
-			'id' => $id,
+			'id'    => $id,
 		);
 	}
 
@@ -1302,9 +1302,9 @@ final class AcfAdapter {
 					throw new RuntimeException( 'Invalid ACF conditional_logic value.' );
 				}
 				$group[] = array(
-					'field' => $field,
+					'field'    => $field,
 					'operator' => $operator,
-					'value' => $value,
+					'value'    => $value,
 				);
 			}
 			$normalized[] = $group;
@@ -1332,7 +1332,7 @@ final class AcfAdapter {
 		}
 		$createdNodes[] = array(
 			'key' => (string) $definition['key'],
-			'id' => $savedId,
+			'id'  => $savedId,
 		);
 		foreach ( array_values( $children ) as $index => $child ) {
 			$this->createFieldTree( $child, $savedId, $index, $createdNodes );
@@ -1413,7 +1413,7 @@ final class AcfAdapter {
 			}
 		}
 		return array(
-			'group' => $group,
+			'group'  => $group,
 			'fields' => $trees,
 		);
 	}
