@@ -36,7 +36,7 @@ final class CacheMaintenanceAdapter {
 	public function capabilities( array $payload = array(), array $context = array() ): array {
 		$layers = array();
 		foreach ( self::LAYERS as $layer ) {
-			$layers[$layer] = $this->layerState( $layer );
+			$layers[ $layer ] = $this->layerState( $layer );
 		}
 
 		return array(
@@ -46,7 +46,7 @@ final class CacheMaintenanceAdapter {
 	}
 
 	public function flush( array $payload, array $context ): array {
-		$layer = isset( $payload['layer'] ) ? sanitize_key( ( string ) $payload['layer'] ) : '';
+		$layer = isset( $payload['layer'] ) ? sanitize_key( (string) $payload['layer'] ) : '';
 		if ( ! in_array( $layer, self::LAYERS, true ) ) {
 			throw new RuntimeException( 'maintenance.cache_flush requires layer: elementor, wp_rocket or asset_cleanup.' );
 		}
@@ -139,7 +139,7 @@ final class CacheMaintenanceAdapter {
 			return array(
 				'provider'  => 'Elementor',
 				'available' => is_object( $filesManager ) && method_exists( $filesManager, 'clear_cache' ),
-				'version'   => defined( 'ELEMENTOR_VERSION' ) ? ( string ) ELEMENTOR_VERSION : '',
+				'version'   => defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : '',
 			);
 		}
 
@@ -147,7 +147,7 @@ final class CacheMaintenanceAdapter {
 			return array(
 				'provider'  => 'WP Rocket',
 				'available' => function_exists( 'rocket_clean_domain' ),
-				'version'   => defined( 'WP_ROCKET_VERSION' ) ? ( string ) WP_ROCKET_VERSION : '',
+				'version'   => defined( 'WP_ROCKET_VERSION' ) ? (string) WP_ROCKET_VERSION : '',
 			);
 		}
 
@@ -158,7 +158,7 @@ final class CacheMaintenanceAdapter {
 				is_callable( array( $class, 'clearCache' ) )
 				|| is_callable( array( $class, 'clearAllCache' ) )
 			),
-			'version'   => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
+			'version'   => defined( 'WPACU_PLUGIN_VERSION' ) ? (string) WPACU_PLUGIN_VERSION : '',
 		);
 	}
 
@@ -267,11 +267,11 @@ final class CacheMaintenanceAdapter {
 			throw new RuntimeException( 'Asset CleanUp loopback request failed.' );
 		}
 
-		if ( 200 !== ( int ) wp_remote_retrieve_response_code( $response ) ) {
+		if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			throw new RuntimeException( 'Asset CleanUp loopback returned an unsuccessful status.' );
 		}
 
-		$decoded = json_decode( ( string ) wp_remote_retrieve_body( $response ), true );
+		$decoded = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		return is_array( $decoded )
 			&& true === ( $decoded['success'] ?? false )
 			&& true === ( $decoded['data']['verified'] ?? false );
@@ -317,12 +317,12 @@ final class CacheMaintenanceAdapter {
 		wp_send_json_success( array(
 			'verified' => true,
 			'provider' => 'Asset CleanUp',
-			'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? ( string ) WPACU_PLUGIN_VERSION : '',
+			'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? (string) WPACU_PLUGIN_VERSION : '',
 		) );
 	}
 
 	private function loopbackHexHeader( string $headerName, int $length ): string {
-		$raw = $_SERVER[$headerName] ?? null;
+		$raw = $_SERVER[ $headerName ] ?? null;
 
 		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
 		if ( ! is_string( $raw ) || ! preg_match( '/\A[a-f0-9]{' . $length . '}\z/i', $raw ) ) {
@@ -360,7 +360,7 @@ final class CacheMaintenanceAdapter {
          * not required to purge arbitrary transient names, which caused false
          * negatives even when the provider flush completed successfully.
          */
-		$transient      = ( string ) WPACU_PLUGIN_ID . '_last_clear_cache';
+		$transient      = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
 		$before         = get_transient( $transient );
 		$startedAt      = time();
 		$verifiedByHook = false;
@@ -376,8 +376,8 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$after             = get_transient( $transient );
-		$beforeValue       = is_numeric( $before ) ? ( int ) $before : 0;
-		$afterValue        = is_numeric( $after ) ? ( int ) $after : 0;
+		$beforeValue       = is_numeric( $before ) ? (int) $before : 0;
+		$afterValue        = is_numeric( $after ) ? (int) $after : 0;
 		$timestampVerified = $afterValue >= ( $startedAt - 1 )
 			&& $afterValue >= $beforeValue;
 
@@ -391,9 +391,9 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$classesPath = defined( 'WPACU_PLUGIN_CLASSES_PATH' )
-			? ( string ) WPACU_PLUGIN_CLASSES_PATH
+			? (string) WPACU_PLUGIN_CLASSES_PATH
 			: ( defined( 'WPACU_PLUGIN_DIR' )
-				? rtrim( ( string ) WPACU_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . 'classes'
+				? rtrim( (string) WPACU_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . 'classes'
 				: '' );
 
 		$base = '' !== $classesPath ? realpath( $classesPath ) : false;
@@ -441,7 +441,7 @@ final class CacheMaintenanceAdapter {
 
 	private function countAssetCleanupJsonFiles(): int {
 		$directory = defined( 'WP_CONTENT_DIR' )
-			? rtrim( ( string ) WP_CONTENT_DIR, '/\\' ) . '/cache/asset-cleanup'
+			? rtrim( (string) WP_CONTENT_DIR, '/\\' ) . '/cache/asset-cleanup'
 			: '';
 
 		if ( '' === $directory || ! is_dir( $directory ) ) {
@@ -458,7 +458,7 @@ final class CacheMaintenanceAdapter {
 
 		$count = 0;
 		foreach ( $iterator as $item ) {
-			if ( $item->isFile() && 'json' === strtolower( ( string ) $item->getExtension() ) ) {
+			if ( $item->isFile() && 'json' === strtolower( (string) $item->getExtension() ) ) {
 				++$count;
 				if ( $count >= 10000 ) {
 					break;

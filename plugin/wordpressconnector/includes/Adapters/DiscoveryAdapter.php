@@ -24,12 +24,12 @@ final class DiscoveryAdapter {
 
 		$postTypes = array();
 		foreach ( get_post_types( array(), 'objects' ) as $name => $object ) {
-			$postTypes[$name] = array(
+			$postTypes[ $name ] = array(
 				'label'        => $object->label,
-				'public'       => ( bool ) $object->public,
-				'show_ui'      => ( bool ) $object->show_ui,
-				'show_in_rest' => ( bool ) $object->show_in_rest,
-				'hierarchical' => ( bool ) $object->hierarchical,
+				'public'       => (bool) $object->public,
+				'show_ui'      => (bool) $object->show_ui,
+				'show_in_rest' => (bool) $object->show_in_rest,
+				'hierarchical' => (bool) $object->hierarchical,
 				'supports'     => get_all_post_type_supports( $name ),
 				'taxonomies'   => get_object_taxonomies( $name ),
 			);
@@ -37,13 +37,13 @@ final class DiscoveryAdapter {
 
 		$taxonomies = array();
 		foreach ( get_taxonomies( array(), 'objects' ) as $name => $object ) {
-			$taxonomies[$name] = array(
+			$taxonomies[ $name ] = array(
 				'label'        => $object->label,
-				'public'       => ( bool ) $object->public,
-				'show_ui'      => ( bool ) $object->show_ui,
-				'show_in_rest' => ( bool ) $object->show_in_rest,
-				'hierarchical' => ( bool ) $object->hierarchical,
-				'object_type'  => array_values( ( array ) $object->object_type ),
+				'public'       => (bool) $object->public,
+				'show_ui'      => (bool) $object->show_ui,
+				'show_in_rest' => (bool) $object->show_in_rest,
+				'hierarchical' => (bool) $object->hierarchical,
+				'object_type'  => array_values( (array) $object->object_type ),
 			);
 		}
 
@@ -52,7 +52,7 @@ final class DiscoveryAdapter {
 		if ( ! Policy::publicRepositoryContext() ) {
 			require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			foreach ( get_plugins() as $file => $data ) {
-				$plugins[$file] = array(
+				$plugins[ $file ] = array(
 					'name'           => $data['Name'] ?? $file,
 					'version'        => $data['Version'] ?? '',
 					'active'         => is_plugin_active( $file ),
@@ -63,9 +63,9 @@ final class DiscoveryAdapter {
 
 		$imageSizes = array();
 		foreach ( wp_get_registered_image_subsizes() as $name => $size ) {
-			$imageSizes[$name] = array(
-				'width'  => ( int ) $size['width'],
-				'height' => ( int ) $size['height'],
+			$imageSizes[ $name ] = array(
+				'width'  => (int) $size['width'],
+				'height' => (int) $size['height'],
 				'crop'   => $size['crop'],
 			);
 		}
@@ -91,7 +91,7 @@ final class DiscoveryAdapter {
 
 		return array(
 			'wordpress'              => array(
-				'version'          => ( string ) $wp_version,
+				'version'          => (string) $wp_version,
 				'php_version'      => PHP_VERSION,
 				'multisite'        => is_multisite(),
 				'environment_type' => function_exists( 'wp_get_environment_type' ) ? wp_get_environment_type() : null,
@@ -99,10 +99,10 @@ final class DiscoveryAdapter {
 				'home_url'         => Policy::publicRepositoryContext() ? null : home_url(),
 			),
 			'theme'                  => array(
-				'stylesheet' => ( string ) $theme->get_stylesheet(),
-				'template'   => ( string ) $theme->get_template(),
-				'name'       => ( string ) $theme->get( 'Name' ),
-				'version'    => ( string ) $theme->get( 'Version' ),
+				'stylesheet' => (string) $theme->get_stylesheet(),
+				'template'   => (string) $theme->get_template(),
+				'name'       => (string) $theme->get( 'Name' ),
+				'version'    => (string) $theme->get( 'Version' ),
 			),
 			'plugins'                => $plugins,
 			'post_types'             => $postTypes,
@@ -230,7 +230,7 @@ final class DiscoveryAdapter {
 					}
 					foreach ( preg_split( '/[\s,|]+/', strtoupper( $method ) ) as $verb ) {
 						if ( in_array( $verb, array( 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE' ), true ) ) {
-							$verbs[$verb] = true;
+							$verbs[ $verb ] = true;
 						}
 					}
 				}
@@ -246,7 +246,7 @@ final class DiscoveryAdapter {
 				'advertised_methods' => $methods,
 				'execution_enabled'  => false,
 			);
-			$visibleNamespaces[$routeNamespace] = true;
+			$visibleNamespaces[ $routeNamespace ] = true;
 		}
 
 		usort( $safeRoutes, static function ( array $a, array $b ): int {
@@ -257,7 +257,7 @@ final class DiscoveryAdapter {
 		$result['available'] = true;
 		$result['namespaces'] = $namespaceList;
 		$result['total'] = count( $safeRoutes );
-		$result['pages'] = max( 1, ( int ) ceil( $result['total'] / $perPage ) );
+		$result['pages'] = max( 1, (int) ceil( $result['total'] / $perPage ) );
 		$result['routes'] = array_slice( $safeRoutes, ( $page - 1 ) * $perPage, $perPage );
 		$encoded              = function_exists( 'wp_json_encode' ) ? wp_json_encode( $result ) : json_encode( $result );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 131072 ) {
@@ -271,7 +271,7 @@ final class DiscoveryAdapter {
 			1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
 			throw new \RuntimeException( $field . ' must be a positive integer.' );
 		}
-		$number = ( int ) $value;
+		$number = (int) $value;
 		if ( $number <= 0 || $number > $maximum ) {
 			throw new \RuntimeException( $field . ' exceeds the supported limit.' );
 		}
