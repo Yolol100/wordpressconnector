@@ -18,6 +18,11 @@ use Webactueel\WordPressConnector\Support\Input;
  * Registers and handles System connector actions.
  */
 final class SystemAdapter {
+	/**
+	 * Register connector actions and their handlers.
+	 *
+	 * @param Registry $registry Action registry to extend.
+	 */
 	public function register( Registry $registry ): void {
 		$privileged   = array( 'privileged' => true );
 		$sensitive    = array( 'privileged' => true, 'sensitive' => true );
@@ -76,6 +81,11 @@ final class SystemAdapter {
 		$registry->register( 'multisite.site.delete', array( $this, 'siteDelete' ), $sensitive + array( 'mutation' => true, 'system_update' => true, 'capability' => 'delete_sites', 'description' => 'Delete a multisite site.' ) );
 	}
 
+	/**
+	 * Inspect system readiness and diagnostic state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function doctor(): array {
 		global $wpdb, $wp_version;
 		$file_modifications_allowed = function_exists( 'wp_is_file_mod_allowed' )
@@ -103,6 +113,13 @@ final class SystemAdapter {
 		return $checks;
 	}
 
+	/**
+	 * Handle the user list connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userList( array $payload ): array {
 		$users = get_users( array(
 			'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
@@ -113,12 +130,27 @@ final class SystemAdapter {
 		return array( 'users' => array_map( array( $this, 'userSnapshot' ), $users ) );
 	}
 
+	/**
+	 * Handle the user get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userGet( array $payload ): array {
 		$user     = $this->user( $payload );
 		$snapshot = $this->userSnapshot( $user );
 		return array( 'user' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
 
+	/**
+	 * Handle the user create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userCreate( array $payload, array $context ): array {
 		$login = isset( $payload['login'] ) ? sanitize_user( (string) $payload['login'], true ) : '';
 		$email = isset( $payload['email'] ) ? sanitize_email( (string) $payload['email'] ) : '';
@@ -145,6 +177,14 @@ final class SystemAdapter {
 		return array( 'user' => $this->userSnapshot( get_user_by( 'id', $id ) ), 'password_generated_server_side' => true, '_rollback' => array( 'action' => 'user.delete', 'payload' => array( 'id' => (int) $id ) ) );
 	}
 
+	/**
+	 * Handle the user update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userUpdate( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
 		$before = $this->userSnapshot( $user );
@@ -183,6 +223,14 @@ final class SystemAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the user force password reset connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userForcePasswordReset( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
 		$userId = (int) $user->ID;
@@ -242,6 +290,14 @@ final class SystemAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the user delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function userDelete( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
 		$before = $this->userSnapshot( $user );
@@ -259,11 +315,24 @@ final class SystemAdapter {
 		return array( 'deleted' => (int) $user->ID, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the role list connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function roleList(): array {
 		global $wp_roles;
 		return array( 'roles' => $wp_roles->roles );
 	}
 
+	/**
+	 * Handle the role create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function roleCreate( array $payload, array $context ): array {
 		$role = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
 		$name = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : '';
@@ -286,6 +355,14 @@ final class SystemAdapter {
 		return array( 'role' => $role, '_rollback' => array( 'action' => 'role.delete', 'payload' => array( 'role' => $role ) ) );
 	}
 
+	/**
+	 * Handle the role update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function roleUpdate( array $payload, array $context ): array {
 		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
 		$role     = get_role( $roleName );
@@ -303,6 +380,14 @@ final class SystemAdapter {
 		return array( 'role' => $roleName, 'capabilities' => get_role( $roleName )->capabilities, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the role delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function roleDelete( array $payload, array $context ): array {
 		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
 		$role     = get_role( $roleName );
@@ -320,6 +405,11 @@ final class SystemAdapter {
 		return array( 'deleted' => $roleName, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the plugin list connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginList(): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$transient = get_site_transient( 'update_plugins' );
@@ -366,6 +456,14 @@ final class SystemAdapter {
 		);
 	}
 
+	/**
+	 * Handle the plugin directory search connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginDirectorySearch( array $payload, array $context = array() ): array {
 		if ( array_diff( array_keys( $payload ), array( 'search', 'page', 'per_page' ) ) ) {
 			throw new RuntimeException( 'Plugin directory search accepts only search, page and per_page.' );
@@ -435,6 +533,14 @@ final class SystemAdapter {
 		);
 	}
 
+	/**
+	 * Handle the plugin activate connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginActivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -459,6 +565,14 @@ final class SystemAdapter {
 		return array( 'file' => $file, 'active' => true, 'readback_verified' => true, '_rollback' => array( 'action' => 'plugin.deactivate', 'payload' => array( 'file' => $file, 'network_wide' => $networkWide ) ) );
 	}
 
+	/**
+	 * Handle the plugin deactivate connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginDeactivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -484,6 +598,14 @@ final class SystemAdapter {
 		return array( 'file' => $file, 'active' => false, 'readback_verified' => true, '_rollback' => $before ? array( 'action' => 'plugin.activate', 'payload' => array( 'file' => $file, 'network_wide' => $networkWide ) ) : null );
 	}
 
+	/**
+	 * Handle the plugin install connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginInstall( array $payload, array $context ): array {
 		$slug = isset( $payload['slug'] ) && is_string( $payload['slug'] ) ? $payload['slug'] : '';
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug ) ) {
@@ -528,6 +650,14 @@ final class SystemAdapter {
 		return array( 'installed' => $slug, 'installed_files' => $installedFiles, 'readback_verified' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the plugin update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginUpdate( array $payload, array $context ): array {
 		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
 		$file           = $this->pluginFile( $payload );
@@ -573,6 +703,14 @@ final class SystemAdapter {
 		return array( 'updated' => $file, 'version' => $version, 'readback_verified' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the plugin delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function pluginDelete( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
@@ -599,6 +737,11 @@ final class SystemAdapter {
 		return array( 'deleted' => $file, 'readback_verified' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the theme list connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeList(): array {
 		$active       = get_stylesheet();
 		$activeParent = get_template();
@@ -636,6 +779,14 @@ final class SystemAdapter {
 		);
 	}
 
+	/**
+	 * Handle the theme switch connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeSwitch( array $payload, array $context ): array {
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
 		$theme      = wp_get_theme( $stylesheet );
@@ -654,6 +805,14 @@ final class SystemAdapter {
 			'_rollback' => array( 'action' => 'theme.switch', 'payload' => array( 'stylesheet' => $before ) ) );
 	}
 
+	/**
+	 * Handle the theme install connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeInstall( array $payload, array $context ): array {
 		$slug = isset( $payload['slug'] ) && is_string( $payload['slug'] ) ? $payload['slug'] : '';
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9-]{0,79}\z/', $slug ) ) {
@@ -684,6 +843,14 @@ final class SystemAdapter {
 		return array( 'installed' => $slug, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the theme update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeUpdate( array $payload, array $context ): array {
 		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
 		$stylesheet     = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
@@ -731,6 +898,14 @@ final class SystemAdapter {
 		return array( 'updated' => $stylesheet, 'version' => $version, 'readback_verified' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Read the requested expected update version.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $allowedFields Allowed request fields.
+	 *
+	 * @return string|null Result of this operation.
+	 */
 	private function expectedUpdateVersion( array $payload, array $allowedFields ): ?string {
 		if ( array_diff( array_keys( $payload ), $allowedFields ) ) {
 			throw new RuntimeException( 'Update request contains unsupported fields.' );
@@ -745,6 +920,14 @@ final class SystemAdapter {
 		return $version;
 	}
 
+	/**
+	 * Read the provider's available update version.
+	 *
+	 * @param string $transientName WordPress update transient name.
+	 * @param string $identity Target plugin or theme identity.
+	 *
+	 * @return string|null Result of this operation.
+	 */
 	private function availableUpdateVersion( string $transientName, string $identity ): ?string {
 		$transient = get_site_transient( $transientName );
 		$offers    = is_object( $transient ) ? ( $transient->response ?? null ) : null;
@@ -757,6 +940,14 @@ final class SystemAdapter {
 		return is_string( $version ) && '' !== $version ? $version : null;
 	}
 
+	/**
+	 * Handle the theme delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeDelete( array $payload, array $context ): array {
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
 		if ( $stylesheet === get_stylesheet() || $stylesheet === get_template() ) {
@@ -785,6 +976,11 @@ final class SystemAdapter {
 		return array( 'deleted' => $stylesheet, 'readback_verified' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the core check updates connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function coreCheckUpdates(): array {
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		wp_version_check();
@@ -794,6 +990,14 @@ final class SystemAdapter {
 		return array( 'updates' => $items );
 	}
 
+	/**
+	 * Handle the core update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function coreUpdate( array $payload, array $context ): array {
 		global $wp_version;
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -824,6 +1028,11 @@ final class SystemAdapter {
 		return array( 'updated' => true, 'target_version' => $candidate->current ?? null, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the cron list connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function cronList(): array {
 		$cron  = _get_cron_array();
 		$items = array();
@@ -838,6 +1047,14 @@ final class SystemAdapter {
 		return array( 'events' => $items );
 	}
 
+	/**
+	 * Handle the cron run connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function cronRun( array $payload, array $context ): array {
 		$hook = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
 		$args = isset( $payload['args'] ) && is_array( $payload['args'] ) ? $payload['args'] : array();
@@ -857,6 +1074,14 @@ final class SystemAdapter {
 		return array( 'ran' => $state, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the cron delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function cronDelete( array $payload, array $context ): array {
 		$hook = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
 		if ( '' === $hook ) {
@@ -872,6 +1097,14 @@ final class SystemAdapter {
 		return array( 'cleared' => (int) $count, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the cron schedule connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function cronSchedule( array $payload, array $context ): array {
 		$hook       = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
 		$timestamp  = isset( $payload['timestamp'] ) ? (int) $payload['timestamp'] : time();
@@ -895,6 +1128,14 @@ final class SystemAdapter {
 		return array( 'scheduled' => true, 'event' => $state, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the rewrite flush connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function rewriteFlush( array $payload, array $context ): array {
 		$hard = Input::bool( $payload, 'hard' );
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -904,6 +1145,14 @@ final class SystemAdapter {
 		return array( 'flushed' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the cache flush connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function cacheFlush( array $payload, array $context ): array {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_flush' => true, '_current_fingerprint' => Fingerprint::make( array( 'cache' => 'current' ) ) );
@@ -911,6 +1160,13 @@ final class SystemAdapter {
 		return array( 'flushed' => wp_cache_flush(), 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the site list connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function siteList( array $payload ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -919,6 +1175,14 @@ final class SystemAdapter {
 		return array( 'sites' => array_map( array( $this, 'siteSnapshot' ), $sites ) );
 	}
 
+	/**
+	 * Handle the site create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function siteCreate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -939,6 +1203,14 @@ final class SystemAdapter {
 		return array( 'site' => $this->siteSnapshot( get_site( $siteId ) ), '_rollback' => array( 'action' => 'multisite.site.delete', 'payload' => array( 'id' => (int) $siteId ) ) );
 	}
 
+	/**
+	 * Handle the site update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function siteUpdate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -962,6 +1234,14 @@ final class SystemAdapter {
 		return array( 'site' => $this->siteSnapshot( get_site( $id ) ), '_rollback' => array( 'action' => 'multisite.site.update', 'payload' => $before ) );
 	}
 
+	/**
+	 * Handle the site delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function siteDelete( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -985,6 +1265,13 @@ final class SystemAdapter {
 		return array( 'deleted' => $id, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle internal user logic.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return \WP_User Result of this operation.
+	 */
 	private function user( array $payload ): \WP_User {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$user = get_user_by( 'id', $id );
@@ -994,6 +1281,13 @@ final class SystemAdapter {
 		return $user;
 	}
 
+	/**
+	 * Handle internal user snapshot logic.
+	 *
+	 * @param \WP_User $user Value used by this operation.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function userSnapshot( \WP_User $user ): array {
 		return array(
 			'id'           => (int) $user->ID,
@@ -1009,6 +1303,12 @@ final class SystemAdapter {
 		);
 	}
 
+	/**
+	 * Handle internal apply user fields logic.
+	 *
+	 * @param int $id Value used by this operation.
+	 * @param array $payload Request parameters.
+	 */
 	private function applyUserFields( int $id, array $payload ): void {
 		$fields = array( 'ID' => $id );
 		$map    = array( 'email' => 'user_email', 'display_name' => 'display_name', 'first_name' => 'first_name', 'last_name' => 'last_name', 'description' => 'description', 'url' => 'user_url' );
@@ -1045,6 +1345,13 @@ final class SystemAdapter {
 		return $url;
 	}
 
+	/**
+	 * Handle internal plugin file logic.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return string Result of this operation.
+	 */
 	private function pluginFile( array $payload ): string {
 		$file = isset( $payload['file'] ) ? str_replace( '\\', '/', (string) $payload['file'] ) : '';
 		if ( '' === $file || false !== strpos( $file, '..' ) || 0 === strpos( $file, '/' ) ) {
@@ -1057,12 +1364,26 @@ final class SystemAdapter {
 		return $file;
 	}
 
+	/**
+	 * Handle internal plugin version logic.
+	 *
+	 * @param string $file Value used by this operation.
+	 *
+	 * @return string Result of this operation.
+	 */
 	private function pluginVersion( string $file ): string {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins = get_plugins();
 		return isset( $plugins[ $file ]['Version'] ) ? (string) $plugins[ $file ]['Version'] : '';
 	}
 
+	/**
+	 * Handle internal site snapshot logic.
+	 *
+	 * @param \WP_Site $site Value used by this operation.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function siteSnapshot( \WP_Site $site ): array {
 		return array(
 			'id'           => (int) $site->blog_id,
