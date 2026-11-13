@@ -85,7 +85,6 @@ final class ElementorJsonExport
 
     private function exportPayload(object $document,\WP_Post $post): array
     {
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Both invoked hook names belong to Elementor and must retain its public filter contracts.
         if(!method_exists($document,'get_export_data')) {
             throw new RuntimeException('This Elementor version does not expose document export data.');
         }
@@ -98,6 +97,7 @@ final class ElementorJsonExport
         if(empty($content)) {
             throw new RuntimeException('The Elementor document is empty.');
         }
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing export-elements filter must retain its hook name.
         $content=apply_filters('elementor/template_library/sources/local/export/elements',$content);
         if(!is_array($content)) {
             throw new RuntimeException('Elementor export filters returned invalid document content.');
@@ -110,6 +110,7 @@ final class ElementorJsonExport
             $type='page'===(string)$post->post_type?'wp-page':('post'===(string)$post->post_type?'wp-post':'page');
         }
         $payload=array('content'=>$content,'page_settings'=>$settings,'version'=>class_exists('Elementor\\DB')?(string)\Elementor\DB::DB_VERSION:'0.4','title'=>(string)$post->post_title,'type'=>$type);
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing snapshot filter must retain its hook name.
         $snapshots=apply_filters('elementor/template_library/export/build_snapshots',array(),$content,(int)$post->ID,$payload);
         if(is_array($snapshots)) {
             if(!empty($snapshots['global_classes'])) {
