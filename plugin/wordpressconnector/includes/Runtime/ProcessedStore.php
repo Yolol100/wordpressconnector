@@ -1,239 +1,227 @@
 <?php
 
-declare(strict_types=1);
+declare( strict_types = 1 );
 
 namespace Webactueel\WordPressConnector\Runtime;
 
-final class ProcessedStore
-{
-    private const PREFIX = 'wpconnector_processed_';
-    private const LOCK_KEY = 'wpconnector_mutation_lock';
-    private const LOCK_TTL = 600;
+final class ProcessedStore {
+	private const PREFIX = 'wpconnector_processed_';
+	private const LOCK_KEY = 'wpconnector_mutation_lock';
+	private const LOCK_TTL = 600;
 
-    /**
+	/**
      * Reserve the request ID durably BEFORE calling a mutating provider.
      * add_option() relies on the WordPress options table's unique option_name,
      * so two simultaneous requests cannot both claim the same ID.
      */
-    public function begin(string $requestId, string $fingerprint, string $action): void
-    {
-        $key = self::key($requestId);
-        $record = array(
-            'created_at' => time(),
-            'fingerprint' => $fingerprint,
-            'action' => $action,
-            'state' => 'pending',
-            'result_hash' => null,
-            'ok' => null,
-            'terminal_error' => null,
-        );
-        if (! add_option($key, $record, '', false) || get_option($key, null) !== $record) {
-            throw new \RuntimeException('Mutation request could not be reserved. No mutation was started.');
-        }
-    }
+	public function begin( string $requestId, string $fingerprint, string $action ): void {
+		$key    = self::key( $requestId );
+		$record = array(
+			'created_at'     => time(),
+			'fingerprint'    => $fingerprint,
+			'action'         => $action,
+			'state'          => 'pending',
+			'result_hash'    => null,
+			'ok'             => null,
+			'terminal_error' => null,
+		);
+		if ( ! add_option( $key, $record, '', false ) || get_option( $key, null ) !== $record ) {
+			throw new \RuntimeException( 'Mutation request could not be reserved. No mutation was started.' );
+		}
+	}
 
-    public function put(string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null): void
-    {
-        $key = self::key($requestId);
-        $previous = $this->get($requestId);
-        if (! is_array($previous)
-            || ($previous['state'] ?? null) !== 'pending'
-            || ! is_string($previous['fingerprint'] ?? null)
-            || ! hash_equals($previous['fingerprint'], $fingerprint)
-            || ($previous['action'] ?? null) !== $action) {
-            throw new \RuntimeException('Mutation result cannot be finalized without its original pending reservation.');
-        }
-        $record = array(
-            'created_at' => (int) $previous['created_at'],
-            'fingerprint' => $fingerprint,
-            'action' => $action,
-            'state' => 'completed',
-            'result_hash' => $resultHash,
-            'ok' => $ok,
-            'terminal_error' => $ok ? null : $this->boundedTerminalError($terminalError),
-        );
-        update_option($key, $record, false);
-        if (get_option($key, null) !== $record) {
-            // Retain the pending reservation: repeating this request could
-            // execute a successful mutation twice after a database error.
-            throw new \RuntimeException('Mutation result did not persist; execution outcome is uncertain. Do not retry automatically.');
-        }
-    }
+	public function put( string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null ): void {
+		$key      = self::key( $requestId );
+		$previous = $this->get( $requestId );
+		if ( ! is_array( $previous )
+ || ( $previous['state'] ?? null ) !== 'pending'
+ || ! is_string( $previous['fingerprint'] ?? null )
+ || ! hash_equals( $previous['fingerprint'], $fingerprint )
+ || ( $previous['action'] ?? null ) !== $action ) {
+			throw new \RuntimeException( 'Mutation result cannot be finalized without its original pending reservation.' );
+		}
+		$record = array(
+			'created_at'     => (int) $previous['created_at'],
+			'fingerprint'    => $fingerprint,
+			'action'         => $action,
+			'state'          => 'completed',
+			'result_hash'    => $resultHash,
+			'ok'             => $ok,
+			'terminal_error' => $ok ? null : $this->boundedTerminalError( $terminalError ),
+		);
+		update_option( $key, $record, false );
+		if ( get_option( $key, null ) !== $record ) {
+			// Retain the pending reservation: repeating this request could
+			// execute a successful mutation twice after a database error.
+			throw new \RuntimeException( 'Mutation result did not persist; execution outcome is uncertain. Do not retry automatically.' );
+		}
+	}
 
-    public function get(string $requestId): ?array
-    {
-        $value = get_option(self::key($requestId), null);
-        return is_array($value) ? $value : null;
-    }
+	public function get( string $requestId ): ?array {
+		$value = get_option( self::key( $requestId ), null );
+		return is_array( $value ) ? $value : null;
+	}
 
-    /**
+	/**
      * Read-only, sanitized observation for an authenticated recovery inspection.
      * A missing option is not proof that a previous operation did not run.
      */
-    public function mutationLockStatus(string $requestId): string
-    {
-        $value = get_option(self::LOCK_KEY, null);
-        if (null === $value) {
-            return 'not_observed';
-        }
-        if (! is_string($value)) {
-            return 'unverifiable';
-        }
-        $lock = json_decode($value, true);
-        if (! is_array($lock)
-            || ! is_string($lock['token'] ?? null)
-            || '' === $lock['token']
-            || ! is_numeric($lock['created_at'] ?? null)) {
-            return 'unverifiable';
-        }
-        $owner = $lock['request_id'] ?? null;
-        if (! is_string($owner) || '' === $owner) {
-            return 'legacy_or_unverifiable';
-        }
-        return hash_equals($owner, $requestId) ? 'held_for_request' : 'held_for_another_request';
-    }
+	public function mutationLockStatus( string $requestId ): string {
+		$value = get_option( self::LOCK_KEY, null );
+		if ( null === $value ) {
+			return 'not_observed';
+		}
+		if ( ! is_string( $value ) ) {
+			return 'unverifiable';
+		}
+		$lock = json_decode( $value, true );
+		if ( ! is_array( $lock )
+ || ! is_string( $lock['token'] ?? null )
+ || '' === $lock['token']
+ || ! is_numeric( $lock['created_at'] ?? null ) ) {
+			return 'unverifiable';
+		}
+		$owner = $lock['request_id'] ?? null;
+		if ( ! is_string( $owner ) || '' === $owner ) {
+			return 'legacy_or_unverifiable';
+		}
+		return hash_equals( $owner, $requestId ) ? 'held_for_request' : 'held_for_another_request';
+	}
 
-    public function acquireMutationLock(string $requestId = ''): string
-    {
-        $token = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : bin2hex(random_bytes(16));
-        $value = wp_json_encode(array(
-            'token' => $token,
-            'request_id' => $requestId,
-            'created_at' => time(),
-        ));
-        if (! is_string($value)) {
-            return '';
-        }
+	public function acquireMutationLock( string $requestId = '' ): string {
+		$token = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : bin2hex( random_bytes( 16 ) );
+		$value = wp_json_encode( array(
+			'token'      => $token,
+			'request_id' => $requestId,
+			'created_at' => time(),
+		) );
+		if ( ! is_string( $value ) ) {
+			return '';
+		}
 
-        if (add_option(self::LOCK_KEY, $value, '', false)) {
-            return $token;
-        }
+		if ( add_option( self::LOCK_KEY, $value, '', false ) ) {
+			return $token;
+		}
 
-        $existing = get_option(self::LOCK_KEY, '');
-        $data = is_string($existing) ? json_decode($existing, true) : null;
-        if (
-            ! is_string($existing)
-            || ! is_array($data)
-            || time() - (int) ($data['created_at'] ?? time()) <= self::LOCK_TTL
-        ) {
-            return '';
-        }
+		$existing = get_option( self::LOCK_KEY, '' );
+		$data     = is_string( $existing ) ? json_decode( $existing, true ) : null;
+		if (
+			! is_string( $existing )
+ || ! is_array( $data )
+ || time() - (int) ( $data['created_at'] ?? time() ) <= self::LOCK_TTL
+		) {
+			return '';
+		}
 
-        // Time alone does not prove that the previous request finished.
-        // A long-running upgrade may still be modifying the filesystem.
-        // Reclaim only when its unique persisted request ID has an explicit,
-        // successfully finalized outcome. Unknown/legacy locks are deliberately
-        // left for administrator reconciliation rather than a second write.
-        $ownerRequestId = isset($data['request_id']) && is_string($data['request_id'])
-            ? $data['request_id'] : '';
-        if ('' === $ownerRequestId) {
-            return '';
-        }
-        $owner = $this->get($ownerRequestId);
-        if (! is_array($owner) || ($owner['state'] ?? null) !== 'completed'
-            || ! is_string($owner['result_hash'] ?? null)
-            || '' === $owner['result_hash']) {
-            return '';
-        }
+		// Time alone does not prove that the previous request finished.
+		// A long-running upgrade may still be modifying the filesystem.
+		// Reclaim only when its unique persisted request ID has an explicit,
+		// successfully finalized outcome. Unknown/legacy locks are deliberately
+		// left for administrator reconciliation rather than a second write.
+		$ownerRequestId = isset( $data['request_id'] ) && is_string( $data['request_id'] )
+			? $data['request_id'] : '';
+		if ( '' === $ownerRequestId ) {
+			return '';
+		}
+		$owner = $this->get( $ownerRequestId );
+		if ( ! is_array( $owner ) || ( $owner['state'] ?? null ) !== 'completed'
+ || ! is_string( $owner['result_hash'] ?? null )
+ || '' === $owner['result_hash'] ) {
+			return '';
+		}
 
-        return $this->compareAndSwapLock($existing, $value) ? $token : '';
-    }
+		return $this->compareAndSwapLock( $existing, $value ) ? $token : '';
+	}
 
-    public function releaseMutationLock(string $token): void
-    {
-        $existing = get_option(self::LOCK_KEY, '');
-        $data = is_string($existing) ? json_decode($existing, true) : null;
-        if (! is_string($existing) || ! is_array($data) || ! hash_equals((string) ($data['token'] ?? ''), $token)) {
-            return;
-        }
+	public function releaseMutationLock( string $token ): void {
+		$existing = get_option( self::LOCK_KEY, '' );
+		$data     = is_string( $existing ) ? json_decode( $existing, true ) : null;
+		if ( ! is_string( $existing ) || ! is_array( $data ) || ! hash_equals( (string) ( $data['token'] ?? '' ), $token ) ) {
+			return;
+		}
 
-        $this->deleteLockIfValue($existing);
-    }
+		$this->deleteLockIfValue( $existing );
+	}
 
-    public function cleanup(int $olderThanSeconds): int
-    {
-        global $wpdb;
-        $like = $wpdb->esc_like(self::PREFIX) . '%';
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared cleanup scan must see latest idempotency reservations; caching is unsafe.
-        $rows = $wpdb->get_results($wpdb->prepare("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like));
-        if (! is_array($rows)) {
-            throw new \RuntimeException('Mutation cleanup could not inspect WordPress options storage.');
-        }
-        $deleted = 0;
-        foreach ($rows as $row) {
-            $name = isset($row->option_name) && is_string($row->option_name) ? $row->option_name : '';
-            if (1 !== preg_match('/^wpconnector_processed_[a-f0-9]{64}\z/', $name)) {
-                continue;
-            }
-            $value = maybe_unserialize($row->option_value);
-            if (! is_array($value) || ! is_int($value['created_at'] ?? null)
-                || $value['created_at'] >= time() - $olderThanSeconds) {
-                continue;
-            }
-            // Only proven terminal states may expire. An unknown or malformed
-            // record is a replay barrier, not safe garbage to discard.
-            $completed = ($value['state'] ?? null) === 'completed'
-                || (! array_key_exists('state', $value) && is_bool($value['ok'] ?? null));
-            if (! $completed
-                || ! is_bool($value['ok'] ?? null)
-                || ! is_string($value['result_hash'] ?? null)
-                || '' === $value['result_hash']) {
-                continue;
-            }
-            if (delete_option((string) $row->option_name)) {
-                ++$deleted;
-            }
-        }
-        return $deleted;
-    }
+	public function cleanup( int $olderThanSeconds ): int {
+		global $wpdb;
+		$like = $wpdb->esc_like( self::PREFIX ) . '%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared cleanup scan must see latest idempotency reservations; caching is unsafe.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
+		if ( ! is_array( $rows ) ) {
+			throw new \RuntimeException( 'Mutation cleanup could not inspect WordPress options storage.' );
+		}
+		$deleted = 0;
+		foreach ( $rows as $row ) {
+			$name = isset( $row->option_name ) && is_string( $row->option_name ) ? $row->option_name : '';
+			if ( 1 !== preg_match( '/^wpconnector_processed_[a-f0-9]{64}\z/', $name ) ) {
+				continue;
+			}
+			$value = maybe_unserialize( $row->option_value );
+			if ( ! is_array( $value ) || ! is_int( $value['created_at'] ?? null )
+ || $value['created_at'] >= time() - $olderThanSeconds ) {
+				continue;
+			}
+			// Only proven terminal states may expire. An unknown or malformed
+			// record is a replay barrier, not safe garbage to discard.
+			$completed = ( $value['state'] ?? null ) === 'completed'
+ || ( ! array_key_exists( 'state', $value ) && is_bool( $value['ok'] ?? null ) );
+			if ( ! $completed
+ || ! is_bool( $value['ok'] ?? null )
+ || ! is_string( $value['result_hash'] ?? null )
+ || '' === $value['result_hash'] ) {
+				continue;
+			}
+			if ( delete_option( (string) $row->option_name ) ) {
+				++$deleted;
+			}
+		}
+		return $deleted;
+	}
 
-    private function compareAndSwapLock(string $expected, string $replacement): bool
-    {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on the options row is necessary for the mutation lock; cache invalidated below.
-        $updated = $wpdb->update(
-            $wpdb->options,
-            array('option_value' => $replacement),
-            array('option_name' => self::LOCK_KEY, 'option_value' => $expected),
-            array('%s'),
-            array('%s', '%s')
-        );
-        if (1 !== $updated) {
-            return false;
-        }
+	private function compareAndSwapLock( string $expected, string $replacement ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on the options row is necessary for the mutation lock; cache invalidated below.
+		$updated = $wpdb->update(
+			$wpdb->options,
+			array( 'option_value' => $replacement ),
+			array( 'option_name' => self::LOCK_KEY, 'option_value' => $expected ),
+			array( '%s' ),
+			array( '%s', '%s' )
+		);
+		if ( 1 !== $updated ) {
+			return false;
+		}
 
-        wp_cache_delete(self::LOCK_KEY, 'options');
-        return true;
-    }
+		wp_cache_delete( self::LOCK_KEY, 'options' );
+		return true;
+	}
 
-    private function deleteLockIfValue(string $expected): bool
-    {
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
-        $deleted = $wpdb->delete(
-            $wpdb->options,
-            array('option_name' => self::LOCK_KEY, 'option_value' => $expected),
-            array('%s', '%s')
-        );
-        if (1 !== $deleted) {
-            return false;
-        }
+	private function deleteLockIfValue( string $expected ): bool {
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
+		$deleted = $wpdb->delete(
+			$wpdb->options,
+			array( 'option_name' => self::LOCK_KEY, 'option_value' => $expected ),
+			array( '%s', '%s' )
+		);
+		if ( 1 !== $deleted ) {
+			return false;
+		}
 
-        wp_cache_delete(self::LOCK_KEY, 'options');
-        return true;
-    }
+		wp_cache_delete( self::LOCK_KEY, 'options' );
+		return true;
+	}
 
-    private function boundedTerminalError(?string $message): string
-    {
-        $message = is_string($message) ? trim($message) : '';
-        if ('' === $message) {
-            return 'Completed mutation ended with a terminal execution failure.';
-        }
-        return strlen($message) > 500 ? substr($message, 0, 500) : $message;
-    }
+	private function boundedTerminalError( ?string $message ): string {
+		$message = is_string( $message ) ? trim( $message ) : '';
+		if ( '' === $message ) {
+			return 'Completed mutation ended with a terminal execution failure.';
+		}
+		return strlen( $message ) > 500 ? substr( $message, 0, 500 ) : $message;
+	}
 
-    private static function key(string $requestId): string
-    {
-        return self::PREFIX . hash('sha256', $requestId);
-    }
+	private static function key( string $requestId ): string {
+		return self::PREFIX . hash( 'sha256', $requestId );
+	}
 }
