@@ -17,8 +17,12 @@ if ($start === false || $end === false || $end <= $start) {
 }
 $method = substr($source, $start, $end - $start);
 
+if (preg_match("/->register\\(\\s*'user\\.force_password_reset'\\s*,/", $source) !== 1) {
+    fwrite(STDERR, "Missing emergency password reset action registration.\n");
+    exit(1);
+}
+
 $required = array(
-    "register('user.force_password_reset'",
     "'sensitive' => true",
     "'capability' => 'edit_users'",
     "current_user_can('edit_user'",

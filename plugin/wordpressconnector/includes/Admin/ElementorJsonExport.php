@@ -125,7 +125,16 @@ final class ElementorJsonExport
 
     private function bundleWithSiteParts(\WP_Post $post,array $documentPayload): array {
         $parts=$this->sitePartsForPost($post);
-        return array('format'=>self::BUNDLE_FORMAT,'bundle_version'=>self::BUNDLE_VERSION,'source'=>array('post_id'=>(int)$post->ID,'post_type'=>(string)$post->post_type,'title'=>(string)$post->post_title),'document'=>$documentPayload,'header'=>isset($parts['header']['payload'])?$parts['header']['payload']:null,'footer'=>isset($parts['footer']['payload'])?$parts['footer']['payload']:null,'site_part_meta'=>array('header'=>$this->sitePartMeta($parts['header']??null),'footer'=>$this->sitePartMeta($parts['footer']??null)),'warnings'=>isset($parts['warnings'])&&is_array($parts['warnings'])?$parts['warnings']:array());
+        return array(
+            'format'=>self::BUNDLE_FORMAT,
+            'bundle_version'=>self::BUNDLE_VERSION,
+            'source'=>array('post_id'=>(int)$post->ID,'post_type'=>(string)$post->post_type,'title'=>(string)$post->post_title),
+            'document'=>$documentPayload,
+            'header'=>isset($parts['header']['payload'])?$parts['header']['payload']:null,
+            'footer'=>isset($parts['footer']['payload'])?$parts['footer']['payload']:null,
+            'site_part_meta'=>array('header'=>$this->sitePartMeta($parts['header']??null),'footer'=>$this->sitePartMeta($parts['footer']??null)),
+            'warnings'=>isset($parts['warnings'])&&is_array($parts['warnings'])?$parts['warnings']:array()
+        );
     }
 
     private function sitePartsForPost(\WP_Post $sourcePost): array

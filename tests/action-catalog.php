@@ -180,10 +180,13 @@ if ($source === false) {
 }
 
 $registrationLines = array();
-foreach (preg_split('/\R/', $source) as $line) {
-    if (preg_match("/register\\('([^']+)'/", $line, $matches) === 1) {
-        $registrationLines[$matches[1]] = $line;
-    }
+$registrationMatches = array();
+if (preg_match_all("/->register\\(\\s*'([^']+)'(.*?)\\);/s", $source, $registrationMatches, PREG_SET_ORDER) === false) {
+    fwrite(STDERR, "Unable to parse system action registrations.\n");
+    exit(1);
+}
+foreach ($registrationMatches as $registration) {
+    $registrationLines[$registration[1]] = $registration[0];
 }
 
 foreach (array('plugin.install', 'plugin.update', 'plugin.delete', 'theme.install', 'theme.update', 'theme.delete', 'core.update') as $action) {

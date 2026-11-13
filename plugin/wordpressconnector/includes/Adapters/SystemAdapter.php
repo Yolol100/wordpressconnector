@@ -23,7 +23,15 @@ final class SystemAdapter
         $registry->register('user.get', array($this, 'userGet'), $sensitive + array('capability' => 'list_users', 'description' => 'Read a WordPress user.'));
         $registry->register('user.create', array($this, 'userCreate'), $sensitive + array('mutation' => true, 'capability' => 'create_users', 'description' => 'Create a WordPress user with a server-generated password.'));
         $registry->register('user.update', array($this, 'userUpdate'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Update WordPress user profile fields and roles.'));
-        $registry->register('user.force_password_reset', array($this, 'userForcePasswordReset'), $sensitive + array('mutation' => true, 'capability' => 'edit_users', 'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'));
+        $registry->register(
+            'user.force_password_reset',
+            array($this, 'userForcePasswordReset'),
+            $sensitive + array(
+                'mutation' => true,
+                'capability' => 'edit_users',
+                'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'
+            )
+        );
         $registry->register('user.delete', array($this, 'userDelete'), $sensitive + array('mutation' => true, 'capability' => 'delete_users', 'description' => 'Delete a WordPress user.'));
 
         $registry->register('role.list', array($this, 'roleList'), $privileged + array('capability' => 'promote_users', 'description' => 'List roles and capabilities.'));
@@ -140,7 +148,19 @@ final class SystemAdapter
         if (isset($payload['add_roles'])) foreach ((array) $payload['add_roles'] as $role) $user->add_role(sanitize_key((string) $role));
         if (isset($payload['remove_roles'])) foreach ((array) $payload['remove_roles'] as $role) $user->remove_role(sanitize_key((string) $role));
         $result['after'] = $this->userSnapshot(get_user_by('id', $user->ID));
-        $result['_rollback'] = array('action' => 'user.update', 'payload' => array('id' => (int) $user->ID, 'email' => $before['email'], 'display_name' => $before['display_name'], 'first_name' => $before['first_name'], 'last_name' => $before['last_name'], 'description' => $before['description'], 'url' => $before['url'], 'role' => $before['roles'][0] ?? 'subscriber'));
+        $result['_rollback'] = array(
+            'action' => 'user.update',
+            'payload' => array(
+                'id' => (int) $user->ID,
+                'email' => $before['email'],
+                'display_name' => $before['display_name'],
+                'first_name' => $before['first_name'],
+                'last_name' => $before['last_name'],
+                'description' => $before['description'],
+                'url' => $before['url'],
+                'role' => $before['roles'][0] ?? 'subscriber'
+            )
+        );
         return $result;
     }
 
@@ -733,7 +753,14 @@ final class SystemAdapter
     {
         $cron = _get_cron_array();
         $items = array();
-        foreach ((array) $cron as $timestamp => $hooks) foreach ((array) $hooks as $hook => $events) foreach ((array) $events as $key => $event) $items[] = array('timestamp' => (int) $timestamp, 'hook' => (string) $hook, 'schedule' => $event['schedule'] ?? false, 'args' => $event['args'] ?? array(), 'interval' => $event['interval'] ?? null, 'key' => (string) $key);
+        foreach ((array) $cron as $timestamp => $hooks) foreach ((array) $hooks as $hook => $events) foreach ((array) $events as $key => $event) $items[] = array(
+            'timestamp' => (int) $timestamp,
+            'hook' => (string) $hook,
+            'schedule' => $event['schedule'] ?? false,
+            'args' => $event['args'] ?? array(),
+            'interval' => $event['interval'] ?? null,
+            'key' => (string) $key
+        );
         return array('events' => $items);
     }
 
@@ -851,7 +878,18 @@ final class SystemAdapter
 
     private function userSnapshot(\WP_User $user): array
     {
-        return array('id' => (int) $user->ID, 'login' => (string) $user->user_login, 'email' => (string) $user->user_email, 'display_name' => (string) $user->display_name, 'first_name' => (string) $user->first_name, 'last_name' => (string) $user->last_name, 'description' => (string) $user->description, 'url' => (string) $user->user_url, 'roles' => array_values($user->roles), 'capabilities' => $user->allcaps);
+        return array(
+            'id' => (int) $user->ID,
+            'login' => (string) $user->user_login,
+            'email' => (string) $user->user_email,
+            'display_name' => (string) $user->display_name,
+            'first_name' => (string) $user->first_name,
+            'last_name' => (string) $user->last_name,
+            'description' => (string) $user->description,
+            'url' => (string) $user->user_url,
+            'roles' => array_values($user->roles),
+            'capabilities' => $user->allcaps
+        );
     }
 
     private function applyUserFields(int $id, array $payload): void
@@ -908,6 +946,18 @@ final class SystemAdapter
 
     private function siteSnapshot(\WP_Site $site): array
     {
-        return array('id' => (int) $site->blog_id, 'network_id' => (int) $site->site_id, 'domain' => (string) $site->domain, 'path' => (string) $site->path, 'registered' => (string) $site->registered, 'last_updated' => (string) $site->last_updated, 'public' => (int) $site->public, 'archived' => (int) $site->archived, 'mature' => (int) $site->mature, 'spam' => (int) $site->spam, 'deleted' => (int) $site->deleted);
+        return array(
+            'id' => (int) $site->blog_id,
+            'network_id' => (int) $site->site_id,
+            'domain' => (string) $site->domain,
+            'path' => (string) $site->path,
+            'registered' => (string) $site->registered,
+            'last_updated' => (string) $site->last_updated,
+            'public' => (int) $site->public,
+            'archived' => (int) $site->archived,
+            'mature' => (int) $site->mature,
+            'spam' => (int) $site->spam,
+            'deleted' => (int) $site->deleted
+        );
     }
 }
