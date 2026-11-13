@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types=1 );
+declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\CLI;
 
@@ -17,27 +17,26 @@ final class Command {
 	}
 
 	/**
-     * Execute one connector request file.
+	 * Execute one connector request file.
      *
-     * ## OPTIONS
+	 * ## OPTIONS
      *
-     * <request>
-     * : Path to a request JSON file.
+	 * <request>
+	 * : Path to a request JSON file.
      *
-     * [--output=<path>]
-     * : Write the result JSON atomically to this path.
+	 * [--output=<path>]
+	 * : Write the result JSON atomically to this path.
      *
-     * [--asset-root=<path>]
-     * : Trusted root used by media.import source_path.
+	 * [--asset-root=<path>]
+	 * : Trusted root used by media.import source_path.
      *
-     * ## EXAMPLES
+	 * ## EXAMPLES
      *
-     *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
+	 *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
      *
-     * @subcommand run
-     */
-	public function run( array $args, array $assocArgs ): void
-	{
+	 * @subcommand run
+	 */
+	public function run( array $args, array $assocArgs ): void {
 		$requestPath = isset( $args[0] ) ? ( string ) $args[0] : '';
 		if ( '' === $requestPath ) {
 			\WP_CLI::error( 'Request file is required.' );
@@ -66,12 +65,11 @@ final class Command {
 	}
 
 	/**
-     * Print the registered action catalog.
+	 * Print the registered action catalog.
      *
-     * @subcommand actions
-     */
-	public function actions( array $args, array $assocArgs ): void
-	{
+	 * @subcommand actions
+	 */
+	public function actions( array $args, array $assocArgs ): void {
 		$request = Request::fromArray( array(
 			'version' => 1,
 			'request_id' => 'actions-list-0001',
@@ -84,12 +82,11 @@ final class Command {
 	}
 
 	/**
-     * Run read-only runtime diagnostics.
+	 * Run read-only runtime diagnostics.
      *
-     * @subcommand doctor
-     */
-	public function doctor( array $args, array $assocArgs ): void
-	{
+	 * @subcommand doctor
+	 */
+	public function doctor( array $args, array $assocArgs ): void {
 		$request = Request::fromArray( array(
 			'version' => 1,
 			'request_id' => 'doctor-run-00001',
