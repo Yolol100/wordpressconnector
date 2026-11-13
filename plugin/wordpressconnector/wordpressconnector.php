@@ -16,12 +16,12 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector;
 
-if(! defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-define('WPCONNECTOR_VERSION','1.20.10');
-define('WPCONNECTOR_FILE',__FILE__);
-define('WPCONNECTOR_PATH',plugin_dir_path(__FILE__));
+define( 'WPCONNECTOR_VERSION', '1.20.10' );
+define( 'WPCONNECTOR_FILE', __FILE__ );
+define( 'WPCONNECTOR_PATH', plugin_dir_path( __FILE__ ) );
 $wpconnector_files = array(
 	'includes/Support/Json.php',
 	'includes/Support/Fingerprint.php',
@@ -79,10 +79,10 @@ $wpconnector_files = array(
 	'includes/CLI/Command.php',
 	'includes/Plugin.php'
 );
-foreach($wpconnector_files as $wpconnector_file) {
+foreach ( $wpconnector_files as $wpconnector_file ) {
 	require_once WPCONNECTOR_PATH.$wpconnector_file;
 }
 Plugin::boot();
-register_activation_hook(WPCONNECTOR_FILE, static function ($networkWide = false): void {
-	\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation((bool) $networkWide);
-});
+register_activation_hook( WPCONNECTOR_FILE, static function ( $networkWide = false ): void {
+	\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $networkWide );
+} );

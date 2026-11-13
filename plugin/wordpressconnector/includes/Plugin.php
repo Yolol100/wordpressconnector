@@ -49,15 +49,13 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Runtime\SnapshotStore;
 
-final class Plugin
-{
-	public static function boot(): void
-	{
-		add_action('before_woocommerce_init', static function (): void {
-			if (class_exists('Automattic\\WooCommerce\\Utilities\\FeaturesUtil')) {
-				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', WPCONNECTOR_FILE, true);
+final class Plugin {
+	public static function boot(): void {
+		add_action( 'before_woocommerce_init', static function (): void {
+			if ( class_exists( 'Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', WPCONNECTOR_FILE, true );
 			}
-		});
+		} );
 
 		$registry = new Registry();
 		$adapters = array(
@@ -96,22 +94,22 @@ final class Plugin
 			new SystemAdapter(),
 		);
 
-		foreach ($adapters as $adapter) {
-			$adapter->register($registry);
+		foreach ( $adapters as $adapter ) {
+			$adapter->register( $registry );
 		}
 
-		do_action('wpconnector_register_actions', $registry);
+		do_action( 'wpconnector_register_actions', $registry );
 
-		$runner = new Runner($registry, new SnapshotStore(), new ProcessedStore());
-		(new Settings())->register();
-		(new ElementorJsonExport())->register();
-		(new ElementorJsonImport())->register();
-		$restController = new Controller($runner, new AssetStore());
+		$runner = new Runner( $registry, new SnapshotStore(), new ProcessedStore() );
+		( new Settings() )->register();
+		( new ElementorJsonExport() )->register();
+		( new ElementorJsonImport() )->register();
+		$restController = new Controller( $runner, new AssetStore() );
 		$restController->register();
-		(new McpController($runner, $registry, array($restController, 'authorize')))->register();
+		( new McpController( $runner, $registry, array( $restController, 'authorize' ) ) )->register();
 
-		if (defined('WP_CLI') && WP_CLI && class_exists('WP_CLI')) {
-			\WP_CLI::add_command('wordpress-connector', new Command($runner));
+		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
+			\WP_CLI::add_command( 'wordpress-connector', new Command( $runner ) );
 		}
 	}
 }
