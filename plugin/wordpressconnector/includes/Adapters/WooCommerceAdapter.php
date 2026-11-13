@@ -400,16 +400,26 @@ final class WooCommerceAdapter {
 			'paginate' => true,
 			'status'   => isset( $payload['status'] ) ? $payload['status'] : ( Policy::publicRepositoryContext() ? 'publish' : array( 'publish', 'draft', 'pending', 'private' ) ),
 		);
-		if ( isset( $payload['type'] ) ) $args['type'] = sanitize_key( (string) $payload['type'] );
-		if ( isset( $payload['sku'] ) ) $args['sku'] = (string) $payload['sku'];
-		if ( isset( $payload['search'] ) ) $args['s'] = sanitize_text_field( (string) $payload['search'] );
-		if ( isset( $payload['category'] ) ) $args['category'] = array_map( 'intval', (array) $payload['category'] );
+		if ( isset( $payload['type'] ) ) {
+			$args['type'] = sanitize_key( (string) $payload['type'] );
+		}
+		if ( isset( $payload['sku'] ) ) {
+			$args['sku'] = (string) $payload['sku'];
+		}
+		if ( isset( $payload['search'] ) ) {
+			$args['s'] = sanitize_text_field( (string) $payload['search'] );
+		}
+		if ( isset( $payload['category'] ) ) {
+			$args['category'] = array_map( 'intval', (array) $payload['category'] );
+		}
 
 		$query    = wc_get_products( $args );
 		$products = is_object( $query ) && isset( $query->products ) ? $query->products : (array) $query;
 		$items    = array();
 		foreach ( $products as $product ) {
-			if ( $product instanceof \WC_Product ) $items[] = $this->productSnapshot( $product );
+			if ( $product instanceof \WC_Product ) {
+				$items[] = $this->productSnapshot( $product );
+			}
 		}
 		return array(
 			'products' => $items,
@@ -441,7 +451,9 @@ final class WooCommerceAdapter {
 		}
 
 		$id = $product->save();
-		if ( ! $id ) throw new RuntimeException( 'WooCommerce product save failed.' );
+		if ( ! $id ) {
+			throw new RuntimeException( 'WooCommerce product save failed.' );
+		}
 		$saved = wc_get_product( $id );
 		return array( 'product' => $this->productSnapshot( $saved ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
 	}
@@ -453,7 +465,9 @@ final class WooCommerceAdapter {
 		$this->applyProduct( $working, $payload );
 		$after  = $this->productSnapshot( $working );
 		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 
 		$this->applyProduct( $product, $payload );
 		$product->save();
@@ -466,11 +480,15 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$parentId = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent   = wc_get_product( $parentId );
-		if ( ! $parent instanceof \WC_Product_Variable ) throw new RuntimeException( 'Variable product not found.' );
+		if ( ! $parent instanceof \WC_Product_Variable ) {
+			throw new RuntimeException( 'Variable product not found.' );
+		}
 		$items = array();
 		foreach ( $parent->get_children() as $id ) {
 			$variation = wc_get_product( (int) $id );
-			if ( $variation instanceof \WC_Product_Variation ) $items[] = $this->variationSnapshot( $variation );
+			if ( $variation instanceof \WC_Product_Variation ) {
+				$items[] = $this->variationSnapshot( $variation );
+			}
 		}
 		return array( 'variations' => $items );
 	}
@@ -485,13 +503,19 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$parentId = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent   = wc_get_product( $parentId );
-		if ( ! $parent instanceof \WC_Product_Variable ) throw new RuntimeException( 'Variable parent product not found.' );
+		if ( ! $parent instanceof \WC_Product_Variable ) {
+			throw new RuntimeException( 'Variable parent product not found.' );
+		}
 		$variation = new \WC_Product_Variation();
 		$variation->set_parent_id( $parentId );
 		$this->applyVariation( $variation, $payload );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_create' => $this->variationSnapshot( $variation ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'parent_id' => $parentId ) ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_create' => $this->variationSnapshot( $variation ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'parent_id' => $parentId ) ) );
+		}
 		$id = $variation->save();
-		if ( ! $id ) throw new RuntimeException( 'Variation save failed.' );
+		if ( ! $id ) {
+			throw new RuntimeException( 'Variation save failed.' );
+		}
 		$savedVariation = wc_get_product( $id );
 		if ( ! $savedVariation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Saved WooCommerce variation could not be read back.' );
@@ -505,7 +529,9 @@ final class WooCommerceAdapter {
 		$working   = clone $variation;
 		$this->applyVariation( $working, $payload );
 		$result = array( 'before' => $before, 'after' => $this->variationSnapshot( $working ), '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$this->applyVariation( $variation, $payload );
 		$variation->save();
 		$updatedVariation = wc_get_product( $variation->get_id() );
@@ -529,9 +555,13 @@ final class WooCommerceAdapter {
 	public function attributeCreate( array $payload, array $context ): array {
 		$this->assertWoo();
 		$args = $this->attributeArgs( $payload, false );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_create' => $args, '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'slug' => $args['slug'] ) ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_create' => $args, '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'slug' => $args['slug'] ) ) );
+		}
 		$id = wc_create_attribute( $args );
-		if ( is_wp_error( $id ) ) throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) ) {
+			throw new RuntimeException( $id->get_error_message() );
+		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		return array( 'attribute_id' => (int) $id, '_rollback' => array( 'action' => 'woocommerce.attribute.delete', 'payload' => array( 'id' => (int) $id ) ) );
 	}
@@ -543,9 +573,13 @@ final class WooCommerceAdapter {
 		$before    = $this->attributeSnapshot( $beforeObj );
 		$args      = $this->attributeArgs( $payload, true );
 		$result    = array( 'before' => $before, 'changes' => $args, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$updated = wc_update_attribute( $id, $args );
-		if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) ) {
+			throw new RuntimeException( $updated->get_error_message() );
+		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['after'] = $this->attributeSnapshot( $this->findAttribute( $id ) );
 		$result['_rollback'] = array( 'action' => 'woocommerce.attribute.update', 'payload' => array_merge( array( 'id' => $id ), $before ) );
@@ -557,9 +591,13 @@ final class WooCommerceAdapter {
 		$id     = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$before = $this->attributeSnapshot( $this->findAttribute( $id ) );
 		$result = array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$deleted = wc_delete_attribute( $id );
-		if ( is_wp_error( $deleted ) ) throw new RuntimeException( $deleted->get_error_message() );
+		if ( is_wp_error( $deleted ) ) {
+			throw new RuntimeException( $deleted->get_error_message() );
+		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['_rollback'] = array( 'action' => 'woocommerce.attribute.create', 'payload' => $before );
 		return $result;
@@ -585,7 +623,9 @@ final class WooCommerceAdapter {
 	public function couponGet( array $payload ): array {
 		$this->assertWoo();
 		$coupon = new \WC_Coupon( $payload['id'] ?? ( $payload['code'] ?? 0 ) );
-		if ( ! $coupon->get_id() ) throw new RuntimeException( 'Coupon not found.' );
+		if ( ! $coupon->get_id() ) {
+			throw new RuntimeException( 'Coupon not found.' );
+		}
 		$snapshot = $this->couponSnapshot( $coupon );
 		return array( 'coupon' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
@@ -594,7 +634,9 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$coupon = new \WC_Coupon();
 		$this->applyCoupon( $coupon, $payload );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_create' => $this->couponSnapshot( $coupon ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true ) ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_create' => $this->couponSnapshot( $coupon ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true ) ) );
+		}
 		$id = $coupon->save();
 		return array( 'coupon' => $this->couponSnapshot( new \WC_Coupon( $id ) ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
 	}
@@ -602,12 +644,16 @@ final class WooCommerceAdapter {
 	public function couponUpdate( array $payload, array $context ): array {
 		$this->assertWoo();
 		$coupon = new \WC_Coupon( $payload['id'] ?? ( $payload['code'] ?? 0 ) );
-		if ( ! $coupon->get_id() ) throw new RuntimeException( 'Coupon not found.' );
+		if ( ! $coupon->get_id() ) {
+			throw new RuntimeException( 'Coupon not found.' );
+		}
 		$before  = $this->couponSnapshot( $coupon );
 		$working = clone $coupon;
 		$this->applyCoupon( $working, $payload );
 		$result = array( 'before' => $before, 'after' => $this->couponSnapshot( $working ), '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$this->applyCoupon( $coupon, $payload );
 		$coupon->save();
 		$result['after'] = $this->couponSnapshot( new \WC_Coupon( $coupon->get_id() ) );
@@ -625,7 +671,9 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$product = wc_get_product( $id );
-		if ( ! $product instanceof \WC_Product ) throw new RuntimeException( 'Product not found.' );
+		if ( ! $product instanceof \WC_Product ) {
+			throw new RuntimeException( 'Product not found.' );
+		}
 		return $product;
 	}
 
@@ -633,7 +681,9 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$id        = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$variation = wc_get_product( $id );
-		if ( ! $variation instanceof \WC_Product_Variation ) throw new RuntimeException( 'Variation not found.' );
+		if ( ! $variation instanceof \WC_Product_Variation ) {
+			throw new RuntimeException( 'Variation not found.' );
+		}
 		return $variation;
 	}
 
@@ -645,7 +695,9 @@ final class WooCommerceAdapter {
 			case 'simple': return new \WC_Product_Simple();
 			default:
 				$class = wc_get_product_classname( 0, $type );
-				if ( class_exists( $class ) && is_subclass_of( $class, 'WC_Product' ) ) return new $class();
+				if ( class_exists( $class ) && is_subclass_of( $class, 'WC_Product' ) ) {
+					return new $class();
+				}
 				throw new RuntimeException( 'Unsupported product type: ' . $type );
 		}
 	}
@@ -666,22 +718,48 @@ final class WooCommerceAdapter {
 			if ( array_key_exists( $key, $payload ) && method_exists( $product, $method ) ) $product->{$method}( $payload[ $key ] );
 		}
 
-		if ( array_key_exists( 'date_on_sale_from', $payload ) ) $product->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
-		if ( array_key_exists( 'date_on_sale_to', $payload ) ) $product->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
-		if ( isset( $payload['category_ids'] ) ) $product->set_category_ids( array_map( 'intval', (array) $payload['category_ids'] ) );
-		if ( isset( $payload['tag_ids'] ) ) $product->set_tag_ids( array_map( 'intval', (array) $payload['tag_ids'] ) );
-		if ( isset( $payload['gallery_image_ids'] ) ) $product->set_gallery_image_ids( array_map( 'intval', (array) $payload['gallery_image_ids'] ) );
-		if ( isset( $payload['upsell_ids'] ) ) $product->set_upsell_ids( array_map( 'intval', (array) $payload['upsell_ids'] ) );
-		if ( isset( $payload['cross_sell_ids'] ) ) $product->set_cross_sell_ids( array_map( 'intval', (array) $payload['cross_sell_ids'] ) );
-		if ( isset( $payload['default_attributes'] ) && method_exists( $product, 'set_default_attributes' ) ) $product->set_default_attributes( (array) $payload['default_attributes'] );
-		if ( isset( $payload['attributes'] ) && is_array( $payload['attributes'] ) ) $product->set_attributes( $this->buildAttributes( $payload['attributes'] ) );
-		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) $product->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
+		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
+			$product->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
+		}
+		if ( array_key_exists( 'date_on_sale_to', $payload ) ) {
+			$product->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
+		}
+		if ( isset( $payload['category_ids'] ) ) {
+			$product->set_category_ids( array_map( 'intval', (array) $payload['category_ids'] ) );
+		}
+		if ( isset( $payload['tag_ids'] ) ) {
+			$product->set_tag_ids( array_map( 'intval', (array) $payload['tag_ids'] ) );
+		}
+		if ( isset( $payload['gallery_image_ids'] ) ) {
+			$product->set_gallery_image_ids( array_map( 'intval', (array) $payload['gallery_image_ids'] ) );
+		}
+		if ( isset( $payload['upsell_ids'] ) ) {
+			$product->set_upsell_ids( array_map( 'intval', (array) $payload['upsell_ids'] ) );
+		}
+		if ( isset( $payload['cross_sell_ids'] ) ) {
+			$product->set_cross_sell_ids( array_map( 'intval', (array) $payload['cross_sell_ids'] ) );
+		}
+		if ( isset( $payload['default_attributes'] ) && method_exists( $product, 'set_default_attributes' ) ) {
+			$product->set_default_attributes( (array) $payload['default_attributes'] );
+		}
+		if ( isset( $payload['attributes'] ) && is_array( $payload['attributes'] ) ) {
+			$product->set_attributes( $this->buildAttributes( $payload['attributes'] ) );
+		}
+		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) {
+			$product->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
+		}
 
 		if ( $product instanceof \WC_Product_External ) {
-			if ( isset( $payload['external_url'] ) ) $product->set_product_url( (string) $payload['external_url'] );
-			if ( isset( $payload['button_text'] ) ) $product->set_button_text( (string) $payload['button_text'] );
+			if ( isset( $payload['external_url'] ) ) {
+				$product->set_product_url( (string) $payload['external_url'] );
+			}
+			if ( isset( $payload['button_text'] ) ) {
+				$product->set_button_text( (string) $payload['button_text'] );
+			}
 		}
-		if ( $product instanceof \WC_Product_Grouped && isset( $payload['children'] ) ) $product->set_children( array_map( 'intval', (array) $payload['children'] ) );
+		if ( $product instanceof \WC_Product_Grouped && isset( $payload['children'] ) ) {
+			$product->set_children( array_map( 'intval', (array) $payload['children'] ) );
+		}
 	}
 
 	private function applyVariation( \WC_Product_Variation $variation, array $payload ): void {
@@ -694,10 +772,18 @@ final class WooCommerceAdapter {
 			'download_limit' => 'set_download_limit', 'download_expiry' => 'set_download_expiry', 'description' => 'set_description',
 		);
 		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $variation->{$method}( $payload[ $key ] );
-		if ( isset( $payload['attributes'] ) ) $variation->set_attributes( (array) $payload['attributes'] );
-		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) $variation->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
-		if ( array_key_exists( 'date_on_sale_from', $payload ) ) $variation->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
-		if ( array_key_exists( 'date_on_sale_to', $payload ) ) $variation->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
+		if ( isset( $payload['attributes'] ) ) {
+			$variation->set_attributes( (array) $payload['attributes'] );
+		}
+		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) {
+			$variation->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
+		}
+		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
+			$variation->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
+		}
+		if ( array_key_exists( 'date_on_sale_to', $payload ) ) {
+			$variation->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
+		}
 	}
 
 	private function orderSnapshot( \WC_Order $order, bool $includePersonalData, bool $includeItems = true ): array {
@@ -897,7 +983,9 @@ final class WooCommerceAdapter {
 	private function customerAddressSnapshot( array $address ): array {
 		$safe = array();
 		foreach ( array( 'first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'email', 'phone' ) as $key ) {
-			if ( isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) ) $safe[ $key ] = (string) $address[ $key ];
+			if ( isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) ) {
+				$safe[ $key ] = (string) $address[ $key ];
+			}
 		}
 		return $safe;
 	}
@@ -910,7 +998,9 @@ final class WooCommerceAdapter {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared zone-location count must reflect current shipping settings.
 			$countValue = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE `zone_id` = %d", $table, $zoneId ) );
-			if ( null === $countValue || false === $countValue ) throw new RuntimeException( 'WooCommerce shipping zone locations could not be counted.' );
+			if ( null === $countValue || false === $countValue ) {
+				throw new RuntimeException( 'WooCommerce shipping zone locations could not be counted.' );
+			}
 			$locationCount = (int) $countValue;
 			if ( $locationCount > 0 ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded shipping-location list must reflect current settings.
@@ -920,7 +1010,9 @@ final class WooCommerceAdapter {
 					$zoneId,
 					100
 				) );
-				if ( ! is_array( $locationRows ) ) throw new RuntimeException( 'WooCommerce shipping zone locations could not be read.' );
+				if ( ! is_array( $locationRows ) ) {
+					throw new RuntimeException( 'WooCommerce shipping zone locations could not be read.' );
+				}
 				foreach ( $locationRows as $location ) {
 					if ( is_object( $location ) && isset( $location->location_code, $location->location_type ) ) {
 						$locations[] = array( 'code' => (string) $location->location_code, 'type' => (string) $location->location_type );
@@ -947,7 +1039,9 @@ final class WooCommerceAdapter {
 		);
 		$snapshot = array();
 		foreach ( $fields as $source => $target ) {
-			if ( array_key_exists( $source, $values ) && is_scalar( $values[ $source ] ) ) $snapshot[ $target ] = $values[ $source ];
+			if ( array_key_exists( $source, $values ) && is_scalar( $values[ $source ] ) ) {
+				$snapshot[ $target ] = $values[ $source ];
+			}
 		}
 		return $snapshot;
 	}
@@ -977,7 +1071,9 @@ final class WooCommerceAdapter {
 			$data['external_url'] = (string) $product->get_product_url();
 			$data['button_text'] = (string) $product->get_button_text();
 		}
-		if ( $product instanceof \WC_Product_Grouped ) $data['children'] = array_map( 'intval', $product->get_children() );
+		if ( $product instanceof \WC_Product_Grouped ) {
+			$data['children'] = array_map( 'intval', $product->get_children() );
+		}
 		return $data;
 	}
 
@@ -1004,7 +1100,9 @@ final class WooCommerceAdapter {
 	private function buildAttributes( array $input ): array {
 		$attributes = array();
 		foreach ( $input as $item ) {
-			if ( ! is_array( $item ) ) continue;
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
 			$attribute = new \WC_Product_Attribute();
 			$attribute->set_id( isset( $item['id'] ) ? (int) $item['id'] : 0 );
 			$attribute->set_name( isset( $item['name'] ) ? (string) $item['name'] : '' );
@@ -1037,9 +1135,13 @@ final class WooCommerceAdapter {
 	private function buildDownloads( array $input ): array {
 		$downloads = array();
 		foreach ( $input as $item ) {
-			if ( ! is_array( $item ) || empty( $item['file'] ) ) continue;
+			if ( ! is_array( $item ) || empty( $item['file'] ) ) {
+				continue;
+			}
 			$download = new \WC_Product_Download();
-			if ( ! empty( $item['id'] ) ) $download->set_id( (string) $item['id'] );
+			if ( ! empty( $item['id'] ) ) {
+				$download->set_id( (string) $item['id'] );
+			}
 			$download->set_name( isset( $item['name'] ) ? (string) $item['name'] : basename( (string) $item['file'] ) );
 			$download->set_file( (string) $item['file'] );
 			$downloads[$download->get_id()] = $download;
@@ -1050,19 +1152,33 @@ final class WooCommerceAdapter {
 	private function downloadsSnapshot( array $downloads ): array {
 		$items = array();
 		foreach ( $downloads as $download ) {
-			if ( $download instanceof \WC_Product_Download ) $items[] = array( 'id' => (string) $download->get_id(), 'name' => (string) $download->get_name(), 'file' => (string) $download->get_file() );
+			if ( $download instanceof \WC_Product_Download ) {
+				$items[] = array( 'id' => (string) $download->get_id(), 'name' => (string) $download->get_name(), 'file' => (string) $download->get_file() );
+			}
 		}
 		return $items;
 	}
 
 	private function attributeArgs( array $payload, bool $partial ): array {
 		$args = array();
-		if ( isset( $payload['name'] ) ) $args['name'] = sanitize_text_field( (string) $payload['name'] );
-		if ( isset( $payload['slug'] ) ) $args['slug'] = wc_sanitize_taxonomy_name( (string) $payload['slug'] );
-		if ( isset( $payload['type'] ) ) $args['type'] = sanitize_key( (string) $payload['type'] );
-		if ( isset( $payload['order_by'] ) ) $args['order_by'] = sanitize_key( (string) $payload['order_by'] );
-		if ( array_key_exists( 'has_archives', $payload ) ) $args['has_archives'] = Input::bool( $payload, 'has_archives' );
-		if ( ! $partial && empty( $args['name'] ) ) throw new RuntimeException( 'Attribute name is required.' );
+		if ( isset( $payload['name'] ) ) {
+			$args['name'] = sanitize_text_field( (string) $payload['name'] );
+		}
+		if ( isset( $payload['slug'] ) ) {
+			$args['slug'] = wc_sanitize_taxonomy_name( (string) $payload['slug'] );
+		}
+		if ( isset( $payload['type'] ) ) {
+			$args['type'] = sanitize_key( (string) $payload['type'] );
+		}
+		if ( isset( $payload['order_by'] ) ) {
+			$args['order_by'] = sanitize_key( (string) $payload['order_by'] );
+		}
+		if ( array_key_exists( 'has_archives', $payload ) ) {
+			$args['has_archives'] = Input::bool( $payload, 'has_archives' );
+		}
+		if ( ! $partial && empty( $args['name'] ) ) {
+			throw new RuntimeException( 'Attribute name is required.' );
+		}
 		return $args;
 	}
 
@@ -1091,12 +1207,24 @@ final class WooCommerceAdapter {
 			'minimum_amount'         => 'set_minimum_amount', 'maximum_amount' => 'set_maximum_amount',
 		);
 		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $coupon->{$method}( $payload[ $key ] );
-		if ( isset( $payload['product_ids'] ) ) $coupon->set_product_ids( array_map( 'intval', (array) $payload['product_ids'] ) );
-		if ( isset( $payload['excluded_product_ids'] ) ) $coupon->set_excluded_product_ids( array_map( 'intval', (array) $payload['excluded_product_ids'] ) );
-		if ( isset( $payload['product_categories'] ) ) $coupon->set_product_categories( array_map( 'intval', (array) $payload['product_categories'] ) );
-		if ( isset( $payload['excluded_product_categories'] ) ) $coupon->set_excluded_product_categories( array_map( 'intval', (array) $payload['excluded_product_categories'] ) );
-		if ( isset( $payload['email_restrictions'] ) ) $coupon->set_email_restrictions( array_map( 'sanitize_email', (array) $payload['email_restrictions'] ) );
-		if ( array_key_exists( 'date_expires', $payload ) ) $coupon->set_date_expires( $payload['date_expires'] ?: null );
+		if ( isset( $payload['product_ids'] ) ) {
+			$coupon->set_product_ids( array_map( 'intval', (array) $payload['product_ids'] ) );
+		}
+		if ( isset( $payload['excluded_product_ids'] ) ) {
+			$coupon->set_excluded_product_ids( array_map( 'intval', (array) $payload['excluded_product_ids'] ) );
+		}
+		if ( isset( $payload['product_categories'] ) ) {
+			$coupon->set_product_categories( array_map( 'intval', (array) $payload['product_categories'] ) );
+		}
+		if ( isset( $payload['excluded_product_categories'] ) ) {
+			$coupon->set_excluded_product_categories( array_map( 'intval', (array) $payload['excluded_product_categories'] ) );
+		}
+		if ( isset( $payload['email_restrictions'] ) ) {
+			$coupon->set_email_restrictions( array_map( 'sanitize_email', (array) $payload['email_restrictions'] ) );
+		}
+		if ( array_key_exists( 'date_expires', $payload ) ) {
+			$coupon->set_date_expires( $payload['date_expires'] ?: null );
+		}
 	}
 
 	private function couponSnapshot( \WC_Coupon $coupon ): array {

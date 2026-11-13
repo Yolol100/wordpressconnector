@@ -49,15 +49,20 @@ final class YoastTemplateSettingsAdapter {
 		$this->assertProviderSupportsFields( $changes );
 		$before = $this->snapshot();$after = array_replace( $before, $changes );
 		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) )return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$options = $this->options();
 		foreach ( $changes as $key => $value )$options[self::KEYS[ $key ]] = $value;
 		update_option( 'wpseo_titles', $options );
 		$verified = $this->snapshot();
 		if ( $verified !== $after ){
 			foreach ( $changes as $key => $value ){
-				if ( null === $before[ $key ] )unset( $options[self::KEYS[ $key ]] );
-				else $options[self::KEYS[ $key ]] = $before[ $key ];
+				if ( null === $before[ $key ] ) {
+					unset( $options[self::KEYS[ $key ]] );
+				} else {
+					$options[self::KEYS[ $key ]] = $before[ $key ];
+				}
 			}
 			update_option( 'wpseo_titles', $options );
 			throw new RuntimeException( 'Yoast template readback mismatch; requested fields restored.' );
@@ -69,17 +74,24 @@ final class YoastTemplateSettingsAdapter {
 		return $result;
 	}
 	public function restore( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Rollback only.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Rollback only.' );
+		}
 		$current  = $this->snapshot();
 		$expected = $payload['expected_after_fingerprint'] ?? '';
 		if ( ! is_string( $expected ) || ! hash_equals( Fingerprint::make( $current ), $expected ) )
 			throw new RuntimeException( 'Yoast templates changed since write.' );
 		$previous = $this->validateFields( $payload['fields'] ?? null, true );
-		if ( ! empty( $context['dry_run'] ) )return array( 'would_restore' => array_keys( $previous ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_restore' => array_keys( $previous ) );
+		}
 		$options = $this->options();
 		foreach ( $previous as $key => $value ){
-			if ( $value === null )unset( $options[self::KEYS[ $key ]] );
-			else $options[self::KEYS[ $key ]] = $value;
+			if ( $value === null ) {
+				unset( $options[self::KEYS[ $key ]] );
+			} else {
+				$options[self::KEYS[ $key ]] = $value;
+			}
 		}
 		update_option( 'wpseo_titles', $options );
 		if ( array_intersect_key( $this->snapshot(), $previous ) !== $previous )
@@ -105,7 +117,9 @@ final class YoastTemplateSettingsAdapter {
 					( ! $restore && trim( $value ) === '' ) )
 					throw new RuntimeException( 'Invalid template length.' );
 				$value = $restore?$value:sanitize_text_field( $value );
-				if ( ! $restore && trim( $value ) === '' )throw new RuntimeException( 'Invalid template text.' );
+				if ( ! $restore && trim( $value ) === '' ) {
+					throw new RuntimeException( 'Invalid template text.' );
+				}
 			}
 			$clean[ $key ] = $value;
 		}
@@ -152,7 +166,9 @@ final class YoastTemplateSettingsAdapter {
 
 	private function options(): array {
 		$value = get_option( 'wpseo_titles', null );
-		if ( ! is_array( $value ) )throw new RuntimeException( 'Yoast settings unavailable.' );
+		if ( ! is_array( $value ) ) {
+			throw new RuntimeException( 'Yoast settings unavailable.' );
+		}
 		return $value;
 	}
 	private function snapshot(): array {

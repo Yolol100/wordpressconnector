@@ -403,14 +403,26 @@ final class CoreAdapter {
 		}
 		$before = $this->termSnapshot( $term );
 		$args   = array();
-		if ( isset( $payload['name'] ) ) $args['name'] = sanitize_text_field( (string) $payload['name'] );
-		if ( isset( $payload['slug'] ) ) $args['slug'] = sanitize_title( (string) $payload['slug'] );
-		if ( isset( $payload['description'] ) ) $args['description'] = sanitize_textarea_field( (string) $payload['description'] );
-		if ( isset( $payload['parent'] ) ) $args['parent'] = (int) $payload['parent'];
+		if ( isset( $payload['name'] ) ) {
+			$args['name'] = sanitize_text_field( (string) $payload['name'] );
+		}
+		if ( isset( $payload['slug'] ) ) {
+			$args['slug'] = sanitize_title( (string) $payload['slug'] );
+		}
+		if ( isset( $payload['description'] ) ) {
+			$args['description'] = sanitize_textarea_field( (string) $payload['description'] );
+		}
+		if ( isset( $payload['parent'] ) ) {
+			$args['parent'] = (int) $payload['parent'];
+		}
 		$result = array( 'before' => $before, 'changes' => $args, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$updated = wp_update_term( $id, $taxonomy, $args );
-		if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) ) {
+			throw new RuntimeException( $updated->get_error_message() );
+		}
 		$result['after'] = $this->termSnapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array( 'action' => 'term.update', 'payload' => array_merge( array( 'taxonomy' => $taxonomy, 'id' => $id ), $before ) );
 		return $result;
@@ -420,12 +432,18 @@ final class CoreAdapter {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$term     = get_term( $id, $taxonomy );
-		if ( ! $term instanceof \WP_Term ) throw new RuntimeException( 'Term not found.' );
+		if ( ! $term instanceof \WP_Term ) {
+			throw new RuntimeException( 'Term not found.' );
+		}
 		$before = $this->termSnapshot( $term );
 		$result = array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$deleted = wp_delete_term( $id, $taxonomy );
-		if ( is_wp_error( $deleted ) || false === $deleted ) throw new RuntimeException( is_wp_error( $deleted ) ? $deleted->get_error_message() : 'Term delete failed.' );
+		if ( is_wp_error( $deleted ) || false === $deleted ) {
+			throw new RuntimeException( is_wp_error( $deleted ) ? $deleted->get_error_message() : 'Term delete failed.' );
+		}
 		$result['_rollback'] = array( 'action' => 'term.create', 'payload' => array_merge( array( 'taxonomy' => $taxonomy ), $before ) );
 		return $result;
 	}
@@ -435,14 +453,22 @@ final class CoreAdapter {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$terms    = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
 		$append   = Input::bool( $payload, 'append' );
-		if ( ! $objectId || ! taxonomy_exists( $taxonomy ) ) throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		if ( ! $objectId || ! taxonomy_exists( $taxonomy ) ) {
+			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		}
 		$before = wp_get_object_terms( $objectId, $taxonomy, array( 'fields' => 'ids' ) );
-		if ( is_wp_error( $before ) ) throw new RuntimeException( $before->get_error_message() );
+		if ( is_wp_error( $before ) ) {
+			throw new RuntimeException( $before->get_error_message() );
+		}
 		$termIds = array_map( 'intval', $terms );
 		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $termIds ) ) ) : $termIds, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 		$assigned = wp_set_object_terms( $objectId, $termIds, $taxonomy, $append );
-		if ( is_wp_error( $assigned ) ) throw new RuntimeException( $assigned->get_error_message() );
+		if ( is_wp_error( $assigned ) ) {
+			throw new RuntimeException( $assigned->get_error_message() );
+		}
 		$result['_rollback'] = array( 'action' => 'term.assign', 'payload' => array( 'object_id' => $objectId, 'taxonomy' => $taxonomy, 'terms' => array_map( 'intval', $before ), 'append' => false ) );
 		return $result;
 	}
@@ -457,7 +483,9 @@ final class CoreAdapter {
 
 	public function menuGet( array $payload ): array {
 		$menu = wp_get_nav_menu_object( $payload['id'] ?? ( $payload['name'] ?? 0 ) );
-		if ( ! $menu ) throw new RuntimeException( 'Menu not found.' );
+		if ( ! $menu ) {
+			throw new RuntimeException( 'Menu not found.' );
+		}
 		$items = array();
 		foreach ( (array) wp_get_nav_menu_items( $menu->term_id ) as $item ) {
 			$items[] = array(
@@ -478,38 +506,56 @@ final class CoreAdapter {
 
 	public function menuCreate( array $payload, array $context ): array {
 		$name = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : '';
-		if ( '' === $name ) throw new RuntimeException( 'name is required.' );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_create' => $name, '_current_fingerprint' => Fingerprint::make( array( 'new_menu' => $name ) ) );
+		if ( '' === $name ) {
+			throw new RuntimeException( 'name is required.' );
+		}
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_create' => $name, '_current_fingerprint' => Fingerprint::make( array( 'new_menu' => $name ) ) );
+		}
 		$id = wp_create_nav_menu( $name );
-		if ( is_wp_error( $id ) ) throw new RuntimeException( $id->get_error_message() );
+		if ( is_wp_error( $id ) ) {
+			throw new RuntimeException( $id->get_error_message() );
+		}
 		return array( 'menu_id' => (int) $id, '_rollback' => array( 'action' => 'menu.delete', 'payload' => array( 'id' => (int) $id ) ) );
 	}
 
 	public function menuUpdate( array $payload, array $context ): array {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$menu = wp_get_nav_menu_object( $id );
-		if ( ! $menu ) throw new RuntimeException( 'Menu not found.' );
+		if ( ! $menu ) {
+			throw new RuntimeException( 'Menu not found.' );
+		}
 		$name   = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : (string) $menu->name;
 		$before = array( 'id' => $id, 'name' => (string) $menu->name );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => array( 'id' => $id, 'name' => $name ), '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'after' => array( 'id' => $id, 'name' => $name ), '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		$updated = wp_update_nav_menu_object( $id, array( 'menu-name' => $name ) );
-		if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) ) {
+			throw new RuntimeException( $updated->get_error_message() );
+		}
 		return array( 'menu_id' => (int) $updated, '_rollback' => array( 'action' => 'menu.update', 'payload' => $before ) );
 	}
 
 	public function menuDelete( array $payload, array $context ): array {
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$snapshot = $this->menuGet( array( 'id' => $id ) );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $snapshot, '_current_fingerprint' => Fingerprint::make( $snapshot ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $snapshot, '_current_fingerprint' => Fingerprint::make( $snapshot ) );
+		}
 		$deleted = wp_delete_nav_menu( $id );
-		if ( is_wp_error( $deleted ) ) throw new RuntimeException( $deleted->get_error_message() );
+		if ( is_wp_error( $deleted ) ) {
+			throw new RuntimeException( $deleted->get_error_message() );
+		}
 		return array( 'deleted' => $id, 'rollback_supported' => false );
 	}
 
 	public function menuItemUpsert( array $payload, array $context ): array {
 		$menuId = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$itemId = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
-		if ( ! wp_get_nav_menu_object( $menuId ) ) throw new RuntimeException( 'Menu not found.' );
+		if ( ! wp_get_nav_menu_object( $menuId ) ) {
+			throw new RuntimeException( 'Menu not found.' );
+		}
 		$before = $itemId ? get_post( $itemId ) : null;
 		$args   = array();
 		$map    = array(
@@ -518,14 +564,26 @@ final class CoreAdapter {
 			'status'     => 'menu-item-status', 'type' => 'menu-item-type', 'object' => 'menu-item-object',
 		);
 		foreach ( $map as $source => $target ) {
-			if ( isset( $payload[ $source ] ) ) $args[ $target ] = sanitize_text_field( (string) $payload[ $source ] );
+			if ( isset( $payload[ $source ] ) ) {
+				$args[ $target ] = sanitize_text_field( (string) $payload[ $source ] );
+			}
 		}
-		if ( isset( $payload['object_id'] ) ) $args['menu-item-object-id'] = (int) $payload['object_id'];
-		if ( isset( $payload['parent'] ) ) $args['menu-item-parent-id'] = (int) $payload['parent'];
-		if ( isset( $payload['position'] ) ) $args['menu-item-position'] = (int) $payload['position'];
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_upsert' => array( 'menu_id' => $menuId, 'item_id' => $itemId, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $itemId ) : array( 'new' => true ) ) );
+		if ( isset( $payload['object_id'] ) ) {
+			$args['menu-item-object-id'] = (int) $payload['object_id'];
+		}
+		if ( isset( $payload['parent'] ) ) {
+			$args['menu-item-parent-id'] = (int) $payload['parent'];
+		}
+		if ( isset( $payload['position'] ) ) {
+			$args['menu-item-position'] = (int) $payload['position'];
+		}
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'would_upsert' => array( 'menu_id' => $menuId, 'item_id' => $itemId, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $itemId ) : array( 'new' => true ) ) );
+		}
 		$updated = wp_update_nav_menu_item( $menuId, $itemId, $args );
-		if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) ) {
+			throw new RuntimeException( $updated->get_error_message() );
+		}
 		return array( 'item_id' => (int) $updated, 'rollback_supported' => false );
 	}
 
@@ -533,10 +591,14 @@ final class CoreAdapter {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
 		$menuId     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$registered = get_registered_nav_menus();
-		if ( ! isset( $registered[ $location ] ) ) throw new RuntimeException( 'Unknown menu location.' );
+		if ( ! isset( $registered[ $location ] ) ) {
+			throw new RuntimeException( 'Unknown menu location.' );
+		}
 		$locations = get_nav_menu_locations();
 		$before    = isset( $locations[ $location ] ) ? (int) $locations[ $location ] : 0;
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => $menuId, '_current_fingerprint' => Fingerprint::make( $locations ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'after' => $menuId, '_current_fingerprint' => Fingerprint::make( $locations ) );
+		}
 		$locations[ $location ] = $menuId;
 		set_theme_mod( 'nav_menu_locations', $locations );
 		return array( 'location' => $location, 'menu_id' => $menuId, '_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ) );
@@ -553,7 +615,9 @@ final class CoreAdapter {
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_option( $name, null );
 		$value  = $payload['value'] ?? null;
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		update_option( $name, $value, array_key_exists( 'autoload', $payload ) ? Input::bool( $payload, 'autoload' ) : null );
 		return array( 'name' => $name, 'value' => get_option( $name, null ), '_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
@@ -562,35 +626,47 @@ final class CoreAdapter {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_option( $name, null );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		delete_option( $name );
 		return array( 'deleted' => $name, '_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
 	public function networkOptionGet( array $payload ): array {
-		if ( ! is_multisite() ) throw new RuntimeException( 'Not a multisite installation.' );
+		if ( ! is_multisite() ) {
+			throw new RuntimeException( 'Not a multisite installation.' );
+		}
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array( 'name' => $name, 'value' => get_site_option( $name, null ) );
 	}
 
 	public function networkOptionUpdate( array $payload, array $context ): array {
-		if ( ! is_multisite() ) throw new RuntimeException( 'Not a multisite installation.' );
+		if ( ! is_multisite() ) {
+			throw new RuntimeException( 'Not a multisite installation.' );
+		}
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_site_option( $name, null );
 		$value  = $payload['value'] ?? null;
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		update_site_option( $name, $value );
 		return array( 'name' => $name, 'value' => get_site_option( $name, null ), '_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
 	public function networkOptionDelete( array $payload, array $context ): array {
-		if ( ! is_multisite() ) throw new RuntimeException( 'Not a multisite installation.' );
+		if ( ! is_multisite() ) {
+			throw new RuntimeException( 'Not a multisite installation.' );
+		}
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_site_option( $name, null );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		delete_site_option( $name );
 		return array( 'deleted' => $name, '_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
@@ -606,7 +682,9 @@ final class CoreAdapter {
 		Policy::assertKeyAllowed( $name );
 		$before = get_theme_mod( $name, null );
 		$value  = $payload['value'] ?? null;
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'after' => $value, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		set_theme_mod( $name, $value );
 		return array( 'name' => $name, 'value' => get_theme_mod( $name, null ), '_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
@@ -615,7 +693,9 @@ final class CoreAdapter {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		$before = get_theme_mod( $name, null );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		remove_theme_mod( $name );
 		return array( 'removed' => $name, '_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
@@ -632,39 +712,57 @@ final class CoreAdapter {
 
 	public function commentGet( array $payload ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) throw new RuntimeException( 'Comment not found.' );
+		if ( ! $comment instanceof \WP_Comment ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
 		return array( 'comment' => $this->commentSnapshot( $comment ) );
 	}
 
 	public function commentUpdate( array $payload, array $context ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) throw new RuntimeException( 'Comment not found.' );
+		if ( ! $comment instanceof \WP_Comment ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
 		$before = $this->commentSnapshot( $comment );
 		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
 		$map    = array( 'content' => 'comment_content', 'author' => 'comment_author', 'author_email' => 'comment_author_email', 'author_url' => 'comment_author_url', 'approved' => 'comment_approved' );
 		foreach ( $map as $source => $target ) {
-			if ( isset( $payload[ $source ] ) ) $fields[ $target ] = (string) $payload[ $source ];
+			if ( isset( $payload[ $source ] ) ) {
+				$fields[ $target ] = (string) $payload[ $source ];
+			}
 		}
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'changes' => $fields, '_current_fingerprint' => Fingerprint::make( $before ) );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, 'changes' => $fields, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
 		$updated = wp_update_comment( wp_slash( $fields ), true );
-		if ( is_wp_error( $updated ) ) throw new RuntimeException( $updated->get_error_message() );
+		if ( is_wp_error( $updated ) ) {
+			throw new RuntimeException( $updated->get_error_message() );
+		}
 		return array( 'comment' => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ), '_rollback' => array( 'action' => 'comment.update', 'payload' => array( 'id' => (int) $comment->comment_ID, 'content' => $before['content'], 'author' => $before['author'], 'author_email' => $before['author_email'], 'author_url' => $before['author_url'], 'approved' => $before['approved'] ) ) );
 	}
 
 	public function commentTrash( array $payload, array $context ): array {
 		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$comment = get_comment( $id );
-		if ( ! $comment instanceof \WP_Comment ) throw new RuntimeException( 'Comment not found.' );
+		if ( ! $comment instanceof \WP_Comment ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
 		$before = $this->commentSnapshot( $comment );
-		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
-		if ( ! wp_trash_comment( $id ) ) throw new RuntimeException( 'Could not trash comment.' );
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		}
+		if ( ! wp_trash_comment( $id ) ) {
+			throw new RuntimeException( 'Could not trash comment.' );
+		}
 		return array( 'trashed' => $id, 'rollback_supported' => false );
 	}
 
 	private function requirePost( array $payload ): \WP_Post {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
-		if ( ! $post instanceof \WP_Post ) throw new RuntimeException( 'Post not found.' );
+		if ( ! $post instanceof \WP_Post ) {
+			throw new RuntimeException( 'Post not found.' );
+		}
 		return $post;
 	}
 
@@ -676,12 +774,22 @@ final class CoreAdapter {
 			'ping_status' => 'ping_status', 'date' => 'post_date', 'date_gmt' => 'post_date_gmt',
 		);
 		foreach ( $stringMap as $source => $target ) {
-			if ( array_key_exists( $source, $payload ) ) $fields[ $target ] = (string) $payload[ $source ];
+			if ( array_key_exists( $source, $payload ) ) {
+				$fields[ $target ] = (string) $payload[ $source ];
+			}
 		}
-		if ( isset( $payload['author'] ) ) $fields['post_author'] = (int) $payload['author'];
-		if ( isset( $payload['parent'] ) ) $fields['post_parent'] = (int) $payload['parent'];
-		if ( isset( $payload['menu_order'] ) ) $fields['menu_order'] = (int) $payload['menu_order'];
-		if ( ! $partial && ! isset( $fields['post_status'] ) ) $fields['post_status'] = 'draft';
+		if ( isset( $payload['author'] ) ) {
+			$fields['post_author'] = (int) $payload['author'];
+		}
+		if ( isset( $payload['parent'] ) ) {
+			$fields['post_parent'] = (int) $payload['parent'];
+		}
+		if ( isset( $payload['menu_order'] ) ) {
+			$fields['menu_order'] = (int) $payload['menu_order'];
+		}
+		if ( ! $partial && ! isset( $fields['post_status'] ) ) {
+			$fields['post_status'] = 'draft';
+		}
 		return $fields;
 	}
 
@@ -721,17 +829,23 @@ final class CoreAdapter {
 		$reverse = array( 'post_title' => 'title', 'post_content' => 'content', 'post_excerpt' => 'excerpt', 'post_status' => 'status', 'post_name' => 'slug', 'post_author' => 'author', 'post_parent' => 'parent', 'menu_order' => 'menu_order', 'comment_status' => 'comment_status', 'ping_status' => 'ping_status' );
 		$result  = array();
 		foreach ( $reverse as $field => $key ) {
-			if ( array_key_exists( $field, $fields ) ) $result[ $key ] = $fields[ $field ];
+			if ( array_key_exists( $field, $fields ) ) {
+				$result[ $key ] = $fields[ $field ];
+			}
 		}
 		return $result;
 	}
 
 	private function metaTarget( array $payload ): array {
 		$type = isset( $payload['object_type'] ) ? sanitize_key( (string) $payload['object_type'] ) : '';
-		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) throw new RuntimeException( 'object_type must be post, term, user or comment.' );
+		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) {
+			throw new RuntimeException( 'object_type must be post, term, user or comment.' );
+		}
 		$id  = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
 		$key = $this->requireKey( $payload, 'key' );
-		if ( ! $id ) throw new RuntimeException( 'object_id is required.' );
+		if ( ! $id ) {
+			throw new RuntimeException( 'object_id is required.' );
+		}
 		return array( $type, $id, $key );
 	}
 
@@ -750,7 +864,9 @@ final class CoreAdapter {
 
 	private function requireKey( array $payload, string $field ): string {
 		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
-		if ( '' === $value || strlen( $value ) > 191 ) throw new RuntimeException( $field . ' is required and must be <= 191 characters.' );
+		if ( '' === $value || strlen( $value ) > 191 ) {
+			throw new RuntimeException( $field . ' is required and must be <= 191 characters.' );
+		}
 		return $value;
 	}
 }
