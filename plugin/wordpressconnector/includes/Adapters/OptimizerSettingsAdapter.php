@@ -32,7 +32,7 @@ final class OptimizerSettingsAdapter {
 	);
 
 	public function register( Registry $registry ): void {
-		$read = array( 'privileged' => true, 'capability' => 'manage_options' );
+		$read  = array( 'privileged' => true, 'capability' => 'manage_options' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'optimizer.settings.update', array( $this, 'update' ), $write );
@@ -42,15 +42,15 @@ final class OptimizerSettingsAdapter {
 	public function inspect( array $payload, array $context = array() ): array {
 		$this->keys( $payload, array( 'provider' ) );
 		$provider = $this->provider( $payload );
-		$state = $this->state( $provider );
+		$state    = $this->state( $provider );
 		return array(
-			'provider' => $provider,
-			'fields' => $this->publicFields( $provider, $state ),
-			'write_scope' => $provider === 'asset_cleanup' ? 'read_only_provider_api_required' : 'image_display_options_only',
-			'fingerprint' => Fingerprint::make( $state ),
-			'wp_rocket' => $this->rocketSummary(),
+			'provider'                 => $provider,
+			'fields'                   => $this->publicFields( $provider, $state ),
+			'write_scope'              => $provider === 'asset_cleanup' ? 'read_only_provider_api_required' : 'image_display_options_only',
+			'fingerprint'              => Fingerprint::make( $state ),
+			'wp_rocket'                => $this->rocketSummary(),
 			'effective_state_verified' => $provider === 'ewww',
-			'settings_source' => $provider === 'ewww'?'ewww_provider_accessor':'stored_option_only',
+			'settings_source'          => $provider === 'ewww'?'ewww_provider_accessor':'stored_option_only',
 		);
 	}
 
@@ -66,15 +66,15 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Optimizer updates must change exactly one approved setting.' );
 		$key = array_key_first( $fields );
 		if ( !is_string( $key ) )throw new RuntimeException( 'Invalid optimizer setting field.' );
-		$value = $this->validate( $provider, $key, $fields[$key] );
-		$old = $this->state( $provider );
+		$value       = $this->validate( $provider, $key, $fields[$key] );
+		$old         = $this->state( $provider );
 		$fingerprint = Fingerprint::make( $old );
-		$before = $this->publicFields( $provider, $old );
-		$after = $before;
+		$before      = $this->publicFields( $provider, $old );
+		$after       = $before;
 		$after[$key] = $value;
 		$this->conflicts( $provider, $key, $value );
 		$out = array(
-			'provider' => $provider, 'before' => $before, 'after' => $after,
+			'provider'             => $provider, 'before' => $before, 'after' => $after,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( !empty( $context['dry_run'] ) )return $out;
@@ -91,7 +91,7 @@ final class OptimizerSettingsAdapter {
 		}
 		if ( $provider === 'ewww' )$this->assertEwwwWriteCapability();
 		$previousExists = array_key_exists( $key, $old );
-		$previousValue = $previousExists?$old[$key]:null;
+		$previousValue  = $previousExists?$old[$key]:null;
 		try {
 			$this->write( $provider, $old, $key, $value );
 			$next = $this->state( $provider );
@@ -117,7 +117,7 @@ final class OptimizerSettingsAdapter {
 		$out['after'] = $this->publicFields( $provider, $next );
 		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore', 'payload' => array(
 			'provider' => $provider, 'field' => $key, 'exists' => $previousExists,
-			'value' => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
+			'value'    => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
 		) );
 		return $out;
 	}
@@ -191,7 +191,7 @@ final class OptimizerSettingsAdapter {
 
 	private function publicFields( string $provider, array $state ): array {
 		$keys = $provider === 'asset_cleanup'?self::ASSET_FIELDS:self::EWWW_FIELDS;
-		$out = array();
+		$out  = array();
 		foreach ( $keys as $key ){
 			if ( !array_key_exists( $key, $state ) ){
 				$out[$key] = null;
@@ -257,9 +257,9 @@ final class OptimizerSettingsAdapter {
 	private function rocketSummary(): array {
 		if ( !function_exists( 'get_rocket_option' ) )return array( 'available' => false );
 		return array(
-			'available' => true,
-			'lazyload' => (string)get_rocket_option( 'lazyload', 0 ),
-			'image_dimensions' => (string)get_rocket_option( 'image_dimensions', 0 ),
+			'available'         => true,
+			'lazyload'          => (string)get_rocket_option( 'lazyload', 0 ),
+			'image_dimensions'  => (string)get_rocket_option( 'image_dimensions', 0 ),
 			'remove_unused_css' => (string)get_rocket_option( 'remove_unused_css', 0 ),
 		);
 	}
@@ -273,7 +273,7 @@ final class OptimizerSettingsAdapter {
  && defined( 'ABSPATH' ) )require_once ABSPATH.'wp-admin/includes/plugin.php';
 		if ( !function_exists( 'get_plugins' ) || !function_exists( 'is_plugin_active' ) )
 			throw new RuntimeException( 'WordPress plugin inventory is unavailable.' );
-		$file = $provider === 'asset_cleanup'?'wp-asset-clean-up/wpacu.php':'ewww-image-optimizer/ewww-image-optimizer.php';
+		$file    = $provider === 'asset_cleanup'?'wp-asset-clean-up/wpacu.php':'ewww-image-optimizer/ewww-image-optimizer.php';
 		$version = get_plugins()[$file]['Version'] ?? '';
 		$pattern = $provider === 'asset_cleanup'?'/^1\\.4\\.0\\.[0-9]+$/D':'/^8\\.8\\.[0-9]+$/D';
 		if ( !is_plugin_active( $file ) || !is_string( $version ) || !preg_match( $pattern, $version ) )

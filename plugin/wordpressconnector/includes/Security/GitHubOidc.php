@@ -14,13 +14,13 @@ final class GitHubOidc {
 	private const TRUSTED_RUNTIMES = array(
 		'Yolol100/wordpressconnector' => array(
 			'repository_id' => '1341990468',
-			'workflow_ref' => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
-			'visibility' => array( 'public', 'private' ),
+			'workflow_ref'  => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
+			'visibility'    => array( 'public', 'private' ),
 		),
 		'Yolol100/Wordpress' => array(
 			'repository_id' => '933904076',
-			'workflow_ref' => 'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
-			'visibility' => array( 'private' ),
+			'workflow_ref'  => 'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+			'visibility'    => array( 'private' ),
 		),
 	);
 	private const CLOCK_SKEW = 60;
@@ -47,8 +47,8 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC token is malformed.' );
 		}
 
-		$header = $this->decodeJsonSegment( $parts[0], 'header' );
-		$claims = $this->decodeJsonSegment( $parts[1], 'claims' );
+		$header    = $this->decodeJsonSegment( $parts[0], 'header' );
+		$claims    = $this->decodeJsonSegment( $parts[1], 'claims' );
 		$signature = $this->decodeBase64Url( $parts[2], 'signature' );
 
 		if ( 'RS256' !== ( $header['alg'] ?? null ) ) {
@@ -60,7 +60,7 @@ final class GitHubOidc {
 		}
 
 		$publicKey = $this->publicKey( $kid );
-		$verified = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $publicKey, OPENSSL_ALGO_SHA256 );
+		$verified  = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $publicKey, OPENSSL_ALGO_SHA256 );
 		if ( 1 !== $verified ) {
 			throw new RuntimeException( 'GitHub OIDC signature verification failed.' );
 		}
@@ -101,15 +101,15 @@ final class GitHubOidc {
 		if ( ! isset( self::TRUSTED_RUNTIMES[$repository] ) ) {
 			throw new RuntimeException( 'GitHub OIDC repository is not trusted.' );
 		}
-		$runtime = self::TRUSTED_RUNTIMES[$repository];
+		$runtime  = self::TRUSTED_RUNTIMES[$repository];
 
 		$expected = array(
-			'repository_id' => (string) $runtime['repository_id'],
+			'repository_id'       => (string) $runtime['repository_id'],
 			'repository_owner_id' => self::REPOSITORY_OWNER_ID,
-			'ref' => 'refs/heads/main',
-			'workflow_ref' => (string) $runtime['workflow_ref'],
-			'event_name' => 'workflow_dispatch',
-			'runner_environment' => 'github-hosted',
+			'ref'                 => 'refs/heads/main',
+			'workflow_ref'        => (string) $runtime['workflow_ref'],
+			'event_name'          => 'workflow_dispatch',
+			'runner_environment'  => 'github-hosted',
 		);
 		foreach ( $expected as $name => $value ) {
 			if ( ! isset( $claims[$name] ) || ! is_scalar( $claims[$name] ) || ! hash_equals( $value, (string) $claims[$name] ) ) {
@@ -135,7 +135,7 @@ final class GitHubOidc {
 		if ( false !== get_transient( 'wpconnector_oidc_jti_' . $hash ) ) {
 			throw new RuntimeException( 'GitHub OIDC token was already used.' );
 		}
-		$key = self::REPLAY_OPTION_PREFIX . $hash;
+		$key    = self::REPLAY_OPTION_PREFIX . $hash;
 		$record = array( 'created_at' => time(), 'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW );
 		// add_option() uses the uniquely indexed option_name in WordPress's
 		// database: simultaneous requests cannot consume the same signed JWT.
@@ -162,7 +162,7 @@ final class GitHubOidc {
 			throw new RuntimeException( 'OIDC replay cleanup requires WordPress options storage.' );
 		}
 		$cutoff = time() - max( self::MAX_TOKEN_AGE + 2 * self::CLOCK_SKEW, $olderThanSeconds );
-		$like = $wpdb->esc_like( self::REPLAY_OPTION_PREFIX ) . '%';
+		$like   = $wpdb->esc_like( self::REPLAY_OPTION_PREFIX ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded replay-claim cleanup needs a fresh prepared options read; do not cache security state.
 		$rows = $wpdb->get_results( $wpdb->prepare(
 			"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
@@ -204,16 +204,16 @@ final class GitHubOidc {
 
 	private function publicKey( string $kid ) {
 		$keys = $this->jwks( false );
-		$key = $this->findKey( $keys, $kid );
+		$key  = $this->findKey( $keys, $kid );
 		if ( null === $key ) {
 			$keys = $this->jwks( true );
-			$key = $this->findKey( $keys, $kid );
+			$key  = $this->findKey( $keys, $kid );
 		}
 		if ( null === $key || 'RSA' !== ( $key['kty'] ?? null ) || 'RS256' !== ( $key['alg'] ?? null ) ) {
 			throw new RuntimeException( 'GitHub OIDC signing key is unavailable.' );
 		}
 
-		$pem = $this->keyPem( $key );
+		$pem       = $this->keyPem( $key );
 		$publicKey = openssl_pkey_get_public( $pem );
 		if ( false === $publicKey ) {
 			throw new RuntimeException( 'GitHub OIDC public key could not be loaded.' );
@@ -230,10 +230,10 @@ final class GitHubOidc {
 		}
 
 		$response = wp_safe_remote_get( self::JWKS_URL, array(
-			'timeout' => 5,
+			'timeout'     => 5,
 			'redirection' => 0,
-			'sslverify' => true,
-			'headers' => array( 'Accept' => 'application/json' ),
+			'sslverify'   => true,
+			'headers'     => array( 'Accept' => 'application/json' ),
 		) );
 		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			throw new RuntimeException( 'GitHub OIDC signing keys could not be fetched.' );
@@ -273,15 +273,15 @@ final class GitHubOidc {
 		if ( ! isset( $key['n'], $key['e'] ) || ! is_string( $key['n'] ) || ! is_string( $key['e'] ) ) {
 			throw new RuntimeException( 'GitHub OIDC RSA signing key is incomplete.' );
 		}
-		$modulus = $this->decodeBase64Url( $key['n'], 'RSA modulus' );
-		$exponent = $this->decodeBase64Url( $key['e'], 'RSA exponent' );
-		$rsa = $this->asn1Sequence( $this->asn1Integer( $modulus ) . $this->asn1Integer( $exponent ) );
+		$modulus   = $this->decodeBase64Url( $key['n'], 'RSA modulus' );
+		$exponent  = $this->decodeBase64Url( $key['e'], 'RSA exponent' );
+		$rsa       = $this->asn1Sequence( $this->asn1Integer( $modulus ) . $this->asn1Integer( $exponent ) );
 		$algorithm = hex2bin( '300d06092a864886f70d0101010500' );
 		if ( false === $algorithm ) {
 			throw new RuntimeException( 'Could not construct RSA algorithm identifier.' );
 		}
 		$bitString = "\x03" . $this->asn1Length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
-		$spki = $this->asn1Sequence( $algorithm . $bitString );
+		$spki      = $this->asn1Sequence( $algorithm . $bitString );
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 

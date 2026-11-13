@@ -12,12 +12,12 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class WooCommerceFulfillmentAdapter {
 	private const TYPES = array(
-		'shipping_zone' => '/wc/v3/shipping/zones',
+		'shipping_zone'   => '/wc/v3/shipping/zones',
 		'shipping_method' => '/wc/v3/shipping/zones',
-		'tax_rate' => '/wc/v3/taxes',
+		'tax_rate'        => '/wc/v3/taxes',
 	);
 	public function register( Registry $registry ): void {
-		$read = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
+		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.fulfillment.locations.inspect', array( $this, 'inspectLocations' ), $read );
 		$registry->register( 'woocommerce.fulfillment.locations.update', array( $this, 'updateLocations' ), $write );
@@ -28,7 +28,7 @@ final class WooCommerceFulfillmentAdapter {
 
 	public function inspectLocations( array $payload, array $context = array() ): array {
 		$this->keys( $payload, array( 'zone_id' ) );
-		$path = $this->locationPath( $payload );
+		$path      = $this->locationPath( $payload );
 		$locations = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		return array( 'zone_id' => $payload['zone_id'], 'locations' => $locations,
 			'fingerprint' => Fingerprint::make( $locations ) );
@@ -36,11 +36,11 @@ final class WooCommerceFulfillmentAdapter {
 
 	public function updateLocations( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'zone_id', 'locations', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
-		$path = $this->locationPath( $payload );
-		$new = $this->normalizeLocations( $payload['locations'] ?? null, false );
-		$before = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$path        = $this->locationPath( $payload );
+		$new         = $this->normalizeLocations( $payload['locations'] ?? null, false );
+		$before      = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		$fingerprint = Fingerprint::make( $before );
-		$result = array( 'zone_id' => $payload['zone_id'], 'before' => $before, 'after' => $new,
+		$result      = array( 'zone_id' => $payload['zone_id'], 'before' => $before, 'after' => $new,
 			'_current_fingerprint' => $fingerprint );
 		if ( !empty( $context['dry_run'] ) )return $result;
 		$this->gate( $payload, $fingerprint );
@@ -61,8 +61,8 @@ final class WooCommerceFulfillmentAdapter {
 	public function restoreLocations( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Location restoration is rollback-only.' );
 		$this->keys( $payload, array( 'zone_id', 'locations', 'expected_after_fingerprint' ) );
-		$path = $this->locationPath( $payload );
-		$current = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$path     = $this->locationPath( $payload );
+		$current  = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( !is_string( $expected ) || !preg_match( '/^[a-f0-9]{64}$/D', $expected )
  || !hash_equals( Fingerprint::make( $current ), $expected ) )
@@ -77,9 +77,9 @@ final class WooCommerceFulfillmentAdapter {
 
 	public function create( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'type', 'zone_id', 'fields', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
-		$type = $this->type( $payload );
-		$path = $this->collectionPath( $type, $payload );
-		$fields = $this->creationFields( $type, $payload['fields'] ?? null );
+		$type      = $this->type( $payload );
+		$path      = $this->collectionPath( $type, $payload );
+		$fields    = $this->creationFields( $type, $payload['fields'] ?? null );
 		$inventory = $this->api( 'GET', $path, array( 'per_page' => 100 ) );
 		if ( count( $inventory ) >= 100 ){
 			throw new RuntimeException( 'Provider inventory is incomplete; cannot safely prevent duplicate creation.' );
@@ -95,7 +95,7 @@ final class WooCommerceFulfillmentAdapter {
  && ( $candidate['name'] ?? '' ) === $fields['name'] )
 				throw new RuntimeException( 'A matching tax rate already exists.' );
 		}
-		$fp = Fingerprint::make( $this->inventorySnapshot( $type, $inventory ) );
+		$fp     = Fingerprint::make( $this->inventorySnapshot( $type, $inventory ) );
 		$result = array( 'type' => $type, 'fields' => $fields, 'would_create' => true, '_current_fingerprint' => $fp );
 		if ( !empty( $context['dry_run'] ) )return $result;
 		$this->gate( $payload, $fp );
@@ -104,7 +104,7 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Tax creation requires separate site-local tax policy gate.' );
 		}
 		$created = $this->api( 'POST', $path, $fields );
-		$id = $type === 'shipping_method'?( $created['instance_id'] ?? null ):( $created['id'] ?? null );
+		$id      = $type === 'shipping_method'?( $created['instance_id'] ?? null ):( $created['id'] ?? null );
 		if ( !is_int( $id ) || $id<1 )throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
 		$resourcePath = $path.'/'.$id;
 		try {
@@ -133,7 +133,7 @@ final class WooCommerceFulfillmentAdapter {
 		$snapshot = $this->resourceSnapshot( $type, $current );
 		$result['created'] = $snapshot;
 		$result['_rollback'] = array( 'action' => 'woocommerce.fulfillment.restore_created', 'payload' => array(
-			'type' => $type, 'zone_id' => $payload['zone_id'] ?? null, 'id' => $id,
+			'type'                       => $type, 'zone_id' => $payload['zone_id'] ?? null, 'id' => $id,
 			'expected_after_fingerprint' => Fingerprint::make( $snapshot ),
 		) );
 		return $result;
@@ -142,17 +142,17 @@ final class WooCommerceFulfillmentAdapter {
 	public function restoreCreated( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) )throw new RuntimeException( 'Created resources may only be restored through connector rollback.' );
 		$this->keys( $payload, array( 'type', 'zone_id', 'id', 'expected_after_fingerprint' ) );
-		$type = $this->type( $payload );
-		$id = $this->positive( $payload['id'] ?? null, 'id' );
-		$path = $this->collectionPath( $type, $payload ).'/'.$id;
-		$current = $this->api( 'GET', $path );
+		$type     = $this->type( $payload );
+		$id       = $this->positive( $payload['id'] ?? null, 'id' );
+		$path     = $this->collectionPath( $type, $payload ).'/'.$id;
+		$current  = $this->api( 'GET', $path );
 		$snapshot = $this->resourceSnapshot( $type, $current );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( !is_string( $expected ) || !preg_match( '/^[a-f0-9]{64}$/D', $expected )
  || !hash_equals( Fingerprint::make( $snapshot ), $expected ) )
 			throw new RuntimeException( 'Created WooCommerce resource has changed; automatic removal unsafe.' );
 		if ( $type === 'shipping_zone' ){
-			$methods = $this->api( 'GET', $path.'/methods' );
+			$methods   = $this->api( 'GET', $path.'/methods' );
 			$locations = $this->api( 'GET', $path.'/locations' );
 			if ( $methods || $locations )throw new RuntimeException( 'Created zone now has methods or locations; cannot automatically remove.' );
 		}
@@ -311,7 +311,7 @@ final class WooCommerceFulfillmentAdapter {
  || !method_exists( $response, 'get_data' ) )
 			throw new RuntimeException( 'WooCommerce provider returned an invalid response.' );
 		$status = (int)$response->get_status();
-		$data = $response->get_data();
+		$data   = $response->get_data();
 		if ( $status<200 || $status >= 300 || !is_array( $data ) )
 			throw new RuntimeException( 'WooCommerce provider returned HTTP '.$status.'.' );
 		return $data;

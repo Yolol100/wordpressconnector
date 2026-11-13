@@ -47,12 +47,12 @@ final class Settings {
 		$src = plugins_url( 'assets/connection-doctor.js', WPCONNECTOR_FILE );
 		wp_enqueue_script( 'wpconnector-connection-doctor', $src, array(), WPCONNECTOR_VERSION, true );
 		wp_localize_script( 'wpconnector-connection-doctor', 'WPConnectorDoctor', array(
-			'url' => rest_url( 'webactueel-wordpress-connector/v1/mcp' ),
-			'nonce' => wp_create_nonce( 'wp_rest' ),
-			'checking' => __( 'Checking this signed-in browser session...', 'wordpressconnector' ),
-			'success' => __( 'WordPress browser session confirmed. External ChatGPT OAuth is NOT yet proven.', 'wordpressconnector' ),
-			'failed' => __( 'This browser could not reach the authenticated MCP endpoint.', 'wordpressconnector' ),
-			'copied' => __( 'Endpoint copied. Do not paste application passwords into chats.', 'wordpressconnector' ),
+			'url'        => rest_url( 'webactueel-wordpress-connector/v1/mcp' ),
+			'nonce'      => wp_create_nonce( 'wp_rest' ),
+			'checking'   => __( 'Checking this signed-in browser session...', 'wordpressconnector' ),
+			'success'    => __( 'WordPress browser session confirmed. External ChatGPT OAuth is NOT yet proven.', 'wordpressconnector' ),
+			'failed'     => __( 'This browser could not reach the authenticated MCP endpoint.', 'wordpressconnector' ),
+			'copied'     => __( 'Endpoint copied. Do not paste application passwords into chats.', 'wordpressconnector' ),
 			'copyFailed' => __( 'Copy unavailable; select the address above and copy it manually.', 'wordpressconnector' ),
 		) );
 	}
@@ -104,7 +104,7 @@ final class Settings {
 		}
 
 		$userId = get_current_user_id();
-		$user = wp_get_current_user();
+		$user   = wp_get_current_user();
 		if ( $userId <= 0 || ! is_object( $user ) || (int) $user->ID !== $userId || 
 			! current_user_can( 'create_app_password', $userId ) ) {
 			wp_die( esc_html__( 'Application Password permission is not available for the signed-in account.', 'wordpressconnector' ),
@@ -147,16 +147,16 @@ final class Settings {
 		$message .= '<p>' . esc_html__( 'Enter the details only into a trusted HTTPS REST/MCP client that supports WordPress Application Passwords. ChatGPT web connections may require OAuth instead. Never put this password in a GitHub branch, workflow, chat or URL. GitHub Actions already uses password-free OIDC.', 'wordpressconnector' ) . '</p>';
 		$message .= '<p><a href="' . esc_url( admin_url( 'profile.php' ) ) . '">' . esc_html__( 'Manage or revoke this password in your profile', 'wordpressconnector' ) . '</a></p>';
 		$allowed_html = array(
-			'h1' => array(),
-			'p' => array(),
+			'h1'    => array(),
+			'p'     => array(),
 			'label' => array( 'for' => true ),
 			'input' => array(
-				'id' => true,
-				'type' => true,
-				'readonly' => true,
+				'id'           => true,
+				'type'         => true,
+				'readonly'     => true,
 				'autocomplete' => true,
-				'value' => true,
-				'style' => true,
+				'value'        => true,
+				'style'        => true,
 			),
 			'a' => array( 'href' => true ),
 		);
@@ -167,8 +167,8 @@ final class Settings {
 	public function renderPage(): void {
 		if ( ! current_user_can( 'manage_options' ) ) { return; }
 
-		$presenceUrl = rest_url( 'webactueel-wordpress-connector/v1/presence' );
-		$healthUrl = rest_url( 'webactueel-wordpress-connector/v1/health' );
+		$presenceUrl  = rest_url( 'webactueel-wordpress-connector/v1/presence' );
+		$healthUrl    = rest_url( 'webactueel-wordpress-connector/v1/health' );
 		$legacyActive = $this->legacyBridgeActive();
 
 		echo '<div class="wrap">';
@@ -203,7 +203,7 @@ final class Settings {
 		echo '<p><strong>' . esc_html__( 'MCP endpoint', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( rest_url( 'webactueel-wordpress-connector/v1/mcp' ) ) . '</code></p>';
 		echo '<p>' . esc_html__( 'The currently signed-in WordPress administrator is used. No first-user search, automatic administrator selection or password sharing with GitHub takes place.', 'wordpressconnector' ) . '</p>';
 		$currentId = get_current_user_id();
-		$canIssue = $currentId > 0 && current_user_can( 'create_app_password', $currentId )
+		$canIssue  = $currentId > 0 && current_user_can( 'create_app_password', $currentId )
  && is_ssl()
  && 'https' === strtolower( (string) wp_parse_url( rest_url( 'webactueel-wordpress-connector/v1/mcp' ), PHP_URL_SCHEME ) )
  && function_exists( 'wp_is_application_passwords_available_for_user' )
@@ -273,9 +273,9 @@ final class Settings {
      * It reuses the private read-only connector readiness facts.
      */
 	private function renderConnectionRecoveryGuide(): void {
-		$status = ( new ConnectionReadinessAdapter() )->inspect();
-		$site = $status['wordpress'];
-		$oauth = $status['chatgpt'];
+		$status   = ( new ConnectionReadinessAdapter() )->inspect();
+		$site     = $status['wordpress'];
+		$oauth    = $status['chatgpt'];
 		$recovery = $status['recovery'];
 
 		echo '<h2>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</h2>';

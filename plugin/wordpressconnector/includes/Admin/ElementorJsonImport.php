@@ -56,7 +56,7 @@ final class ElementorJsonImport {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selectedId = isset( $_GET['post_id'] )?absint( wp_unslash( $_GET['post_id'] ) ):0;
-		$posts = get_posts( array( 'post_type' => $postType, 'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ), 'posts_per_page' => 200, 'orderby' => 'modified', 'order' => 'DESC' ) );
+		$posts      = get_posts( array( 'post_type' => $postType, 'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ), 'posts_per_page' => 200, 'orderby' => 'modified', 'order' => 'DESC' ) );
 		echo '<div class="wrap"><h1>'.esc_html__( 'Import Elementor JSON', 'wordpressconnector' ).'</h1><p>'.esc_html__( 'Upload an Elementor JSON document. Choose an existing item to replace only its Elementor structure/settings, or choose Create new to make a new draft. Existing-item writes use Elementor readback and automatic rollback.', 'wordpressconnector' ).'</p><form method="post" enctype="multipart/form-data" action="'.esc_url( admin_url( 'admin-post.php' ) ).'">';
 		wp_nonce_field( self::ACTION );
 		echo '<input type="hidden" name="action" value="'.esc_attr( self::ACTION ).'"><input type="hidden" name="post_type" value="'.esc_attr( $postType ).'"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">'.esc_html__( 'Target', 'wordpressconnector' ).'</label></th><td><select id="wpconnector-target-post" name="post_id">';
@@ -74,16 +74,16 @@ final class ElementorJsonImport {
 
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
-		$postId = isset( $_POST['post_id'] )?absint( wp_unslash( $_POST['post_id'] ) ):0;
+		$postId   = isset( $_POST['post_id'] )?absint( wp_unslash( $_POST['post_id'] ) ):0;
 		$postType = isset( $_POST['post_type'] )?sanitize_key( wp_unslash( $_POST['post_type'] ) ):'';
 		if ( !$this->supportsPostType( $postType ) || !current_user_can( $this->capabilityForPostType( $postType ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
-			$payload = $this->uploadedPayload();
-			$data = $payload['content'];
+			$payload  = $this->uploadedPayload();
+			$data     = $payload['content'];
 			$settings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )?$payload['page_settings']:( isset( $payload['settings'] ) && is_array( $payload['settings'] )?$payload['settings']:array() );
-			$adapter = new ElementorAdapter();
+			$adapter  = new ElementorAdapter();
 			if ( $postId>0 ) {
 				$post = get_post( $postId );
 				if ( !$post instanceof \WP_Post || (string)$post->post_type !== $postType ) {
@@ -104,7 +104,7 @@ final class ElementorJsonImport {
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
-				$created = $adapter->createDocument( $adapterPayload, array( 'dry_run' => false ) );
+				$created  = $adapter->createDocument( $adapterPayload, array( 'dry_run' => false ) );
 				$resultId = isset( $created['document']['post_id'] )?(int)$created['document']['post_id']:0;
 				if ( $resultId<1 ) {
 					throw new RuntimeException( 'Elementor JSON was imported but the new document ID could not be verified.' );
@@ -125,7 +125,7 @@ final class ElementorJsonImport {
 		if ( !isset( $_FILES['elementor_json'] ) || !is_array( $_FILES['elementor_json'] ) ) {
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
-		$file = $_FILES['elementor_json'];
+		$file  = $_FILES['elementor_json'];
 		$error = isset( $file['error'] )?(int)$file['error']:UPLOAD_ERR_NO_FILE;
 		if ( UPLOAD_ERR_OK !== $error ) {
 			throw new RuntimeException( 'The Elementor JSON upload failed.' );
@@ -182,8 +182,8 @@ final class ElementorJsonImport {
 		}
 		try {
 			$entries = $this->bulkUploads();
-			$plan = $this->buildBulkPlan( $entries );
-			$allOk = true;
+			$plan    = $this->buildBulkPlan( $entries );
+			$allOk   = true;
 			foreach ( $plan as $row ) {
 				if ( 'ready' !== $row['status'] ) {
 					$allOk = false;
@@ -226,7 +226,7 @@ final class ElementorJsonImport {
 		if ( ! preg_match( '/^[A-Za-z0-9]{48}$/D', $token ) || ! isset( $_POST['confirmed'] ) || 'yes' !== $_POST['confirmed'] ) {
 			wp_die( 'Bulkimport not confirmed.', '', array( 'response' => 400 ) );
 		}
-		$key = 'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token );
+		$key   = 'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token );
 		$state = get_transient( $key );
 		if ( ! is_array( $state ) || ! isset( $state['plan'] ) || ! is_array( $state['plan'] ) ) {
 			wp_die( 'Preview expired. Upload again.', '', array( 'response' => 409 ) );
@@ -239,13 +239,13 @@ final class ElementorJsonImport {
 		}
 		// Reuse the same mutation lock as authenticated REST/MCP requests.
 		$store = new \Webactueel\WordPressConnector\Runtime\ProcessedStore();
-		$lock = $store->acquireMutationLock();
+		$lock  = $store->acquireMutationLock();
 		if ( '' === $lock ) {
 			wp_die( 'Another connector mutation is running. Preview again after it finishes.', '', array( 'response' => 409 ) );
 		}
-		$adapter = new ElementorAdapter();
-		$snapshots = array();
-		$updated = array();
+		$adapter    = new ElementorAdapter();
+		$snapshots  = array();
+		$updated    = array();
 		$inFlightId = 0;
 		try {
 			foreach ( $plan as $row ) {
@@ -274,10 +274,10 @@ final class ElementorJsonImport {
 					throw new RuntimeException( 'Document changed during bulk import.' );
 				}
 				$payload = array(
-				'id' => $id,
-				'data' => $row['content'],
+				'id'            => $id,
+				'data'          => $row['content'],
 				'page_settings' => $row['settings'],
-				'edit_mode' => 'builder',
+				'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $row['post_type'] ) {
 					$payload['template_type'] = $row['template_type'];
@@ -297,12 +297,12 @@ final class ElementorJsonImport {
 				try {
 					$before = $snapshots[$id];
 					$adapter->replaceDocument( array(
-					'id' => $id,
-					'data' => $before['data'],
+					'id'            => $id,
+					'data'          => $before['data'],
 					'page_settings' => $before['page_settings'],
-					'edit_mode' => $before['edit_mode'],
+					'edit_mode'     => $before['edit_mode'],
 					'template_type' => $before['template_type'],
-					'conditions' => $before['conditions'],
+					'conditions'    => $before['conditions'],
 					), array( 'dry_run' => false ) );
 				}
 				catch ( Throwable $rollbackError ) {
@@ -346,7 +346,7 @@ final class ElementorJsonImport {
 		if ( $count<1 || $count>self::BULK_LIMIT ) {
 			throw new RuntimeException( 'Upload 1 to 20 JSON files.' );
 		}
-		$total = 0;
+		$total   = 0;
 		$entries = array();
 		for ( $i = 0;$i<$count;$i++ ) {
 			if ( (int)( $files['error'][$i] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
@@ -371,7 +371,7 @@ final class ElementorJsonImport {
 				throw new RuntimeException( 'Invalid JSON in '.$name );
 			}
 			if ( isset( $payload['format'] ) && 'wordpressconnector/elementor-site-parts-bundle' === $payload['format'] ) {
-				$source = isset( $payload['source'] ) && is_array( $payload['source'] )?$payload['source']:array();
+				$source  = isset( $payload['source'] ) && is_array( $payload['source'] )?$payload['source']:array();
 				$payload = $payload['document'] ?? array();
 				if ( is_array( $payload ) && !isset( $payload['source'] ) ) {
 					$payload['source'] = $source;
@@ -386,14 +386,14 @@ final class ElementorJsonImport {
 	}
 
 	private function buildBulkPlan( array $entries ): array {
-		$plan = array();
-		$seenTargets = array();
+		$plan          = array();
+		$seenTargets   = array();
 		$templateTypes = array( 'header', 'footer', 'section', 'single', 'single-post', 'single-page',
 		'archive', 'search-results', 'error-404', 'popup', 'loop-item', 'loop', 'kit' );
 		foreach ( $entries as $entry ) {
-			$name = $entry['name'];
-			$payload = $entry['payload'];
-			$source = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
+			$name         = $entry['name'];
+			$payload      = $entry['payload'];
+			$source       = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
 			$declaredType = sanitize_key( (string) ( $source['post_type'] ?? '' ) );
 			$documentType = sanitize_key( (string) ( $payload['type'] ?? '' ) );
 			$inferredType = '';
@@ -406,7 +406,7 @@ final class ElementorJsonImport {
 			elseif ( in_array( $documentType, $templateTypes, true ) ) {
 				$inferredType = 'elementor_library';
 			}
-			$postType = '' !== $declaredType ? $declaredType : $inferredType;
+			$postType       = '' !== $declaredType ? $declaredType : $inferredType;
 			$familyConflict = '' !== $declaredType && '' !== $inferredType
  && $declaredType !== $inferredType
  && ! ( 'elementor_library' === $declaredType && 'page' === $documentType );
@@ -419,9 +419,9 @@ final class ElementorJsonImport {
 				$slug = $this->bulkFilenameSlug( $name );
 			}
 			$row = array(
-			'name' => $name, 'post_type' => $postType, 'slug' => $slug,
-			'post_id' => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
-			'content' => $payload['content'],
+			'name'     => $name, 'post_type' => $postType, 'slug' => $slug,
+			'post_id'  => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
+			'content'  => $payload['content'],
 			'settings' => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 			? $payload['page_settings']
 			: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
@@ -432,12 +432,12 @@ final class ElementorJsonImport {
 			}
 			elseif ( '' !== $postType && '' !== $slug ) {
 				$matches = get_posts( array(
-				'post_type' => $postType, 'post_status' => 'any',
-				'name' => $slug, 'posts_per_page' => 3, 'fields' => 'ids',
+				'post_type'        => $postType, 'post_status' => 'any',
+				'name'             => $slug, 'posts_per_page' => 3, 'fields' => 'ids',
 				'suppress_filters' => true,
 				) );
 				if ( 1 === count( $matches ) ) {
-					$id = (int) $matches[0];
+					$id   = (int) $matches[0];
 					$post = get_post( $id );
 					if ( $post instanceof \WP_Post && (string) $post->post_name === $slug
  && current_user_can( 'edit_post', $id ) ) {
@@ -454,7 +454,7 @@ final class ElementorJsonImport {
 						else {
 							try {
 								$inspection = ( new ElementorAdapter() )->inspect( array( 'id' => $id ) );
-								$doc = $inspection['document'] ?? null;
+								$doc        = $inspection['document'] ?? null;
 								if ( ! is_array( $doc ) || empty( $doc['data'] ) ) {
 									$row['status'] = 'conflict: existing Elementor document is empty';
 								}

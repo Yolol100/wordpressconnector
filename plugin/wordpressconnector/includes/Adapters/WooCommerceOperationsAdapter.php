@@ -18,16 +18,16 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class WooCommerceOperationsAdapter {
 	private const AREAS = array(
-		'shipping_zone' => array( 'name', 'order' ),
+		'shipping_zone'   => array( 'name', 'order' ),
 		'shipping_method' => array( 'enabled', 'order', 'settings' ),
-		'tax_rate' => array( 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ),
+		'tax_rate'        => array( 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ),
 		'payment_gateway' => array( 'title', 'description', 'order', 'enabled', 'settings' ),
 	);
 
 	private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant|bank|iban|routing|account|user[_-]?name|username|access[_-]?key|public[_-]?key|private[_-]?key|client|signature|certificate|authorization|webhook|private|license|smtp|auth|oauth)/i';
 
 	public function register( Registry $registry ): void {
-		$read = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
+		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
 			'description' => 'Read bounded provider-owned shipping zones/methods, tax rates and gateway summaries.',
@@ -51,23 +51,23 @@ final class WooCommerceOperationsAdapter {
 			throw new RuntimeException( 'Unrecognized WooCommerce operations inventory area.' );
 		}
 		$path = array(
-			'shipping_zones' => '/wc/v3/shipping/zones',
-			'tax_rates' => '/wc/v3/taxes',
+			'shipping_zones'   => '/wc/v3/shipping/zones',
+			'tax_rates'        => '/wc/v3/taxes',
 			'payment_gateways' => '/wc/v3/payment_gateways',
 		)[$area] ?? '';
 		if ( $area === 'shipping_methods' ) {
 			$zoneId = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
-			$path = '/wc/v3/shipping/zones/' . $zoneId . '/methods';
+			$path   = '/wc/v3/shipping/zones/' . $zoneId . '/methods';
 		} elseif ( array_key_exists( 'zone_id', $payload ) ) {
 			throw new RuntimeException( 'Unexpected zone_id for WooCommerce operations inventory.' );
 		}
-		$page = $payload['page'] ?? 1;
+		$page    = $payload['page'] ?? 1;
 		$perPage = $payload['per_page'] ?? 50;
 		if ( ! is_int( $page ) || $page < 1 || $page > 1000
  || ! is_int( $perPage ) || $perPage < 1 || $perPage > 100 ) {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
-		$query = $area === 'tax_rates' ? array( 'page' => $page, 'per_page' => $perPage ) : array();
+		$query    = $area === 'tax_rates' ? array( 'page' => $page, 'per_page' => $perPage ) : array();
 		$response = $this->request( 'GET', $path, $query );
 		if ( count( $response ) > 150 ) {
 			throw new RuntimeException( 'WooCommerce operations inventory exceeds limit.' );
@@ -86,21 +86,21 @@ final class WooCommerceOperationsAdapter {
 			}
 		}
 		return array(
-			'area' => $area, 'items' => $out, 'count' => count( $out ),
-			'page' => $page, 'per_page' => $perPage,
+			'area'     => $area, 'items' => $out, 'count' => count( $out ),
+			'page'     => $page, 'per_page' => $perPage,
 			'has_more' => $area === 'tax_rates' && count( $response ) >= $perPage,
 		);
 	}
 
 	public function inspect( array $payload, array $context = array() ): array {
 		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id' ) );
-		$area = $this->area( $payload );
-		$path = $this->path( $area, $payload );
-		$data = $this->request( 'GET', $path );
+		$area  = $this->area( $payload );
+		$path  = $this->path( $area, $payload );
+		$data  = $this->request( 'GET', $path );
 		$clean = $this->summarize( $data, $area );
 		return array(
-			'area' => $area,
-			'item' => $clean,
+			'area'        => $area,
+			'item'        => $clean,
 			'fingerprint' => Fingerprint::make( $clean ),
 		);
 	}
@@ -111,20 +111,20 @@ final class WooCommerceOperationsAdapter {
 			'restore_verified', 'expected_before_fingerprint',
 			'sandbox_verified',
 		) );
-		$area = $this->area( $payload );
-		$path = $this->path( $area, $payload );
+		$area   = $this->area( $payload );
+		$path   = $this->path( $area, $payload );
 		$fields = $payload['fields'] ?? null;
 		if ( ! is_array( $fields ) || !$fields || count( $fields ) > 12 ) {
 			throw new RuntimeException( 'WooCommerce operations write requires 1-12 explicitly selected fields.' );
 		}
-		$raw = $this->request( 'GET', $path );
-		$before = $this->summarize( $raw, $area );
+		$raw         = $this->request( 'GET', $path );
+		$before      = $this->summarize( $raw, $area );
 		$fingerprint = Fingerprint::make( $before );
-		$updates = $this->validateChanges( $area, $fields, $raw );
-		$result = array(
-			'area' => $area,
-			'before' => $before,
-			'requested' => $updates,
+		$updates     = $this->validateChanges( $area, $fields, $raw );
+		$result      = array(
+			'area'                 => $area,
+			'before'               => $before,
+			'requested'            => $updates,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -171,12 +171,12 @@ final class WooCommerceOperationsAdapter {
 		$after = $this->summarize( $afterRaw, $area );
 		$result['after'] = $after;
 		$result['_rollback'] = array(
-			'action' => 'woocommerce.operations.restore',
+			'action'  => 'woocommerce.operations.restore',
 			'payload' => array(
-				'area' => $area,
-				'id' => $payload['id'],
-				'zone_id' => $payload['zone_id'] ?? null,
-				'fields' => $previous,
+				'area'                       => $area,
+				'id'                         => $payload['id'],
+				'zone_id'                    => $payload['zone_id'] ?? null,
+				'fields'                     => $previous,
 				'expected_after_fingerprint' => Fingerprint::make( $after ),
 			),
 		);
@@ -188,11 +188,11 @@ final class WooCommerceOperationsAdapter {
 			throw new RuntimeException( 'WooCommerce provider restoration is rollback-only.' );
 		}
 		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id', 'fields', 'expected_after_fingerprint' ) );
-		$area = $this->area( $payload );
-		$path = $this->path( $area, $payload );
+		$area      = $this->area( $payload );
+		$path      = $this->path( $area, $payload );
 		$beforeRaw = $this->request( 'GET', $path );
-		$before = $this->summarize( $beforeRaw, $area );
-		$expected = $payload['expected_after_fingerprint'] ?? null;
+		$before    = $this->summarize( $beforeRaw, $area );
+		$expected  = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
  || ! hash_equals( Fingerprint::make( $before ), $expected ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback blocked due to changed remote state.' );
@@ -209,7 +209,7 @@ final class WooCommerceOperationsAdapter {
 	}
 
 	private function summarize( array $data, string $area ): array {
-		$out = array();
+		$out  = array();
 		$keys = $area === 'shipping_zone' ? array( 'id', 'name', 'order' )
 			: ( $area === 'shipping_method' ? array( 'instance_id', 'method_id', 'title', 'order', 'enabled' )
 			: ( $area === 'tax_rate' ? array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' )
@@ -227,11 +227,11 @@ final class WooCommerceOperationsAdapter {
  || ! is_array( $setting ) ) {
 					continue;
 				}
-				$type = isset( $setting['type'] ) && is_string( $setting['type'] ) ? $setting['type'] : '';
-				$secret = $this->secret( $id, $type );
+				$type    = isset( $setting['type'] ) && is_string( $setting['type'] ) ? $setting['type'] : '';
+				$secret  = $this->secret( $id, $type );
 				$visible = ! $secret && $this->exposableSetting( $area, $id );
-				$option = array(
-					'id' => $id, 'type' => substr( $type, 0, 40 ),
+				$option  = array(
+					'id'   => $id, 'type' => substr( $type, 0, 40 ),
 					'mode' => $secret ? 'secret_blocked'
 						: ( $visible ? 'critical_requires_site_gate' : 'provider_specific_read_only' ),
 				);
@@ -271,7 +271,7 @@ final class WooCommerceOperationsAdapter {
 						throw new RuntimeException( 'Protected WooCommerce provider credential or setting.' );
 					}
 					$field = $before['settings'][$optionId];
-					$type = (string) ( $field['type'] ?? '' );
+					$type  = (string) ( $field['type'] ?? '' );
 					if ( ! is_string( $desired ) || strlen( $desired ) > 300 ) {
 						throw new RuntimeException( 'Provider setting value must be a bounded string.' );
 					}
