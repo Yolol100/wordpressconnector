@@ -3,6 +3,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $source = file_get_contents($root.'/plugin/wordpressconnector/includes/Adapters/MediaAdapter.php');
 if (! is_string($source)) { throw new RuntimeException('MediaAdapter missing.'); }
+$compactSource = preg_replace('/\\s+/', '', $source);
+if (! is_string($compactSource)) { throw new RuntimeException('Could not normalize media source.'); }
+
 foreach (array(
     "'media.rename'",
     "'capability' => 'manage_options'",
@@ -20,11 +23,11 @@ foreach (array(
     "Image rename readback verification failed",
     "Images with a separate original_image require manual migration",
 ) as $marker) {
-    if (false === strpos($source, $marker)) {
+    if (false === strpos($compactSource, preg_replace('/\\s+/', '', $marker))) {
         throw new RuntimeException('Missing safe image rename marker: '.$marker);
     }
 }
-if (false !== strpos($source, 'rename($sourceReal')) {
+if (false !== strpos($compactSource, 'rename($sourceReal')) {
     throw new RuntimeException('Old image paths must not be moved or deleted.');
 }
 echo "Media rename contract OK\n";
