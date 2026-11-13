@@ -288,19 +288,16 @@ final class CacheMaintenanceAdapter
 
     public function handleAssetCleanupLoopback(): void
     {
-        if (! isset($_SERVER['REQUEST_METHOD']) || 'POST' !== strtoupper((string) $_SERVER['REQUEST_METHOD'])) {
+        $method = $_SERVER['REQUEST_METHOD'] ?? null;
+        if (! is_string($method) || 'POST' !== strtoupper($method)) {
             wp_send_json_error(array('code' => 'method_not_allowed'), 405);
             return;
         }
 
-        $key = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
-            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_KEY'])
-            : '';
-        $token = isset($_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
-            ? strtolower((string) $_SERVER['HTTP_X_WPCONNECTOR_CACHE_TOKEN'])
-            : '';
+        $key = $this->loopbackHexHeader('HTTP_X_WPCONNECTOR_CACHE_KEY', 32);
+        $token = $this->loopbackHexHeader('HTTP_X_WPCONNECTOR_CACHE_TOKEN', 64);
 
-        if (! preg_match('/^[a-f0-9]{32}\z/', $key) || ! preg_match('/^[a-f0-9]{64}\z/', $token)) {
+        if ('' === $key || '' === $token) {
             wp_send_json_error(array('code' => 'invalid_authorization'), 403);
             return;
         }
@@ -332,6 +329,18 @@ final class CacheMaintenanceAdapter
             'provider' => 'Asset CleanUp',
             'version' => defined('WPACU_PLUGIN_VERSION') ? (string) WPACU_PLUGIN_VERSION : '',
         ));
+    }
+
+    private function loopbackHexHeader(string $headerName, int $length): string
+    {
+        $raw = $_SERVER[$headerName] ?? null;
+
+        // Check the original bytes before lowercasing: malformed headers must not become valid tokens.
+        if (! is_string($raw) || ! preg_match('/\A[a-f0-9]{' . $length . '}\z/i', $raw)) {
+            return '';
+        }
+
+        return strtolower($raw);
     }
 
     private function flushAssetCleanupDirect(): bool
