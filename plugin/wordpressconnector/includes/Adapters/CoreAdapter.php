@@ -19,6 +19,11 @@ use Webactueel\WordPressConnector\Support\Input;
  * Registers and handles Core connector actions.
  */
 final class CoreAdapter {
+	/**
+	 * Register connector actions and their handlers.
+	 *
+	 * @param Registry $registry Action registry to extend.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'post.list', array( $this, 'postList' ), array( 'description' => 'List posts, pages or custom post types.' ) );
 		$registry->register( 'post.get', array( $this, 'postGet' ), array( 'description' => 'Read one post object.' ) );
@@ -65,6 +70,13 @@ final class CoreAdapter {
 		$registry->register( 'comment.trash', array( $this, 'commentTrash' ), array( 'mutation' => true, 'privileged' => true, 'sensitive' => true, 'description' => 'Trash a comment.' ) );
 	}
 
+	/**
+	 * Handle the post list connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function postList( array $payload ): array {
 		$postType = isset( $payload['post_type'] ) ? $payload['post_type'] : 'post';
 		$status   = isset( $payload['status'] ) ? $payload['status'] : ( Policy::publicRepositoryContext() ? 'publish' : 'any' );
@@ -103,12 +115,29 @@ final class CoreAdapter {
 		);
 	}
 
+	/**
+	 * Handle the post get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function postGet( array $payload ): array {
 		$post = $this->requirePost( $payload );
 		Policy::assertPostReadable( $post );
 		return array( 'post' => $this->postSnapshot( $post ), 'fingerprint' => Fingerprint::make( $this->postSnapshot( $post ) ) );
 	}
 
+	/**
+	 * Handle the post create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function postCreate( array $payload, array $context ): array {
 		$fields = $this->sanitizePostFields( $payload, false );
 		if ( empty( $fields['post_type'] ) ) {
@@ -136,6 +165,16 @@ final class CoreAdapter {
 		);
 	}
 
+	/**
+	 * Handle the post update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function postUpdate( array $payload, array $context ): array {
 		$post = $this->requirePost( $payload );
 		Policy::assertReadablePostType( (string) $post->post_type );
@@ -231,6 +270,16 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the post trash connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function postTrash( array $payload, array $context ): array {
 		$post   = $this->requirePost( $payload );
 		$before = $this->postSnapshot( $post );
@@ -248,6 +297,16 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the post restore connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function postRestore( array $payload, array $context ): array {
 		$post   = $this->requirePost( $payload );
 		$before = $this->postSnapshot( $post );
@@ -266,6 +325,13 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the post revisions connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function postRevisions( array $payload ): array {
 		$post = $this->requirePost( $payload );
 		Policy::assertPostReadable( $post );
@@ -276,6 +342,16 @@ final class CoreAdapter {
 		return array( 'revisions' => $items );
 	}
 
+	/**
+	 * Handle the post restore revision connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
 		$revisionId = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
 		$revision   = wp_get_post_revision( $revisionId );
@@ -300,12 +376,29 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the meta get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function metaGet( array $payload ): array {
 		list( $type, $id, $key ) = $this->metaTarget( $payload );
 		Policy::assertMetaKeyAllowed( $key );
 		return array( 'value' => get_metadata( $type, $id, $key, true ) );
 	}
 
+	/**
+	 * Handle the meta update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function metaUpdate( array $payload, array $context ): array {
 		list( $type, $id, $key ) = $this->metaTarget( $payload );
 		Policy::assertMetaKeyAllowed( $key );
@@ -325,6 +418,14 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the meta delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function metaDelete( array $payload, array $context ): array {
 		list( $type, $id, $key ) = $this->metaTarget( $payload );
 		Policy::assertMetaKeyAllowed( $key );
@@ -338,6 +439,15 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the term list connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termList( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : 'category';
 		if ( ! taxonomy_exists( $taxonomy ) ) {
@@ -361,6 +471,15 @@ final class CoreAdapter {
 		return array( 'terms' => array_map( array( $this, 'termSnapshot' ), $terms ) );
 	}
 
+	/**
+	 * Handle the term get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termGet( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -376,6 +495,16 @@ final class CoreAdapter {
 		return array( 'term' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
 
+	/**
+	 * Handle the term create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termCreate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$name     = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : '';
@@ -402,6 +531,16 @@ final class CoreAdapter {
 		return array( 'term' => $this->termSnapshot( get_term( $id, $taxonomy ) ), '_rollback' => array( 'action' => 'term.delete', 'payload' => array( 'taxonomy' => $taxonomy, 'id' => $id ) ) );
 	}
 
+	/**
+	 * Handle the term update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termUpdate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -436,6 +575,16 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the term delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termDelete( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
@@ -456,6 +605,16 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the term assign connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function termAssign( array $payload, array $context ): array {
 		$objectId = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
@@ -481,6 +640,11 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Handle the menu list connector action.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function menuList(): array {
 		$menus = array();
 		foreach ( wp_get_nav_menus() as $menu ) {
@@ -489,6 +653,15 @@ final class CoreAdapter {
 		return array( 'menus' => $menus, 'locations' => get_nav_menu_locations(), 'registered_locations' => get_registered_nav_menus() );
 	}
 
+	/**
+	 * Handle the menu get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuGet( array $payload ): array {
 		$menu = wp_get_nav_menu_object( $payload['id'] ?? ( $payload['name'] ?? 0 ) );
 		if ( ! $menu ) {
@@ -512,6 +685,16 @@ final class CoreAdapter {
 		return array( 'menu' => array( 'term_id' => (int) $menu->term_id, 'name' => (string) $menu->name, 'slug' => (string) $menu->slug ), 'items' => $items );
 	}
 
+	/**
+	 * Handle the menu create connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuCreate( array $payload, array $context ): array {
 		$name = isset( $payload['name'] ) ? sanitize_text_field( (string) $payload['name'] ) : '';
 		if ( '' === $name ) {
@@ -527,6 +710,16 @@ final class CoreAdapter {
 		return array( 'menu_id' => (int) $id, '_rollback' => array( 'action' => 'menu.delete', 'payload' => array( 'id' => (int) $id ) ) );
 	}
 
+	/**
+	 * Handle the menu update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuUpdate( array $payload, array $context ): array {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$menu = wp_get_nav_menu_object( $id );
@@ -545,6 +738,16 @@ final class CoreAdapter {
 		return array( 'menu_id' => (int) $updated, '_rollback' => array( 'action' => 'menu.update', 'payload' => $before ) );
 	}
 
+	/**
+	 * Handle the menu delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuDelete( array $payload, array $context ): array {
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$snapshot = $this->menuGet( array( 'id' => $id ) );
@@ -558,6 +761,16 @@ final class CoreAdapter {
 		return array( 'deleted' => $id, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the menu item upsert connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
 		$menuId = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$itemId = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
@@ -595,6 +808,16 @@ final class CoreAdapter {
 		return array( 'item_id' => (int) $updated, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Handle the menu location set connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function menuLocationSet( array $payload, array $context ): array {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
 		$menuId     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
@@ -612,12 +835,27 @@ final class CoreAdapter {
 		return array( 'location' => $location, 'menu_id' => $menuId, '_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ) );
 	}
 
+	/**
+	 * Handle the option get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function optionGet( array $payload ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array( 'name' => $name, 'value' => get_option( $name, null ) );
 	}
 
+	/**
+	 * Handle the option update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function optionUpdate( array $payload, array $context ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
@@ -630,6 +868,14 @@ final class CoreAdapter {
 		return array( 'name' => $name, 'value' => get_option( $name, null ), '_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the option delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function optionDelete( array $payload, array $context ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
@@ -641,6 +887,15 @@ final class CoreAdapter {
 		return array( 'deleted' => $name, '_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the network option get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function networkOptionGet( array $payload ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -650,6 +905,16 @@ final class CoreAdapter {
 		return array( 'name' => $name, 'value' => get_site_option( $name, null ) );
 	}
 
+	/**
+	 * Handle the network option update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function networkOptionUpdate( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -665,6 +930,16 @@ final class CoreAdapter {
 		return array( 'name' => $name, 'value' => get_site_option( $name, null ), '_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the network option delete connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function networkOptionDelete( array $payload, array $context ): array {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
@@ -679,12 +954,27 @@ final class CoreAdapter {
 		return array( 'deleted' => $name, '_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the theme mod get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeModGet( array $payload ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		return array( 'name' => $name, 'value' => get_theme_mod( $name, null ) );
 	}
 
+	/**
+	 * Handle the theme mod update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeModUpdate( array $payload, array $context ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
@@ -697,6 +987,14 @@ final class CoreAdapter {
 		return array( 'name' => $name, 'value' => get_theme_mod( $name, null ), '_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the theme mod remove connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function themeModRemove( array $payload, array $context ): array {
 		$name = $this->requireKey( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
@@ -708,6 +1006,13 @@ final class CoreAdapter {
 		return array( 'removed' => $name, '_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ) );
 	}
 
+	/**
+	 * Handle the comment list connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 */
 	public function commentList( array $payload ): array {
 		$comments = get_comments( array(
 			'post_id' => isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0,
@@ -718,6 +1023,15 @@ final class CoreAdapter {
 		return array( 'comments' => array_map( array( $this, 'commentSnapshot' ), $comments ) );
 	}
 
+	/**
+	 * Handle the comment get connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function commentGet( array $payload ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $comment instanceof \WP_Comment ) {
@@ -726,6 +1040,16 @@ final class CoreAdapter {
 		return array( 'comment' => $this->commentSnapshot( $comment ) );
 	}
 
+	/**
+	 * Handle the comment update connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function commentUpdate( array $payload, array $context ): array {
 		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $comment instanceof \WP_Comment ) {
@@ -749,6 +1073,16 @@ final class CoreAdapter {
 		return array( 'comment' => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ), '_rollback' => array( 'action' => 'comment.update', 'payload' => array( 'id' => (int) $comment->comment_ID, 'content' => $before['content'], 'author' => $before['author'], 'author_email' => $before['author_email'], 'author_url' => $before['author_url'], 'approved' => $before['approved'] ) ) );
 	}
 
+	/**
+	 * Handle the comment trash connector action.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	public function commentTrash( array $payload, array $context ): array {
 		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$comment = get_comment( $id );
@@ -765,6 +1099,15 @@ final class CoreAdapter {
 		return array( 'trashed' => $id, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Resolve and validate the requested WordPress post.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return \WP_Post Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	private function requirePost( array $payload ): \WP_Post {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
@@ -774,6 +1117,14 @@ final class CoreAdapter {
 		return $post;
 	}
 
+	/**
+	 * Validate and sanitize post fields for the requested operation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param bool $partial Whether partial updates are allowed.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function sanitizePostFields( array $payload, bool $partial ): array {
 		$fields    = array();
 		$stringMap = array(
@@ -801,6 +1152,13 @@ final class CoreAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Build a stable snapshot of a WordPress post.
+	 *
+	 * @param \WP_Post $post WordPress post to inspect.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function postSnapshot( \WP_Post $post ): array {
 		return array(
 			'id'                 => (int) $post->ID,
@@ -825,6 +1183,13 @@ final class CoreAdapter {
 		);
 	}
 
+	/**
+	 * Build payload data for a guarded post rollback.
+	 *
+	 * @param array $snapshot Previously captured state.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function postRollbackPayload( array $snapshot ): array {
 		return array(
 			'id'         => $snapshot['id'], 'title' => $snapshot['title'], 'content' => $snapshot['content'], 'excerpt' => $snapshot['excerpt'],
@@ -833,6 +1198,13 @@ final class CoreAdapter {
 		);
 	}
 
+	/**
+	 * Build a snapshot from accepted update fields.
+	 *
+	 * @param array $fields Input fields to inspect.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function snapshotFromUpdateFields( array $fields ): array {
 		$reverse = array( 'post_title' => 'title', 'post_content' => 'content', 'post_excerpt' => 'excerpt', 'post_status' => 'status', 'post_name' => 'slug', 'post_author' => 'author', 'post_parent' => 'parent', 'menu_order' => 'menu_order', 'comment_status' => 'comment_status', 'ping_status' => 'ping_status' );
 		$result  = array();
@@ -844,6 +1216,15 @@ final class CoreAdapter {
 		return $result;
 	}
 
+	/**
+	 * Resolve the requested WordPress metadata target.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	private function metaTarget( array $payload ): array {
 		$type = isset( $payload['object_type'] ) ? sanitize_key( (string) $payload['object_type'] ) : '';
 		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) {
@@ -857,10 +1238,24 @@ final class CoreAdapter {
 		return array( $type, $id, $key );
 	}
 
+	/**
+	 * Build a snapshot of a taxonomy term.
+	 *
+	 * @param \WP_Term $term Taxonomy term to inspect.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function termSnapshot( \WP_Term $term ): array {
 		return array( 'id' => (int) $term->term_id, 'taxonomy' => (string) $term->taxonomy, 'name' => (string) $term->name, 'slug' => (string) $term->slug, 'description' => (string) $term->description, 'parent' => (int) $term->parent, 'count' => (int) $term->count );
 	}
 
+	/**
+	 * Build a snapshot of a WordPress comment.
+	 *
+	 * @param \WP_Comment $comment WordPress comment to inspect.
+	 *
+	 * @return array Result of this operation.
+	 */
 	private function commentSnapshot( \WP_Comment $comment ): array {
 		return array(
 			'id'           => (int) $comment->comment_ID, 'post_id' => (int) $comment->comment_post_ID, 'author' => (string) $comment->comment_author,
@@ -870,6 +1265,16 @@ final class CoreAdapter {
 		);
 	}
 
+	/**
+	 * Handle internal require key logic.
+	 *
+	 * @param array  $payload Request parameters.
+	 * @param string $field Value used by this operation.
+	 *
+	 * @return string Result of this operation.
+	 *
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
 	private function requireKey( array $payload, string $field ): string {
 		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
 		if ( '' === $value || strlen( $value ) > 191 ) {
