@@ -7,7 +7,7 @@ The unprivileged `WordPress Coding Standards Audit` workflow uses isolated
 audit-only Composer dependencies outside the plugin source:
 
 - WordPress Coding Standards 3.4.1.
-- PHP_CodeSniffer 3.13.5.
+- PHP_CodeSniffer 3.13.6.
 - No ignored sniff categories, per-file suppressions or narrowed standards.
 
 The scan is **baseline/reporting-only**. A green audit job means the scanner
@@ -23,6 +23,6 @@ Never replace the existing PHP runtime, WordPress, WooCommerce, security or
 package tests with this additional advisory audit.
 
 Local repeat: install `wp-coding-standards/wpcs:3.4.1` and
-`squizlabs/php_codesniffer:3.13.5` using Composer in a separate tool directory,
+`squizlabs/php_codesniffer:3.13.6` using Composer in a separate tool directory,
 then run its `vendor/bin/phpcs --standard=phpcs.xml.dist --report=summary`
 from the repository root.

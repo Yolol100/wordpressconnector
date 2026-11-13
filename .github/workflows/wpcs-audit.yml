@@ -38,7 +38,7 @@ jobs:
             "description": "Ephemeral audit dependencies, not plugin runtime dependencies",
             "type": "project",
             "require-dev": {
-              "squizlabs/php_codesniffer": "3.13.5",
+              "squizlabs/php_codesniffer": "3.13.6",
               "wp-coding-standards/wpcs": "3.4.1"
             },
             "config": {
