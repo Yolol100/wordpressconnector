@@ -60,8 +60,10 @@ $assetRequired = array(
     "array('zip' => 'application/zip')",
     "connector plugin/theme package",
 );
+$compactAssetStore = preg_replace('/\\s+/', '', $assetStore);
+if (! is_string($compactAssetStore)) { throw new RuntimeException('Unable to normalize plugin-package asset store.'); }
 foreach ($assetRequired as $needle) {
-    if (strpos($assetStore, $needle) === false) {
+    if (strpos($compactAssetStore, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing plugin-package upload contract: {$needle}\n");
         exit(1);
     }
