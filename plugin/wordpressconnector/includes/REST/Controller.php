@@ -186,9 +186,9 @@ final class Controller {
 
 	public function validateRequestId( $value ): bool { return is_string( $value ) && (bool)preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value ); }
 	public function validateAssetPath( $value ): bool {
-		if ( !is_string( $value ) || '' === $value || strlen( $value )>240 || '/' === $value[0] || false !== strpos( $value, '\\' ) ) { return false; }
+		if ( ! is_string( $value ) || '' === $value || strlen( $value )>240 || '/' === $value[0] || false !== strpos( $value, '\\' ) ) { return false; }
 		foreach ( explode( '/', $value ) as $segment ) {
-			if ( '' === $segment || '.' === $segment || '..' === $segment || !preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z/', $segment ) ) { return false; }
+			if ( '' === $segment || '.' === $segment || '..' === $segment || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}\z/', $segment ) ) { return false; }
 		}
 		return true;
 	}

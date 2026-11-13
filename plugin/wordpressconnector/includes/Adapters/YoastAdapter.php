@@ -88,7 +88,7 @@ final class YoastAdapter {
 		}
 
 		foreach ( $updates as $field => $value ) {
-			if ( ! isset( self::FIELDS[$field] ) ) {
+			if ( ! isset( self::FIELDS[ $field ] ) ) {
 				throw new RuntimeException( 'Unsupported Yoast field: ' . (string) $field );
 			}
 			if ( null !== $value && ! is_scalar( $value ) ) {
@@ -99,7 +99,7 @@ final class YoastAdapter {
 		$before = $this->snapshot( (int) $post->ID );
 		$after  = $before;
 		foreach ( $updates as $field => $value ) {
-			$after[$field] = null === $value ? null : $this->sanitizeField( (string) $field, $value );
+			$after[ $field ] = null === $value ? null : $this->sanitizeField( (string) $field, $value );
 		}
 
 		$result = array(
@@ -114,7 +114,7 @@ final class YoastAdapter {
 		}
 
 		foreach ( $updates as $field => $value ) {
-			$metaKey = self::FIELDS[$field];
+			$metaKey = self::FIELDS[ $field ];
 			if ( null === $value || '' === (string) $value ) {
 				delete_post_meta( (int) $post->ID, $metaKey );
 			} else {
@@ -126,7 +126,7 @@ final class YoastAdapter {
 		$readback = $this->snapshot( (int) $post->ID );
 		foreach ( $updates as $field => $value ) {
 			$expected = null === $value || '' === (string) $value ? null : $this->sanitizeField( (string) $field, $value );
-			if ( $readback[$field] !== $expected ) {
+			if ( $readback[ $field ] !== $expected ) {
 				throw new RuntimeException( 'Yoast readback verification failed for field: ' . (string) $field );
 			}
 		}
@@ -156,7 +156,7 @@ final class YoastAdapter {
 		$result = array();
 		foreach ( self::FIELDS as $field => $metaKey ) {
 			$value = get_post_meta( $postId, $metaKey, true );
-			$result[$field] = '' === $value ? null : (string) $value;
+			$result[ $field ] = '' === $value ? null : (string) $value;
 		}
 		return $result;
 	}

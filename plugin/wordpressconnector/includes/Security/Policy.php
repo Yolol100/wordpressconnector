@@ -240,9 +240,9 @@ final class Policy {
 		foreach ( $value as $key => $item ) {
 			$name = (string) $key;
 			if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', $name ) ) {
-				$redacted[$key] = '[redacted]'; continue;
+				$redacted[ $key ] = '[redacted]'; continue;
 			}
-			$redacted[$key] = self::redact( $item );
+			$redacted[ $key ] = self::redact( $item );
 		}
 		return $redacted;
 	}

@@ -248,7 +248,7 @@ final class CustomCssAdapter {
 		}
 
 		$themes = wp_get_themes();
-		if ( ! isset( $themes[$stylesheet] ) ) {
+		if ( ! isset( $themes[ $stylesheet ] ) ) {
 			throw new RuntimeException( 'Theme stylesheet is not installed: ' . $stylesheet );
 		}
 

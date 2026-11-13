@@ -77,12 +77,12 @@ final class YoastNativeAbilitiesAdapter {
 		$actions   = array();
 		foreach ( self::ABILITIES as $kind => $name ) {
 			$ability        = $available ? wp_get_ability( $name ) : null;
-			$actions[$kind] = is_object( $ability ) && method_exists( $ability, 'execute' );
+			$actions[ $kind ] = is_object( $ability ) && method_exists( $ability, 'execute' );
 		}
 		return array(
 			'available'     => $available,
-			'yoast_version' => defined( 'WPSEO_VERSION' ) ? ( string ) WPSEO_VERSION :
-				( defined( 'YOAST_SEO_VERSION' ) ? ( string ) YOAST_SEO_VERSION : null ),
+			'yoast_version' => defined( 'WPSEO_VERSION' ) ? (string) WPSEO_VERSION :
+				( defined( 'YOAST_SEO_VERSION' ) ? (string) YOAST_SEO_VERSION : null ),
 			'abilities'     => $actions,
 			'requires' => array( 'wordpress' => '6.9', 'yoast' => '28.6' ),
 			'transport'     => 'private_authenticated_only',
@@ -94,7 +94,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'wpseo_manage_options' ) ) {
 			throw new RuntimeException( 'Yoast analysis scores require wpseo_manage_options.' );
 		}
-		$kind = isset( $payload['kind'] ) ? ( string ) $payload['kind'] : '';
+		$kind = isset( $payload['kind'] ) ? (string) $payload['kind'] : '';
 		if ( ! in_array( $kind, array( 'seo_scores', 'readability_scores', 'inclusive_language_scores' ), true ) ) {
 			throw new RuntimeException( 'Unsupported Yoast analysis kind.' );
 		}
@@ -102,7 +102,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! is_int( $number ) || $number < 1 || $number > 100 ) {
 			throw new RuntimeException( 'number_of_posts must be an integer from 1 through 100.' );
 		}
-		$result = $this->invoke( self::ABILITIES[$kind], array( 'number_of_posts' => $number ) );
+		$result = $this->invoke( self::ABILITIES[ $kind ], array( 'number_of_posts' => $number ) );
 		if ( ! is_array( $result ) || count( $result ) > $number ) {
 			throw new RuntimeException( 'Yoast analysis response shape was invalid.' );
 		}
@@ -153,7 +153,7 @@ final class YoastNativeAbilitiesAdapter {
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $fields ) );
 		$after = $this->snapshot( $this->postData( $id ) );
 		foreach ( $fields as $field => $value ) {
-			if ( $after[$field] !== $value ) {
+			if ( $after[ $field ] !== $value ) {
 				try {
 					$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $restoreFields ) );
 					$restored = $this->snapshot( $this->postData( $id ) );
@@ -200,7 +200,7 @@ final class YoastNativeAbilitiesAdapter {
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $previous ) );
 		$after = $this->snapshot( $this->postData( $id ) );
 		foreach ( $previous as $field => $value ) {
-			if ( $after[$field] !== $value ) {
+			if ( $after[ $field ] !== $value ) {
 				throw new RuntimeException( 'Yoast native rollback readback mismatch.' );
 			}
 		}
@@ -244,7 +244,7 @@ final class YoastNativeAbilitiesAdapter {
 		}
 		$rows = isset( $result['post_id'] ) ? array( $result ) : array_values( $result );
 		if ( count( $rows ) !== 1 || ! is_array( $rows[0] ) ||
-			( int ) ( $rows[0]['post_id'] ?? 0 ) !== $id ) {
+			(int) ( $rows[0]['post_id'] ?? 0 ) !== $id ) {
 			throw new RuntimeException( 'Yoast native post response did not match the exact target.' );
 		}
 		return $rows[0];
@@ -273,7 +273,7 @@ final class YoastNativeAbilitiesAdapter {
 	private function snapshot( array $data ): array {
 		$fields = array();
 		foreach ( self::WRITABLE as $name ) {
-			$fields[$name] = array_key_exists( $name, $data ) ? $data[$name] : null;
+			$fields[ $name ] = array_key_exists( $name, $data ) ? $data[ $name ] : null;
 		}
 		return $fields;
 	}
@@ -283,8 +283,8 @@ final class YoastNativeAbilitiesAdapter {
 		foreach ( array( 'seo_title_rendered', 'meta_description_rendered', 'canonical_rendered',
 			'open_graph_title_rendered', 'open_graph_description_rendered',
 			'twitter_title_rendered', 'twitter_description_rendered' ) as $name ) {
-			$fields[$name] = isset( $data[$name] ) && is_scalar( $data[$name] ) ?
-				( string ) $data[$name] : null;
+			$fields[ $name ] = isset( $data[ $name ] ) && is_scalar( $data[ $name ] ) ?
+				(string) $data[ $name ] : null;
 		}
 		return $fields;
 	}
@@ -323,7 +323,7 @@ final class YoastNativeAbilitiesAdapter {
 					}
 				}
 			}
-			$normalized[$name] = $value;
+			$normalized[ $name ] = $value;
 		}
 		return $normalized;
 	}
