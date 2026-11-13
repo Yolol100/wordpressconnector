@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $adapter = (string) file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/CodeSnippetsAdapter.php');
+$normalizedAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($normalizedAdapter)) {
+    throw new RuntimeException('Could not normalize Code Snippets implementation source.');
+}
 $validator = $root . '/scripts/validate-public-request.php';
 $receiptBuilder = $root . '/scripts/build-public-receipt.php';
 
@@ -20,7 +24,7 @@ foreach (array(
     "readback_verified",
     "'_rollback'",
 ) as $needle) {
-    if (false === strpos($adapter, $needle)) {
+    if (false === strpos($normalizedAdapter, preg_replace('/\\s+/', '', $needle))) {
         fwrite(STDERR, "Code Snippets adapter contract is missing: {$needle}\n");
         exit(1);
     }
@@ -38,10 +42,11 @@ foreach (array('execute_snippet(', 'create_item(') as $needle) {
 $guardStart = strpos($adapter, 'public function catalogOnlyEnsure(');
 $guardEnd = strpos($adapter, 'public function catalogOnlyUndo(');
 $ensureBody = $guardStart !== false && $guardEnd !== false ? substr($adapter, $guardStart, $guardEnd - $guardStart) : '';
+$normalizedEnsureBody = preg_replace('/\\s+/', '', $ensureBody);
 if ('' === $ensureBody ||
     false !== strpos($ensureBody, "\$payload['code']") ||
     false !== strpos($ensureBody, "\$payload['snippet_code']") ||
-    false === strpos($ensureBody, 'if ($payload)')) {
+    false === strpos($normalizedEnsureBody, 'if($payload)')) {
     fwrite(STDERR, "Managed Code Snippets creation did not reject arbitrary caller PHP.\n");
     exit(1);
 }
