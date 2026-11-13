@@ -14,13 +14,64 @@ final class WooCommerceAdapter
 {
     public function register(Registry $registry): void
     {
-        $registry->register('woocommerce.order.list', array($this, 'orderList'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'));
-        $registry->register('woocommerce.order.get', array($this, 'orderGet'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'));
-        $registry->register('woocommerce.customer.get', array($this, 'customerGet'), array('privileged' => true, 'sensitive' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'));
-        $registry->register('woocommerce.shipping_zone.list', array($this, 'shippingZoneList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.'));
-        $registry->register('woocommerce.shipping_zone.get', array($this, 'shippingZoneGet'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'));
+        $registry->register(
+            'woocommerce.order.list',
+            array($this, 'orderList'),
+            array(
+                'privileged' => true,
+                'sensitive' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'
+            )
+        );
+        $registry->register(
+            'woocommerce.order.get',
+            array($this, 'orderGet'),
+            array(
+                'privileged' => true,
+                'sensitive' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'
+            )
+        );
+        $registry->register(
+            'woocommerce.customer.get',
+            array($this, 'customerGet'),
+            array(
+                'privileged' => true,
+                'sensitive' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'
+            )
+        );
+        $registry->register(
+            'woocommerce.shipping_zone.list',
+            array($this, 'shippingZoneList'),
+            array(
+                'privileged' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.'
+            )
+        );
+        $registry->register(
+            'woocommerce.shipping_zone.get',
+            array($this, 'shippingZoneGet'),
+            array(
+                'privileged' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'
+            )
+        );
         $registry->register('woocommerce.tax_class.list', array($this, 'taxClassList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce tax classes.'));
-        $registry->register('woocommerce.tax_rate.list', array($this, 'taxRateList'), array('privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List bounded WooCommerce tax rates for a registered tax class.'));
+        $registry->register(
+            'woocommerce.tax_rate.list',
+            array($this, 'taxRateList'),
+            array(
+                'privileged' => true,
+                'capability' => 'manage_woocommerce',
+                'description' => 'List bounded WooCommerce tax rates for a registered tax class.'
+            )
+        );
         $registry->register('woocommerce.product.list', array($this, 'productList'), array('description' => 'List WooCommerce products through WooCommerce CRUD.'));
         $registry->register('woocommerce.product.get', array($this, 'productGet'), array('description' => 'Read a WooCommerce product.'));
         $registry->register('woocommerce.product.create', array($this, 'productCreate'), array('mutation' => true, 'description' => 'Create a WooCommerce product.'));
@@ -42,16 +93,22 @@ final class WooCommerceAdapter
     public function orderList(array $payload): array
     {
         $this->assertWoo();
-        if (! function_exists('wc_get_orders')) throw new RuntimeException('WooCommerce order query API is unavailable.');
+        if (! function_exists('wc_get_orders')) {
+            throw new RuntimeException('WooCommerce order query API is unavailable.');
+        }
         Policy::assertReadablePostType('shop_order');
         $limit = isset($payload['per_page']) ? max(1, min(100, (int) $payload['per_page'])) : 25;
         $page = isset($payload['page']) ? max(1, (int) $payload['page']) : 1;
         $args = array('limit' => $limit, 'page' => $page, 'paginate' => true, 'return' => 'objects');
         if (isset($payload['status'])) {
             $status = sanitize_key((string) $payload['status']);
-            if (strpos($status, 'wc-') !== 0) $status = 'wc-' . $status;
+            if (strpos($status, 'wc-') !== 0) {
+                $status = 'wc-' . $status;
+            }
             $statuses = function_exists('wc_get_order_statuses') ? wc_get_order_statuses() : array();
-            if (! isset($statuses[$status])) throw new RuntimeException('Unknown WooCommerce order status.');
+            if (! isset($statuses[$status])) {
+                throw new RuntimeException('Unknown WooCommerce order status.');
+            }
             $args['status'] = array($status);
         }
         if (isset($payload['customer_id'])) {
@@ -61,7 +118,9 @@ final class WooCommerceAdapter
         $orders = is_object($query) && isset($query->orders) ? $query->orders : (array) $query;
         $items = array();
         foreach ($orders as $order) {
-            if ($order instanceof \WC_Order) $items[] = $this->orderSnapshot($order, false, false);
+            if ($order instanceof \WC_Order) {
+                $items[] = $this->orderSnapshot($order, false, false);
+            }
         }
         return array(
             'orders' => $items,
@@ -75,12 +134,18 @@ final class WooCommerceAdapter
     public function orderGet(array $payload): array
     {
         $this->assertWoo();
-        if (! function_exists('wc_get_order')) throw new RuntimeException('WooCommerce order API is unavailable.');
+        if (! function_exists('wc_get_order')) {
+            throw new RuntimeException('WooCommerce order API is unavailable.');
+        }
         Policy::assertReadablePostType('shop_order');
         $id = array_key_exists('id', $payload) ? $this->positiveIntegerId($payload['id'], 'A positive order id is required.') : 0;
-        if ($id < 1) throw new RuntimeException('A positive order id is required.');
+        if ($id < 1) {
+            throw new RuntimeException('A positive order id is required.');
+        }
         $order = wc_get_order($id);
-        if (! $order instanceof \WC_Order) throw new RuntimeException('WooCommerce order not found.');
+        if (! $order instanceof \WC_Order) {
+            throw new RuntimeException('WooCommerce order not found.');
+        }
         $includePersonalData = Input::bool($payload, 'include_personal_data', false);
         $snapshot = $this->orderSnapshot($order, $includePersonalData);
         return array('order' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
@@ -89,18 +154,28 @@ final class WooCommerceAdapter
     public function customerGet(array $payload): array
     {
         $this->assertWoo();
-        if (! class_exists('WC_Customer')) throw new RuntimeException('WooCommerce customer API is unavailable.');
+        if (! class_exists('WC_Customer')) {
+            throw new RuntimeException('WooCommerce customer API is unavailable.');
+        }
         $id = array_key_exists('id', $payload) ? $this->positiveIntegerId($payload['id'], 'A WooCommerce customer account id is required.') : 0;
         $user = $id > 0 ? get_user_by('id', $id) : false;
-        if (! $user) throw new RuntimeException('A WooCommerce customer account id is required.');
+        if (! $user) {
+            throw new RuntimeException('A WooCommerce customer account id is required.');
+        }
         $customer = new \WC_Customer($id);
-        if (! $customer->get_id()) throw new RuntimeException('WooCommerce customer not found.');
+        if (! $customer->get_id()) {
+            throw new RuntimeException('WooCommerce customer not found.');
+        }
         $role = (string) $customer->get_role();
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Public extension hook is already used by consumers; retain its established name.
         $customerRoles = function_exists('apply_filters') ? apply_filters('wpc_connector_woocommerce_customer_roles', array('customer', 'subscriber')) : array('customer', 'subscriber');
-        if (! is_array($customerRoles)) $customerRoles = array('customer', 'subscriber');
+        if (! is_array($customerRoles)) {
+            $customerRoles = array('customer', 'subscriber');
+        }
         $hasOrderHistory = method_exists($customer, 'get_order_count') && (int) $customer->get_order_count() > 0;
-        if (! in_array($role, $customerRoles, true) && ! $hasOrderHistory) throw new RuntimeException('A WooCommerce customer account id is required.');
+        if (! in_array($role, $customerRoles, true) && ! $hasOrderHistory) {
+            throw new RuntimeException('A WooCommerce customer account id is required.');
+        }
         $snapshot = array(
             'id' => (int) $customer->get_id(),
             'is_paying_customer' => (bool) $customer->get_is_paying_customer(),
@@ -121,13 +196,25 @@ final class WooCommerceAdapter
     {
         global $wpdb;
         $this->assertWoo();
-        if (! class_exists('WC_Shipping_Zones') || ! method_exists('WC_Shipping_Zones', 'get_zone') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
+        if (
+            ! class_exists('WC_Shipping_Zones') ||
+            ! method_exists('WC_Shipping_Zones', 'get_zone') ||
+            ! isset($wpdb) ||
+            ! is_object($wpdb) ||
+            ! method_exists($wpdb, 'prepare') ||
+            ! method_exists($wpdb, 'get_results') ||
+            ! method_exists($wpdb, 'get_var')
+        ) {
+            throw new RuntimeException('WooCommerce shipping zone API is unavailable.');
+        }
         $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
         $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
         $table = $wpdb->prefix . 'woocommerce_shipping_zones';
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded live WooCommerce count; caching may return stale state.
         $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE `zone_id` > %d", $table, 0));
-        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce shipping zones could not be counted.');
+        if (null === $totalValue || false === $totalValue) {
+            throw new RuntimeException('WooCommerce shipping zones could not be counted.');
+        }
         $total = (int) $totalValue + 1;
         $pages = max(1, (int) ceil($total / $limit));
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded live WooCommerce zone listing; avoid stale zone reads.
@@ -137,7 +224,9 @@ final class WooCommerceAdapter
             $limit,
             ($page - 1) * $limit
         ));
-        if (! is_array($rows)) throw new RuntimeException('WooCommerce shipping zones could not be read.');
+        if (! is_array($rows)) {
+            throw new RuntimeException('WooCommerce shipping zones could not be read.');
+        }
         $zones = array();
         foreach ($rows as $row) {
             if (is_object($row) && isset($row->zone_id, $row->zone_name, $row->zone_order)) {
@@ -146,7 +235,9 @@ final class WooCommerceAdapter
         }
         if ($page === $pages && method_exists('WC_Shipping_Zones', 'get_zone')) {
             $defaultZone = \WC_Shipping_Zones::get_zone(0);
-            if ($defaultZone instanceof \WC_Shipping_Zone) $zones[] = $this->shippingZoneSnapshot(0, (string) $defaultZone->get_zone_name(), (int) $defaultZone->get_zone_order());
+            if ($defaultZone instanceof \WC_Shipping_Zone) {
+                $zones[] = $this->shippingZoneSnapshot(0, (string) $defaultZone->get_zone_name(), (int) $defaultZone->get_zone_order());
+            }
         }
         return array('zones' => $zones, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => $pages);
     }
@@ -155,20 +246,42 @@ final class WooCommerceAdapter
     {
         $this->assertWoo();
         $idValue = $payload['id'] ?? null;
-        if (! is_int($idValue) && (! is_string($idValue) || 1 !== preg_match('/^(0|[1-9][0-9]*)$/D', $idValue))) throw new RuntimeException('A valid shipping zone id is required.');
+        if (! is_int($idValue) && (! is_string($idValue) || 1 !== preg_match('/^(0|[1-9][0-9]*)$/D', $idValue))) {
+            throw new RuntimeException('A valid shipping zone id is required.');
+        }
         $validatedId = filter_var((string) $idValue, FILTER_VALIDATE_INT);
         global $wpdb;
-        if (false === $validatedId || $validatedId < 0 || ! class_exists('WC_Shipping_Zones') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('A valid shipping zone id is required.');
+        if (
+            false === $validatedId ||
+            $validatedId < 0 ||
+            ! class_exists('WC_Shipping_Zones') ||
+            ! isset($wpdb) ||
+            ! is_object($wpdb) ||
+            ! method_exists($wpdb, 'prepare') ||
+            ! method_exists($wpdb, 'get_results') ||
+            ! method_exists($wpdb, 'get_var')
+        ) {
+            throw new RuntimeException('A valid shipping zone id is required.');
+        }
         $id = (int) $validatedId;
         if (0 === $id) {
             $zone = \WC_Shipping_Zones::get_zone(0);
-            if (! $zone instanceof \WC_Shipping_Zone) throw new RuntimeException('WooCommerce shipping zone not found.');
+            if (! $zone instanceof \WC_Shipping_Zone) {
+                throw new RuntimeException('WooCommerce shipping zone not found.');
+            }
             $snapshot = $this->shippingZoneSnapshot(0, (string) $zone->get_zone_name(), (int) $zone->get_zone_order());
         } else {
             $table = $wpdb->prefix . 'woocommerce_shipping_zones';
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared exact-ID WooCommerce zone lookup must return current data.
             $rows = $wpdb->get_results($wpdb->prepare("SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` = %d LIMIT 1", $table, $id));
-            if (! is_array($rows) || empty($rows[0]) || ! is_object($rows[0]) || ! isset($rows[0]->zone_id, $rows[0]->zone_name, $rows[0]->zone_order)) throw new RuntimeException('WooCommerce shipping zone not found.');
+            if (
+                ! is_array($rows) ||
+                empty($rows[0]) ||
+                ! is_object($rows[0]) ||
+                ! isset($rows[0]->zone_id, $rows[0]->zone_name, $rows[0]->zone_order)
+            ) {
+                throw new RuntimeException('WooCommerce shipping zone not found.');
+            }
             $snapshot = $this->shippingZoneSnapshot((int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order);
         }
         return array('zone' => $snapshot, 'fingerprint' => Fingerprint::make($snapshot));
@@ -177,7 +290,9 @@ final class WooCommerceAdapter
     public function taxClassList(): array
     {
         $this->assertWoo();
-        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_rate_classes')) throw new RuntimeException('WooCommerce tax class API is unavailable.');
+        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_rate_classes')) {
+            throw new RuntimeException('WooCommerce tax class API is unavailable.');
+        }
         $classes = array();
         foreach (\WC_Tax::get_tax_rate_classes() as $class) {
             if (is_object($class)) {
@@ -191,11 +306,25 @@ final class WooCommerceAdapter
     {
         global $wpdb;
         $this->assertWoo();
-        if (! class_exists('WC_Tax') || ! method_exists('WC_Tax', 'get_tax_class_slugs') || ! isset($wpdb) || ! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results') || ! method_exists($wpdb, 'get_var')) throw new RuntimeException('WooCommerce tax rate API is unavailable.');
+        if (
+            ! class_exists('WC_Tax') ||
+            ! method_exists('WC_Tax', 'get_tax_class_slugs') ||
+            ! isset($wpdb) ||
+            ! is_object($wpdb) ||
+            ! method_exists($wpdb, 'prepare') ||
+            ! method_exists($wpdb, 'get_results') ||
+            ! method_exists($wpdb, 'get_var')
+        ) {
+            throw new RuntimeException('WooCommerce tax rate API is unavailable.');
+        }
         $class = isset($payload['tax_class']) ? sanitize_title((string) $payload['tax_class']) : '';
         $validClasses = array('' => true);
-        foreach (\WC_Tax::get_tax_class_slugs() as $slug) $validClasses[(string) $slug] = true;
-        if (! isset($validClasses[$class])) throw new RuntimeException('Unknown WooCommerce tax class.');
+        foreach (\WC_Tax::get_tax_class_slugs() as $slug) {
+            $validClasses[(string) $slug] = true;
+        }
+        if (! isset($validClasses[$class])) {
+            throw new RuntimeException('Unknown WooCommerce tax class.');
+        }
         $limit = isset($payload['per_page']) ? max(1, min(50, (int) $payload['per_page'])) : 25;
         $page = isset($payload['page']) ? max(1, min(100000, (int) $payload['page'])) : 1;
         $offset = ($page - 1) * $limit;
@@ -203,7 +332,9 @@ final class WooCommerceAdapter
         $locationsTable = $wpdb->prefix . 'woocommerce_tax_rate_locations';
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared WooCommerce tax count must reflect latest tax settings.
         $totalValue = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE `tax_rate_class` = %s", $ratesTable, $class));
-        if (null === $totalValue || false === $totalValue) throw new RuntimeException('WooCommerce tax rates could not be counted.');
+        if (null === $totalValue || false === $totalValue) {
+            throw new RuntimeException('WooCommerce tax rates could not be counted.');
+        }
         $total = (int) $totalValue;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-rate listing must reflect latest tax settings.
         $rateRows = $wpdb->get_results($wpdb->prepare(
@@ -213,10 +344,14 @@ final class WooCommerceAdapter
             $limit,
             $offset
         ));
-        if (! is_array($rateRows)) throw new RuntimeException('WooCommerce tax rates could not be read.');
+        if (! is_array($rateRows)) {
+            throw new RuntimeException('WooCommerce tax rates could not be read.');
+        }
         $rateIds = array();
         foreach ($rateRows as $rateRow) {
-            if (is_object($rateRow) && isset($rateRow->tax_rate_id)) $rateIds[] = (int) $rateRow->tax_rate_id;
+            if (is_object($rateRow) && isset($rateRow->tax_rate_id)) {
+                $rateIds[] = (int) $rateRow->tax_rate_id;
+            }
         }
         $locationCounts = array();
         if ($rateIds) {
@@ -227,9 +362,13 @@ final class WooCommerceAdapter
                 $locationsTable,
                 ...array_map('intval', $rateIds)
             ));
-            if (! is_array($countRows)) throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
+            if (! is_array($countRows)) {
+                throw new RuntimeException('WooCommerce tax rate locations could not be counted.');
+            }
             foreach ($countRows as $countRow) {
-                if (is_object($countRow) && isset($countRow->tax_rate_id, $countRow->location_count)) $locationCounts[(int) $countRow->tax_rate_id] = (int) $countRow->location_count;
+                if (is_object($countRow) && isset($countRow->tax_rate_id, $countRow->location_count)) {
+                    $locationCounts[(int) $countRow->tax_rate_id] = (int) $countRow->location_count;
+                }
             }
         }
         $items = array();
@@ -244,7 +383,9 @@ final class WooCommerceAdapter
                 $rateId,
                 100
             )) : array();
-            if (! is_array($locations)) throw new RuntimeException('WooCommerce tax rate locations could not be read.');
+            if (! is_array($locations)) {
+                throw new RuntimeException('WooCommerce tax rate locations could not be read.');
+            }
             $snapshot['locations'] = array();
             foreach ($locations as $location) {
                 if (is_object($location) && isset($location->location_type, $location->location_code)) {
@@ -923,7 +1064,14 @@ final class WooCommerceAdapter
         $items = array();
         foreach ($attributes as $attribute) {
             if ($attribute instanceof \WC_Product_Attribute) {
-                $items[] = array('id' => (int) $attribute->get_id(), 'name' => (string) $attribute->get_name(), 'options' => array_values($attribute->get_options()), 'position' => (int) $attribute->get_position(), 'visible' => (bool) $attribute->get_visible(), 'variation' => (bool) $attribute->get_variation());
+                $items[] = array(
+                    'id' => (int) $attribute->get_id(),
+                    'name' => (string) $attribute->get_name(),
+                    'options' => array_values($attribute->get_options()),
+                    'position' => (int) $attribute->get_position(),
+                    'visible' => (bool) $attribute->get_visible(),
+                    'variation' => (bool) $attribute->get_variation()
+                );
             }
         }
         return $items;

@@ -234,31 +234,13 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
-      - name: Set up PHP
+      - name: Set up PHP and WP-CLI
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.2'
           extensions: mysqli
           coverage: none
-
-      - name: Install verified WP-CLI 2.12.0
-        shell: bash
-        run: |
-          set -euo pipefail
-          phar="$RUNNER_TEMP/wp-cli.phar"
-          # Official stable build, verified against a fixed 2.12.0 SHA-256.
-          # Fallback to the signed-release distribution if raw GitHub is down.
-          if ! curl --fail --location --silent --show-error --retry 2 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 90 --output "$phar" \
-            https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar; then
-            curl --fail --location --silent --show-error --retry 2 --retry-all-errors --retry-delay 2 --connect-timeout 10 --max-time 90 --output "$phar" \
-              https://github.com/wp-cli/wp-cli/releases/download/v2.12.0/wp-cli-2.12.0.phar
-          fi
-          printf '%s  %s\n' 'ce34ddd838f7351d6759068d09793f26755463b4a4610a5a5c0a97b68220d85c' "$phar" | sha256sum --check --strict
-          printf '#!/usr/bin/env bash\nexec php "%s" "$@"\n' "$phar" > "$RUNNER_TEMP/wp"
-          chmod 0755 "$RUNNER_TEMP/wp"
-          "$RUNNER_TEMP/wp" --info
-          test "$("$RUNNER_TEMP/wp" cli version --skip-wordpress)" = 'WP-CLI 2.12.0'
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          tools: wp-cli:2.12.0
 
       - name: Install WordPress runtime
         shell: bash
