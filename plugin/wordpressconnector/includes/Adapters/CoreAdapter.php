@@ -376,8 +376,8 @@ final class CoreAdapter {
 		}
 		$args = array();
 		foreach ( array( 'slug', 'description' ) as $field ) {
-			if ( isset( $payload[$field] ) ) {
-				$args[$field] = 'slug' === $field ? sanitize_title( (string) $payload[$field] ) : sanitize_textarea_field( (string) $payload[$field] );
+			if ( isset( $payload[ $field ] ) ) {
+				$args[ $field ] = 'slug' === $field ? sanitize_title( (string) $payload[ $field ] ) : sanitize_textarea_field( (string) $payload[ $field ] );
 			}
 		}
 		if ( isset( $payload['parent'] ) ) {
@@ -518,7 +518,7 @@ final class CoreAdapter {
 			'status'     => 'menu-item-status', 'type' => 'menu-item-type', 'object' => 'menu-item-object',
 		);
 		foreach ( $map as $source => $target ) {
-			if ( isset( $payload[$source] ) ) $args[$target] = sanitize_text_field( (string) $payload[$source] );
+			if ( isset( $payload[ $source ] ) ) $args[ $target ] = sanitize_text_field( (string) $payload[ $source ] );
 		}
 		if ( isset( $payload['object_id'] ) ) $args['menu-item-object-id'] = (int) $payload['object_id'];
 		if ( isset( $payload['parent'] ) ) $args['menu-item-parent-id'] = (int) $payload['parent'];
@@ -533,11 +533,11 @@ final class CoreAdapter {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
 		$menuId     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$registered = get_registered_nav_menus();
-		if ( ! isset( $registered[$location] ) ) throw new RuntimeException( 'Unknown menu location.' );
+		if ( ! isset( $registered[ $location ] ) ) throw new RuntimeException( 'Unknown menu location.' );
 		$locations = get_nav_menu_locations();
-		$before    = isset( $locations[$location] ) ? (int) $locations[$location] : 0;
+		$before    = isset( $locations[ $location ] ) ? (int) $locations[ $location ] : 0;
 		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'after' => $menuId, '_current_fingerprint' => Fingerprint::make( $locations ) );
-		$locations[$location] = $menuId;
+		$locations[ $location ] = $menuId;
 		set_theme_mod( 'nav_menu_locations', $locations );
 		return array( 'location' => $location, 'menu_id' => $menuId, '_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ) );
 	}
@@ -643,7 +643,7 @@ final class CoreAdapter {
 		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
 		$map    = array( 'content' => 'comment_content', 'author' => 'comment_author', 'author_email' => 'comment_author_email', 'author_url' => 'comment_author_url', 'approved' => 'comment_approved' );
 		foreach ( $map as $source => $target ) {
-			if ( isset( $payload[$source] ) ) $fields[$target] = (string) $payload[$source];
+			if ( isset( $payload[ $source ] ) ) $fields[ $target ] = (string) $payload[ $source ];
 		}
 		if ( ! empty( $context['dry_run'] ) ) return array( 'before' => $before, 'changes' => $fields, '_current_fingerprint' => Fingerprint::make( $before ) );
 		$updated = wp_update_comment( wp_slash( $fields ), true );
@@ -676,7 +676,7 @@ final class CoreAdapter {
 			'ping_status' => 'ping_status', 'date' => 'post_date', 'date_gmt' => 'post_date_gmt',
 		);
 		foreach ( $stringMap as $source => $target ) {
-			if ( array_key_exists( $source, $payload ) ) $fields[$target] = (string) $payload[$source];
+			if ( array_key_exists( $source, $payload ) ) $fields[ $target ] = (string) $payload[ $source ];
 		}
 		if ( isset( $payload['author'] ) ) $fields['post_author'] = (int) $payload['author'];
 		if ( isset( $payload['parent'] ) ) $fields['post_parent'] = (int) $payload['parent'];
@@ -721,7 +721,7 @@ final class CoreAdapter {
 		$reverse = array( 'post_title' => 'title', 'post_content' => 'content', 'post_excerpt' => 'excerpt', 'post_status' => 'status', 'post_name' => 'slug', 'post_author' => 'author', 'post_parent' => 'parent', 'menu_order' => 'menu_order', 'comment_status' => 'comment_status', 'ping_status' => 'ping_status' );
 		$result  = array();
 		foreach ( $reverse as $field => $key ) {
-			if ( array_key_exists( $field, $fields ) ) $result[$key] = $fields[$field];
+			if ( array_key_exists( $field, $fields ) ) $result[ $key ] = $fields[ $field ];
 		}
 		return $result;
 	}
@@ -749,7 +749,7 @@ final class CoreAdapter {
 	}
 
 	private function requireKey( array $payload, string $field ): string {
-		$value = isset( $payload[$field] ) ? (string) $payload[$field] : '';
+		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
 		if ( '' === $value || strlen( $value ) > 191 ) throw new RuntimeException( $field . ' is required and must be <= 191 characters.' );
 		return $value;
 	}

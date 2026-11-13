@@ -83,7 +83,7 @@ final class AcfAdapter {
 			$selected = array();
 			foreach ( $payload['fields'] as $field ) {
 				$key            = (string) $field;
-				$selected[$key] = get_field( $key, $target, false );
+				$selected[ $key ] = get_field( $key, $target, false );
 			}
 			$fields = $selected;
 		}
@@ -236,8 +236,8 @@ final class AcfAdapter {
 		foreach ( $normalized as $definition ) {
 			$key    = $definition['key'];
 			$name   = $definition['name'];
-			$byKey  = $existingByKey[$key] ?? null;
-			$byName = $existingByName[$name] ?? null;
+			$byKey  = $existingByKey[ $key ] ?? null;
+			$byName = $existingByName[ $name ] ?? null;
 			if ( is_array( $byKey ) ) {
 				$summary = $this->fieldSummary( $byKey );
 				if ( ! $this->fieldMatchesDefinition( $summary, $definition, $groupId ) ) {
@@ -246,7 +246,7 @@ final class AcfAdapter {
 				if ( is_array( $byName ) && (string) ( $byName['key'] ?? '' ) !== $key ) {
 					throw new RuntimeException( 'Existing ACF field name belongs to a different field: ' . $name );
 				}
-				$before[$key] = $summary;
+				$before[ $key ] = $summary;
 				continue;
 			}
 			if ( is_array( $byName ) ) {
@@ -264,13 +264,13 @@ final class AcfAdapter {
  || ! empty( $summary['required'] ) ) {
 					throw new RuntimeException( 'Existing global ACF field conflicts with requested text field: ' . $key );
 				}
-				$before[$key] = $summary;
-				$recoverable[$key] = $globalId;
+				$before[ $key ] = $summary;
+				$recoverable[ $key ] = $globalId;
 				$wouldCreate[] = $definition;
 				continue;
 			}
 
-			$before[$key] = null;
+			$before[ $key ] = null;
 			$wouldCreate[] = $definition;
 		}
 
@@ -428,8 +428,8 @@ final class AcfAdapter {
 		foreach ( $normalized as $definition ) {
 			$key    = $definition['key'];
 			$name   = $definition['name'];
-			$byKey  = $existingByKey[$key] ?? null;
-			$byName = $existingByName[$name] ?? null;
+			$byKey  = $existingByKey[ $key ] ?? null;
+			$byName = $existingByName[ $name ] ?? null;
 			if ( is_array( $byKey ) ) {
 				if ( (int) ( $byKey['parent'] ?? 0 ) !== $groupId ) {
 					throw new RuntimeException( 'Existing ACF field key belongs to a different parent: ' . $key );
@@ -441,14 +441,14 @@ final class AcfAdapter {
 				if ( is_array( $byName ) && (string) ( $byName['key'] ?? '' ) !== $key ) {
 					throw new RuntimeException( 'Existing ACF field name belongs to a different field: ' . $name );
 				}
-				$before[$key] = $tree;
+				$before[ $key ] = $tree;
 				continue;
 			}
 			if ( is_array( $byName ) ) {
 				throw new RuntimeException( 'Existing ACF field name conflicts with requested complex field: ' . $name );
 			}
 			$this->assertFieldTreeKeysAvailable( $definition );
-			$before[$key] = null;
+			$before[ $key ] = null;
 			$wouldCreate[] = $definition;
 		}
 
@@ -782,13 +782,13 @@ final class AcfAdapter {
 			if ( '' === $label || strlen( $label ) > 80 || preg_match( '/[\x00-\x1F\x7F]/', $label ) ) {
 				throw new RuntimeException( 'Invalid ACF field label for: ' . $key );
 			}
-			if ( isset( $keys[$key] ) || isset( $names[$name] ) ) {
+			if ( isset( $keys[ $key ] ) || isset( $names[ $name ] ) ) {
 				throw new RuntimeException( 'Duplicate ACF field key or name in schema request.' );
 			}
 			Policy::assertKeyAllowed( $key );
 			Policy::assertKeyAllowed( $name );
-			$keys[$key] = true;
-			$names[$name] = true;
+			$keys[ $key ] = true;
+			$names[ $name ] = true;
 			$normalized[] = array( 'key' => $key, 'name' => $name, 'label' => $label, 'type' => 'text' );
 		}
 		return $normalized;
@@ -937,11 +937,11 @@ final class AcfAdapter {
 				$param    = isset( $rule['param'] ) ? (string) $rule['param'] : '';
 				$operator = isset( $rule['operator'] ) ? (string) $rule['operator'] : '';
 				$value    = isset( $rule['value'] ) ? (string) $rule['value'] : '';
-				if ( ! isset( $types[$param] ) ) {
+				if ( ! isset( $types[ $param ] ) ) {
 					throw new RuntimeException( 'Unsupported ACF location parameter: ' . $param );
 				}
 				$operators = (array) acf_get_location_rule_operators( array( 'param' => $param ) );
-				if ( ! isset( $operators[$operator] ) ) {
+				if ( ! isset( $operators[ $operator ] ) ) {
 					throw new RuntimeException( 'Unsupported ACF location operator for ' . $param . ': ' . $operator );
 				}
 				if ( '' === $value || strlen( $value ) > 200 || $this->hasInvalidControl( $value, false ) ) {
@@ -995,7 +995,7 @@ final class AcfAdapter {
 			'group'        => array( 'sub_fields', 'layout' ),
 			'repeater'     => array( 'sub_fields', 'min', 'max', 'layout', 'button_label', 'collapsed', 'rows_per_page' ),
 		);
-		if ( ! isset( $typeProperties[$type] ) ) {
+		if ( ! isset( $typeProperties[ $type ] ) ) {
 			throw new RuntimeException( 'Unsupported ACF complex schema field type: ' . $type );
 		}
 		if ( ! acf_get_field_type( $type ) ) {
@@ -1004,7 +1004,7 @@ final class AcfAdapter {
 
 		$allowed = array_merge(
 			array( 'key', 'name', 'label', 'type', 'instructions', 'required', 'conditional_logic', 'wrapper' ),
-			$typeProperties[$type]
+			$typeProperties[ $type ]
 		);
 		foreach ( array_keys( $field ) as $property ) {
 			if ( ! in_array( (string) $property, $allowed, true ) ) {
@@ -1025,10 +1025,10 @@ final class AcfAdapter {
 		}
 		Policy::assertKeyAllowed( $key );
 		Policy::assertKeyAllowed( $name );
-		if ( isset( $keys[$key] ) ) {
+		if ( isset( $keys[ $key ] ) ) {
 			throw new RuntimeException( 'Duplicate ACF field key in schema request: ' . $key );
 		}
-		$keys[$key] = true;
+		$keys[ $key ] = true;
 
 		$normalized = array(
 			'key'               => $key,
@@ -1056,10 +1056,10 @@ final class AcfAdapter {
 				if ( ! array_key_exists( $property, $field ) ) {
 					continue;
 				}
-				if ( 'number' === $type && 'default_value' === $property && is_numeric( $field[$property] ) ) {
-					$normalized[$property] = $field[$property] + 0;
+				if ( 'number' === $type && 'default_value' === $property && is_numeric( $field[ $property ] ) ) {
+					$normalized[ $property ] = $field[ $property ] + 0;
 				} else {
-					$normalized[$property] = $this->boundedText( $field[$property], 2000, true, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedText( $field[ $property ], 2000, true, $key . '.' . $property );
 				}
 			}
 		}
@@ -1081,7 +1081,7 @@ final class AcfAdapter {
 		if ( 'number' === $type ) {
 			foreach ( array( 'min', 'max', 'step' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedNumber( $field[$property], -1000000000, 1000000000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedNumber( $field[ $property ], -1000000000, 1000000000, $key . '.' . $property );
 				}
 			}
 		}
@@ -1104,12 +1104,12 @@ final class AcfAdapter {
 			}
 			foreach ( array( 'min_width', 'min_height', 'max_width', 'max_height' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 100000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 100000, $key . '.' . $property );
 				}
 			}
 			foreach ( array( 'min_size', 'max_size' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedNumber( $field[$property], 0, 10000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedNumber( $field[ $property ], 0, 10000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'mime_types', $field ) ) {
@@ -1132,7 +1132,7 @@ final class AcfAdapter {
 			}
 			foreach ( array( 'min', 'max' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 1000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 1000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'filters', $field ) ) {
@@ -1171,7 +1171,7 @@ final class AcfAdapter {
 		if ( 'repeater' === $type ) {
 			foreach ( array( 'min', 'max' ) as $property ) {
 				if ( array_key_exists( $property, $field ) ) {
-					$normalized[$property] = $this->boundedInteger( $field[$property], 0, 1000, $key . '.' . $property );
+					$normalized[ $property ] = $this->boundedInteger( $field[ $property ], 0, 1000, $key . '.' . $property );
 				}
 			}
 			if ( array_key_exists( 'button_label', $field ) ) {
@@ -1380,14 +1380,14 @@ final class AcfAdapter {
 				}
 				$actualValues = array_values( $actual );
 				foreach ( $expected as $index => $value ) {
-					if ( ! $this->schemaContains( $value, $actualValues[$index] ) ) {
+					if ( ! $this->schemaContains( $value, $actualValues[ $index ] ) ) {
 						return false;
 					}
 				}
 				return true;
 			}
 			foreach ( $expected as $key => $value ) {
-				if ( ! array_key_exists( $key, $actual ) || ! $this->schemaContains( $value, $actual[$key] ) ) {
+				if ( ! array_key_exists( $key, $actual ) || ! $this->schemaContains( $value, $actual[ $key ] ) ) {
 					return false;
 				}
 			}

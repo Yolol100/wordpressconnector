@@ -103,7 +103,7 @@ final class WooCommerceAdapter {
 				$status = 'wc-' . $status;
 			}
 			$statuses = function_exists( 'wc_get_order_statuses' ) ? wc_get_order_statuses() : array();
-			if ( ! isset( $statuses[$status] ) ) {
+			if ( ! isset( $statuses[ $status ] ) ) {
 				throw new RuntimeException( 'Unknown WooCommerce order status.' );
 			}
 			$args['status'] = array( $status );
@@ -313,7 +313,7 @@ final class WooCommerceAdapter {
 		foreach ( \WC_Tax::get_tax_class_slugs() as $slug ) {
 			$validClasses[(string) $slug] = true;
 		}
-		if ( ! isset( $validClasses[$class] ) ) {
+		if ( ! isset( $validClasses[ $class ] ) ) {
 			throw new RuntimeException( 'Unknown WooCommerce tax class.' );
 		}
 		$limit          = isset( $payload['per_page'] ) ? max( 1, min( 50, (int) $payload['per_page'] ) ) : 25;
@@ -366,7 +366,7 @@ final class WooCommerceAdapter {
 		foreach ( $rateRows as $rate ) {
 			$snapshot      = $this->taxRateSnapshot( $rate );
 			$rateId        = isset( $rate->tax_rate_id ) ? (int) $rate->tax_rate_id : 0;
-			$locationCount = $locationCounts[$rateId] ?? 0;
+			$locationCount = $locationCounts[ $rateId ] ?? 0;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location list must reflect latest tax settings.
 			$locations = $locationCount > 0 ? $wpdb->get_results( $wpdb->prepare(
 				"SELECT `location_type`, `location_code` FROM %i WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
@@ -663,7 +663,7 @@ final class WooCommerceAdapter {
 			'downloadable'       => 'set_downloadable', 'download_limit' => 'set_download_limit', 'download_expiry' => 'set_download_expiry',
 		);
 		foreach ( $setters as $key => $method ) {
-			if ( array_key_exists( $key, $payload ) && method_exists( $product, $method ) ) $product->{$method}( $payload[$key] );
+			if ( array_key_exists( $key, $payload ) && method_exists( $product, $method ) ) $product->{$method}( $payload[ $key ] );
 		}
 
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) $product->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
@@ -693,7 +693,7 @@ final class WooCommerceAdapter {
 			'image_id'       => 'set_image_id', 'virtual' => 'set_virtual', 'downloadable' => 'set_downloadable',
 			'download_limit' => 'set_download_limit', 'download_expiry' => 'set_download_expiry', 'description' => 'set_description',
 		);
-		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $variation->{$method}( $payload[$key] );
+		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $variation->{$method}( $payload[ $key ] );
 		if ( isset( $payload['attributes'] ) ) $variation->set_attributes( (array) $payload['attributes'] );
 		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) $variation->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) $variation->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
@@ -897,7 +897,7 @@ final class WooCommerceAdapter {
 	private function customerAddressSnapshot( array $address ): array {
 		$safe = array();
 		foreach ( array( 'first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'email', 'phone' ) as $key ) {
-			if ( isset( $address[$key] ) && is_scalar( $address[$key] ) ) $safe[$key] = (string) $address[$key];
+			if ( isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) ) $safe[ $key ] = (string) $address[ $key ];
 		}
 		return $safe;
 	}
@@ -947,7 +947,7 @@ final class WooCommerceAdapter {
 		);
 		$snapshot = array();
 		foreach ( $fields as $source => $target ) {
-			if ( array_key_exists( $source, $values ) && is_scalar( $values[$source] ) ) $snapshot[$target] = $values[$source];
+			if ( array_key_exists( $source, $values ) && is_scalar( $values[ $source ] ) ) $snapshot[ $target ] = $values[ $source ];
 		}
 		return $snapshot;
 	}
@@ -1090,7 +1090,7 @@ final class WooCommerceAdapter {
 			'limit_usage_to_x_items' => 'set_limit_usage_to_x_items', 'free_shipping' => 'set_free_shipping', 'exclude_sale_items' => 'set_exclude_sale_items',
 			'minimum_amount'         => 'set_minimum_amount', 'maximum_amount' => 'set_maximum_amount',
 		);
-		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $coupon->{$method}( $payload[$key] );
+		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $coupon->{$method}( $payload[ $key ] );
 		if ( isset( $payload['product_ids'] ) ) $coupon->set_product_ids( array_map( 'intval', (array) $payload['product_ids'] ) );
 		if ( isset( $payload['excluded_product_ids'] ) ) $coupon->set_excluded_product_ids( array_map( 'intval', (array) $payload['excluded_product_ids'] ) );
 		if ( isset( $payload['product_categories'] ) ) $coupon->set_product_categories( array_map( 'intval', (array) $payload['product_categories'] ) );

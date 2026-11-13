@@ -17,7 +17,7 @@ final class ElementorJsonImport {
 	private const MAX_BYTES = 5242880;
 
 	public function register(): void {
-		if ( !is_admin() ) {
+		if ( ! is_admin() ) {
 			return;
 		}
 		add_filter( 'page_row_actions', array( $this, 'rowActions' ), 99, 2 );
@@ -29,7 +29,7 @@ final class ElementorJsonImport {
 	}
 
 	public function rowActions( array $actions, \WP_Post $post ): array {
-		if ( !$this->supportsPostType( (string)$post->post_type ) || !current_user_can( 'edit_post', (int)$post->ID ) ) {
+		if ( ! $this->supportsPostType( (string)$post->post_type ) || ! current_user_can( 'edit_post', (int)$post->ID ) ) {
 			return $actions;
 		}
 		$actions['wpconnector_import_elementor_json'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->importUrl( (string)$post->post_type, (int)$post->ID ) ), esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) );
@@ -52,7 +52,7 @@ final class ElementorJsonImport {
 	}
 
 	public function renderImportPage( string $postType ): void {
-		if ( !$this->supportsPostType( $postType ) || !current_user_can( $this->capabilityForPostType( $postType ) ) ) {
+		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selectedId = isset( $_GET['post_id'] )?absint( wp_unslash( $_GET['post_id'] ) ):0;
@@ -62,7 +62,7 @@ final class ElementorJsonImport {
 		echo '<input type="hidden" name="action" value="'.esc_attr( self::ACTION ).'"><input type="hidden" name="post_type" value="'.esc_attr( $postType ).'"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">'.esc_html__( 'Target', 'wordpressconnector' ).'</label></th><td><select id="wpconnector-target-post" name="post_id">';
 		printf( '<option value="0"%1$s>%2$s</option>', selected( $selectedId, 0, false ), esc_html__( 'Create new draft from JSON', 'wordpressconnector' ) );
 		foreach ( $posts as $post ) {
-			if ( !$post instanceof \WP_Post || !current_user_can( 'edit_post', (int)$post->ID ) ) {
+			if ( ! $post instanceof \WP_Post || ! current_user_can( 'edit_post', (int)$post->ID ) ) {
 				continue;
 			}
 			printf( '<option value="%1$d"%2$s>%3$s (#%1$d)</option>', (int)$post->ID, selected( $selectedId, (int)$post->ID, false ), esc_html( (string)$post->post_title ) );
@@ -76,7 +76,7 @@ final class ElementorJsonImport {
 		check_admin_referer( self::ACTION );
 		$postId   = isset( $_POST['post_id'] )?absint( wp_unslash( $_POST['post_id'] ) ):0;
 		$postType = isset( $_POST['post_type'] )?sanitize_key( wp_unslash( $_POST['post_type'] ) ):'';
-		if ( !$this->supportsPostType( $postType ) || !current_user_can( $this->capabilityForPostType( $postType ) ) ) {
+		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
@@ -86,10 +86,10 @@ final class ElementorJsonImport {
 			$adapter  = new ElementorAdapter();
 			if ( $postId>0 ) {
 				$post = get_post( $postId );
-				if ( !$post instanceof \WP_Post || (string)$post->post_type !== $postType ) {
+				if ( ! $post instanceof \WP_Post || (string)$post->post_type !== $postType ) {
 					throw new RuntimeException( 'The selected import target no longer exists.' );
 				}
-				if ( !current_user_can( 'edit_post', $postId ) ) {
+				if ( ! current_user_can( 'edit_post', $postId ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
 				$adapterPayload = array( 'id' => $postId, 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
@@ -122,7 +122,7 @@ final class ElementorJsonImport {
 	}
 
 	private function uploadedPayload(): array {
-		if ( !isset( $_FILES['elementor_json'] ) || !is_array( $_FILES['elementor_json'] ) ) {
+		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
 		$file  = $_FILES['elementor_json'];
@@ -139,31 +139,31 @@ final class ElementorJsonImport {
 			throw new RuntimeException( 'Choose a .json Elementor export file.' );
 		}
 		$tmpName = isset( $file['tmp_name'] )?(string)$file['tmp_name']:'';
-		if ( '' === $tmpName || !is_uploaded_file( $tmpName ) ) {
+		if ( '' === $tmpName || ! is_uploaded_file( $tmpName ) ) {
 			throw new RuntimeException( 'The Elementor JSON upload is invalid.' );
 		}
 		$raw = file_get_contents( $tmpName );
-		if ( !is_string( $raw ) || '' === trim( $raw ) || strlen( $raw )>self::MAX_BYTES ) {
+		if ( ! is_string( $raw ) || '' === trim( $raw ) || strlen( $raw )>self::MAX_BYTES ) {
 			throw new RuntimeException( 'The Elementor JSON file is empty or too large.' );
 		}
 		$decoded = json_decode( $raw, true );
-		if ( !is_array( $decoded ) || JSON_ERROR_NONE !== json_last_error() ) {
+		if ( ! is_array( $decoded ) || JSON_ERROR_NONE !== json_last_error() ) {
 			throw new RuntimeException( 'The uploaded file is not valid JSON.' );
 		}
 		if ( isset( $decoded['format'] ) && 'wordpressconnector/elementor-site-parts-bundle' === $decoded['format'] ) {
-			if ( !isset( $decoded['document'] ) || !is_array( $decoded['document'] ) ) {
+			if ( ! isset( $decoded['document'] ) || ! is_array( $decoded['document'] ) ) {
 				throw new RuntimeException( 'The Elementor site-parts bundle does not contain a document payload.' );
 			}
 			$decoded = $decoded['document'];
 		}
-		if ( !isset( $decoded['content'] ) || !is_array( $decoded['content'] ) || empty( $decoded['content'] ) ) {
+		if ( ! isset( $decoded['content'] ) || ! is_array( $decoded['content'] ) || empty( $decoded['content'] ) ) {
 			throw new RuntimeException( 'The JSON is not a non-empty Elementor document export.' );
 		}
 		return $decoded;
 	}
 
 	public function renderBulkPage(): void {
-		if ( !current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Not allowed.', '', array( 'response' => 403 ) );
 		}
 		echo '<div class="wrap"><h1>Elementor JSON bulkimport</h1><p>Upload maximaal 20 losse Elementor JSON-bestanden (totaal maximaal 8 MB). Elk bestand wordt alleen gekoppeld aan een <strong>unieke bestaande slug in het juiste berichttype</strong>. Er worden geen pagina’s op titelgelijkheid gekozen en er worden geen nieuwe berichten gemaakt. Eerst controleren, daarna afzonderlijk bevestigen.</p>';
@@ -177,7 +177,7 @@ final class ElementorJsonImport {
 
 	public function previewBulk(): void {
 		check_admin_referer( self::BULK_PREVIEW );
-		if ( !current_user_can( 'manage_options' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Not allowed.', '', array( 'response' => 403 ) );
 		}
 		try {
@@ -191,7 +191,7 @@ final class ElementorJsonImport {
 			}
 			$token = wp_generate_password( 48, false, false );
 			// Store confirmed previews only: cap transient size to avoid large database writes.
-			if ( $allOk && !set_transient( 'wpconnector_bulk_'.get_current_user_id().'_'.hash( 'sha256', $token ), array( 'plan' => $plan, 'created' => time() ), 10*MINUTE_IN_SECONDS ) ) {
+			if ( $allOk && ! set_transient( 'wpconnector_bulk_'.get_current_user_id().'_'.hash( 'sha256', $token ), array( 'plan' => $plan, 'created' => time() ), 10*MINUTE_IN_SECONDS ) ) {
 				throw new RuntimeException( 'Could not store this import preview securely. No changes were made.' );
 			}
 			echo '<div class="wrap"><h1>Bulkimport controleren</h1><p>Alleen de hieronder getoonde bestaande Elementor-documenten kunnen worden overschreven. Bij een conflict wordt de hele batch geblokkeerd.</p><table class="widefat striped"><thead><tr><th>Bestand</th><th>Berichttype</th><th>Doel</th><th>Status</th></tr></thead><tbody>';
@@ -263,7 +263,7 @@ final class ElementorJsonImport {
 				if ( ! hash_equals( (string) $row['fingerprint'], (string) ( $current['fingerprint'] ?? '' ) ) ) {
 					throw new RuntimeException( 'Document changed since preview.' );
 				}
-				$snapshots[$id] = $current['document'];
+				$snapshots[ $id ] = $current['document'];
 			}
 			foreach ( $plan as $row ) {
 				$id = (int) $row['post_id'];
@@ -295,7 +295,7 @@ final class ElementorJsonImport {
 			$failedRollbacks = array();
 			foreach ( array_reverse( $updated ) as $id ) {
 				try {
-					$before = $snapshots[$id];
+					$before = $snapshots[ $id ];
 					$adapter->replaceDocument( array(
 					'id'            => $id,
 					'data'          => $before['data'],
@@ -339,7 +339,7 @@ final class ElementorJsonImport {
 
 	private function bulkUploads(): array {
 		$files = $_FILES['elementor_jsons'] ?? null;
-		if ( !is_array( $files ) || !isset( $files['name'] ) || !is_array( $files['name'] ) ) {
+		if ( ! is_array( $files ) || ! isset( $files['name'] ) || ! is_array( $files['name'] ) ) {
 			throw new RuntimeException( 'No files uploaded.' );
 		}
 		$count = count( $files['name'] );
@@ -349,35 +349,35 @@ final class ElementorJsonImport {
 		$total   = 0;
 		$entries = array();
 		for ( $i = 0;$i<$count;$i++ ) {
-			if ( (int)( $files['error'][$i] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
+			if ( (int) ( $files['error'][ $i ] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
 				throw new RuntimeException( 'One of the uploads failed.' );
 			}
-			$name   = sanitize_file_name( (string)( $files['name'][$i] ?? '' ) );
-			$size   = (int)( $files['size'][$i] ?? 0 );
+			$name   = sanitize_file_name( (string) ( $files['name'][ $i ] ?? '' ) );
+			$size   = (int) ( $files['size'][ $i ] ?? 0 );
 			$total+=$size;
 			if ( strtolower( (string)pathinfo( $name, PATHINFO_EXTENSION ) ) !== 'json' || $size<1 || $size>self::MAX_BYTES || $total>self::BULK_BYTES ) {
 				throw new RuntimeException( 'Only JSON files up to 5 MB each and 8 MB in total are allowed.' );
 			}
-			$tmp = (string)( $files['tmp_name'][$i] ?? '' );
-			if ( !is_uploaded_file( $tmp ) ) {
+			$tmp = (string) ( $files['tmp_name'][ $i ] ?? '' );
+			if ( ! is_uploaded_file( $tmp ) ) {
 				throw new RuntimeException( 'Invalid uploaded file.' );
 			}
 			$raw = file_get_contents( $tmp );
-			if ( !is_string( $raw ) || strlen( $raw )>self::MAX_BYTES ) {
+			if ( ! is_string( $raw ) || strlen( $raw )>self::MAX_BYTES ) {
 				throw new RuntimeException( 'Could not read upload.' );
 			}
 			$payload = json_decode( $raw, true );
-			if ( !is_array( $payload ) || json_last_error() !== JSON_ERROR_NONE ) {
+			if ( ! is_array( $payload ) || json_last_error() !== JSON_ERROR_NONE ) {
 				throw new RuntimeException( 'Invalid JSON in '.$name );
 			}
 			if ( isset( $payload['format'] ) && 'wordpressconnector/elementor-site-parts-bundle' === $payload['format'] ) {
 				$source  = isset( $payload['source'] ) && is_array( $payload['source'] )?$payload['source']:array();
 				$payload = $payload['document'] ?? array();
-				if ( is_array( $payload ) && !isset( $payload['source'] ) ) {
+				if ( is_array( $payload ) && ! isset( $payload['source'] ) ) {
 					$payload['source'] = $source;
 				}
 			}
-			if ( !isset( $payload['content'] ) || !is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
+			if ( ! isset( $payload['content'] ) || ! is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
 				throw new RuntimeException( 'Missing Elementor content in '.$name );
 			}
 			$entries[] = array( 'name' => $name, 'payload' => $payload );

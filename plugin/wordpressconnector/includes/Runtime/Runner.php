@@ -103,7 +103,7 @@ final class Runner {
 			$terminalContext = array();
 			foreach ( array( 'name', 'execution_may_have_started', 'provider_error_code' ) as $key ) {
 				if ( array_key_exists( $key, $data ) ) {
-					$terminalContext[$key] = $data[$key];
+					$terminalContext[ $key ] = $data[ $key ];
 				}
 			}
 			unset( $data['_rollback'], $data['_current_fingerprint'], $data['_terminal_error'] );
@@ -162,7 +162,7 @@ final class Runner {
      */
 	public function readBatch( array $payload, array $context ): array {
 		$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
-		if ( !$operations || count( $operations ) > 25 || array_keys( $payload ) !== array( 'operations' ) ) {
+		if ( ! $operations || count( $operations ) > 25 || array_keys( $payload ) !== array( 'operations' ) ) {
 			throw new RuntimeException( 'connector.read_batch requires 1-25 operations.' );
 		}
 
@@ -454,7 +454,7 @@ final class Runner {
 				}
 				foreach ( $fields as $key => $value ) {
 					$requiredVariable = is_string( $key ) && array_key_exists( $key, $allowedVariables )
-						? $allowedVariables[$key] : null;
+						? $allowedVariables[ $key ] : null;
 					if ( null === $requiredVariable || ! is_string( $value )
  || strlen( $value ) > 150 || strlen( $value ) < 10
  || false === strpos( $value, $requiredVariable )
@@ -609,13 +609,13 @@ final class Runner {
 			$id  = $check['element_id'] ?? null;
 			$url = $check['from'] ?? null;
 			if ( ! is_string( $id ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $id )
- || isset( $seen[$id] ) || ! is_string( $url ) || strlen( $url ) > 500
+ || isset( $seen[ $id ] ) || ! is_string( $url ) || strlen( $url ) > 500
  || ! filter_var( $url, FILTER_VALIDATE_URL )
  || wp_parse_url( $url, PHP_URL_SCHEME ) !== 'https'
  || strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) !== $host ) {
 				throw new RuntimeException( 'Invalid header diagnostic widget or site URL.' );
 			}
-			$seen[$id] = true;
+			$seen[ $id ] = true;
 		}
 		if ( ! $dryRun ) {
 			throw new RuntimeException( 'Header diagnostics are read-only.' );
@@ -642,12 +642,12 @@ final class Runner {
 			}
 			$elementId = $change['element_id'] ?? '';
 			if ( ! is_string( $elementId ) || ! preg_match( '/^[a-zA-Z0-9_-]{5,64}\\z/', $elementId )
- || isset( $seen[$elementId] ) ) {
+ || isset( $seen[ $elementId ] ) ) {
 				throw new RuntimeException( 'Header link widget ID must be unique and bounded.' );
 			}
-			$seen[$elementId] = true;
+			$seen[ $elementId ] = true;
 			foreach ( array( 'from', 'to' ) as $field ) {
-				$url = $change[$field] ?? null;
+				$url = $change[ $field ] ?? null;
 				if ( ! is_string( $url ) || strlen( $url ) > 500 || ! filter_var( $url, FILTER_VALIDATE_URL )
  || wp_parse_url( $url, PHP_URL_SCHEME ) !== 'https'
  || strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) !== $homeHost
@@ -960,7 +960,7 @@ final class Runner {
 			}
 			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
-			if ( '' === $name || ! isset( $allowedParents[$parent] ) ) {
+			if ( '' === $name || ! isset( $allowedParents[ $parent ] ) ) {
 				throw new RuntimeException( 'Public ACF field does not belong to a field group for the target post: ' . $fieldKey );
 			}
 			Policy::assertKeyAllowed( $name );
@@ -991,7 +991,7 @@ final class Runner {
 			'code_snippets.patch'              => array( 'code_snippets.restore_code' ),
 			'custom_css.patch'                 => array( 'custom_css.update' ),
 		);
-		if ( ! isset( $allowed[$sourceAction] ) || ! in_array( $rollbackAction, $allowed[$sourceAction], true ) ) {
+		if ( ! isset( $allowed[ $sourceAction ] ) || ! in_array( $rollbackAction, $allowed[ $sourceAction ], true ) ) {
 			throw new RuntimeException( 'Rollback snapshot is not eligible for the guarded public rollback route.' );
 		}
 		if ( 'acf.portfolio_stats_update' === $sourceAction ) {
@@ -1082,7 +1082,7 @@ final class Runner {
 	}
 
 	private function assertPublicRollbackPostId( array $payload, string $key = 'id' ): void {
-		$postId = isset( $payload[$key] ) ? (int) $payload[$key] : 0;
+		$postId = isset( $payload[ $key ] ) ? (int) $payload[ $key ] : 0;
 		if ( $postId <= 0 ) {
 			throw new RuntimeException( 'Public rollback requires a positive post id.' );
 		}
