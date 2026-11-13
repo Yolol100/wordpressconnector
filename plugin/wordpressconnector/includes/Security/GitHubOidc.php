@@ -307,7 +307,7 @@ final class GitHubOidc {
 		$encoded = '';
 		while ( $length > 0 ) {
 			$encoded = chr( $length & 0xff ) . $encoded;
-			$length > >= 8;
+			$length >>= 8;
 		}
 		return chr( 0x80 | strlen( $encoded ) ) . $encoded;
 	}
