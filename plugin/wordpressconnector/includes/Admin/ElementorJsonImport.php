@@ -352,8 +352,8 @@ final class ElementorJsonImport {
 			if ( (int)( $files['error'][$i] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
 				throw new RuntimeException( 'One of the uploads failed.' );
 			}
-			$name = sanitize_file_name( (string)( $files['name'][$i] ?? '' ) );
-			$size = (int)( $files['size'][$i] ?? 0 );
+			$name   = sanitize_file_name( (string)( $files['name'][$i] ?? '' ) );
+			$size   = (int)( $files['size'][$i] ?? 0 );
 			$total+=$size;
 			if ( strtolower( (string)pathinfo( $name, PATHINFO_EXTENSION ) ) !== 'json' || $size<1 || $size>self::MAX_BYTES || $total>self::BULK_BYTES ) {
 				throw new RuntimeException( 'Only JSON files up to 5 MB each and 8 MB in total are allowed.' );
@@ -421,8 +421,8 @@ final class ElementorJsonImport {
 			$row = array(
 			'name'     => $name, 'post_type' => $postType, 'slug' => $slug,
 			'post_id'  => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
-			'content'  => $payload['content'],
-			'settings' => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
+			'content'                        => $payload['content'],
+			'settings'                       => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 			? $payload['page_settings']
 			: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
 			'template_type' => $documentType, 'fingerprint' => '',
@@ -443,7 +443,7 @@ final class ElementorJsonImport {
  && current_user_can( 'edit_post', $id ) ) {
 						$row['post_id'] = $id;
 						$row['target_label'] = (string) $post->post_title . ' (#' . $id . ')';
-						$storedType = (string) get_post_meta( $id, '_elementor_template_type', true );
+						$storedType          = (string) get_post_meta( $id, '_elementor_template_type', true );
 						if ( 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
 							$row['status'] = 'conflict: existing item is not an Elementor document';
 						}

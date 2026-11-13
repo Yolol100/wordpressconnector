@@ -78,16 +78,16 @@ final class ElementorCapabilitiesAdapter {
 		if ( empty( $postTypes ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
 			return array(
-				'available'   => true,
-				'environment' => $environment,
-				'scan'        => array(
+				'available'       => true,
+				'environment'     => $environment,
+				'scan'            => array(
 					'post_types'    => array(),
 					'post_statuses' => $statuses,
 					'limit'         => $limit,
 					'offset'        => $offset,
 					'has_more'      => false,
 				),
-				'summary' => array(
+				'summary'         => array(
 					'documents_scanned'        => 0,
 					'widget_instances'         => 0,
 					'unique_widget_types_used' => 0,
@@ -103,14 +103,14 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$ids = get_posts( array(
-			'post_type'      => $postTypes,
-			'post_status'    => $statuses,
-			'fields'         => 'ids',
-			'posts_per_page' => $limit + 1,
-			'offset'         => $offset,
-			'orderby'        => 'ID',
-			'order'          => 'ASC',
-			'meta_query'     => array(
+			'post_type'        => $postTypes,
+			'post_status'      => $statuses,
+			'fields'           => 'ids',
+			'posts_per_page'   => $limit + 1,
+			'offset'           => $offset,
+			'orderby'          => 'ID',
+			'order'            => 'ASC',
+			'meta_query'       => array(
 				array(
 					'key'     => '_elementor_data',
 					'compare' => 'EXISTS',
@@ -206,9 +206,9 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		return array(
-			'available'   => true,
-			'environment' => $environment,
-			'scan'        => array(
+			'available'       => true,
+			'environment'     => $environment,
+			'scan'            => array(
 				'post_types'    => $postTypes,
 				'post_statuses' => $statuses,
 				'limit'         => $limit,
@@ -216,7 +216,7 @@ final class ElementorCapabilitiesAdapter {
 				'has_more'      => $hasMore,
 				'next_offset'   => $hasMore ? $offset + $limit : null,
 			),
-			'summary' => array(
+			'summary'         => array(
 				'documents_scanned'        => count( $documents ),
 				'widget_instances'         => $widgetInstances,
 				'unique_widget_types_used' => count( $usedWidgets ),
@@ -261,7 +261,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			try {
-				$properties = method_exists( $className, 'get_properties' ) ? ( array ) $className::get_properties() : array();
+				$properties               = method_exists( $className, 'get_properties' ) ? ( array ) $className::get_properties() : array();
 				$result[( string ) $type] = array(
 					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( ( string ) $className::get_title() ) : ( string ) $type,
 					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', ( array ) $properties['cpt'] ) ) : array(),
@@ -296,8 +296,8 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			try {
-				$controls   = method_exists( $widget, 'get_controls' ) ? ( array ) $widget->get_controls() : array();
-				$categories = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', ( array ) $widget->get_categories() ) ) : array();
+				$controls                 = method_exists( $widget, 'get_controls' ) ? ( array ) $widget->get_controls() : array();
+				$categories               = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', ( array ) $widget->get_categories() ) ) : array();
 				$result[( string ) $name] = array(
 					'name'          => method_exists( $widget, 'get_name' ) ? ( string ) $widget->get_name() : ( string ) $name,
 					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( ( string ) $widget->get_title() ) : ( string ) $name,
@@ -614,7 +614,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 			$elementType = isset( $element['elType'] ) ? ( string ) $element['elType'] : '';
 			if ( 'widget' === $elementType && isset( $element['widgetType'] ) && '' !== ( string ) $element['widgetType'] ) {
-				$widgetName = ( string ) $element['widgetType'];
+				$widgetName           = ( string ) $element['widgetType'];
 				$widgets[$widgetName] = isset( $widgets[$widgetName] ) ? $widgets[$widgetName] + 1 : 1;
 			} elseif ( '' !== $elementType ) {
 				$elementTypes[$elementType] = isset( $elementTypes[$elementType] ) ? $elementTypes[$elementType] + 1 : 1;

@@ -15,25 +15,25 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class YoastSnippetAdapter {
 	private const KEYS = array(
-		'title' => '_yoast_wpseo_title',
+		'title'       => '_yoast_wpseo_title',
 		'description' => '_yoast_wpseo_metadesc',
 	);
 
 	public function register( Registry $registry ): void {
 		$registry->register( 'yoast.snippet.inspect', array( $this, 'inspect' ), array(
-			'privileged' => true,
+			'privileged'             => true,
 			'public_repository_safe' => true,
-			'description' => 'Inspect only the public title and meta description overrides of a published post.',
+			'description'            => 'Inspect only the public title and meta description overrides of a published post.',
 		) );
 		$registry->register( 'yoast.snippet.update', array( $this, 'update' ), array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'               => true,
+			'privileged'             => true,
 			'public_repository_safe' => true,
-			'description' => 'Guarded edit of public Yoast SEO title and description overrides only.',
+			'description'            => 'Guarded edit of public Yoast SEO title and description overrides only.',
 		) );
 		$registry->register( 'yoast.snippet.restore', array( $this, 'restore' ), array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'    => true,
+			'privileged'  => true,
 			'description' => 'Internal stale-state-guarded rollback of a previous snippet edit.',
 		) );
 	}
@@ -59,7 +59,7 @@ final class YoastSnippetAdapter {
 	private function fields( int $id ): array {
 		$values = array();
 		foreach ( self::KEYS as $key => $meta ) {
-			$raw = get_post_meta( $id, $meta, true );
+			$raw          = get_post_meta( $id, $meta, true );
 			$values[$key] = is_string( $raw ) && $raw !== '' ? $raw : null;
 		}
 		return $values;
@@ -102,11 +102,11 @@ final class YoastSnippetAdapter {
 		if ( array_keys( $payload ) !== array( 'id' ) ) {
 			throw new RuntimeException( 'Snippet inspect accepts only id.' );
 		}
-		$post = $this->target( $payload, true );
+		$post   = $this->target( $payload, true );
 		$before = $this->state( ( int ) $post->ID );
 		return array(
-			'post_id' => ( int ) $post->ID,
-			'fields' => $before['fields'],
+			'post_id'     => ( int ) $post->ID,
+			'fields'      => $before['fields'],
 			'fingerprint' => Fingerprint::make( $before ),
 		);
 	}
@@ -115,17 +115,17 @@ final class YoastSnippetAdapter {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'fields' ) ) ) {
 			throw new RuntimeException( 'Snippet update accepts only id and fields.' );
 		}
-		$post = $this->target( $payload, true );
+		$post    = $this->target( $payload, true );
 		$updates = self::validateFields( $payload['fields'] ?? null );
-		$before = $this->state( ( int ) $post->ID );
-		$after = $before;
+		$before  = $this->state( ( int ) $post->ID );
+		$after   = $before;
 		foreach ( $updates as $key => $value ) {
 			$after['fields'][$key] = $value;
 		}
 		$result = array(
-			'post_id' => ( int ) $post->ID,
-			'before' => $before,
-			'after' => $after,
+			'post_id'              => ( int ) $post->ID,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -148,12 +148,12 @@ final class YoastSnippetAdapter {
 			throw new RuntimeException( 'Snippet readback mismatch; prior values restored.' );
 		}
 		$result['after'] = $actual;
-		$previous = array_intersect_key( $before['fields'], $updates );
+		$previous            = array_intersect_key( $before['fields'], $updates );
 		$result['_rollback'] = array(
-			'action' => 'yoast.snippet.restore',
+			'action'  => 'yoast.snippet.restore',
 			'payload' => array(
-				'id' => ( int ) $post->ID,
-				'fields' => $previous,
+				'id'                         => ( int ) $post->ID,
+				'fields'                     => $previous,
 				'expected_after_fingerprint' => Fingerprint::make( $actual ),
 			),
 		);
@@ -164,10 +164,10 @@ final class YoastSnippetAdapter {
 		if ( empty( $context['rollback_mode'] ) || array_diff( array_keys( $payload ), array( 'id', 'fields', 'expected_after_fingerprint' ) ) ) {
 			throw new RuntimeException( 'Snippet restore is reserved for guarded rollback.' );
 		}
-		$post = $this->target( $payload, true );
-		$previous = self::validateFields( $payload['fields'] ?? null, true );
-		$expected = $payload['expected_after_fingerprint'] ?? null;
-		$current = $this->state( ( int ) $post->ID );
+		$post      = $this->target( $payload, true );
+		$previous  = self::validateFields( $payload['fields'] ?? null, true );
+		$expected  = $payload['expected_after_fingerprint'] ?? null;
+		$current   = $this->state( ( int ) $post->ID );
 		$currentFp = Fingerprint::make( $current );
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) || ! hash_equals( $expected, $currentFp ) ) {
 			throw new RuntimeException( 'Snippet changed after edit; rollback refused.' );

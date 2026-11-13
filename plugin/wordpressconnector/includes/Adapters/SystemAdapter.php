@@ -73,7 +73,7 @@ final class SystemAdapter {
 		$file_modifications_allowed = function_exists( 'wp_is_file_mod_allowed' )
 			? (bool) wp_is_file_mod_allowed( 'plugin_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$checks = array(
+		$checks                     = array(
 			'wordpress_bootstrap'         => defined( 'ABSPATH' ),
 			'database'                    => $wpdb instanceof \wpdb && (bool) $wpdb->ready,
 			'wp_cli'                      => defined( 'WP_CLI' ) && WP_CLI,
@@ -187,7 +187,7 @@ final class SystemAdapter {
 			\WP_Session_Tokens::get_instance( $userId )->destroy_all();
 		}
 
-		$key = get_password_reset_key( $user );
+		$key                        = get_password_reset_key( $user );
 		$result['password_rotated'] = true;
 		$result['sessions_revoked'] = true;
 		if ( is_wp_error( $key ) ) {
@@ -204,7 +204,7 @@ final class SystemAdapter {
 		/* translators: %s: WordPress site name. */
 		$subject = sprintf( __( '[%s] Security password reset', 'wordpressconnector' ), $siteName );
 		/* translators: %s: WordPress site name. */
-		$message = sprintf( __( 'An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector' ), $siteName ) . "\r\n\r\n";
+		$message  = sprintf( __( 'An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector' ), $siteName ) . "\r\n\r\n";
 		$message .= __( 'All active sessions have been signed out. Set a new password using this link:', 'wordpressconnector' ) . "\r\n\r\n";
 		$message .= $resetUrl . "\r\n";
 
@@ -280,7 +280,7 @@ final class SystemAdapter {
 		$canModify = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'plugin_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items = array();
+		$items     = array();
 		foreach ( get_plugins() as $file => $data ) {
 			// Match WordPress Core's REST plugin visibility for multisite site administrators.
 			// Inactive network-only plugins are visible to network plugin managers only.
@@ -288,10 +288,10 @@ final class SystemAdapter {
  && ! is_plugin_active( $file ) && is_network_only_plugin( $file ) ) {
 				continue;
 			}
-			$network    = is_multisite() ? is_plugin_active_for_network( $file ) : false;
-			$active     = is_plugin_active( $file ) || $network;
-			$offer      = $offers[$file] ?? null;
-			$newVersion = is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null )
+			$network     = is_multisite() ? is_plugin_active_for_network( $file ) : false;
+			$active      = is_plugin_active( $file ) || $network;
+			$offer       = $offers[$file] ?? null;
+			$newVersion  = is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null )
 				: ( is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null ) : null );
 			$isConnector = 'wordpressconnector/wordpressconnector.php' === $file;
 			$items[] = array(
@@ -309,9 +309,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'plugins'                                         => $items,
-			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'plugins'             => $items,
+			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -381,7 +381,7 @@ final class SystemAdapter {
 				? (int) $result->info['results']
 				: ( isset( $result->info ) && is_object( $result->info ) && isset( $result->info->results )
 					? (int) $result->info->results : null ),
-			'read_only' => true,
+			'read_only'     => true,
 		);
 	}
 
@@ -529,12 +529,12 @@ final class SystemAdapter {
 		$transient    = get_site_transient( 'update_themes' );
 		$offers       = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
 			? $transient->response : array();
-		$checkedAt = is_object( $transient ) && isset( $transient->last_checked )
+		$checkedAt    = is_object( $transient ) && isset( $transient->last_checked )
 			? (int) $transient->last_checked : 0;
-		$canModify = function_exists( 'wp_is_file_mod_allowed' )
+		$canModify    = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'theme_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items = array();
+		$items        = array();
 		foreach ( wp_get_themes() as $stylesheet => $theme ) {
 			$offer      = $offers[$stylesheet] ?? null;
 			$newVersion = is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null )
@@ -553,9 +553,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'themes'                                          => $items,
-			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'themes'              => $items,
+			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}

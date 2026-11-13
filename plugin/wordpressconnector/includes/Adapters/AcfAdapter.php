@@ -82,7 +82,7 @@ final class AcfAdapter {
 		if ( isset( $payload['fields'] ) && is_array( $payload['fields'] ) ) {
 			$selected = array();
 			foreach ( $payload['fields'] as $field ) {
-				$key = (string) $field;
+				$key            = (string) $field;
 				$selected[$key] = get_field( $key, $target, false );
 			}
 			$fields = $selected;
@@ -183,7 +183,7 @@ final class AcfAdapter {
 		$groups = acf_get_field_groups( $args );
 		$result = array();
 		foreach ( (array) $groups as $group ) {
-			$fields = acf_get_fields( $group );
+			$fields   = acf_get_fields( $group );
 			$result[] = array(
 				'key'    => $group['key'] ?? null,
 				'title'  => $group['title'] ?? null,
@@ -322,7 +322,7 @@ final class AcfAdapter {
 
 		$after = array();
 		foreach ( $normalized as $definition ) {
-			$readback = acf_get_field( $definition['key'] );
+			$readback                  = acf_get_field( $definition['key'] );
 			$after[$definition['key']] = is_array( $readback ) ? $this->fieldSummary( $readback ) : null;
 		}
 		$result['after'] = $after;
@@ -619,7 +619,7 @@ final class AcfAdapter {
 			return $result;
 		}
 
-		$import = $group;
+		$import           = $group;
 		$import['fields'] = $fields;
 		try {
 			$saved = acf_import_field_group( $import );
@@ -895,7 +895,7 @@ final class AcfAdapter {
 				'comments', 'revisions', 'slug', 'author', 'format', 'page_attributes',
 				'featured_image', 'categories', 'tags', 'send-trackbacks',
 			);
-			$hidden = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
+			$hidden        = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
 			foreach ( $hidden as $item ) {
 				if ( ! in_array( $item, $allowedHidden, true ) ) {
 					throw new RuntimeException( 'Invalid ACF hide_on_screen item: ' . $item );
@@ -1163,7 +1163,7 @@ final class AcfAdapter {
 				throw new RuntimeException( 'ACF ' . $type . ' field requires sub_fields: ' . $key );
 			}
 			$normalized['sub_fields'] = $this->normalizeSchemaFields( $subFields, $depth + 1, $total, $keys );
-			$layouts = 'group' === $type ? array( 'block', 'table', 'row' ) : array( 'table', 'block', 'row' );
+			$layouts                  = 'group' === $type ? array( 'block', 'table', 'row' ) : array( 'table', 'block', 'row' );
 			if ( array_key_exists( 'layout', $field ) ) {
 				$normalized['layout'] = $this->enumValue( $field['layout'], $layouts, $key . '.layout' );
 			}
@@ -1264,7 +1264,7 @@ final class AcfAdapter {
 		unset( $field['sub_fields'] );
 		$field['parent'] = $parentId;
 		$field['menu_order'] = $menuOrder;
-		$saved = acf_update_field( $field );
+		$saved               = acf_update_field( $field );
 		if ( ! is_array( $saved ) ) {
 			throw new RuntimeException( 'ACF complex field creation failed for: ' . $definition['key'] );
 		}

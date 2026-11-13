@@ -41,7 +41,7 @@ final class SiteEditorAdapter {
 		$response = $this->request( 'GET', $this->route( $kind ), array(
 			'context' => 'edit', 'per_page' => 20, 'page' => $page,
 		) );
-		$data = $this->data( $response );
+		$data     = $this->data( $response );
 		if ( ! is_array( $data ) ) {
 			throw new RuntimeException( 'WordPress did not return template records.' );
 		}
@@ -91,7 +91,7 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Global styles exceed the bounded response size.' );
 		}
 		return array( 'theme' => $theme, 'settings' => $settings, 'styles' => $styles,
-			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ) );
+			'fingerprint'                           => Fingerprint::make( array( $settings, $styles ) ) );
 	}
 
 	public function update( array $payload, array $context ): array {
@@ -105,9 +105,9 @@ final class SiteEditorAdapter {
 
 		$result = array(
 			'kind'                 => $kind, 'id' => $id, 'theme' => get_stylesheet(),
-			'would_change'         => $before['content_sha256'] !== hash( 'sha256', $content ),
+			'would_change'                        => $before['content_sha256'] !== hash( 'sha256', $content ),
 			'before'               => array( 'content_sha256' => $before['content_sha256'], 'modified' => $before['modified'] ),
-			'_current_fingerprint' => $before['fingerprint'],
+			'_current_fingerprint'                => $before['fingerprint'],
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -136,7 +136,7 @@ final class SiteEditorAdapter {
 		$result['_rollback'] = array(
 			'action'  => 'site_editor.template.restore',
 			'payload' => array( 'kind' => $kind, 'id' => $id, 'content' => $previous,
-				'expected_after_fingerprint' => $after['fingerprint'] ),
+				'expected_after_fingerprint'          => $after['fingerprint'] ),
 		);
 		return $result;
 	}
@@ -180,13 +180,13 @@ final class SiteEditorAdapter {
 		if ( ( $record['id'] ?? null ) !== $id || ( $record['theme'] ?? null ) !== get_stylesheet() ) {
 			throw new RuntimeException( 'WordPress Site Editor returned an unexpected theme/template identity.' );
 		}
-		$content = $this->rawContent( $record );
+		$content              = $this->rawContent( $record );
 		$state   = array( 'kind' => $kind, 'id' => $id, 'theme' => get_stylesheet(),
-			'source'         => (string) ( $record['source'] ?? '' ),
-			'wp_id'          => (int) ( $record['wp_id'] ?? 0 ),
-			'modified'       => (string) ( $record['modified'] ?? '' ),
-			'content_sha256' => hash( 'sha256', $content ),
-			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0 );
+			'source'                            => (string) ( $record['source'] ?? '' ),
+			'wp_id'                             => (int) ( $record['wp_id'] ?? 0 ),
+			'modified'                          => (string) ( $record['modified'] ?? '' ),
+			'content_sha256'                    => hash( 'sha256', $content ),
+			'customized'                        => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0 );
 		$state['fingerprint'] = Fingerprint::make( $state );
 		return $state;
 	}

@@ -18,15 +18,15 @@ final class CodeSnippetsAdapter {
 
 		$registry->register( 'code_snippets.catalog_only.inspect', array( $this, 'catalogOnlyInspect' ), array(
 			'privileged'  => true, 'capability' => 'manage_options',
-			'description' => 'Read safe metadata of the built-in WooCommerce catalogue-only Code Snippets preset.',
+			'description'                       => 'Read safe metadata of the built-in WooCommerce catalogue-only Code Snippets preset.',
 		) );
 		$registry->register( 'code_snippets.catalog_only.ensure', array( $this, 'catalogOnlyEnsure' ), array(
 			'mutation'    => true, 'privileged' => true, 'capability' => 'manage_options',
-			'description' => 'Create/activate only the vetted built-in WooCommerce catalogue snippet with rollback. No caller PHP.',
+			'description'                       => 'Create/activate only the vetted built-in WooCommerce catalogue snippet with rollback. No caller PHP.',
 		) );
 		$registry->register( 'code_snippets.catalog_only.undo', array( $this, 'catalogOnlyUndo' ), array(
 			'mutation'    => true, 'privileged' => true, 'capability' => 'manage_options',
-			'description' => 'Guarded internal rollback of a connector-created/activated catalogue snippet.',
+			'description'                       => 'Guarded internal rollback of a connector-created/activated catalogue snippet.',
 		) );
 		$registry->register( 'code_snippets.patch', array( $this, 'patch' ), array(
 			'mutation'    => true,
@@ -154,12 +154,12 @@ final class CodeSnippetsAdapter {
 		if ( $created ) {
 			// Only source shipped in the verified connector ZIP reaches this provider API.
 			$snippet = new \Code_Snippets\Model\Snippet( array(
-				'id'     => 0, 'name' => self::CATALOG_NAME,
-				'desc'   => 'Existing WooCommerce prices visible, cart and checkout disabled.',
+				'id'                         => 0, 'name'        => self::CATALOG_NAME,
+				'desc'                       => 'Existing WooCommerce prices visible, cart and checkout disabled.',
 				'code'   => $code, 'scope' => 'global', 'priority' => 10,
 				'active' => false, 'network' => false,
 			) );
-			$saved = \Code_Snippets\save_snippet( $snippet );
+			$saved   = \Code_Snippets\save_snippet( $snippet );
 			if ( ! is_object( $saved ) || ( int ) ( $saved->id ?? 0 ) <= 0 ) {
 				throw new RuntimeException( 'Code Snippets provider could not save the audited preset.' );
 			}
@@ -269,7 +269,7 @@ final class CodeSnippetsAdapter {
 			throw new RuntimeException( 'Patched Code Snippets code exceeds the 1 MiB connector limit.' );
 		}
 
-		$afterPlanned = $before;
+		$afterPlanned         = $before;
 		$afterPlanned['code'] = $newCode;
 
 		$result = array(
