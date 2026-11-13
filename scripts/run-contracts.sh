@@ -11,6 +11,8 @@ find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n
 run_php tests/policy-contract.php
 run_php tests/policy-asset-symlink-contract.php
 run_php tests/json-atomic-write-contract.php
+run_php tests/fingerprint-runtime-contract.php
+run_php tests/input-strict-boolean-contract.php
 run_php tests/asset-private-permissions-contract.php
 run_php tests/asset-base-symlink-contract.php
 run_php tests/rest-asset-cleanup-contract.php
@@ -38,6 +40,7 @@ run_php tests/public-custom-css-contract.php
 run_php tests/code-snippets-contract.php
 run_php tests/code-snippets-catalog-preset-contract.php
 run_php tests/cache-maintenance-contract.php
+run_php tests/cache-loopback-security-contract.php
 run_php tests/elementor-inventory-contract.php
 run_php tests/elementor-forms-contract.php
 run_php tests/elementor-json-export-runtime.php
