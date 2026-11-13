@@ -1,6 +1,6 @@
 <?php
 
-declare( strict_types=1 );
+declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Runtime;
 
@@ -13,8 +13,7 @@ if ( ! defined( 'ABSPATH' )) {
  * request payloads, credentials or URLs into diagnostic metadata.
  */
 final class Diagnostics {
-	public static function classify( string $message, bool $mutating = false ): array
-	{
+	public static function classify( string $message, bool $mutating = false ): array {
 		$msg = strtolower( substr( $message, 0, 1000 ));
 		$category = 'unknown_failure';
 		$resolution = 'Inspect the request-correlated, access-controlled WordPress and transport logs.';
@@ -84,8 +83,7 @@ final class Diagnostics {
 		);
 	}
 
-	private static function has( string $message, array $needles ): bool
-	{
+	private static function has( string $message, array $needles ): bool {
 		foreach ( $needles as $needle ) {
 			if ( false !== strpos( $message, $needle )) {
 				return true;
