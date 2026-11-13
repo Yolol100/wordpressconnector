@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Runner behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -16,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Keep isolated REST/MCP/CLI and contract harness entrypoints consistent.
 require_once __DIR__ . '/Diagnostics.php';
 
+/**
+ * Provides Runner behavior for connector request processing.
+ */
 final class Runner {
 	private Registry $registry;
 	private SnapshotStore $snapshots;

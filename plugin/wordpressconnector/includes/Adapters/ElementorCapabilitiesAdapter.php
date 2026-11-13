@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Elementor Capabilities connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -9,6 +14,9 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Registers and handles Elementor Capabilities connector actions.
+ */
 final class ElementorCapabilitiesAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.capabilities', array( $this, 'capabilities' ), array(

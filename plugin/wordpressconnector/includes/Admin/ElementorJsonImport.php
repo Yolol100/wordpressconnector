@@ -1,4 +1,9 @@
 <?php
+/**
+ * Supports Elementor Json Import workflows in WordPress administration.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -7,6 +12,9 @@ namespace Webactueel\WordPressConnector\Admin;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
+/**
+ * Supports Elementor Json Import workflows in WordPress administration.
+ */
 final class ElementorJsonImport {
 	private const BULK_PREVIEW = 'wpconnector_elementor_bulk_preview';
 	private const BULK_CONFIRM = 'wpconnector_elementor_bulk_confirm';

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Applies Site Pairing safeguards to connector operations.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 

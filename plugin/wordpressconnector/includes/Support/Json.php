@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Json utilities shared by connector services.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Support;
 
 use RuntimeException;
 
+/**
+ * Provides Json utilities shared by connector services.
+ */
 final class Json {
 	public static function decode( string $json ): array {
 		try {

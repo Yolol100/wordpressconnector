@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Cache Maintenance connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Cache Maintenance connector actions.
+ */
 final class CacheMaintenanceAdapter {
 	private const LAYERS = array( 'elementor', 'wp_rocket', 'asset_cleanup' );
 	private const ASSET_CLEANUP_LOOPBACK_ACTION = 'wpconnector_asset_cleanup_flush';

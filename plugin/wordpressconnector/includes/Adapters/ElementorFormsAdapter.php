@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Elementor Forms connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Elementor Forms connector actions.
+ */
 final class ElementorFormsAdapter {
 	private const ATOMIC_CONFIG_KEYS = array(
 		'atomic_controls',

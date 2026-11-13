@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Site Editor connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 

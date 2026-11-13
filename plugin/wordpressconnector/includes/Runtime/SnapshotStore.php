@@ -1,9 +1,17 @@
 <?php
+/**
+ * Provides Snapshot Store behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Runtime;
 
+/**
+ * Provides Snapshot Store behavior for connector request processing.
+ */
 final class SnapshotStore {
 	private const PREFIX = 'wpconnector_snapshot_';
 

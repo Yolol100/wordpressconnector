@@ -1,4 +1,9 @@
 <?php
+/**
+ * Supports Settings workflows in WordPress administration.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -7,6 +12,9 @@ namespace Webactueel\WordPressConnector\Admin;
 use Webactueel\WordPressConnector\Security\SitePairing;
 use Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter;
 
+/**
+ * Supports Settings workflows in WordPress administration.
+ */
 final class Settings {
 	private const PAGE = 'wordpressconnector';
 	private const DIRECT_MCP_PASSWORD_LABEL = 'WordPress Connector - Direct MCP';

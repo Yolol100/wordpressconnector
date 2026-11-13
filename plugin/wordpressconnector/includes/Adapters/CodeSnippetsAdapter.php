@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Code Snippets connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Code Snippets connector actions.
+ */
 final class CodeSnippetsAdapter {
 	private const MAX_CODE_BYTES = 1048576;
 	private const MAX_REPLACEMENTS = 4;

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Filesystem connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -12,6 +17,9 @@ use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Filesystem connector actions.
+ */
 final class FilesystemAdapter {
 	private const MAX_TEXT_BYTES = 131072;
 	private const MAX_LIST_ENTRIES = 200;

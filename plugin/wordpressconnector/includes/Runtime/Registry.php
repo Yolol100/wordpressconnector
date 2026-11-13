@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Registry behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -7,6 +12,9 @@ namespace Webactueel\WordPressConnector\Runtime;
 use RuntimeException;
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Provides Registry behavior for connector request processing.
+ */
 final class Registry {
 	private array $actions = array();
 

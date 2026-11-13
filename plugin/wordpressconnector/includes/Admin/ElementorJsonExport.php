@@ -1,4 +1,9 @@
 <?php
+/**
+ * Supports Elementor Json Export workflows in WordPress administration.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Admin;
 
 use RuntimeException;
 use Throwable;
+/**
+ * Supports Elementor Json Export workflows in WordPress administration.
+ */
 final class ElementorJsonExport {
 	private const ACTION = 'wpconnector_export_elementor_json';
 	private const POST_TYPES = array( 'page', 'post', 'elementor_library' );

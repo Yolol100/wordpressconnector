@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Portfolio Stats connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+/**
+ * Registers and handles Portfolio Stats connector actions.
+ */
 final class PortfolioStatsAdapter {
 	private const ALLOWED_FIELD_NAMES = array(
 		'portfolio_stat_1_value',

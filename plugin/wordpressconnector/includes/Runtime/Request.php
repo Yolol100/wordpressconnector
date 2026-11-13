@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Request behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -8,6 +13,9 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Json;
 
+/**
+ * Provides Request behavior for connector request processing.
+ */
 final class Request {
 	private string $id;
 	private string $action;

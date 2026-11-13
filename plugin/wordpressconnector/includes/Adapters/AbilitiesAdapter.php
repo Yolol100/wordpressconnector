@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Abilities connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -7,6 +12,9 @@ namespace Webactueel\WordPressConnector\Adapters;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Registers and handles Abilities connector actions.
+ */
 final class AbilitiesAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'wordpress.abilities', array( $this, 'catalog' ), array(

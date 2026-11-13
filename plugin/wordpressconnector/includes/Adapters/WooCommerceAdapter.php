@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Woo Commerce connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles Woo Commerce connector actions.
+ */
 final class WooCommerceAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register(

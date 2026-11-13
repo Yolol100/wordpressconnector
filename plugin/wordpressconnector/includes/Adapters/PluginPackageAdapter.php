@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Plugin Package connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles Plugin Package connector actions.
+ */
 final class PluginPackageAdapter {
 	private const MAX_PACKAGE_BYTES = 20971520;
 	private const MAX_UNCOMPRESSED_BYTES = 104857600;

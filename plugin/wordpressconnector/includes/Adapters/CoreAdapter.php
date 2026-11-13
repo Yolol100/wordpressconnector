@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles Core connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -10,6 +15,9 @@ use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles Core connector actions.
+ */
 final class CoreAdapter {
 	public function register( Registry $registry ): void {
 		$registry->register( 'post.list', array( $this, 'postList' ), array( 'description' => 'List posts, pages or custom post types.' ) );

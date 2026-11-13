@@ -1,4 +1,9 @@
 <?php
+/**
+ * Registers and handles System connector actions.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -9,6 +14,9 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 
+/**
+ * Registers and handles System connector actions.
+ */
 final class SystemAdapter {
 	public function register( Registry $registry ): void {
 		$privileged   = array( 'privileged' => true );

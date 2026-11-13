@@ -1,4 +1,9 @@
 <?php
+/**
+ * Removes connector-owned WordPress state during plugin uninstall.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 

@@ -1,4 +1,9 @@
 <?php
+/**
+ * Applies Policy safeguards to connector operations.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types = 1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
+/**
+ * Applies Policy safeguards to connector operations.
+ */
 final class Policy {
 	private const SENSITIVE_POST_TYPES = array(
 		'shop_order',

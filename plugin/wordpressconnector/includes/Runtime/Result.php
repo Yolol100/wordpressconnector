@@ -1,4 +1,9 @@
 <?php
+/**
+ * Provides Result behavior for connector request processing.
+ *
+ * @package WordPressConnector
+ */
 
 declare( strict_types=1 );
 
@@ -6,6 +11,9 @@ namespace Webactueel\WordPressConnector\Runtime;
 
 use Webactueel\WordPressConnector\Security\Policy;
 
+/**
+ * Provides Result behavior for connector request processing.
+ */
 final class Result
 {
 	public static function success( Request $request, array $data, array $meta = array() ): array

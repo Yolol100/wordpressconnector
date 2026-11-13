@@ -1,4 +1,9 @@
 <?php
+/**
+ * Exposes Command commands for WordPress CLI.
+ *
+ * @package WordPressConnector
+ */
 
 declare(strict_types=1);
 
@@ -9,6 +14,9 @@ use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Support\Json;
 
+/**
+ * Exposes Command commands for WordPress CLI.
+ */
 final class Command {
 	private Runner $runner;
 
