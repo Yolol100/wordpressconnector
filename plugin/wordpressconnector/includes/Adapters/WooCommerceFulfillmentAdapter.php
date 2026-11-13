@@ -104,9 +104,9 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Tax creation requires separate site-local tax policy gate.' );
 		}
 		$created = $this->api( 'POST', $path, $fields );
-		$id      = $type === 'shipping_method'?( $created['instance_id'] ?? null ):( $created['id'] ?? null );
-		if ( ! is_int( $id ) || $id<1 )throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
-		$resourcePath = $path.'/'.$id;
+		$id      = $type === 'shipping_method' ? ( $created['instance_id'] ?? null ) : ( $created['id'] ?? null );
+		if ( ! is_int( $id ) || $id < 1 )throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
+		$resourcePath = $path . '/' . $id;
 		try {
 			$current = $this->api( 'GET', $resourcePath );
 			if ( $type === 'shipping_method' && ( $current['enabled'] ?? null ) !== false ){
@@ -144,7 +144,7 @@ final class WooCommerceFulfillmentAdapter {
 		$this->keys( $payload, array( 'type', 'zone_id', 'id', 'expected_after_fingerprint' ) );
 		$type     = $this->type( $payload );
 		$id       = $this->positive( $payload['id'] ?? null, 'id' );
-		$path     = $this->collectionPath( $type, $payload ).'/'.$id;
+		$path     = $this->collectionPath( $type, $payload ) . '/' . $id;
 		$current  = $this->api( 'GET', $path );
 		$snapshot = $this->resourceSnapshot( $type, $current );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
@@ -152,8 +152,8 @@ final class WooCommerceFulfillmentAdapter {
  || ! hash_equals( Fingerprint::make( $snapshot ), $expected ) )
 			throw new RuntimeException( 'Created WooCommerce resource has changed; automatic removal unsafe.' );
 		if ( $type === 'shipping_zone' ){
-			$methods   = $this->api( 'GET', $path.'/methods' );
-			$locations = $this->api( 'GET', $path.'/locations' );
+			$methods   = $this->api( 'GET', $path . '/methods' );
+			$locations = $this->api( 'GET', $path . '/locations' );
 			if ( $methods || $locations )throw new RuntimeException( 'Created zone now has methods or locations; cannot automatically remove.' );
 		}
 		if ( ! empty( $context['dry_run'] ) )return array( 'would_remove_created_id' => $id );
@@ -162,19 +162,19 @@ final class WooCommerceFulfillmentAdapter {
 	}
 
 	private function creationFields( string $type, $fields ): array {
-		if ( ! is_array( $fields ) || ! $fields || count( $fields )>9 )
+		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 9 )
 			throw new RuntimeException( 'WooCommerce provisioning requires explicit bounded fields.' );
-		$allowed = $type === 'shipping_zone'?array( 'name', 'order' )
-			:( $type === 'shipping_method'?array( 'method_id' ):array( 'country', 'state', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
+		$allowed = $type === 'shipping_zone' ? array( 'name', 'order' )
+			: ( $type === 'shipping_method' ? array( 'method_id' ) : array( 'country', 'state', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
 		if ( array_diff( array_keys( $fields ), $allowed ) )
 			throw new RuntimeException( 'Provisioning includes unsupported provider settings.' );
 		if ( $type === 'shipping_zone' ){
 			$name = $fields['name'] ?? null;
-			if ( ! is_string( $name ) || strlen( trim( $name ) )<2 || strlen( $name )>80
+			if ( ! is_string( $name ) || strlen( trim( $name ) ) < 2 || strlen( $name ) > 80
  || preg_match( '/[<>\\x00-\\x1F]/', $name ) )throw new RuntimeException( 'Invalid shipping zone name.' );
 			$data = array( 'name' => sanitize_text_field( $name ) );
 			if ( isset( $fields['order'] ) ){
-				if ( ! is_int( $fields['order'] ) || $fields['order']<0 || $fields['order']>1000 )
+				if ( ! is_int( $fields['order'] ) || $fields['order'] < 0 || $fields['order'] > 1000 )
 					throw new RuntimeException( 'Invalid zone order.' );
 				$data['order'] = $fields['order'];
 			}
@@ -193,17 +193,17 @@ final class WooCommerceFulfillmentAdapter {
 		$country = $fields['country'];$rate = $fields['rate'];$name = $fields['name'];
 		if ( ! is_string( $country ) || ! preg_match( '/^[A-Z]{2}$/D', $country )
  || ! is_string( $rate ) || ! preg_match( '/^\\d{1,2}(?:\\.\\d{1,4})?$/D', $rate )
- || ! is_string( $name ) || strlen( $name )>100 || strlen( trim( $name ) )<2 || preg_match( '/[<>\\x00-\\x1F]/', $name ) )
+ || ! is_string( $name ) || strlen( $name ) > 100 || strlen( trim( $name ) ) < 2 || preg_match( '/[<>\\x00-\\x1F]/', $name ) )
 			throw new RuntimeException( 'Tax rate country/percentage/name is invalid.' );
 		$clean = array( 'country' => $country, 'rate' => $rate, 'name' => sanitize_text_field( $name ) );
 		foreach ( $fields as $key => $value ){
 			if ( isset( $clean[ $key ] ) )continue;
 			if ( in_array( $key, array( 'priority', 'order' ), true ) ){
-				if ( ! is_int( $value ) || $value<0 || $value>1000 )throw new RuntimeException( 'Invalid tax priority.' );
+				if ( ! is_int( $value ) || $value < 0 || $value > 1000 )throw new RuntimeException( 'Invalid tax priority.' );
 			}elseif ( in_array( $key, array( 'compound', 'shipping' ), true ) ){
 				if ( ! is_bool( $value ) )throw new RuntimeException( 'Tax boolean must be strict.' );
 			}else{
-				if ( ! is_string( $value ) || strlen( $value )>80 || preg_match( '/[<>\\x00-\\x1F]/', $value ) )
+				if ( ! is_string( $value ) || strlen( $value ) > 80 || preg_match( '/[<>\\x00-\\x1F]/', $value ) )
 					throw new RuntimeException( 'Invalid tax class or state.' );
 			}
 			$clean[ $key ] = $value;
@@ -215,13 +215,13 @@ final class WooCommerceFulfillmentAdapter {
 		$result = array();
 		foreach ( $response as $value ){
 			if ( ! is_array( $value ) || ! isset( $value['type'], $value['code'] ) )continue;
-			$result[] = array( 'type' => (string)$value['type'], 'code' => (string)$value['code'] );
+			$result[] = array( 'type' => (string) $value['type'], 'code' => (string) $value['code'] );
 		}
 		return $this->normalizeLocations( $result, true );
 	}
 
 	private function normalizeLocations( $locations, bool $allowEmpty ): array {
-		if ( ! is_array( $locations ) || count( $locations )>100 || ( ! $allowEmpty && ! $locations ) )
+		if ( ! is_array( $locations ) || count( $locations ) > 100 || ( ! $allowEmpty && ! $locations ) )
 			throw new RuntimeException( 'Locations require 1-100 allowed entries.' );
 		$result = array();
 		foreach ( $locations as $point ){
@@ -229,10 +229,10 @@ final class WooCommerceFulfillmentAdapter {
 				throw new RuntimeException( 'Invalid shipping zone location shape.' );
 			$type = $point['type'] ?? null;$code = $point['code'] ?? null;
 			if ( ! is_string( $type ) || ! in_array( $type, array( 'country', 'state', 'postcode', 'continent' ), true )
- || ! is_string( $code ) || strlen( $code )>24 || ! preg_match( '/^[A-Za-z0-9 :*\\-]{1,24}$/D', $code ) ){
+ || ! is_string( $code ) || strlen( $code ) > 24 || ! preg_match( '/^[A-Za-z0-9 :*\\-]{1,24}$/D', $code ) ){
 				throw new RuntimeException( 'Invalid shipping zone geographic location.' );
 			}
-			$key = $type.':'.$code;$result[ $key ] = array( 'type' => $type, 'code' => $code );
+			$key = $type . ':' . $code;$result[ $key ] = array( 'type' => $type, 'code' => $code );
 		}
 		ksort( $result, SORT_STRING );
 		return array_values( $result );
@@ -248,9 +248,9 @@ final class WooCommerceFulfillmentAdapter {
 	}
 
 	private function resourceSnapshot( string $type, array $item ): array {
-		$keys = $type === 'shipping_zone'?array( 'id', 'name', 'order' )
-			:( $type === 'shipping_method'?array( 'instance_id', 'method_id', 'order', 'enabled' )
-			:array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
+		$keys = $type === 'shipping_zone' ? array( 'id', 'name', 'order' )
+			: ( $type === 'shipping_method' ? array( 'instance_id', 'method_id', 'order', 'enabled' )
+			: array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
 		$out = array();
 		foreach ( $keys as $key )if ( array_key_exists( $key, $item ) )$out[ $key ] = $item[ $key ];
 		// Hash provider-specific settings so a later method edit invalidates
@@ -278,16 +278,16 @@ final class WooCommerceFulfillmentAdapter {
 	}
 	private function collectionPath( string $type, array $payload ): string {
 		$path = self::TYPES[ $type ];
-		if ( $type === 'shipping_method' )$path.='/'.$this->positive( $payload['zone_id'] ?? null, 'zone_id' ).'/methods';
+		if ( $type === 'shipping_method' )$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
 		elseif ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null )
 			throw new RuntimeException( 'Provisioning zone_id is only valid for shipping methods.' );
 		return $path;
 	}
 	private function locationPath( array $payload ): string {
-		return '/wc/v3/shipping/zones/'.$this->positive( $payload['zone_id'] ?? null, 'zone_id' ).'/locations';
+		return '/wc/v3/shipping/zones/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/locations';
 	}
 	private function positive( $id, string $name ): int {
-		if ( ! is_int( $id ) || $id<1 || $id>2147483647 )throw new RuntimeException( $name.' must be a positive integer.' );
+		if ( ! is_int( $id ) || $id < 1 || $id > 2147483647 )throw new RuntimeException( $name . ' must be a positive integer.' );
 		return $id;
 	}
 	private function keys( array $payload, array $allowed ): void {
@@ -310,10 +310,10 @@ final class WooCommerceFulfillmentAdapter {
 		if ( ! is_object( $response ) || ! method_exists( $response, 'get_status' )
  || ! method_exists( $response, 'get_data' ) )
 			throw new RuntimeException( 'WooCommerce provider returned an invalid response.' );
-		$status = (int)$response->get_status();
+		$status = (int) $response->get_status();
 		$data   = $response->get_data();
-		if ( $status<200 || $status >= 300 || ! is_array( $data ) )
-			throw new RuntimeException( 'WooCommerce provider returned HTTP '.$status.'.' );
+		if ( $status < 200 || $status >= 300 || ! is_array( $data ) )
+			throw new RuntimeException( 'WooCommerce provider returned HTTP ' . $status . '.' );
 		return $data;
 	}
 }
