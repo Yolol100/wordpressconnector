@@ -49,14 +49,14 @@ final class Command {
 			);
 			$result = $this->runner->run( $request, $context );
 
-			if ( ! empty( $assocArgs['output'] )) {
+			if ( ! empty( $assocArgs['output'] ) ) {
 				Json::writeFileAtomic( ( string ) $assocArgs['output'], $result );
 				\WP_CLI::log( ( string ) $assocArgs['output'] );
 			} else {
-				\WP_CLI::line( Json::encode( $result ));
+				\WP_CLI::line( Json::encode( $result ) );
 			}
 
-			if ( empty( $result['ok'] )) {
+			if ( empty( $result['ok'] ) ) {
 				\WP_CLI::halt( 1 );
 			}
 		} catch ( RuntimeException $error ) {
@@ -78,7 +78,7 @@ final class Command {
 			'payload' => array(),
 		) );
 		$result = $this->runner->run( $request );
-		\WP_CLI::line( Json::encode( $result ));
+		\WP_CLI::line( Json::encode( $result ) );
 	}
 
 	/**
@@ -95,8 +95,8 @@ final class Command {
 			'payload' => array(),
 		) );
 		$result = $this->runner->run( $request );
-		\WP_CLI::line( Json::encode( $result ));
-		if ( empty( $result['ok'] ) || empty( $result['data']['ok'] )) {
+		\WP_CLI::line( Json::encode( $result ) );
+		if ( empty( $result['ok'] ) || empty( $result['data']['ok'] ) ) {
 			\WP_CLI::halt( 1 );
 		}
 	}
