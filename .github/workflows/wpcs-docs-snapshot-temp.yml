@@ -1,5 +1,5 @@
 # ONE-TIME branch-only WPCS documentation workflow. Delete before creating a PR.
-# Verification rerun after correcting doc tags and whitespace-only property alignment.
+# Verification rerun with corrected Python regular expressions and precise PHPCS gates.
 name: Temporary WPCS Docs Verification
 on:
   push:
