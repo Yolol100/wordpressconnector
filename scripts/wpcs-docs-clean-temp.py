@@ -84,7 +84,7 @@ for full,entry in audit["files"].items():
         additions=[]
         for n in names:
             if re.search(r"@param\s+[^\r\n]*\$"+re.escape(n)+r"\b",joined):continue
-            additions.append(f"{prefix} * @param {ptype(n,declaration)} \${n} {description(n)}")
+            additions.append(f"{prefix} * @param {ptype(n,declaration)} ${n} {description(n)}")
         if additions:
             at=next((i for i,l in enumerate(clean) if re.search(r"@(?:return|throws|deprecated|since)\b",l)),len(clean))
             if at and clean[at-1].strip() not in ("*","") and "@param" not in clean[at-1]:
