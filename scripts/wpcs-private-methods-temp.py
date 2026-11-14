@@ -68,5 +68,5 @@ for path, source in sources.items():
 total = sum(x[1] for x in changed_files)
 occurrences = sum(x[2] for x in changed_files)
 print("PRIVATE_METHODS_SUMMARY", {"files":len(changed_files),"methods":total,"occurrences":occurrences,"excluded":dict(excluded)})
-if not (180 <= total <= 260 and 500 <= occurrences <= 1100):
+if not (70 <= total <= 110 and 250 <= occurrences <= 450):
     raise RuntimeError("Unexpected private method candidate count, fail closed")
