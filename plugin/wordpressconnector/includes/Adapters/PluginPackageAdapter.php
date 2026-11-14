@@ -307,25 +307,25 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin package is empty or exceeds the configured size limit.' );
 		}
 
-		$expected_sha256 = isset( $payload['sha256'] ) ? strtolower( (string) $payload['sha256'] ) : '';
-		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expected_sha256 ) ) {
+		$expectedSha256 = isset( $payload['sha256'] ) ? strtolower( (string) $payload['sha256'] ) : '';
+		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expectedSha256 ) ) {
 			throw new RuntimeException( 'sha256 must be a 64-character lowercase hexadecimal checksum.' );
 		}
 		$actual_sha256 = hash_file( 'sha256', $package );
-		if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expected_sha256, strtolower( $actual_sha256 ) ) ) {
+		if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expectedSha256, strtolower( $actual_sha256 ) ) ) {
 			throw new RuntimeException( 'Plugin package SHA-256 checksum does not match.' );
 		}
 
-		$expected_plugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', (string) $payload['expected_plugin'] ) : '';
-		if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expected_plugin ) ) {
+		$expectedPlugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', (string) $payload['expected_plugin'] ) : '';
+		if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expectedPlugin ) ) {
 			throw new RuntimeException( 'expected_plugin must be an exact plugin file such as plugin-slug/plugin.php.' );
 		}
 
 		$package_info = $this->inspectPackage( $package );
-		if ( ! hash_equals( $expected_plugin, $package_info['plugin_file'] ) ) {
+		if ( ! hash_equals( $expectedPlugin, $package_info['plugin_file'] ) ) {
 			throw new RuntimeException( 'Plugin package identity does not match expected_plugin.' );
 		}
-		$this->assertNotSelf( $expected_plugin );
+		$this->assertNotSelf( $expectedPlugin );
 
 		$overwrite   = Input::bool( $payload, 'overwrite' );
 		$activate    = Input::bool( $payload, 'activate' );
@@ -334,7 +334,7 @@ final class PluginPackageAdapter {
 
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins   = get_plugins();
-		$installed = isset( $plugins[ $expected_plugin ] );
+		$installed = isset( $plugins[ $expectedPlugin ] );
 
 		if ( $overwrite && ! $installed ) {
 			throw new RuntimeException( 'overwrite=true requires expected_plugin to already be installed.' );
@@ -343,17 +343,17 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin is already installed. Use overwrite=true with the same expected_plugin to replace it.' );
 		}
 
-		$destination_root = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $expected_plugin );
+		$destination_root = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $expectedPlugin );
 		if ( ! $overwrite && is_dir( $destination_root ) ) {
 			throw new RuntimeException( 'Plugin destination directory already exists. Refusing an ambiguous install.' );
 		}
 
-		$before = $this->snapshot( $expected_plugin, $plugins );
+		$before = $this->snapshot( $expectedPlugin, $plugins );
 		$plan   = array(
 			'source_path'        => $source_path,
 			'sha256'             => $actual_sha256,
 			'bytes'              => (int) $size,
-			'plugin_file'        => $expected_plugin,
+			'plugin_file'        => $expectedPlugin,
 			'plugin_name'        => $package_info['plugin_name'],
 			'archive_entries'    => $package_info['entries'],
 			'uncompressed_bytes' => $package_info['uncompressed_bytes'],
@@ -389,18 +389,18 @@ final class PluginPackageAdapter {
 
 		wp_clean_plugins_cache( true );
 		$installed_file = $upgrader->plugin_info();
-		if ( ! is_string( $installed_file ) || ! hash_equals( $expected_plugin, str_replace( '\\', '/', $installed_file ) ) ) {
+		if ( ! is_string( $installed_file ) || ! hash_equals( $expectedPlugin, str_replace( '\\', '/', $installed_file ) ) ) {
 			throw new RuntimeException( 'Installed plugin identity did not match the verified package identity.' );
 		}
 
 		if ( $activate ) {
-			$needs_activation = $networkWide
-				? ! is_plugin_active_for_network( $expected_plugin )
-				: ! is_plugin_active( $expected_plugin );
-			if ( $needs_activation ) {
+			$needsActivation = $networkWide
+				? ! is_plugin_active_for_network( $expectedPlugin )
+				: ! is_plugin_active( $expectedPlugin );
+			if ( $needsActivation ) {
 				// This is a user-requested fresh activation, not a silent Core upgrade.
 				// Third-party install hooks must run exactly as in wp-admin.
-				$activated = activate_plugin( $expected_plugin, '', $networkWide, false );
+				$activated = activate_plugin( $expectedPlugin, '', $networkWide, false );
 				if ( is_wp_error( $activated ) ) {
 					throw new RuntimeException( $activated->get_error_message() );
 				}
@@ -409,11 +409,11 @@ final class PluginPackageAdapter {
 
 		wp_clean_plugins_cache( true );
 		$after_plugins = get_plugins();
-		if ( ! isset( $after_plugins[ $expected_plugin ] ) ) {
+		if ( ! isset( $after_plugins[ $expectedPlugin ] ) ) {
 			throw new RuntimeException( 'Plugin package readback failed: expected plugin is not installed.' );
 		}
 
-		$after = $this->snapshot( $expected_plugin, $after_plugins );
+		$after = $this->snapshot( $expectedPlugin, $after_plugins );
 		if ( $activate && ! ( $networkWide ? $after['network_active'] : $after['active'] ) ) {
 			throw new RuntimeException( 'Plugin was installed but activation did not persist; investigate the activation hook and server restrictions.' );
 		}
