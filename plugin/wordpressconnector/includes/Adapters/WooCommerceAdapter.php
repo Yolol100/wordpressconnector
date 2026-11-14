@@ -73,7 +73,15 @@ final class WooCommerceAdapter {
 				'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'
 			)
 		);
-		$registry->register( 'woocommerce.tax_class.list', array( $this, 'taxClassList' ), array( 'privileged' => true, 'capability' => 'manage_woocommerce', 'description' => 'List WooCommerce tax classes.' ) );
+		$registry->register(
+			'woocommerce.tax_class.list',
+			array( $this, 'taxClassList' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_woocommerce',
+				'description' => 'List WooCommerce tax classes.',
+			)
+		);
 		$registry->register(
 			'woocommerce.tax_rate.list',
 			array( $this, 'taxRateList' ),
@@ -85,20 +93,100 @@ final class WooCommerceAdapter {
 		);
 		$registry->register( 'woocommerce.product.list', array( $this, 'productList' ), array( 'description' => 'List WooCommerce products through WooCommerce CRUD.' ) );
 		$registry->register( 'woocommerce.product.get', array( $this, 'productGet' ), array( 'description' => 'Read a WooCommerce product.' ) );
-		$registry->register( 'woocommerce.product.create', array( $this, 'productCreate' ), array( 'mutation' => true, 'description' => 'Create a WooCommerce product.' ) );
-		$registry->register( 'woocommerce.product.update', array( $this, 'productUpdate' ), array( 'mutation' => true, 'description' => 'Update a WooCommerce product.' ) );
+		$registry->register(
+			'woocommerce.product.create',
+			array( $this, 'productCreate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Create a WooCommerce product.',
+			)
+		);
+		$registry->register(
+			'woocommerce.product.update',
+			array( $this, 'productUpdate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Update a WooCommerce product.',
+			)
+		);
 		$registry->register( 'woocommerce.variation.list', array( $this, 'variationList' ), array( 'description' => 'List product variations.' ) );
 		$registry->register( 'woocommerce.variation.get', array( $this, 'variationGet' ), array( 'description' => 'Read a product variation.' ) );
-		$registry->register( 'woocommerce.variation.create', array( $this, 'variationCreate' ), array( 'mutation' => true, 'description' => 'Create a product variation.' ) );
-		$registry->register( 'woocommerce.variation.update', array( $this, 'variationUpdate' ), array( 'mutation' => true, 'description' => 'Update a product variation.' ) );
+		$registry->register(
+			'woocommerce.variation.create',
+			array( $this, 'variationCreate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Create a product variation.',
+			)
+		);
+		$registry->register(
+			'woocommerce.variation.update',
+			array( $this, 'variationUpdate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Update a product variation.',
+			)
+		);
 		$registry->register( 'woocommerce.attribute.list', array( $this, 'attributeList' ), array( 'description' => 'List global WooCommerce product attributes.' ) );
-		$registry->register( 'woocommerce.attribute.create', array( $this, 'attributeCreate' ), array( 'mutation' => true, 'description' => 'Create a global WooCommerce product attribute.' ) );
-		$registry->register( 'woocommerce.attribute.update', array( $this, 'attributeUpdate' ), array( 'mutation' => true, 'description' => 'Update a global WooCommerce product attribute.' ) );
-		$registry->register( 'woocommerce.attribute.delete', array( $this, 'attributeDelete' ), array( 'mutation' => true, 'privileged' => true, 'description' => 'Delete a global WooCommerce product attribute.' ) );
-		$registry->register( 'woocommerce.coupon.list', array( $this, 'couponList' ), array( 'privileged' => true, 'description' => 'List WooCommerce coupons without customer/order data.' ) );
-		$registry->register( 'woocommerce.coupon.get', array( $this, 'couponGet' ), array( 'privileged' => true, 'description' => 'Read a WooCommerce coupon.' ) );
-		$registry->register( 'woocommerce.coupon.create', array( $this, 'couponCreate' ), array( 'mutation' => true, 'privileged' => true, 'description' => 'Create a WooCommerce coupon.' ) );
-		$registry->register( 'woocommerce.coupon.update', array( $this, 'couponUpdate' ), array( 'mutation' => true, 'privileged' => true, 'description' => 'Update a WooCommerce coupon.' ) );
+		$registry->register(
+			'woocommerce.attribute.create',
+			array( $this, 'attributeCreate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Create a global WooCommerce product attribute.',
+			)
+		);
+		$registry->register(
+			'woocommerce.attribute.update',
+			array( $this, 'attributeUpdate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Update a global WooCommerce product attribute.',
+			)
+		);
+		$registry->register(
+			'woocommerce.attribute.delete',
+			array( $this, 'attributeDelete' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Delete a global WooCommerce product attribute.',
+			)
+		);
+		$registry->register(
+			'woocommerce.coupon.list',
+			array( $this, 'couponList' ),
+			array(
+				'privileged'  => true,
+				'description' => 'List WooCommerce coupons without customer/order data.',
+			)
+		);
+		$registry->register(
+			'woocommerce.coupon.get',
+			array( $this, 'couponGet' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read a WooCommerce coupon.',
+			)
+		);
+		$registry->register(
+			'woocommerce.coupon.create',
+			array( $this, 'couponCreate' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Create a WooCommerce coupon.',
+			)
+		);
+		$registry->register(
+			'woocommerce.coupon.update',
+			array( $this, 'couponUpdate' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update a WooCommerce coupon.',
+			)
+		);
 	}
 
 	/**
@@ -118,7 +206,12 @@ final class WooCommerceAdapter {
 		Policy::assertReadablePostType( 'shop_order' );
 		$limit = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 25;
 		$page  = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
-		$args  = array( 'limit' => $limit, 'page' => $page, 'paginate' => true, 'return' => 'objects' );
+		$args  = array(
+			'limit'    => $limit,
+			'page'     => $page,
+			'paginate' => true,
+			'return'   => 'objects',
+		);
 		if ( isset( $payload['status'] ) ) {
 			$status = sanitize_key( (string) $payload['status'] );
 			if ( strpos( $status, 'wc-' ) !== 0 ) {
@@ -175,7 +268,10 @@ final class WooCommerceAdapter {
 		}
 		$includePersonalData = Input::bool( $payload, 'include_personal_data', false );
 		$snapshot            = $this->orderSnapshot( $order, $includePersonalData );
-		return array( 'order' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'order'       => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -224,7 +320,10 @@ final class WooCommerceAdapter {
 			$snapshot['billing']    = $this->customerAddressSnapshot( $customer->get_billing() );
 			$snapshot['shipping']   = $this->customerAddressSnapshot( $customer->get_shipping() );
 		}
-		return array( 'customer' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'customer'    => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -282,7 +381,13 @@ final class WooCommerceAdapter {
 				$zones[] = $this->shippingZoneSnapshot( 0, (string) $default_zone->get_zone_name(), (int) $default_zone->get_zone_order() );
 			}
 		}
-		return array( 'zones' => $zones, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => $pages );
+		return array(
+			'zones'    => $zones,
+			'page'     => $page,
+			'per_page' => $limit,
+			'total'    => $total,
+			'pages'    => $pages,
+		);
 	}
 
 	/**
@@ -335,7 +440,10 @@ final class WooCommerceAdapter {
 			}
 			$snapshot = $this->shippingZoneSnapshot( (int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order );
 		}
-		return array( 'zone' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'zone'        => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -356,7 +464,10 @@ final class WooCommerceAdapter {
 				$classes[] = array( 'id' => isset( $class->tax_rate_class_id ) ? (int) $class->tax_rate_class_id : 0, 'name' => isset( $class->name ) ? (string) $class->name : '', 'slug' => isset( $class->slug ) ? (string) $class->slug : '' );
 			}
 		}
-		return array( 'classes' => $classes, 'standard_class' => '' );
+		return array(
+			'classes'        => $classes,
+			'standard_class' => '',
+		);
 	}
 
 	/**
@@ -461,7 +572,14 @@ final class WooCommerceAdapter {
 			$snapshot['locations_truncated'] = $location_count > count( $snapshot['locations'] );
 			$items[]                         = $snapshot;
 		}
-		return array( 'tax_class' => $class, 'rates' => $items, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => (int) ceil( $total / $limit ) );
+		return array(
+			'tax_class' => $class,
+			'rates'     => $items,
+			'page'      => $page,
+			'per_page'  => $limit,
+			'total'     => $total,
+			'pages'     => (int) ceil( $total / $limit ),
+		);
 	}
 
 	/**
@@ -525,7 +643,10 @@ final class WooCommerceAdapter {
 			Policy::assertPostReadable( $post );
 		}
 		$snapshot = $this->productSnapshot( $product );
-		return array( 'product' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'product'     => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -545,7 +666,10 @@ final class WooCommerceAdapter {
 		$this->applyProduct( $product, $payload );
 
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_create' => $this->productSnapshot( $product ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'type' => $type ) ) );
+			return array(
+				'would_create'         => $this->productSnapshot( $product ),
+				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'type' => $type ) ),
+			);
 		}
 
 		$id = $product->save();
@@ -553,7 +677,10 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'WooCommerce product save failed.' );
 		}
 		$saved = wc_get_product( $id );
-		return array( 'product' => $this->productSnapshot( $saved ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
+		return array(
+			'product'   => $this->productSnapshot( $saved ),
+			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+		);
 	}
 
 	/**
@@ -570,7 +697,11 @@ final class WooCommerceAdapter {
 		$working = clone $product;
 		$this->applyProduct( $working, $payload );
 		$after  = $this->productSnapshot( $working );
-		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'before'               => $before,
+			'after'                => $after,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -578,7 +709,10 @@ final class WooCommerceAdapter {
 		$this->applyProduct( $product, $payload );
 		$product->save();
 		$result['after']     = $this->productSnapshot( wc_get_product( $product->get_id() ) );
-		$result['_rollback'] = array( 'action' => 'woocommerce.product.update', 'payload' => $this->productRollbackPayload( $before ) );
+		$result['_rollback'] = array(
+			'action'  => 'woocommerce.product.update',
+			'payload' => $this->productRollbackPayload( $before ),
+		);
 		return $result;
 	}
 
@@ -618,7 +752,10 @@ final class WooCommerceAdapter {
 	public function variationGet( array $payload ): array {
 		$variation = $this->variation( $payload );
 		$snapshot  = $this->variationSnapshot( $variation );
-		return array( 'variation' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'variation'   => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -642,7 +779,10 @@ final class WooCommerceAdapter {
 		$variation->set_parent_id( $parent_id );
 		$this->applyVariation( $variation, $payload );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_create' => $this->variationSnapshot( $variation ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'parent_id' => $parent_id ) ) );
+			return array(
+				'would_create'         => $this->variationSnapshot( $variation ),
+				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'parent_id' => $parent_id ) ),
+			);
 		}
 		$id = $variation->save();
 		if ( ! $id ) {
@@ -652,7 +792,10 @@ final class WooCommerceAdapter {
 		if ( ! $saved_variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Saved WooCommerce variation could not be read back.' );
 		}
-		return array( 'variation' => $this->variationSnapshot( $saved_variation ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
+		return array(
+			'variation' => $this->variationSnapshot( $saved_variation ),
+			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+		);
 	}
 
 	/**
@@ -670,7 +813,11 @@ final class WooCommerceAdapter {
 		$before    = $this->variationSnapshot( $variation );
 		$working   = clone $variation;
 		$this->applyVariation( $working, $payload );
-		$result = array( 'before' => $before, 'after' => $this->variationSnapshot( $working ), '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'before'               => $before,
+			'after'                => $this->variationSnapshot( $working ),
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -681,7 +828,10 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'Updated WooCommerce variation could not be read back.' );
 		}
 		$result['after']     = $this->variationSnapshot( $updated_variation );
-		$result['_rollback'] = array( 'action' => 'woocommerce.variation.update', 'payload' => $this->variationRollbackPayload( $before ) );
+		$result['_rollback'] = array(
+			'action'  => 'woocommerce.variation.update',
+			'payload' => $this->variationRollbackPayload( $before ),
+		);
 		return $result;
 	}
 
@@ -713,14 +863,20 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$args = $this->attributeArgs( $payload, false );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_create' => $args, '_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'slug' => $args['slug'] ) ) );
+			return array(
+				'would_create'         => $args,
+				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'slug' => $args['slug'] ) ),
+			);
 		}
 		$id = wc_create_attribute( $args );
 		if ( is_wp_error( $id ) ) {
 			throw new RuntimeException( $id->get_error_message() );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
-		return array( 'attribute_id' => (int) $id, '_rollback' => array( 'action' => 'woocommerce.attribute.delete', 'payload' => array( 'id' => (int) $id ) ) );
+		return array(
+			'attribute_id' => (int) $id,
+			'_rollback'    => array( 'action' => 'woocommerce.attribute.delete', 'payload' => array( 'id' => (int) $id ) ),
+		);
 	}
 
 	/**
@@ -739,7 +895,11 @@ final class WooCommerceAdapter {
 		$before_obj = $this->findAttribute( $id );
 		$before     = $this->attributeSnapshot( $before_obj );
 		$args       = $this->attributeArgs( $payload, true );
-		$result     = array( 'before' => $before, 'changes' => $args, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result     = array(
+			'before'               => $before,
+			'changes'              => $args,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -749,7 +909,10 @@ final class WooCommerceAdapter {
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
 		$result['after']     = $this->attributeSnapshot( $this->findAttribute( $id ) );
-		$result['_rollback'] = array( 'action' => 'woocommerce.attribute.update', 'payload' => array_merge( array( 'id' => $id ), $before ) );
+		$result['_rollback'] = array(
+			'action'  => 'woocommerce.attribute.update',
+			'payload' => array_merge( array( 'id' => $id ), $before ),
+		);
 		return $result;
 	}
 
@@ -767,7 +930,10 @@ final class WooCommerceAdapter {
 		$this->assertWoo();
 		$id     = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$before = $this->attributeSnapshot( $this->findAttribute( $id ) );
-		$result = array( 'before' => $before, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'before'               => $before,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -776,7 +942,10 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( $deleted->get_error_message() );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
-		$result['_rollback'] = array( 'action' => 'woocommerce.attribute.create', 'payload' => $before );
+		$result['_rollback'] = array(
+			'action'  => 'woocommerce.attribute.create',
+			'payload' => $before,
+		);
 		return $result;
 	}
 
@@ -801,7 +970,11 @@ final class WooCommerceAdapter {
 			$coupon  = new \WC_Coupon( (int) $post->ID );
 			$items[] = $this->couponSnapshot( $coupon );
 		}
-		return array( 'coupons' => $items, 'total' => (int) $query->found_posts, 'pages' => (int) $query->max_num_pages );
+		return array(
+			'coupons' => $items,
+			'total'   => (int) $query->found_posts,
+			'pages'   => (int) $query->max_num_pages,
+		);
 	}
 
 	/**
@@ -820,7 +993,10 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'Coupon not found.' );
 		}
 		$snapshot = $this->couponSnapshot( $coupon );
-		return array( 'coupon' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'coupon'      => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -836,10 +1012,16 @@ final class WooCommerceAdapter {
 		$coupon = new \WC_Coupon();
 		$this->applyCoupon( $coupon, $payload );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_create' => $this->couponSnapshot( $coupon ), '_current_fingerprint' => Fingerprint::make( array( 'new' => true ) ) );
+			return array(
+				'would_create'         => $this->couponSnapshot( $coupon ),
+				'_current_fingerprint' => Fingerprint::make( array( 'new' => true ) ),
+			);
 		}
 		$id = $coupon->save();
-		return array( 'coupon' => $this->couponSnapshot( new \WC_Coupon( $id ) ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
+		return array(
+			'coupon'    => $this->couponSnapshot( new \WC_Coupon( $id ) ),
+			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+		);
 	}
 
 	/**
@@ -861,14 +1043,21 @@ final class WooCommerceAdapter {
 		$before  = $this->couponSnapshot( $coupon );
 		$working = clone $coupon;
 		$this->applyCoupon( $working, $payload );
-		$result = array( 'before' => $before, 'after' => $this->couponSnapshot( $working ), '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'before'               => $before,
+			'after'                => $this->couponSnapshot( $working ),
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
 		$this->applyCoupon( $coupon, $payload );
 		$coupon->save();
 		$result['after']     = $this->couponSnapshot( new \WC_Coupon( $coupon->get_id() ) );
-		$result['_rollback'] = array( 'action' => 'woocommerce.coupon.update', 'payload' => array_merge( array( 'id' => $coupon->get_id() ), $before ) );
+		$result['_rollback'] = array(
+			'action'  => 'woocommerce.coupon.update',
+			'payload' => array_merge( array( 'id' => $coupon->get_id() ), $before ),
+		);
 		return $result;
 	}
 
@@ -1207,7 +1396,11 @@ final class WooCommerceAdapter {
 		}
 
 		if ( 0 === $total ) {
-			return array( 'ids' => array(), 'total' => 0, 'truncated' => false );
+			return array(
+				'ids'       => array(),
+				'total'     => 0,
+				'truncated' => false,
+			);
 		}
 
 		try {
