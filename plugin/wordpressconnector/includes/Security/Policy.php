@@ -72,6 +72,15 @@ final class Policy {
 	private static ?bool $runtimePublicRepository = null;
 	private static bool $requestConfirmed = false;
 
+	/**
+	 * Ensure action allowed for the Policy component.
+	 *
+	 * @param array $descriptor Input for the operation.
+	 * @param bool  $dryRun Input for the operation.
+	 * @param bool  $confirm Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertActionAllowed( array $descriptor, bool $dryRun, bool $confirm ): void {
 		self::$requestConfirmed = $confirm;
 
@@ -125,6 +134,14 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure public action target for the Policy component.
+	 *
+	 * @param string $action Input for the operation.
+	 * @param array  $payload Requested action payload.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertPublicActionTarget( string $action, array $payload ): void {
 		if ( ! self::publicRepositoryContext() || ! in_array( $action, array( 'post.update', 'post.literal_replace', 'acf.update', 'elementor.inspect', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore' ), true ) ) {
 			return;
@@ -146,6 +163,14 @@ final class Policy {
 		self::assertPublicContentTarget( $post, $requiresEdit );
 	}
 
+	/**
+	 * Ensure public content target for the Policy component.
+	 *
+	 * @param \WP_Post $post Input for the operation.
+	 * @param bool     $requiresEdit Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertPublicContentTarget( \WP_Post $post, bool $requiresEdit = false ): void {
 		self::assertReadablePostType( (string) $post->post_type );
 		$postType = get_post_type_object( (string) $post->post_type );
@@ -160,6 +185,13 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure post readable for the Policy component.
+	 *
+	 * @param \WP_Post $post Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertPostReadable( \WP_Post $post ): void {
 		self::assertReadablePostType( (string) $post->post_type );
 		if ( ! self::publicRepositoryContext() ) { return; }
@@ -181,6 +213,13 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure readable post type for the Policy component.
+	 *
+	 * @param string $postType Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertReadablePostType( string $postType ): void {
 		if ( in_array( $postType, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitiveExportAllowed() ) {
 			throw new RuntimeException( 'Sensitive post type export requires confirm=true on a non-public transport.' );
@@ -190,12 +229,26 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure key allowed for the Policy component.
+	 *
+	 * @param string $key Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertKeyAllowed( string $key ): void {
 		if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie|auth_key|secure_auth|logged_in_key|nonce_key|salt)/i', $key ) ) {
 			throw new RuntimeException( 'Secret-like keys cannot be read or written through the connector.' );
 		}
 	}
 
+	/**
+	 * Ensure meta key allowed for the Policy component.
+	 *
+	 * @param string $key Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertMetaKeyAllowed( string $key ): void {
 		self::assertKeyAllowed( $key );
 		if ( isset( $key[0] ) && '_' === $key[0] ) {
@@ -203,6 +256,13 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure option key allowed for the Policy component.
+	 *
+	 * @param string $key Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertOptionKeyAllowed( string $key ): void {
 		self::assertKeyAllowed( $key );
 		if ( in_array( strtolower( $key ), self::BLOCKED_OPTION_KEYS, true ) ) {
@@ -210,6 +270,16 @@ final class Policy {
 		}
 	}
 
+	/**
+	 * Ensure local asset path for the Policy component.
+	 *
+	 * @param string $path Input for the operation.
+	 * @param string $assetRoot Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertLocalAssetPath( string $path, string $assetRoot ): string {
 		// Reject lexical symlinks before realpath() erases the path components.
 		$base = rtrim( $assetRoot, DIRECTORY_SEPARATOR );
@@ -242,6 +312,13 @@ final class Policy {
 		return $real;
 	}
 
+	/**
+	 * Process the redact operation in the Policy component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	public static function redact( $value ) {
 		if ( ! is_array( $value ) ) { return $value; }
 		$redacted = array();
@@ -255,13 +332,30 @@ final class Policy {
 		return $redacted;
 	}
 
+	/**
+	 * Process the set public repository context operation in the Policy component.
+	 *
+	 * @param bool $isPublic Input for the operation.
+	 */
 	public static function setPublicRepositoryContext( bool $isPublic ): void { self::$runtimePublicRepository = $isPublic; }
 
+	/**
+	 * Process the public repository context operation in the Policy component.
+	 *
+	 * @return bool Operation result.
+	 */
 	public static function publicRepositoryContext(): bool {
 		if ( null !== self::$runtimePublicRepository ) { return self::$runtimePublicRepository; }
 		return self::flag( 'WPCONNECTOR_PUBLIC_REPOSITORY' );
 	}
 
+	/**
+	 * Process the flag operation in the Policy component.
+	 *
+	 * @param string $name Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	public static function flag( string $name ): bool {
 		if ( defined( $name ) ) { return self::truthy( constant( $name ) ); }
 		$environment = getenv( $name );
@@ -270,11 +364,23 @@ final class Policy {
 		return false;
 	}
 
+	/**
+	 * Process the truthy operation in the Policy component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private static function truthy( $value ): bool {
 		if ( true === $value || 1 === $value ) { return true; }
 		return in_array( strtolower( (string) $value ), array( '1', 'true', 'yes', 'on' ), true );
 	}
 
+	/**
+	 * Process the sensitive export allowed operation in the Policy component.
+	 *
+	 * @return bool Operation result.
+	 */
 	private static function sensitiveExportAllowed(): bool {
 		return self::$requestConfirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
 	}

@@ -1433,6 +1433,13 @@ final class WooCommerceAdapter {
 		);
 	}
 
+	/**
+	 * Process the variation rollback payload operation in the WooCommerce adapter.
+	 *
+	 * @param array $snapshot Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function variationRollbackPayload( array $snapshot ): array { return $snapshot; }
 
 	/**
@@ -1558,6 +1565,15 @@ final class WooCommerceAdapter {
 		return $args;
 	}
 
+	/**
+	 * Find attribute for the WooCommerce adapter.
+	 *
+	 * @param int $id Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function findAttribute( int $id ) {
 		foreach ( wc_get_attribute_taxonomies() as $attribute ) if ( (int) $attribute->attribute_id === $id ) return $attribute;
 		throw new RuntimeException( 'Attribute not found.' );

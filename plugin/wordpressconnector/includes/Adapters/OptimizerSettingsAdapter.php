@@ -36,6 +36,11 @@ final class OptimizerSettingsAdapter {
 		'ewww_image_optimizer_ll_abovethefold', 'ewww_image_optimizer_add_missing_dims'
 	);
 
+	/**
+	 * Register the OptimizerSettings adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read  = array( 'privileged' => true, 'capability' => 'manage_options' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
@@ -44,6 +49,14 @@ final class OptimizerSettingsAdapter {
 		$registry->register( 'optimizer.settings.restore', array( $this, 'restore' ), $write );
 	}
 
+	/**
+	 * Process the inspect operation in the OptimizerSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$this->keys( $payload, array( 'provider' ) );
 		$provider = $this->provider( $payload );
@@ -59,6 +72,16 @@ final class OptimizerSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the OptimizerSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'provider', 'fields', 'expected_before_fingerprint' ) );
 		$provider = $this->provider( $payload );
@@ -133,6 +156,16 @@ final class OptimizerSettingsAdapter {
 		return $out;
 	}
 
+	/**
+	 * Process the restore operation in the OptimizerSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Optimizer restoration is rollback-only.' );
@@ -168,6 +201,15 @@ final class OptimizerSettingsAdapter {
 		return array( 'restored' => true, 'provider' => $provider, 'field' => $key );
 	}
 
+	/**
+	 * Process the state operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function state( string $provider ): array {
 		$this->version( $provider );
 		if ( $provider === 'asset_cleanup' ){
@@ -199,6 +241,17 @@ final class OptimizerSettingsAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Process the write operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 * @param array  $state Input for the operation.
+	 * @param string $key Input for the operation.
+	 * @param mixed  $value Input for the operation.
+	 * @param bool   $exists Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function write( string $provider, array $state, string $key, $value, bool $exists = true ): void {
 		if ( $provider === 'asset_cleanup' )
 			throw new RuntimeException( 'Asset CleanUp settings writes require a verified provider API.' );
@@ -210,6 +263,14 @@ final class OptimizerSettingsAdapter {
 		ewww_image_optimizer_set_option( $key, $value );
 	}
 
+	/**
+	 * Process the public fields operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 * @param array  $state Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function publicFields( string $provider, array $state ): array {
 		$keys = $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_FIELDS;
 		$out  = array();
@@ -224,6 +285,18 @@ final class OptimizerSettingsAdapter {
 		return $out;
 	}
 
+	/**
+	 * Process the validate operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 * @param string $key Input for the operation.
+	 * @param mixed  $value Input for the operation.
+	 * @param bool   $restore Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validate( string $provider, string $key, $value, bool $restore = false ): string {
 		if ( ! $this->isWritable( $provider, $key ) || ( ! is_string( $value ) && ! is_int( $value ) && ! is_bool( $value ) ) )
 			throw new RuntimeException( 'Optimizer setting is not in the safe write allowlist.' );
@@ -260,6 +333,13 @@ final class OptimizerSettingsAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the ewww stored option exists operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $key Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function ewwwStoredOptionExists( string $key ): bool {
 		$missing = new \stdClass();
 		$network = function_exists( 'is_multisite' ) && is_multisite()
@@ -269,6 +349,11 @@ final class OptimizerSettingsAdapter {
 		return ( $network ? get_site_option( $key, $missing ) : get_option( $key, $missing ) ) !== $missing;
 	}
 
+	/**
+	 * Ensure ewww write capability for the OptimizerSettings adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertEwwwWriteCapability(): void {
 		if ( function_exists( 'is_multisite' ) && is_multisite()
  && function_exists( 'is_plugin_active_for_network' )
@@ -278,6 +363,15 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Network-active EWWW requires manage_network_options for writes.' );
 	}
 
+	/**
+	 * Process the conflicts operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 * @param string $key Input for the operation.
+	 * @param string $value Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function conflicts( string $provider, string $key, string $value ): void {
 		$rocket = $this->rocketSummary();
 		if ( $provider !== 'ewww' || $value !== '1' ) {
@@ -291,6 +385,11 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'WP Rocket already owns missing image dimensions.' );
 	}
 
+	/**
+	 * Process the rocket summary operation in the OptimizerSettings adapter.
+	 *
+	 * @return array Operation result.
+	 */
 	private function rocketSummary(): array {
 		if ( ! function_exists( 'get_rocket_option' ) ) {
 			return array( 'available' => false );
@@ -303,10 +402,25 @@ final class OptimizerSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Check whether writable for the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 * @param string $key Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function isWritable( string $provider, string $key ): bool {
 		return in_array( $key, $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_WRITE, true );
 	}
 
+	/**
+	 * Process the version operation in the OptimizerSettings adapter.
+	 *
+	 * @param string $provider Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function version( string $provider ): void {
 		if ( ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) )
  && defined( 'ABSPATH' ) )require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -319,6 +433,15 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Unsupported or inactive optimizer plugin version.' );
 	}
 
+	/**
+	 * Process the provider operation in the OptimizerSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function provider( array $payload ): string {
 		$provider = $payload['provider'] ?? null;
 		if ( $provider !== 'asset_cleanup' && $provider !== 'ewww' )
@@ -326,12 +449,28 @@ final class OptimizerSettingsAdapter {
 		return $provider;
 	}
 
+	/**
+	 * Process the expected operation in the OptimizerSettings adapter.
+	 *
+	 * @param mixed  $expected Input for the operation.
+	 * @param string $current Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function expected( $expected, string $current ): void {
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
  || ! hash_equals( $current, $expected ) )
 			throw new RuntimeException( 'Optimizer state changed since dry-run.' );
 	}
 
+	/**
+	 * Process the keys operation in the OptimizerSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $allowed Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function keys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) )
 			throw new RuntimeException( 'Unexpected optimizer settings request fields.' );

@@ -36,6 +36,15 @@ final class GitHubOidc {
 	private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
 	private const REPLAY_OPTION_PREFIX = 'wpconnector_oidc_replay_';
 
+	/**
+	 * Process the authenticate operation in the GitHubOidc component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function authenticate( \WP_REST_Request $request ): int {
 		$token = (string) $request->get_header( self::HEADER );
 		if ( '' === $token ) {
@@ -80,10 +89,22 @@ final class GitHubOidc {
 		return $this->administratorId( $claims );
 	}
 
+	/**
+	 * Process the expected audience operation in the GitHubOidc component.
+	 *
+	 * @return string Operation result.
+	 */
 	public static function expectedAudience(): string {
 		return rtrim( (string) rest_url( 'webactueel-wordpress-connector/v1' ), '/' );
 	}
 
+	/**
+	 * Ensure claims for the GitHubOidc component.
+	 *
+	 * @param array $claims Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertClaims( array $claims ): void {
 		$now = time();
 		if ( self::ISSUER !== ( $claims['iss'] ?? null ) ) {
@@ -136,6 +157,13 @@ final class GitHubOidc {
 		}
 	}
 
+	/**
+	 * Ensure not replayed for the GitHubOidc component.
+	 *
+	 * @param array $claims Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertNotReplayed( array $claims ): void {
 		$hash = hash( 'sha256', (string) $claims['jti'] );
 		// Respect tokens consumed before upgrading from transient-based replay
@@ -200,6 +228,15 @@ final class GitHubOidc {
 		return $deleted;
 	}
 
+	/**
+	 * Process the administrator id operation in the GitHubOidc component.
+	 *
+	 * @param array $claims Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function administratorId( array $claims ): int {
 		// The WordPress administrator who approved this exact site is the
 		// executing actor; never impersonate an arbitrary first admin user.
@@ -210,6 +247,15 @@ final class GitHubOidc {
 		return $id;
 	}
 
+	/**
+	 * Process the public key operation in the GitHubOidc component.
+	 *
+	 * @param string $kid Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function publicKey( string $kid ) {
 		$keys = $this->jwks( false );
 		$key  = $this->findKey( $keys, $kid );
@@ -229,6 +275,15 @@ final class GitHubOidc {
 		return $publicKey;
 	}
 
+	/**
+	 * Process the jwks operation in the GitHubOidc component.
+	 *
+	 * @param bool $forceRefresh Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function jwks( bool $forceRefresh ): array {
 		if ( ! $forceRefresh ) {
 			$cached = get_transient( self::JWKS_TRANSIENT );
@@ -262,6 +317,14 @@ final class GitHubOidc {
 		return $decoded['keys'];
 	}
 
+	/**
+	 * Find key for the GitHubOidc component.
+	 *
+	 * @param array  $keys Input for the operation.
+	 * @param string $kid Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function findKey( array $keys, string $kid ): ?array {
 		foreach ( $keys as $key ) {
 			if ( ! is_array( $key ) || ! isset( $key['kid'] ) || ! is_string( $key['kid'] ) ) {
@@ -274,6 +337,15 @@ final class GitHubOidc {
 		return null;
 	}
 
+	/**
+	 * Process the key pem operation in the GitHubOidc component.
+	 *
+	 * @param array $key Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function keyPem( array $key ): string {
 		if ( isset( $key['x5c'][0] ) && is_string( $key['x5c'][0] ) && '' !== $key['x5c'][0] ) {
 			return "-----BEGIN CERTIFICATE-----\n" . chunk_split( $key['x5c'][0], 64, "\n" ) . "-----END CERTIFICATE-----\n";
@@ -293,6 +365,13 @@ final class GitHubOidc {
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 
+	/**
+	 * Process the asn1 integer operation in the GitHubOidc component.
+	 *
+	 * @param string $bytes Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function asn1Integer( string $bytes ): string {
 		$bytes = ltrim( $bytes, "\x00" );
 		if ( '' === $bytes ) {
@@ -304,10 +383,24 @@ final class GitHubOidc {
 		return "\x02" . $this->asn1Length( strlen( $bytes ) ) . $bytes;
 	}
 
+	/**
+	 * Process the asn1 sequence operation in the GitHubOidc component.
+	 *
+	 * @param string $bytes Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function asn1Sequence( string $bytes ): string {
 		return "\x30" . $this->asn1Length( strlen( $bytes ) ) . $bytes;
 	}
 
+	/**
+	 * Process the asn1 length operation in the GitHubOidc component.
+	 *
+	 * @param int $length Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function asn1Length( int $length ): string {
 		if ( $length < 0x80 ) {
 			return chr( $length );
@@ -320,6 +413,16 @@ final class GitHubOidc {
 		return chr( 0x80 | strlen( $encoded ) ) . $encoded;
 	}
 
+	/**
+	 * Process the decode json segment operation in the GitHubOidc component.
+	 *
+	 * @param string $segment Input for the operation.
+	 * @param string $label Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function decodeJsonSegment( string $segment, string $label ): array {
 		$json = $this->decodeBase64Url( $segment, $label );
 		try {
@@ -333,6 +436,16 @@ final class GitHubOidc {
 		return $decoded;
 	}
 
+	/**
+	 * Process the decode base64 url operation in the GitHubOidc component.
+	 *
+	 * @param string $value Input for the operation.
+	 * @param string $label Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function decodeBase64Url( string $value, string $label ): string {
 		if ( '' === $value || false !== strpos( $value, '=' ) || ! preg_match( '/^[A-Za-z0-9_-]+\z/', $value ) ) {
 			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is not valid base64url.' );
@@ -352,6 +465,14 @@ final class GitHubOidc {
 		return $decoded;
 	}
 
+	/**
+	 * Process the audience matches operation in the GitHubOidc component.
+	 *
+	 * @param mixed  $audience Input for the operation.
+	 * @param string $expected Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function audienceMatches( $audience, string $expected ): bool {
 		if ( is_string( $audience ) ) {
 			return hash_equals( $expected, $audience );
@@ -367,6 +488,16 @@ final class GitHubOidc {
 		return false;
 	}
 
+	/**
+	 * Process the integer claim operation in the GitHubOidc component.
+	 *
+	 * @param array  $claims Input for the operation.
+	 * @param string $name Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function integerClaim( array $claims, string $name ): int {
 		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[$name] ) && ! ctype_digit( (string) $claims[$name] ) ) ) {
 			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . $name . '.' );

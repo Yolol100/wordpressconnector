@@ -42,6 +42,11 @@ final class YoastNativeAbilitiesAdapter {
 		'nosnippet', 'schema_page_type', 'schema_article_type',
 	);
 
+	/**
+	 * Register the YoastNativeAbilities adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'yoast.native.capabilities', array( $this, 'capabilities' ), array(
 			'privileged'  => true,
@@ -72,6 +77,16 @@ final class YoastNativeAbilitiesAdapter {
 		) );
 	}
 
+	/**
+	 * Process the capabilities operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function capabilities( array $payload = array(), array $context = array() ): array {
 		if ( Policy::publicRepositoryContext() || ! function_exists( 'current_user_can' )
 			|| ! current_user_can( 'manage_options' ) ) {
@@ -94,6 +109,16 @@ final class YoastNativeAbilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the scores operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function scores( array $payload, array $context = array() ): array {
 		$this->assertPrivate();
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'wpseo_manage_options' ) ) {
@@ -114,6 +139,14 @@ final class YoastNativeAbilitiesAdapter {
 		return array( 'kind' => $kind, 'items' => $result, 'count' => count( $result ) );
 	}
 
+	/**
+	 * Process the inspect operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$id   = $this->assertPostAccess( $payload );
 		$data = $this->postData( $id );
@@ -128,6 +161,16 @@ final class YoastNativeAbilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context = array() ): array {
 		$id         = $this->assertPostAccess( $payload );
 		$fields     = $this->validatedFields( $payload['fields'] ?? null );
@@ -185,6 +228,16 @@ final class YoastNativeAbilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context = array() ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Yoast native restore is rollback-only.' );
@@ -212,6 +265,11 @@ final class YoastNativeAbilitiesAdapter {
 		return array( 'post_id' => $id, 'restored' => true, 'readback_verified' => true );
 	}
 
+	/**
+	 * Ensure private for the YoastNativeAbilities adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPrivate(): void {
 		if ( Policy::publicRepositoryContext() ) {
 			throw new RuntimeException( 'Native Yoast Abilities require a private authenticated transport.' );
@@ -224,6 +282,15 @@ final class YoastNativeAbilitiesAdapter {
 		}
 	}
 
+	/**
+	 * Ensure post access for the YoastNativeAbilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPostAccess( array $payload ): int {
 		$this->assertPrivate();
 		$id = $payload['post_id'] ?? null;
@@ -242,6 +309,15 @@ final class YoastNativeAbilitiesAdapter {
 		return $id;
 	}
 
+	/**
+	 * Process the post data operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param int $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function postData( int $id ): array {
 		$result = $this->invoke( self::ABILITIES['post_read'], array( 'post_id' => $id ) );
 		if ( ! is_array( $result ) ) {
@@ -255,6 +331,16 @@ final class YoastNativeAbilitiesAdapter {
 		return $rows[0];
 	}
 
+	/**
+	 * Process the invoke operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param string $name Input for the operation.
+	 * @param array  $input Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function invoke( string $name, array $input ) {
 		$this->assertPrivate();
 		if ( ! in_array( $name, array_values( self::ABILITIES ), true ) ) {
@@ -275,6 +361,13 @@ final class YoastNativeAbilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the snapshot operation in the YoastNativeAbilities adapter.
+	 *
+	 * @param array $data Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( array $data ): array {
 		$fields = array();
 		foreach ( self::WRITABLE as $name ) {
@@ -283,6 +376,13 @@ final class YoastNativeAbilitiesAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Render ed fields for the YoastNativeAbilities adapter.
+	 *
+	 * @param array $data Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function renderedFields( array $data ): array {
 		$fields = array();
 		foreach ( array( 'seo_title_rendered', 'meta_description_rendered', 'canonical_rendered',
@@ -294,6 +394,15 @@ final class YoastNativeAbilitiesAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Validate d fields for the YoastNativeAbilities adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validatedFields( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::WRITABLE ) ) {
 			throw new RuntimeException( 'Expected 1-15 explicit Yoast metadata fields.' );

@@ -21,6 +21,11 @@ final class WooCommerceFulfillmentAdapter {
 		'shipping_method' => '/wc/v3/shipping/zones',
 		'tax_rate'        => '/wc/v3/taxes',
 	);
+	/**
+	 * Register the WooCommerceFulfillment adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
@@ -31,6 +36,14 @@ final class WooCommerceFulfillmentAdapter {
 		$registry->register( 'woocommerce.fulfillment.restore_created', array( $this, 'restoreCreated' ), $write );
 	}
 
+	/**
+	 * Inspect locations for the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspectLocations( array $payload, array $context = array() ): array {
 		$this->keys( $payload, array( 'zone_id' ) );
 		$path      = $this->locationPath( $payload );
@@ -39,6 +52,16 @@ final class WooCommerceFulfillmentAdapter {
 			'fingerprint' => Fingerprint::make( $locations ) );
 	}
 
+	/**
+	 * Update locations for the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function updateLocations( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'zone_id', 'locations', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
 		$path        = $this->locationPath( $payload );
@@ -65,6 +88,16 @@ final class WooCommerceFulfillmentAdapter {
 		return $result;
 	}
 
+	/**
+	 * Restore locations for the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restoreLocations( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Location restoration is rollback-only.' );
@@ -86,6 +119,16 @@ final class WooCommerceFulfillmentAdapter {
 		return array( 'restored' => true, 'zone_id' => $payload['zone_id'] );
 	}
 
+	/**
+	 * Process the create operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function create( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'type', 'zone_id', 'fields', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
 		$type      = $this->type( $payload );
@@ -156,6 +199,16 @@ final class WooCommerceFulfillmentAdapter {
 		return $result;
 	}
 
+	/**
+	 * Restore created for the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restoreCreated( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Created resources may only be restored through connector rollback.' );
@@ -184,6 +237,16 @@ final class WooCommerceFulfillmentAdapter {
 		return array( 'restored_created_resource' => true, 'type' => $type, 'id' => $id );
 	}
 
+	/**
+	 * Process the creation fields operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param string $type Input for the operation.
+	 * @param mixed  $fields Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function creationFields( string $type, $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 9 )
 			throw new RuntimeException( 'WooCommerce provisioning requires explicit bounded fields.' );
@@ -243,6 +306,13 @@ final class WooCommerceFulfillmentAdapter {
 		return $clean;
 	}
 
+	/**
+	 * Process the location snapshot operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $response Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function locationSnapshot( array $response ): array {
 		$result = array();
 		foreach ( $response as $value ){
@@ -254,6 +324,16 @@ final class WooCommerceFulfillmentAdapter {
 		return $this->normalizeLocations( $result, true );
 	}
 
+	/**
+	 * Normalize locations for the WooCommerceFulfillment adapter.
+	 *
+	 * @param mixed $locations Input for the operation.
+	 * @param bool  $allowEmpty Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function normalizeLocations( $locations, bool $allowEmpty ): array {
 		if ( ! is_array( $locations ) || count( $locations ) > 100 || ( ! $allowEmpty && ! $locations ) )
 			throw new RuntimeException( 'Locations require 1-100 allowed entries.' );
@@ -272,6 +352,14 @@ final class WooCommerceFulfillmentAdapter {
 		return array_values( $result );
 	}
 
+	/**
+	 * Process the inventory snapshot operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param string $type Input for the operation.
+	 * @param array  $data Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function inventorySnapshot( string $type, array $data ): array {
 		$out = array();
 		foreach ( $data as $item ){
@@ -283,6 +371,14 @@ final class WooCommerceFulfillmentAdapter {
 		return $out;
 	}
 
+	/**
+	 * Process the resource snapshot operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param string $type Input for the operation.
+	 * @param array  $item Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function resourceSnapshot( string $type, array $item ): array {
 		$keys = $type === 'shipping_zone' ? array( 'id', 'name', 'order' )
 			: ( $type === 'shipping_method' ? array( 'instance_id', 'method_id', 'order', 'enabled' )
@@ -297,6 +393,14 @@ final class WooCommerceFulfillmentAdapter {
 		return $out;
 	}
 
+	/**
+	 * Process the gate operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array  $payload Requested action payload.
+	 * @param string $fingerprint Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function gate( array $payload, string $fingerprint ): void {
 		if ( ! defined( 'WPCONNECTOR_ALLOW_WOO_CRITICAL' ) || WPCONNECTOR_ALLOW_WOO_CRITICAL !== true
  || ( $payload['critical_confirm'] ?? null ) !== true || ( $payload['restore_verified'] ?? null ) !== true )
@@ -307,6 +411,15 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'WooCommerce provisioning preflight fingerprint does not match current state.' );
 	}
 
+	/**
+	 * Process the type operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function type( array $payload ): string {
 		$type = $payload['type'] ?? null;
 		if ( ! is_string( $type ) || ! isset( self::TYPES[ $type ] ) ) {
@@ -314,6 +427,16 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		return $type;
 	}
+	/**
+	 * Collect ion path for the WooCommerceFulfillment adapter.
+	 *
+	 * @param string $type Input for the operation.
+	 * @param array  $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function collectionPath( string $type, array $payload ): string {
 		$path = self::TYPES[ $type ];
 		if ( $type === 'shipping_method' ) {
@@ -323,21 +446,58 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		return $path;
 	}
+	/**
+	 * Process the location path operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 */
 	private function locationPath( array $payload ): string {
 		return '/wc/v3/shipping/zones/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/locations';
 	}
+	/**
+	 * Process the positive operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param mixed  $id Input for the operation.
+	 * @param string $name Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function positive( $id, string $name ): int {
 		if ( ! is_int( $id ) || $id < 1 || $id > 2147483647 ) {
 			throw new RuntimeException( $name . ' must be a positive integer.' );
 		}
 		return $id;
 	}
+	/**
+	 * Process the keys operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $allowed Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function keys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Unexpected WooCommerce provisioning arguments.' );
 		}
 	}
 
+	/**
+	 * Process the api operation in the WooCommerceFulfillment adapter.
+	 *
+	 * @param string $method Input for the operation.
+	 * @param string $path Input for the operation.
+	 * @param array  $body Input for the operation.
+	 * @param bool   $listBody Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function api( string $method, string $path, array $body = array(), bool $listBody = false ): array {
 		if ( ! class_exists( 'WP_REST_Request' ) || ! function_exists( 'rest_do_request' ) )
 			throw new RuntimeException( 'WooCommerce REST API unavailable.' );

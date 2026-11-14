@@ -22,6 +22,11 @@ final class CacheMaintenanceAdapter {
 	private const ASSET_CLEANUP_TOKEN_PREFIX = 'wpconnector_ac_flush_';
 	private const ASSET_CLEANUP_TOKEN_TTL = 60;
 
+	/**
+	 * Register the CacheMaintenance adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		add_action( 'admin_post_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array( $this, 'handleAssetCleanupLoopback' ) );
 		add_action( 'admin_post_nopriv_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array( $this, 'handleAssetCleanupLoopback' ) );
@@ -41,6 +46,14 @@ final class CacheMaintenanceAdapter {
 		) );
 	}
 
+	/**
+	 * Process the capabilities operation in the CacheMaintenance adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function capabilities( array $payload = array(), array $context = array() ): array {
 		$layers = array();
 		foreach ( self::LAYERS as $layer ) {
@@ -53,6 +66,16 @@ final class CacheMaintenanceAdapter {
 		);
 	}
 
+	/**
+	 * Process the flush operation in the CacheMaintenance adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function flush( array $payload, array $context ): array {
 		$layer = isset( $payload['layer'] ) ? sanitize_key( (string) $payload['layer'] ) : '';
 		if ( ! in_array( $layer, self::LAYERS, true ) ) {
@@ -140,6 +163,13 @@ final class CacheMaintenanceAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the layer state operation in the CacheMaintenance adapter.
+	 *
+	 * @param string $layer Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function layerState( string $layer ): array {
 		if ( 'elementor' === $layer ) {
 			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
@@ -170,6 +200,13 @@ final class CacheMaintenanceAdapter {
 		);
 	}
 
+	/**
+	 * Process the flush elementor operation in the CacheMaintenance adapter.
+	 *
+	 * @return bool Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function flushElementor(): bool {
 		$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 		$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
@@ -192,6 +229,13 @@ final class CacheMaintenanceAdapter {
 		return $verified;
 	}
 
+	/**
+	 * Process the flush wp rocket operation in the CacheMaintenance adapter.
+	 *
+	 * @return bool Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function flushWpRocket(): bool {
 		if ( ! function_exists( 'rocket_clean_domain' ) ) {
 			throw new RuntimeException( 'WP Rocket cache API is unavailable.' );
@@ -232,6 +276,11 @@ final class CacheMaintenanceAdapter {
 		return $fallbackVerified;
 	}
 
+	/**
+	 * Process the flush asset cleanup operation in the CacheMaintenance adapter.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function flushAssetCleanup(): bool {
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
 			return $this->flushAssetCleanupViaLoopback();
@@ -240,6 +289,13 @@ final class CacheMaintenanceAdapter {
 		return $this->flushAssetCleanupDirect();
 	}
 
+	/**
+	 * Process the flush asset cleanup via loopback operation in the CacheMaintenance adapter.
+	 *
+	 * @return bool Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function flushAssetCleanupViaLoopback(): bool {
 		$token     = bin2hex( random_bytes( 32 ) );
 		$key       = substr( hash( 'sha256', $token ), 0, 32 );
@@ -285,6 +341,9 @@ final class CacheMaintenanceAdapter {
 			&& true === ( $decoded['data']['verified'] ?? false );
 	}
 
+	/**
+	 * Process the handle asset cleanup loopback operation in the CacheMaintenance adapter.
+	 */
 	public function handleAssetCleanupLoopback(): void {
 		$method = $_SERVER['REQUEST_METHOD'] ?? null;
 		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method ) ) {
@@ -329,6 +388,14 @@ final class CacheMaintenanceAdapter {
 		) );
 	}
 
+	/**
+	 * Process the loopback hex header operation in the CacheMaintenance adapter.
+	 *
+	 * @param string $headerName Input for the operation.
+	 * @param int    $length Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function loopbackHexHeader( string $headerName, int $length ): string {
 		$raw = $_SERVER[ $headerName ] ?? null;
 
@@ -340,6 +407,13 @@ final class CacheMaintenanceAdapter {
 		return strtolower( $raw );
 	}
 
+	/**
+	 * Process the flush asset cleanup direct operation in the CacheMaintenance adapter.
+	 *
+	 * @return bool Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function flushAssetCleanupDirect(): bool {
 		$class  = $this->ensureAssetCleanupClass();
 		$method = '';
@@ -392,6 +466,11 @@ final class CacheMaintenanceAdapter {
 		return $verifiedByHook || $timestampVerified;
 	}
 
+	/**
+	 * Ensure asset cleanup class for the CacheMaintenance adapter.
+	 *
+	 * @return string Operation result.
+	 */
 	private function ensureAssetCleanupClass(): string {
 		$class = 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCommon';
 		if ( class_exists( $class ) ) {
@@ -447,6 +526,11 @@ final class CacheMaintenanceAdapter {
 		return class_exists( $class ) ? $class : '';
 	}
 
+	/**
+	 * Process the count asset cleanup json files operation in the CacheMaintenance adapter.
+	 *
+	 * @return int Operation result.
+	 */
 	private function countAssetCleanupJsonFiles(): int {
 		$directory = defined( 'WP_CONTENT_DIR' )
 			? rtrim( (string) WP_CONTENT_DIR, '/\\' ) . '/cache/asset-cleanup'
@@ -477,6 +561,13 @@ final class CacheMaintenanceAdapter {
 		return $count;
 	}
 
+	/**
+	 * Process the rebuild mode operation in the CacheMaintenance adapter.
+	 *
+	 * @param string $layer Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function rebuildMode( string $layer ): string {
 		if ( 'elementor' === $layer ) {
 			return 'regenerate_on_next_page_request';

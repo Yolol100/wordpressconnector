@@ -16,6 +16,11 @@ use Webactueel\WordPressConnector\Security\Policy;
  * Registers and handles Discovery connector actions.
  */
 final class DiscoveryAdapter {
+	/**
+	 * Register the Discovery adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'connector.discover', array( $this, 'discover' ), array(
 			'description' => 'Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities.',
@@ -27,6 +32,14 @@ final class DiscoveryAdapter {
 		) );
 	}
 
+	/**
+	 * Process the discover operation in the Discovery adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function discover( array $payload, array $context ): array {
 		global $wp_version;
 
@@ -274,6 +287,17 @@ final class DiscoveryAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the rest catalog positive integer operation in the Discovery adapter.
+	 *
+	 * @param mixed  $value Input for the operation.
+	 * @param int    $maximum Input for the operation.
+	 * @param string $field Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function restCatalogPositiveInteger( $value, int $maximum, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) ||
 			1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {

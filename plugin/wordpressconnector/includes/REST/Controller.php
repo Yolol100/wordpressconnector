@@ -26,13 +26,25 @@ final class Controller {
 	private Runner $runner;
 	private AssetStore $assets;
 
+	/**
+	 * Initialize the Controller component dependencies.
+	 *
+	 * @param Runner     $runner Input for the operation.
+	 * @param AssetStore $assets Input for the operation.
+	 */
 	public function __construct( Runner $runner, AssetStore $assets ) {
 		$this->runner = $runner;
 		$this->assets = $assets;
 	}
 
+	/**
+	 * Register the Controller component actions and handlers.
+	 */
 	public function register(): void { add_action( 'rest_api_init', array( $this, 'registerRoutes' ) ); }
 
+	/**
+	 * Process the register routes operation in the Controller component.
+	 */
 	public function registerRoutes(): void {
 		register_rest_route( self::NAMESPACE, '/presence', array(
 			'methods'             => \WP_REST_Server::READABLE,
@@ -60,11 +72,25 @@ final class Controller {
 		) );
 	}
 
+	/**
+	 * Process the allow presence operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	public function allowPresence( \WP_REST_Request $request ) {
 		if ( ! is_ssl() ) { return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector presence requires HTTPS.', array( 'status' => 403 ) ); }
 		return true;
 	}
 
+	/**
+	 * Process the authorize operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	public function authorize( \WP_REST_Request $request ) {
 		if ( ! is_ssl() ) { return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector REST transport requires HTTPS.', array( 'status' => 403 ) ); }
 		if ( ! is_user_logged_in() ) {
@@ -87,10 +113,24 @@ final class Controller {
 		return true;
 	}
 
+	/**
+	 * Process the presence operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return \WP_REST_Response Operation result.
+	 */
 	public function presence( \WP_REST_Request $request ): \WP_REST_Response {
 		return new \WP_REST_Response( array( 'ok' => true, 'connector' => 'webactueel-wordpress-connector', 'zero_config' => true, 'auth' => 'github-actions-oidc' ), 200 );
 	}
 
+	/**
+	 * Process the health operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return \WP_REST_Response Operation result.
+	 */
 	public function health( \WP_REST_Request $request ): \WP_REST_Response {
 		return new \WP_REST_Response( array(
 			'ok'                     => true, 'transport' => 'rest', 'version' => defined( 'WPCONNECTOR_VERSION' )?WPCONNECTOR_VERSION:null, 'user_id' => get_current_user_id(),
@@ -107,6 +147,13 @@ final class Controller {
 		), 200 );
 	}
 
+	/**
+	 * Process the upload asset operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	public function uploadAsset( \WP_REST_Request $request ) {
 		$files = $request->get_file_params();
 		if ( ! isset( $files['file'] ) || ! is_array( $files['file'] ) ) {
@@ -148,6 +195,13 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Process the execute operation in the Controller component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	public function execute( \WP_REST_Request $request ) {
 		$body = (string) $request->get_body();
 		if ( '' === $body || strlen( $body ) > self::MAX_REQUEST_BYTES ) {
@@ -192,7 +246,21 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Validate request id for the Controller component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	public function validateRequestId( $value ): bool { return is_string( $value ) && (bool)preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value ); }
+	/**
+	 * Validate asset path for the Controller component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	public function validateAssetPath( $value ): bool {
 		if ( ! is_string( $value ) || '' === $value || strlen( $value )>240 || '/' === $value[0] || false !== strpos( $value, '\\' ) ) { return false; }
 		foreach ( explode( '/', $value ) as $segment ) {

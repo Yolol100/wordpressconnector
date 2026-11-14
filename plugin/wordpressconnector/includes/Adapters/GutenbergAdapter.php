@@ -19,12 +19,24 @@ use Webactueel\WordPressConnector\Support\Input;
  * Registers and handles Gutenberg connector actions.
  */
 final class GutenbergAdapter {
+	/**
+	 * Register the Gutenberg adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'gutenberg.inspect', array( $this, 'inspect' ), array( 'description' => 'Parse Gutenberg/block content into a block tree.' ) );
 		$registry->register( 'gutenberg.replace', array( $this, 'replace' ), array( 'mutation' => true, 'description' => 'Replace the entire serialized block document.' ) );
 		$registry->register( 'gutenberg.patch', array( $this, 'patch' ), array( 'mutation' => true, 'description' => 'Patch one block by nested numeric path.' ) );
 	}
 
+	/**
+	 * Process the inspect operation in the Gutenberg adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload ): array {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
@@ -36,6 +48,16 @@ final class GutenbergAdapter {
 		);
 	}
 
+	/**
+	 * Process the replace operation in the Gutenberg adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function replace( array $payload, array $context ): array {
 		$post = $this->post( $payload );
 		$beforeContent = (string) $post->post_content;
@@ -70,6 +92,16 @@ final class GutenbergAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the patch operation in the Gutenberg adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function patch( array $payload, array $context ): array {
 		$post = $this->post( $payload );
 		$beforeContent = (string) $post->post_content;
@@ -124,6 +156,15 @@ final class GutenbergAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the post operation in the Gutenberg adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return \WP_Post Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function post( array $payload ): \WP_Post {
 		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $post instanceof \WP_Post ) {
@@ -133,6 +174,16 @@ final class GutenbergAdapter {
 		return $post;
 	}
 
+	/**
+	 * Process the block by path operation in the Gutenberg adapter.
+	 *
+	 * @param array $blocks Value updated by reference.
+	 * @param array $path Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function &blockByPath( array &$blocks, array $path ): array {
 		$current =& $blocks;
 		foreach ( $path as $depth => $index ) {

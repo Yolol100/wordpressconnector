@@ -20,6 +20,17 @@ final class AssetStore {
 	private const MAX_TOTAL_BYTES = 26214400;
 	private const MAX_FILE_BYTES = 20971520;
 
+	/**
+	 * Process the put operation in the AssetStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 * @param string $relativePath Input for the operation.
+	 * @param array  $file Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function put( string $requestId, string $relativePath, array $file ): array {
 		$this->assertRequestId( $requestId );
 		$relativePath = $this->normalizeRelativePath( $relativePath );
@@ -80,6 +91,16 @@ final class AssetStore {
 		);
 	}
 
+	/**
+	 * Process the root for request operation in the AssetStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 * @param bool   $create Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function rootForRequest( string $requestId, bool $create = false ): string {
 		$this->assertRequestId( $requestId );
 		$base      = $this->baseRoot( $create );
@@ -98,6 +119,11 @@ final class AssetStore {
 		return $directory;
 	}
 
+	/**
+	 * Process the cleanup operation in the AssetStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 */
 	public function cleanup( string $requestId ): void {
 		$directory = $this->rootForRequest( $requestId, false );
 		if ( is_dir( $directory ) ) {
@@ -105,6 +131,11 @@ final class AssetStore {
 		}
 	}
 
+	/**
+	 * Clean up expired for the AssetStore component.
+	 *
+	 * @param int $olderThanSeconds Input for the operation.
+	 */
 	public function cleanupExpired( int $olderThanSeconds = DAY_IN_SECONDS ): void {
 		$base = $this->baseRoot( false );
 		if ( ! is_dir( $base ) ) {
@@ -125,6 +156,15 @@ final class AssetStore {
 		}
 	}
 
+	/**
+	 * Process the allowed file type operation in the AssetStore component.
+	 *
+	 * @param string $relativePath Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function allowedFileType( string $relativePath ): array {
 		$basename = basename( $relativePath );
 		$fileType = wp_check_filetype( $basename, get_allowed_mime_types() );
@@ -142,6 +182,15 @@ final class AssetStore {
 		throw new RuntimeException( 'Asset extension is not an allowed WordPress media type or connector plugin/theme package.' );
 	}
 
+	/**
+	 * Process the base root operation in the AssetStore component.
+	 *
+	 * @param bool $create Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function baseRoot( bool $create ): string {
 		$configured = defined( 'WPCONNECTOR_ASSET_ROOT' ) ? trim( (string) constant( 'WPCONNECTOR_ASSET_ROOT' ) ) : '';
 		if ( '' !== $configured ) {
@@ -179,6 +228,13 @@ final class AssetStore {
 		return $base;
 	}
 
+	/**
+	 * Ensure outside web root for the AssetStore component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertOutsideWebRoot( string $path ): void {
 		$webRoot = defined( 'ABSPATH' ) ? realpath( ABSPATH ) : false;
 		if ( false === $webRoot ) {
@@ -202,10 +258,24 @@ final class AssetStore {
 		}
 	}
 
+	/**
+	 * Check whether absolute path for the AssetStore component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function isAbsolutePath( string $path ): bool {
 		return '/' === substr( $path, 0, 1 ) || 1 === preg_match( '/^[A-Za-z]:[\\\\\/]/', $path );
 	}
 
+	/**
+	 * Process the usage operation in the AssetStore component.
+	 *
+	 * @param string $root Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function usage( string $root ): array {
 		$files = 0;
 		$bytes = 0;
@@ -225,6 +295,15 @@ final class AssetStore {
 		return array( 'files' => $files, 'bytes' => $bytes );
 	}
 
+	/**
+	 * Normalize relative path for the AssetStore component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function normalizeRelativePath( string $path ): string {
 		if ( '' === $path || strlen( $path ) > 240 || preg_match( '/[\x00-\x20\x7F]/', $path ) || '/' === $path[0] || false !== strpos( $path, '\\' ) ) {
 			throw new RuntimeException( 'asset_path must be a short relative path without whitespace or control characters.' );
@@ -243,12 +322,26 @@ final class AssetStore {
 		return implode( '/', $segments );
 	}
 
+	/**
+	 * Ensure request id for the AssetStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertRequestId( string $requestId ): void {
 		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId ) ) {
 			throw new RuntimeException( 'request_id must be 8-100 safe characters.' );
 		}
 	}
 
+	/**
+	 * Remove tree for the AssetStore component.
+	 *
+	 * @param string $directory Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function removeTree( string $directory ): void {
 		if ( is_link( $directory ) ) {
 			throw new RuntimeException( 'Refusing symbolic link request asset root.' );

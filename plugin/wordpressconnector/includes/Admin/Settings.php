@@ -19,6 +19,9 @@ final class Settings {
 	private const PAGE = 'wordpressconnector';
 	private const DIRECT_MCP_PASSWORD_LABEL = 'WordPress Connector - Direct MCP';
 
+	/**
+	 * Register the Settings component actions and handlers.
+	 */
 	public function register(): void {
 		if ( ! is_admin() ) { return; }
 		add_action( 'admin_menu', array( $this, 'registerPage' ) );
@@ -28,6 +31,9 @@ final class Settings {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueConnectionDoctor' ) );
 	}
 
+	/**
+	 * Process the unpaired notice operation in the Settings component.
+	 */
 	public function unpairedNotice(): void {
 		if ( ! current_user_can( 'manage_options' ) || SitePairing::pairedAdministratorId() ) {
 			return;
@@ -39,6 +45,9 @@ final class Settings {
 		echo '</p></div>';
 	}
 
+	/**
+	 * Process the register page operation in the Settings component.
+	 */
 	public function registerPage(): void {
 		add_options_page( 'WordPress Connector', 'WordPress Connector', 'manage_options', self::PAGE, array( $this, 'renderPage' ) );
 	}
@@ -65,6 +74,9 @@ final class Settings {
 		) );
 	}
 
+	/**
+	 * Process the save site pairing operation in the Settings component.
+	 */
 	public function saveSitePairing(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Only a site administrator can authorize the Connector.', 'wordpressconnector' ) );
@@ -172,6 +184,9 @@ final class Settings {
 			array( 'response' => 200, 'back_link' => false ) );
 	}
 
+	/**
+	 * Render page for the Settings component.
+	 */
 	public function renderPage(): void {
 		if ( ! current_user_can( 'manage_options' ) ) { return; }
 
@@ -340,6 +355,11 @@ final class Settings {
 		echo esc_html__( 'An installed backup plugin, the WordPress temporary update backup, or a green CI run are not proof that a complete site can be restored.', 'wordpressconnector' ) . '</p>';
 	}
 
+	/**
+	 * Process the legacy bridge active operation in the Settings component.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function legacyBridgeActive(): bool {
 		if ( class_exists( 'Webactueel\\ElementorJsonBridge\\Plugin' ) ) { return true; }
 		if ( ! function_exists( 'is_plugin_active' ) ) { require_once ABSPATH . 'wp-admin/includes/plugin.php'; }

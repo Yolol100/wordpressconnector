@@ -18,6 +18,11 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Media connector actions.
  */
 final class MediaAdapter {
+	/**
+	 * Register the Media adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'media.list', array( $this, 'mediaList' ), array( 'description' => 'List media attachments.' ) );
 		$registry->register( 'media.get', array( $this, 'mediaGet' ), array( 'description' => 'Read one media attachment and metadata.' ) );
@@ -28,6 +33,13 @@ final class MediaAdapter {
 		$registry->register( 'media.regenerate', array( $this, 'mediaRegenerate' ), array( 'mutation' => true, 'description' => 'Regenerate attachment metadata and image subsizes.' ) );
 	}
 
+	/**
+	 * Process the media list operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	public function mediaList( array $payload ): array {
 		$query = new \WP_Query( array(
 			'post_type'      => 'attachment',
@@ -53,6 +65,13 @@ final class MediaAdapter {
 		return array( 'media' => $items, 'total' => (int) $query->found_posts, 'pages' => (int) $query->max_num_pages );
 	}
 
+	/**
+	 * Process the media get operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	public function mediaGet( array $payload ): array {
 		$id   = $this->attachmentId( $payload );
 		$post = get_post( $id );
@@ -61,6 +80,16 @@ final class MediaAdapter {
 		return array( 'media' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
 
+	/**
+	 * Process the media import operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function mediaImport( array $payload, array $context ): array {
 		if ( ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Uploading media requires upload_files permission.' );
@@ -134,6 +163,16 @@ final class MediaAdapter {
 		);
 	}
 
+	/**
+	 * Process the media update operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function mediaUpdate( array $payload, array $context ): array {
 		$id = $this->attachmentId( $payload );
 		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_post', $id ) ) {
@@ -160,6 +199,16 @@ final class MediaAdapter {
 	}
 
 
+	/**
+	 * Process the media rename operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function mediaRename( array $payload, array $context ): array {
 		$id = $this->attachmentId( $payload );
 		if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'upload_files' ) ) {
@@ -304,6 +353,16 @@ final class MediaAdapter {
 		}
 	}
 
+	/**
+	 * Process the media assign operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
 		$targetId    = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
@@ -416,6 +475,16 @@ final class MediaAdapter {
 		}
 	}
 
+	/**
+	 * Process the media regenerate operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function mediaRegenerate( array $payload, array $context ): array {
 		$id = $this->attachmentId( $payload );
 		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_post', $id ) ) {
@@ -440,6 +509,15 @@ final class MediaAdapter {
 		return array( 'attachment_id' => $id, 'metadata' => wp_get_attachment_metadata( $id ), 'rollback_supported' => false );
 	}
 
+	/**
+	 * Process the attachment id operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function attachmentId( array $payload ): int {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
@@ -449,6 +527,15 @@ final class MediaAdapter {
 		return $id;
 	}
 
+	/**
+	 * Process the snapshot operation in the Media adapter.
+	 *
+	 * @param int $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function snapshot( int $id ): array {
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
@@ -468,6 +555,13 @@ final class MediaAdapter {
 		);
 	}
 
+	/**
+	 * Process the apply update operation in the Media adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function applyUpdate( array $payload ): void {
 		$id          = $this->attachmentId( $payload );
 		$post_fields = array( 'ID' => $id );

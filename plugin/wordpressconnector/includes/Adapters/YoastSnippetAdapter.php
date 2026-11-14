@@ -24,6 +24,11 @@ final class YoastSnippetAdapter {
 		'description' => '_yoast_wpseo_metadesc',
 	);
 
+	/**
+	 * Register the YoastSnippet adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'yoast.snippet.inspect', array( $this, 'inspect' ), array(
 			'privileged'             => true,
@@ -43,6 +48,16 @@ final class YoastSnippetAdapter {
 		) );
 	}
 
+	/**
+	 * Process the target operation in the YoastSnippet adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param bool  $edit Input for the operation.
+	 *
+	 * @return \WP_Post Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function target( array $payload, bool $edit ): \WP_Post {
 		if ( ! isset( $payload['id'] ) || ! is_int( $payload['id'] ) || $payload['id'] < 1 ) {
 			throw new RuntimeException( 'Snippet target requires a positive integer id.' );
@@ -61,6 +76,13 @@ final class YoastSnippetAdapter {
 		return $post;
 	}
 
+	/**
+	 * Process the fields operation in the YoastSnippet adapter.
+	 *
+	 * @param int $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function fields( int $id ): array {
 		$values = array();
 		foreach ( self::KEYS as $key => $meta ) {
@@ -70,11 +92,28 @@ final class YoastSnippetAdapter {
 		return $values;
 	}
 
+	/**
+	 * Process the state operation in the YoastSnippet adapter.
+	 *
+	 * @param int $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function state( int $id ): array {
 		return array( 'post_id' => $id, 'fields' => $this->fields( $id ) );
 	}
 
 	/** Shared server-side validation; request/runner also validate independently. */
+	/**
+	 * Validate fields for the YoastSnippet adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 * @param bool  $restore Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function validateFields( $fields, bool $restore = false ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 2 || array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {
 			throw new RuntimeException( 'Snippet fields must be a nonempty title/description object.' );
@@ -103,6 +142,16 @@ final class YoastSnippetAdapter {
 		return $validated;
 	}
 
+	/**
+	 * Process the inspect operation in the YoastSnippet adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		if ( array_keys( $payload ) !== array( 'id' ) ) {
 			throw new RuntimeException( 'Snippet inspect accepts only id.' );
@@ -116,6 +165,16 @@ final class YoastSnippetAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the YoastSnippet adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'fields' ) ) ) {
 			throw new RuntimeException( 'Snippet update accepts only id and fields.' );
@@ -165,6 +224,16 @@ final class YoastSnippetAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the YoastSnippet adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) || array_diff( array_keys( $payload ), array( 'id', 'fields', 'expected_after_fingerprint' ) ) ) {
 			throw new RuntimeException( 'Snippet restore is reserved for guarded rollback.' );

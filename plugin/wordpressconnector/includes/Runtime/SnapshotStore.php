@@ -15,6 +15,15 @@ namespace Webactueel\WordPressConnector\Runtime;
 final class SnapshotStore {
 	private const PREFIX = 'wpconnector_snapshot_';
 
+	/**
+	 * Process the put operation in the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 * @param array  $rollback Input for the operation.
+	 * @param array  $metadata Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function put( string $requestId, array $rollback, array $metadata = array() ): void {
 		$key = self::key( $requestId );
 		$record = array(
@@ -29,11 +38,25 @@ final class SnapshotStore {
 		}
 	}
 
+	/**
+	 * Process the get operation in the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	public function get( string $requestId ): ?array {
 		$record = $this->getRecord( $requestId );
 		return is_array( $record ) && isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : null;
 	}
 
+	/**
+	 * Retrieve record for the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	public function getRecord( string $requestId ): ?array {
 		$value = get_option( self::key( $requestId ), null );
 		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
@@ -47,10 +70,24 @@ final class SnapshotStore {
 		);
 	}
 
+	/**
+	 * Process the delete operation in the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 */
 	public function delete( string $requestId ): void {
 		delete_option( self::key( $requestId ) );
 	}
 
+	/**
+	 * Process the cleanup operation in the SnapshotStore component.
+	 *
+	 * @param int $olderThanSeconds Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function cleanup( int $olderThanSeconds ): int {
 		global $wpdb;
 		$like = $wpdb->esc_like( self::PREFIX ) . '%';
@@ -91,6 +128,13 @@ final class SnapshotStore {
 		return $deleted;
 	}
 
+	/**
+	 * Process the key operation in the SnapshotStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private static function key( string $requestId ): string {
 		return self::PREFIX . hash( 'sha256', $requestId );
 	}

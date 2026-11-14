@@ -38,6 +38,11 @@ final class AutoImageAttributesAdapter {
 		'bu_description_location_ml',
 	);
 
+	/**
+	 * Register the AutoImageAttributes adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'auto_image_attributes.inspect', array( $this, 'inspect' ), array(
 			'privileged' => true,
@@ -50,6 +55,14 @@ final class AutoImageAttributesAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the AutoImageAttributes adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		$fields = $this->snapshot();
 		return array(
@@ -60,6 +73,16 @@ final class AutoImageAttributesAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the AutoImageAttributes adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$updates = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
 		if ( ! $updates ) {
@@ -121,6 +144,13 @@ final class AutoImageAttributesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the snapshot operation in the AutoImageAttributes adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function snapshot(): array {
 		$raw = function_exists( 'iaff_get_settings' ) ? iaff_get_settings() : get_option( 'iaff_settings', array() );
 		if ( ! is_array( $raw ) ) {
@@ -136,6 +166,15 @@ final class AutoImageAttributesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the boolean string operation in the AutoImageAttributes adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function booleanString( $value ): string {
 		if ( true === $value || 1 === $value || '1' === $value || 'true' === strtolower( (string) $value ) || 'yes' === strtolower( (string) $value ) || 'on' === strtolower( (string) $value ) ) {
 			return '1';

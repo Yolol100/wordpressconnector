@@ -32,6 +32,11 @@ final class PortfolioStatsAdapter {
 
 	private const ALLOWED_POST_STATUSES = array( 'publish', 'draft', 'pending', 'private', 'future' );
 
+	/**
+	 * Register the PortfolioStats adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'acf.portfolio_stats_update', array( $this, 'update' ), array(
 			'mutation' => true,
@@ -46,6 +51,17 @@ final class PortfolioStatsAdapter {
 	}
 
 
+	/**
+	 * Update case text for the PortfolioStats adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation cannot be completed safely.
+	 */
 	public function updateCaseText( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'content', 'description_1', 'description_2' ), true ) ) {
@@ -166,6 +182,17 @@ final class PortfolioStatsAdapter {
 	}
 
 
+	/**
+	 * Process the update operation in the PortfolioStats adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'fields' ), true ) ) {

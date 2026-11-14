@@ -18,6 +18,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  * request payloads, credentials or URLs into diagnostic metadata.
  */
 final class Diagnostics {
+	/**
+	 * Process the classify operation in the Diagnostics component.
+	 *
+	 * @param string $message Input for the operation.
+	 * @param bool   $mutating Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	public static function classify( string $message, bool $mutating = false ): array {
 		$msg        = strtolower( substr( $message, 0, 1000 ) );
 		$category   = 'unknown_failure';
@@ -88,6 +96,14 @@ final class Diagnostics {
 		);
 	}
 
+	/**
+	 * Process the has operation in the Diagnostics component.
+	 *
+	 * @param string $message Input for the operation.
+	 * @param array  $needles Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private static function has( string $message, array $needles ): bool {
 		foreach ( $needles as $needle ) {
 			if ( false !== strpos( $message, $needle ) ) {

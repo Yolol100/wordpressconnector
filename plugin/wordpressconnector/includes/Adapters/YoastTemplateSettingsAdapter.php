@@ -36,12 +36,25 @@ final class YoastTemplateSettingsAdapter {
 		'breadcrumb_search_prefix'     => 'breadcrumbs-searchprefix', 'breadcrumb_404_label' => 'breadcrumbs-404crumb',
 		'product_category_title'       => 'title-tax-product_cat',
 		'product_category_description' => 'metadesc-tax-product_cat' );
+	/**
+	 * Register the YoastTemplateSettings adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$security = array( 'privileged' => true, 'capability' => 'manage_options' );
 		$registry->register( 'yoast.templates.inspect', array( $this, 'inspect' ), $security );
 		$registry->register( 'yoast.templates.update', array( $this, 'update' ), array_merge( $security, array( 'mutation' => true ) ) );
 		$registry->register( 'yoast.templates.restore', array( $this, 'restore' ), array_merge( $security, array( 'mutation' => true ) ) );
 	}
+	/**
+	 * Process the inspect operation in the YoastTemplateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		$fields = $this->snapshot();
 		if ( Policy::publicRepositoryContext() ) {
@@ -49,6 +62,16 @@ final class YoastTemplateSettingsAdapter {
 		}
 		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
 	}
+	/**
+	 * Process the update operation in the YoastTemplateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$changes = $this->validateFields( $payload['fields'] ?? null, false );
 		$this->assertProviderSupportsFields( $changes );
@@ -78,6 +101,16 @@ final class YoastTemplateSettingsAdapter {
 			'expected_after_fingerprint' => Fingerprint::make( $verified ) ) );
 		return $result;
 	}
+	/**
+	 * Process the restore operation in the YoastTemplateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Rollback only.' );
@@ -103,6 +136,16 @@ final class YoastTemplateSettingsAdapter {
 			throw new RuntimeException( 'Yoast template rollback readback mismatch.' );
 		return array( 'restored' => true );
 	}
+	/**
+	 * Validate fields for the YoastTemplateSettings adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 * @param bool  $restore Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateFields( $fields, bool $restore ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields )>count( self::KEYS ) )
 			throw new RuntimeException( 'Expected bounded template fields.' );
@@ -130,6 +173,13 @@ final class YoastTemplateSettingsAdapter {
 		}
 		return $clean;
 	}
+	/**
+	 * Ensure provider supports fields for the YoastTemplateSettings adapter.
+	 *
+	 * @param array $changes Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertProviderSupportsFields( array $changes ): void {
 		if ( Policy::publicRepositoryContext() ) {
 			// Public GitHub requests are deliberately narrower than the private
@@ -169,6 +219,13 @@ final class YoastTemplateSettingsAdapter {
 		}
 	}
 
+	/**
+	 * Process the options operation in the YoastTemplateSettings adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function options(): array {
 		$value = get_option( 'wpseo_titles', null );
 		if ( ! is_array( $value ) ) {
@@ -176,6 +233,11 @@ final class YoastTemplateSettingsAdapter {
 		}
 		return $value;
 	}
+	/**
+	 * Process the snapshot operation in the YoastTemplateSettings adapter.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot(): array {
 		$opts = $this->options();$fields = array();
 		foreach ( self::KEYS as $key => $option )$fields[ $key ] = isset( $opts[ $option ] )?(string)$opts[ $option ]:null;

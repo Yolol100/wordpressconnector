@@ -22,6 +22,11 @@ final class CodeSnippetsAdapter {
 	private const CATALOG_NAME = 'Webactueel | WooCommerce Catalogue (No Orders)';
 	private const CATALOG_MARKER = 'WAB_CATALOG_ONLY_2026';
 
+	/**
+	 * Register the CodeSnippets adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 
 		$registry->register( 'code_snippets.catalog_only.inspect', array( $this, 'catalogOnlyInspect' ), array(
@@ -50,6 +55,13 @@ final class CodeSnippetsAdapter {
 	}
 
 
+	/**
+	 * Process the catalog code operation in the CodeSnippets adapter.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function catalogCode(): string {
 		$path = __DIR__ . '/../Presets/woocommerce-catalog-no-orders.txt';
 		$code = is_file( $path ) ? file_get_contents( $path ) : false;
@@ -61,6 +73,11 @@ final class CodeSnippetsAdapter {
 		return trim( $code );
 	}
 
+	/**
+	 * Process the catalog provider operation in the CodeSnippets adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function catalogProvider(): void {
 		$this->assertAvailable();
 		if ( ! current_user_can( 'manage_options' ) || ! class_exists( \Code_Snippets\Model\Snippet::class ) ) {
@@ -73,6 +90,13 @@ final class CodeSnippetsAdapter {
 		}
 	}
 
+	/**
+	 * Process the catalog find operation in the CodeSnippets adapter.
+	 *
+	 * @return object|null Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function catalogFind(): ?object {
 		$found = array();
 		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
@@ -88,6 +112,13 @@ final class CodeSnippetsAdapter {
 		return $found ? $found[0] : null;
 	}
 
+	/**
+	 * Process the catalog state operation in the CodeSnippets adapter.
+	 *
+	 * @param object|null $snippet Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private static function catalogState( ?object $snippet ): array {
 		return array(
 			'present'     => null !== $snippet,
@@ -103,6 +134,14 @@ final class CodeSnippetsAdapter {
 		);
 	}
 
+	/**
+	 * Process the catalog guard operation in the CodeSnippets adapter.
+	 *
+	 * @param object|null $snippet Input for the operation.
+	 * @param string      $expectedCode Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function catalogGuard( ?object $snippet, string $expectedCode ): void {
 		if ( null === $snippet ) {
 			return;
@@ -116,6 +155,16 @@ final class CodeSnippetsAdapter {
 		}
 	}
 
+	/**
+	 * Process the catalog only inspect operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function catalogOnlyInspect( array $payload, array $context = array() ): array {
 		if ( $payload ) {
 			throw new RuntimeException( 'Catalogue preset inspection accepts no payload fields.' );
@@ -133,6 +182,16 @@ final class CodeSnippetsAdapter {
 		);
 	}
 
+	/**
+	 * Process the catalog only ensure operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function catalogOnlyEnsure( array $payload, array $context ): array {
 		if ( $payload ) {
 			throw new RuntimeException( 'Preset creation never accepts PHP or caller configuration.' );
@@ -210,6 +269,16 @@ final class CodeSnippetsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the catalog only undo operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function catalogOnlyUndo( array $payload, array $context ): array {
 		if ( array_keys( $payload ) !== array( 'snippet_id', 'expected_code_sha256', 'created' ) ||
 			! is_int( $payload['snippet_id'] ) || $payload['snippet_id'] <= 0 ||
@@ -243,6 +312,16 @@ final class CodeSnippetsAdapter {
 		return array( 'undone' => true, 'readback_verified' => true );
 	}
 
+	/**
+	 * Process the patch operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function patch( array $payload, array $context ): array {
 		$this->assertAvailable();
 
@@ -321,6 +400,16 @@ final class CodeSnippetsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Restore code for the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restoreCode( array $payload, array $context ): array {
 		$this->assertAvailable();
 
@@ -367,6 +456,11 @@ final class CodeSnippetsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Ensure available for the CodeSnippets adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertAvailable(): void {
 		foreach ( array( 'get_snippet', 'get_snippets', 'update_snippet_fields' ) as $function ) {
 			$qualified = '\\Code_Snippets\\' . $function;
@@ -383,6 +477,15 @@ final class CodeSnippetsAdapter {
 		}
 	}
 
+	/**
+	 * Find target for the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function findTarget( array $payload ) {
 		$snippetId = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
 		$marker    = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
@@ -418,6 +521,15 @@ final class CodeSnippetsAdapter {
 		return $matches[0];
 	}
 
+	/**
+	 * Retrieve snippet for the CodeSnippets adapter.
+	 *
+	 * @param int $snippetId Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function getSnippet( int $snippetId ) {
 		$snippet = \Code_Snippets\get_snippet( $snippetId, false );
 		if ( ! is_object( $snippet ) || (int) ( $snippet->id ?? 0 ) !== $snippetId ) {
@@ -426,6 +538,15 @@ final class CodeSnippetsAdapter {
 		return $snippet;
 	}
 
+	/**
+	 * Process the replacements operation in the CodeSnippets adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function replacements( array $payload ): array {
 		$input = isset( $payload['replacements'] ) && is_array( $payload['replacements'] ) ? array_values( $payload['replacements'] ) : array();
 
@@ -460,6 +581,14 @@ final class CodeSnippetsAdapter {
 		return $replacements;
 	}
 
+	/**
+	 * Write code for the CodeSnippets adapter.
+	 *
+	 * @param int    $snippetId Input for the operation.
+	 * @param string $code Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function writeCode( int $snippetId, string $code ): void {
 		if ( strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets code exceeds the 1 MiB connector limit.' );
@@ -468,6 +597,13 @@ final class CodeSnippetsAdapter {
 		\Code_Snippets\update_snippet_fields( $snippetId, array( 'code' => $code ), false );
 	}
 
+	/**
+	 * Process the snapshot operation in the CodeSnippets adapter.
+	 *
+	 * @param mixed $snippet Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( $snippet ): array {
 		return array(
 			'id'             => (int) ( $snippet->id ?? 0 ),
@@ -486,11 +622,26 @@ final class CodeSnippetsAdapter {
 		);
 	}
 
+	/**
+	 * Process the public snapshot operation in the CodeSnippets adapter.
+	 *
+	 * @param array $snapshot Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function publicSnapshot( array $snapshot ): array {
 		unset( $snapshot['code'] );
 		return $snapshot;
 	}
 
+	/**
+	 * Process the same metadata operation in the CodeSnippets adapter.
+	 *
+	 * @param array $before Input for the operation.
+	 * @param array $after Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function sameMetadata( array $before, array $after ): bool {
 		foreach ( array( 'id','name','desc','tags','scope','priority','active','network','shared_network','locked','trashed','type' ) as $key ) {
 			if ( ( $before[ $key ] ?? null ) !== ( $after[ $key ] ?? null ) ) {

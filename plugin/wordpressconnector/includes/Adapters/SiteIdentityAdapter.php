@@ -22,6 +22,11 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 final class SiteIdentityAdapter {
 	private const KEYS = array( 'blogname', 'blogdescription', 'timezone_string', 'WPLANG' );
 
+	/**
+	 * Register the SiteIdentity adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$public = array(
 			'privileged'             => true,
@@ -38,12 +43,32 @@ final class SiteIdentityAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the SiteIdentity adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		if ( $payload ) throw new RuntimeException( 'Site identity inspect requires an empty payload.' );
 		$state = $this->snapshot();
 		return array( 'fields' => $state, 'fingerprint' => Fingerprint::make( $state ) );
 	}
 
+	/**
+	 * Process the update operation in the SiteIdentity adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'fields' ) ) ) {
 			throw new RuntimeException( 'Site identity update accepts only fields.' );
@@ -85,6 +110,16 @@ final class SiteIdentityAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the SiteIdentity adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) throw new RuntimeException( 'Site identity restore is rollback-only.' );
 		if ( ! current_user_can( 'manage_options' ) ) throw new RuntimeException( 'Site identity restore requires manage_options.' );
@@ -114,6 +149,13 @@ final class SiteIdentityAdapter {
 		return array( 'restored' => true );
 	}
 
+	/**
+	 * Process the snapshot operation in the SiteIdentity adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function snapshot(): array {
 		$result = array();
 		foreach ( self::KEYS as $key ) {
@@ -124,6 +166,15 @@ final class SiteIdentityAdapter {
 		return $result;
 	}
 
+	/**
+	 * Validate fields for the SiteIdentity adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateFields( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS )
  || array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {

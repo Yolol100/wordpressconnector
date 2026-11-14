@@ -42,6 +42,11 @@ final class YoastAdapter {
 		'twitter_image_id'         => '_yoast_wpseo_twitter-image-id',
 	);
 
+	/**
+	 * Register the Yoast adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'yoast.inspect', array( $this, 'inspect' ), array(
 			'privileged'  => true,
@@ -73,6 +78,14 @@ final class YoastAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the Yoast adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload, array $context ): array {
 		$post   = $this->post( $payload );
 		$fields = $this->snapshot( (int) $post->ID );
@@ -88,6 +101,16 @@ final class YoastAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the Yoast adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$post    = $this->post( $payload );
 		$updates = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
@@ -151,6 +174,15 @@ final class YoastAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the post operation in the Yoast adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return \WP_Post Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function post( array $payload ): \WP_Post {
 		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $post instanceof \WP_Post ) {
@@ -160,6 +192,13 @@ final class YoastAdapter {
 		return $post;
 	}
 
+	/**
+	 * Process the snapshot operation in the Yoast adapter.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( int $postId ): array {
 		$result = array();
 		foreach ( self::FIELDS as $field => $metaKey ) {
@@ -169,6 +208,16 @@ final class YoastAdapter {
 		return $result;
 	}
 
+	/**
+	 * Sanitize field for the Yoast adapter.
+	 *
+	 * @param string $field Input for the operation.
+	 * @param mixed  $value Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function sanitizeField( string $field, $value ): string {
 		$value = (string) $value;
 
@@ -223,6 +272,16 @@ final class YoastAdapter {
 		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
 	}
 
+	/**
+	 * Update site representation for the Yoast adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function updateSiteRepresentation( array $payload, array $context ): array {
 		$updates = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
 		if ( ! $updates || count( $updates ) > 3 ) {
@@ -325,6 +384,13 @@ final class YoastAdapter {
 		return array( 'restored' => true, 'fields' => $fields );
 	}
 
+	/**
+	 * Process the site representation snapshot operation in the Yoast adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function siteRepresentationSnapshot(): array {
 		if ( ! defined( 'WPSEO_VERSION' ) && ! defined( 'YOAST_SEO_VERSION' ) ) {
 			throw new RuntimeException( 'Yoast SEO is not active.' );
@@ -336,6 +402,13 @@ final class YoastAdapter {
 		return $this->siteRepresentationFields( $options );
 	}
 
+	/**
+	 * Process the site representation fields operation in the Yoast adapter.
+	 *
+	 * @param array $options Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function siteRepresentationFields( array $options ): array {
 		return array(
 			'company_or_person' => (string) ( $options['company_or_person'] ?? '' ),

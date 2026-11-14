@@ -29,6 +29,13 @@ final class Runner {
 	private SnapshotStore $snapshots;
 	private ProcessedStore $processed;
 
+	/**
+	 * Initialize the Runner component dependencies.
+	 *
+	 * @param Registry       $registry Action registry.
+	 * @param SnapshotStore  $snapshots Input for the operation.
+	 * @param ProcessedStore $processed Input for the operation.
+	 */
 	public function __construct( Registry $registry, SnapshotStore $snapshots, ProcessedStore $processed ) {
 		$this->registry  = $registry;
 		$this->snapshots = $snapshots;
@@ -41,6 +48,16 @@ final class Runner {
 		$this->registry->register( 'connector.mutation_status', array( $this, 'mutationStatus' ), array( 'privileged' => true, 'capability' => 'manage_options', 'description' => 'Read a sanitized request outcome and lock status for private administrator reconciliation.' ) );
 	}
 
+	/**
+	 * Process the run operation in the Runner component.
+	 *
+	 * @param Request $request Input for the operation.
+	 * @param array   $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function run( Request $request, array $context = array() ): array {
 		$lockToken = '';
 		try {
@@ -159,6 +176,14 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Process the actions operation in the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function actions( array $payload, array $context ): array {
 		return array( 'actions' => $this->registry->catalog() );
 	}
@@ -209,6 +234,16 @@ final class Runner {
 		return array( 'operations' => $results );
 	}
 
+	/**
+	 * Process the batch operation in the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function batch( array $payload, array $context ): array {
 		$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
 		if ( ! $operations || count( $operations ) > 25 || array_keys( $payload ) !== array( 'operations' ) ) {
@@ -301,6 +336,16 @@ final class Runner {
 		return $output;
 	}
 
+	/**
+	 * Process the rollback operation in the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function rollback( array $payload, array $context ): array {
 		$request_id = isset( $payload['request_id'] ) ? (string) $payload['request_id'] : '';
 		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $request_id ) ) {
@@ -400,6 +445,14 @@ final class Runner {
 		);
 	}
 
+	/**
+	 * Process the cleanup operation in the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function cleanup( array $payload, array $context ): array {
 		$days = isset( $payload['older_than_days'] ) ? max( 1, min( 365, (int) $payload['older_than_days'] ) ) : 30;
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -416,6 +469,19 @@ final class Runner {
 		);
 	}
 
+	/**
+	 * Process the public descriptor operation in the Runner component.
+	 *
+	 * @param string      $action Input for the operation.
+	 * @param array       $payload Requested action payload.
+	 * @param array       $descriptor Input for the operation.
+	 * @param bool        $dryRun Input for the operation.
+	 * @param string|null $expectedFingerprint Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function publicDescriptor( string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint ): array {
 		if ( 'elementor.header_links.inspect' === $action ) {
 			return $this->publicHeaderLinksInspectDescriptor( $payload, $descriptor, $dryRun );
@@ -599,6 +665,17 @@ final class Runner {
 		return $descriptor;
 	}
 
+	/**
+	 * Process the public header links inspect descriptor operation in the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $descriptor Input for the operation.
+	 * @param bool  $dryRun Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function publicHeaderLinksInspectDescriptor( array $payload, array $descriptor, bool $dryRun ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'checks' ) )
  || ! is_int( $payload['post_id'] ?? null ) || $payload['post_id'] < 1 ) {
@@ -633,6 +710,18 @@ final class Runner {
 		return $descriptor;
 	}
 
+	/**
+	 * Process the public header links replace descriptor operation in the Runner component.
+	 *
+	 * @param array       $payload Requested action payload.
+	 * @param array       $descriptor Input for the operation.
+	 * @param bool        $dryRun Input for the operation.
+	 * @param string|null $expectedFingerprint Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function publicHeaderLinksReplaceDescriptor( array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'changes' ) )
  || ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] < 1 ) {
@@ -675,6 +764,14 @@ final class Runner {
 		return $descriptor;
 	}
 
+	/**
+	 * Ensure public custom css payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param bool  $patch Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicCustomCssPayload( array $payload, bool $patch ): void {
 		$allowed = $patch
 			? array( 'stylesheet', 'patch_id', 'operation', 'css' )
@@ -723,6 +820,13 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Ensure public custom css rollback payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicCustomCssRollbackPayload( array $payload ): void {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'stylesheet', 'css' ), true ) ) {
@@ -741,6 +845,13 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Ensure public plugin install payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicPluginInstallPayload( array $payload ): void {
 		$allowed = array( 'source_path', 'sha256', 'expected_plugin', 'overwrite', 'activate', 'network_wide' );
 		foreach ( array_keys( $payload ) as $key ) {
@@ -785,6 +896,15 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Ensure public cache flush payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicCacheFlushPayload( array $payload ): string {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'layer', 'regenerate' ), true ) ) {
@@ -819,6 +939,15 @@ final class Runner {
 		return $layer;
 	}
 
+	/**
+	 * Ensure public code snippets patch payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicCodeSnippetsPatchPayload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'snippet_id', 'match_code_contains', 'replacements' ), true ) ) {
@@ -878,6 +1007,15 @@ final class Runner {
 		return $target_id;
 	}
 
+	/**
+	 * Ensure public portfolio case text payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicPortfolioCaseTextPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'portfolio.case_text_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
 		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
@@ -888,6 +1026,15 @@ final class Runner {
 		return $post_id;
 	}
 
+	/**
+	 * Ensure public portfolio stats payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicPortfolioStatsPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'acf.portfolio_stats_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
 		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
@@ -898,6 +1045,15 @@ final class Runner {
 		return $post_id;
 	}
 
+	/**
+	 * Ensure public acf update payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicAcfUpdatePayload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'target', 'fields' ), true ) ) {
@@ -976,6 +1132,13 @@ final class Runner {
 		return $post_id;
 	}
 
+	/**
+	 * Ensure public rollback record for the Runner component.
+	 *
+	 * @param array $record Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicRollbackRecord( array $record ): void {
 		if ( empty( $record['public_repository_mode'] ) ) {
 			throw new RuntimeException( 'Rollback snapshot was not created by the guarded public runtime.' );
@@ -1057,6 +1220,16 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Process the public rollback fingerprint operation in the Runner component.
+	 *
+	 * @param array $rollback Input for the operation.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function publicRollbackFingerprint( array $rollback, array $context ): string {
 		$action  = (string) $rollback['action'];
 		$payload = (array) $rollback['payload'];
@@ -1076,6 +1249,13 @@ final class Runner {
 		return isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 	}
 
+	/**
+	 * Ensure public rollback post payload for the Runner component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicRollbackPostPayload( array $payload ): void {
 		$allowed = array( 'id', 'title', 'content', 'excerpt', 'status', 'slug', 'type', 'author', 'parent', 'menu_order', 'comment_status', 'ping_status' );
 		foreach ( array_keys( $payload ) as $key ) {
@@ -1089,6 +1269,14 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Ensure public rollback post id for the Runner component.
+	 *
+	 * @param array  $payload Requested action payload.
+	 * @param string $key Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPublicRollbackPostId( array $payload, string $key = 'id' ): void {
 		$post_id = isset( $payload[ $key ] ) ? (int) $payload[ $key ] : 0;
 		if ( $post_id <= 0 ) {
@@ -1104,6 +1292,19 @@ final class Runner {
 		}
 	}
 
+	/**
+	 * Process the execute with state guards operation in the Runner component.
+	 *
+	 * @param string      $action Input for the operation.
+	 * @param array       $payload Requested action payload.
+	 * @param array       $context Authorized execution context.
+	 * @param string|null $expectedFingerprint Input for the operation.
+	 * @param string|null $expectedStateToken Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function executeWithStateGuards( string $action, array $payload, array $context, ?string $expectedFingerprint, ?string $expectedStateToken ): array {
 		if ( ( null !== $expectedFingerprint || null !== $expectedStateToken ) && empty( $context['dry_run'] ) ) {
 			$preview = $this->registry->execute( $action, $payload, array_merge( $context, array( 'dry_run' => true ) ) );

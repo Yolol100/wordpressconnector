@@ -18,6 +18,15 @@ use Webactueel\WordPressConnector\Security\Policy;
 final class Registry {
 	private array $actions = array();
 
+	/**
+	 * Register the Registry component actions and handlers.
+	 *
+	 * @param string   $name Input for the operation.
+	 * @param callable $handler Input for the operation.
+	 * @param array    $metadata Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function register( string $name, callable $handler, array $metadata = array() ): void {
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9._-]*\z/', $name ) ) {
 			throw new RuntimeException( 'Invalid action name: ' . $name );
@@ -48,6 +57,15 @@ final class Registry {
 		);
 	}
 
+	/**
+	 * Process the descriptor operation in the Registry component.
+	 *
+	 * @param string $name Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function descriptor( string $name ): array {
 		if ( ! isset( $this->actions[ $name ] ) ) {
 			throw new RuntimeException( 'Unknown connector action: ' . $name );
@@ -56,6 +74,17 @@ final class Registry {
 		return $this->actions[ $name ];
 	}
 
+	/**
+	 * Process the execute operation in the Registry component.
+	 *
+	 * @param string $name Input for the operation.
+	 * @param array  $payload Requested action payload.
+	 * @param array  $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function execute( string $name, array $payload, array $context = array() ): array {
 		$descriptor = $this->descriptor( $name );
 		Policy::assertPublicActionTarget( $name, $payload );
@@ -67,6 +96,11 @@ final class Registry {
 		return $result;
 	}
 
+	/**
+	 * Process the catalog operation in the Registry component.
+	 *
+	 * @return array Operation result.
+	 */
 	public function catalog(): array {
 		$catalog = array();
 		foreach ( $this->actions as $name => $descriptor ) {

@@ -58,6 +58,9 @@ use Webactueel\WordPressConnector\Runtime\SnapshotStore;
  * Bootstraps and connects WordPress Connector services.
  */
 final class Plugin {
+	/**
+	 * Process the boot operation in the Plugin component.
+	 */
 	public static function boot(): void {
 		add_action( 'before_woocommerce_init', static function (): void {
 			if ( class_exists( 'Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {

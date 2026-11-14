@@ -21,6 +21,11 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 final class SiteEditorAdapter {
 	private const MAX_CONTENT_BYTES = 65536;
 
+	/**
+	 * Register the SiteEditor adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read  = array( 'privileged' => true, 'capability' => 'edit_theme_options' );
 		$write = $read + array( 'mutation' => true );
@@ -36,6 +41,15 @@ final class SiteEditorAdapter {
 			$read + array( 'description' => 'Read the current block theme global style configuration via core REST without changing it.' ) );
 	}
 
+	/**
+	 * List templates for the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function listTemplates( array $payload = array() ): array {
 		$this->keys( $payload, array( 'kind', 'page' ) );
 		$kind = $this->kind( $payload );
@@ -67,6 +81,13 @@ final class SiteEditorAdapter {
 			'items' => $rows, 'count' => count( $rows ), 'per_page' => 20 );
 	}
 
+	/**
+	 * Process the inspect operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload ): array {
 		$this->keys( $payload, array( 'kind', 'id' ) );
 		$kind   = $this->kind( $payload );
@@ -76,6 +97,15 @@ final class SiteEditorAdapter {
 		return $state + array( 'content' => $this->rawContent( $record ) );
 	}
 
+	/**
+	 * Process the global styles operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function globalStyles( array $payload = array() ): array {
 		$this->keys( $payload, array() );
 		$theme = get_stylesheet();
@@ -99,6 +129,16 @@ final class SiteEditorAdapter {
 			'fingerprint'                           => Fingerprint::make( array( $settings, $styles ) ) );
 	}
 
+	/**
+	 * Process the update operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'kind', 'id', 'content', 'expected_before_fingerprint' ) );
 		$kind    = $this->kind( $payload );
@@ -146,6 +186,16 @@ final class SiteEditorAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'kind', 'id', 'content', 'expected_after_fingerprint' ) );
 		if ( empty( $context['rollback_mode'] ) ) {
@@ -169,6 +219,15 @@ final class SiteEditorAdapter {
 		return array( 'restored' => $id, 'readback_verified' => true );
 	}
 
+	/**
+	 * Restore after failure for the SiteEditor adapter.
+	 *
+	 * @param string $kind Input for the operation.
+	 * @param string $id Input for the operation.
+	 * @param string $previous Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function restoreAfterFailure( string $kind, string $id, string $previous ): void {
 		try {
 			$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $previous ) );
@@ -181,6 +240,17 @@ final class SiteEditorAdapter {
 		}
 	}
 
+	/**
+	 * Process the state operation in the SiteEditor adapter.
+	 *
+	 * @param string $kind Input for the operation.
+	 * @param string $id Input for the operation.
+	 * @param array  $record Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function state( string $kind, string $id, array $record ): array {
 		if ( ( $record['id'] ?? null ) !== $id || ( $record['theme'] ?? null ) !== get_stylesheet() ) {
 			throw new RuntimeException( 'WordPress Site Editor returned an unexpected theme/template identity.' );
@@ -196,6 +266,13 @@ final class SiteEditorAdapter {
 		return $state;
 	}
 
+	/**
+	 * Process the writable operation in the SiteEditor adapter.
+	 *
+	 * @param array $state Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function writable( array $state ): void {
 		if ( ! $state['customized'] || $state['wp_id'] <= 0
  || ! current_user_can( 'edit_post', $state['wp_id'] ) ) {
@@ -203,12 +280,25 @@ final class SiteEditorAdapter {
 		}
 	}
 
+	/**
+	 * Write allowed for the SiteEditor adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function writeAllowed(): void {
 		if ( Policy::publicRepositoryContext() || ! Policy::flag( 'WPCONNECTOR_ALLOW_SITE_EDITOR_WRITES' ) ) {
 			throw new RuntimeException( 'Site Editor writes require explicitly enabled private server policy.' );
 		}
 	}
 
+	/**
+	 * Process the expected operation in the SiteEditor adapter.
+	 *
+	 * @param mixed  $value Input for the operation.
+	 * @param string $actual Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function expected( $value, string $actual ): void {
 		if ( ! is_string( $value ) || ! preg_match( '/^[a-f0-9]{64}\z/', $value )
  || ! hash_equals( $actual, $value ) ) {
@@ -216,6 +306,16 @@ final class SiteEditorAdapter {
 		}
 	}
 
+	/**
+	 * Process the record operation in the SiteEditor adapter.
+	 *
+	 * @param string $kind Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function record( string $kind, string $id ): array {
 		$data = $this->data( $this->request( 'GET', $this->route( $kind ) . '/' . $id,
 			array( 'context' => 'edit' ) ) );
@@ -225,6 +325,17 @@ final class SiteEditorAdapter {
 		return $data;
 	}
 
+	/**
+	 * Process the request operation in the SiteEditor adapter.
+	 *
+	 * @param string $method Input for the operation.
+	 * @param string $path Input for the operation.
+	 * @param array  $params Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function request( string $method, string $path, array $params = array() ) {
 		if ( ! function_exists( 'rest_do_request' ) || ! class_exists( '\WP_REST_Request' ) ) {
 			throw new RuntimeException( 'The WordPress REST API is not initialized.' );
@@ -241,10 +352,26 @@ final class SiteEditorAdapter {
 		return $response;
 	}
 
+	/**
+	 * Process the data operation in the SiteEditor adapter.
+	 *
+	 * @param mixed $response Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	private function data( $response ) {
 		return $response->get_data();
 	}
 
+	/**
+	 * Process the raw content operation in the SiteEditor adapter.
+	 *
+	 * @param array $record Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function rawContent( array $record ): string {
 		$value = $record['content'] ?? null;
 		$raw   = is_array( $value ) ? ( $value['raw'] ?? null ) : $value;
@@ -254,6 +381,15 @@ final class SiteEditorAdapter {
 		return $raw;
 	}
 
+	/**
+	 * Process the content operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function content( array $payload ): string {
 		$content = $payload['content'] ?? null;
 		if ( ! is_string( $content ) || strlen( $content ) > self::MAX_CONTENT_BYTES
@@ -264,6 +400,13 @@ final class SiteEditorAdapter {
 		return $content;
 	}
 
+	/**
+	 * Process the title operation in the SiteEditor adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function title( $value ): string {
 		if ( is_array( $value ) ) {
 			$value = $value['raw'] ?? $value['rendered'] ?? '';
@@ -271,6 +414,15 @@ final class SiteEditorAdapter {
 		return is_string( $value ) ? substr( wp_strip_all_tags( $value ), 0, 140 ) : '';
 	}
 
+	/**
+	 * Process the id operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function id( array $payload ): string {
 		$id    = $payload['id'] ?? null;
 		$theme = get_stylesheet();
@@ -283,6 +435,15 @@ final class SiteEditorAdapter {
 		return $id;
 	}
 
+	/**
+	 * Process the kind operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function kind( array $payload ): string {
 		$kind = $payload['kind'] ?? null;
 		if ( ! in_array( $kind, array( 'template', 'template_part' ), true ) ) {
@@ -291,10 +452,25 @@ final class SiteEditorAdapter {
 		return $kind;
 	}
 
+	/**
+	 * Process the route operation in the SiteEditor adapter.
+	 *
+	 * @param string $kind Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function route( string $kind ): string {
 		return 'template' === $kind ? '/wp/v2/templates' : '/wp/v2/template-parts';
 	}
 
+	/**
+	 * Process the keys operation in the SiteEditor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $allowed Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function keys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Site Editor payload contains unsupported fields.' );

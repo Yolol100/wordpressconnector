@@ -43,10 +43,26 @@ final class Request {
 		$this->expectedStateToken = $expectedStateToken;
 	}
 
+	/**
+	 * Process the from file operation in the Request component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return self Operation result.
+	 */
 	public static function fromFile( string $path ): self {
 		return self::fromArray( Json::readFile( $path ) );
 	}
 
+	/**
+	 * Process the from array operation in the Request component.
+	 *
+	 * @param array $data Input for the operation.
+	 *
+	 * @return self Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function fromArray( array $data ): self {
 		$allowed = array(
 			'version',
@@ -156,6 +172,16 @@ final class Request {
 		);
 	}
 
+	/**
+	 * Process the hex guard operation in the Request component.
+	 *
+	 * @param array  $data Input for the operation.
+	 * @param string $key Input for the operation.
+	 *
+	 * @return string|null Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private static function hexGuard( array $data, string $key ): ?string {
 		if ( ! array_key_exists( $key, $data ) || null === $data[$key] ) {
 			return null;
@@ -166,30 +192,65 @@ final class Request {
 		return $data[$key];
 	}
 
+	/**
+	 * Process the id operation in the Request component.
+	 *
+	 * @return string Operation result.
+	 */
 	public function id(): string {
 		return $this->id;
 	}
 
+	/**
+	 * Process the action operation in the Request component.
+	 *
+	 * @return string Operation result.
+	 */
 	public function action(): string {
 		return $this->action;
 	}
 
+	/**
+	 * Process the payload operation in the Request component.
+	 *
+	 * @return array Operation result.
+	 */
 	public function payload(): array {
 		return $this->payload;
 	}
 
+	/**
+	 * Process the dry run operation in the Request component.
+	 *
+	 * @return bool Operation result.
+	 */
 	public function dryRun(): bool {
 		return $this->dryRun;
 	}
 
+	/**
+	 * Process the confirm operation in the Request component.
+	 *
+	 * @return bool Operation result.
+	 */
 	public function confirm(): bool {
 		return $this->confirm;
 	}
 
+	/**
+	 * Process the expected fingerprint operation in the Request component.
+	 *
+	 * @return string|null Operation result.
+	 */
 	public function expectedFingerprint(): ?string {
 		return $this->expectedFingerprint;
 	}
 
+	/**
+	 * Process the expected state token operation in the Request component.
+	 *
+	 * @return string|null Operation result.
+	 */
 	public function expectedStateToken(): ?string {
 		return $this->expectedStateToken;
 	}

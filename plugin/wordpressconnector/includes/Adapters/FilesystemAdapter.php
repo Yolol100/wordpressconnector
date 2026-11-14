@@ -24,6 +24,11 @@ final class FilesystemAdapter {
 	private const MAX_TEXT_BYTES = 131072;
 	private const MAX_LIST_ENTRIES = 200;
 
+	/**
+	 * Register the Filesystem adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'filesystem.inspect', array( $this, 'inspect' ), array(
 			'privileged'  => true,
@@ -54,6 +59,14 @@ final class FilesystemAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -95,6 +108,16 @@ final class FilesystemAdapter {
 		);
 	}
 
+	/**
+	 * List path for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function listPath( array $payload, array $context = array() ): array {
 		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
 		$absolute = $this->resolveExisting( $relative, true );
@@ -142,6 +165,16 @@ final class FilesystemAdapter {
 		);
 	}
 
+	/**
+	 * Read text for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function readText( array $payload, array $context = array() ): array {
 		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$absolute = $this->resolveExisting( $relative, false );
@@ -166,6 +199,16 @@ final class FilesystemAdapter {
 		);
 	}
 
+	/**
+	 * Write text for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function writeText( array $payload, array $context ): array {
 		if ( empty( $context['dry_run'] ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ) ) {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
@@ -273,6 +316,16 @@ final class FilesystemAdapter {
 		return $result;
 	}
 
+	/**
+	 * Create text for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function createText( array $payload, array $context ): array {
 		$this->assertLifecyclePermission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
@@ -337,6 +390,16 @@ final class FilesystemAdapter {
 		return $result;
 	}
 
+	/**
+	 * Delete text for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function deleteText( array $payload, array $context ): array {
 		$this->assertLifecyclePermission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
@@ -384,6 +447,14 @@ final class FilesystemAdapter {
 		return $result;
 	}
 
+	/**
+	 * Ensure lifecycle permission for the Filesystem adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertLifecyclePermission( array $payload, array $context ): void {
 		if ( array_diff( array_keys( $payload ), array( 'path','content','expected_sha256','acknowledge_active_content' ) ) ) {
 			throw new RuntimeException( 'Filesystem lifecycle request contains unsupported fields.' );
@@ -405,6 +476,15 @@ final class FilesystemAdapter {
 		}
 	}
 
+	/**
+	 * Resolve new text path for the Filesystem adapter.
+	 *
+	 * @param string $relative Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function resolveNewTextPath( string $relative ): string {
 		$parent     = dirname( $relative );
 		$parentPath = $this->resolveExisting( $parent, true );
@@ -418,6 +498,13 @@ final class FilesystemAdapter {
 		return $candidate;
 	}
 
+	/**
+	 * Process the filesystem operation in the Filesystem adapter.
+	 *
+	 * @return \WP_Filesystem_Base Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function filesystem(): \WP_Filesystem_Base {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		$method = (string) get_filesystem_method( array(), ABSPATH );
@@ -434,6 +521,16 @@ final class FilesystemAdapter {
 		return $wp_filesystem;
 	}
 
+	/**
+	 * Resolve existing for the Filesystem adapter.
+	 *
+	 * @param string $relative Input for the operation.
+	 * @param bool   $directoryAllowed Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function resolveExisting( string $relative, bool $directoryAllowed ): string {
 		$root = realpath( ABSPATH );
 		if ( false === $root ) {
@@ -455,6 +552,14 @@ final class FilesystemAdapter {
 		return $real;
 	}
 
+	/**
+	 * Ensure no symlink components for the Filesystem adapter.
+	 *
+	 * @param string $candidate Input for the operation.
+	 * @param string $root Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertNoSymlinkComponents( string $candidate, string $root ): void {
 		if ( $candidate === $root ) {
 			return;
@@ -469,6 +574,15 @@ final class FilesystemAdapter {
 		}
 	}
 
+	/**
+	 * Process the state operation in the Filesystem adapter.
+	 *
+	 * @param string $relative Input for the operation.
+	 * @param string $content Input for the operation.
+	 * @param string $absolute Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function state( string $relative, string $content, string $absolute ): array {
 		return array(
 			'path'                => $relative,
@@ -479,11 +593,26 @@ final class FilesystemAdapter {
 		);
 	}
 
+	/**
+	 * Process the modified gmt operation in the Filesystem adapter.
+	 *
+	 * @param string $absolute Input for the operation.
+	 *
+	 * @return string|null Operation result.
+	 */
 	private function modifiedGmt( string $absolute ): ?string {
 		$modified = @filemtime( $absolute );
 		return false === $modified ? null : gmdate( 'c', (int) $modified );
 	}
 
+	/**
+	 * Validate text for the Filesystem adapter.
+	 *
+	 * @param string $relative Input for the operation.
+	 * @param string $content Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateText( string $relative, string $content ): void {
 		$extension = strtolower( (string) pathinfo( $relative, PATHINFO_EXTENSION ) );
 		if ( 'php' === $extension || 'inc' === $extension ) {
@@ -502,6 +631,13 @@ final class FilesystemAdapter {
 		}
 	}
 
+	/**
+	 * Ensure no embedded secrets for the Filesystem adapter.
+	 *
+	 * @param string $content Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertNoEmbeddedSecrets( string $content ): void {
 		$patterns = array(
 			'/[\"\'](?:password|passwd|secret|token|api[_-]?key|client[_-]?secret|private[_-]?key|authorization)[\"\']\s*(?:=>|:)\s*[\"\']([^\"\']{8,})[\"\']/i',
@@ -518,10 +654,24 @@ final class FilesystemAdapter {
 		}
 	}
 
+	/**
+	 * Check whether utf8 for the Filesystem adapter.
+	 *
+	 * @param string $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function isUtf8( string $value ): bool {
 		return 1 === preg_match( '//u', $value );
 	}
 
+	/**
+	 * Process the file manager root mode operation in the Filesystem adapter.
+	 *
+	 * @param string $configuredPath Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function fileManagerRootMode( string $configuredPath ): string {
 		if ( '' === trim( $configuredPath ) ) {
 			return 'wordpress_root';

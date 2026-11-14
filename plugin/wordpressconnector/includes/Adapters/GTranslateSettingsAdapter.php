@@ -23,6 +23,11 @@ final class GTranslateSettingsAdapter {
 	private const KEYS = array( 'default_language', 'incl_langs', 'fincl_langs', 'detect_browser_language' );
 	private const READ_ONLY = array( 'widget_look', 'flag_style', 'show_in_menu', 'float_switcher_open_direction' );
 
+	/**
+	 * Register the GTranslateSettings adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read = array( 'privileged' => true, 'public_repository_safe' => true, 'capability' => 'manage_options' );
 		$registry->register( 'gtranslate.settings.inspect', array( $this, 'inspect' ), $read );
@@ -32,6 +37,16 @@ final class GTranslateSettingsAdapter {
 			array( 'privileged' => true, 'capability' => 'manage_options', 'mutation' => true ) );
 	}
 
+	/**
+	 * Process the inspect operation in the GTranslateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		if ( $payload ) throw new RuntimeException( 'GTranslate inspection does not accept extra options.' );
 		$raw = $this->settings();
@@ -43,6 +58,16 @@ final class GTranslateSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the GTranslateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertKeys( $payload, array( 'fields', 'expected_before_fingerprint' ) );
 		$raw = $this->settings();
@@ -94,6 +119,16 @@ final class GTranslateSettingsAdapter {
 		return $preview;
 	}
 
+	/**
+	 * Process the restore operation in the GTranslateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) throw new RuntimeException( 'GTranslate restoration is rollback-only.' );
 		if ( ! current_user_can( 'manage_options' ) ) throw new RuntimeException( 'GTranslate restoration requires manage_options.' );
@@ -128,6 +163,13 @@ final class GTranslateSettingsAdapter {
 		return array( 'restored' => true );
 	}
 
+	/**
+	 * Process the version operation in the GTranslateSettings adapter.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function version(): string {
 		// REST/MCP requests do not always bootstrap wp-admin plugin APIs.
 		if ( ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) )
@@ -147,6 +189,13 @@ final class GTranslateSettingsAdapter {
 		return $version;
 	}
 
+	/**
+	 * Process the settings operation in the GTranslateSettings adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function settings(): array {
 		$this->version();
 		$raw = get_option( 'GTranslate', null );
@@ -156,6 +205,13 @@ final class GTranslateSettingsAdapter {
 		return $raw;
 	}
 
+	/**
+	 * Process the public fields operation in the GTranslateSettings adapter.
+	 *
+	 * @param array $raw Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function publicFields( array $raw ): array {
 		$out = array();
 		foreach ( array_merge( self::KEYS, self::READ_ONLY ) as $key ) {
@@ -173,6 +229,15 @@ final class GTranslateSettingsAdapter {
 		return $out;
 	}
 
+	/**
+	 * Validate patch for the GTranslateSettings adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validatePatch( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS ) ) {
 			throw new RuntimeException( 'GTranslate update needs 1-4 selected fields.' );
@@ -198,6 +263,13 @@ final class GTranslateSettingsAdapter {
 		return $out;
 	}
 
+	/**
+	 * Ensure languages for the GTranslateSettings adapter.
+	 *
+	 * @param array $raw Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function ensureLanguages( array $raw ): void {
 		// Never leave the source language unavailable in the selected list.
 		foreach ( array( 'incl_langs','fincl_langs' ) as $key ) {
@@ -208,6 +280,14 @@ final class GTranslateSettingsAdapter {
 		}
 	}
 
+	/**
+	 * Process the expected fingerprint operation in the GTranslateSettings adapter.
+	 *
+	 * @param mixed  $expected Input for the operation.
+	 * @param string $actual Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function expectedFingerprint( $expected, string $actual ): void {
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 			|| ! hash_equals( $actual, $expected ) ) {
@@ -215,6 +295,14 @@ final class GTranslateSettingsAdapter {
 		}
 	}
 
+	/**
+	 * Ensure keys for the GTranslateSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $allowed Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertKeys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Unexpected GTranslate settings request field.' );

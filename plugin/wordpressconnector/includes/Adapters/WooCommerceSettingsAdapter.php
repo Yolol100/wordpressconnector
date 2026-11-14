@@ -52,6 +52,11 @@ final class WooCommerceSettingsAdapter {
 	private const IRREVERSIBLE_PATTERN = '/(delete|remove|erase|wipe|purge|cleanup|retention|reset|sync|hpos|data_store|migrate|feature|webhook|key|token|secret|credential|auth|password|salt|customer_export|tracking|telemetry)/i';
 
 
+	/**
+	 * Register the WooCommerceSettings adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
@@ -73,6 +78,16 @@ final class WooCommerceSettingsAdapter {
 		) ) );
 	}
 
+	/**
+	 * Process the catalog operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function catalog( array $payload = array(), array $context = array() ): array {
 		$this->rejectExtra( $payload, array() );
 		$groups = $this->api( 'GET', '/wc/v3/settings' );
@@ -109,6 +124,16 @@ final class WooCommerceSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Process the inspect operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$this->rejectExtra( $payload, array( 'group', 'offset', 'limit' ) );
 		$group  = $this->groupId( $payload );
@@ -161,6 +186,16 @@ final class WooCommerceSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->rejectExtra( $payload, array( 'group', 'id', 'value',
 			'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
@@ -226,6 +261,16 @@ final class WooCommerceSettingsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'WooCommerce setting restore is rollback-only.' );
@@ -256,6 +301,16 @@ final class WooCommerceSettingsAdapter {
 		return array( 'restored' => true, 'group' => $group, 'id' => $id );
 	}
 
+	/**
+	 * Inspect section for the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspectSection( array $payload, array $context = array() ): array {
 		$this->rejectExtra( $payload, array( 'tab', 'section', 'offset', 'limit' ) );
 		$tab     = $payload['tab'] ?? null;
@@ -326,6 +381,13 @@ final class WooCommerceSettingsAdapter {
 		);
 	}
 
+	/**
+	 * Process the settings pages operation in the WooCommerceSettings adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function settingsPages(): array {
 		if ( ! class_exists( 'WC_Admin_Settings' ) ) {
 			if ( ! function_exists( 'WC' ) || ! is_object( WC() ) || ! method_exists( WC(), 'plugin_path' ) ) {
@@ -347,6 +409,11 @@ final class WooCommerceSettingsAdapter {
 		return $pages;
 	}
 
+	/**
+	 * Process the admin navigation operation in the WooCommerceSettings adapter.
+	 *
+	 * @return array Operation result.
+	 */
 	private function adminNavigation(): array {
 		try {
 			$pages = $this->settingsPages();
@@ -383,6 +450,13 @@ final class WooCommerceSettingsAdapter {
 		}
 	}
 
+	/**
+	 * Ensure group exists for the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertGroupExists( string $group ): void {
 		$groups = $this->api( 'GET', '/wc/v3/settings' );
 		foreach ( $groups as $entry ) {
@@ -393,6 +467,16 @@ final class WooCommerceSettingsAdapter {
 		throw new RuntimeException( 'WooCommerce Settings REST group is not registered.' );
 	}
 
+	/**
+	 * Process the item operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function item( string $group, string $id ): array {
 		$item = $this->api( 'GET', $this->itemPath( $group, $id ) );
 		if ( ! isset( $item['id'] ) || $item['id'] !== $id ) {
@@ -401,10 +485,29 @@ final class WooCommerceSettingsAdapter {
 		return $item;
 	}
 
+	/**
+	 * Process the item path operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function itemPath( string $group, string $id ): string {
 		return '/wc/v3/settings/' . $group . '/' . $id;
 	}
 
+	/**
+	 * Process the api operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $method Input for the operation.
+	 * @param string $path Input for the operation.
+	 * @param array  $params Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function api( string $method, string $path, array $params = array() ): array {
 		if ( ! class_exists( 'WP_REST_Request' ) || ! function_exists( 'rest_do_request' ) ) {
 			throw new RuntimeException( 'WordPress REST runtime is unavailable.' );
@@ -427,6 +530,16 @@ final class WooCommerceSettingsAdapter {
 		return $data;
 	}
 
+	/**
+	 * Validate value for the WooCommerceSettings adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 * @param array $option Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateValue( $value, array $option ) {
 		$type = (string) ( $option['type'] ?? '' );
 		if ( $type === 'multiselect' ) {
@@ -473,6 +586,14 @@ final class WooCommerceSettingsAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the critical editable operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function criticalEditable( string $group, string $id ): bool {
 		$core = in_array( $group, self::CORE_GROUPS, true )
 			|| preg_match( '/^email_[a-z0-9_-]{1,54}$/D', $group );
@@ -481,6 +602,14 @@ final class WooCommerceSettingsAdapter {
 			&& ! $this->isPrivate( $id, '' );
 	}
 
+	/**
+	 * Ensure critical confirmed for the WooCommerceSettings adapter.
+	 *
+	 * @param array  $payload Requested action payload.
+	 * @param string $fingerprint Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertCriticalConfirmed( array $payload, string $fingerprint ): void {
 		if ( ( $payload['critical_confirm'] ?? null ) === true
 			&& ( $payload['restore_verified'] ?? null ) === true
@@ -496,10 +625,28 @@ final class WooCommerceSettingsAdapter {
 		throw new RuntimeException( 'Critical WooCommerce setting requires site-local enablement, tested restore, and explicit confirmation.' );
 	}
 
+	/**
+	 * Process the value fingerprint operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 * @param string $id Input for the operation.
+	 * @param mixed  $value Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function valueFingerprint( string $group, string $id, $value ): string {
 		return Fingerprint::make( array( 'group' => $group, 'id' => $id, 'value' => $value ) );
 	}
 
+	/**
+	 * Process the group id operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function groupId( array $payload ): string {
 		$id = $payload['group'] ?? null;
 		if ( ! is_string( $id ) || ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $id ) ) {
@@ -508,6 +655,15 @@ final class WooCommerceSettingsAdapter {
 		return $id;
 	}
 
+	/**
+	 * Process the setting id operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function settingId( array $payload ): string {
 		$id = $payload['id'] ?? null;
 		if ( ! is_string( $id ) || ! preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id ) ) {
@@ -516,14 +672,37 @@ final class WooCommerceSettingsAdapter {
 		return $id;
 	}
 
+	/**
+	 * Process the editable operation in the WooCommerceSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function editable( string $group, string $id ): bool {
 		return isset( self::EDITABLE[ $group ][ $id ] );
 	}
 
+	/**
+	 * Check whether private for the WooCommerceSettings adapter.
+	 *
+	 * @param string $id Input for the operation.
+	 * @param string $type Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function isPrivate( string $id, string $type ): bool {
 		return 'password' === $type || (bool) preg_match( self::PRIVATE_PATTERN, $id );
 	}
 
+	/**
+	 * Process the safe value operation in the WooCommerceSettings adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	private function safeValue( $value ) {
 		if ( $value === null || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 			return $value;
@@ -534,10 +713,25 @@ final class WooCommerceSettingsAdapter {
 		return '[complex_value_withheld]';
 	}
 
+	/**
+	 * Process the short text operation in the WooCommerceSettings adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function shortText( $value ): string {
 		return is_scalar( $value ) ? substr( sanitize_text_field( (string) $value ), 0, 160 ) : '';
 	}
 
+	/**
+	 * Process the string ids operation in the WooCommerceSettings adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 * @param int   $limit Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function stringIds( $value, int $limit ): array {
 		if ( ! is_array( $value ) ) {
 			return array();
@@ -551,6 +745,18 @@ final class WooCommerceSettingsAdapter {
 		return $ids;
 	}
 
+	/**
+	 * Process the bounded int operation in the WooCommerceSettings adapter.
+	 *
+	 * @param mixed  $value Input for the operation.
+	 * @param int    $min Input for the operation.
+	 * @param int    $max Input for the operation.
+	 * @param string $field Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function boundedInt( $value, int $min, int $max, string $field ): int {
 		if ( ! is_int( $value ) || $value < $min || $value > $max ) {
 			throw new RuntimeException( 'WooCommerce settings ' . $field . ' is outside its bounds.' );
@@ -558,6 +764,14 @@ final class WooCommerceSettingsAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the reject extra operation in the WooCommerceSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $keys Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function rejectExtra( array $payload, array $keys ): void {
 		if ( array_diff( array_keys( $payload ), $keys ) ) {
 			throw new RuntimeException( 'Unexpected WooCommerce settings request parameters.' );
