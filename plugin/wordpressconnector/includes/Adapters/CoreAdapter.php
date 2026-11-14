@@ -78,16 +78,16 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function postList( array $payload ): array {
-		$postType = isset( $payload['post_type'] ) ? $payload['post_type'] : 'post';
+		$post_type = isset( $payload['post_type'] ) ? $payload['post_type'] : 'post';
 		$status   = isset( $payload['status'] ) ? $payload['status'] : ( Policy::publicRepositoryContext() ? 'publish' : 'any' );
-		$perPage  = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50;
+		$per_page  = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50;
 		$page     = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
 
 		$query    = new \WP_Query( array(
-			'post_type'      => $postType,
+			'post_type'      => $post_type,
 			'post_status'    => $status,
 			's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
-			'posts_per_page' => $perPage,
+			'posts_per_page' => $per_page,
 			'paged'          => $page,
 			'orderby'        => isset( $payload['orderby'] ) ? sanitize_key( (string) $payload['orderby'] ) : 'ID',
 			'order'          => isset( $payload['order'] ) && 'ASC' === strtoupper( (string) $payload['order'] ) ? 'ASC' : 'DESC',
@@ -109,7 +109,7 @@ final class CoreAdapter {
 		return array(
 			'items'    => $items,
 			'page'     => $page,
-			'per_page' => $perPage,
+			'per_page' => $per_page,
 			'total'    => (int) $query->found_posts,
 			'pages'    => (int) $query->max_num_pages,
 		);
@@ -239,21 +239,21 @@ final class CoreAdapter {
 			throw new RuntimeException( 'Literal match count is missing, changed or outside the safe range.' );
 		}
 		$state             = array( 'id' => (int) $post->ID, 'status' => (string) $post->post_status, 'content' => $original );
-		$beforeFingerprint = Fingerprint::make( $state );
+		$before_fingerprint = Fingerprint::make( $state );
 		$next              = str_replace( $find, $replace, $original );
 		$result            = array(
 			'post_id'               => (int) $post->ID,
 			'match_count'           => $count,
-			'before_fingerprint'    => $beforeFingerprint,
+			'before_fingerprint'    => $before_fingerprint,
 			'before_content_sha256' => hash( 'sha256', $original ),
 			'after_content_sha256'  => hash( 'sha256', $next ),
-			'_current_fingerprint'  => $beforeFingerprint,
+			'_current_fingerprint'  => $before_fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
 		$guard = isset( $context['expected_prewrite_fingerprint'] ) ? (string) $context['expected_prewrite_fingerprint'] : '';
-		if ( '' === $guard || ! hash_equals( $guard, $beforeFingerprint ) ) {
+		if ( '' === $guard || ! hash_equals( $guard, $before_fingerprint ) ) {
 			throw new RuntimeException( 'Literal replacement must match the confirmed dry-run fingerprint.' );
 		}
 		$updated = wp_update_post( wp_slash( array( 'ID' => (int) $post->ID, 'post_content' => $next ) ), true );
@@ -353,8 +353,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
-		$revisionId = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
-		$revision   = wp_get_post_revision( $revisionId );
+		$revision_id = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
+		$revision   = wp_get_post_revision( $revision_id );
 		if ( ! $revision ) {
 			throw new RuntimeException( 'Revision not found.' );
 		}
@@ -367,7 +367,7 @@ final class CoreAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$restored = wp_restore_post_revision( $revisionId );
+		$restored = wp_restore_post_revision( $revision_id );
 		if ( ! $restored ) {
 			throw new RuntimeException( 'Could not restore revision.' );
 		}
@@ -453,8 +453,8 @@ final class CoreAdapter {
 		if ( ! taxonomy_exists( $taxonomy ) ) {
 			throw new RuntimeException( 'Unknown taxonomy: ' . $taxonomy );
 		}
-		$taxonomyObject = get_taxonomy( $taxonomy );
-		if ( Policy::publicRepositoryContext() && ( ! $taxonomyObject || ! $taxonomyObject->public ) ) {
+		$taxonomy_object = get_taxonomy( $taxonomy );
+		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
 		}
 		$args  = array(
@@ -487,8 +487,8 @@ final class CoreAdapter {
 		if ( ! $term instanceof \WP_Term ) {
 			throw new RuntimeException( 'Term not found.' );
 		}
-		$taxonomyObject = get_taxonomy( (string) $term->taxonomy );
-		if ( Policy::publicRepositoryContext() && ( ! $taxonomyObject || ! $taxonomyObject->public ) ) {
+		$taxonomy_object = get_taxonomy( (string) $term->taxonomy );
+		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
 		}
 		$snapshot = $this->termSnapshot( $term );
@@ -616,23 +616,23 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termAssign( array $payload, array $context ): array {
-		$objectId = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
+		$object_id = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$terms    = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
 		$append   = Input::bool( $payload, 'append' );
-		if ( ! $objectId || ! taxonomy_exists( $taxonomy ) ) {
+		if ( ! $object_id || ! taxonomy_exists( $taxonomy ) ) {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
 		}
-		$before = wp_get_object_terms( $objectId, $taxonomy, array( 'fields' => 'ids' ) );
+		$before = wp_get_object_terms( $object_id, $taxonomy, array( 'fields' => 'ids' ) );
 		if ( is_wp_error( $before ) ) {
 			throw new RuntimeException( $before->get_error_message() );
 		}
-		$termIds = array_map( 'intval', $terms );
-		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $termIds ) ) ) : $termIds, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$term_ids = array_map( 'intval', $terms );
+		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $termIds, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$assigned = wp_set_object_terms( $objectId, $termIds, $taxonomy, $append );
+		$assigned = wp_set_object_terms( $object_id, $term_ids, $taxonomy, $append );
 		if ( is_wp_error( $assigned ) ) {
 			throw new RuntimeException( $assigned->get_error_message() );
 		}
@@ -772,12 +772,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
-		$menuId = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
+		$menu_id = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$itemId = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
-		if ( ! wp_get_nav_menu_object( $menuId ) ) {
+		if ( ! wp_get_nav_menu_object( $menu_id ) ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
-		$before = $itemId ? get_post( $itemId ) : null;
+		$before = $item_id ? get_post( $item_id ) : null;
 		$args   = array();
 		$map    = array(
 			'title'      => 'menu-item-title', 'url' => 'menu-item-url', 'description' => 'menu-item-description',
@@ -799,9 +799,9 @@ final class CoreAdapter {
 			$args['menu-item-position'] = (int) $payload['position'];
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_upsert' => array( 'menu_id' => $menuId, 'item_id' => $itemId, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $itemId ) : array( 'new' => true ) ) );
+			return array( 'would_upsert' => array( 'menu_id' => $menu_id, 'item_id' => $itemId, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $item_id ) : array( 'new' => true ) ) );
 		}
-		$updated = wp_update_nav_menu_item( $menuId, $itemId, $args );
+		$updated = wp_update_nav_menu_item( $menu_id, $item_id, $args );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
@@ -820,7 +820,7 @@ final class CoreAdapter {
 	 */
 	public function menuLocationSet( array $payload, array $context ): array {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
-		$menuId     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
+		$menu_id     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$registered = get_registered_nav_menus();
 		if ( ! isset( $registered[ $location ] ) ) {
 			throw new RuntimeException( 'Unknown menu location.' );
@@ -830,9 +830,9 @@ final class CoreAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'before' => $before, 'after' => $menuId, '_current_fingerprint' => Fingerprint::make( $locations ) );
 		}
-		$locations[ $location ] = $menuId;
+		$locations[ $location ] = $menu_id;
 		set_theme_mod( 'nav_menu_locations', $locations );
-		return array( 'location' => $location, 'menu_id' => $menuId, '_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ) );
+		return array( 'location' => $location, 'menu_id' => $menu_id, '_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ) );
 	}
 
 	/**
@@ -1127,12 +1127,12 @@ final class CoreAdapter {
 	 */
 	private function sanitizePostFields( array $payload, bool $partial ): array {
 		$fields    = array();
-		$stringMap = array(
+		$string_map = array(
 			'title'       => 'post_title', 'content' => 'post_content', 'excerpt' => 'post_excerpt', 'status' => 'post_status',
 			'slug'        => 'post_name', 'type' => 'post_type', 'password' => 'post_password', 'comment_status' => 'comment_status',
 			'ping_status' => 'ping_status', 'date' => 'post_date', 'date_gmt' => 'post_date_gmt',
 		);
-		foreach ( $stringMap as $source => $target ) {
+		foreach ( $string_map as $source => $target ) {
 			if ( array_key_exists( $source, $payload ) ) {
 				$fields[ $target ] = (string) $payload[ $source ];
 			}

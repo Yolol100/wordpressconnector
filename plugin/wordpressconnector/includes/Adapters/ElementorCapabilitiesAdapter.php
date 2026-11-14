@@ -78,12 +78,12 @@ final class ElementorCapabilitiesAdapter {
 		$warnings          = array();
 		$elementor         = \Elementor\Plugin::$instance;
 		$registeredWidgets = $this->widgets( $elementor, $warnings );
-		$postTypes         = $this->inventoryPostTypes( $payload, $warnings );
+		$post_types         = $this->inventoryPostTypes( $payload, $warnings );
 		$statuses          = $this->inventoryStatuses( $payload );
 		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
 		$offset            = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
 
-		if ( empty( $postTypes ) ) {
+		if ( empty( $post_types ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
 			return array(
 				'available'       => true,
@@ -111,7 +111,7 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$ids = get_posts( array(
-			'post_type'        => $postTypes,
+			'post_type'        => $post_types,
 			'post_status'      => $statuses,
 			'fields'           => 'ids',
 			'posts_per_page'   => $limit + 1,
@@ -128,16 +128,16 @@ final class ElementorCapabilitiesAdapter {
 			'suppress_filters' => false,
 		) );
 
-		$hasMore = count( $ids ) > $limit;
-		if ( $hasMore ) {
+		$has_more = count( $ids ) > $limit;
+		if ( $has_more ) {
 			$ids = array_slice( $ids, 0, $limit );
 		}
 
 		$usedWidgets        = array();
 		$elementTypes       = array();
 		$documents          = array();
-		$architectureTotals = array( 'legacy' => 0, 'container' => 0, 'atomic' => 0, 'mixed' => 0, 'widget-only' => 0 );
-		$widgetInstances    = 0;
+		$architecture_totals = array( 'legacy' => 0, 'container' => 0, 'atomic' => 0, 'mixed' => 0, 'widget-only' => 0 );
+		$widget_instances    = 0;
 
 		foreach ( $ids as $postId ) {
 			$post = get_post( (int) $postId );
@@ -157,16 +157,16 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 
-			$documentWidgets      = array();
-			$documentElementTypes = array();
+			$document_widgets      = array();
+			$document_element_types = array();
 			$families             = array( 'legacy' => false, 'container' => false, 'atomic' => false );
-			$this->collectElementUsage( $data, $documentWidgets, $documentElementTypes, $families );
+			$this->collectElementUsage( $data, $document_widgets, $document_element_types, $families );
 
-			$documentWidgetInstances = array_sum( $documentWidgets );
-			$widgetInstances += $documentWidgetInstances;
-			foreach ( $documentWidgets as $widgetName => $count ) {
-				if ( ! isset( $usedWidgets[ $widgetName ] ) ) {
-					$usedWidgets[ $widgetName ] = array(
+			$document_widget_instances = array_sum( $document_widgets );
+			$widget_instances += $document_widget_instances;
+			foreach ( $document_widgets as $widget_name => $count ) {
+				if ( ! isset( $usedWidgets[ $widget_name ] ) ) {
+					$usedWidgets[ $widget_name ] = array(
 						'instances'    => 0,
 						'documents'    => 0,
 						'document_ids' => array(),
@@ -177,8 +177,8 @@ final class ElementorCapabilitiesAdapter {
 				$usedWidgets[ $widgetName ]['document_ids'][] = (int) $postId;
 			}
 
-			foreach ( $documentElementTypes as $elementType => $count ) {
-				if ( ! isset( $elementTypes[ $elementType ] ) ) {
+			foreach ( $document_element_types as $element_type => $count ) {
+				if ( ! isset( $elementTypes[ $element_type ] ) ) {
 					$elementTypes[ $elementType ] = array( 'instances' => 0, 'documents' => 0 );
 				}
 				$elementTypes[ $elementType ]['instances'] += $count;
@@ -186,8 +186,8 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			$architecture = $this->architectureLabel( $families );
-			if ( isset( $architectureTotals[ $architecture ] ) ) {
-				$architectureTotals[ $architecture ]++;
+			if ( isset( $architecture_totals[ $architecture ] ) ) {
+				$architecture_totals[ $architecture ]++;
 			}
 
 			$documents[] = array(
@@ -198,18 +198,18 @@ final class ElementorCapabilitiesAdapter {
 				'slug'             => (string) $post->post_name,
 				'architecture'     => $architecture,
 				'families'         => array_values( array_keys( array_filter( $families ) ) ),
-				'widget_instances' => $documentWidgetInstances,
-				'widgets'          => $documentWidgets,
-				'element_types'    => $documentElementTypes,
+				'widget_instances' => $document_widget_instances,
+				'widgets'          => $document_widgets,
+				'element_types'    => $document_element_types,
 			);
 		}
 
 		ksort( $usedWidgets, SORT_STRING );
 		ksort( $elementTypes, SORT_STRING );
-		$missingWidgets = array();
-		foreach ( $usedWidgets as $widgetName => $usage ) {
-			if ( ! isset( $registeredWidgets[ $widgetName ] ) ) {
-				$missingWidgets[ $widgetName ] = $usage;
+		$missing_widgets = array();
+		foreach ( $usedWidgets as $widget_name => $usage ) {
+			if ( ! isset( $registeredWidgets[ $widget_name ] ) ) {
+				$missing_widgets[ $widget_name ] = $usage;
 			}
 		}
 
@@ -217,23 +217,23 @@ final class ElementorCapabilitiesAdapter {
 			'available'       => true,
 			'environment'     => $environment,
 			'scan'            => array(
-				'post_types'    => $postTypes,
+				'post_types'    => $post_types,
 				'post_statuses' => $statuses,
 				'limit'         => $limit,
 				'offset'        => $offset,
-				'has_more'      => $hasMore,
-				'next_offset'   => $hasMore ? $offset + $limit : null,
+				'has_more'      => $has_more,
+				'next_offset'   => $has_more ? $offset + $limit : null,
 			),
 			'summary'         => array(
 				'documents_scanned'        => count( $documents ),
-				'widget_instances'         => $widgetInstances,
+				'widget_instances'         => $widget_instances,
 				'unique_widget_types_used' => count( $usedWidgets ),
 				'missing_widget_types'     => count( $missingWidgets ),
-				'architecture_documents'   => $architectureTotals,
+				'architecture_documents'   => $architecture_totals,
 			),
 			'widgets'         => $this->mergeUsageIntoWidgets( $registeredWidgets, $usedWidgets ),
 			'used_widgets'    => $usedWidgets,
-			'missing_widgets' => $missingWidgets,
+			'missing_widgets' => $missing_widgets,
 			'element_types'   => $elementTypes,
 			'documents'       => $documents,
 			'warnings'        => array_values( array_unique( $warnings ) ),
@@ -368,8 +368,8 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( (array) $tags as $name => $tagInfo ) {
-			$tag = is_array( $tagInfo ) && isset( $tagInfo['instance'] ) && is_object( $tagInfo['instance'] ) ? $tagInfo['instance'] : null;
+		foreach ( (array) $tags as $name => $tag_info ) {
+			$tag = is_array( $tag_info ) && isset( $tag_info['instance'] ) && is_object( $tag_info['instance'] ) ? $tag_info['instance'] : null;
 			if ( ! $tag ) {
 				continue;
 			}
@@ -422,8 +422,8 @@ final class ElementorCapabilitiesAdapter {
 		$file      = '';
 		try {
 			$reflection = new ReflectionClass( $widget );
-			$fileName   = $reflection->getFileName();
-			$file       = is_string( $fileName ) ? $fileName : '';
+			$file_name   = $reflection->getFileName();
+			$file       = is_string( $file_name ) ? $file_name : '';
 		} catch ( Throwable $error ) {
 			$file = '';
 		}
@@ -500,9 +500,9 @@ final class ElementorCapabilitiesAdapter {
 			$parts    = explode( '/', $relative );
 			$slug     = count( $parts ) > 1 ? $parts[0] : preg_replace( '/\.php$/', '', $parts[0] );
 			$plugins  = $this->installedPlugins( (bool) $root['mu'] );
-			foreach ( $plugins as $pluginFile => $data ) {
-				$pluginFile = str_replace( '\\', '/', (string) $pluginFile );
-				if ( $pluginFile !== $slug . '.php' && 0 !== strpos( $pluginFile, $slug . '/' ) ) {
+			foreach ( $plugins as $plugin_file => $data ) {
+				$plugin_file = str_replace( '\\', '/', (string) $pluginFile );
+				if ( $plugin_file !== $slug . '.php' && 0 !== strpos( $plugin_file, $slug . '/' ) ) {
 					continue;
 				}
 				return array(
@@ -519,17 +519,17 @@ final class ElementorCapabilitiesAdapter {
 
 	private function installedPlugins( bool $mu ): array {
 		static $regular = null;
-		static $mustUse = null;
+		static $must_use = null;
 
 		if ( $mu ) {
-			if ( is_array( $mustUse ) ) {
+			if ( is_array( $must_use ) ) {
 				return $mustUse;
 			}
 			if ( ! function_exists( 'get_mu_plugins' ) && defined( 'ABSPATH' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
 			}
-			$mustUse = function_exists( 'get_mu_plugins' ) ? (array) get_mu_plugins() : array();
-			return $mustUse;
+			$must_use = function_exists( 'get_mu_plugins' ) ? (array) get_mu_plugins() : array();
+			return $must_use;
 		}
 
 		if ( is_array( $regular ) ) {
@@ -568,18 +568,18 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( $requested as $postType ) {
-			$postType = sanitize_key( (string) $postType );
-			if ( '' === $postType || 'attachment' === $postType || ! post_type_exists( $postType ) ) {
+		foreach ( $requested as $post_type ) {
+			$post_type = sanitize_key( (string) $post_type );
+			if ( '' === $post_type || 'attachment' === $post_type || ! post_type_exists( $post_type ) ) {
 				continue;
 			}
 			try {
-				Policy::assertReadablePostType( $postType );
+				Policy::assertReadablePostType( $post_type );
 			} catch ( Throwable $error ) {
-				$warnings[] = 'post_type_skipped_by_policy:' . $postType;
+				$warnings[] = 'post_type_skipped_by_policy:' . $post_type;
 				continue;
 			}
-			$result[] = $postType;
+			$result[] = $post_type;
 		}
 
 		$result = array_values( array_unique( $result ) );
@@ -620,17 +620,17 @@ final class ElementorCapabilitiesAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			$elementType = isset( $element['elType'] ) ? (string) $element['elType'] : '';
+			$element_type = isset( $element['elType'] ) ? (string) $element['elType'] : '';
 			if ( 'widget' === $elementType && isset( $element['widgetType'] ) && '' !== (string) $element['widgetType'] ) {
-				$widgetName           = (string) $element['widgetType'];
-				$widgets[ $widgetName ] = isset( $widgets[ $widgetName ] ) ? $widgets[ $widgetName ] + 1 : 1;
-			} elseif ( '' !== $elementType ) {
-				$elementTypes[ $elementType ] = isset( $elementTypes[ $elementType ] ) ? $elementTypes[ $elementType ] + 1 : 1;
+				$widget_name           = (string) $element['widgetType'];
+				$widgets[ $widget_name ] = isset( $widgets[ $widget_name ] ) ? $widgets[ $widget_name ] + 1 : 1;
+			} elseif ( '' !== $element_type ) {
+				$elementTypes[ $element_type ] = isset( $elementTypes[ $element_type ] ) ? $elementTypes[ $elementType ] + 1 : 1;
 			}
 
-			if ( 'section' === $elementType || 'column' === $elementType ) {
+			if ( 'section' === $element_type || 'column' === $element_type ) {
 				$families['legacy'] = true;
-			} elseif ( 'container' === $elementType ) {
+			} elseif ( 'container' === $element_type ) {
 				$families['container'] = true;
 			} elseif ( 0 === strpos( $elementType, 'e-' ) ) {
 				$families['atomic'] = true;
