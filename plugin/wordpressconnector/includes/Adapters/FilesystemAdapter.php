@@ -567,13 +567,13 @@ final class FilesystemAdapter {
 	 * Resolve existing for the Filesystem adapter.
 	 *
 	 * @param string $relative Input for the operation.
-	 * @param bool   $directoryAllowed Input for the operation.
+	 * @param bool   $directory_allowed Input for the operation.
 	 *
 	 * @return string Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function resolveExisting( string $relative, bool $directoryAllowed ): string {
+	private function resolveExisting( string $relative, bool $directory_allowed ): string {
 		$root = realpath( ABSPATH );
 		if ( false === $root ) {
 			throw new RuntimeException( 'WordPress root could not be resolved.' );
@@ -588,7 +588,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Filesystem path escapes the WordPress root.' );
 		}
 		$this->assertNoSymlinkComponents( $candidate, $root );
-		if ( ! $directoryAllowed && is_dir( $real ) ) {
+		if ( ! $directory_allowed && is_dir( $real ) ) {
 			throw new RuntimeException( 'A file path is required.' );
 		}
 		return $real;
@@ -710,16 +710,16 @@ final class FilesystemAdapter {
 	/**
 	 * Process the file manager root mode operation in the Filesystem adapter.
 	 *
-	 * @param string $configuredPath Input for the operation.
+	 * @param string $configured_path Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function fileManagerRootMode( string $configuredPath ): string {
-		if ( '' === trim( $configuredPath ) ) {
+	private function fileManagerRootMode( string $configured_path ): string {
+		if ( '' === trim( $configured_path ) ) {
 			return 'wordpress_root';
 		}
 		$root       = realpath( ABSPATH );
-		$configured = realpath( $configuredPath );
+		$configured = realpath( $configured_path );
 		if ( false === $root || false === $configured ) {
 			return 'custom_unresolved_ignored';
 		}

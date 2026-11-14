@@ -962,26 +962,26 @@ final class AcfAdapter {
 	/**
 	 * Ensure group applies to post in the ACF adapter.
 	 *
-	 * @param string $groupKey Field or lookup key.
-	 * @param int    $postId Identifier of the requested object.
+	 * @param string $group_key Field or lookup key.
+	 * @param int    $post_id Identifier of the requested object.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertGroupAppliesToPost( string $groupKey, int $postId ): void {
-		$post = get_post( $postId );
+	private function assertGroupAppliesToPost( string $group_key, int $post_id ): void {
+		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'ACF schema target post was not found.' );
 		}
 		if ( Policy::publicRepositoryContext() ) {
 			Policy::assertPostReadable( $post );
 		}
-		$group = acf_get_field_group( $groupKey );
+		$group = acf_get_field_group( $group_key );
 		if ( ! is_array( $group ) || empty( $group['active'] ) ) {
-			throw new RuntimeException( 'ACF field group is missing or inactive: ' . $groupKey );
+			throw new RuntimeException( 'ACF field group is missing or inactive: ' . $group_key );
 		}
 		$applies = false;
-		foreach ( (array) acf_get_field_groups( array( 'post_id' => $postId ) ) as $candidate ) {
-			if ( is_array( $candidate ) && (string) ( $candidate['key'] ?? '' ) === $groupKey ) {
+		foreach ( (array) acf_get_field_groups( array( 'post_id' => $post_id ) ) as $candidate ) {
+			if ( is_array( $candidate ) && (string) ( $candidate['key'] ?? '' ) === $group_key ) {
 				$applies = true;
 				break;
 			}
@@ -1012,16 +1012,16 @@ final class AcfAdapter {
 	/**
 	 * Process the group fields operation in the ACF adapter.
 	 *
-	 * @param string $groupKey Field or lookup key.
+	 * @param string $group_key Field or lookup key.
 	 *
 	 * @return array Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function groupFields( string $groupKey ): array {
-		$group = acf_get_field_group( $groupKey );
+	private function groupFields( string $group_key ): array {
+		$group = acf_get_field_group( $group_key );
 		if ( ! is_array( $group ) ) {
-			throw new RuntimeException( 'ACF field group was not found: ' . $groupKey );
+			throw new RuntimeException( 'ACF field group was not found: ' . $group_key );
 		}
 		$fields = acf_get_fields( $group );
 		return is_array( $fields ) ? $fields : array();
@@ -1711,18 +1711,18 @@ final class AcfAdapter {
 	 * Create field tree in the ACF adapter.
 	 *
 	 * @param array $definition Value used by this operation.
-	 * @param int   $parentId Identifier of the requested object.
-	 * @param int   $menuOrder Value used by this operation.
-	 * @param array $createdNodes Value updated by reference.
+	 * @param int   $parent_id Identifier of the requested object.
+	 * @param int   $menu_order Value used by this operation.
+	 * @param array $created_nodes Value updated by reference.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function createFieldTree( array $definition, int $parentId, int $menuOrder, array &$createdNodes ): void {
+	private function createFieldTree( array $definition, int $parent_id, int $menu_order, array &$created_nodes ): void {
 		$children = isset( $definition['sub_fields'] ) && is_array( $definition['sub_fields'] ) ? $definition['sub_fields'] : array();
 		$field    = $definition;
 		unset( $field['sub_fields'] );
-		$field['parent']     = $parentId;
-		$field['menu_order'] = $menuOrder;
+		$field['parent']     = $parent_id;
+		$field['menu_order'] = $menu_order;
 		$saved               = acf_update_field( $field );
 		if ( ! is_array( $saved ) ) {
 			throw new RuntimeException( 'ACF complex field creation failed for: ' . $definition['key'] );
@@ -1735,25 +1735,25 @@ final class AcfAdapter {
 		if ( $saved_id <= 0 ) {
 			throw new RuntimeException( 'ACF complex field creation returned no persistent ID: ' . $definition['key'] );
 		}
-		$createdNodes[] = array(
+		$created_nodes[] = array(
 			'key' => (string) $definition['key'],
 			'id'  => $saved_id,
 		);
 		foreach ( array_values( $children ) as $index => $child ) {
-			$this->createFieldTree( $child, $saved_id, $index, $createdNodes );
+			$this->createFieldTree( $child, $saved_id, $index, $created_nodes );
 		}
 	}
 
 	/**
 	 * Clean up created field nodes in the ACF adapter.
 	 *
-	 * @param array $createdNodes Value used by this operation.
+	 * @param array $created_nodes Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function cleanupCreatedFieldNodes( array $createdNodes ): array {
+	private function cleanupCreatedFieldNodes( array $created_nodes ): array {
 		$failures = array();
-		foreach ( array_reverse( $createdNodes ) as $node ) {
+		foreach ( array_reverse( $created_nodes ) as $node ) {
 			$key = isset( $node['key'] ) ? (string) $node['key'] : '';
 			$id  = isset( $node['id'] ) ? (int) $node['id'] : 0;
 			if ( '' === $key || $id <= 0 ) {
@@ -1834,12 +1834,12 @@ final class AcfAdapter {
 	/**
 	 * Process the field group snapshot operation in the ACF adapter.
 	 *
-	 * @param string $groupKey Field or lookup key.
+	 * @param string $group_key Field or lookup key.
 	 *
 	 * @return array|null Result of the operation.
 	 */
-	private function fieldGroupSnapshot( string $groupKey ): ?array {
-		$group = acf_get_field_group( $groupKey );
+	private function fieldGroupSnapshot( string $group_key ): ?array {
+		$group = acf_get_field_group( $group_key );
 		if ( ! is_array( $group ) ) {
 			return null;
 		}
@@ -1922,20 +1922,20 @@ final class AcfAdapter {
 	 * Process the bounded text operation in the ACF adapter.
 	 *
 	 * @param mixed  $value Value used by this operation.
-	 * @param int    $maxLength Value used by this operation.
-	 * @param bool   $allowNewlines Value used by this operation.
+	 * @param int    $max_length Value used by this operation.
+	 * @param bool   $allow_newlines Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return string Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function boundedText( $value, int $maxLength, bool $allowNewlines, string $context ): string {
+	private function boundedText( $value, int $max_length, bool $allow_newlines, string $context ): string {
 		if ( ! is_string( $value ) && ! is_int( $value ) && ! is_float( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be text.' );
 		}
 		$text = (string) $value;
-		if ( strlen( $text ) > $maxLength || $this->hasInvalidControl( $text, $allowNewlines ) ) {
+		if ( strlen( $text ) > $max_length || $this->hasInvalidControl( $text, $allow_newlines ) ) {
 			throw new RuntimeException( 'Invalid ACF text value for ' . $context . '.' );
 		}
 		return $text;
@@ -1945,12 +1945,12 @@ final class AcfAdapter {
 	 * Check whether invalid control in the ACF adapter.
 	 *
 	 * @param string $value Value used by this operation.
-	 * @param bool   $allowNewlines Value used by this operation.
+	 * @param bool   $allow_newlines Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
 	 */
-	private function hasInvalidControl( string $value, bool $allowNewlines ): bool {
-		$pattern = $allowNewlines ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/';
+	private function hasInvalidControl( string $value, bool $allow_newlines ): bool {
+		$pattern = $allow_newlines ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/';
 		return (bool) preg_match( $pattern, $value );
 	}
 
@@ -2036,15 +2036,15 @@ final class AcfAdapter {
 	 * Normalize key list in the ACF adapter.
 	 *
 	 * @param mixed  $value Value used by this operation.
-	 * @param int    $maxItems Value used by this operation.
+	 * @param int    $max_items Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function normalizeKeyList( $value, int $maxItems, string $context ): array {
-		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
+	private function normalizeKeyList( $value, int $max_items, string $context ): array {
+		if ( ! is_array( $value ) || count( $value ) > $max_items ) {
 			throw new RuntimeException( 'Invalid ACF list for ' . $context . '.' );
 		}
 		$result = array();
@@ -2063,21 +2063,21 @@ final class AcfAdapter {
 	 * Normalize bounded string list in the ACF adapter.
 	 *
 	 * @param mixed  $value Value used by this operation.
-	 * @param int    $maxItems Value used by this operation.
-	 * @param int    $maxLength Value used by this operation.
+	 * @param int    $max_items Value used by this operation.
+	 * @param int    $max_length Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function normalizeBoundedStringList( $value, int $maxItems, int $maxLength, string $context ): array {
-		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
+	private function normalizeBoundedStringList( $value, int $max_items, int $max_length, string $context ): array {
+		if ( ! is_array( $value ) || count( $value ) > $max_items ) {
 			throw new RuntimeException( 'Invalid ACF list for ' . $context . '.' );
 		}
 		$result = array();
 		foreach ( array_values( $value ) as $item ) {
-			if ( ! is_string( $item ) || '' === $item || strlen( $item ) > $maxLength || $this->hasInvalidControl( $item, false ) ) {
+			if ( ! is_string( $item ) || '' === $item || strlen( $item ) > $max_length || $this->hasInvalidControl( $item, false ) ) {
 				throw new RuntimeException( 'Invalid ACF string in ' . $context . '.' );
 			}
 			Policy::assertKeyAllowed( $item );

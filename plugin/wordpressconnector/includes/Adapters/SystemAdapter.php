@@ -1349,14 +1349,14 @@ final class SystemAdapter {
 	 * Read the requested expected update version.
 	 *
 	 * @param array $payload Request parameters.
-	 * @param array $allowedFields Allowed request fields.
+	 * @param array $allowed_fields Allowed request fields.
 	 *
 	 * @return string|null Result of this operation.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
-	private function expectedUpdateVersion( array $payload, array $allowedFields ): ?string {
-		if ( array_diff( array_keys( $payload ), $allowedFields ) ) {
+	private function expectedUpdateVersion( array $payload, array $allowed_fields ): ?string {
+		if ( array_diff( array_keys( $payload ), $allowed_fields ) ) {
 			throw new RuntimeException( 'Update request contains unsupported fields.' );
 		}
 		if ( ! array_key_exists( 'expected_target_version', $payload ) ) {
@@ -1372,13 +1372,13 @@ final class SystemAdapter {
 	/**
 	 * Read the provider's available update version.
 	 *
-	 * @param string $transientName WordPress update transient name.
+	 * @param string $transient_name WordPress update transient name.
 	 * @param string $identity Target plugin or theme identity.
 	 *
 	 * @return string|null Result of this operation.
 	 */
-	private function availableUpdateVersion( string $transientName, string $identity ): ?string {
-		$transient = get_site_transient( $transientName );
+	private function availableUpdateVersion( string $transient_name, string $identity ): ?string {
+		$transient = get_site_transient( $transient_name );
 		$offers    = is_object( $transient ) ? ( $transient->response ?? null ) : null;
 		if ( ! is_array( $offers ) || ! isset( $offers[ $identity ] ) ) {
 			return null;

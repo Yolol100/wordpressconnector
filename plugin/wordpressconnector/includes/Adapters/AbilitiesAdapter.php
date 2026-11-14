@@ -183,12 +183,12 @@ final class AbilitiesAdapter {
 	 *
 	 * @param array $payload Requested action payload.
 	 * @param array $context Authorized execution context.
-	 * @param bool  $approvedProvider Value used by this operation.
+	 * @param bool  $approved_provider Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function executeMutation( array $payload, array $context, bool $approvedProvider ): array {
-		list( $name, $ability ) = $this->resolveAbility( $payload, true, $approvedProvider );
+	private function executeMutation( array $payload, array $context, bool $approved_provider ): array {
+		list( $name, $ability ) = $this->resolveAbility( $payload, true, $approved_provider );
 		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		$annotations            = $this->safeAnnotations( $ability );
 
@@ -218,13 +218,13 @@ final class AbilitiesAdapter {
 	 *
 	 * @param array $payload Requested action payload.
 	 * @param bool  $mutation Value used by this operation.
-	 * @param bool  $approvedProvider Value used by this operation.
+	 * @param bool  $approved_provider Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function resolveAbility( array $payload, bool $mutation, bool $approvedProvider = false ): array {
+	private function resolveAbility( array $payload, bool $mutation, bool $approved_provider = false ): array {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
 			throw new \RuntimeException( 'WordPress Abilities API is not available on this site.' );
 		}
@@ -234,7 +234,7 @@ final class AbilitiesAdapter {
 		}
 		$ability  = wp_get_ability( $name );
 		$eligible = $mutation
-			? ( $approvedProvider ? $this->isApprovedPluginMutationEligible( $name, $ability )
+			? ( $approved_provider ? $this->isApprovedPluginMutationEligible( $name, $ability )
 				: $this->isElementorMutationEligible( $name, $ability ) )
 			: $this->isReadEligible( $ability );
 		if ( ! is_object( $ability ) || ! $eligible ) {
@@ -387,14 +387,14 @@ final class AbilitiesAdapter {
 	 *
 	 * @param string      $name Value used by this operation.
 	 * @param array       $annotations Value used by this operation.
-	 * @param string|null $providerErrorCode Value used by this operation.
+	 * @param string|null $provider_error_code Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function terminalMutationFailure( string $name, array $annotations, ?string $providerErrorCode ): array {
+	private function terminalMutationFailure( string $name, array $annotations, ?string $provider_error_code ): array {
 		$safe_code = null;
-		if ( is_string( $providerErrorCode ) && 1 === preg_match( '/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode ) ) {
-			$safe_code = $providerErrorCode;
+		if ( is_string( $provider_error_code ) && 1 === preg_match( '/^[A-Za-z0-9._-]{1,120}$/D', $provider_error_code ) ) {
+			$safe_code = $provider_error_code;
 		}
 
 		return array(
@@ -918,18 +918,18 @@ final class AbilitiesAdapter {
 	 * Process the bounded catalog text operation in the Abilities adapter.
 	 *
 	 * @param string $value Value used by this operation.
-	 * @param int    $maxBytes Value used by this operation.
+	 * @param int    $max_bytes Value used by this operation.
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function boundedCatalogText( string $value, int $maxBytes ): string {
-		if ( strlen( $value ) <= $maxBytes ) {
+	private function boundedCatalogText( string $value, int $max_bytes ): string {
+		if ( strlen( $value ) <= $max_bytes ) {
 			return $value;
 		}
 		if ( function_exists( 'mb_strcut' ) ) {
-			return mb_strcut( $value, 0, $maxBytes, 'UTF-8' );
+			return mb_strcut( $value, 0, $max_bytes, 'UTF-8' );
 		}
-		$cut = $maxBytes;
+		$cut = $max_bytes;
 		while ( $cut > 0 && isset( $value[ $cut ] ) && ( ord( $value[ $cut ] ) & 0xC0 ) === 0x80 ) {
 			--$cut;
 		}

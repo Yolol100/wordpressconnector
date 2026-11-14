@@ -621,11 +621,11 @@ final class PluginPackageAdapter {
 	 *
 	 * @param bool $overwrite Input for the operation.
 	 * @param bool $activate Input for the operation.
-	 * @param bool $networkWide Input for the operation.
+	 * @param bool $network_wide Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertCapabilities( bool $overwrite, bool $activate, bool $networkWide ): void {
+	private function assertCapabilities( bool $overwrite, bool $activate, bool $network_wide ): void {
 		if ( ! current_user_can( 'install_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to install plugins.' );
 		}
@@ -635,7 +635,7 @@ final class PluginPackageAdapter {
 		if ( $activate && ! current_user_can( 'activate_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to activate plugins.' );
 		}
-		if ( $networkWide ) {
+		if ( $network_wide ) {
 			if ( ! is_multisite() ) {
 				throw new RuntimeException( 'network_wide is only valid on multisite.' );
 			}
@@ -648,12 +648,12 @@ final class PluginPackageAdapter {
 	/**
 	 * Ensure not self for the PluginPackage adapter.
 	 *
-	 * @param string $pluginFile Input for the operation.
+	 * @param string $plugin_file Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertNotSelf( string $pluginFile ): void {
-		if ( defined( 'WPCONNECTOR_FILE' ) && function_exists( 'plugin_basename' ) && hash_equals( str_replace( '\\', '/', plugin_basename( WPCONNECTOR_FILE ) ), $pluginFile ) ) {
+	private function assertNotSelf( string $plugin_file ): void {
+		if ( defined( 'WPCONNECTOR_FILE' ) && function_exists( 'plugin_basename' ) && hash_equals( str_replace( '\\', '/', plugin_basename( WPCONNECTOR_FILE ) ), $plugin_file ) ) {
 			throw new RuntimeException( 'WordPress Connector cannot replace its own active runtime through plugin.install_package. Use the repository release/deployment path.' );
 		}
 	}
@@ -661,16 +661,16 @@ final class PluginPackageAdapter {
 	/**
 	 * Process the snapshot operation in the PluginPackage adapter.
 	 *
-	 * @param string $pluginFile Input for the operation.
+	 * @param string $plugin_file Input for the operation.
 	 * @param array  $plugins Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function snapshot( string $pluginFile, array $plugins ): array {
+	private function snapshot( string $plugin_file, array $plugins ): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		if ( ! isset( $plugins[ $pluginFile ] ) ) {
+		if ( ! isset( $plugins[ $plugin_file ] ) ) {
 			return array(
-				'file'           => $pluginFile,
+				'file'           => $plugin_file,
 				'installed'      => false,
 				'version'        => null,
 				'active'         => false,
@@ -679,12 +679,12 @@ final class PluginPackageAdapter {
 		}
 
 		return array(
-			'file'           => $pluginFile,
+			'file'           => $plugin_file,
 			'installed'      => true,
-			'name'           => isset( $plugins[ $pluginFile ]['Name'] ) ? (string) $plugins[ $pluginFile ]['Name'] : $pluginFile,
-			'version'        => isset( $plugins[ $pluginFile ]['Version'] ) ? (string) $plugins[ $pluginFile ]['Version'] : '',
-			'active'         => is_plugin_active( $pluginFile ),
-			'network_active' => is_multisite() ? is_plugin_active_for_network( $pluginFile ) : false,
+			'name'           => isset( $plugins[ $plugin_file ]['Name'] ) ? (string) $plugins[ $plugin_file ]['Name'] : $plugin_file,
+			'version'        => isset( $plugins[ $plugin_file ]['Version'] ) ? (string) $plugins[ $plugin_file ]['Version'] : '',
+			'active'         => is_plugin_active( $plugin_file ),
+			'network_active' => is_multisite() ? is_plugin_active_for_network( $plugin_file ) : false,
 		);
 	}
 }

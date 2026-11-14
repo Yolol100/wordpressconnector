@@ -460,21 +460,21 @@ final class ElementorFormsAdapter {
 	 * Process the manager types operation in the Elementor forms adapter.
 	 *
 	 * @param object $elementor Value used by this operation.
-	 * @param string $managerName Value used by this operation.
+	 * @param string $manager_name Value used by this operation.
 	 * @param string $method Value used by this operation.
 	 * @param array  $warnings Value updated by reference.
-	 * @param string $warningPrefix Value used by this operation.
+	 * @param string $warning_prefix Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function managerTypes( object $elementor, string $managerName, string $method, array &$warnings, string $warningPrefix ): array {
-		if ( ! isset( $elementor->{$managerName} ) || ! is_object( $elementor->{$managerName} ) || ! method_exists( $elementor->{$managerName}, $method ) ) {
+	private function managerTypes( object $elementor, string $manager_name, string $method, array &$warnings, string $warning_prefix ): array {
+		if ( ! isset( $elementor->{$manager_name} ) || ! is_object( $elementor->{$manager_name} ) || ! method_exists( $elementor->{$manager_name}, $method ) ) {
 			return array();
 		}
 		try {
-			return (array) $elementor->{$managerName}->{$method}();
+			return (array) $elementor->{$manager_name}->{$method}();
 		} catch ( Throwable $error ) {
-			$warnings[] = $warningPrefix . '_inventory_failed';
+			$warnings[] = $warning_prefix . '_inventory_failed';
 			return array();
 		}
 	}
@@ -703,21 +703,21 @@ final class ElementorFormsAdapter {
 	 * Ensure message has paragraph in the Elementor forms adapter.
 	 *
 	 * @param array  $form Value used by this operation.
-	 * @param string $messageType Requested type.
+	 * @param string $message_type Requested type.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertMessageHasParagraph( array $form, string $messageType ): void {
-		$message = $this->findFirstByType( $form, $messageType );
+	private function assertMessageHasParagraph( array $form, string $message_type ): void {
+		$message = $this->findFirstByType( $form, $message_type );
 		if ( ! is_array( $message ) ) {
-			throw new RuntimeException( 'V4 Atomic Form is missing ' . $messageType . '.' );
+			throw new RuntimeException( 'V4 Atomic Form is missing ' . $message_type . '.' );
 		}
 		foreach ( $message['elements'] as $child ) {
 			if ( is_array( $child ) && 'e-paragraph' === (string) ( $child['elType'] ?? '' ) ) {
 				return;
 			}
 		}
-		throw new RuntimeException( $messageType . ' must contain an e-paragraph child.' );
+		throw new RuntimeException( $message_type . ' must contain an e-paragraph child.' );
 	}
 
 	/**
@@ -758,9 +758,9 @@ final class ElementorFormsAdapter {
 	 * @param array       $elements Value used by this operation.
 	 * @param array       $forms Value updated by reference.
 	 * @param array       $path Value used by this operation.
-	 * @param string|null $parentId Identifier of the requested object.
+	 * @param string|null $parent_id Identifier of the requested object.
 	 */
-	private function collectForms( array $elements, array &$forms, array $path, ?string $parentId ): void {
+	private function collectForms( array $elements, array &$forms, array $path, ?string $parent_id ): void {
 		foreach ( $elements as $index => $element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
@@ -771,7 +771,7 @@ final class ElementorFormsAdapter {
 				$forms[] = array(
 					'id'                => isset( $element['id'] ) ? (string) $element['id'] : '',
 					'family'            => $family,
-					'parent_element_id' => $parentId,
+					'parent_element_id' => $parent_id,
 					'path'              => $element_path,
 					'form'              => $element,
 				);
@@ -781,7 +781,7 @@ final class ElementorFormsAdapter {
 					$element['elements'],
 					$forms,
 					array_merge( $element_path, array( 'elements' ) ),
-					isset( $element['id'] ) ? (string) $element['id'] : $parentId
+					isset( $element['id'] ) ? (string) $element['id'] : $parent_id
 				);
 			}
 		}
@@ -845,7 +845,7 @@ final class ElementorFormsAdapter {
 	 * Process the insert into parent operation in the Elementor forms adapter.
 	 *
 	 * @param array    $elements Value updated by reference.
-	 * @param string   $parentId Identifier of the requested object.
+	 * @param string   $parent_id Identifier of the requested object.
 	 * @param array    $form Value used by this operation.
 	 * @param int|null $position Value used by this operation.
 	 *
@@ -853,12 +853,12 @@ final class ElementorFormsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function insertIntoParent( array &$elements, string $parentId, array $form, ?int $position ): bool {
+	private function insertIntoParent( array &$elements, string $parent_id, array $form, ?int $position ): bool {
 		foreach ( $elements as &$element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			if ( isset( $element['id'] ) && hash_equals( (string) $element['id'], $parentId ) ) {
+			if ( isset( $element['id'] ) && hash_equals( (string) $element['id'], $parent_id ) ) {
 				if ( ! isset( $element['elements'] ) || ! is_array( $element['elements'] ) ) {
 					throw new RuntimeException( 'Target parent cannot contain Elementor child elements.' );
 				}
@@ -866,7 +866,7 @@ final class ElementorFormsAdapter {
 				unset( $element );
 				return true;
 			}
-			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) && $this->insertIntoParent( $element['elements'], $parentId, $form, $position ) ) {
+			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) && $this->insertIntoParent( $element['elements'], $parent_id, $form, $position ) ) {
 				unset( $element );
 				return true;
 			}
@@ -938,21 +938,21 @@ final class ElementorFormsAdapter {
 	 * Ensure no nested forms in the Elementor forms adapter.
 	 *
 	 * @param array $elements Value used by this operation.
-	 * @param bool  $insideForm Value used by this operation.
+	 * @param bool  $inside_form Value used by this operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertNoNestedForms( array $elements, bool $insideForm = false ): void {
+	private function assertNoNestedForms( array $elements, bool $inside_form = false ): void {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
 			$is_form = null !== $this->formFamily( $element );
-			if ( $insideForm && $is_form ) {
+			if ( $inside_form && $is_form ) {
 				throw new RuntimeException( 'Elementor forms cannot be nested inside another form.' );
 			}
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				$this->assertNoNestedForms( $element['elements'], $insideForm || $is_form );
+				$this->assertNoNestedForms( $element['elements'], $inside_form || $is_form );
 			}
 		}
 	}
@@ -1018,38 +1018,38 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the snapshot operation in the Elementor forms adapter.
 	 *
-	 * @param int $postId Identifier of the requested object.
+	 * @param int $post_id Identifier of the requested object.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function snapshot( int $postId ): array {
-		$document = $this->documentOrNull( $postId );
+	private function snapshot( int $post_id ): array {
+		$document = $this->documentOrNull( $post_id );
 		if ( $document ) {
 			$data         = method_exists( $document, 'get_elements_data' ) ? $document->get_elements_data() : array();
 			$pageSettings = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
 			return array(
-				'post_id'       => $postId,
+				'post_id'       => $post_id,
 				'data'          => is_array( $data ) ? $data : array(),
 				'page_settings' => is_array( $pageSettings ) ? $pageSettings : array(),
 			);
 		}
-		$raw  = get_post_meta( $postId, '_elementor_data', true );
+		$raw  = get_post_meta( $post_id, '_elementor_data', true );
 		$data = is_array( $raw ) ? $raw : json_decode( (string) $raw, true );
 		return array(
-			'post_id'       => $postId,
+			'post_id'       => $post_id,
 			'data'          => is_array( $data ) ? $data : array(),
-			'page_settings' => $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) ),
+			'page_settings' => $this->normalizeMetaArray( get_post_meta( $post_id, '_elementor_page_settings', true ) ),
 		);
 	}
 
 	/**
 	 * Process the document or null operation in the Elementor forms adapter.
 	 *
-	 * @param int $postId Identifier of the requested object.
+	 * @param int $post_id Identifier of the requested object.
 	 *
 	 * @return object|null Result of the operation.
 	 */
-	private function documentOrNull( int $postId ): ?object {
+	private function documentOrNull( int $post_id ): ?object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return null;
 		}
@@ -1059,7 +1059,7 @@ final class ElementorFormsAdapter {
 			return null;
 		}
 		try {
-			$document = $manager->get( $postId );
+			$document = $manager->get( $post_id );
 			return is_object( $document ) ? $document : null;
 		} catch ( Throwable $error ) {
 			return null;
@@ -1069,14 +1069,14 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the document operation in the Elementor forms adapter.
 	 *
-	 * @param int $postId Identifier of the requested object.
+	 * @param int $post_id Identifier of the requested object.
 	 *
 	 * @return object Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function document( int $postId ): object {
-		$document = $this->documentOrNull( $postId );
+	private function document( int $post_id ): object {
+		$document = $this->documentOrNull( $post_id );
 		if ( ! $document || ! method_exists( $document, 'save' ) ) {
 			throw new RuntimeException( 'Elementor document save API is unavailable for this document.' );
 		}

@@ -593,34 +593,34 @@ final class ElementorAdapter {
 	/**
 	 * Prepare document meta for the Elementor adapter.
 	 *
-	 * @param int   $postId Input for the operation.
+	 * @param int   $post_id Input for the operation.
 	 * @param array $payload Requested action payload.
 	 */
-	private function prepareDocumentMeta( int $postId, array $payload ): void {
+	private function prepareDocumentMeta( int $post_id, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
-			update_post_meta( $postId, '_elementor_template_type', (string) $payload['template_type'] );
+			update_post_meta( $post_id, '_elementor_template_type', (string) $payload['template_type'] );
 		}
-		update_post_meta( $postId, '_elementor_edit_mode', isset( $payload['edit_mode'] ) ? (string) $payload['edit_mode'] : 'builder' );
+		update_post_meta( $post_id, '_elementor_edit_mode', isset( $payload['edit_mode'] ) ? (string) $payload['edit_mode'] : 'builder' );
 	}
 
 	/**
 	 * Write supplemental meta for the Elementor adapter.
 	 *
-	 * @param int   $postId Input for the operation.
+	 * @param int   $post_id Input for the operation.
 	 * @param array $payload Requested action payload.
 	 */
-	private function writeSupplementalMeta( int $postId, array $payload ): void {
+	private function writeSupplementalMeta( int $post_id, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
-			update_post_meta( $postId, '_elementor_template_type', (string) $payload['template_type'] );
+			update_post_meta( $post_id, '_elementor_template_type', (string) $payload['template_type'] );
 		}
 		if ( array_key_exists( 'conditions', $payload ) ) {
-			update_post_meta( $postId, '_elementor_conditions', is_array( $payload['conditions'] ) ? $payload['conditions'] : array() );
+			update_post_meta( $post_id, '_elementor_conditions', is_array( $payload['conditions'] ) ? $payload['conditions'] : array() );
 		}
 		if ( array_key_exists( 'edit_mode', $payload ) ) {
-			update_post_meta( $postId, '_elementor_edit_mode', (string) $payload['edit_mode'] );
+			update_post_meta( $post_id, '_elementor_edit_mode', (string) $payload['edit_mode'] );
 		}
 		if ( defined( 'ELEMENTOR_VERSION' ) ) {
-			update_post_meta( $postId, '_elementor_version', ELEMENTOR_VERSION );
+			update_post_meta( $post_id, '_elementor_version', ELEMENTOR_VERSION );
 		}
 	}
 
@@ -710,23 +710,23 @@ final class ElementorAdapter {
 	/**
 	 * Process the apply existing document mutation operation in the Elementor adapter.
 	 *
-	 * @param int   $postId Input for the operation.
+	 * @param int   $post_id Input for the operation.
 	 * @param array $payload Requested action payload.
 	 * @param array $data Input for the operation.
-	 * @param array $pageSettings Input for the operation.
+	 * @param array $page_settings Input for the operation.
 	 * @param array $before Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function applyExistingDocumentMutation( int $postId, array $payload, array $data, array $pageSettings, array $before ): array {
+	private function applyExistingDocumentMutation( int $post_id, array $payload, array $data, array $page_settings, array $before ): array {
 		try {
-			$savedElements = $this->saveDocumentViaApi( $postId, $data, $pageSettings );
-			$this->writeSupplementalMeta( $postId, $payload );
+			$savedElements = $this->saveDocumentViaApi( $post_id, $data, $page_settings );
+			$this->writeSupplementalMeta( $post_id, $payload );
 			$this->clearCache();
-			$after = $this->snapshot( $postId );
-			$this->assertDocumentReadback( $after, $savedElements, $pageSettings );
+			$after = $this->snapshot( $post_id );
+			$this->assertDocumentReadback( $after, $savedElements, $page_settings );
 			return $after;
 		} catch ( Throwable $error ) {
 			try {
@@ -773,13 +773,13 @@ final class ElementorAdapter {
 	/**
 	 * Process the document operation in the Elementor adapter.
 	 *
-	 * @param int $postId Input for the operation.
+	 * @param int $post_id Input for the operation.
 	 *
 	 * @return object Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function document( int $postId ): object {
+	private function document( int $post_id ): object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
 		}
@@ -790,7 +790,7 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'Elementor document manager is unavailable.' );
 		}
 
-		$document = $manager->get( $postId );
+		$document = $manager->get( $post_id );
 		if ( ! is_object( $document ) || ! method_exists( $document, 'save' ) || ! method_exists( $document, 'get_elements_data' ) ) {
 			throw new RuntimeException( 'This item is not an editable Elementor document.' );
 		}
@@ -801,13 +801,13 @@ final class ElementorAdapter {
 	/**
 	 * Process the document or null operation in the Elementor adapter.
 	 *
-	 * @param int $postId Input for the operation.
+	 * @param int $post_id Input for the operation.
 	 *
 	 * @return object|null Operation result.
 	 */
-	private function documentOrNull( int $postId ): ?object {
+	private function documentOrNull( int $post_id ): ?object {
 		try {
-			return $this->document( $postId );
+			return $this->document( $post_id );
 		} catch ( Throwable $error ) {
 			return null;
 		}
@@ -817,17 +817,17 @@ final class ElementorAdapter {
 	 * Ensure document readback for the Elementor adapter.
 	 *
 	 * @param array $actual Input for the operation.
-	 * @param array $expectedData Input for the operation.
-	 * @param array $expectedSettings Input for the operation.
+	 * @param array $expected_data Input for the operation.
+	 * @param array $expected_settings Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertDocumentReadback( array $actual, array $expectedData, array $expectedSettings ): void {
-		if ( ! hash_equals( Fingerprint::make( $expectedData ), Fingerprint::make( $actual['data'] ) ) ) {
+	private function assertDocumentReadback( array $actual, array $expected_data, array $expected_settings ): void {
+		if ( ! hash_equals( Fingerprint::make( $expected_data ), Fingerprint::make( $actual['data'] ) ) ) {
 			throw new RuntimeException( 'Elementor document readback verification failed for elements.' );
 		}
 
-		foreach ( $expectedSettings as $key => $expected_value ) {
+		foreach ( $expected_settings as $key => $expected_value ) {
 			if ( 'template' === $key ) {
 				// Elementor's Page Settings Manager saves this field in WordPress'
 				// _wp_page_template meta, not in _elementor_page_settings.
@@ -894,30 +894,30 @@ final class ElementorAdapter {
 	 * Find element for the Elementor adapter.
 	 *
 	 * @param array  $elements Value updated by reference.
-	 * @param string $elementId Input for the operation.
+	 * @param string $element_id Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function &findElement( array &$elements, string $elementId ): array {
+	private function &findElement( array &$elements, string $element_id ): array {
 		foreach ( $elements as &$element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			if ( isset( $element['id'] ) && (string) $element['id'] === $elementId ) {
+			if ( isset( $element['id'] ) && (string) $element['id'] === $element_id ) {
 				return $element;
 			}
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
 				try {
-					return $this->findElement( $element['elements'], $elementId );
+					return $this->findElement( $element['elements'], $element_id );
 				} catch ( RuntimeException $error ) {
 					// This descendant has no match; continue with the next sibling.
 				}
 			}
 		}
 		unset( $element );
-		throw new RuntimeException( 'Elementor element not found: ' . $elementId );
+		throw new RuntimeException( 'Elementor element not found: ' . $element_id );
 	}
 
 	/**

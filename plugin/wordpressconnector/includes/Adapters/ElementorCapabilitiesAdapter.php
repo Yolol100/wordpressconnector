@@ -559,18 +559,18 @@ final class ElementorCapabilitiesAdapter {
 	 * @param string|null $name Input for the operation.
 	 * @param string|null $version Input for the operation.
 	 * @param string      $confidence Input for the operation.
-	 * @param string      $className Input for the operation.
+	 * @param string      $class_name Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function source( string $family, ?string $slug, ?string $name, ?string $version, string $confidence, string $className ): array {
+	private function source( string $family, ?string $slug, ?string $name, ?string $version, string $confidence, string $class_name ): array {
 		return array(
 			'family'     => $family,
 			'slug'       => $slug,
 			'name'       => $name,
 			'version'    => $version,
 			'confidence' => $confidence,
-			'class'      => $className,
+			'class'      => $class_name,
 		);
 	}
 
@@ -772,13 +772,13 @@ final class ElementorCapabilitiesAdapter {
 	/**
 	 * Process the elementor data operation in the ElementorCapabilities adapter.
 	 *
-	 * @param int   $postId Input for the operation.
+	 * @param int   $post_id Input for the operation.
 	 * @param array $warnings Value updated by reference.
 	 *
 	 * @return array|null Operation result.
 	 */
-	private function elementorData( int $postId, array &$warnings ): ?array {
-		$raw = get_post_meta( $postId, '_elementor_data', true );
+	private function elementorData( int $post_id, array &$warnings ): ?array {
+		$raw = get_post_meta( $post_id, '_elementor_data', true );
 		if ( is_array( $raw ) ) {
 			return $raw;
 		}
@@ -787,7 +787,7 @@ final class ElementorCapabilitiesAdapter {
 		}
 		$decoded = json_decode( $raw, true );
 		if ( ! is_array( $decoded ) ) {
-			$warnings[] = 'invalid_elementor_data:' . $postId;
+			$warnings[] = 'invalid_elementor_data:' . $post_id;
 			return null;
 		}
 		return $decoded;
@@ -798,10 +798,10 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @param array $elements Input for the operation.
 	 * @param array $widgets Value updated by reference.
-	 * @param array $elementTypes Value updated by reference.
+	 * @param array $element_types Value updated by reference.
 	 * @param array $families Value updated by reference.
 	 */
-	private function collectElementUsage( array $elements, array &$widgets, array &$elementTypes, array &$families ): void {
+	private function collectElementUsage( array $elements, array &$widgets, array &$element_types, array &$families ): void {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
@@ -811,7 +811,7 @@ final class ElementorCapabilitiesAdapter {
 				$widget_name             = (string) $element['widgetType'];
 				$widgets[ $widget_name ] = isset( $widgets[ $widget_name ] ) ? $widgets[ $widget_name ] + 1 : 1;
 			} elseif ( '' !== $element_type ) {
-				$elementTypes[ $element_type ] = isset( $elementTypes[ $element_type ] ) ? $elementTypes[ $element_type ] + 1 : 1;
+				$element_types[ $element_type ] = isset( $element_types[ $element_type ] ) ? $element_types[ $element_type ] + 1 : 1;
 			}
 
 			if ( 'section' === $element_type || 'column' === $element_type ) {
@@ -823,12 +823,12 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				$this->collectElementUsage( $element['elements'], $widgets, $elementTypes, $families );
+				$this->collectElementUsage( $element['elements'], $widgets, $element_types, $families );
 			}
 		}
 
 		ksort( $widgets, SORT_STRING );
-		ksort( $elementTypes, SORT_STRING );
+		ksort( $element_types, SORT_STRING );
 	}
 
 	/**
@@ -849,15 +849,15 @@ final class ElementorCapabilitiesAdapter {
 	/**
 	 * Process the merge usage into widgets operation in the ElementorCapabilities adapter.
 	 *
-	 * @param array $registeredWidgets Input for the operation.
-	 * @param array $usedWidgets Input for the operation.
+	 * @param array $registered_widgets Input for the operation.
+	 * @param array $used_widgets Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function mergeUsageIntoWidgets( array $registeredWidgets, array $usedWidgets ): array {
-		foreach ( $registeredWidgets as $name => &$widget ) {
-			$widget['usage'] = isset( $usedWidgets[ $name ] )
-				? $usedWidgets[ $name ]
+	private function mergeUsageIntoWidgets( array $registered_widgets, array $used_widgets ): array {
+		foreach ( $registered_widgets as $name => &$widget ) {
+			$widget['usage'] = isset( $used_widgets[ $name ] )
+				? $used_widgets[ $name ]
 				: array(
 					'instances'    => 0,
 					'documents'    => 0,
@@ -865,6 +865,6 @@ final class ElementorCapabilitiesAdapter {
 				);
 		}
 		unset( $widget );
-		return $registeredWidgets;
+		return $registered_widgets;
 	}
 }

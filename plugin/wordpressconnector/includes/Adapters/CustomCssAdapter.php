@@ -246,51 +246,51 @@ final class CustomCssAdapter {
 	/**
 	 * Process the apply patch operation in the CustomCss adapter.
 	 *
-	 * @param string      $currentCss Input for the operation.
-	 * @param string      $patchId Input for the operation.
+	 * @param string      $current_css Input for the operation.
+	 * @param string      $patch_id Input for the operation.
 	 * @param string      $operation Input for the operation.
-	 * @param string|null $patchCss Input for the operation.
+	 * @param string|null $patch_css Input for the operation.
 	 *
 	 * @return string Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function applyPatch( string $currentCss, string $patchId, string $operation, ?string $patchCss ): string {
-		$start       = '/* ' . self::PATCH_PREFIX . $patchId . ' */';
-		$end         = '/* /' . self::PATCH_PREFIX . $patchId . ' */';
-		$start_count = substr_count( $currentCss, $start );
-		$end_count   = substr_count( $currentCss, $end );
+	private function applyPatch( string $current_css, string $patch_id, string $operation, ?string $patch_css ): string {
+		$start       = '/* ' . self::PATCH_PREFIX . $patch_id . ' */';
+		$end         = '/* /' . self::PATCH_PREFIX . $patch_id . ' */';
+		$start_count = substr_count( $current_css, $start );
+		$end_count   = substr_count( $current_css, $end );
 
 		if ( $start_count > 1 || $end_count > 1 || $start_count !== $end_count ) {
-			throw new RuntimeException( 'Managed CSS patch markers are duplicated or incomplete for patch_id: ' . $patchId );
+			throw new RuntimeException( 'Managed CSS patch markers are duplicated or incomplete for patch_id: ' . $patch_id );
 		}
 
-		$start_pos = strpos( $currentCss, $start );
-		$end_pos   = false !== $start_pos ? strpos( $currentCss, $end, $start_pos + strlen( $start ) ) : false;
+		$start_pos = strpos( $current_css, $start );
+		$end_pos   = false !== $start_pos ? strpos( $current_css, $end, $start_pos + strlen( $start ) ) : false;
 		if ( false !== $start_pos && ( false === $end_pos || $end_pos < $start_pos ) ) {
-			throw new RuntimeException( 'Managed CSS patch markers are malformed for patch_id: ' . $patchId );
+			throw new RuntimeException( 'Managed CSS patch markers are malformed for patch_id: ' . $patch_id );
 		}
 
 		if ( 'remove' === $operation ) {
 			if ( false === $start_pos || false === $end_pos ) {
-				return $currentCss;
+				return $current_css;
 			}
 			$end_after = $end_pos + strlen( $end );
-			return substr( $currentCss, 0, $start_pos ) . substr( $currentCss, $end_after );
+			return substr( $current_css, 0, $start_pos ) . substr( $current_css, $end_after );
 		}
 
-		$block = $start . "\n" . rtrim( (string) $patchCss ) . "\n" . $end;
+		$block = $start . "\n" . rtrim( (string) $patch_css ) . "\n" . $end;
 		if ( false !== $start_pos && false !== $end_pos ) {
 			$end_after = $end_pos + strlen( $end );
-			return substr( $currentCss, 0, $start_pos ) . $block . substr( $currentCss, $end_after );
+			return substr( $current_css, 0, $start_pos ) . $block . substr( $current_css, $end_after );
 		}
 
-		if ( '' === $currentCss ) {
+		if ( '' === $current_css ) {
 			return $block . "\n";
 		}
 
-		$separator = preg_match( '/(?:\r\n|\r|\n)\z/', $currentCss ) ? "\n" : "\n\n";
-		return $currentCss . $separator . $block . "\n";
+		$separator = preg_match( '/(?:\r\n|\r|\n)\z/', $current_css ) ? "\n" : "\n\n";
+		return $current_css . $separator . $block . "\n";
 	}
 
 	/**
@@ -340,13 +340,13 @@ final class CustomCssAdapter {
 	 * Ensure css for the CustomCss adapter.
 	 *
 	 * @param string $css Input for the operation.
-	 * @param int    $maxBytes Input for the operation.
+	 * @param int    $max_bytes Input for the operation.
 	 * @param string $label Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertCss( string $css, int $maxBytes, string $label ): void {
-		if ( strlen( $css ) > $maxBytes ) {
+	private function assertCss( string $css, int $max_bytes, string $label ): void {
+		if ( strlen( $css ) > $max_bytes ) {
 			throw new RuntimeException( $label . ' exceeds the connector size limit.' );
 		}
 		if ( preg_match( '/[\x00-\x08\x0B\x0E-\x1F\x7F]/', $css ) ) {

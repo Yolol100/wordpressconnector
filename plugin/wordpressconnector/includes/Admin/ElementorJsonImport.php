@@ -641,13 +641,13 @@ final class ElementorJsonImport {
 	 * Process the import title operation in the ElementorJsonImport component.
 	 *
 	 * @param array  $payload Requested action payload.
-	 * @param string $postType Input for the operation.
+	 * @param string $post_type Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function importTitle( array $payload, string $postType ): string {
+	private function importTitle( array $payload, string $post_type ): string {
 		$title = isset( $payload['title'] ) && is_string( $payload['title'] ) ? sanitize_text_field( $payload['title'] ) : '';
-		return '' !== $title ? $title : ( 'elementor_library' === $postType ? 'Imported Elementor Template' : 'Imported Elementor ' . ucfirst( $postType ) );
+		return '' !== $title ? $title : ( 'elementor_library' === $post_type ? 'Imported Elementor Template' : 'Imported Elementor ' . ucfirst( $post_type ) );
 	}
 
 	/**
@@ -665,18 +665,18 @@ final class ElementorJsonImport {
 	/**
 	 * Process the import url operation in the ElementorJsonImport component.
 	 *
-	 * @param string $postType Input for the operation.
-	 * @param int    $postId Input for the operation.
+	 * @param string $post_type Input for the operation.
+	 * @param int    $post_id Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function importUrl( string $postType, int $postId ): string {
-		$slug = 'page' === $postType ? 'wpconnector-import-elementor-page' : ( 'post' === $postType ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
-		$base = 'post' === $postType ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $postType );
+	private function importUrl( string $post_type, int $post_id ): string {
+		$slug = 'page' === $post_type ? 'wpconnector-import-elementor-page' : ( 'post' === $post_type ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
+		$base = 'post' === $post_type ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $post_type );
 		return add_query_arg(
 			array(
 				'page'    => $slug,
-				'post_id' => $postId,
+				'post_id' => $post_id,
 			),
 			$base
 		);
@@ -685,22 +685,22 @@ final class ElementorJsonImport {
 	/**
 	 * Process the capability for post type operation in the ElementorJsonImport component.
 	 *
-	 * @param string $postType Input for the operation.
+	 * @param string $post_type Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function capabilityForPostType( string $postType ): string {
-		return 'page' === $postType ? 'edit_pages' : 'edit_posts';
+	private function capabilityForPostType( string $post_type ): string {
+		return 'page' === $post_type ? 'edit_pages' : 'edit_posts';
 	}
 
 	/**
 	 * Check support for post type for the ElementorJsonImport component.
 	 *
-	 * @param string $postType Input for the operation.
+	 * @param string $post_type Input for the operation.
 	 *
 	 * @return bool Operation result.
 	 */
-	private function supportsPostType( string $postType ): bool {
-		return in_array( $postType, self::POST_TYPES, true );
+	private function supportsPostType( string $post_type ): bool {
+		return in_array( $post_type, self::POST_TYPES, true );
 	}
 }

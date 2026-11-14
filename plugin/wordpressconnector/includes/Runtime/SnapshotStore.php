@@ -131,11 +131,11 @@ final class SnapshotStore {
 	/**
 	 * Process the key operation in the SnapshotStore component.
 	 *
-	 * @param string $requestId Input for the operation.
+	 * @param string $request_id Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private static function key( string $requestId ): string {
-		return self::PREFIX . hash( 'sha256', $requestId );
+	private static function key( string $request_id ): string {
+		return self::PREFIX . hash( 'sha256', $request_id );
 	}
 }

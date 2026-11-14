@@ -404,13 +404,13 @@ final class CacheMaintenanceAdapter {
 	/**
 	 * Process the loopback hex header operation in the CacheMaintenance adapter.
 	 *
-	 * @param string $headerName Input for the operation.
+	 * @param string $header_name Input for the operation.
 	 * @param int    $length Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function loopbackHexHeader( string $headerName, int $length ): string {
-		$raw = $_SERVER[ $headerName ] ?? null;
+	private function loopbackHexHeader( string $header_name, int $length ): string {
+		$raw = $_SERVER[ $header_name ] ?? null;
 
 		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
 		if ( ! is_string( $raw ) || ! preg_match( '/\A[a-f0-9]{' . $length . '}\z/i', $raw ) ) {

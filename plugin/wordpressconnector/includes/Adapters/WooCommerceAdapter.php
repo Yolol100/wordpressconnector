@@ -1324,13 +1324,13 @@ final class WooCommerceAdapter {
 	 * Handle internal order snapshot logic.
 	 *
 	 * @param \WC_Order $order Value used by this operation.
-	 * @param bool      $includePersonalData Value used by this operation.
-	 * @param bool      $includeItems Value used by this operation.
+	 * @param bool      $include_personal_data Value used by this operation.
+	 * @param bool      $include_items Value used by this operation.
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function orderSnapshot( \WC_Order $order, bool $includePersonalData, bool $includeItems = true ): array {
-		$item_details = $includeItems
+	private function orderSnapshot( \WC_Order $order, bool $include_personal_data, bool $include_items = true ): array {
+		$item_details = $include_items
 			? $this->orderItemsSnapshot( $order )
 			: array(
 				'items'           => array(),
@@ -1350,12 +1350,12 @@ final class WooCommerceAdapter {
 			'payment_method'  => (string) $order->get_payment_method(),
 			'shipping_method' => (string) $order->get_shipping_method(),
 		);
-		if ( $includeItems ) {
+		if ( $include_items ) {
 			$snapshot['items']           = $item_details['items'];
 			$snapshot['item_count']      = $item_details['item_count'];
 			$snapshot['items_truncated'] = $item_details['items_truncated'];
 		}
-		if ( $includePersonalData ) {
+		if ( $include_personal_data ) {
 			$snapshot['customer_id'] = (int) $order->get_customer_id();
 			$snapshot['billing']     = array(
 				'first_name' => (string) $order->get_billing_first_name(),
@@ -1583,22 +1583,22 @@ final class WooCommerceAdapter {
 	/**
 	 * Handle internal shipping zone snapshot logic.
 	 *
-	 * @param int    $zoneId Value used by this operation.
-	 * @param string $zoneName Value used by this operation.
-	 * @param int    $zoneOrder Value used by this operation.
+	 * @param int    $zone_id Value used by this operation.
+	 * @param string $zone_name Value used by this operation.
+	 * @param int    $zone_order Value used by this operation.
 	 *
 	 * @return array Result of this operation.
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function shippingZoneSnapshot( int $zoneId, string $zoneName, int $zoneOrder ): array {
+	private function shippingZoneSnapshot( int $zone_id, string $zone_name, int $zone_order ): array {
 		global $wpdb;
 		$locations      = array();
 		$location_count = 0;
-		if ( $zoneId > 0 && isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'prepare' ) && method_exists( $wpdb, 'get_results' ) && method_exists( $wpdb, 'get_var' ) ) {
+		if ( $zone_id > 0 && isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'prepare' ) && method_exists( $wpdb, 'get_results' ) && method_exists( $wpdb, 'get_var' ) ) {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared zone-location count must reflect current shipping settings.
-			$count_value = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE `zone_id` = %d', $table, $zoneId ) );
+			$count_value = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE `zone_id` = %d', $table, $zone_id ) );
 			if ( null === $count_value || false === $count_value ) {
 				throw new RuntimeException( 'WooCommerce shipping zone locations could not be counted.' );
 			}
@@ -1609,7 +1609,7 @@ final class WooCommerceAdapter {
 					$wpdb->prepare(
 						'SELECT `location_code`, `location_type` FROM %i WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d',
 						$table,
-						$zoneId,
+						$zone_id,
 						100
 					)
 				);
@@ -1627,9 +1627,9 @@ final class WooCommerceAdapter {
 			}
 		}
 		return array(
-			'id'                  => $zoneId,
-			'name'                => $zoneName,
-			'order'               => $zoneOrder,
+			'id'                  => $zone_id,
+			'name'                => $zone_name,
+			'order'               => $zone_order,
 			'locations'           => $locations,
 			'location_count'      => $location_count,
 			'locations_truncated' => $location_count > count( $locations ),

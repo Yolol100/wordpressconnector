@@ -389,14 +389,14 @@ final class WooCommerceFulfillmentAdapter {
 	 * Normalize locations for the WooCommerceFulfillment adapter.
 	 *
 	 * @param mixed $locations Input for the operation.
-	 * @param bool  $allowEmpty Input for the operation.
+	 * @param bool  $allow_empty Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function normalizeLocations( $locations, bool $allowEmpty ): array {
-		if ( ! is_array( $locations ) || count( $locations ) > 100 || ( ! $allowEmpty && ! $locations ) ) {
+	private function normalizeLocations( $locations, bool $allow_empty ): array {
+		if ( ! is_array( $locations ) || count( $locations ) > 100 || ( ! $allow_empty && ! $locations ) ) {
 			throw new RuntimeException( 'Locations require 1-100 allowed entries.' );
 		}
 		$result = array();
@@ -565,18 +565,18 @@ final class WooCommerceFulfillmentAdapter {
 	 * @param string $method Input for the operation.
 	 * @param string $path Input for the operation.
 	 * @param array  $body Input for the operation.
-	 * @param bool   $listBody Input for the operation.
+	 * @param bool   $list_body Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function api( string $method, string $path, array $body = array(), bool $listBody = false ): array {
+	private function api( string $method, string $path, array $body = array(), bool $list_body = false ): array {
 		if ( ! class_exists( 'WP_REST_Request' ) || ! function_exists( 'rest_do_request' ) ) {
 			throw new RuntimeException( 'WooCommerce REST API unavailable.' );
 		}
 		$request = new \WP_REST_Request( $method, $path );
-		if ( $listBody ) {
+		if ( $list_body ) {
 			if ( ! method_exists( $request, 'set_body' ) || ! method_exists( $request, 'set_header' ) ) {
 				throw new RuntimeException( 'WooCommerce REST JSON request API unavailable.' );
 			}
