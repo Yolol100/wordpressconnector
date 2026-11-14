@@ -31,15 +31,32 @@ final class YoastNativeAbilitiesAdapter {
 	);
 
 	private const WRITABLE = array(
-		'seo_title', 'meta_description', 'canonical', 'is_cornerstone',
-		'noindex', 'nofollow', 'noimageindex', 'noarchive', 'nosnippet',
-		'open_graph_title', 'open_graph_description', 'twitter_title',
-		'twitter_description', 'schema_page_type', 'schema_article_type',
+		'seo_title',
+		'meta_description',
+		'canonical',
+		'is_cornerstone',
+		'noindex',
+		'nofollow',
+		'noimageindex',
+		'noarchive',
+		'nosnippet',
+		'open_graph_title',
+		'open_graph_description',
+		'twitter_title',
+		'twitter_description',
+		'schema_page_type',
+		'schema_article_type',
 	);
 
 	private const HIGH_IMPACT = array(
-		'canonical', 'noindex', 'nofollow', 'noimageindex', 'noarchive',
-		'nosnippet', 'schema_page_type', 'schema_article_type',
+		'canonical',
+		'noindex',
+		'nofollow',
+		'noimageindex',
+		'noarchive',
+		'nosnippet',
+		'schema_page_type',
+		'schema_article_type',
 	);
 
 	/**
@@ -155,7 +172,10 @@ final class YoastNativeAbilitiesAdapter {
 			'fields'      => $this->snapshot( $data ),
 			'rendered'    => $this->renderedFields( $data ),
 			'analysis'    => array_intersect_key( $data, array_flip( array(
-				'focus_keyphrase', 'seo_score', 'readability_score', 'inclusive_language_score',
+				'focus_keyphrase',
+				'seo_score',
+				'readability_score',
+				'inclusive_language_score',
 			) ) ),
 			'fingerprint' => Fingerprint::make( $this->snapshot( $data ) ),
 		);
