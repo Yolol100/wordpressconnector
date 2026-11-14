@@ -32,7 +32,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'
+				'description' =>, 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'
 			)
 		);
 		$registry->register(
@@ -42,7 +42,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'
+				'description' =>, 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'
 			)
 		);
 		$registry->register(
@@ -52,7 +52,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'
+				'description' =>, 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'
 			)
 		);
 		$registry->register(
@@ -61,7 +61,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.'
+				'description' =>, 'List WooCommerce shipping zones and geographic locations without shipping method settings.'
 			)
 		);
 		$registry->register(
@@ -70,7 +70,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'
+				'description' =>, 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'
 			)
 		);
 		$registry->register(
@@ -88,7 +88,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' => 'List bounded WooCommerce tax rates for a registered tax class.'
+				'description' =>, 'List bounded WooCommerce tax rates for a registered tax class.'
 			)
 		);
 		$registry->register( 'woocommerce.product.list', array( $this, 'productList' ), array( 'description' => 'List WooCommerce products through WooCommerce CRUD.' ) );
@@ -464,7 +464,7 @@ final class WooCommerceAdapter {
 				$classes[] = array(
 					'id'   => isset( $class->tax_rate_class_id ) ? (int) $class->tax_rate_class_id : 0,
 					'name' => isset( $class->name ) ? (string) $class->name : '',
-					'slug' => isset( $class->slug ) ? (string) $class->slug : ''
+					'slug' => isset( $class->slug ) ? (string) $class->slug :, ''
 				);
 			}
 		}
@@ -571,7 +571,7 @@ final class WooCommerceAdapter {
 				if ( is_object( $location ) && isset( $location->location_type, $location->location_code ) ) {
 					$snapshot['locations'][] = array(
 						'type' => (string) $location->location_type,
-						'code' => (string) $location->location_code
+						'code' => (string) $location->location_code,
 					);
 				}
 			}
@@ -677,7 +677,7 @@ final class WooCommerceAdapter {
 				'would_create'         => $this->productSnapshot( $product ),
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'  => true,
-					'type' => $type
+					'type' => $type,
 				) ),
 			);
 		}
@@ -691,7 +691,7 @@ final class WooCommerceAdapter {
 			'product'   => $this->productSnapshot( $saved ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -796,7 +796,7 @@ final class WooCommerceAdapter {
 				'would_create'         => $this->variationSnapshot( $variation ),
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'       => true,
-					'parent_id' => $parent_id
+					'parent_id' => $parent_id,
 				) ),
 			);
 		}
@@ -812,7 +812,7 @@ final class WooCommerceAdapter {
 			'variation' => $this->variationSnapshot( $saved_variation ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -886,7 +886,7 @@ final class WooCommerceAdapter {
 				'would_create'         => $args,
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'  => true,
-					'slug' => $args['slug']
+					'slug' => $args['slug'],
 				) ),
 			);
 		}
@@ -899,7 +899,7 @@ final class WooCommerceAdapter {
 			'attribute_id' => (int) $id,
 			'_rollback'    => array(
 				'action'  => 'woocommerce.attribute.delete',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -1047,7 +1047,7 @@ final class WooCommerceAdapter {
 			'coupon'    => $this->couponSnapshot( new \WC_Coupon( $id ) ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -1309,7 +1309,7 @@ final class WooCommerceAdapter {
 			: array(
 				'items'           => array(),
 				'item_count'      => 0,
-				'items_truncated' => false
+				'items_truncated' => false,
 			);
 		$snapshot     = array(
 			'id'              => (int) $order->get_id(),
@@ -1588,7 +1588,7 @@ final class WooCommerceAdapter {
 					if ( is_object( $location ) && isset( $location->location_code, $location->location_type ) ) {
 						$locations[] = array(
 							'code' => (string) $location->location_code,
-							'type' => (string) $location->location_type
+							'type' => (string) $location->location_type,
 						);
 					}
 				}
@@ -1796,7 +1796,7 @@ final class WooCommerceAdapter {
 					'options'   => array_values( $attribute->get_options() ),
 					'position'  => (int) $attribute->get_position(),
 					'visible'   => (bool) $attribute->get_visible(),
-					'variation' => (bool) $attribute->get_variation()
+					'variation' => (bool) $attribute->get_variation(),
 				);
 			}
 		}
@@ -1841,7 +1841,7 @@ final class WooCommerceAdapter {
 				$items[] = array(
 					'id'   => (string) $download->get_id(),
 					'name' => (string) $download->get_name(),
-					'file' => (string) $download->get_file()
+					'file' => (string) $download->get_file(),
 				);
 			}
 		}

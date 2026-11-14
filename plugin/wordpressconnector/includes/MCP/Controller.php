@@ -277,7 +277,7 @@ final class Controller {
 			'tools'     => array( 'listChanged' => false ),
 			'resources' => array(
 				'listChanged' => false,
-				'subscribe'   => false
+				'subscribe'   => false,
 			),
 			'prompts'   => array( 'listChanged' => false ),
 		);
@@ -356,7 +356,7 @@ final class Controller {
 				'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
 				'mimeType'    => 'text/plain',
 			),
-		) ), $modern, 300000 );
+		), ), $modern, 300000 );
 	}
 
 	/**
@@ -399,9 +399,9 @@ final class Controller {
 			array(
 				'uri'      => $params['uri'],
 				'mimeType' => 'text/plain',
-				'text'     => $text
+				'text'     => $text,
 			),
-		) ), $modern, 60000 );
+		), ), $modern, 60000 );
 	}
 
 	/**
@@ -428,11 +428,11 @@ final class Controller {
 					array(
 						'name'        => 'goal',
 						'description' => 'Optional short description of the intended change.',
-						'required'    => false
+						'required'    => false,
 					),
 				),
 			),
-		) ), $modern, 300000 );
+		), ), $modern, 300000 );
 	}
 
 	/**
@@ -494,8 +494,8 @@ final class Controller {
 			'messages'    => array( array( 'role' => 'user',
 				'content' => array(
 				'type'    => 'text',
-				'text'    => $text
-			) ) ),
+				'text'    => $text,
+			), ), ),
 		);
 	}
 
@@ -517,7 +517,7 @@ final class Controller {
 						'readOnlyHint'    => true,
 						'destructiveHint' => false,
 						'idempotentHint'  => true,
-						'openWorldHint'   => false
+						'openWorldHint'   => false,
 					),
 				),
 				array(
@@ -528,7 +528,7 @@ final class Controller {
 						'readOnlyHint'    => true,
 						'destructiveHint' => false,
 						'idempotentHint'  => true,
-						'openWorldHint'   => false
+						'openWorldHint'   => false,
 					),
 				),
 				array(
@@ -539,7 +539,7 @@ final class Controller {
 						'readOnlyHint'    => false,
 						'destructiveHint' => true,
 						'idempotentHint'  => false,
-						'openWorldHint'   => false
+						'openWorldHint'   => false,
 					),
 				),
 			),
@@ -744,7 +744,7 @@ final class Controller {
 			'id'      => $id,
 			'error'   => array(
 				'code'    => $code,
-				'message' => $this->boundedMessage( $message )
+				'message' => $this->boundedMessage( $message ),
 			),
 		), $status );
 	}
@@ -762,7 +762,7 @@ final class Controller {
 			'content' => array( array(
 				'type' => 'text',
 				'text' => $this->encodeForText( $value ),
-			) ),
+			), ),
 			'structuredContent' => array( 'result' => $value ),
 			'isError'           => $isError,
 		);
@@ -778,7 +778,7 @@ final class Controller {
 	private function toolError( string $message ): array {
 		$value = array(
 			'ok'    => false,
-			'error' => $this->boundedMessage( $message )
+			'error' => $this->boundedMessage( $message ),
 		);
 		return $this->toolResult( $value, true );
 	}
@@ -883,28 +883,28 @@ final class Controller {
 			'properties'           => array(
 				'action'               => array(
 					'type'    => 'string',
-					'pattern' => '^[a-z0-9][a-z0-9._-]*$'
+					'pattern' =>, '^[a-z0-9][a-z0-9._-]*$'
 				),
 				'payload' => array( 'type' => 'object' ),
 				'dry_run' => array(
 					'type'    => 'boolean',
-					'default' => true
+					'default' => true,
 				),
 				'confirm'              => array(
 					'type'    => 'boolean',
-					'default' => false
+					'default' => false,
 				),
 				'request_id'           => array(
 					'type'    => 'string',
-					'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'
+					'pattern' =>, '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'
 				),
 				'expected_fingerprint' => array(
 					'type'    => 'string',
-					'pattern' => '^[a-f0-9]{64}$'
+					'pattern' =>, '^[a-f0-9]{64}$'
 				),
 				'expected_state_token' => array(
 					'type'    => 'string',
-					'pattern' => '^[a-f0-9]{64}$'
+					'pattern' =>, '^[a-f0-9]{64}$'
 				),
 			),
 			'required' => array( 'action', 'payload' ),

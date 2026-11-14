@@ -39,7 +39,7 @@ final class WooCommerceOperationsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' => 'manage_woocommerce'
+			'capability' =>, 'manage_woocommerce'
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
@@ -92,7 +92,7 @@ final class WooCommerceOperationsAdapter {
 		}
 		$query    = $area === 'tax_rates' ? array(
 			'page'     => $page,
-			'per_page' => $perPage
+			'per_page' => $perPage,
 		) : array();
 		$response = $this->request( 'GET', $path, $query );
 		if ( count( $response ) > 150 ) {
@@ -266,7 +266,7 @@ final class WooCommerceOperationsAdapter {
 		}
 		return array(
 			'restored' => true,
-			'area'     => $area
+			'area'     => $area,
 		);
 	}
 

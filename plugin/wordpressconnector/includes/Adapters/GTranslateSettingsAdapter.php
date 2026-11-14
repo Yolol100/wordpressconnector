@@ -32,7 +32,7 @@ final class GTranslateSettingsAdapter {
 		$read = array(
 			'privileged'             => true,
 			'public_repository_safe' => true,
-			'capability'             => 'manage_options'
+			'capability'             =>, 'manage_options'
 		);
 		$registry->register( 'gtranslate.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'gtranslate.settings.update', array( $this, 'update' ),
@@ -41,7 +41,7 @@ final class GTranslateSettingsAdapter {
 			array(
 				'privileged' => true,
 				'capability' => 'manage_options',
-				'mutation'   => true
+				'mutation'   => true,
 			) );
 	}
 
@@ -165,7 +165,7 @@ final class GTranslateSettingsAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) return array(
 			'would_restore'        => array_keys( $entries ),
-			'_current_fingerprint' => Fingerprint::make( $raw )
+			'_current_fingerprint' => Fingerprint::make( $raw ),
 		);
 		update_option( 'GTranslate', $before );
 		if ( $this->settings() !== $before ) {

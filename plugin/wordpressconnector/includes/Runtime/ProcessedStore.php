@@ -243,7 +243,7 @@ final class ProcessedStore {
 			array( 'option_value' => $replacement ),
 			array(
 				'option_name'  => self::LOCK_KEY,
-				'option_value' => $expected
+				'option_value' => $expected,
 			),
 			array( '%s' ),
 			array( '%s', '%s' )
@@ -270,7 +270,7 @@ final class ProcessedStore {
 			$wpdb->options,
 			array(
 				'option_name'  => self::LOCK_KEY,
-				'option_value' => $expected
+				'option_value' => $expected,
 			),
 			array( '%s', '%s' )
 		);

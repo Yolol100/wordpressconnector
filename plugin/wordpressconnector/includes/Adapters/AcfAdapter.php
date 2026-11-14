@@ -165,8 +165,8 @@ final class AcfAdapter {
 		$result['_rollback'] = array( 'action' => 'acf.update',
 			'payload' => array(
 			'target'  => $target,
-			'fields'  => $before
-		) );
+			'fields'  => $before,
+		), );
 		return $result;
 	}
 
@@ -195,7 +195,7 @@ final class AcfAdapter {
 		$result = array(
 			'target'               => $target,
 			'before'               => $before,
-			'_current_fingerprint' => Fingerprint::make( $before )
+			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -207,8 +207,8 @@ final class AcfAdapter {
 		$result['_rollback'] = array( 'action' => 'acf.update',
 			'payload' => array(
 			'target'  => $target,
-			'fields'  => $before
-		) );
+			'fields'  => $before,
+		), );
 		return $result;
 	}
 
@@ -348,7 +348,7 @@ final class AcfAdapter {
 		$state  = array(
 			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields'    => $before
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -375,7 +375,7 @@ final class AcfAdapter {
 				'wrapper'           => array(
 					'width' => '',
 					'class' => '',
-					'id'    => ''
+					'id'    =>, ''
 				),
 				'default_value' => '',
 				'maxlength'     => '',
@@ -412,7 +412,7 @@ final class AcfAdapter {
 				'payload' => array(
 					'post_id'   => $postId,
 					'group_key' => $groupKey,
-					'fields'    => $created
+					'fields'    => $created,
 				),
 			);
 		}
@@ -457,7 +457,7 @@ final class AcfAdapter {
 		$state  = array(
 			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields'    => $before
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -563,7 +563,7 @@ final class AcfAdapter {
 		$state  = array(
 			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields'    => $before
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -672,7 +672,7 @@ final class AcfAdapter {
 		$state  = array(
 			'post_id'   => $postId,
 			'group_key' => $groupKey,
-			'fields'    => $before
+			'fields'    => $before,
 		);
 		$result = array(
 			'post_id'              => $postId,
@@ -746,11 +746,11 @@ final class AcfAdapter {
 
 		$state  = array(
 			'group_key' => $groupKey,
-			'current'   => null
+			'current'   => null,
 		);
 		$schema = array(
 			'group'  => $group,
-			'fields' => $fields
+			'fields' => $fields,
 		);
 		$result = array(
 			'group_key'            => $groupKey,
@@ -826,7 +826,7 @@ final class AcfAdapter {
 		$fields              = $this->normalizeSchemaFields( array_values( $expected['fields'] ), 0, $total, $keys );
 		$normalized_expected = array(
 			'group'  => $group,
-			'fields' => $fields
+			'fields' => $fields,
 		);
 		$current             = $this->fieldGroupSnapshot( $groupKey );
 		if ( is_array( $current ) && ! $this->schemaContains( $normalized_expected, $current ) ) {
@@ -838,7 +838,7 @@ final class AcfAdapter {
 			'before'               => $current,
 			'_current_fingerprint' => Fingerprint::make( array(
 				'group_key' => $groupKey,
-				'current'   => $current
+				'current'   => $current,
 			) ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -997,7 +997,7 @@ final class AcfAdapter {
 				'key'   => $key,
 				'name'  => $name,
 				'label' => $label,
-				'type'  => 'text'
+				'type'  =>, 'text'
 			);
 		}
 		return $normalized;
@@ -1199,7 +1199,7 @@ final class AcfAdapter {
 				$normalized_rules[] = array(
 					'param'    => $param,
 					'operator' => $operator,
-					'value'    => $value
+					'value'    => $value,
 				);
 			}
 			$normalized[] = $normalized_rules;
@@ -1319,7 +1319,7 @@ final class AcfAdapter {
 			'wrapper' => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array(
 				'width' => '',
 				'class' => '',
-				'id'    => ''
+				'id'    =>, ''
 			),
 		);
 
@@ -1552,7 +1552,7 @@ final class AcfAdapter {
 		return array(
 			'width' => $width,
 			'class' => $class,
-			'id'    => $id
+			'id'    => $id,
 		);
 	}
 
@@ -1599,7 +1599,7 @@ final class AcfAdapter {
 				$group[] = array(
 					'field'    => $field,
 					'operator' => $operator,
-					'value'    => $value
+					'value'    => $value,
 				);
 			}
 			$normalized[] = $group;
@@ -1637,7 +1637,7 @@ final class AcfAdapter {
 		}
 		$createdNodes[] = array(
 			'key' => (string) $definition['key'],
-			'id'  => $saved_id
+			'id'  => $saved_id,
 		);
 		foreach ( array_values( $children ) as $index => $child ) {
 			$this->createFieldTree( $child, $saved_id, $index, $createdNodes );
@@ -1747,7 +1747,7 @@ final class AcfAdapter {
 		}
 		return array(
 			'group'  => $group,
-			'fields' => $trees
+			'fields' => $trees,
 		);
 	}
 

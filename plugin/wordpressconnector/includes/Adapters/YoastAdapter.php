@@ -271,7 +271,7 @@ final class YoastAdapter {
 		$fields = $this->siteRepresentationSnapshot();
 		return array(
 			'fields'      => $fields,
-			'fingerprint' => Fingerprint::make( $fields )
+			'fingerprint' => Fingerprint::make( $fields ),
 		);
 	}
 
@@ -369,7 +369,7 @@ final class YoastAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => true,
-				'_current_fingerprint' => Fingerprint::make( $before )
+				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
 		$fields = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
@@ -389,7 +389,7 @@ final class YoastAdapter {
 		}
 		return array(
 			'restored' => true,
-			'fields'   => $fields
+			'fields'   => $fields,
 		);
 	}
 

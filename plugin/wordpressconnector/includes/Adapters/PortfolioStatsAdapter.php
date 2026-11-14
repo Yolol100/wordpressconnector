@@ -141,7 +141,7 @@ final class PortfolioStatsAdapter {
 			'post_id'              => $post_id,
 			'before'               => $before,
 			'after'                => $requested,
-			'_current_fingerprint' => Fingerprint::make( $before )
+			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 
@@ -149,7 +149,7 @@ final class PortfolioStatsAdapter {
 			if ( array_key_exists( 'content', $requested ) ) {
 				$updated = wp_update_post( array(
 					'ID'           => $post_id,
-					'post_content' => $requested['content']
+					'post_content' => $requested['content'],
 				), true );
 				if ( is_wp_error( $updated ) ) throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
 			}
@@ -172,7 +172,7 @@ final class PortfolioStatsAdapter {
 			if ( array_key_exists( 'content', $before ) ) {
 				$restore       = wp_update_post( array(
 					'ID'           => $post_id,
-					'post_content' => $before['content']
+					'post_content' => $before['content'],
 				), true );
 				$restored_post = get_post( $post_id );
 				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) $failures[] = 'content';
@@ -190,7 +190,7 @@ final class PortfolioStatsAdapter {
 		foreach ( $before as $name => $value ) $rollback_payload[ $name ] = $value;
 		$result['_rollback'] = array(
 			'action'  => 'portfolio.case_text_update',
-			'payload' => $rollback_payload
+			'payload' => $rollback_payload,
 		);
 		return $result;
 	}
@@ -342,7 +342,7 @@ final class PortfolioStatsAdapter {
 			'action'  => 'acf.portfolio_stats_update',
 			'payload' => array(
 				'post_id' => $post_id,
-				'fields'  => $before
+				'fields'  => $before,
 			),
 		);
 		return $result;

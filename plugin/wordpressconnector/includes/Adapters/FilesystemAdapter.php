@@ -341,14 +341,14 @@ final class FilesystemAdapter {
 		$absolute      = $this->resolveNewTextPath( $relative );
 		$expectedState = array(
 			'path'   => $relative,
-			'exists' => false
+			'exists' => false,
 		);
 		$result        = array(
 			'before' => $expectedState,
 			'after'  => array(
 				'path'   => $relative,
 				'bytes'  => strlen( $content ),
-				'sha256' => hash( 'sha256', $content )
+				'sha256' => hash( 'sha256', $content ),
 			),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 			'_current_fingerprint'                    => Fingerprint::make( $expectedState ),
@@ -395,7 +395,7 @@ final class FilesystemAdapter {
 			'path'                       => $relative,
 			'expected_sha256'            => hash( 'sha256', $readback ),
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-		) );
+		), );
 		return $result;
 	}
 
@@ -426,7 +426,7 @@ final class FilesystemAdapter {
 			'before' => $beforeState,
 			'after'  => array(
 				'path'   => $relative,
-				'exists' => false
+				'exists' => false,
 			),
 			'_current_fingerprint'                    => Fingerprint::make( $beforeState ),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
@@ -457,7 +457,7 @@ final class FilesystemAdapter {
 			'path'                       => $relative,
 			'content'                    => $before,
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-		) );
+		), );
 		return $result;
 	}
 

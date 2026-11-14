@@ -28,24 +28,24 @@ final class MediaAdapter {
 		$registry->register( 'media.get', array( $this, 'mediaGet' ), array( 'description' => 'Read one media attachment and metadata.' ) );
 		$registry->register( 'media.import', array( $this, 'mediaImport' ), array(
 			'mutation'    => true,
-			'description' => 'Import a file from the trusted request asset root into the media library.'
+			'description' =>, 'Import a file from the trusted request asset root into the media library.'
 		) );
 		$registry->register( 'media.rename', array( $this, 'mediaRename' ), array(
 			'mutation'    => true,
 			'capability'  => 'manage_options',
-			'description' => 'Safely rename an image with retained old-URL compatibility files, dry-run, and exact metadata readback.'
+			'description' =>, 'Safely rename an image with retained old-URL compatibility files, dry-run, and exact metadata readback.'
 		) );
 		$registry->register( 'media.update', array( $this, 'mediaUpdate' ), array(
 			'mutation'    => true,
-			'description' => 'Update attachment title, alt text, caption, description and parent.'
+			'description' =>, 'Update attachment title, alt text, caption, description and parent.'
 		) );
 		$registry->register( 'media.assign', array( $this, 'mediaAssign' ), array(
 			'mutation'    => true,
-			'description' => 'Assign media as featured image, Woo gallery image, custom logo or site icon.'
+			'description' =>, 'Assign media as featured image, Woo gallery image, custom logo or site icon.'
 		) );
 		$registry->register( 'media.regenerate', array( $this, 'mediaRegenerate' ), array(
 			'mutation'    => true,
-			'description' => 'Regenerate attachment metadata and image subsizes.'
+			'description' =>, 'Regenerate attachment metadata and image subsizes.'
 		) );
 	}
 
@@ -81,7 +81,7 @@ final class MediaAdapter {
 		return array(
 			'media' => $items,
 			'total' => (int) $query->found_posts,
-			'pages' => (int) $query->max_num_pages
+			'pages' => (int) $query->max_num_pages,
 		);
 	}
 
@@ -99,7 +99,7 @@ final class MediaAdapter {
 		$snapshot = $this->snapshot( $id );
 		return array(
 			'media'       => $snapshot,
-			'fingerprint' => Fingerprint::make( $snapshot )
+			'fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
 
@@ -155,8 +155,8 @@ final class MediaAdapter {
 				'_current_fingerprint' => Fingerprint::make( array(
 				'source'               => $source,
 				'size'                 => $size,
-				'mtime'                => filemtime( $real )
-			) ) );
+				'mtime'                => filemtime( $real ),
+			) ), );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -170,7 +170,7 @@ final class MediaAdapter {
 
 		$file_array    = array(
 			'name'     => basename( $real ),
-			'tmp_name' => $tmp
+			'tmp_name' => $tmp,
 		);
 		$attachment_id = media_handle_sideload( $file_array, $planned['parent'], isset( $payload['description'] ) ? (string) $payload['description'] : null );
 		if ( is_wp_error( $attachment_id ) ) {
@@ -192,7 +192,7 @@ final class MediaAdapter {
 			'media'     => $this->snapshot( (int) $attachment_id ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $attachment_id )
+				'payload' => array( 'id' => (int) $attachment_id ),
 			),
 		);
 	}
@@ -218,7 +218,7 @@ final class MediaAdapter {
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
-			'_current_fingerprint' => Fingerprint::make( $before )
+			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -233,7 +233,7 @@ final class MediaAdapter {
 			'caption'     => $before['caption'],
 			'description' => $before['description'],
 			'parent'      => $before['parent'],
-		) );
+		), );
 		return $result;
 	}
 
@@ -279,7 +279,7 @@ final class MediaAdapter {
 			return array(
 				'unchanged'            => true,
 				'attachment_id'        => $id,
-				'_current_fingerprint' => Fingerprint::make( $this->snapshot( $id ) )
+				'_current_fingerprint' => Fingerprint::make( $this->snapshot( $id ) ),
 			);
 		}
 		$metadata = wp_get_attachment_metadata( $id );
@@ -315,11 +315,11 @@ final class MediaAdapter {
 			'old_filename'       => $old_name,
 			'new_filename'       => $requested,
 			'copies'             => count( $copies ),
-			'old_urls_preserved' => true );
+			'old_urls_preserved' => true, );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_rename'         => $plan,
-				'_current_fingerprint' => Fingerprint::make( $before )
+				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
 		$created = array();
@@ -372,7 +372,7 @@ final class MediaAdapter {
 			return array( 'renamed' => $plan,
 				'after'              => $readback,
 				'rollback_supported' => false,
-				'old_urls_preserved' => true );
+				'old_urls_preserved' => true, );
 		} catch ( \Throwable $error ) {
 			// A metadata write can fail after another part already committed.
 			// Never delete new files unless BOTH original WordPress pointers
@@ -463,7 +463,7 @@ final class MediaAdapter {
 						'id'          => $before,
 						'target_type' => 'featured_image',
 						'target_id'   => $targetId,
-					) );
+					), );
 				}
 				return $result;
 
@@ -487,7 +487,7 @@ final class MediaAdapter {
 				$result = array(
 					'before'               => $before,
 					'after'                => $after,
-					'_current_fingerprint' => Fingerprint::make( $before )
+					'_current_fingerprint' => Fingerprint::make( $before ),
 				);
 				if ( ! empty( $context['dry_run'] ) ) {
 					return $result;
@@ -501,7 +501,7 @@ final class MediaAdapter {
 					'payload'           => array(
 					'id'                => $targetId,
 					'gallery_image_ids' => $before,
-				) );
+				), );
 				return $result;
 
 			case 'custom_logo':
@@ -513,7 +513,7 @@ final class MediaAdapter {
 					return array(
 						'before'               => $before,
 						'after'                => $attachment_id,
-						'_current_fingerprint' => Fingerprint::make( $before )
+						'_current_fingerprint' => Fingerprint::make( $before ),
 					);
 				}
 				set_theme_mod( 'custom_logo', $attachment_id );
@@ -522,9 +522,9 @@ final class MediaAdapter {
 					'action'    => 'theme_mod.update',
 					'payload'   => array(
 						'name'  => 'custom_logo',
-						'value' => $before
+						'value' => $before,
 					),
-				) );
+				), );
 
 			case 'site_icon':
 				if ( ! current_user_can( 'manage_options' ) ) {
@@ -535,7 +535,7 @@ final class MediaAdapter {
 					return array(
 						'before'               => $before,
 						'after'                => $attachment_id,
-						'_current_fingerprint' => Fingerprint::make( $before )
+						'_current_fingerprint' => Fingerprint::make( $before ),
 					);
 				}
 				update_option( 'site_icon', $attachment_id, false );
@@ -544,9 +544,9 @@ final class MediaAdapter {
 					'action'    => 'option.update',
 					'payload'   => array(
 						'name'  => 'site_icon',
-						'value' => $before
+						'value' => $before,
 					),
-				) );
+				), );
 
 			default:
 				throw new RuntimeException( 'target_type must be featured_image, product_gallery, custom_logo or site_icon. Use acf.update, elementor.patch_element or gutenberg.patch for builder-specific assignments.' );
@@ -580,7 +580,7 @@ final class MediaAdapter {
 			return array(
 				'would_regenerate'     => $id,
 				'before'               => $before,
-				'_current_fingerprint' => Fingerprint::make( $before )
+				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
 		require_once ABSPATH . 'wp-admin/includes/image.php';
@@ -591,7 +591,7 @@ final class MediaAdapter {
 		return array(
 			'attachment_id'      => $id,
 			'metadata'           => wp_get_attachment_metadata( $id ),
-			'rollback_supported' => false
+			'rollback_supported' => false,
 		);
 	}
 

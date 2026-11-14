@@ -123,7 +123,7 @@ final class YoastNativeAbilitiesAdapter {
 			'abilities' => $actions,
 			'requires'  => array(
 				'wordpress' => '6.9',
-				'yoast'     => '28.6'
+				'yoast'     =>, '28.6'
 			),
 			'transport'     => 'private_authenticated_only',
 		);
@@ -159,7 +159,7 @@ final class YoastNativeAbilitiesAdapter {
 		return array(
 			'kind'  => $kind,
 			'items' => $result,
-			'count' => count( $result )
+			'count' => count( $result ),
 		);
 	}
 
@@ -282,7 +282,7 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => array_keys( $previous ),
-				'_current_fingerprint' => Fingerprint::make( $current )
+				'_current_fingerprint' => Fingerprint::make( $current ),
 			);
 		}
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $previous ) );
@@ -295,7 +295,7 @@ final class YoastNativeAbilitiesAdapter {
 		return array(
 			'post_id'           => $id,
 			'restored'          => true,
-			'readback_verified' => true
+			'readback_verified' => true,
 		);
 	}
 

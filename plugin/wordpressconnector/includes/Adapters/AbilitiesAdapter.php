@@ -329,7 +329,7 @@ final class AbilitiesAdapter {
 		try {
 			$budget  = array(
 				'nodes' => 0,
-				'bytes' => 0
+				'bytes' => 0,
 			);
 			$safe    = $this->redactAbilityResult( $result, 0, new \SplObjectStorage(), $budget );
 			$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $safe ) : json_encode( $safe );
@@ -917,7 +917,7 @@ final class AbilitiesAdapter {
 	private function boundedCatalogValue( $value ): array {
 		$budget = array(
 			'nodes' => 0,
-			'bytes' => 0
+			'bytes' => 0,
 		);
 		try {
 			$safe = $this->boundedCatalogWalk( $value, 0, new \SplObjectStorage(), $budget );

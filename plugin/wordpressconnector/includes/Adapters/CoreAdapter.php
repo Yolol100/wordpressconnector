@@ -390,7 +390,7 @@ final class CoreAdapter {
 				'would_create'         => $fields,
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'       => true,
-					'post_type' => $fields['post_type']
+					'post_type' => $fields['post_type'],
 				) ),
 			);
 		}
@@ -405,7 +405,7 @@ final class CoreAdapter {
 			'post'      => $this->postSnapshot( $post ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -510,7 +510,7 @@ final class CoreAdapter {
 		}
 		$updated = wp_update_post( wp_slash( array(
 			'ID'           => (int) $post->ID,
-			'post_content' => $next
+			'post_content' => $next,
 		) ), true );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
@@ -519,7 +519,7 @@ final class CoreAdapter {
 		if ( ! $actual instanceof \WP_Post || (string) $actual->post_content !== $next ) {
 			wp_update_post( wp_slash( array(
 				'ID'           => (int) $post->ID,
-				'post_content' => $original
+				'post_content' => $original,
 			) ), true );
 			throw new RuntimeException( 'Literal replacement readback failed; prior content restore attempted.' );
 		}
@@ -528,7 +528,7 @@ final class CoreAdapter {
 			'action'  => 'post.update',
 			'payload' => array(
 				'id'      => (int) $post->ID,
-				'content' => $original
+				'content' => $original,
 			),
 		);
 		return $result;
@@ -708,7 +708,7 @@ final class CoreAdapter {
 				'object_type' => $type,
 				'object_id'   => $id,
 				'key'         => $key,
-				'value'       => $before
+				'value'       => $before,
 			),
 		);
 		return $result;
@@ -740,7 +740,7 @@ final class CoreAdapter {
 				'object_type' => $type,
 				'object_id'   => $id,
 				'key'         => $key,
-				'value'       => $before
+				'value'       => $before,
 			),
 		);
 		return $result;
@@ -835,11 +835,11 @@ final class CoreAdapter {
 				'would_create'         => array(
 					'taxonomy' => $taxonomy,
 					'name'     => $name,
-					'args'     => $args
+					'args'     => $args,
 				),
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'      => true,
-					'taxonomy' => $taxonomy
+					'taxonomy' => $taxonomy,
 				) ),
 			);
 		}
@@ -853,8 +853,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'term.delete',
 				'payload'  => array(
 				'taxonomy' => $taxonomy,
-				'id'       => $id
-			) ),
+				'id'       => $id,
+			), ),
 		);
 	}
 
@@ -906,7 +906,7 @@ final class CoreAdapter {
 			'action'  => 'term.update',
 			'payload' => array_merge( array(
 				'taxonomy' => $taxonomy,
-				'id'       => $id
+				'id'       => $id,
 			), $before ),
 		);
 		return $result;
@@ -989,7 +989,7 @@ final class CoreAdapter {
 				'object_id' => $object_id,
 				'taxonomy'  => $taxonomy,
 				'terms'     => array_map( 'intval', $before ),
-				'append'    => false
+				'append'    => false,
 			),
 		);
 		return $result;
@@ -1007,7 +1007,7 @@ final class CoreAdapter {
 				'term_id' => (int) $menu->term_id,
 				'name'    => (string) $menu->name,
 				'slug'    => (string) $menu->slug,
-				'count'   => (int) $menu->count
+				'count'   => (int) $menu->count,
 			);
 		}
 		return array(
@@ -1050,7 +1050,7 @@ final class CoreAdapter {
 			'menu'  => array(
 				'term_id' => (int) $menu->term_id,
 				'name'    => (string) $menu->name,
-				'slug'    => (string) $menu->slug
+				'slug'    => (string) $menu->slug,
 			),
 			'items' => $items,
 		);
@@ -1085,7 +1085,7 @@ final class CoreAdapter {
 			'menu_id'   => (int) $id,
 			'_rollback' => array(
 				'action'  => 'menu.delete',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -1116,7 +1116,7 @@ final class CoreAdapter {
 				'before' => $before,
 				'after'  => array(
 					'id'   => $id,
-					'name' => $name
+					'name' => $name,
 				),
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
@@ -1129,7 +1129,7 @@ final class CoreAdapter {
 			'menu_id'   => (int) $updated,
 			'_rollback' => array(
 				'action'  => 'menu.update',
-				'payload' => $before
+				'payload' => $before,
 			),
 		);
 	}
@@ -1211,7 +1211,7 @@ final class CoreAdapter {
 				'would_upsert'         => array(
 					'menu_id' => $menu_id,
 					'item_id' => $item_id,
-					'args'    => $args
+					'args'    => $args,
 				),
 				'_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $item_id ) : array( 'new' => true ) ),
 			);
@@ -1260,8 +1260,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'menu.location_set',
 				'payload'  => array(
 				'location' => $location,
-				'menu_id'  => $before
-			) ),
+				'menu_id'  => $before,
+			), ),
 		);
 	}
 
@@ -1308,8 +1308,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'option.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1337,8 +1337,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'option.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1395,8 +1395,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'network_option.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1429,8 +1429,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'network_option.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1477,8 +1477,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'theme_mod.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1506,8 +1506,8 @@ final class CoreAdapter {
 			'_rollback' => array( 'action' => 'theme_mod.update',
 				'payload' => array(
 				'name'    => $name,
-				'value'   => $before
-			) ),
+				'value'   => $before,
+			), ),
 		);
 	}
 
@@ -1594,8 +1594,8 @@ final class CoreAdapter {
 				'author'       => $before['author'],
 				'author_email' => $before['author_email'],
 				'author_url'   => $before['author_url'],
-				'approved'     => $before['approved']
-			) ),
+				'approved'     => $before['approved'],
+			), ),
 		);
 	}
 

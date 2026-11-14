@@ -308,7 +308,7 @@ final class CodeSnippetsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_undo'           => $state,
-				'_current_fingerprint' => Fingerprint::make( $state )
+				'_current_fingerprint' => Fingerprint::make( $state ),
 			);
 		}
 		$ok = $payload['created']
@@ -323,7 +323,7 @@ final class CodeSnippetsAdapter {
 		}
 		return array(
 			'undone'            => true,
-			'readback_verified' => true
+			'readback_verified' => true,
 		);
 	}
 
@@ -592,7 +592,7 @@ final class CodeSnippetsAdapter {
 
 			$replacements[] = array(
 				'find'    => $find,
-				'replace' => $replace
+				'replace' => $replace,
 			);
 		}
 

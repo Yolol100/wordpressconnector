@@ -43,23 +43,23 @@ final class Runner {
 		$this->registry->register( 'connector.actions', array( $this, 'actions' ), array( 'description' => 'List registered actions and security metadata.' ) );
 		$this->registry->register( 'connector.batch', array( $this, 'batch' ), array(
 			'mutation'    => true,
-			'description' => 'Execute up to 25 connector operations with compensation on failure.'
+			'description' =>, 'Execute up to 25 connector operations with compensation on failure.'
 		) );
 		$this->registry->register( 'connector.read_batch', array( $this, 'readBatch' ), array( 'description' => 'Read up to 25 supported actions with one permission-checked request and no mutations.' ) );
 		$this->registry->register( 'connector.rollback', array( $this, 'rollback' ), array(
 			'mutation'    => true,
 			'privileged'  => true,
-			'description' => 'Execute a stored rollback snapshot by request_id.'
+			'description' =>, 'Execute a stored rollback snapshot by request_id.'
 		) );
 		$this->registry->register( 'connector.cleanup', array( $this, 'cleanup' ), array(
 			'mutation'    => true,
 			'privileged'  => true,
-			'description' => 'Delete expired idempotency and rollback state.'
+			'description' =>, 'Delete expired idempotency and rollback state.'
 		) );
 		$this->registry->register( 'connector.mutation_status', array( $this, 'mutationStatus' ), array(
 			'privileged'  => true,
 			'capability'  => 'manage_options',
-			'description' => 'Read a sanitized request outcome and lock status for private administrator reconciliation.'
+			'description' =>, 'Read a sanitized request outcome and lock status for private administrator reconciliation.'
 		) );
 	}
 
@@ -120,7 +120,7 @@ final class Runner {
 					}
 					return Result::success( $request, array(
 						'idempotent_replay'    => true,
-						'original_result_hash' => $existing['result_hash'] ?? null
+						'original_result_hash' => $existing['result_hash'] ?? null,
 					), array( 'request_fingerprint' => $requestFingerprint ) );
 				}
 				// Durable reservation precedes every provider write. If PHP
@@ -239,7 +239,7 @@ final class Runner {
 			Policy::assertActionAllowed( $descriptor, true, false );
 			$allowed[] = array(
 				'action'  => $action,
-				'payload' => $operation['payload']
+				'payload' => $operation['payload'],
 			);
 		}
 
@@ -252,7 +252,7 @@ final class Runner {
 			unset( $result['_rollback'], $result['_current_fingerprint'] );
 			$results[] = array(
 				'action' => $operation['action'],
-				'result' => $result
+				'result' => $result,
 			);
 		}
 		return array( 'operations' => $results );
@@ -294,7 +294,7 @@ final class Runner {
 			$expectedStateToken = $operation['expected_state_token'] ?? null;
 			foreach ( array(
 				'expected_fingerprint' => $expected,
-				'expected_state_token' => $expectedStateToken
+				'expected_state_token' => $expectedStateToken,
 			) as $guard => $value ) {
 				if ( null !== $value && ( ! is_string( $value ) || ! preg_match( '/^[a-f0-9]{64}\\z/', $value ) ) ) {
 					throw new RuntimeException( 'Invalid ' . $guard . ' at batch index ' . $index . '.' );
@@ -341,7 +341,7 @@ final class Runner {
 				unset( $result['_rollback'], $result['_current_fingerprint'] );
 				$results[] = array(
 					'action' => $action,
-					'result' => $result
+					'result' => $result,
 				);
 			}
 		} catch ( Throwable $error ) {
@@ -353,13 +353,13 @@ final class Runner {
 							'action'        => $rollback['action'],
 							'result'        => $this->registry->execute( (string) $rollback['action'], (array) $rollback['payload'], array_merge( $context, array(
 							'rollback_mode' => true,
-							'dry_run'       => false
-						) ) ) );
+							'dry_run'       => false,
+						) ) ), );
 					} catch ( Throwable $rollback_error ) {
 						$compensation[] = array(
 							'ok'     => false,
 							'action' => $rollback['action'] ?? null,
-							'error'  => $rollback_error->getMessage()
+							'error'  => $rollback_error->getMessage(),
 						);
 					}
 				}
@@ -372,9 +372,9 @@ final class Runner {
 				'payload' => array( 'operations' => array_map( static function ( array $rollback ): array {
 				return array(
 					'action'  => $rollback['action'],
-					'payload' => $rollback['payload']
+					'payload' => $rollback['payload'],
 				);
-			}, $rollbacks ) ) );
+			}, $rollbacks ), ), );
 		}
 		return $output;
 	}
@@ -427,13 +427,13 @@ final class Runner {
 		}
 		$result = $this->registry->execute( (string) $rollback['action'], $rollback['payload'], array_merge( $context, array(
 			'rollback_mode'        => true,
-			'expected_fingerprint' => null
+			'expected_fingerprint' => null,
 		) ) );
 		unset( $result['_rollback'], $result['_current_fingerprint'] );
 		return array(
 			'restored_request_id' => $request_id,
 			'restored_with'       => $rollback['action'],
-			'result'              => $result
+			'result'              => $result,
 		);
 	}
 
@@ -977,7 +977,7 @@ final class Runner {
 
 		$preview = $this->registry->execute( 'maintenance.cache_flush', array(
 			'layer'      => $layer,
-			'regenerate' => $regenerate
+			'regenerate' => $regenerate,
 		), array(
 			'dry_run'           => true,
 			'confirm'           => true,
@@ -1073,7 +1073,7 @@ final class Runner {
 		$preview     = $this->registry->execute( 'portfolio.case_text_update', $payload, array(
 			'dry_run'           => true,
 			'confirm'           => true,
-			'public_validation' => true
+			'public_validation' => true,
 		) );
 		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
@@ -1096,7 +1096,7 @@ final class Runner {
 		$preview     = $this->registry->execute( 'acf.portfolio_stats_update', $payload, array(
 			'dry_run'           => true,
 			'confirm'           => true,
-			'public_validation' => true
+			'public_validation' => true,
 		) );
 		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
@@ -1300,7 +1300,7 @@ final class Runner {
 				$preview = $this->registry->execute( (string) $operation['action'], (array) $operation['payload'], array_merge( $context, array(
 					'dry_run'       => true,
 					'confirm'       => true,
-					'rollback_mode' => true
+					'rollback_mode' => true,
 				) ) );
 				$current = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 				if ( ! preg_match( '/^[a-f0-9]{64}\z/', $current ) ) {
@@ -1313,7 +1313,7 @@ final class Runner {
 		$preview = $this->registry->execute( $action, $payload, array_merge( $context, array(
 			'dry_run'       => true,
 			'confirm'       => true,
-			'rollback_mode' => true
+			'rollback_mode' => true,
 		) ) );
 		return isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 	}

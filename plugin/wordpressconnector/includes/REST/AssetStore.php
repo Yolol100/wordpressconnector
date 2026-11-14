@@ -282,7 +282,7 @@ final class AssetStore {
 		if ( ! is_dir( $root ) ) {
 			return array(
 				'files' => 0,
-				'bytes' => 0
+				'bytes' => 0,
 			);
 		}
 
@@ -297,7 +297,7 @@ final class AssetStore {
 		}
 		return array(
 			'files' => $files,
-			'bytes' => $bytes
+			'bytes' => $bytes,
 		);
 	}
 

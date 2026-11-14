@@ -162,7 +162,7 @@ final class ElementorCapabilitiesAdapter {
 			'container'   => 0,
 			'atomic'      => 0,
 			'mixed'       => 0,
-			'widget-only' => 0
+			'widget-only' => 0,
 		);
 		$widget_instances    = 0;
 
@@ -189,7 +189,7 @@ final class ElementorCapabilitiesAdapter {
 			$families               = array(
 				'legacy'    => false,
 				'container' => false,
-				'atomic'    => false
+				'atomic'    => false,
 			);
 			$this->collectElementUsage( $data, $document_widgets, $document_element_types, $families );
 
@@ -212,7 +212,7 @@ final class ElementorCapabilitiesAdapter {
 				if ( ! isset( $elementTypes[ $element_type ] ) ) {
 					$elementTypes[ $element_type ] = array(
 						'instances' => 0,
-						'documents' => 0
+						'documents' => 0,
 					);
 				}
 				$elementTypes[ $element_type ]['instances'] += $count;
@@ -609,13 +609,13 @@ final class ElementorCapabilitiesAdapter {
 		if ( defined( 'WP_PLUGIN_DIR' ) ) {
 			$roots[] = array(
 				'path' => (string) WP_PLUGIN_DIR,
-				'mu'   => false
+				'mu'   => false,
 			);
 		}
 		if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
 			$roots[] = array(
 				'path' => (string) WPMU_PLUGIN_DIR,
-				'mu'   => true
+				'mu'   => true,
 			);
 		}
 
@@ -641,7 +641,7 @@ final class ElementorCapabilitiesAdapter {
 			return array(
 				'slug'    => (string) $slug,
 				'name'    => (string) $slug,
-				'version' => null
+				'version' => null,
 			);
 		}
 
@@ -851,7 +851,7 @@ final class ElementorCapabilitiesAdapter {
 				: array(
 					'instances'    => 0,
 					'documents'    => 0,
-					'document_ids' => array()
+					'document_ids' => array(),
 				);
 		}
 		unset( $widget );

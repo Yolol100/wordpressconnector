@@ -44,7 +44,7 @@ final class OptimizerSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' => 'manage_options'
+			'capability' =>, 'manage_options'
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );
@@ -161,7 +161,7 @@ final class OptimizerSettingsAdapter {
 			'exists'                     => $previousExists,
 			'value'                      => $previousValue,
 			'expected_after_fingerprint' => Fingerprint::make( $next ),
-		) );
+		), );
 		return $out;
 	}
 
@@ -210,7 +210,7 @@ final class OptimizerSettingsAdapter {
 		return array(
 			'restored' => true,
 			'provider' => $provider,
-			'field'    => $key
+			'field'    => $key,
 		);
 	}
 

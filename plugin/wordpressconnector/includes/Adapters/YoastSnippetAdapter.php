@@ -102,7 +102,7 @@ final class YoastSnippetAdapter {
 	private function state( int $id ): array {
 		return array(
 			'post_id' => $id,
-			'fields'  => $this->fields( $id )
+			'fields'  => $this->fields( $id ),
 		);
 	}
 
@@ -252,7 +252,7 @@ final class YoastSnippetAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'_current_fingerprint' => $currentFp,
-				'would_restore'        => array_keys( $previous )
+				'would_restore'        => array_keys( $previous ),
 			);
 		}
 		foreach ( $previous as $key => $value ) {
@@ -271,7 +271,7 @@ final class YoastSnippetAdapter {
 		}
 		return array(
 			'restored' => true,
-			'post_id'  => (int) $post->ID
+			'post_id'  => (int) $post->ID,
 		);
 	}
 }

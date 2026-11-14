@@ -113,7 +113,7 @@ final class ElementorJsonExport {
 		return wp_nonce_url( add_query_arg( array(
 			'action'             => self::ACTION,
 			'post_id'            => $postId,
-			'include_site_parts' => $includeSiteParts ? 1 : 0
+			'include_site_parts' => $includeSiteParts ? 1 : 0,
 		), admin_url( 'admin-post.php' ) ), self::ACTION . '_' . $postId );
 	}
 
@@ -157,7 +157,7 @@ final class ElementorJsonExport {
 			'page_settings' => $settings,
 			'version'       => class_exists( 'Elementor\\DB' ) ? (string) \Elementor\DB::DB_VERSION : '0.4',
 			'title'         => (string) $post->post_title,
-			'type'          => $type
+			'type'          => $type,
 		);
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing snapshot filter must retain its hook name.
 		$snapshots = apply_filters( 'elementor/template_library/export/build_snapshots', array(), $content, (int) $post->ID, $payload );
@@ -188,16 +188,16 @@ final class ElementorJsonExport {
 			'source'         => array(
 				'post_id'   => (int) $post->ID,
 				'post_type' => (string) $post->post_type,
-				'title'     => (string) $post->post_title
+				'title'     => (string) $post->post_title,
 			),
 			'document'       => $documentPayload,
 			'header'         => isset( $parts['header']['payload'] ) ? $parts['header']['payload'] : null,
 			'footer'         => isset( $parts['footer']['payload'] ) ? $parts['footer']['payload'] : null,
 			'site_part_meta' => array(
 				'header' => $this->sitePartMeta( $parts['header'] ?? null ),
-				'footer' => $this->sitePartMeta( $parts['footer'] ?? null )
+				'footer' => $this->sitePartMeta( $parts['footer'] ?? null ),
 			),
-			'warnings'       => isset( $parts['warnings'] ) && is_array( $parts['warnings'] ) ? $parts['warnings'] : array()
+			'warnings'       => isset( $parts['warnings'] ) && is_array( $parts['warnings'] ) ? $parts['warnings'] : array(),
 		);
 	}
 
@@ -213,7 +213,7 @@ final class ElementorJsonExport {
 			return array(
 				'header'   => null,
 				'footer'   => null,
-				'warnings' => array( 'Elementor Pro Theme Builder is not active.' )
+				'warnings' => array( 'Elementor Pro Theme Builder is not active.' ),
 			);
 		}
 		try {
@@ -228,7 +228,7 @@ final class ElementorJsonExport {
 			$matches = $this->withSingularQuery( $sourcePost, static function()use( $conditions ):array {
 				return array(
 					'header' => $conditions->get_documents_for_location( 'header' ),
-					'footer' => $conditions->get_documents_for_location( 'footer' )
+					'footer' => $conditions->get_documents_for_location( 'footer' ),
 				);
 			} );
 			$header   = $this->firstSitePart( $matches['header'] ?? array(), 'header' );
@@ -243,7 +243,7 @@ final class ElementorJsonExport {
 			return array(
 				'header'   => $header,
 				'footer'   => $footer,
-				'warnings' => $warnings
+				'warnings' => $warnings,
 			);
 		}
 		catch ( Throwable $error ) {
@@ -292,7 +292,7 @@ final class ElementorJsonExport {
 			return array(
 				'id'      => $templateId,
 				'title'   => (string) $template->post_title,
-				'payload' => $payload
+				'payload' => $payload,
 			);
 		}
 		return null;
@@ -318,7 +318,7 @@ final class ElementorJsonExport {
 			'post_status'         => 'any',
 			'posts_per_page'      => 1,
 			'ignore_sticky_posts' => true,
-			'no_found_rows'       => true
+			'no_found_rows'       => true,
 		);
 		if ( 'page' === (string) $sourcePost->post_type ) {
 			$args['page_id'] = (int) $sourcePost->ID;
@@ -358,7 +358,7 @@ final class ElementorJsonExport {
 		return array(
 			'header'   => null,
 			'footer'   => null,
-			'warnings' => array( $warning )
+			'warnings' => array( $warning ),
 		);
 	}
 
@@ -372,7 +372,7 @@ final class ElementorJsonExport {
 	private function sitePartMeta( ?array $part ): ?array {
 		return null === $part ? null : array(
 			'id'    => (int) ( $part['id'] ?? 0 ),
-			'title' => (string) ( $part['title'] ?? '' )
+			'title' => (string) ( $part['title'] ?? '' ),
 		);
 	}
 

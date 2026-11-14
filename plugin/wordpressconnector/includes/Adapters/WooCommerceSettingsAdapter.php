@@ -69,7 +69,7 @@ final class WooCommerceSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' => 'manage_woocommerce'
+			'capability' =>, 'manage_woocommerce'
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 
@@ -310,7 +310,7 @@ final class WooCommerceSettingsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => $id,
-				'_current_fingerprint' => $fingerprint
+				'_current_fingerprint' => $fingerprint,
 			);
 		}
 		$this->api( 'PUT', $this->itemPath( $group, $id ), array( 'value' => $previous ) );
@@ -321,7 +321,7 @@ final class WooCommerceSettingsAdapter {
 		return array(
 			'restored' => true,
 			'group'    => $group,
-			'id'       => $id
+			'id'       => $id,
 		);
 	}
 
@@ -457,7 +457,7 @@ final class WooCommerceSettingsAdapter {
 					foreach ( array_slice( $sections, 0, 60, true ) as $id => $label ) {
 						$subtabs[] = array(
 							'id'    => $this->shortText( (string) $id ),
-							'label' => $this->shortText( $label )
+							'label' => $this->shortText( $label ),
 						);
 					}
 				}
@@ -482,12 +482,12 @@ final class WooCommerceSettingsAdapter {
 			}
 			return array(
 				'available' => true,
-				'tabs'      => $tabs
+				'tabs'      => $tabs,
 			);
 		} catch ( Throwable $error ) {
 			return array(
 				'available' => false,
-				'reason'    => 'admin_settings_inventory_failed'
+				'reason'    =>, 'admin_settings_inventory_failed'
 			);
 		}
 	}
@@ -680,7 +680,7 @@ final class WooCommerceSettingsAdapter {
 		return Fingerprint::make( array(
 			'group' => $group,
 			'id'    => $id,
-			'value' => $value
+			'value' => $value,
 		) );
 	}
 

@@ -30,24 +30,24 @@ final class ElementorAdapter {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );
 		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array(
 			'mutation'    => true,
-			'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.'
+			'description' =>, 'Create a page, post, product or Elementor library document through the Elementor document API.'
 		) );
 		$registry->register( 'elementor.replace_document', array( $this, 'replaceDocument' ), array(
 			'mutation'    => true,
-			'description' => 'Replace Elementor elements/settings through the Elementor document API.'
+			'description' =>, 'Replace Elementor elements/settings through the Elementor document API.'
 		) );
 		$registry->register( 'elementor.patch_element', array( $this, 'patchElement' ), array(
 			'mutation'    => true,
-			'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.'
+			'description' =>, 'Patch an Elementor element by stable element id and save through the Elementor document API.'
 		) );
 		$registry->register( 'elementor.regenerate', array( $this, 'regenerate' ), array(
 			'mutation'    => true,
-			'description' => 'Clear Elementor generated CSS/files cache.'
+			'description' =>, 'Clear Elementor generated CSS/files cache.'
 		) );
 		$registry->register( 'elementor.header_links.replace', array( $this, 'replaceHeaderLinks' ), array(
 			'mutation'    => true,
 			'capability'  => 'edit_theme_options',
-			'description' => 'Replace exact same-site Icon List links in one published Elementor header.'
+			'description' =>, 'Replace exact same-site Icon List links in one published Elementor header.'
 		) );
 		$registry->register( 'elementor.header_links.inspect', array( $this, 'inspectHeaderLinks' ), array( 'description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.' ) );
 	}
@@ -65,7 +65,7 @@ final class ElementorAdapter {
 		$snapshot = $this->snapshot( (int) $post->ID );
 		return array(
 			'document'    => $snapshot,
-			'fingerprint' => Fingerprint::make( $snapshot )
+			'fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
 
@@ -101,11 +101,11 @@ final class ElementorAdapter {
 			return array(
 				'would_create'         => array(
 					'post'      => $post_fields,
-					'elementor' => $this->requestedMeta( $payload, $data )
+					'elementor' => $this->requestedMeta( $payload, $data ),
 				),
 				'_current_fingerprint' => Fingerprint::make( array(
 					'new'       => true,
-					'post_type' => $post_type
+					'post_type' => $post_type,
 				) ),
 			);
 		}
@@ -131,7 +131,7 @@ final class ElementorAdapter {
 			'document'  => $after,
 			'_rollback' => array(
 				'action'  => 'post.trash',
-				'payload' => array( 'id' => (int) $id )
+				'payload' => array( 'id' => (int) $id ),
 			),
 		);
 	}
@@ -180,7 +180,7 @@ final class ElementorAdapter {
 		);
 		$result['_rollback'] = array(
 			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before )
+			'payload' => $this->rollbackPayload( $before ),
 		);
 		return $result;
 	}
@@ -258,7 +258,7 @@ final class ElementorAdapter {
 		$result['after_element'] = $readback_element;
 		$result['_rollback']     = array(
 			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before )
+			'payload' => $this->rollbackPayload( $before ),
 		);
 		return $result;
 	}
@@ -280,13 +280,13 @@ final class ElementorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_clear_elementor_cache' => true,
-				'_current_fingerprint'        => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) )
+				'_current_fingerprint'        => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) ),
 			);
 		}
 		$this->clearCache();
 		return array(
 			'cleared'            => true,
-			'rollback_supported' => false
+			'rollback_supported' => false,
 		);
 	}
 
@@ -324,7 +324,7 @@ final class ElementorAdapter {
 				'post_id'     => $id,
 				'eligible'    => false,
 				'reason_code' => 'not_published_elementor_library',
-				'checks'      => array()
+				'checks'      => array(),
 			);
 		}
 		$can_edit = current_user_can( 'edit_post', $id );
@@ -334,7 +334,7 @@ final class ElementorAdapter {
 				'post_id'     => $id,
 				'eligible'    => false,
 				'reason_code' => 'not_header_template',
-				'checks'      => array()
+				'checks'      => array(),
 			);
 		}
 		$matches = array();
@@ -358,7 +358,7 @@ final class ElementorAdapter {
 			$matches[] = array(
 				'element_id'        =>$elementId,
 				'is_icon_list'      =>$is_icon_list,
-				'exact_url_matches' =>min( 2, $matches_count )
+				'exact_url_matches' =>min( 2, $matches_count ),
 			);
 		}
 		$eligible = $can_edit;
@@ -438,7 +438,7 @@ final class ElementorAdapter {
 			$results[] = array(
 				'element_id' => $elementId,
 				'from'       => $from,
-				'to'         => $to
+				'to'         => $to,
 			);
 		}
 		$result = array(

@@ -55,7 +55,7 @@ final class YoastTemplateSettingsAdapter {
 		'breadcrumb_search_prefix'        => 'breadcrumbs-searchprefix',
 		'breadcrumb_404_label'            => 'breadcrumbs-404crumb',
 		'product_category_title'          => 'title-tax-product_cat',
-		'product_category_description'    => 'metadesc-tax-product_cat'
+		'product_category_description'    =>, 'metadesc-tax-product_cat'
 	);
 	/**
 	 * Register the YoastTemplateSettings adapter actions and handlers.
@@ -65,7 +65,7 @@ final class YoastTemplateSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$security = array(
 			'privileged' => true,
-			'capability' => 'manage_options'
+			'capability' =>, 'manage_options'
 		);
 		$registry->register( 'yoast.templates.inspect', array( $this, 'inspect' ), $security );
 		$registry->register( 'yoast.templates.update', array( $this, 'update' ), array_merge( $security, array( 'mutation' => true ) ) );
@@ -84,12 +84,12 @@ final class YoastTemplateSettingsAdapter {
 		if ( Policy::publicRepositoryContext() ) {
 			return array(
 				'fields'      => array_intersect_key( $fields, array_flip( array( 'category_title', 'product_category_title', 'product_title', 'product_description' ) ) ),
-				'fingerprint' => Fingerprint::make( $fields )
+				'fingerprint' => Fingerprint::make( $fields ),
 			);
 		}
 		return array(
 			'fields'      => $fields,
-			'fingerprint' => Fingerprint::make( $fields )
+			'fingerprint' => Fingerprint::make( $fields ),
 		);
 	}
 	/**
@@ -109,7 +109,7 @@ final class YoastTemplateSettingsAdapter {
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
-			'_current_fingerprint' => Fingerprint::make( $before )
+			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -133,7 +133,7 @@ final class YoastTemplateSettingsAdapter {
 		$result['_rollback'] = array( 'action' => 'yoast.templates.restore',
 			'payload'                    => array(
 			'fields'                     => array_intersect_key( $before, $changes ),
-			'expected_after_fingerprint' => Fingerprint::make( $verified ) ) );
+			'expected_after_fingerprint' => Fingerprint::make( $verified ), ), );
 		return $result;
 	}
 	/**

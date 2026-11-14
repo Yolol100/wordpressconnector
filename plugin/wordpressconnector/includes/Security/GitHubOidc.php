@@ -174,7 +174,7 @@ final class GitHubOidc {
 		$key    = self::REPLAY_OPTION_PREFIX . $hash;
 		$record = array(
 			'created_at' => time(),
-			'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW
+			'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW,
 		);
 		// add_option() uses the uniquely indexed option_name in WordPress's
 		// database: simultaneous requests cannot consume the same signed JWT.

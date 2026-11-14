@@ -102,7 +102,7 @@ final class YoastFeatureSettingsAdapter {
 		$fields = $this->snapshot();
 		return array(
 			'fields'      => $fields,
-			'fingerprint' => Fingerprint::make( $fields )
+			'fingerprint' => Fingerprint::make( $fields ),
 		);
 	}
 
@@ -204,7 +204,7 @@ final class YoastFeatureSettingsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => array_keys( $previous ),
-				'_current_fingerprint' => Fingerprint::make( $before )
+				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
 		$oldOptions = $this->options( $group );
@@ -227,7 +227,7 @@ final class YoastFeatureSettingsAdapter {
 		}
 		return array(
 			'restored' => true,
-			'fields'   => array_keys( $previous )
+			'fields'   => array_keys( $previous ),
 		);
 	}
 

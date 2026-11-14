@@ -70,11 +70,11 @@ final class ElementorFormsAdapter {
 				'classic'     => array(
 					'available'                 => false,
 					'controls'                  => array(),
-					'submit_action_choice_keys' => array()
+					'submit_action_choice_keys' => array(),
 				),
 				'atomic'             => array(
 					'available' => false,
-					'types'     => array()
+					'types'     => array(),
 				),
 				'recommended_family' => null,
 				'schema_fingerprint' => null,
@@ -96,7 +96,7 @@ final class ElementorFormsAdapter {
 			'recommended_family' => ! empty( $atomic['available'] ) ? 'v4' : ( ! empty( $classic['available'] ) ? 'v3' : null ),
 			'schema_fingerprint' => Fingerprint::make( array(
 				'classic' => $classic,
-				'atomic'  => $atomic
+				'atomic'  => $atomic,
 			) ),
 			'warnings'           => array_values( array_unique( $warnings ) ),
 		);
@@ -1084,7 +1084,7 @@ final class ElementorFormsAdapter {
 		}
 		$result = $this->document( $postId )->save( array(
 			'elements' => $data,
-			'settings' => $pageSettings
+			'settings' => $pageSettings,
 		) );
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
 			throw new RuntimeException( $result->get_error_message() );

@@ -29,7 +29,7 @@ final class SiteEditorAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' => 'edit_theme_options'
+			'capability' =>, 'edit_theme_options'
 		);
 		$write = $read + array( 'mutation' => true );
 		$registry->register( 'site_editor.template.list', array( $this, 'listTemplates' ),
@@ -87,7 +87,7 @@ final class SiteEditorAdapter {
 			'page'     => $page,
 			'items'    => $rows,
 			'count'    => count( $rows ),
-			'per_page' => 20 );
+			'per_page' => 20, );
 	}
 
 	/**
@@ -137,7 +137,7 @@ final class SiteEditorAdapter {
 		return array( 'theme' => $theme,
 			'settings'    => $settings,
 			'styles'      => $styles,
-			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ) );
+			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ), );
 	}
 
 	/**
@@ -166,7 +166,7 @@ final class SiteEditorAdapter {
 			'would_change' => $before['content_sha256'] !== hash( 'sha256', $content ),
 			'before'       => array(
 				'content_sha256' => $before['content_sha256'],
-				'modified'       => $before['modified']
+				'modified'       => $before['modified'],
 			),
 			'_current_fingerprint'                => $before['fingerprint'],
 		);
@@ -195,14 +195,14 @@ final class SiteEditorAdapter {
 		$result['updated'] = true;
 		$result['after'] = array(
 			'content_sha256' => $after['content_sha256'],
-			'modified'       => $after['modified']
+			'modified'       => $after['modified'],
 		);
 		$result['_rollback'] = array(
 			'action'  => 'site_editor.template.restore',
 			'payload' => array( 'kind' => $kind,
 				'id'                         => $id,
 				'content'                    => $previous,
-				'expected_after_fingerprint' => $after['fingerprint'] ),
+				'expected_after_fingerprint' => $after['fingerprint'], ),
 		);
 		return $result;
 	}
@@ -231,7 +231,7 @@ final class SiteEditorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => $id,
-				'_current_fingerprint' => $before['fingerprint']
+				'_current_fingerprint' => $before['fingerprint'],
 			);
 		}
 		$this->writeAllowed();
@@ -242,7 +242,7 @@ final class SiteEditorAdapter {
 		}
 		return array(
 			'restored'          => $id,
-			'readback_verified' => true
+			'readback_verified' => true,
 		);
 	}
 
@@ -290,7 +290,7 @@ final class SiteEditorAdapter {
 			'wp_id'          => (int) ( $record['wp_id'] ?? 0 ),
 			'modified'       => (string) ( $record['modified'] ?? '' ),
 			'content_sha256' => hash( 'sha256', $content ),
-			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0 );
+			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0, );
 		$state['fingerprint'] = Fingerprint::make( $state );
 		return $state;
 	}

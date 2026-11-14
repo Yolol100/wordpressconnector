@@ -38,7 +38,7 @@ final class SiteIdentityAdapter {
 		$registry->register( 'site.identity.update', array( $this, 'update' ),
 			array_merge( $public, array(
 				'mutation'    => true,
-				'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.'
+				'description' =>, 'Update bounded site identity with dry-run, stale-state protection and rollback.'
 			) ) );
 		$registry->register( 'site.identity.restore', array( $this, 'restore' ), array(
 			'mutation'    => true,
@@ -63,7 +63,7 @@ final class SiteIdentityAdapter {
 		$state = $this->snapshot();
 		return array(
 			'fields'      => $state,
-			'fingerprint' => Fingerprint::make( $state )
+			'fingerprint' => Fingerprint::make( $state ),
 		);
 	}
 
@@ -91,7 +91,7 @@ final class SiteIdentityAdapter {
 		$result      = array(
 			'before'               => $before,
 			'after'                => $next,
-			'_current_fingerprint' => $fingerprint
+			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 
@@ -153,7 +153,7 @@ final class SiteIdentityAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => true,
-				'_current_fingerprint' => $fingerprint
+				'_current_fingerprint' => $fingerprint,
 			);
 		}
 		foreach ( $fields as $key => $value ) {

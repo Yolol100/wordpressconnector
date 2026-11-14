@@ -64,12 +64,12 @@ final class Controller {
 				'request_id' => array(
 					'required'          => true,
 					'type'              => 'string',
-					'validate_callback' => array( $this, 'validateRequestId' )
+					'validate_callback' => array( $this, 'validateRequestId' ),
 				),
 				'asset_path' => array(
 					'required'          => true,
 					'type'              => 'string',
-					'validate_callback' => array( $this, 'validateAssetPath' )
+					'validate_callback' => array( $this, 'validateAssetPath' ),
 				),
 			),
 		) );
@@ -133,7 +133,7 @@ final class Controller {
 			'ok'          => true,
 			'connector'   => 'webactueel-wordpress-connector',
 			'zero_config' => true,
-			'auth'        => 'github-actions-oidc'
+			'auth'        =>, 'github-actions-oidc'
 		), 200 );
 	}
 
@@ -162,7 +162,7 @@ final class Controller {
 			'limits' => array(
 				'request_bytes'     => self::MAX_REQUEST_BYTES,
 				'asset_files'       => 10,
-				'asset_total_bytes' => 26214400
+				'asset_total_bytes' => 26214400,
 			),
 		), 200 );
 	}
@@ -188,7 +188,7 @@ final class Controller {
 			);
 			return new \WP_REST_Response( array(
 				'ok'    => true,
-				'asset' => $stored
+				'asset' => $stored,
 			), 201 );
 		} catch ( Throwable $error ) {
 			// Storage and provider exceptions may expose server paths.

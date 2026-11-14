@@ -131,7 +131,7 @@ final class PluginPackageAdapter {
 		$before = array(
 			'stylesheet' => $expected,
 			'installed'  => $installed,
-			'version'    => $installed ? (string) $current->get( 'Version' ) : null
+			'version'    => $installed ? (string) $current->get( 'Version' ) : null,
 		);
 		$plan   = array( 'stylesheet' => $expected,
 			'source_path'        => $source,
@@ -139,11 +139,11 @@ final class PluginPackageAdapter {
 			'bytes'              => (int) $size,
 			'overwrite'          => $overwrite,
 			'archive_entries'    => $info['entries'],
-			'uncompressed_bytes' => $info['uncompressed_bytes'] );
+			'uncompressed_bytes' => $info['uncompressed_bytes'], );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_install_theme_package' => $plan,
 				'before'               => $before,
-				'_current_fingerprint' => Fingerprint::make( $before ) );
+				'_current_fingerprint' => Fingerprint::make( $before ), );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -163,7 +163,7 @@ final class PluginPackageAdapter {
 		$backup           = array(
 			'slug' => $expected,
 			'src'  => get_theme_root(),
-			'dir'  => 'themes'
+			'dir'  =>, 'themes'
 		);
 		$restore_pending  = false;
 		$shutdown_restore = static function () use ( $upgrader, $backup, &$restore_pending ): void {
@@ -210,7 +210,7 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
 			$after = array( 'stylesheet' => $expected,
-				'version' => (string) $after_theme->get( 'Version' ) );
+				'version' => (string) $after_theme->get( 'Version' ), );
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
 				$restored        = $upgrader->restore_temp_backup( array( $backup ) );
@@ -243,7 +243,7 @@ final class PluginPackageAdapter {
 			// WordPress temp backups may be cleaned up automatically; do not
 			// advertise a durable user-triggered rollback after success.
 			'rollback_supported' => false,
-			'readback_verified'  => true );
+			'readback_verified'  => true, );
 	}
 
 	/**
@@ -312,7 +312,7 @@ final class PluginPackageAdapter {
 			}
 			return array(
 				'entries'            => $zip->numFiles,
-				'uncompressed_bytes' => $total
+				'uncompressed_bytes' => $total,
 			);
 		} finally {
 			$zip->close();

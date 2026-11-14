@@ -29,7 +29,7 @@ final class WooCommerceFulfillmentAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' => 'manage_woocommerce'
+			'capability' =>, 'manage_woocommerce'
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.fulfillment.locations.inspect', array( $this, 'inspectLocations' ), $read );
@@ -53,7 +53,7 @@ final class WooCommerceFulfillmentAdapter {
 		$locations = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		return array( 'zone_id' => $payload['zone_id'],
 			'locations'   => $locations,
-			'fingerprint' => Fingerprint::make( $locations ) );
+			'fingerprint' => Fingerprint::make( $locations ), );
 	}
 
 	/**
@@ -75,7 +75,7 @@ final class WooCommerceFulfillmentAdapter {
 		$result      = array( 'zone_id' => $payload['zone_id'],
 			'before'               => $before,
 			'after'                => $new,
-			'_current_fingerprint' => $fingerprint );
+			'_current_fingerprint' => $fingerprint, );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -91,7 +91,7 @@ final class WooCommerceFulfillmentAdapter {
 		$result['_rollback'] = array( 'action' => 'woocommerce.fulfillment.locations.restore',
 			'payload' => array( 'zone_id' => $payload['zone_id'],
 				'locations'                  => $before,
-				'expected_after_fingerprint' => Fingerprint::make( $after ) ) );
+				'expected_after_fingerprint' => Fingerprint::make( $after ), ), );
 		return $result;
 	}
 
@@ -125,7 +125,7 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Shipping location rollback readback failed.' );
 		return array(
 			'restored' => true,
-			'zone_id'  => $payload['zone_id']
+			'zone_id'  => $payload['zone_id'],
 		);
 	}
 
@@ -166,7 +166,7 @@ final class WooCommerceFulfillmentAdapter {
 			'type'                 => $type,
 			'fields'               => $fields,
 			'would_create'         => true,
-			'_current_fingerprint' => $fp
+			'_current_fingerprint' => $fp,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -213,7 +213,7 @@ final class WooCommerceFulfillmentAdapter {
 			'zone_id'                    => $payload['zone_id'] ?? null,
 			'id'                         => $id,
 			'expected_after_fingerprint' => Fingerprint::make( $snapshot ),
-		) );
+		), );
 		return $result;
 	}
 
@@ -255,7 +255,7 @@ final class WooCommerceFulfillmentAdapter {
 		return array(
 			'restored_created_resource' => true,
 			'type'                      => $type,
-			'id'                        => $id
+			'id'                        => $id,
 		);
 	}
 
@@ -296,7 +296,7 @@ final class WooCommerceFulfillmentAdapter {
 			// methods are forced disabled before the operation is accepted.
 			return array(
 				'method_id' => $method,
-				'enabled'   => false
+				'enabled'   => false,
 			);
 		}
 		foreach ( array( 'country', 'rate', 'name' ) as $required ) {
@@ -312,7 +312,7 @@ final class WooCommerceFulfillmentAdapter {
 		$clean = array(
 			'country' => $country,
 			'rate'    => $rate,
-			'name'    => sanitize_text_field( $name )
+			'name'    => sanitize_text_field( $name ),
 		);
 		foreach ( $fields as $key => $value ){
 			if ( isset( $clean[ $key ] ) ) {
@@ -350,7 +350,7 @@ final class WooCommerceFulfillmentAdapter {
 			}
 			$result[] = array(
 				'type' => (string) $value['type'],
-				'code' => (string) $value['code']
+				'code' => (string) $value['code'],
 			);
 		}
 		return $this->normalizeLocations( $result, true );
@@ -380,7 +380,7 @@ final class WooCommerceFulfillmentAdapter {
 			}
 			$key = $type . ':' . $code;$result[ $key ] = array(
 				'type' => $type,
-				'code' => $code
+				'code' => $code,
 			);
 		}
 		ksort( $result, SORT_STRING );
