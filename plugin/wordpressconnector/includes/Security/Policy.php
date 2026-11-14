@@ -90,8 +90,18 @@ final class Policy {
 		'theme.install_package',
 	);
 
+	/**
+	 * Runtime public repository maintained by the connector.
+	 *
+	 * @var ?bool
+	 */
 	private static ?bool $runtime_public_repository = null;
-	private static bool $request_confirmed          = false;
+	/**
+	 * Request confirmed maintained by the connector.
+	 *
+	 * @var bool
+	 */
+	private static bool $request_confirmed = false;
 
 	/**
 	 * Ensure action allowed for the Policy component.

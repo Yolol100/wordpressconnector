@@ -458,6 +458,11 @@ final class CoreAdapter {
 	/**
 	 * Surgical public page copy correction. The caller never receives raw page
 	 * content, and the original is held only in the site's rollback snapshot.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function postLiteralReplace( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'find', 'replace', 'expected_matches' ) ) ) {

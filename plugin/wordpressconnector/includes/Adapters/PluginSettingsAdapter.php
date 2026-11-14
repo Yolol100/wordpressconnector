@@ -381,6 +381,9 @@ final class PluginSettingsAdapter {
 	 * Only explicitly modeled nonsecret indicators are read below. Anything
 	 * else remains inventory-only rather than pretending to be an audit pass.
 	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function audit( array $payload = array(), array $context = array() ): array {
@@ -498,6 +501,9 @@ final class PluginSettingsAdapter {
 	 * All keys and all values in these checks are fixed enumerations.
 	 * Never return plugin-header text, unrestricted option data, credentials,
 	 * SMTP addresses, firewall rules, payment settings or source file paths.
+	 *
+	 * @param string $id Target identifier.
+	 * @param string $mode Validated mode value.
 	 */
 	private function auditNonsecretChecks( string $id, string $mode ): array {
 		if ( ! function_exists( 'get_option' ) ) {

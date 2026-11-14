@@ -545,6 +545,9 @@ final class AbilitiesAdapter {
 	 * abilities never become callable just because they exist. A server
 	 * operator must approve the exact ability AND exact active plugin file
 	 * using a JSON mapping in wp-config.php.
+	 *
+	 * @param string $name Registered resource name.
+	 * @param mixed $ability Validated ability value.
 	 */
 	private function isApprovedPluginMutationEligible( string $name, $ability ): bool {
 		if ( $this->isElementorAbilityName( $name ) || ! is_object( $ability )

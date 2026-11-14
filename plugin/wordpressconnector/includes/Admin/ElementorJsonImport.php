@@ -626,6 +626,8 @@ final class ElementorJsonImport {
 	 * Infer only recognized export filename forms. Unknown suffixes are left
 	 * untouched so an accidental filename never becomes a fuzzy target.
 	 * Every inferred slug still requires exactly one matching post type.
+	 *
+	 * @param string $filename Filename to process.
 	 */
 	private function bulkFilenameSlug( string $filename ): string {
 		$stem = sanitize_title( (string) pathinfo( $filename, PATHINFO_FILENAME ) );

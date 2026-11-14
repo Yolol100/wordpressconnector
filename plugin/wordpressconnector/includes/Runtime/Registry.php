@@ -16,6 +16,11 @@ use Webactueel\WordPressConnector\Security\Policy;
  * Provides Registry behavior for connector request processing.
  */
 final class Registry {
+	/**
+	 * Actions maintained by the connector.
+	 *
+	 * @var array
+	 */
 	private array $actions = array();
 
 	/**

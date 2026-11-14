@@ -18,6 +18,11 @@ use Webactueel\WordPressConnector\Support\Json;
  * Exposes Command commands for WordPress CLI.
  */
 final class Command {
+	/**
+	 * Runner maintained by the connector.
+	 *
+	 * @var Runner
+	 */
 	private Runner $runner;
 
 	/**
@@ -48,6 +53,9 @@ final class Command {
 	 *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
 	 *
 	 * @subcommand run
+	 *
+	 * @param array $args Command-line arguments.
+	 * @param array $assocArgs Associative command-line arguments.
 	 */
 	public function run( array $args, array $assocArgs ): void {
 		$requestPath = isset( $args[0] ) ? (string) $args[0] : '';
@@ -81,6 +89,9 @@ final class Command {
 	 * Print the registered action catalog.
 	 *
 	 * @subcommand actions
+	 *
+	 * @param array $args Command-line arguments.
+	 * @param array $assocArgs Associative command-line arguments.
 	 */
 	public function actions( array $args, array $assocArgs ): void {
 		$request = Request::fromArray(
@@ -100,6 +111,9 @@ final class Command {
 	 * Run read-only runtime diagnostics.
 	 *
 	 * @subcommand doctor
+	 *
+	 * @param array $args Command-line arguments.
+	 * @param array $assocArgs Associative command-line arguments.
 	 */
 	public function doctor( array $args, array $assocArgs ): void {
 		$request = Request::fromArray(

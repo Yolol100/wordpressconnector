@@ -1352,6 +1352,8 @@ final class SystemAdapter {
 	 * @param array $allowedFields Allowed request fields.
 	 *
 	 * @return string|null Result of this operation.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	private function expectedUpdateVersion( array $payload, array $allowedFields ): ?string {
 		if ( array_diff( array_keys( $payload ), $allowedFields ) ) {
@@ -1932,6 +1934,12 @@ final class SystemAdapter {
 	 * A plugin can filter plugins_api()/themes_api() responses. Never install an
 	 * untrusted package URL merely because that API returned it. Custom ZIPs
 	 * use plugin.install_package with independent SHA-256 and archive checks.
+	 *
+	 * @param string $url URL to inspect.
+	 * @param string $slug Validated slug value.
+	 * @param string $kind Validated kind value.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	private function officialDirectoryPackageUrl( string $url, string $slug, string $kind ): string {
 		if ( strlen( $url ) > 320 || ! in_array( $kind, array( 'plugin', 'theme' ), true ) ) {

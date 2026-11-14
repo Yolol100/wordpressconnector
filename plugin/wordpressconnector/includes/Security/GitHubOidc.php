@@ -193,6 +193,10 @@ final class GitHubOidc {
 	 * Bounded cleanup for the privileged connector.cleanup action.
 	 * Only claims older than both the retention window and their expiry
 	 * are removed. Never delete a recently issued or malformed claim.
+	 *
+	 * @param int $olderThanSeconds Minimum age in seconds.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public static function cleanupReplayClaims( int $olderThanSeconds ): int {
 		global $wpdb;

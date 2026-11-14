@@ -25,8 +25,23 @@ require_once __DIR__ . '/Diagnostics.php';
  * Provides Runner behavior for connector request processing.
  */
 final class Runner {
+	/**
+	 * Registry maintained by the connector.
+	 *
+	 * @var Registry
+	 */
 	private Registry $registry;
+	/**
+	 * Snapshots maintained by the connector.
+	 *
+	 * @var SnapshotStore
+	 */
 	private SnapshotStore $snapshots;
+	/**
+	 * Processed maintained by the connector.
+	 *
+	 * @var ProcessedStore
+	 */
 	private ProcessedStore $processed;
 
 	/**
@@ -244,6 +259,11 @@ final class Runner {
 	 * Single-roundtrip fast path for independent reads. Preflight every leaf
 	 * before executing any to prevent a later unsafe action from partly running.
 	 * Mutations, sensitive exports and nested actions are never eligible.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function readBatch( array $payload, array $context ): array {
 		$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
@@ -504,6 +524,11 @@ final class Runner {
 	/**
 	 * Private administrator-only recovery inspection. No recovery write or
 	 * retry is possible here; results are observations, not execution proof.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function mutationStatus( array $payload, array $context ): array {
 		if ( array_keys( $payload ) !== array( 'request_id' )

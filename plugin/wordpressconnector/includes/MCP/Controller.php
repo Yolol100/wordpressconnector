@@ -29,8 +29,23 @@ final class Controller {
 	private const PROMPT_AUDIT          = 'wordpress_connector_readonly_audit';
 	private const PROMPT_CHANGE         = 'wordpress_connector_plan_safe_change';
 
+	/**
+	 * Runner maintained by the connector.
+	 *
+	 * @var Runner
+	 */
 	private Runner $runner;
+	/**
+	 * Registry maintained by the connector.
+	 *
+	 * @var Registry
+	 */
 	private Registry $registry;
+	/**
+	 * Authorization callback maintained by the connector.
+	 *
+	 * @var mixed
+	 */
 	private $authorizationCallback;
 
 	/**

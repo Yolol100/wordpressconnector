@@ -23,7 +23,17 @@ final class Controller {
 	private const NAMESPACE         = 'webactueel-wordpress-connector/v1';
 	private const MAX_REQUEST_BYTES = 262144;
 
+	/**
+	 * Runner maintained by the connector.
+	 *
+	 * @var Runner
+	 */
 	private Runner $runner;
+	/**
+	 * Assets maintained by the connector.
+	 *
+	 * @var AssetStore
+	 */
 	private AssetStore $assets;
 
 	/**

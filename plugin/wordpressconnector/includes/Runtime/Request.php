@@ -17,12 +17,47 @@ use Webactueel\WordPressConnector\Support\Json;
  * Provides Request behavior for connector request processing.
  */
 final class Request {
+	/**
+	 * Id maintained by the connector.
+	 *
+	 * @var string
+	 */
 	private string $id;
+	/**
+	 * Action maintained by the connector.
+	 *
+	 * @var string
+	 */
 	private string $action;
+	/**
+	 * Payload maintained by the connector.
+	 *
+	 * @var array
+	 */
 	private array $payload;
+	/**
+	 * Dry run maintained by the connector.
+	 *
+	 * @var bool
+	 */
 	private bool $dryRun;
+	/**
+	 * Confirm maintained by the connector.
+	 *
+	 * @var bool
+	 */
 	private bool $confirm;
+	/**
+	 * Expected fingerprint maintained by the connector.
+	 *
+	 * @var ?string
+	 */
 	private ?string $expectedFingerprint;
+	/**
+	 * Expected state token maintained by the connector.
+	 *
+	 * @var ?string
+	 */
 	private ?string $expectedStateToken;
 
 	/**

@@ -157,6 +157,11 @@ final class DiscoveryAdapter {
 	/**
 	 * Inspect only REST routing metadata. This is not an arbitrary REST proxy.
 	 * Native rest_endpoints filters may run during get_routes() as in Core.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function restCatalog( array $payload, array $context = array() ): array {
 		foreach ( array_keys( $payload ) as $key ) {

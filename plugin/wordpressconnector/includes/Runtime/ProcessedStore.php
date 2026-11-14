@@ -21,6 +21,12 @@ final class ProcessedStore {
 	 * Reserve the request ID durably BEFORE calling a mutating provider.
 	 * add_option() relies on the WordPress options table's unique option_name,
 	 * so two simultaneous requests cannot both claim the same ID.
+	 *
+	 * @param string $requestId Request identifier for durable execution state.
+	 * @param string $fingerprint Expected request fingerprint.
+	 * @param string $action Registered connector action.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function begin( string $requestId, string $fingerprint, string $action ): void {
 		$key    = self::key( $requestId );
@@ -92,6 +98,8 @@ final class ProcessedStore {
 	/**
 	 * Read-only, sanitized observation for an authenticated recovery inspection.
 	 * A missing option is not proof that a previous operation did not run.
+	 *
+	 * @param string $requestId Request identifier for durable execution state.
 	 */
 	public function mutationLockStatus( string $requestId ): string {
 		$value = get_option( self::LOCK_KEY, null );
