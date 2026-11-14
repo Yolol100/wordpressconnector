@@ -122,6 +122,8 @@ final class ElementorFormsAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function upsert( array $payload, array $context ): array {
 		$post   = $this->post( $payload );
@@ -263,7 +265,7 @@ final class ElementorFormsAdapter {
 	 * Process the classic capabilities operation in the Elementor forms adapter.
 	 *
 	 * @param object $elementor Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -299,7 +301,7 @@ final class ElementorFormsAdapter {
 	 * Process the atomic capabilities operation in the Elementor forms adapter.
 	 *
 	 * @param object $elementor Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -337,7 +339,7 @@ final class ElementorFormsAdapter {
 	 * Collect control schema in the Elementor forms adapter.
 	 *
 	 * @param object $component Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -366,7 +368,7 @@ final class ElementorFormsAdapter {
 	 * Process the control record operation in the Elementor forms adapter.
 	 *
 	 * @param string $name Value used by this operation.
-	 * @param array $control Value used by this operation.
+	 * @param array  $control Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -401,7 +403,7 @@ final class ElementorFormsAdapter {
 	 * Collect atomic config in the Elementor forms adapter.
 	 *
 	 * @param object $component Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 * @param string $name Value used by this operation.
 	 *
 	 * @return array Result of the operation.
@@ -436,7 +438,7 @@ final class ElementorFormsAdapter {
 	 * @param object $elementor Value used by this operation.
 	 * @param string $managerName Value used by this operation.
 	 * @param string $method Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 * @param string $warningPrefix Value used by this operation.
 	 *
 	 * @return array Result of the operation.
@@ -457,7 +459,7 @@ final class ElementorFormsAdapter {
 	 * Process the all registered components operation in the Elementor forms adapter.
 	 *
 	 * @param object $elementor Value used by this operation.
-	 * @param array $warnings Value updated by reference.
+	 * @param array  $warnings Value updated by reference.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -481,9 +483,11 @@ final class ElementorFormsAdapter {
 	/**
 	 * Validate form in the Elementor forms adapter.
 	 *
-	 * @param array $form Value used by this operation.
+	 * @param array  $form Value used by this operation.
 	 * @param string $family Value used by this operation.
-	 * @param array $capabilities Value used by this operation.
+	 * @param array  $capabilities Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateForm( array $form, string $family, array $capabilities ): void {
 		$this->assertElementId( $form, 'form' );
@@ -515,6 +519,8 @@ final class ElementorFormsAdapter {
 	 *
 	 * @param array $form Value used by this operation.
 	 * @param array $capabilities Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateClassicForm( array $form, array $capabilities ): void {
 		if ( 'widget' !== (string) ( $form['elType'] ?? '' ) || 'form' !== (string) ( $form['widgetType'] ?? '' ) ) {
@@ -575,6 +581,8 @@ final class ElementorFormsAdapter {
 	 *
 	 * @param array $form Value used by this operation.
 	 * @param array $capabilities Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateAtomicForm( array $form, array $capabilities ): void {
 		if ( 'e-form' !== (string) ( $form['elType'] ?? '' ) ) {
@@ -607,7 +615,9 @@ final class ElementorFormsAdapter {
 	 * @param array $node Value used by this operation.
 	 * @param array $registered Value used by this operation.
 	 * @param array $counts Value updated by reference.
-	 * @param bool $root Value used by this operation.
+	 * @param bool  $root Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateAtomicNode( array $node, array $registered, array &$counts, bool $root ): void {
 		$this->assertElementId( $node, $root ? 'atomic form' : 'atomic form child' );
@@ -647,8 +657,10 @@ final class ElementorFormsAdapter {
 	/**
 	 * Validate atomic settings in the Elementor forms adapter.
 	 *
-	 * @param array $settings Value used by this operation.
+	 * @param array  $settings Value used by this operation.
 	 * @param string $type Requested type.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateAtomicSettings( array $settings, string $type ): void {
 		foreach ( $settings as $key => $value ) {
@@ -666,8 +678,10 @@ final class ElementorFormsAdapter {
 	/**
 	 * Ensure message has paragraph in the Elementor forms adapter.
 	 *
-	 * @param array $form Value used by this operation.
+	 * @param array  $form Value used by this operation.
 	 * @param string $messageType Requested type.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertMessageHasParagraph( array $form, string $messageType ): void {
 		$message = $this->findFirstByType( $form, $messageType );
@@ -717,9 +731,9 @@ final class ElementorFormsAdapter {
 	/**
 	 * Collect forms in the Elementor forms adapter.
 	 *
-	 * @param array $elements Value used by this operation.
-	 * @param array $forms Value updated by reference.
-	 * @param array $path Value used by this operation.
+	 * @param array       $elements Value used by this operation.
+	 * @param array       $forms Value updated by reference.
+	 * @param array       $path Value used by this operation.
 	 * @param string|null $parentId Identifier of the requested object.
 	 */
 	private function collectForms( array $elements, array &$forms, array $path, ?string $parentId ): void {
@@ -752,7 +766,7 @@ final class ElementorFormsAdapter {
 	/**
 	 * Find element copy in the Elementor forms adapter.
 	 *
-	 * @param array $elements Value used by this operation.
+	 * @param array  $elements Value used by this operation.
 	 * @param string $id Identifier of the requested object.
 	 *
 	 * @return array|null Result of the operation.
@@ -778,9 +792,9 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the replace element by id operation in the Elementor forms adapter.
 	 *
-	 * @param array $elements Value updated by reference.
+	 * @param array  $elements Value updated by reference.
 	 * @param string $id Identifier of the requested object.
-	 * @param array $replacement Value used by this operation.
+	 * @param array  $replacement Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
 	 */
@@ -806,12 +820,14 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the insert into parent operation in the Elementor forms adapter.
 	 *
-	 * @param array $elements Value updated by reference.
-	 * @param string $parentId Identifier of the requested object.
-	 * @param array $form Value used by this operation.
+	 * @param array    $elements Value updated by reference.
+	 * @param string   $parentId Identifier of the requested object.
+	 * @param array    $form Value used by this operation.
 	 * @param int|null $position Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function insertIntoParent( array &$elements, string $parentId, array $form, ?int $position ): bool {
 		foreach ( $elements as &$element ) {
@@ -838,9 +854,11 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the insert at operation in the Elementor forms adapter.
 	 *
-	 * @param array $elements Value updated by reference.
-	 * @param array $form Value used by this operation.
+	 * @param array    $elements Value updated by reference.
+	 * @param array    $form Value used by this operation.
 	 * @param int|null $position Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function insertAt( array &$elements, array $form, ?int $position ): void {
 		if ( null === $position ) {
@@ -870,9 +888,11 @@ final class ElementorFormsAdapter {
 	/**
 	 * Collect element ids in the Elementor forms adapter.
 	 *
-	 * @param array $element Value used by this operation.
-	 * @param array $ids Value updated by reference.
+	 * @param array  $element Value used by this operation.
+	 * @param array  $ids Value updated by reference.
 	 * @param string $context Authorized execution context.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function collectElementIds( array $element, array &$ids, string $context ): void {
 		$this->assertElementId( $element, $context );
@@ -894,7 +914,9 @@ final class ElementorFormsAdapter {
 	 * Ensure no nested forms in the Elementor forms adapter.
 	 *
 	 * @param array $elements Value used by this operation.
-	 * @param bool $insideForm Value used by this operation.
+	 * @param bool  $insideForm Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertNoNestedForms( array $elements, bool $insideForm = false ): void {
 		foreach ( $elements as $element ) {
@@ -914,8 +936,10 @@ final class ElementorFormsAdapter {
 	/**
 	 * Ensure element id in the Elementor forms adapter.
 	 *
-	 * @param array $element Value used by this operation.
+	 * @param array  $element Value used by this operation.
 	 * @param string $context Authorized execution context.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertElementId( array $element, string $context ): void {
 		$id = isset( $element['id'] ) ? (string) $element['id'] : '';
@@ -927,7 +951,7 @@ final class ElementorFormsAdapter {
 	/**
 	 * Find first by type in the Elementor forms adapter.
 	 *
-	 * @param array $node Value used by this operation.
+	 * @param array  $node Value used by this operation.
 	 * @param string $type Requested type.
 	 *
 	 * @return array|null Result of the operation.
@@ -955,6 +979,8 @@ final class ElementorFormsAdapter {
 	 * @param array $payload Requested action payload.
 	 *
 	 * @return \WP_Post Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function post( array $payload ): \WP_Post {
 		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
@@ -1022,6 +1048,8 @@ final class ElementorFormsAdapter {
 	 * @param int $postId Identifier of the requested object.
 	 *
 	 * @return object Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function document( int $postId ): object {
 		$document = $this->documentOrNull( $postId );
@@ -1034,9 +1062,11 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the save document operation in the Elementor forms adapter.
 	 *
-	 * @param int $postId Identifier of the requested object.
+	 * @param int   $postId Identifier of the requested object.
 	 * @param array $data Value used by this operation.
 	 * @param array $pageSettings Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function saveDocument( int $postId, array $data, array $pageSettings ): void {
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $postId ) ) {
@@ -1058,6 +1088,8 @@ final class ElementorFormsAdapter {
 	 * Restore snapshot in the Elementor forms adapter.
 	 *
 	 * @param array $snapshot Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function restoreSnapshot( array $snapshot ): void {
 		$this->saveDocument( (int) $snapshot['post_id'], $snapshot['data'], $snapshot['page_settings'] );

@@ -122,6 +122,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertAcf();
@@ -171,6 +173,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function delete( array $payload, array $context ): array {
 		$this->assertAcf();
@@ -202,6 +206,8 @@ final class AcfAdapter {
 	 * @param array $payload Requested action payload.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function fieldGroups( array $payload ): array {
 		$this->assertAcfSchema();
@@ -251,6 +257,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function ensureTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
@@ -394,6 +402,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function removeTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
@@ -454,6 +464,9 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 * @throws \Throwable When the guarded operation cannot be completed safely.
 	 */
 	public function ensureFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
@@ -585,6 +598,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function removeFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
@@ -665,6 +680,9 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 * @throws \Throwable When the guarded operation cannot be completed safely.
 	 */
 	public function createFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
@@ -739,6 +757,8 @@ final class AcfAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function deleteFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
@@ -793,6 +813,8 @@ final class AcfAdapter {
 
 	/**
 	 * Ensure acf in the ACF adapter.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertAcf(): void {
 		if ( ! function_exists( 'get_fields' ) || ! function_exists( 'update_field' ) ) {
@@ -802,6 +824,8 @@ final class AcfAdapter {
 
 	/**
 	 * Ensure acf schema in the ACF adapter.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertAcfSchema(): void {
 		$this->assertAcf();
@@ -816,7 +840,9 @@ final class AcfAdapter {
 	 * Ensure group applies to post in the ACF adapter.
 	 *
 	 * @param string $groupKey Field or lookup key.
-	 * @param int $postId Identifier of the requested object.
+	 * @param int    $postId Identifier of the requested object.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertGroupAppliesToPost( string $groupKey, int $postId ): void {
 		$post = get_post( $postId );
@@ -848,6 +874,8 @@ final class AcfAdapter {
 	 * @param string $groupKey Field or lookup key.
 	 *
 	 * @return int Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function groupId( string $groupKey ): int {
 		$group   = acf_get_field_group( $groupKey );
@@ -864,6 +892,8 @@ final class AcfAdapter {
 	 * @param string $groupKey Field or lookup key.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function groupFields( string $groupKey ): array {
 		$group = acf_get_field_group( $groupKey );
@@ -880,6 +910,8 @@ final class AcfAdapter {
 	 * @param array $requested Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeRequestedTextFields( array $requested ): array {
 		$normalized = array();
@@ -941,7 +973,7 @@ final class AcfAdapter {
 	 *
 	 * @param array $summary Value used by this operation.
 	 * @param array $definition Value used by this operation.
-	 * @param int $groupId Identifier of the requested object.
+	 * @param int   $groupId Identifier of the requested object.
 	 *
 	 * @return bool Result of the operation.
 	 */
@@ -956,6 +988,8 @@ final class AcfAdapter {
 
 	/**
 	 * Ensure acf complex schema in the ACF adapter.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertAcfComplexSchema(): void {
 		$this->assertAcfSchema();
@@ -978,6 +1012,8 @@ final class AcfAdapter {
 	 * @param array $group Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeFieldGroup( array $group ): array {
 		$allowed = array(
@@ -1062,6 +1098,8 @@ final class AcfAdapter {
 	 * @param array $location Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeLocationRules( array $location ): array {
 		if ( ! $location || count( $location ) > 8 ) {
@@ -1116,11 +1154,13 @@ final class AcfAdapter {
 	 * Normalize schema fields in the ACF adapter.
 	 *
 	 * @param array $requested Value used by this operation.
-	 * @param int $depth Value used by this operation.
-	 * @param int $total Value updated by reference.
+	 * @param int   $depth Value used by this operation.
+	 * @param int   $total Value updated by reference.
 	 * @param array $keys Value updated by reference.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeSchemaFields( array $requested, int $depth, int &$total, array &$keys ): array {
 		if ( $depth > 3 ) {
@@ -1153,11 +1193,13 @@ final class AcfAdapter {
 	 * Normalize schema field in the ACF adapter.
 	 *
 	 * @param array $field Value used by this operation.
-	 * @param int $depth Value used by this operation.
-	 * @param int $total Value updated by reference.
+	 * @param int   $depth Value used by this operation.
+	 * @param int   $total Value updated by reference.
 	 * @param array $keys Value updated by reference.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeSchemaField( array $field, int $depth, int &$total, array &$keys ): array {
 		$type            = isset( $field['type'] ) ? (string) $field['type'] : '';
@@ -1230,10 +1272,12 @@ final class AcfAdapter {
 	/**
 	 * Normalize scalar schema properties in the ACF adapter.
 	 *
-	 * @param array $field Value used by this operation.
+	 * @param array  $field Value used by this operation.
 	 * @param string $type Requested type.
 	 * @param string $key Field or lookup key.
-	 * @param array $normalized Value updated by reference.
+	 * @param array  $normalized Value updated by reference.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeScalarSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( in_array( $type, array( 'text', 'textarea', 'email', 'url', 'number' ), true ) ) {
@@ -1275,10 +1319,12 @@ final class AcfAdapter {
 	/**
 	 * Normalize image schema properties in the ACF adapter.
 	 *
-	 * @param array $field Value used by this operation.
+	 * @param array  $field Value used by this operation.
 	 * @param string $type Requested type.
 	 * @param string $key Field or lookup key.
-	 * @param array $normalized Value updated by reference.
+	 * @param array  $normalized Value updated by reference.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeImageSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( 'image' === $type ) {
@@ -1318,10 +1364,12 @@ final class AcfAdapter {
 	/**
 	 * Normalize relationship schema properties in the ACF adapter.
 	 *
-	 * @param array $field Value used by this operation.
+	 * @param array  $field Value used by this operation.
 	 * @param string $type Requested type.
 	 * @param string $key Field or lookup key.
-	 * @param array $normalized Value updated by reference.
+	 * @param array  $normalized Value updated by reference.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeRelationshipSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( 'relationship' === $type ) {
@@ -1360,13 +1408,15 @@ final class AcfAdapter {
 	/**
 	 * Normalize nested schema properties in the ACF adapter.
 	 *
-	 * @param array $field Value used by this operation.
+	 * @param array  $field Value used by this operation.
 	 * @param string $type Requested type.
 	 * @param string $key Field or lookup key.
-	 * @param int $depth Value used by this operation.
-	 * @param int $total Value updated by reference.
-	 * @param array $keys Value updated by reference.
-	 * @param array $normalized Value updated by reference.
+	 * @param int    $depth Value used by this operation.
+	 * @param int    $total Value updated by reference.
+	 * @param array  $keys Value updated by reference.
+	 * @param array  $normalized Value updated by reference.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeNestedSchemaProperties( array $field, string $type, string $key, int $depth, int &$total, array &$keys, array &$normalized ): void {
 		if ( in_array( $type, array( 'group', 'repeater' ), true ) ) {
@@ -1414,6 +1464,8 @@ final class AcfAdapter {
 	 * @param mixed $wrapper Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeWrapper( $wrapper ): array {
 		if ( ! is_array( $wrapper ) ) {
@@ -1445,6 +1497,8 @@ final class AcfAdapter {
 	 * @param mixed $logic Value used by this operation.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeConditionalLogic( $logic ) {
 		if ( false === $logic || 0 === $logic || '0' === $logic || null === $logic ) {
@@ -1488,9 +1542,11 @@ final class AcfAdapter {
 	 * Create field tree in the ACF adapter.
 	 *
 	 * @param array $definition Value used by this operation.
-	 * @param int $parentId Identifier of the requested object.
-	 * @param int $menuOrder Value used by this operation.
+	 * @param int   $parentId Identifier of the requested object.
+	 * @param int   $menuOrder Value used by this operation.
 	 * @param array $createdNodes Value updated by reference.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function createFieldTree( array $definition, int $parentId, int $menuOrder, array &$createdNodes ): void {
 		$children = isset( $definition['sub_fields'] ) && is_array( $definition['sub_fields'] ) ? $definition['sub_fields'] : array();
@@ -1556,6 +1612,8 @@ final class AcfAdapter {
 	 * Delete field tree by key in the ACF adapter.
 	 *
 	 * @param string $key Field or lookup key.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function deleteFieldTreeByKey( string $key ): void {
 		$field = acf_get_field( $key );
@@ -1622,6 +1680,8 @@ final class AcfAdapter {
 	 * Ensure field tree keys available in the ACF adapter.
 	 *
 	 * @param array $definition Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertFieldTreeKeysAvailable( array $definition ): void {
 		$key = (string) $definition['key'];
@@ -1681,12 +1741,14 @@ final class AcfAdapter {
 	/**
 	 * Process the bounded text operation in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $maxLength Value used by this operation.
-	 * @param bool $allowNewlines Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param int    $maxLength Value used by this operation.
+	 * @param bool   $allowNewlines Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return string Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function boundedText( $value, int $maxLength, bool $allowNewlines, string $context ): string {
 		if ( ! is_string( $value ) && ! is_int( $value ) && ! is_float( $value ) ) {
@@ -1703,7 +1765,7 @@ final class AcfAdapter {
 	 * Check whether invalid control in the ACF adapter.
 	 *
 	 * @param string $value Value used by this operation.
-	 * @param bool $allowNewlines Value used by this operation.
+	 * @param bool   $allowNewlines Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
 	 */
@@ -1715,10 +1777,12 @@ final class AcfAdapter {
 	/**
 	 * Process the require boolean operation in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return bool Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function requireBoolean( $value, string $context ): bool {
 		if ( ! is_bool( $value ) ) {
@@ -1730,12 +1794,14 @@ final class AcfAdapter {
 	/**
 	 * Process the bounded integer operation in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $min Value used by this operation.
-	 * @param int $max Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param int    $min Value used by this operation.
+	 * @param int    $max Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return int Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function boundedInteger( $value, int $min, int $max, string $context ): int {
 		if ( ! is_int( $value ) || $value < $min || $value > $max ) {
@@ -1747,12 +1813,14 @@ final class AcfAdapter {
 	/**
 	 * Process the bounded number operation in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param float $min Value used by this operation.
-	 * @param float $max Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param float  $min Value used by this operation.
+	 * @param float  $max Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function boundedNumber( $value, float $min, float $max, string $context ) {
 		if ( ! is_int( $value ) && ! is_float( $value ) ) {
@@ -1768,11 +1836,13 @@ final class AcfAdapter {
 	/**
 	 * Process the enum value operation in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param array $allowed Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param array  $allowed Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return string Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function enumValue( $value, array $allowed, string $context ): string {
 		$value = (string) $value;
@@ -1785,11 +1855,13 @@ final class AcfAdapter {
 	/**
 	 * Normalize key list in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $maxItems Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param int    $maxItems Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeKeyList( $value, int $maxItems, string $context ): array {
 		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
@@ -1810,12 +1882,14 @@ final class AcfAdapter {
 	/**
 	 * Normalize bounded string list in the ACF adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $maxItems Value used by this operation.
-	 * @param int $maxLength Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param int    $maxItems Value used by this operation.
+	 * @param int    $maxLength Value used by this operation.
 	 * @param string $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function normalizeBoundedStringList( $value, int $maxItems, int $maxLength, string $context ): array {
 		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
@@ -1838,6 +1912,8 @@ final class AcfAdapter {
 	 * @param array $payload Requested action payload.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function target( array $payload ) {
 		if ( array_key_exists( 'target', $payload ) ) {

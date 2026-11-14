@@ -36,7 +36,7 @@ final class Controller {
 	/**
 	 * Initialize the MCP controller dependencies.
 	 *
-	 * @param Runner $runner Value used by this operation.
+	 * @param Runner   $runner Value used by this operation.
 	 * @param Registry $registry Connector action registry.
 	 * @param callable $authorizationCallback Value used by this operation.
 	 */
@@ -181,8 +181,8 @@ final class Controller {
 	 * Check whether modern request in the MCP controller.
 	 *
 	 * @param \WP_REST_Request $request Incoming request object.
-	 * @param string $method Value used by this operation.
-	 * @param array $params Value used by this operation.
+	 * @param string           $method Value used by this operation.
+	 * @param array            $params Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
 	 */
@@ -201,8 +201,10 @@ final class Controller {
 	 * Validate modern envelope in the MCP controller.
 	 *
 	 * @param \WP_REST_Request $request Incoming request object.
-	 * @param string $method Value used by this operation.
-	 * @param array $params Value used by this operation.
+	 * @param string           $method Value used by this operation.
+	 * @param array            $params Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateModernEnvelope( \WP_REST_Request $request, string $method, array $params ): void {
 		if ( self::MODERN_VERSION !== (string) $request->get_header( 'mcp-protocol-version' ) ) {
@@ -249,6 +251,8 @@ final class Controller {
 	 * @param array $params Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function initializeResult( array $params ): array {
 		if ( isset( $params['protocolVersion'] ) && ! is_string( $params['protocolVersion'] ) ) {
@@ -281,6 +285,8 @@ final class Controller {
 	 *
 	 * @param array $params Value used by this operation.
 	 * @param array $allowed Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertAllowedParams( array $params, array $allowed ): void {
 		$allowed[] = '_meta';
@@ -295,6 +301,8 @@ final class Controller {
 	 * Ensure unpaged list in the MCP controller.
 	 *
 	 * @param array $params Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertUnpagedList( array $params ): void {
 		$this->assertAllowedParams( $params, array( 'cursor' ) );
@@ -307,8 +315,8 @@ final class Controller {
 	 * Process the private cache operation in the MCP controller.
 	 *
 	 * @param array $result Value used by this operation.
-	 * @param bool $modern Value used by this operation.
-	 * @param int $ttlMs Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
+	 * @param int   $ttlMs Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -324,7 +332,7 @@ final class Controller {
 	 * List resources in the MCP controller.
 	 *
 	 * @param array $params Value used by this operation.
-	 * @param bool $modern Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -352,9 +360,11 @@ final class Controller {
 	 * Read resource in the MCP controller.
 	 *
 	 * @param array $params Value used by this operation.
-	 * @param bool $modern Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function readResource( array $params, bool $modern ): array {
 		$this->assertAllowedParams( $params, array( 'uri' ) );
@@ -391,7 +401,7 @@ final class Controller {
 	 * List prompts in the MCP controller.
 	 *
 	 * @param array $params Value used by this operation.
-	 * @param bool $modern Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -420,6 +430,8 @@ final class Controller {
 	 * @param array $params Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function getPrompt( array $params ): array {
 		$this->assertAllowedParams( $params, array( 'name', 'arguments' ) );
@@ -516,6 +528,8 @@ final class Controller {
 	 * @param array $params Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function callTool( $rpcId, array $params ): array {
 		$allowed = array( 'name', 'arguments', '_meta' );
@@ -552,9 +566,9 @@ final class Controller {
 	/**
 	 * Process the execute tool operation in the MCP controller.
 	 *
-	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param mixed  $rpcId Identifier of the requested object.
 	 * @param string $toolName Value used by this operation.
-	 * @param array $arguments Value used by this operation.
+	 * @param array  $arguments Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -619,12 +633,12 @@ final class Controller {
 	/**
 	 * Process the run semantic operation in the MCP controller.
 	 *
-	 * @param mixed $rpcId Identifier of the requested object.
-	 * @param string $toolName Value used by this operation.
-	 * @param string $action Value used by this operation.
-	 * @param array $payload Requested action payload.
-	 * @param bool $dryRun Value used by this operation.
-	 * @param bool $confirm Value used by this operation.
+	 * @param mixed       $rpcId Identifier of the requested object.
+	 * @param string      $toolName Value used by this operation.
+	 * @param string      $action Value used by this operation.
+	 * @param array       $payload Requested action payload.
+	 * @param bool        $dryRun Value used by this operation.
+	 * @param bool        $confirm Value used by this operation.
 	 * @param string|null $requestId Identifier of the requested object.
 	 * @param string|null $expectedFingerprint Value used by this operation.
 	 * @param string|null $expectedStateToken Value used by this operation.
@@ -663,7 +677,7 @@ final class Controller {
 	 *
 	 * @param mixed $id Identifier of the requested object.
 	 * @param array $result Value used by this operation.
-	 * @param bool $modern Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
 	 *
 	 * @return \WP_REST_Response Result of the operation.
 	 */
@@ -687,10 +701,10 @@ final class Controller {
 	/**
 	 * Process the error response operation in the MCP controller.
 	 *
-	 * @param mixed $id Identifier of the requested object.
-	 * @param int $code Value used by this operation.
+	 * @param mixed  $id Identifier of the requested object.
+	 * @param int    $code Value used by this operation.
 	 * @param string $message Value used by this operation.
-	 * @param int $status Value used by this operation.
+	 * @param int    $status Value used by this operation.
 	 *
 	 * @return \WP_REST_Response Result of the operation.
 	 */
@@ -706,7 +720,7 @@ final class Controller {
 	 * Process the tool result operation in the MCP controller.
 	 *
 	 * @param array $value Value used by this operation.
-	 * @param bool $isError Value used by this operation.
+	 * @param bool  $isError Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -751,12 +765,14 @@ final class Controller {
 	/**
 	 * Process the generated request id operation in the MCP controller.
 	 *
-	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param mixed  $rpcId Identifier of the requested object.
 	 * @param string $toolName Value used by this operation.
 	 * @param string $action Value used by this operation.
-	 * @param array $payload Requested action payload.
+	 * @param array  $payload Requested action payload.
 	 *
 	 * @return string Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function generatedRequestId( $rpcId, string $toolName, string $action, array $payload ): string {
 		$json = json_encode( array(
@@ -775,7 +791,7 @@ final class Controller {
 	/**
 	 * Process the optional hash operation in the MCP controller.
 	 *
-	 * @param array $arguments Value used by this operation.
+	 * @param array  $arguments Value used by this operation.
 	 * @param string $key Field or lookup key.
 	 *
 	 * @return mixed Result of the operation.
@@ -793,8 +809,10 @@ final class Controller {
 	/**
 	 * Ensure no arguments in the MCP controller.
 	 *
-	 * @param array $arguments Value used by this operation.
+	 * @param array  $arguments Value used by this operation.
 	 * @param string $toolName Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function assertNoArguments( array $arguments, string $toolName ): void {
 		if ( array() !== $arguments ) {

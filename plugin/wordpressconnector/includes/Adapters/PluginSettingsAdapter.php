@@ -364,6 +364,8 @@ final class PluginSettingsAdapter {
      * activation state, declared integration mode and registered capabilities.
      * Only explicitly modeled nonsecret indicators are read below. Anything
      * else remains inventory-only rather than pretending to be an audit pass.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
      */
 	public function audit( array $payload = array(), array $context = array() ): array {
 		if ( $payload ) {
@@ -737,6 +739,8 @@ final class PluginSettingsAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
 		$plugin  = $this->profile( $payload );
@@ -792,6 +796,8 @@ final class PluginSettingsAdapter {
 	 * @param array $payload Requested action payload.
 	 *
 	 * @return string Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function profile( array $payload ): string {
 		$plugin = isset( $payload['plugin'] ) ? sanitize_key( (string) $payload['plugin'] ) : '';
@@ -822,7 +828,7 @@ final class PluginSettingsAdapter {
 	 * Write profile in the plugin settings adapter.
 	 *
 	 * @param string $plugin Value used by this operation.
-	 * @param array $updates Value used by this operation.
+	 * @param array  $updates Value used by this operation.
 	 */
 	private function writeProfile( string $plugin, array $updates ): void {
 		if ( 'wp_rocket' === $plugin ) {
@@ -844,10 +850,12 @@ final class PluginSettingsAdapter {
 	 * Validate updates in the plugin settings adapter.
 	 *
 	 * @param string $plugin Value used by this operation.
-	 * @param array $updates Value used by this operation.
-	 * @param array $before Value used by this operation.
+	 * @param array  $updates Value used by this operation.
+	 * @param array  $before Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function validateUpdates( string $plugin, array $updates, array $before ): array {
 		$clean = array();
@@ -888,6 +896,8 @@ final class PluginSettingsAdapter {
 	 * Read wp rocket in the plugin settings adapter.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function readWpRocket(): array {
 		if ( ! function_exists( 'get_rocket_option' ) || ! function_exists( 'update_rocket_option' ) ) {
@@ -904,6 +914,8 @@ final class PluginSettingsAdapter {
 	 * Write wp rocket in the plugin settings adapter.
 	 *
 	 * @param array $updates Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function writeWpRocket( array $updates ): void {
 		if ( ! function_exists( 'update_rocket_option' ) ) {
@@ -929,6 +941,8 @@ final class PluginSettingsAdapter {
 	 * Write imagify in the plugin settings adapter.
 	 *
 	 * @param array $updates Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function writeImagify( array $updates ): void {
 		unset( $updates['api_key'], $updates['version'] );
@@ -942,9 +956,11 @@ final class PluginSettingsAdapter {
 	 * Execute the authorized WordPress ability.
 	 *
 	 * @param string $name Value used by this operation.
-	 * @param array $input Value used by this operation.
+	 * @param array  $input Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function executeAbility( string $name, array $input ): array {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
@@ -969,6 +985,8 @@ final class PluginSettingsAdapter {
 	 * Read joinchat in the plugin settings adapter.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function readJoinchat(): array {
 		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
@@ -997,6 +1015,8 @@ final class PluginSettingsAdapter {
 	 * Write joinchat in the plugin settings adapter.
 	 *
 	 * @param array $updates Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function writeJoinchat( array $updates ): void {
 		$stored = get_option( 'joinchat', array() );
@@ -1011,9 +1031,11 @@ final class PluginSettingsAdapter {
 	 * Sanitize joinchat value in the plugin settings adapter.
 	 *
 	 * @param string $type Requested type.
-	 * @param mixed $value Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function sanitizeJoinchatValue( string $type, $value ) {
 		if ( 'yes_no' === $type ) {
@@ -1068,6 +1090,8 @@ final class PluginSettingsAdapter {
 	 * Read really simple security in the plugin settings adapter.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function readReallySimpleSecurity(): array {
 		if ( ! function_exists( 'rsssl_fields' ) || ! function_exists( 'rsssl_get_option' ) || ! function_exists( 'rsssl_update_option' ) ) {
@@ -1101,6 +1125,8 @@ final class PluginSettingsAdapter {
 	 * Write really simple security in the plugin settings adapter.
 	 *
 	 * @param array $updates Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function writeReallySimpleSecurity( array $updates ): void {
 		if ( ! function_exists( 'rsssl_update_option' ) ) {
@@ -1115,9 +1141,11 @@ final class PluginSettingsAdapter {
 	 * Sanitize wp rocket value in the plugin settings adapter.
 	 *
 	 * @param string $type Requested type.
-	 * @param mixed $value Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function sanitizeWpRocketValue( string $type, $value ) {
 		if ( 'bool' === $type ) {
@@ -1162,6 +1190,8 @@ final class PluginSettingsAdapter {
 	 * @param mixed $value Value used by this operation.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function sanitizeLike( $current, $value ) {
 		if ( is_bool( $current ) ) {
@@ -1199,6 +1229,8 @@ final class PluginSettingsAdapter {
 	 * @param array $value Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function sanitizeArray( array $value ): array {
 		$clean = array();
@@ -1220,6 +1252,8 @@ final class PluginSettingsAdapter {
 	 * @param mixed $value Value used by this operation.
 	 *
 	 * @return int Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function toBoolInt( $value ): int {
 		$normalized = strtolower( (string) $value );

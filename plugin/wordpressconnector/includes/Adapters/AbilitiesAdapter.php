@@ -54,6 +54,8 @@ final class AbilitiesAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	public function catalog( array $payload, array $context ): array {
 		if ( ! function_exists( 'wp_get_abilities' ) ) {
@@ -165,7 +167,7 @@ final class AbilitiesAdapter {
 	 *
 	 * @param array $payload Requested action payload.
 	 * @param array $context Authorized execution context.
-	 * @param bool $approvedProvider Value used by this operation.
+	 * @param bool  $approvedProvider Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
@@ -199,10 +201,12 @@ final class AbilitiesAdapter {
 	 * Resolve ability in the Abilities adapter.
 	 *
 	 * @param array $payload Requested action payload.
-	 * @param bool $mutation Value used by this operation.
-	 * @param bool $approvedProvider Value used by this operation.
+	 * @param bool  $mutation Value used by this operation.
+	 * @param bool  $approvedProvider Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function resolveAbility( array $payload, bool $mutation, bool $approvedProvider = false ): array {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
@@ -228,11 +232,14 @@ final class AbilitiesAdapter {
 	 *
 	 * @param string $name Value used by this operation.
 	 * @param object $ability Value used by this operation.
-	 * @param mixed $input Value used by this operation.
-	 * @param array $annotations Value used by this operation.
-	 * @param bool $mutation Value used by this operation.
+	 * @param mixed  $input Value used by this operation.
+	 * @param array  $annotations Value used by this operation.
+	 * @param bool   $mutation Value used by this operation.
 	 *
 	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 * @throws \Throwable When the guarded operation cannot be completed safely.
 	 */
 	private function executeAndSanitize( string $name, object $ability, $input, array $annotations, bool $mutation ): array {
 		$execution_started               = false;
@@ -359,8 +366,8 @@ final class AbilitiesAdapter {
 	/**
 	 * Process the terminal mutation failure operation in the Abilities adapter.
 	 *
-	 * @param string $name Value used by this operation.
-	 * @param array $annotations Value used by this operation.
+	 * @param string      $name Value used by this operation.
+	 * @param array       $annotations Value used by this operation.
 	 * @param string|null $providerErrorCode Value used by this operation.
 	 *
 	 * @return array Result of the operation.
@@ -385,12 +392,14 @@ final class AbilitiesAdapter {
 	/**
 	 * Process the redact ability result operation in the Abilities adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $depth Value used by this operation.
+	 * @param mixed             $value Value used by this operation.
+	 * @param int               $depth Value used by this operation.
 	 * @param \SplObjectStorage $seen Value used by this operation.
-	 * @param array $budget Value updated by reference.
+	 * @param array             $budget Value updated by reference.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function redactAbilityResult( $value, int $depth, \SplObjectStorage $seen, array &$budget ) {
 		if ( ++$budget['nodes'] > 10000 || $depth > 20 ) throw new \RuntimeException( 'WordPress Ability result exceeds the traversal limit.' );
@@ -438,6 +447,8 @@ final class AbilitiesAdapter {
 	 * @param mixed $value Value used by this operation.
 	 *
 	 * @return string|null Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function catalogNamespace( $value ): ?string {
 		if ( null === $value || '' === $value ) {
@@ -483,7 +494,7 @@ final class AbilitiesAdapter {
 	 * Check whether elementor mutation eligible in the Abilities adapter.
 	 *
 	 * @param string $name Value used by this operation.
-	 * @param mixed $ability Value used by this operation.
+	 * @param mixed  $ability Value used by this operation.
 	 *
 	 * @return bool Result of the operation.
 	 */
@@ -852,11 +863,13 @@ final class AbilitiesAdapter {
 	/**
 	 * Process the catalog positive integer operation in the Abilities adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $max Value used by this operation.
+	 * @param mixed  $value Value used by this operation.
+	 * @param int    $max Value used by this operation.
 	 * @param string $field Value used by this operation.
 	 *
 	 * @return int Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function catalogPositiveInteger( $value, int $max, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
@@ -873,7 +886,7 @@ final class AbilitiesAdapter {
 	 * Process the bounded catalog text operation in the Abilities adapter.
 	 *
 	 * @param string $value Value used by this operation.
-	 * @param int $maxBytes Value used by this operation.
+	 * @param int    $maxBytes Value used by this operation.
 	 *
 	 * @return string Result of the operation.
 	 */
@@ -916,12 +929,14 @@ final class AbilitiesAdapter {
 	/**
 	 * Process the bounded catalog walk operation in the Abilities adapter.
 	 *
-	 * @param mixed $value Value used by this operation.
-	 * @param int $depth Value used by this operation.
+	 * @param mixed             $value Value used by this operation.
+	 * @param int               $depth Value used by this operation.
 	 * @param \SplObjectStorage $seen Value used by this operation.
-	 * @param array $budget Value updated by reference.
+	 * @param array             $budget Value updated by reference.
 	 *
 	 * @return mixed Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function boundedCatalogWalk( $value, int $depth, \SplObjectStorage $seen, array &$budget ) {
 		if ( ++$budget['nodes'] > 2000 || $depth > 12 ) {
