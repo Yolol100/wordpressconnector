@@ -69,7 +69,7 @@ for relative, messages in issues.items():
                     continue
                 indent, name = match.group(1, 2)
                 typ = "callable" if name == "$authorizationCallback" else "mixed"
-            inserts[at].append(f"{indent}/** @var {typ} Stored connector {name[1:].lower()} state. */")
+            inserts[at].append(f"{indent}/**\n{indent} * Stored connector {name[1:].lower()} state.\n{indent} *\n{indent} * @var {typ}\n{indent} */")
             counts["property"] += 1
             continue
         if relative == "includes/CLI/Command.php":
@@ -113,7 +113,24 @@ for relative, messages in issues.items():
                 if not typ.startswith("\\") and typ not in {"RuntimeException", "Exception", "InvalidArgumentException", "LogicException"}:
                     typ = "\\" + typ
                 throws.append(f"\t * @throws {typ} When this operation cannot complete safely.")
-                counts["throws"] += 1
+                if relative == "includes/Adapters/ConnectorUpdateAdapter.php" and "downloadVerifiedPackage" in signature:
+                    throws.append("\t * @throws \\Throwable When a downloaded ZIP must be cleaned up after an error.")
+                counts["throws"] += len(throws)
+        if params:
+            existing_types = re.findall(r"@param\\s+(\\S+)\\s+\\$\\w+", doc)
+            new_types = [re.search(r"@param\\s+(\\S+)", row).group(1) for row in params]
+            width = max(map(len, existing_types + new_types))
+            params = [
+                re.sub(r"(@param\\s+)(\\S+)\\s+(\\$\\w+)",
+                       lambda m: m.group(1) + m.group(2) + " " * (width - len(m.group(2)) + 1) + m.group(3), row, count=1)
+                for row in params
+            ]
+            if relative == "includes/Adapters/ConnectorUpdateAdapter.php" and "verifiedNativeDownload" in signature:
+                prior = [row for row in params if re.search(r"\\$package\\b", row)]
+                if prior:
+                    before_upgrader = next(i for i in range(start, close) if "@param" in lines[i] and "$upgrader" in lines[i])
+                    inserts[before_upgrader].extend(prior)
+                    params = [row for row in params if row not in prior]
         if params:
             target = next((i for i in range(start, close) if re.search(r"@(?:return|throws)\b", lines[i])), close)
             if lines[target - 1].strip() != "*" and not lines[target - 1].strip().startswith("* @"):
@@ -124,6 +141,10 @@ for relative, messages in issues.items():
                 inserts[close].append("\t *")
             inserts[close].extend(throws)
     updated = "\n".join("\n".join(inserts.get(i, []) + [line]) for i, line in enumerate(lines))
+    if relative == "includes/Security/Policy.php":
+        before_alignment = "$request_confirmed          = false;"
+        if updated.count(before_alignment) != 1: raise RuntimeError("Policy spacing anchor missing")
+        updated = updated.replace(before_alignment, "$request_confirmed = false;", 1)
     normalize = lambda s: re.sub(r"\s+", "", re.sub(r"/\*\*[\s\S]*?\*/", "", s))
     if normalize(updated) != normalize(original):
         raise RuntimeError("Executable source changed outside documentation: " + relative)
