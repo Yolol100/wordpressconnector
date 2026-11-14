@@ -43,8 +43,17 @@ final class WooCommerceSettingsAdapter {
 	private const PRIVATE_PATTERN = '/(password|passwd|secret|token|auth|api[_-]?key|consumer|credential|private|license|webhook|smtp|recipient|authorization|client[_-]?id|client[_-]?secret|session|merchant|bank|iban|routing|account[_-]?(?:number|id|iban|key|owner)|user[_-]?name|username|access[_-]?key|signing|certificate|oauth|public[_-]?key)/i';
 
 	private const CORE_GROUPS = array(
-		'general', 'products', 'tax', 'shipping', 'checkout', 'account',
-		'email', 'advanced', 'integration', 'site_visibility', 'point_of_sale'
+		'general',
+		'products',
+		'tax',
+		'shipping',
+		'checkout',
+		'account',
+		'email',
+		'advanced',
+		'integration',
+		'site_visibility',
+		'point_of_sale'
 	);
 
 	// Changing these settings can have irreversible effects that simply
@@ -117,9 +126,14 @@ final class WooCommerceSettingsAdapter {
 			'admin_navigation'     => $this->adminNavigation(),
 			'coverage'             => 'all_exposed_groups_readable; only_explicit_allowlist_mutable',
 			'outside_settings_api' => array(
-				'shipping_zones_and_methods', 'tax_rates_and_classes', 'payment_gateway_credentials',
-				'email_delivery_credentials', 'download_directory_rules', 'webhooks_and_api_keys',
-				'third_party_mollie_settings', 'point_of_sale_provider_settings',
+				'shipping_zones_and_methods',
+				'tax_rates_and_classes',
+				'payment_gateway_credentials',
+				'email_delivery_credentials',
+				'download_directory_rules',
+				'webhooks_and_api_keys',
+				'third_party_mollie_settings',
+				'point_of_sale_provider_settings',
 			),
 		);
 	}
@@ -439,8 +453,17 @@ final class WooCommerceSettingsAdapter {
 					'label'    => $this->shortText( $page->get_label() ),
 					'subtabs'  => $subtabs,
 					'provider' => in_array( $tabId, array(
-						'general', 'products', 'shipping', 'checkout', 'account', 'email',
-						'integration', 'advanced', 'tax', 'site_visibility', 'point_of_sale',
+						'general',
+						'products',
+						'shipping',
+						'checkout',
+						'account',
+						'email',
+						'integration',
+						'advanced',
+						'tax',
+						'site_visibility',
+						'point_of_sale',
 					), true ) ? 'woocommerce' : 'extension_or_custom',
 				);
 			}

@@ -1120,9 +1120,15 @@ final class CoreAdapter {
 		$before = $item_id ? get_post( $item_id ) : null;
 		$args   = array();
 		$map    = array(
-			'title'      => 'menu-item-title', 'url' => 'menu-item-url', 'description' => 'menu-item-description',
-			'attr_title' => 'menu-item-attr-title', 'target' => 'menu-item-target', 'xfn' => 'menu-item-xfn',
-			'status'     => 'menu-item-status', 'type' => 'menu-item-type', 'object' => 'menu-item-object',
+			'title'       => 'menu-item-title',
+			'url'         => 'menu-item-url',
+			'description' => 'menu-item-description',
+			'attr_title'  => 'menu-item-attr-title',
+			'target'      => 'menu-item-target',
+			'xfn'         => 'menu-item-xfn',
+			'status'      => 'menu-item-status',
+			'type'        => 'menu-item-type',
+			'object'      => 'menu-item-object',
 		);
 		foreach ( $map as $source => $target ) {
 			if ( isset( $payload[ $source ] ) ) {
@@ -1552,9 +1558,17 @@ final class CoreAdapter {
 	private function sanitizePostFields( array $payload, bool $partial ): array {
 		$fields     = array();
 		$string_map = array(
-			'title'       => 'post_title', 'content' => 'post_content', 'excerpt' => 'post_excerpt', 'status' => 'post_status',
-			'slug'        => 'post_name', 'type' => 'post_type', 'password' => 'post_password', 'comment_status' => 'comment_status',
-			'ping_status' => 'ping_status', 'date' => 'post_date', 'date_gmt' => 'post_date_gmt',
+			'title'          => 'post_title',
+			'content'        => 'post_content',
+			'excerpt'        => 'post_excerpt',
+			'status'         => 'post_status',
+			'slug'           => 'post_name',
+			'type'           => 'post_type',
+			'password'       => 'post_password',
+			'comment_status' => 'comment_status',
+			'ping_status'    => 'ping_status',
+			'date'           => 'post_date',
+			'date_gmt'       => 'post_date_gmt',
 		);
 		foreach ( $string_map as $source => $target ) {
 			if ( array_key_exists( $source, $payload ) ) {
@@ -1616,9 +1630,17 @@ final class CoreAdapter {
 	 */
 	private function postRollbackPayload( array $snapshot ): array {
 		return array(
-			'id'         => $snapshot['id'], 'title' => $snapshot['title'], 'content' => $snapshot['content'], 'excerpt' => $snapshot['excerpt'],
-			'status'     => $snapshot['status'], 'slug' => $snapshot['slug'], 'author' => $snapshot['author'], 'parent' => $snapshot['parent'],
-			'menu_order' => $snapshot['menu_order'], 'comment_status' => $snapshot['comment_status'], 'ping_status' => $snapshot['ping_status'],
+			'id'             => $snapshot['id'],
+			'title'          => $snapshot['title'],
+			'content'        => $snapshot['content'],
+			'excerpt'        => $snapshot['excerpt'],
+			'status'         => $snapshot['status'],
+			'slug'           => $snapshot['slug'],
+			'author'         => $snapshot['author'],
+			'parent'         => $snapshot['parent'],
+			'menu_order'     => $snapshot['menu_order'],
+			'comment_status' => $snapshot['comment_status'],
+			'ping_status'    => $snapshot['ping_status'],
 		);
 	}
 
