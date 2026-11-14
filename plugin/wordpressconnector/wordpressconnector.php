@@ -77,7 +77,7 @@ $wpconnector_files = array(
 	'includes/Admin/ElementorJsonExport.php',
 	'includes/Admin/ElementorJsonImport.php',
 	'includes/CLI/Command.php',
-	'includes/Plugin.php'
+	'includes/Plugin.php',
 );
 foreach ( $wpconnector_files as $wpconnector_file ) {
 	require_once WPCONNECTOR_PATH.$wpconnector_file;

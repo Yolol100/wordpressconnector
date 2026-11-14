@@ -30,24 +30,24 @@ final class ElementorAdapter {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );
 		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array(
 			'mutation'    => true,
-			'description' =>, 'Create a page, post, product or Elementor library document through the Elementor document API.'
+			'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.',
 		) );
 		$registry->register( 'elementor.replace_document', array( $this, 'replaceDocument' ), array(
 			'mutation'    => true,
-			'description' =>, 'Replace Elementor elements/settings through the Elementor document API.'
+			'description' => 'Replace Elementor elements/settings through the Elementor document API.',
 		) );
 		$registry->register( 'elementor.patch_element', array( $this, 'patchElement' ), array(
 			'mutation'    => true,
-			'description' =>, 'Patch an Elementor element by stable element id and save through the Elementor document API.'
+			'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.',
 		) );
 		$registry->register( 'elementor.regenerate', array( $this, 'regenerate' ), array(
 			'mutation'    => true,
-			'description' =>, 'Clear Elementor generated CSS/files cache.'
+			'description' => 'Clear Elementor generated CSS/files cache.',
 		) );
 		$registry->register( 'elementor.header_links.replace', array( $this, 'replaceHeaderLinks' ), array(
 			'mutation'    => true,
 			'capability'  => 'edit_theme_options',
-			'description' =>, 'Replace exact same-site Icon List links in one published Elementor header.'
+			'description' => 'Replace exact same-site Icon List links in one published Elementor header.',
 		) );
 		$registry->register( 'elementor.header_links.inspect', array( $this, 'inspectHeaderLinks' ), array( 'description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.' ) );
 	}

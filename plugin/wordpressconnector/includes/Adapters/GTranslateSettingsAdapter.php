@@ -32,7 +32,7 @@ final class GTranslateSettingsAdapter {
 		$read = array(
 			'privileged'             => true,
 			'public_repository_safe' => true,
-			'capability'             =>, 'manage_options'
+			'capability'             => 'manage_options',
 		);
 		$registry->register( 'gtranslate.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'gtranslate.settings.update', array( $this, 'update' ),

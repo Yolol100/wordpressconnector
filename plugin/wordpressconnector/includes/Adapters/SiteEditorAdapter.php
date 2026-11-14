@@ -29,7 +29,7 @@ final class SiteEditorAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' =>, 'edit_theme_options'
+			'capability' => 'edit_theme_options',
 		);
 		$write = $read + array( 'mutation' => true );
 		$registry->register( 'site_editor.template.list', array( $this, 'listTemplates' ),

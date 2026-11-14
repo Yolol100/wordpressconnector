@@ -55,7 +55,7 @@ final class YoastTemplateSettingsAdapter {
 		'breadcrumb_search_prefix'        => 'breadcrumbs-searchprefix',
 		'breadcrumb_404_label'            => 'breadcrumbs-404crumb',
 		'product_category_title'          => 'title-tax-product_cat',
-		'product_category_description'    =>, 'metadesc-tax-product_cat'
+		'product_category_description'    => 'metadesc-tax-product_cat',
 	);
 	/**
 	 * Register the YoastTemplateSettings adapter actions and handlers.
@@ -65,7 +65,7 @@ final class YoastTemplateSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$security = array(
 			'privileged' => true,
-			'capability' =>, 'manage_options'
+			'capability' => 'manage_options',
 		);
 		$registry->register( 'yoast.templates.inspect', array( $this, 'inspect' ), $security );
 		$registry->register( 'yoast.templates.update', array( $this, 'update' ), array_merge( $security, array( 'mutation' => true ) ) );
@@ -222,7 +222,7 @@ final class YoastTemplateSettingsAdapter {
 			// as in the repository's request validator.
 			foreach ( $changes as $key => $value ) {
 				if ( ! in_array( $key, array( 'category_title', 'product_category_title',
-					'product_title', 'product_description' ), true ) ) {
+					'product_title', 'product_description', ), true ) ) {
 					throw new RuntimeException( 'Public Yoast template field is not allowed.' );
 				}
 				$token = in_array( $key, array( 'category_title', 'product_category_title' ), true )

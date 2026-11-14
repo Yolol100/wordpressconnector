@@ -375,7 +375,7 @@ final class AcfAdapter {
 				'wrapper'           => array(
 					'width' => '',
 					'class' => '',
-					'id'    =>, ''
+					'id'    => '',
 				),
 				'default_value' => '',
 				'maxlength'     => '',
@@ -997,7 +997,7 @@ final class AcfAdapter {
 				'key'   => $key,
 				'name'  => $name,
 				'label' => $label,
-				'type'  =>, 'text'
+				'type'  => 'text',
 			);
 		}
 		return $normalized;
@@ -1319,7 +1319,7 @@ final class AcfAdapter {
 			'wrapper' => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array(
 				'width' => '',
 				'class' => '',
-				'id'    =>, ''
+				'id'    => '',
 			),
 		);
 

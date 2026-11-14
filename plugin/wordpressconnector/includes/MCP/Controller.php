@@ -883,7 +883,7 @@ final class Controller {
 			'properties'           => array(
 				'action'               => array(
 					'type'    => 'string',
-					'pattern' =>, '^[a-z0-9][a-z0-9._-]*$'
+					'pattern' => '^[a-z0-9][a-z0-9._-]*$',
 				),
 				'payload' => array( 'type' => 'object' ),
 				'dry_run' => array(
@@ -896,15 +896,15 @@ final class Controller {
 				),
 				'request_id'           => array(
 					'type'    => 'string',
-					'pattern' =>, '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'
+					'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$',
 				),
 				'expected_fingerprint' => array(
 					'type'    => 'string',
-					'pattern' =>, '^[a-f0-9]{64}$'
+					'pattern' => '^[a-f0-9]{64}$',
 				),
 				'expected_state_token' => array(
 					'type'    => 'string',
-					'pattern' =>, '^[a-f0-9]{64}$'
+					'pattern' => '^[a-f0-9]{64}$',
 				),
 			),
 			'required' => array( 'action', 'payload' ),

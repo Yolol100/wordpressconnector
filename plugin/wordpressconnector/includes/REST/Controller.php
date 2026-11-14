@@ -133,7 +133,7 @@ final class Controller {
 			'ok'          => true,
 			'connector'   => 'webactueel-wordpress-connector',
 			'zero_config' => true,
-			'auth'        =>, 'github-actions-oidc'
+			'auth'        => 'github-actions-oidc',
 		), 200 );
 	}
 

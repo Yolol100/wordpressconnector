@@ -163,7 +163,7 @@ final class PluginPackageAdapter {
 		$backup           = array(
 			'slug' => $expected,
 			'src'  => get_theme_root(),
-			'dir'  =>, 'themes'
+			'dir'  => 'themes',
 		);
 		$restore_pending  = false;
 		$shutdown_restore = static function () use ( $upgrader, $backup, &$restore_pending ): void {

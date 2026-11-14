@@ -39,7 +39,7 @@ final class WooCommerceOperationsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' =>, 'manage_woocommerce'
+			'capability' => 'manage_woocommerce',
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
@@ -70,7 +70,7 @@ final class WooCommerceOperationsAdapter {
 		$this->assertKeys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
 		$area = $payload['area'] ?? null;
 		if ( ! is_string( $area ) || ! in_array( $area, array(
-			'shipping_zones', 'shipping_methods', 'tax_rates', 'payment_gateways' ), true ) ) {
+			'shipping_zones', 'shipping_methods', 'tax_rates', 'payment_gateways', ), true ) ) {
 			throw new RuntimeException( 'Unrecognized WooCommerce operations inventory area.' );
 		}
 		$path = array(

@@ -28,11 +28,11 @@ final class GutenbergAdapter {
 		$registry->register( 'gutenberg.inspect', array( $this, 'inspect' ), array( 'description' => 'Parse Gutenberg/block content into a block tree.' ) );
 		$registry->register( 'gutenberg.replace', array( $this, 'replace' ), array(
 			'mutation'    => true,
-			'description' =>, 'Replace the entire serialized block document.'
+			'description' => 'Replace the entire serialized block document.',
 		) );
 		$registry->register( 'gutenberg.patch', array( $this, 'patch' ), array(
 			'mutation'    => true,
-			'description' =>, 'Patch one block by nested numeric path.'
+			'description' => 'Patch one block by nested numeric path.',
 		) );
 	}
 

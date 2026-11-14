@@ -43,23 +43,23 @@ final class Runner {
 		$this->registry->register( 'connector.actions', array( $this, 'actions' ), array( 'description' => 'List registered actions and security metadata.' ) );
 		$this->registry->register( 'connector.batch', array( $this, 'batch' ), array(
 			'mutation'    => true,
-			'description' =>, 'Execute up to 25 connector operations with compensation on failure.'
+			'description' => 'Execute up to 25 connector operations with compensation on failure.',
 		) );
 		$this->registry->register( 'connector.read_batch', array( $this, 'readBatch' ), array( 'description' => 'Read up to 25 supported actions with one permission-checked request and no mutations.' ) );
 		$this->registry->register( 'connector.rollback', array( $this, 'rollback' ), array(
 			'mutation'    => true,
 			'privileged'  => true,
-			'description' =>, 'Execute a stored rollback snapshot by request_id.'
+			'description' => 'Execute a stored rollback snapshot by request_id.',
 		) );
 		$this->registry->register( 'connector.cleanup', array( $this, 'cleanup' ), array(
 			'mutation'    => true,
 			'privileged'  => true,
-			'description' =>, 'Delete expired idempotency and rollback state.'
+			'description' => 'Delete expired idempotency and rollback state.',
 		) );
 		$this->registry->register( 'connector.mutation_status', array( $this, 'mutationStatus' ), array(
 			'privileged'  => true,
 			'capability'  => 'manage_options',
-			'description' =>, 'Read a sanitized request outcome and lock status for private administrator reconciliation.'
+			'description' => 'Read a sanitized request outcome and lock status for private administrator reconciliation.',
 		) );
 	}
 

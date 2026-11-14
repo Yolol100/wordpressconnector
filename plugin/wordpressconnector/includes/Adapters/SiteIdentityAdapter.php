@@ -38,7 +38,7 @@ final class SiteIdentityAdapter {
 		$registry->register( 'site.identity.update', array( $this, 'update' ),
 			array_merge( $public, array(
 				'mutation'    => true,
-				'description' =>, 'Update bounded site identity with dry-run, stale-state protection and rollback.'
+				'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.',
 			) ) );
 		$registry->register( 'site.identity.restore', array( $this, 'restore' ), array(
 			'mutation'    => true,

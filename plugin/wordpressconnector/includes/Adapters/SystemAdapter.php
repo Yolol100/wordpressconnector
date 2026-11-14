@@ -77,7 +77,7 @@ final class SystemAdapter {
 			$sensitive + array(
 				'mutation'    => true,
 				'capability'  => 'edit_users',
-				'description' =>, 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'
+				'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.',
 			)
 		);
 		$registry->register(
@@ -496,7 +496,7 @@ final class SystemAdapter {
 				'last_name'    => $before['last_name'],
 				'description'  => $before['description'],
 				'url'          => $before['url'],
-				'role'         => $before['roles'][0] ??, 'subscriber'
+				'role'         => $before['roles'][0] ?? 'subscriber',
 			),
 		);
 		return $result;

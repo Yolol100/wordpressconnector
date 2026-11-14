@@ -81,7 +81,7 @@ final class PluginSettingsAdapter {
 			'id'      => 'aios',
 			'mode'    => 'security_provider_contract_needed',
 			'actions' => array(),
-			'note'    =>, 'AIOS firewall, login protection and 2FA require version-specific safe APIs and lockout recovery before settings writes.'
+			'note'    => 'AIOS firewall, login protection and 2FA require version-specific safe APIs and lockout recovery before settings writes.',
 		),
 		'woocommerce/woocommerce.php'                     => array(
 			'id'      => 'woocommerce',
@@ -102,40 +102,40 @@ final class PluginSettingsAdapter {
 				'woocommerce.operations.update',
 				'woocommerce.fulfillment.locations.inspect',
 				'woocommerce.fulfillment.locations.update',
-				'woocommerce.fulfillment.create'
+				'woocommerce.fulfillment.create',
 			),
-			'note'    =>, 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.'
+			'note'    => 'Installed connector version determines availability. High-risk shipping, tax and payment writes require tested restore and site-local gates.',
 		),
 		'mollie-payments-for-woocommerce/mollie-payments-for-woocommerce.php' => array(
 			'id'      => 'mollie',
 			'mode'    => 'woocommerce_gateway_limited',
 			'actions' => array( 'woocommerce.operations.list', 'woocommerce.operations.inspect', 'woocommerce.operations.update' ),
-			'note'    =>, 'Only WooCommerce-exposed gateway fields; live/test mode, payment credentials and actual payments require provider-native authenticated setup and sandbox verification.'
+			'note'    => 'Only WooCommerce-exposed gateway fields; live/test mode, payment credentials and actual payments require provider-native authenticated setup and sandbox verification.',
 		),
 		'ewww-image-optimizer/ewww-image-optimizer.php'   => array(
 			'id'      => 'ewww_image_optimizer',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update' ),
-			'note'    =>, 'EWWW 8.x lazy loading and image conversion cannot be safely changed through arbitrary options. Avoid duplicate lazy loading with WP Rocket.'
+			'note'    => 'EWWW 8.x lazy loading and image conversion cannot be safely changed through arbitrary options. Avoid duplicate lazy loading with WP Rocket.',
 		),
 		'broken-link-checker-seo/aioseo-broken-link-checker.php' => array(
 			'id'      => 'aioseo_broken_link_checker',
 			'mode'    => 'external_account_bound',
 			'actions' => array(),
-			'note'    =>, 'AIOSEO Broken Link Checker scans through the vendor service; it is not a local-only link scanner and should not be connected when local-only processing is required.'
+			'note'    => 'AIOSEO Broken Link Checker scans through the vendor service; it is not a local-only link scanner and should not be connected when local-only processing is required.',
 		),
 
 		'all-in-one-wp-migration/all-in-one-wp-migration.php' => array(
 			'id'      => 'all_in_one_wp_migration',
 			'mode'    => 'system_operation',
 			'actions' => array(),
-			'note'    =>, 'Backup/import/export operations require a separate high-risk staging-first contract.'
+			'note'    => 'Backup/import/export operations require a separate high-risk staging-first contract.',
 		),
 		'wp-asset-clean-up/wpacu.php'                     => array(
 			'id'      => 'asset_cleanup',
 			'mode'    => 'guarded_settings',
 			'actions' => array( 'optimizer.settings.inspect', 'optimizer.settings.update', 'maintenance.cache_capabilities', 'maintenance.cache_flush' ),
-			'note'    =>, 'Cache maintenance is supported; asset unload/settings writes require an installed-version and browser regression contract.'
+			'note'    => 'Cache maintenance is supported; asset unload/settings writes require an installed-version and browser regression contract.',
 		),
 		'auto-image-attributes-from-filename-with-bulk-updater/iaff_image-attributes-from-filename.php' => array(
 			'id'      => 'auto_image_attributes',
@@ -146,13 +146,13 @@ final class PluginSettingsAdapter {
 			'id'      => 'broken_link_checker',
 			'mode'    => 'version_bound',
 			'actions' => array(),
-			'note'    =>, 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.'
+			'note'    => 'Cloud/local engines and account-bound state require an exact installed-version contract before writes are exposed.',
 		),
 		'code-snippets/code-snippets.php'                 => array(
 			'id'      => 'code_snippets',
 			'mode'    => 'bounded_exact_patch_and_catalog_preset',
 			'actions' => array( 'code_snippets.patch', 'code_snippets.catalog_only.inspect', 'code_snippets.catalog_only.ensure', 'code_snippets.catalog_only.undo' ),
-			'note'    =>, 'Caller-supplied arbitrary PHP creation remains blocked. One fixed vetted WooCommerce catalogue-only preset supports inspection, guarded creation/activation and rollback; existing snippets support bounded exact replacements.'
+			'note'    => 'Caller-supplied arbitrary PHP creation remains blocked. One fixed vetted WooCommerce catalogue-only preset supports inspection, guarded creation/activation and rollback; existing snippets support bounded exact replacements.',
 		),
 		'content-sync-manager/content-sync-manager.php'   => array(
 			'id'      => 'content_sync_manager',
@@ -163,7 +163,7 @@ final class PluginSettingsAdapter {
 			'id'      => 'classic_editor',
 			'mode'    => 'core_editor_option',
 			'actions' => array(),
-			'note'    =>, 'A dedicated editor-preference contract is required; no raw options are exposed.'
+			'note'    => 'A dedicated editor-preference contract is required; no raw options are exposed.',
 		),
 		'duplicate-page/duplicatepage.php'                => array(
 			'id'      => 'duplicate_page',
@@ -185,7 +185,7 @@ final class PluginSettingsAdapter {
 				'elementor.patch_element',
 				'elementor.replace_document',
 				'elementor.form_inspect',
-				'elementor.form_upsert'
+				'elementor.form_upsert',
 			),
 		),
 		'elementor-pro-2/elementor-pro.php'               => array(
@@ -198,38 +198,38 @@ final class PluginSettingsAdapter {
 				'elementor.patch_element',
 				'elementor.replace_document',
 				'elementor.form_inspect',
-				'elementor.form_upsert'
+				'elementor.form_upsert',
 			),
 		),
 		'gtranslate/gtranslate.php'                       => array(
 			'id'      => 'gtranslate',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'gtranslate.settings.inspect', 'gtranslate.settings.update' ),
-			'note'    =>, 'Only GTranslate 5.0.x NL/EN language selection and browser detection; preserves unrelated premium, CSS and domain options.'
+			'note'    => 'Only GTranslate 5.0.x NL/EN language selection and browser detection; preserves unrelated premium, CSS and domain options.',
 		),
 		'hostinger-ai-assistant/hostinger-ai-assistant.php' => array(
 			'id'      => 'hostinger_ai',
 			'mode'    => 'external_account_bound',
 			'actions' => array(),
-			'note'    =>, 'Hostinger AI provider features, AI requests and account credentials require separately verified authenticated interfaces; audit is inventory-only.'
+			'note'    => 'Hostinger AI provider features, AI requests and account credentials require separately verified authenticated interfaces; audit is inventory-only.',
 		),
 		'hostinger-easy-onboarding/hostinger-easy-onboarding.php' => array(
 			'id'      => 'hostinger_easy_onboarding',
 			'mode'    => 'onboarding_observation_only',
 			'actions' => array(),
-			'note'    =>, 'Hostinger onboarding is detected only; readiness and vendor progress state cannot be inferred from plugin activation.'
+			'note'    => 'Hostinger onboarding is detected only; readiness and vendor progress state cannot be inferred from plugin activation.',
 		),
 		'hostinger-reach/hostinger-reach.php'             => array(
 			'id'      => 'hostinger_reach',
 			'mode'    => 'external_account_bound',
 			'actions' => array(),
-			'note'    =>, 'Hostinger Reach email-marketing integration requires a vendor account and consent-aware end-to-end verification. Never export contacts, tokens or campaign settings.'
+			'note'    => 'Hostinger Reach email-marketing integration requires a vendor account and consent-aware end-to-end verification. Never export contacts, tokens or campaign settings.',
 		),
 		'hostinger/hostinger.php'                         => array(
 			'id'      => 'hostinger_tools',
 			'mode'    => 'security_provider_contract_needed',
 			'actions' => array(),
-			'note'    =>, 'Hostinger Tools maintenance, cache, XML-RPC, HTTPS redirects and hosting service state are not safe to mutate without provider-backed inspection and lockout recovery.'
+			'note'    => 'Hostinger Tools maintenance, cache, XML-RPC, HTTPS redirects and hosting service state are not safe to mutate without provider-backed inspection and lockout recovery.',
 		),
 		'imagify/imagify.php'                             => array(
 			'id'      => 'imagify',
@@ -240,7 +240,7 @@ final class PluginSettingsAdapter {
 			'id'      => 'joinchat',
 			'mode'    => 'native_allowlist',
 			'actions' => array( 'plugin.settings.inspect', 'plugin.settings.update' ),
-			'note'    =>, 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.'
+			'note'    => 'Only a bounded set of nonsecret options for Joinchat 6.4.x; tracking, phone and button/message settings only.',
 		),
 		'litespeed-cache/litespeed-cache.php'             => array(
 			'id'      => 'litespeed_cache',
@@ -251,19 +251,19 @@ final class PluginSettingsAdapter {
 			'id'      => 'loco_translate',
 			'mode'    => 'filesystem_bound',
 			'actions' => array(),
-			'note'    =>, 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.'
+			'note'    => 'Translation-file authoring needs its own translation-aware validation rather than raw file writes.',
 		),
 		'redirection/redirection.php'                     => array(
 			'id'      => 'redirection',
 			'mode'    => 'provider_api_required',
 			'actions' => array(),
-			'note'    =>, 'Redirect writes require a dedicated provider-owned API contract and redirect-loop validation.'
+			'note'    => 'Redirect writes require a dedicated provider-owned API contract and redirect-loop validation.',
 		),
 		'under-construction-page/under-construction.php'  => array(
 			'id'      => 'under_construction',
 			'mode'    => 'maintenance_gate',
 			'actions' => array(),
-			'note'    =>, 'Maintenance settings and public REST visibility require a dedicated security-reviewed contract; never bypass upstream HTTP 403.'
+			'note'    => 'Maintenance settings and public REST visibility require a dedicated security-reviewed contract; never bypass upstream HTTP 403.',
 		),
 		'really-simple-ssl/rlrsssl-really-simple-ssl.php' => array(
 			'id'      => 'really_simple_security',
@@ -274,13 +274,13 @@ final class PluginSettingsAdapter {
 			'id'      => 'site_kit',
 			'mode'    => 'oauth_bound',
 			'actions' => array(),
-			'note'    =>, 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.'
+			'note'    => 'OAuth tokens, service connections and encrypted settings are intentionally not exported through GitHub.',
 		),
 		'wordfence/wordfence.php'                         => array(
 			'id'      => 'wordfence',
 			'mode'    => 'limited_stable_api',
 			'actions' => array(),
-			'note'    =>, 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.'
+			'note'    => 'Broad settings writes are withheld until stable public interfaces and safe allowlists are proven.',
 		),
 		'wordpressconnector/wordpressconnector.php'       => array(
 			'id'      => 'wordpress_connector',
@@ -297,7 +297,7 @@ final class PluginSettingsAdapter {
 			'id'      => 'wp_mail_smtp',
 			'mode'    => 'secret_bound',
 			'actions' => array(),
-			'note'    =>, 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.'
+			'note'    => 'SMTP passwords, OAuth tokens and provider secrets are never exported through GitHub.',
 		),
 		'wp-rocket/wp-rocket.php'                         => array(
 			'id'      => 'wp_rocket',
@@ -313,7 +313,7 @@ final class PluginSettingsAdapter {
 				'yoast.templates.inspect',
 				'yoast.templates.update',
 				'yoast.site_representation.inspect',
-				'yoast.site_representation.update'
+				'yoast.site_representation.update',
 			),
 		),
 		'wordpress-seo-premium/wp-seo-premium.php'        => array(
@@ -325,7 +325,7 @@ final class PluginSettingsAdapter {
 				'yoast.templates.inspect',
 				'yoast.templates.update',
 				'yoast.site_representation.inspect',
-				'yoast.site_representation.update'
+				'yoast.site_representation.update',
 			),
 		),
 	);
@@ -492,7 +492,7 @@ final class PluginSettingsAdapter {
 			if ( ! is_array( $raw ) ) {
 				return array(
 					'english_source'  => 'unknown',
-					'nl_en_languages' =>, 'unknown'
+					'nl_en_languages' => 'unknown',
 				);
 			}
 			$languages = $raw['incl_langs'] ?? null;
@@ -511,7 +511,7 @@ final class PluginSettingsAdapter {
 				return array(
 					'organization_name'        => 'unknown',
 					'organization_description' => 'unknown',
-					'organization_logo'        =>, 'unknown'
+					'organization_logo'        => 'unknown',
 				);
 			}
 			$company = $raw['company_name'] ?? null;
@@ -527,7 +527,7 @@ final class PluginSettingsAdapter {
 			if ( ! is_array( $raw ) ) {
 				return array(
 					'button_tip_saved' => 'unknown',
-					'message_saved'    =>, 'unknown'
+					'message_saved'    => 'unknown',
 				);
 			}
 			// Saved values are not necessarily the effective default/translations.
@@ -555,7 +555,7 @@ final class PluginSettingsAdapter {
 			$raw = get_option( 'wpassetcleanup_settings', null );
 			return array(
 				'settings_record'    => null === $raw ? 'missing' : 'present',
-				'effective_settings' =>, 'unverified'
+				'effective_settings' => 'unverified',
 			);
 		}
 		if ( 'wp_mail_smtp' === $id ) {
@@ -563,7 +563,7 @@ final class PluginSettingsAdapter {
 			$raw = get_option( 'wp_mail_smtp', null );
 			return array(
 				'settings_record' => is_array( $raw ) ? 'present' : 'unknown',
-				'delivery'        =>, 'unverified'
+				'delivery'        => 'unverified',
 			);
 		}
 		return array();

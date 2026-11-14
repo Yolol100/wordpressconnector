@@ -22,7 +22,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 final class OptimizerSettingsAdapter {
 	private const ASSET_FIELDS = array(
 		'minify_loaded_css', 'minify_loaded_js', 'combine_loaded_css',
-		'combine_loaded_js', 'inline_css_files', 'critical_css_status'
+		'combine_loaded_js', 'inline_css_files', 'critical_css_status',
 	);
 	private const EWWW_FIELDS = array(
 		'ewww_image_optimizer_lazy_load', 'ewww_image_optimizer_ll_autoscale',
@@ -33,7 +33,7 @@ final class OptimizerSettingsAdapter {
 	);
 	private const EWWW_WRITE = array(
 		'ewww_image_optimizer_lazy_load', 'ewww_image_optimizer_ll_autoscale',
-		'ewww_image_optimizer_ll_abovethefold', 'ewww_image_optimizer_add_missing_dims'
+		'ewww_image_optimizer_ll_abovethefold', 'ewww_image_optimizer_add_missing_dims',
 	);
 
 	/**
@@ -44,7 +44,7 @@ final class OptimizerSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' =>, 'manage_options'
+			'capability' => 'manage_options',
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );

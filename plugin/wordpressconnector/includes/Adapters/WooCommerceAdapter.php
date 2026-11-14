@@ -32,7 +32,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'List bounded WooCommerce order summaries without billing, shipping or line-item details.'
+				'description' => 'List bounded WooCommerce order summaries without billing, shipping or line-item details.',
 			)
 		);
 		$registry->register(
@@ -42,7 +42,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.'
+				'description' => 'Read one WooCommerce order summary; personal data is omitted unless explicitly requested.',
 			)
 		);
 		$registry->register(
@@ -52,7 +52,7 @@ final class WooCommerceAdapter {
 				'privileged'  => true,
 				'sensitive'   => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.'
+				'description' => 'Read one WooCommerce customer summary; contact and address data requires an explicit per-customer request.',
 			)
 		);
 		$registry->register(
@@ -61,7 +61,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'List WooCommerce shipping zones and geographic locations without shipping method settings.'
+				'description' => 'List WooCommerce shipping zones and geographic locations without shipping method settings.',
 			)
 		);
 		$registry->register(
@@ -70,7 +70,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.'
+				'description' => 'Read one WooCommerce shipping zone and geographic locations without shipping method settings.',
 			)
 		);
 		$registry->register(
@@ -88,7 +88,7 @@ final class WooCommerceAdapter {
 			array(
 				'privileged'  => true,
 				'capability'  => 'manage_woocommerce',
-				'description' =>, 'List bounded WooCommerce tax rates for a registered tax class.'
+				'description' => 'List bounded WooCommerce tax rates for a registered tax class.',
 			)
 		);
 		$registry->register( 'woocommerce.product.list', array( $this, 'productList' ), array( 'description' => 'List WooCommerce products through WooCommerce CRUD.' ) );
@@ -464,7 +464,7 @@ final class WooCommerceAdapter {
 				$classes[] = array(
 					'id'   => isset( $class->tax_rate_class_id ) ? (int) $class->tax_rate_class_id : 0,
 					'name' => isset( $class->name ) ? (string) $class->name : '',
-					'slug' => isset( $class->slug ) ? (string) $class->slug :, ''
+					'slug' => isset( $class->slug ) ? (string) $class->slug : '',
 				);
 			}
 		}

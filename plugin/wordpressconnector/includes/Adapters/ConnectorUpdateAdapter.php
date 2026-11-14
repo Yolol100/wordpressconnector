@@ -445,7 +445,7 @@ final class ConnectorUpdateAdapter {
 		$backup   = array(
 			'slug' => 'wordpressconnector',
 			'src'  => WP_PLUGIN_DIR,
-			'dir'  =>, 'plugins'
+			'dir'  => 'plugins',
 		);
 
 		$upgrader->init();

@@ -53,7 +53,7 @@ final class WooCommerceSettingsAdapter {
 		'advanced',
 		'integration',
 		'site_visibility',
-		'point_of_sale'
+		'point_of_sale',
 	);
 
 	// Changing these settings can have irreversible effects that simply
@@ -69,7 +69,7 @@ final class WooCommerceSettingsAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' =>, 'manage_woocommerce'
+			'capability' => 'manage_woocommerce',
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 
@@ -215,7 +215,7 @@ final class WooCommerceSettingsAdapter {
 	 */
 	public function update( array $payload, array $context ): array {
 		$this->rejectExtra( $payload, array( 'group', 'id', 'value',
-			'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
+			'critical_confirm', 'restore_verified', 'expected_before_fingerprint', ) );
 		$group    = $this->groupId( $payload );
 		$id       = $this->settingId( $payload );
 		$lowRisk  = $this->editable( $group, $id );
@@ -487,7 +487,7 @@ final class WooCommerceSettingsAdapter {
 		} catch ( Throwable $error ) {
 			return array(
 				'available' => false,
-				'reason'    =>, 'admin_settings_inventory_failed'
+				'reason'    => 'admin_settings_inventory_failed',
 			);
 		}
 	}

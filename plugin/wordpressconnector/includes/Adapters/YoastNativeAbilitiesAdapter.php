@@ -123,7 +123,7 @@ final class YoastNativeAbilitiesAdapter {
 			'abilities' => $actions,
 			'requires'  => array(
 				'wordpress' => '6.9',
-				'yoast'     =>, '28.6'
+				'yoast'     => '28.6',
 			),
 			'transport'     => 'private_authenticated_only',
 		);
@@ -421,7 +421,7 @@ final class YoastNativeAbilitiesAdapter {
 		$fields = array();
 		foreach ( array( 'seo_title_rendered', 'meta_description_rendered', 'canonical_rendered',
 			'open_graph_title_rendered', 'open_graph_description_rendered',
-			'twitter_title_rendered', 'twitter_description_rendered' ) as $name ) {
+			'twitter_title_rendered', 'twitter_description_rendered', ) as $name ) {
 			$fields[ $name ] = isset( $data[ $name ] ) && is_scalar( $data[ $name ] ) ?
 				(string) $data[ $name ] : null;
 		}

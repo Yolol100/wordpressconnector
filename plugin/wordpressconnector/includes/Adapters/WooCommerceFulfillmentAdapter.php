@@ -29,7 +29,7 @@ final class WooCommerceFulfillmentAdapter {
 	public function register( Registry $registry ): void {
 		$read  = array(
 			'privileged' => true,
-			'capability' =>, 'manage_woocommerce'
+			'capability' => 'manage_woocommerce',
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'woocommerce.fulfillment.locations.inspect', array( $this, 'inspectLocations' ), $read );
