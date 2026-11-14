@@ -264,7 +264,7 @@ final class AcfAdapter {
 			$global = acf_get_field( $key );
 			if ( is_array( $global ) ) {
 				$summary  = $this->fieldSummary( $global );
-				$globalId = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
+				$global_id = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
 				if ( $global_id <= 0
  || 0 !== (int) ( $summary['parent'] ?? 0 )
  || (string) ( $summary['name'] ?? '' ) !== $name
@@ -452,7 +452,7 @@ final class AcfAdapter {
 				$before[ $key ] = $tree;
 				continue;
 			}
-			if ( is_array( $byName ) ) {
+			if ( is_array( $by_name ) ) {
 				throw new RuntimeException( 'Existing ACF field name conflicts with requested complex field: ' . $name );
 			}
 			$this->assertFieldTreeKeysAvailable( $definition );
@@ -466,7 +466,7 @@ final class AcfAdapter {
 			'group_key'            => $groupKey,
 			'requested'            => $normalized,
 			'before'               => $before,
-			'would_create'         => array_values( array_map( static function ( array $field ): string { return $field['key']; }, $wouldCreate ) ),
+			'would_create'         => array_values( array_map( static function ( array $field ): string { return $field['key']; }, $would_create ) ),
 			'_current_fingerprint' => Fingerprint::make( $state ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -599,9 +599,9 @@ final class AcfAdapter {
 			}
 		}
 		$group_input  = isset( $payload['group'] ) && is_array( $payload['group'] ) ? $payload['group'] : array();
-		$fieldsInput = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
+		$fields_input = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? array_values( $payload['fields'] ) : array();
 		$group       = $this->normalizeFieldGroup( $group_input );
-		if ( ! $fields_input || count( $fieldsInput ) > 20 ) {
+		if ( ! $fields_input || count( $fields_input ) > 20 ) {
 			throw new RuntimeException( 'acf.schema.create_field_group requires 1-20 top-level fields.' );
 		}
 		$total    = 0;
@@ -681,7 +681,7 @@ final class AcfAdapter {
 		$fields             = $this->normalizeSchemaFields( array_values( $expected['fields'] ), 0, $total, $keys );
 		$normalized_expected = array( 'group' => $group, 'fields' => $fields );
 		$current            = $this->fieldGroupSnapshot( $groupKey );
-		if ( is_array( $current ) && ! $this->schemaContains( $normalizedExpected, $current ) ) {
+		if ( is_array( $current ) && ! $this->schemaContains( $normalized_expected, $current ) ) {
 			throw new RuntimeException( 'Refusing to delete an ACF field group that no longer matches the expected schema: ' . $groupKey );
 		}
 
@@ -898,14 +898,14 @@ final class AcfAdapter {
 			if ( ! is_array( $group['hide_on_screen'] ) || count( $group['hide_on_screen'] ) > 20 ) {
 				throw new RuntimeException( 'Invalid ACF field-group hide_on_screen list.' );
 			}
-			$allowedHidden = array(
+			$allowed_hidden = array(
 				'permalink', 'the_content', 'excerpt', 'custom_fields', 'discussion',
 				'comments', 'revisions', 'slug', 'author', 'format', 'page_attributes',
 				'featured_image', 'categories', 'tags', 'send-trackbacks',
 			);
 			$hidden        = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
 			foreach ( $hidden as $item ) {
-				if ( ! in_array( $item, $allowedHidden, true ) ) {
+				if ( ! in_array( $item, $allowed_hidden, true ) ) {
 					throw new RuntimeException( 'Invalid ACF hide_on_screen item: ' . $item );
 				}
 			}
@@ -992,7 +992,7 @@ final class AcfAdapter {
 
 	private function normalizeSchemaField( array $field, int $depth, int &$total, array &$keys ): array {
 		$type           = isset( $field['type'] ) ? (string) $field['type'] : '';
-		$typeProperties = array(
+		$type_properties = array(
 			'text'         => array( 'default_value', 'placeholder', 'prepend', 'append', 'maxlength' ),
 			'textarea'     => array( 'default_value', 'placeholder', 'maxlength', 'rows', 'new_lines' ),
 			'number'       => array( 'default_value', 'placeholder', 'prepend', 'append', 'min', 'max', 'step' ),
@@ -1003,7 +1003,7 @@ final class AcfAdapter {
 			'group'        => array( 'sub_fields', 'layout' ),
 			'repeater'     => array( 'sub_fields', 'min', 'max', 'layout', 'button_label', 'collapsed', 'rows_per_page' ),
 		);
-		if ( ! isset( $typeProperties[ $type ] ) ) {
+		if ( ! isset( $type_properties[ $type ] ) ) {
 			throw new RuntimeException( 'Unsupported ACF complex schema field type: ' . $type );
 		}
 		if ( ! acf_get_field_type( $type ) ) {
@@ -1079,11 +1079,11 @@ final class AcfAdapter {
 				$normalized['rows'] = $this->boundedInteger( $field['rows'], 1, 100, $key . '.rows' );
 			}
 			if ( array_key_exists( 'new_lines', $field ) ) {
-				$newLines = (string) $field['new_lines'];
-				if ( ! in_array( $newLines, array( '', 'wpautop', 'br' ), true ) ) {
+				$new_lines = (string) $field['new_lines'];
+				if ( ! in_array( $new_lines, array( '', 'wpautop', 'br' ), true ) ) {
 					throw new RuntimeException( 'Invalid textarea new_lines setting for: ' . $key );
 				}
-				$normalized['new_lines'] = $newLines;
+				$normalized['new_lines'] = $new_lines;
 			}
 		}
 		if ( 'number' === $type ) {
@@ -1167,7 +1167,7 @@ final class AcfAdapter {
 	private function normalizeNestedSchemaProperties( array $field, string $type, string $key, int $depth, int &$total, array &$keys, array &$normalized ): void {
 		if ( in_array( $type, array( 'group', 'repeater' ), true ) ) {
 			$sub_fields = isset( $field['sub_fields'] ) && is_array( $field['sub_fields'] ) ? array_values( $field['sub_fields'] ) : array();
-			if ( ! $subFields ) {
+			if ( ! $sub_fields ) {
 				throw new RuntimeException( 'ACF ' . $type . ' field requires sub_fields: ' . $key );
 			}
 			$normalized['sub_fields'] = $this->normalizeSchemaFields( $sub_fields, $depth + 1, $total, $keys );
@@ -1195,7 +1195,7 @@ final class AcfAdapter {
 				}
 				if ( '' !== $collapsed ) {
 					$direct_keys = array_map( static function ( array $subField ): string { return (string) $subField['key']; }, $normalized['sub_fields'] );
-					if ( ! in_array( $collapsed, $directKeys, true ) ) {
+					if ( ! in_array( $collapsed, $direct_keys, true ) ) {
 						throw new RuntimeException( 'Repeater collapsed field must reference a direct sub field: ' . $key );
 					}
 				}
@@ -1281,7 +1281,7 @@ final class AcfAdapter {
 			$readback = acf_get_field( $definition['key'] );
 			$saved_id  = is_array( $readback ) && isset( $readback['ID'] ) ? (int) $readback['ID'] : 0;
 		}
-		if ( $savedId <= 0 ) {
+		if ( $saved_id <= 0 ) {
 			throw new RuntimeException( 'ACF complex field creation returned no persistent ID: ' . $definition['key'] );
 		}
 		$createdNodes[] = array( 'key' => (string) $definition['key'], 'id' => $saved_id );

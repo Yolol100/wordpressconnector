@@ -172,17 +172,17 @@ final class ElementorCapabilitiesAdapter {
 						'document_ids' => array(),
 					);
 				}
-				$usedWidgets[ $widgetName ]['instances'] += $count;
-				$usedWidgets[ $widgetName ]['documents']++;
-				$usedWidgets[ $widgetName ]['document_ids'][] = (int) $postId;
+				$usedWidgets[ $widget_name ]['instances'] += $count;
+				$usedWidgets[ $widget_name ]['documents']++;
+				$usedWidgets[ $widget_name ]['document_ids'][] = (int) $postId;
 			}
 
 			foreach ( $document_element_types as $element_type => $count ) {
 				if ( ! isset( $elementTypes[ $element_type ] ) ) {
-					$elementTypes[ $elementType ] = array( 'instances' => 0, 'documents' => 0 );
+					$elementTypes[ $element_type ] = array( 'instances' => 0, 'documents' => 0 );
 				}
-				$elementTypes[ $elementType ]['instances'] += $count;
-				$elementTypes[ $elementType ]['documents']++;
+				$elementTypes[ $element_type ]['instances'] += $count;
+				$elementTypes[ $element_type ]['documents']++;
 			}
 
 			$architecture = $this->architectureLabel( $families );
@@ -228,7 +228,7 @@ final class ElementorCapabilitiesAdapter {
 				'documents_scanned'        => count( $documents ),
 				'widget_instances'         => $widget_instances,
 				'unique_widget_types_used' => count( $usedWidgets ),
-				'missing_widget_types'     => count( $missingWidgets ),
+				'missing_widget_types'     => count( $missing_widgets ),
 				'architecture_documents'   => $architecture_totals,
 			),
 			'widgets'         => $this->mergeUsageIntoWidgets( $registeredWidgets, $usedWidgets ),
@@ -501,7 +501,7 @@ final class ElementorCapabilitiesAdapter {
 			$slug     = count( $parts ) > 1 ? $parts[0] : preg_replace( '/\.php$/', '', $parts[0] );
 			$plugins  = $this->installedPlugins( (bool) $root['mu'] );
 			foreach ( $plugins as $plugin_file => $data ) {
-				$plugin_file = str_replace( '\\', '/', (string) $pluginFile );
+				$plugin_file = str_replace( '\\', '/', (string) $plugin_file );
 				if ( $plugin_file !== $slug . '.php' && 0 !== strpos( $plugin_file, $slug . '/' ) ) {
 					continue;
 				}
@@ -523,7 +523,7 @@ final class ElementorCapabilitiesAdapter {
 
 		if ( $mu ) {
 			if ( is_array( $must_use ) ) {
-				return $mustUse;
+				return $must_use;
 			}
 			if ( ! function_exists( 'get_mu_plugins' ) && defined( 'ABSPATH' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/plugin.php';
@@ -621,18 +621,18 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			$element_type = isset( $element['elType'] ) ? (string) $element['elType'] : '';
-			if ( 'widget' === $elementType && isset( $element['widgetType'] ) && '' !== (string) $element['widgetType'] ) {
+			if ( 'widget' === $element_type && isset( $element['widgetType'] ) && '' !== (string) $element['widgetType'] ) {
 				$widget_name           = (string) $element['widgetType'];
 				$widgets[ $widget_name ] = isset( $widgets[ $widget_name ] ) ? $widgets[ $widget_name ] + 1 : 1;
 			} elseif ( '' !== $element_type ) {
-				$elementTypes[ $element_type ] = isset( $elementTypes[ $element_type ] ) ? $elementTypes[ $elementType ] + 1 : 1;
+				$elementTypes[ $element_type ] = isset( $elementTypes[ $element_type ] ) ? $elementTypes[ $element_type ] + 1 : 1;
 			}
 
 			if ( 'section' === $element_type || 'column' === $element_type ) {
 				$families['legacy'] = true;
 			} elseif ( 'container' === $element_type ) {
 				$families['container'] = true;
-			} elseif ( 0 === strpos( $elementType, 'e-' ) ) {
+			} elseif ( 0 === strpos( $element_type, 'e-' ) ) {
 				$families['atomic'] = true;
 			}
 

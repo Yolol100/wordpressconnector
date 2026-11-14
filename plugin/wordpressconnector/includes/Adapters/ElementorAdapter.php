@@ -234,7 +234,7 @@ final class ElementorAdapter {
 			$is_icon_list   = false;
 			try {
 				$element    =& $this->findElement( $snapshot['data'], $elementId );
-				$isIconList = ( $element['widgetType'] ?? '' ) === 'icon-list'
+				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
 				if ( $is_icon_list ) {
 					foreach ( $element['settings']['icon_list'] as $item ) {
@@ -245,7 +245,7 @@ final class ElementorAdapter {
 			} catch ( RuntimeException $error ) {
 				// Missing Elementor ID is a bounded diagnostic, never a template export.
 			}
-			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$isIconList, 'exact_url_matches'=>min( 2,$matches_count ) );
+			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$is_icon_list, 'exact_url_matches'=>min( 2,$matches_count ) );
 		}
 		$eligible = $can_edit;
 		foreach ( $matches as $match ) {
@@ -254,7 +254,7 @@ final class ElementorAdapter {
 		return array(
 			'post_id'=>$id,
 			'eligible'=>$eligible,
-			'reason_code'=>!$canEdit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
+			'reason_code'=>!$can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
 			'checks'=>$matches,
 			'document_fingerprint'=>Fingerprint::make( $snapshot ),
 		);
@@ -369,7 +369,7 @@ final class ElementorAdapter {
 			$raw          = get_post_meta( $postId, '_elementor_data', true );
 			$data         = $this->normalizeData( $raw ?: array() );
 			$settings     = $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) );
-			$documentType = '';
+			$document_type = '';
 		}
 
 		// Elementor stores the WordPress page layout outside _elementor_page_settings.
@@ -430,7 +430,7 @@ final class ElementorAdapter {
 		}
 
 		$document           = $this->document( $postId );
-		$normalizedElements = null;
+		$normalized_elements = null;
 		// Elementor normalizes widgets/containers through get_data_for_save().
 		// Its documented after_save event carries the canonical data submitted
 		// to update_metadata(). Compare that against the separately read DB data.
@@ -574,7 +574,7 @@ final class ElementorAdapter {
 			if ( ! array_key_exists( $key, $actual['page_settings'] ) ) {
 				throw new RuntimeException( 'Elementor document readback is missing page setting: ' . (string) $key );
 			}
-			if ( ! hash_equals( Fingerprint::make( $expectedValue ), Fingerprint::make( $actual['page_settings'][ $key ] ) ) ) {
+			if ( ! hash_equals( Fingerprint::make( $expected_value ), Fingerprint::make( $actual['page_settings'][ $key ] ) ) ) {
 				throw new RuntimeException( 'Elementor page setting readback verification failed: ' . (string) $key );
 			}
 		}

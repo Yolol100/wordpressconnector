@@ -339,7 +339,7 @@ final class Runner {
 		}
 		$result = $this->registry->execute( (string) $rollback['action'], $rollback['payload'], array_merge( $context, array( 'rollback_mode' => true, 'expected_fingerprint' => null ) ) );
 		unset( $result['_rollback'], $result['_current_fingerprint'] );
-		return array( 'restored_request_id' => $requestId, 'restored_with' => $rollback['action'], 'result' => $result );
+		return array( 'restored_request_id' => $request_id, 'restored_with' => $rollback['action'], 'result' => $result );
 	}
 
 	/**
@@ -387,13 +387,13 @@ final class Runner {
 		// This is deliberately a boolean inventory observation, not
 		// the rollback payload or a promise that rollback can succeed.
 		return array(
-			'request_id'                     => $requestId,
+			'request_id'                     => $request_id,
 			'record_state'                   => $state,
 			'recorded_action'                => $action,
 			'recorded_at_gmt'                => $created_at_gmt,
 			'outcome'                        => $outcome,
-			'rollback_snapshot_recorded'     => null !== $this->snapshots->getRecord( $requestId ),
-			'mutation_lock'                  => $this->processed->mutationLockStatus( $requestId ),
+			'rollback_snapshot_recorded'     => null !== $this->snapshots->getRecord( $request_id ),
+			'mutation_lock'                  => $this->processed->mutationLockStatus( $request_id ),
 			'manual_reconciliation_required' => 'completed' !== $state,
 			'safe_to_retry_automatically'    => false,
 			'guidance'                       => 'Verify the exact site state and original request receipt before any new write or rollback. This inspection makes no changes.',
@@ -451,7 +451,7 @@ final class Runner {
 					throw new RuntimeException( 'Public Yoast template update accepts only fields.' );
 				}
 				$fields           = $payload['fields'] ?? null;
-				$allowedVariables = array(
+				$allowed_variables = array(
 					'category_title'         => '%%term_title%%',
 					'product_category_title' => '%%term_title%%',
 					'product_title'          => '%%title%%',
@@ -465,7 +465,7 @@ final class Runner {
 						? $allowed_variables[ $key ] : null;
 					if ( null === $required_variable || ! is_string( $value )
  || strlen( $value ) > 150 || strlen( $value ) < 10
- || false === strpos( $value, $requiredVariable )
+ || false === strpos( $value, $required_variable )
  || preg_match( '/[\\x00-\\x1f\\x7f<>]/', $value ) ) {
 						throw new RuntimeException( 'Public Yoast template field or value is not allowed.' );
 					}
@@ -649,7 +649,7 @@ final class Runner {
 				throw new RuntimeException( 'Header link replacement keys are not allowed.' );
 			}
 			$element_id = $change['element_id'] ?? '';
-			if ( ! is_string( $elementId ) || ! preg_match( '/^[a-zA-Z0-9_-]{5,64}\\z/', $element_id )
+			if ( ! is_string( $element_id ) || ! preg_match( '/^[a-zA-Z0-9_-]{5,64}\\z/', $element_id )
  || isset( $seen[ $element_id ] ) ) {
 				throw new RuntimeException( 'Header link widget ID must be unique and bounded.' );
 			}
@@ -695,7 +695,7 @@ final class Runner {
 		}
 
 		$patch_id = isset( $payload['patch_id'] ) && is_string( $payload['patch_id'] ) ? $payload['patch_id'] : '';
-		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}\\z/', $patchId ) ) {
+		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}\\z/', $patch_id ) ) {
 			throw new RuntimeException( 'Public custom_css.patch requires a safe 3-64 character patch_id.' );
 		}
 
@@ -752,7 +752,7 @@ final class Runner {
 		$source_path = isset( $payload['source_path'] ) && is_string( $payload['source_path'] )
 			? str_replace( '\\', '/', $payload['source_path'] )
 			: '';
-		if ( ! preg_match( '#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip\\z#', $sourcePath ) ) {
+		if ( ! preg_match( '#^plugin-packages/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\\.zip\\z#', $source_path ) ) {
 			throw new RuntimeException( 'Public plugin package install requires source_path plugin-packages/<safe-name>.zip.' );
 		}
 
@@ -766,7 +766,7 @@ final class Runner {
 		$expected_plugin = isset( $payload['expected_plugin'] ) && is_string( $payload['expected_plugin'] )
 			? str_replace( '\\', '/', $payload['expected_plugin'] )
 			: '';
-		if ( ! preg_match( '/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php\\z/', $expectedPlugin ) ) {
+		if ( ! preg_match( '/^[A-Za-z0-9._-]+\\/[A-Za-z0-9._-]+\\.php\\z/', $expected_plugin ) ) {
 			throw new RuntimeException( 'Public plugin package install requires an exact expected_plugin file.' );
 		}
 
@@ -774,7 +774,7 @@ final class Runner {
 			throw new RuntimeException( 'Public plugin package install requires an explicit boolean overwrite value.' );
 		}
 		if ( true === $payload['overwrite']
- && ! hash_equals( 'webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expectedPlugin ) ) {
+ && ! hash_equals( 'webactueel-mailbox-bridge/webactueel-mailbox-bridge.php', $expected_plugin ) ) {
 			throw new RuntimeException( 'Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.' );
 		}
 		if ( ! array_key_exists( 'network_wide', $payload ) || false !== $payload['network_wide'] ) {
@@ -880,7 +880,7 @@ final class Runner {
 
 	private function assertPublicPortfolioCaseTextPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'portfolio.case_text_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
-		$postId      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
+		$post_id      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 		if ( $post_id <= 0 || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 			throw new RuntimeException( 'Portfolio case text public validation did not produce a guarded target fingerprint.' );
@@ -890,7 +890,7 @@ final class Runner {
 
 	private function assertPublicPortfolioStatsPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'acf.portfolio_stats_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
-		$postId      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
+		$post_id      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 		if ( $post_id <= 0 || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 			throw new RuntimeException( 'Portfolio stats public validation did not produce a guarded target fingerprint.' );
@@ -911,7 +911,7 @@ final class Runner {
 			if ( ! is_int( $payload['post_id'] ) || $payload['post_id'] <= 0 ) {
 				throw new RuntimeException( 'Public ACF update post_id must be a positive integer.' );
 			}
-			$postId = $payload['post_id'];
+			$post_id = $payload['post_id'];
 		} elseif ( array_key_exists( 'target', $payload ) && is_int( $payload['target'] ) && $payload['target'] > 0 ) {
 			$post_id = $payload['target'];
 		} else {
@@ -922,7 +922,7 @@ final class Runner {
 			throw new RuntimeException( 'Public ACF update target post was not found.' );
 		}
 		Policy::assertPostReadable( $post );
-		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $postId ) ) {
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'Current user lacks permission to edit the public ACF target post.' );
 		}
 		foreach ( array( 'acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field' ) as $function ) {
@@ -946,29 +946,29 @@ final class Runner {
 				$allowed_parents[(string) $group['ID']] = true;
 			}
 		}
-		if ( ! $allowedParents ) {
+		if ( ! $allowed_parents ) {
 			throw new RuntimeException( 'No ACF field group applies to the public target post.' );
 		}
 		foreach ( $fields as $field_key => $value ) {
-			$fieldKey = (string) $field_key;
-			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $fieldKey ) ) {
+			$field_key = (string) $field_key;
+			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $field_key ) ) {
 				throw new RuntimeException( 'Public ACF update requires field keys, not field names.' );
 			}
 			Policy::assertKeyAllowed( $field_key );
 			if ( ! is_string( $value ) || strlen( $value ) > 1000 || preg_match( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value ) ) {
 				throw new RuntimeException( 'Public ACF values must be text strings up to 1000 bytes without control characters.' );
 			}
-			$field     = acf_get_field( $fieldKey );
+			$field     = acf_get_field( $field_key );
 			$field_type = is_array( $field ) ? (string) ( $field['type'] ?? '' ) : '';
 			if ( ! is_array( $field ) || ! in_array( $field_type, array( 'text', 'textarea', 'wysiwyg' ), true ) ) {
-				throw new RuntimeException( 'Public ACF field is missing or is not an allowed textual field: ' . $fieldKey );
+				throw new RuntimeException( 'Public ACF field is missing or is not an allowed textual field: ' . $field_key );
 			}
 			if ( in_array( $field_type, array( 'textarea', 'wysiwyg' ), true ) && ( false !== strpos( $value, '<' ) || false !== strpos( $value, '>' ) ) ) {
 				throw new RuntimeException( 'Public multiline ACF values must be plain text without HTML markup: ' . $field_key );
 			}
 			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
-			if ( '' === $name || ! isset( $allowedParents[ $parent ] ) ) {
+			if ( '' === $name || ! isset( $allowed_parents[ $parent ] ) ) {
 				throw new RuntimeException( 'Public ACF field does not belong to a field group for the target post: ' . $field_key );
 			}
 			Policy::assertKeyAllowed( $name );
@@ -999,7 +999,7 @@ final class Runner {
 			'code_snippets.patch'              => array( 'code_snippets.restore_code' ),
 			'custom_css.patch'                 => array( 'custom_css.update' ),
 		);
-		if ( ! isset( $allowed[ $source_action ] ) || ! in_array( $rollback_action, $allowed[ $sourceAction ], true ) ) {
+		if ( ! isset( $allowed[ $source_action ] ) || ! in_array( $rollback_action, $allowed[ $source_action ], true ) ) {
 			throw new RuntimeException( 'Rollback snapshot is not eligible for the guarded public rollback route.' );
 		}
 		if ( 'acf.portfolio_stats_update' === $source_action ) {
@@ -1010,16 +1010,16 @@ final class Runner {
 				throw new RuntimeException( 'Public snippet rollback has unsupported keys.' );
 			}
 			$this->assertPublicRollbackPostId( $rollback_payload );
-			\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields( $rollbackPayload['fields'] ?? null, true );
-			if ( ! is_string( $rollbackPayload['expected_after_fingerprint'] ?? null ) || 
-				! preg_match( '/^[a-f0-9]{64}\z/', $rollbackPayload['expected_after_fingerprint'] ) ) {
+			\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields( $rollback_payload['fields'] ?? null, true );
+			if ( ! is_string( $rollback_payload['expected_after_fingerprint'] ?? null ) || 
+				! preg_match( '/^[a-f0-9]{64}\z/', $rollback_payload['expected_after_fingerprint'] ) ) {
 				throw new RuntimeException( 'Public snippet rollback requires an after-fingerprint.' );
 			}
 		} elseif ( 'code_snippets.patch' === $source_action ) {
 			$rollback_payload = (array) ( $rollback['payload'] ?? array() );
 			$snippet_id       = isset( $rollback_payload['snippet_id'] ) ? (int) $rollback_payload['snippet_id'] : 0;
-			$code            = isset( $rollbackPayload['code'] ) && is_string( $rollback_payload['code'] ) ? $rollbackPayload['code'] : null;
-			$expected        = isset( $rollbackPayload['expected_code_fingerprint'] ) ? (string) $rollback_payload['expected_code_fingerprint'] : '';
+			$code            = isset( $rollback_payload['code'] ) && is_string( $rollback_payload['code'] ) ? $rollback_payload['code'] : null;
+			$expected        = isset( $rollback_payload['expected_code_fingerprint'] ) ? (string) $rollback_payload['expected_code_fingerprint'] : '';
 			if ( $snippet_id <= 0 || null === $code || strlen( $code ) > 1048576 || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected ) ) {
 				throw new RuntimeException( 'Public Code Snippets rollback snapshot is invalid.' );
 			}
@@ -1029,7 +1029,7 @@ final class Runner {
 			$this->assertPublicPortfolioCaseTextPayload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'acf.update' === $rollback_action ) {
 			$this->assertPublicAcfUpdatePayload( (array) ( $rollback['payload'] ?? array() ) );
-		} elseif ( 'post.update' === $rollbackAction ) {
+		} elseif ( 'post.update' === $rollback_action ) {
 			$this->assertPublicRollbackPostPayload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'elementor.replace_document' === $rollback_action ) {
 			$this->assertPublicRollbackPostId( (array) ( $rollback['payload'] ?? array() ) );
@@ -1091,7 +1091,7 @@ final class Runner {
 
 	private function assertPublicRollbackPostId( array $payload, string $key = 'id' ): void {
 		$post_id = isset( $payload[ $key ] ) ? (int) $payload[ $key ] : 0;
-		if ( $postId <= 0 ) {
+		if ( $post_id <= 0 ) {
 			throw new RuntimeException( 'Public rollback requires a positive post id.' );
 		}
 		$post = get_post( $post_id );
@@ -1099,7 +1099,7 @@ final class Runner {
 			throw new RuntimeException( 'Public rollback target post was not found.' );
 		}
 		Policy::assertPostReadable( $post );
-		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $postId ) ) {
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'Current user lacks permission to edit the public rollback target post.' );
 		}
 	}

@@ -628,7 +628,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $before->get_error_message() );
 		}
 		$term_ids = array_map( 'intval', $terms );
-		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $termIds, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $term_ids, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -636,7 +636,7 @@ final class CoreAdapter {
 		if ( is_wp_error( $assigned ) ) {
 			throw new RuntimeException( $assigned->get_error_message() );
 		}
-		$result['_rollback'] = array( 'action' => 'term.assign', 'payload' => array( 'object_id' => $objectId, 'taxonomy' => $taxonomy, 'terms' => array_map( 'intval', $before ), 'append' => false ) );
+		$result['_rollback'] = array( 'action' => 'term.assign', 'payload' => array( 'object_id' => $object_id, 'taxonomy' => $taxonomy, 'terms' => array_map( 'intval', $before ), 'append' => false ) );
 		return $result;
 	}
 
@@ -773,7 +773,7 @@ final class CoreAdapter {
 	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
 		$menu_id = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
-		$itemId = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
+		$item_id = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
 		if ( ! wp_get_nav_menu_object( $menu_id ) ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
@@ -799,7 +799,7 @@ final class CoreAdapter {
 			$args['menu-item-position'] = (int) $payload['position'];
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_upsert' => array( 'menu_id' => $menu_id, 'item_id' => $itemId, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $item_id ) : array( 'new' => true ) ) );
+			return array( 'would_upsert' => array( 'menu_id' => $menu_id, 'item_id' => $item_id, 'args' => $args ), '_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $item_id ) : array( 'new' => true ) ) );
 		}
 		$updated = wp_update_nav_menu_item( $menu_id, $item_id, $args );
 		if ( is_wp_error( $updated ) ) {
@@ -828,7 +828,7 @@ final class CoreAdapter {
 		$locations = get_nav_menu_locations();
 		$before    = isset( $locations[ $location ] ) ? (int) $locations[ $location ] : 0;
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'before' => $before, 'after' => $menuId, '_current_fingerprint' => Fingerprint::make( $locations ) );
+			return array( 'before' => $before, 'after' => $menu_id, '_current_fingerprint' => Fingerprint::make( $locations ) );
 		}
 		$locations[ $location ] = $menu_id;
 		set_theme_mod( 'nav_menu_locations', $locations );

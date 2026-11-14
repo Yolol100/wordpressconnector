@@ -420,11 +420,11 @@ final class WooCommerceAdapter {
 		}
 		$location_counts = array();
 		if ( $rate_ids ) {
-			$placeholders = implode( ',', array_fill( 0, count( $rateIds ), '%d' ) );
+			$placeholders = implode( ',', array_fill( 0, count( $rate_ids ), '%d' ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location count uses live rate IDs.
 			$count_rows = $wpdb->get_results( $wpdb->prepare(
 				"SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
-				$locationsTable,
+				$locations_table,
 				...array_map( 'intval', $rate_ids )
 			) );
 			if ( ! is_array( $count_rows ) ) {
@@ -440,7 +440,7 @@ final class WooCommerceAdapter {
 		foreach ( $rate_rows as $rate ) {
 			$snapshot      = $this->taxRateSnapshot( $rate );
 			$rate_id        = isset( $rate->tax_rate_id ) ? (int) $rate->tax_rate_id : 0;
-			$locationCount = $locationCounts[ $rateId ] ?? 0;
+			$location_count = $location_counts[ $rate_id ] ?? 0;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location list must reflect latest tax settings.
 			$locations = $location_count > 0 ? $wpdb->get_results( $wpdb->prepare(
 				"SELECT `location_type`, `location_code` FROM %i WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
@@ -593,7 +593,7 @@ final class WooCommerceAdapter {
 	 */
 	public function variationList( array $payload ): array {
 		$this->assertWoo();
-		$parentId = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
+		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent   = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable product not found.' );
@@ -633,7 +633,7 @@ final class WooCommerceAdapter {
 	 */
 	public function variationCreate( array $payload, array $context ): array {
 		$this->assertWoo();
-		$parentId = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
+		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent   = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable parent product not found.' );
@@ -652,7 +652,7 @@ final class WooCommerceAdapter {
 		if ( ! $saved_variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Saved WooCommerce variation could not be read back.' );
 		}
-		return array( 'variation' => $this->variationSnapshot( $savedVariation ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
+		return array( 'variation' => $this->variationSnapshot( $saved_variation ), '_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ) );
 	}
 
 	/**
@@ -680,7 +680,7 @@ final class WooCommerceAdapter {
 		if ( ! $updated_variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Updated WooCommerce variation could not be read back.' );
 		}
-		$result['after'] = $this->variationSnapshot( $updatedVariation );
+		$result['after'] = $this->variationSnapshot( $updated_variation );
 		$result['_rollback'] = array( 'action' => 'woocommerce.variation.update', 'payload' => $this->variationRollbackPayload( $before ) );
 		return $result;
 	}
@@ -1068,8 +1068,8 @@ final class WooCommerceAdapter {
 			'shipping_method' => (string) $order->get_shipping_method(),
 		);
 		if ( $includeItems ) {
-			$snapshot['items'] = $itemDetails['items'];
-			$snapshot['item_count'] = $itemDetails['item_count'];
+			$snapshot['items'] = $item_details['items'];
+			$snapshot['item_count'] = $item_details['item_count'];
 			$snapshot['items_truncated'] = $item_details['items_truncated'];
 		}
 		if ( $includePersonalData ) {
@@ -1113,7 +1113,7 @@ final class WooCommerceAdapter {
 	 */
 	private function orderItemsSnapshot( \WC_Order $order ): array {
 		$selection   = $this->boundedCoreOrderItemIds( $order );
-		$selectedIds = $selection['ids'];
+		$selected_ids = $selection['ids'];
 
 		if ( $selected_ids && ! class_exists( 'WC_Order_Factory' ) ) {
 			throw new RuntimeException( 'WooCommerce order item factory is unavailable.' );
@@ -1122,7 +1122,7 @@ final class WooCommerceAdapter {
 		$items = array();
 		foreach ( $selected_ids as $item_id ) {
 			try {
-				$item = \WC_Order_Factory::get_order_item( $itemId );
+				$item = \WC_Order_Factory::get_order_item( $item_id );
 			} catch ( \Throwable $error ) {
 				throw new RuntimeException( 'WooCommerce order items could not be read.' );
 			}
@@ -1162,16 +1162,16 @@ final class WooCommerceAdapter {
 		}
 
 		$data_store = $order->get_data_store();
-		if ( ! is_object( $data_store ) || ! method_exists( $dataStore, 'get_current_class_name' ) ) {
+		if ( ! is_object( $data_store ) || ! method_exists( $data_store, 'get_current_class_name' ) ) {
 			throw new RuntimeException( 'WooCommerce bounded order item data store API is unavailable.' );
 		}
 
-		$data_store_class = ltrim( (string) $dataStore->get_current_class_name(), '\\' );
-		$coreDataStores = array(
+		$data_store_class = ltrim( (string) $data_store->get_current_class_name(), '\\' );
+		$core_data_stores = array(
 			'WC_Order_Data_Store_CPT',
 			'Automattic\\WooCommerce\\Internal\\DataStores\\Orders\\OrdersTableDataStore',
 		);
-		if ( ! in_array( $dataStoreClass, $coreDataStores, true ) ) {
+		if ( ! in_array( $data_store_class, $core_data_stores, true ) ) {
 			throw new RuntimeException( 'WooCommerce bounded order item data store API is unavailable.' );
 		}
 
@@ -1181,14 +1181,14 @@ final class WooCommerceAdapter {
 		}
 
 		$order_id = (int) $order->get_id();
-		if ( $orderId < 1 ) {
+		if ( $order_id < 1 ) {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
 		$table = (string) $wpdb->prefix . 'woocommerce_order_items';
 
 		try {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded order-item count uses prepared SQL and requires fresh data.
-			$totalRaw = $wpdb->get_var( $wpdb->prepare(
+			$total_raw = $wpdb->get_var( $wpdb->prepare(
 				'SELECT COUNT(*) FROM %i WHERE order_id = %d AND order_item_type = %s',
 				$table,
 				$order_id,
@@ -1198,10 +1198,10 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
 
-		if ( ! is_numeric( $totalRaw ) || (int) $totalRaw < 0 ) {
+		if ( ! is_numeric( $total_raw ) || (int) $total_raw < 0 ) {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
-		$total = (int) $totalRaw;
+		$total = (int) $total_raw;
 		if ( $total > 10000 ) {
 			throw new RuntimeException( 'WooCommerce order item count exceeds the safety limit.' );
 		}
@@ -1212,7 +1212,7 @@ final class WooCommerceAdapter {
 
 		try {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded order-item ID lookup uses prepared SQL and requires fresh data.
-			$rawItemIds = $wpdb->get_col( $wpdb->prepare(
+			$raw_item_ids = $wpdb->get_col( $wpdb->prepare(
 				'SELECT order_item_id FROM %i WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d',
 				$table,
 				$order_id,
@@ -1229,7 +1229,7 @@ final class WooCommerceAdapter {
 
 		$item_ids = array();
 		foreach ( $raw_item_ids as $item_id ) {
-			if ( ! is_int( $item_id ) && ( ! is_string( $item_id ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $itemId ) ) ) {
+			if ( ! is_int( $item_id ) && ( ! is_string( $item_id ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $item_id ) ) ) {
 				throw new RuntimeException( 'WooCommerce order items could not be read.' );
 			}
 			$validated_id = filter_var( (string) $item_id, FILTER_VALIDATE_INT );
@@ -1239,13 +1239,13 @@ final class WooCommerceAdapter {
 			$item_ids[(int) $validated_id] = (int) $validated_id;
 		}
 
-		$item_ids = array_values( $itemIds );
-		if ( count( $itemIds ) !== min( 50, $total ) ) {
+		$item_ids = array_values( $item_ids );
+		if ( count( $item_ids ) !== min( 50, $total ) ) {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
 
 		return array(
-			'ids'       => $itemIds,
+			'ids'       => $item_ids,
 			'total'     => $total,
 			'truncated' => $total > 50,
 		);
@@ -1308,19 +1308,19 @@ final class WooCommerceAdapter {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared zone-location count must reflect current shipping settings.
 			$count_value = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE `zone_id` = %d", $table, $zoneId ) );
-			if ( null === $countValue || false === $countValue ) {
+			if ( null === $count_value || false === $count_value ) {
 				throw new RuntimeException( 'WooCommerce shipping zone locations could not be counted.' );
 			}
-			$location_count = (int) $countValue;
-			if ( $locationCount > 0 ) {
+			$location_count = (int) $count_value;
+			if ( $location_count > 0 ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded shipping-location list must reflect current settings.
-				$locationRows = $wpdb->get_results( $wpdb->prepare(
+				$location_rows = $wpdb->get_results( $wpdb->prepare(
 					"SELECT `location_code`, `location_type` FROM %i WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
 					$table,
 					$zoneId,
 					100
 				) );
-				if ( ! is_array( $locationRows ) ) {
+				if ( ! is_array( $location_rows ) ) {
 					throw new RuntimeException( 'WooCommerce shipping zone locations could not be read.' );
 				}
 				foreach ( $location_rows as $location ) {
@@ -1336,7 +1336,7 @@ final class WooCommerceAdapter {
 			'order'               => $zoneOrder,
 			'locations'           => $locations,
 			'location_count'      => $location_count,
-			'locations_truncated' => $locationCount > count( $locations ),
+			'locations_truncated' => $location_count > count( $locations ),
 		);
 	}
 
