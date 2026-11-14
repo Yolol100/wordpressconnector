@@ -13,15 +13,15 @@ namespace Webactueel\WordPressConnector\Runtime;
  * Provides Processed Store behavior for connector request processing.
  */
 final class ProcessedStore {
-	private const PREFIX = 'wpconnector_processed_';
+	private const PREFIX   = 'wpconnector_processed_';
 	private const LOCK_KEY = 'wpconnector_mutation_lock';
 	private const LOCK_TTL = 600;
 
 	/**
-     * Reserve the request ID durably BEFORE calling a mutating provider.
-     * add_option() relies on the WordPress options table's unique option_name,
-     * so two simultaneous requests cannot both claim the same ID.
-     */
+	 * Reserve the request ID durably BEFORE calling a mutating provider.
+	 * add_option() relies on the WordPress options table's unique option_name,
+	 * so two simultaneous requests cannot both claim the same ID.
+	 */
 	public function begin( string $requestId, string $fingerprint, string $action ): void {
 		$key    = self::key( $requestId );
 		$record = array(
@@ -54,10 +54,10 @@ final class ProcessedStore {
 		$key      = self::key( $requestId );
 		$previous = $this->get( $requestId );
 		if ( ! is_array( $previous )
- || ( $previous['state'] ?? null ) !== 'pending'
- || ! is_string( $previous['fingerprint'] ?? null )
- || ! hash_equals( $previous['fingerprint'], $fingerprint )
- || ( $previous['action'] ?? null ) !== $action ) {
+		|| ( $previous['state'] ?? null ) !== 'pending'
+		|| ! is_string( $previous['fingerprint'] ?? null )
+		|| ! hash_equals( $previous['fingerprint'], $fingerprint )
+		|| ( $previous['action'] ?? null ) !== $action ) {
 			throw new \RuntimeException( 'Mutation result cannot be finalized without its original pending reservation.' );
 		}
 		$record = array(
@@ -90,9 +90,9 @@ final class ProcessedStore {
 	}
 
 	/**
-     * Read-only, sanitized observation for an authenticated recovery inspection.
-     * A missing option is not proof that a previous operation did not run.
-     */
+	 * Read-only, sanitized observation for an authenticated recovery inspection.
+	 * A missing option is not proof that a previous operation did not run.
+	 */
 	public function mutationLockStatus( string $requestId ): string {
 		$value = get_option( self::LOCK_KEY, null );
 		if ( null === $value ) {
@@ -103,9 +103,9 @@ final class ProcessedStore {
 		}
 		$lock = json_decode( $value, true );
 		if ( ! is_array( $lock )
- || ! is_string( $lock['token'] ?? null )
- || '' === $lock['token']
- || ! is_numeric( $lock['created_at'] ?? null ) ) {
+		|| ! is_string( $lock['token'] ?? null )
+		|| '' === $lock['token']
+		|| ! is_numeric( $lock['created_at'] ?? null ) ) {
 			return 'unverifiable';
 		}
 		$owner = $lock['request_id'] ?? null;
@@ -124,11 +124,13 @@ final class ProcessedStore {
 	 */
 	public function acquireMutationLock( string $requestId = '' ): string {
 		$token = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : bin2hex( random_bytes( 16 ) );
-		$value = wp_json_encode( array(
-			'token'      => $token,
-			'request_id' => $requestId,
-			'created_at' => time(),
-		) );
+		$value = wp_json_encode(
+			array(
+				'token'      => $token,
+				'request_id' => $requestId,
+				'created_at' => time(),
+			)
+		);
 		if ( ! is_string( $value ) ) {
 			return '';
 		}
@@ -141,8 +143,8 @@ final class ProcessedStore {
 		$data     = is_string( $existing ) ? json_decode( $existing, true ) : null;
 		if (
 			! is_string( $existing )
- || ! is_array( $data )
- || time() - (int) ( $data['created_at'] ?? time() ) <= self::LOCK_TTL
+		|| ! is_array( $data )
+		|| time() - (int) ( $data['created_at'] ?? time() ) <= self::LOCK_TTL
 		) {
 			return '';
 		}
@@ -152,15 +154,15 @@ final class ProcessedStore {
 		// Reclaim only when its unique persisted request ID has an explicit,
 		// successfully finalized outcome. Unknown/legacy locks are deliberately
 		// left for administrator reconciliation rather than a second write.
-		$ownerRequestId = isset( $data['request_id'] ) && is_string( $data['request_id'] )
+		$owner_request_id = isset( $data['request_id'] ) && is_string( $data['request_id'] )
 			? $data['request_id'] : '';
-		if ( '' === $ownerRequestId ) {
+		if ( '' === $owner_request_id ) {
 			return '';
 		}
-		$owner = $this->get( $ownerRequestId );
+		$owner = $this->get( $owner_request_id );
 		if ( ! is_array( $owner ) || ( $owner['state'] ?? null ) !== 'completed'
- || ! is_string( $owner['result_hash'] ?? null )
- || '' === $owner['result_hash'] ) {
+		|| ! is_string( $owner['result_hash'] ?? null )
+		|| '' === $owner['result_hash'] ) {
 			return '';
 		}
 
@@ -207,17 +209,17 @@ final class ProcessedStore {
 			}
 			$value = maybe_unserialize( $row->option_value );
 			if ( ! is_array( $value ) || ! is_int( $value['created_at'] ?? null )
- || $value['created_at'] >= time() - $olderThanSeconds ) {
+			|| $value['created_at'] >= time() - $olderThanSeconds ) {
 				continue;
 			}
 			// Only proven terminal states may expire. An unknown or malformed
 			// record is a replay barrier, not safe garbage to discard.
 			$completed = ( $value['state'] ?? null ) === 'completed'
- || ( ! array_key_exists( 'state', $value ) && is_bool( $value['ok'] ?? null ) );
+			|| ( ! array_key_exists( 'state', $value ) && is_bool( $value['ok'] ?? null ) );
 			if ( ! $completed
- || ! is_bool( $value['ok'] ?? null )
- || ! is_string( $value['result_hash'] ?? null )
- || '' === $value['result_hash'] ) {
+			|| ! is_bool( $value['ok'] ?? null )
+			|| ! is_string( $value['result_hash'] ?? null )
+			|| '' === $value['result_hash'] ) {
 				continue;
 			}
 			if ( delete_option( (string) $row->option_name ) ) {

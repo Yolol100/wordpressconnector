@@ -34,11 +34,15 @@ final class ConnectionReadinessAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'connector.setup.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Read private setup readiness evidence for ChatGPT OAuth and full-site backup/recovery; detection does not prove authorization or restore.',
-		) );
+		$registry->register(
+			'connector.setup.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Read private setup readiness evidence for ChatGPT OAuth and full-site backup/recovery; detection does not prove authorization or restore.',
+			)
+		);
 	}
 
 	/**
@@ -58,7 +62,7 @@ final class ConnectionReadinessAdapter {
 
 		$endpoint  = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
 		$https     = is_ssl() && is_string( $endpoint )
-			&& 'https' === strtolower( ( string ) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
+			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
 		$providers = $this->activeBackupProviders();
 
@@ -89,16 +93,28 @@ final class ConnectionReadinessAdapter {
 	}
 
 	/**
-     * Capability and server-policy indicators are not proof that a write will succeed.
-     * The connected client's authentication, filesystem and hosting must be tested separately.
-     */
+	 * Capability and server-policy indicators are not proof that a write will succeed.
+	 * The connected client's authentication, filesystem and hosting must be tested separately.
+	 */
 	private function managementReadiness(): array {
 		$capabilities = array();
 		foreach ( array(
-			'manage_options', 'activate_plugins', 'install_plugins', 'update_plugins',
-			'delete_plugins', 'edit_plugins', 'switch_themes', 'install_themes',
-			'update_themes', 'delete_themes', 'edit_themes', 'edit_theme_options',
-			'update_core', 'list_users', 'edit_users', 'promote_users',
+			'manage_options',
+			'activate_plugins',
+			'install_plugins',
+			'update_plugins',
+			'delete_plugins',
+			'edit_plugins',
+			'switch_themes',
+			'install_themes',
+			'update_themes',
+			'delete_themes',
+			'edit_themes',
+			'edit_theme_options',
+			'update_core',
+			'list_users',
+			'edit_users',
+			'promote_users',
 		) as $capability ) {
 			$capabilities[ $capability ] = function_exists( 'current_user_can' )
 				&& current_user_can( $capability );
@@ -114,8 +130,8 @@ final class ConnectionReadinessAdapter {
 				'filesystem_writes' => Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ),
 			),
 			'wordpress_file_modifications_allowed' => function_exists( 'wp_is_file_mod_allowed' )
-				? ( bool ) wp_is_file_mod_allowed( 'plugin_update' ) : null,
-			'wordpress_file_editor_disabled'       => defined( 'DISALLOW_FILE_EDIT' ) && ( bool ) DISALLOW_FILE_EDIT,
+				? (bool) wp_is_file_mod_allowed( 'plugin_update' ) : null,
+			'wordpress_file_editor_disabled'       => defined( 'DISALLOW_FILE_EDIT' ) && (bool) DISALLOW_FILE_EDIT,
 			'permission_check_only'                => true,
 			'site_write_verified'                  => false,
 		);

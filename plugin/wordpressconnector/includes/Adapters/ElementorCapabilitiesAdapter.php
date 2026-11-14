@@ -24,12 +24,20 @@ final class ElementorCapabilitiesAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'elementor.capabilities', array( $this, 'capabilities' ), array(
-			'description' => 'Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities.',
-		) );
-		$registry->register( 'elementor.inventory', array( $this, 'inventory' ), array(
-			'description' => 'Inventory registered Elementor widgets and actual widget/element usage across Elementor documents.',
-		) );
+		$registry->register(
+			'elementor.capabilities',
+			array( $this, 'capabilities' ),
+			array(
+				'description' => 'Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities.',
+			)
+		);
+		$registry->register(
+			'elementor.inventory',
+			array( $this, 'inventory' ),
+			array(
+				'description' => 'Inventory registered Elementor widgets and actual widget/element usage across Elementor documents.',
+			)
+		);
 	}
 
 	/**
@@ -131,23 +139,25 @@ final class ElementorCapabilitiesAdapter {
 			);
 		}
 
-		$ids = get_posts( array(
-			'post_type'        => $post_types,
-			'post_status'      => $statuses,
-			'fields'           => 'ids',
-			'posts_per_page'   => $limit + 1,
-			'offset'           => $offset,
-			'orderby'          => 'ID',
-			'order'            => 'ASC',
-			'meta_query'       => array(
-				array(
-					'key'     => '_elementor_data',
-					'compare' => 'EXISTS',
+		$ids = get_posts(
+			array(
+				'post_type'        => $post_types,
+				'post_status'      => $statuses,
+				'fields'           => 'ids',
+				'posts_per_page'   => $limit + 1,
+				'offset'           => $offset,
+				'orderby'          => 'ID',
+				'order'            => 'ASC',
+				'meta_query'       => array(
+					array(
+						'key'     => '_elementor_data',
+						'compare' => 'EXISTS',
+					),
 				),
-			),
-			'no_found_rows'    => true,
-			'suppress_filters' => false,
-		) );
+				'no_found_rows'    => true,
+				'suppress_filters' => false,
+			)
+		);
 
 		$has_more = count( $ids ) > $limit;
 		if ( $has_more ) {
@@ -204,7 +214,7 @@ final class ElementorCapabilitiesAdapter {
 					);
 				}
 				$usedWidgets[ $widget_name ]['instances'] += $count;
-				$usedWidgets[ $widget_name ]['documents']++;
+				++$usedWidgets[ $widget_name ]['documents'];
 				$usedWidgets[ $widget_name ]['document_ids'][] = (int) $postId;
 			}
 
@@ -216,12 +226,12 @@ final class ElementorCapabilitiesAdapter {
 					);
 				}
 				$elementTypes[ $element_type ]['instances'] += $count;
-				$elementTypes[ $element_type ]['documents']++;
+				++$elementTypes[ $element_type ]['documents'];
 			}
 
 			$architecture = $this->architectureLabel( $families );
 			if ( isset( $architecture_totals[ $architecture ] ) ) {
-				$architecture_totals[ $architecture ]++;
+				++$architecture_totals[ $architecture ];
 			}
 
 			$documents[] = array(
@@ -316,8 +326,8 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			try {
-				$properties             = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
-				$result[(string) $type] = array(
+				$properties               = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
+				$result[ (string) $type ] = array(
 					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( (string) $className::get_title() ) : (string) $type,
 					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', (array) $properties['cpt'] ) ) : array(),
 					'show_in_library' => isset( $properties['show_in_library'] ) ? (bool) $properties['show_in_library'] : null,
@@ -359,9 +369,9 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			try {
-				$controls               = method_exists( $widget, 'get_controls' ) ? (array) $widget->get_controls() : array();
-				$categories             = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', (array) $widget->get_categories() ) ) : array();
-				$result[(string) $name] = array(
+				$controls                 = method_exists( $widget, 'get_controls' ) ? (array) $widget->get_controls() : array();
+				$categories               = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', (array) $widget->get_categories() ) ) : array();
+				$result[ (string) $name ] = array(
 					'name'          => method_exists( $widget, 'get_name' ) ? (string) $widget->get_name() : (string) $name,
 					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( (string) $widget->get_title() ) : (string) $name,
 					'categories'    => $categories,
@@ -404,7 +414,7 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			try {
-				$result[(string) $name] = array(
+				$result[ (string) $name ] = array(
 					'name'       => method_exists( $element, 'get_name' ) ? (string) $element->get_name() : (string) $name,
 					'title'      => method_exists( $element, 'get_title' ) ? wp_strip_all_tags( (string) $element->get_title() ) : (string) $name,
 					'categories' => method_exists( $element, 'get_categories' ) ? array_values( array_map( 'strval', (array) $element->get_categories() ) ) : array(),
@@ -445,7 +455,7 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			try {
-				$result[(string) $name] = array(
+				$result[ (string) $name ] = array(
 					'name'       => method_exists( $tag, 'get_name' ) ? (string) $tag->get_name() : (string) $name,
 					'title'      => method_exists( $tag, 'get_title' ) ? wp_strip_all_tags( (string) $tag->get_title() ) : (string) $name,
 					'group'      => method_exists( $tag, 'get_group' ) && is_scalar( $tag->get_group() ) ? (string) $tag->get_group() : null,
@@ -485,7 +495,7 @@ final class ElementorCapabilitiesAdapter {
 			if ( ! is_object( $breakpoint ) ) {
 				continue;
 			}
-			$result[(string) $name] = array(
+			$result[ (string) $name ] = array(
 				'label'     => method_exists( $breakpoint, 'get_label' ) ? (string) $breakpoint->get_label() : (string) $name,
 				'value'     => method_exists( $breakpoint, 'get_value' ) ? (int) $breakpoint->get_value() : null,
 				'direction' => method_exists( $breakpoint, 'get_direction' ) ? (string) $breakpoint->get_direction() : null,

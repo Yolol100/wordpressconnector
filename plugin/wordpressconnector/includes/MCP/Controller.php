@@ -19,15 +19,15 @@ use Webactueel\WordPressConnector\Runtime\Runner;
  * Implements Controller handling for the connector MCP endpoint.
  */
 final class Controller {
-	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
-	private const ROUTE = '/mcp';
-	private const MODERN_VERSION = '2026-07-28';
-	private const LEGACY_VERSION = '2025-11-25';
-	private const MAX_REQUEST_BYTES = 262144;
+	private const NAMESPACE             = 'webactueel-wordpress-connector/v1';
+	private const ROUTE                 = '/mcp';
+	private const MODERN_VERSION        = '2026-07-28';
+	private const LEGACY_VERSION        = '2025-11-25';
+	private const MAX_REQUEST_BYTES     = 262144;
 	private const RESOURCE_SAFE_CHANGES = 'wordpress-connector://guide/safe-changes';
 	private const RESOURCE_INTEGRATIONS = 'wordpress-connector://guide/integrations';
-	private const PROMPT_AUDIT = 'wordpress_connector_readonly_audit';
-	private const PROMPT_CHANGE = 'wordpress_connector_plan_safe_change';
+	private const PROMPT_AUDIT          = 'wordpress_connector_readonly_audit';
+	private const PROMPT_CHANGE         = 'wordpress_connector_plan_safe_change';
 
 	private Runner $runner;
 	private Registry $registry;
@@ -41,8 +41,8 @@ final class Controller {
 	 * @param callable $authorizationCallback Value used by this operation.
 	 */
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
-		$this->runner = $runner;
-		$this->registry = $registry;
+		$this->runner                = $runner;
+		$this->registry              = $registry;
 		$this->authorizationCallback = $authorizationCallback;
 	}
 
@@ -57,11 +57,15 @@ final class Controller {
 	 * Register the supported REST and MCP routes.
 	 */
 	public function registerRoutes(): void {
-		register_rest_route( self::NAMESPACE, self::ROUTE, array(
-			'methods'             => \WP_REST_Server::CREATABLE,
-			'callback'            => array( $this, 'handle' ),
-			'permission_callback' => array( $this, 'authorize' ),
-		) );
+		register_rest_route(
+			self::NAMESPACE,
+			self::ROUTE,
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'handle' ),
+				'permission_callback' => array( $this, 'authorize' ),
+			)
+		);
 	}
 
 	/**
@@ -94,9 +98,9 @@ final class Controller {
 			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
 		}
 
-		$idPresent = array_key_exists( 'id', $message );
-		$id        = $idPresent ? $message['id'] : null;
-		if ( $idPresent && ! is_int( $id ) && ! is_string( $id ) ) {
+		$id_present = array_key_exists( 'id', $message );
+		$id        = $id_present ? $message['id'] : null;
+		if ( $id_present && ! is_int( $id ) && ! is_string( $id ) ) {
 			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
 		}
 
@@ -117,7 +121,7 @@ final class Controller {
 			return new \WP_REST_Response( null, 202 );
 		}
 
-		if ( ! $idPresent ) {
+		if ( ! $id_present ) {
 			return new \WP_REST_Response( null, 202 );
 		}
 
@@ -129,8 +133,8 @@ final class Controller {
 				return $this->errorResponse( $id, -32020, $error->getMessage(), 400 );
 			}
 		} else {
-			$headerVersion = (string) $request->get_header( 'mcp-protocol-version' );
-			if ( '' !== $headerVersion && self::LEGACY_VERSION !== $headerVersion ) {
+			$header_version = (string) $request->get_header( 'mcp-protocol-version' );
+			if ( '' !== $header_version && self::LEGACY_VERSION !== $header_version ) {
 				return $this->errorResponse( $id, -32600, 'Unsupported MCP protocol version.', 400 );
 			}
 		}
@@ -268,10 +272,10 @@ final class Controller {
 
 
 	/**
-     * The MCP resources/prompts are metadata-only, not alternative WordPress
-     * execution routes. Every request retains the existing authenticated
-     * WordPress REST permission_callback and never calls the Runner.
-     */
+	 * The MCP resources/prompts are metadata-only, not alternative WordPress
+	 * execution routes. Every request retains the existing authenticated
+	 * WordPress REST permission_callback and never calls the Runner.
+	 */
 	private function capabilities(): array {
 		return array(
 			'tools'     => array( 'listChanged' => false ),
@@ -325,7 +329,7 @@ final class Controller {
 	 */
 	private function privateCache( array $result, bool $modern, int $ttlMs ): array {
 		if ( $modern ) {
-			$result['ttlMs'] = $ttlMs;
+			$result['ttlMs']      = $ttlMs;
 			$result['cacheScope'] = 'private';
 		}
 		return $result;
@@ -341,22 +345,28 @@ final class Controller {
 	 */
 	private function listResources( array $params, bool $modern ): array {
 		$this->assertUnpagedList( $params );
-		return $this->privateCache( array( 'resources' => array(
+		return $this->privateCache(
 			array(
-				'uri'         => self::RESOURCE_SAFE_CHANGES,
-				'name'        => 'safe-changes',
-				'title'       => 'Safe WordPress change workflow',
-				'description' => 'Read-only guidance for dry-runs, confirmations, backups and verification.',
-				'mimeType'    => 'text/plain',
+				'resources' => array(
+					array(
+						'uri'         => self::RESOURCE_SAFE_CHANGES,
+						'name'        => 'safe-changes',
+						'title'       => 'Safe WordPress change workflow',
+						'description' => 'Read-only guidance for dry-runs, confirmations, backups and verification.',
+						'mimeType'    => 'text/plain',
+					),
+					array(
+						'uri'         => self::RESOURCE_INTEGRATIONS,
+						'name'        => 'integrations',
+						'title'       => 'WordPress plugin and builder integration guide',
+						'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
+						'mimeType'    => 'text/plain',
+					),
+				),
 			),
-			array(
-				'uri'         => self::RESOURCE_INTEGRATIONS,
-				'name'        => 'integrations',
-				'title'       => 'WordPress plugin and builder integration guide',
-				'description' => 'Read-only guidance on native WordPress Abilities and provider boundaries.',
-				'mimeType'    => 'text/plain',
-			),
-		), ), $modern, 300000 );
+			$modern,
+			300000
+		);
 	}
 
 	/**
@@ -395,13 +405,19 @@ final class Controller {
 			throw new RuntimeException( 'Resource not found.' );
 		}
 
-		return $this->privateCache( array( 'contents' => array(
+		return $this->privateCache(
 			array(
-				'uri'      => $params['uri'],
-				'mimeType' => 'text/plain',
-				'text'     => $text,
+				'contents' => array(
+					array(
+						'uri'      => $params['uri'],
+						'mimeType' => 'text/plain',
+						'text'     => $text,
+					),
+				),
 			),
-		), ), $modern, 60000 );
+			$modern,
+			60000
+		);
 	}
 
 	/**
@@ -414,25 +430,31 @@ final class Controller {
 	 */
 	private function listPrompts( array $params, bool $modern ): array {
 		$this->assertUnpagedList( $params );
-		return $this->privateCache( array( 'prompts' => array(
+		return $this->privateCache(
 			array(
-				'name'        => self::PROMPT_AUDIT,
-				'title'       => 'Audit a WordPress site (read-only)',
-				'description' => 'Inspect available capabilities and report actionable risks without changes.',
-			),
-			array(
-				'name'        => self::PROMPT_CHANGE,
-				'title'       => 'Plan a safe WordPress change',
-				'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
-				'arguments'   => array(
+				'prompts' => array(
 					array(
-						'name'        => 'goal',
-						'description' => 'Optional short description of the intended change.',
-						'required'    => false,
+						'name'        => self::PROMPT_AUDIT,
+						'title'       => 'Audit a WordPress site (read-only)',
+						'description' => 'Inspect available capabilities and report actionable risks without changes.',
+					),
+					array(
+						'name'        => self::PROMPT_CHANGE,
+						'title'       => 'Plan a safe WordPress change',
+						'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
+						'arguments'   => array(
+							array(
+								'name'        => 'goal',
+								'description' => 'Optional short description of the intended change.',
+								'required'    => false,
+							),
+						),
 					),
 				),
 			),
-		), ), $modern, 300000 );
+			$modern,
+			300000
+		);
 	}
 
 	/**
@@ -491,11 +513,15 @@ final class Controller {
 		}
 		return array(
 			'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
-			'messages'    => array( array( 'role' => 'user',
-				'content'                         => array(
-				'type' => 'text',
-				'text' => $text,
-			), ), ),
+			'messages'    => array(
+				array(
+					'role'    => 'user',
+					'content' => array(
+						'type' => 'text',
+						'text' => $text,
+					),
+				),
+			),
 		);
 	}
 
@@ -545,7 +571,7 @@ final class Controller {
 			),
 		);
 		if ( $modern ) {
-			$result['ttlMs'] = 300000;
+			$result['ttlMs']      = 300000;
 			$result['cacheScope'] = 'private';
 		}
 		return $result;
@@ -695,11 +721,14 @@ final class Controller {
 			$data['expected_state_token'] = $expectedStateToken;
 		}
 
-		$connectorRequest = Request::fromArray( $data );
-		return $this->runner->run( $connectorRequest, array(
-			'transport'             => 'mcp',
-			'authenticated_user_id' => get_current_user_id(),
-		) );
+		$connector_request = Request::fromArray( $data );
+		return $this->runner->run(
+			$connector_request,
+			array(
+				'transport'             => 'mcp',
+				'authenticated_user_id' => get_current_user_id(),
+			)
+		);
 	}
 
 	/**
@@ -716,16 +745,19 @@ final class Controller {
 			if ( ! isset( $result['resultType'] ) ) {
 				$result = array_merge( array( 'resultType' => 'complete' ), $result );
 			}
-			$meta = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
+			$meta                                       = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
 			$meta['io.modelcontextprotocol/serverInfo'] = $this->serverInfo();
-			$result['_meta'] = $meta;
+			$result['_meta']                            = $meta;
 		}
 
-		return new \WP_REST_Response( array(
-			'jsonrpc' => '2.0',
-			'id'      => $id,
-			'result'  => $result,
-		), 200 );
+		return new \WP_REST_Response(
+			array(
+				'jsonrpc' => '2.0',
+				'id'      => $id,
+				'result'  => $result,
+			),
+			200
+		);
 	}
 
 	/**
@@ -739,14 +771,17 @@ final class Controller {
 	 * @return \WP_REST_Response Result of the operation.
 	 */
 	private function errorResponse( $id, int $code, string $message, int $status ): \WP_REST_Response {
-		return new \WP_REST_Response( array(
-			'jsonrpc' => '2.0',
-			'id'      => $id,
-			'error'   => array(
-				'code'    => $code,
-				'message' => $this->boundedMessage( $message ),
+		return new \WP_REST_Response(
+			array(
+				'jsonrpc' => '2.0',
+				'id'      => $id,
+				'error'   => array(
+					'code'    => $code,
+					'message' => $this->boundedMessage( $message ),
+				),
 			),
-		), $status );
+			$status
+		);
 	}
 
 	/**
@@ -759,10 +794,12 @@ final class Controller {
 	 */
 	private function toolResult( array $value, bool $isError ): array {
 		return array(
-			'content'           => array( array(
-				'type' => 'text',
-				'text' => $this->encodeForText( $value ),
-			), ),
+			'content'           => array(
+				array(
+					'type' => 'text',
+					'text' => $this->encodeForText( $value ),
+				),
+			),
 			'structuredContent' => array( 'result' => $value ),
 			'isError'           => $isError,
 		);
@@ -811,13 +848,16 @@ final class Controller {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function generatedRequestId( $rpcId, string $toolName, string $action, array $payload ): string {
-		$json = json_encode( array(
-			'rpc_id'  => $rpcId,
-			'tool'    => $toolName,
-			'action'  => $action,
-			'payload' => $payload,
-			'user_id' => get_current_user_id(),
-		), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		$json = json_encode(
+			array(
+				'rpc_id'  => $rpcId,
+				'tool'    => $toolName,
+				'action'  => $action,
+				'payload' => $payload,
+				'user_id' => get_current_user_id(),
+			),
+			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+		);
 		if ( ! is_string( $json ) ) {
 			throw new RuntimeException( 'Unable to generate a connector request id.' );
 		}
@@ -885,7 +925,7 @@ final class Controller {
 					'type'    => 'string',
 					'pattern' => '^[a-z0-9][a-z0-9._-]*$',
 				),
-				'payload' => array( 'type' => 'object' ),
+				'payload'              => array( 'type' => 'object' ),
 				'dry_run'              => array(
 					'type'    => 'boolean',
 					'default' => true,

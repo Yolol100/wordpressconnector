@@ -31,26 +31,26 @@ final class Command {
 
 	/**
 	 * Execute one connector request file.
-     *
+	 *
 	 * ## OPTIONS
-     *
+	 *
 	 * <request>
 	 * : Path to a request JSON file.
-     *
+	 *
 	 * [--output=<path>]
 	 * : Write the result JSON atomically to this path.
-     *
+	 *
 	 * [--asset-root=<path>]
 	 * : Trusted root used by media.import source_path.
-     *
+	 *
 	 * ## EXAMPLES
-     *
+	 *
 	 *     wp wordpress-connector run requests/example.json --output=results/example.json --asset-root=assets/inbox
-     *
+	 *
 	 * @subcommand run
 	 */
 	public function run( array $args, array $assocArgs ): void {
-		$requestPath = isset( $args[0] ) ? ( string ) $args[0] : '';
+		$requestPath = isset( $args[0] ) ? (string) $args[0] : '';
 		if ( '' === $requestPath ) {
 			\WP_CLI::error( 'Request file is required.' );
 		}
@@ -58,13 +58,13 @@ final class Command {
 		try {
 			$request = Request::fromFile( $requestPath );
 			$context = array(
-				'asset_root' => isset( $assocArgs['asset-root'] ) ? ( string ) $assocArgs['asset-root'] : '',
+				'asset_root' => isset( $assocArgs['asset-root'] ) ? (string) $assocArgs['asset-root'] : '',
 			);
-			$result = $this->runner->run( $request, $context );
+			$result  = $this->runner->run( $request, $context );
 
 			if ( ! empty( $assocArgs['output'] ) ) {
-				Json::writeFileAtomic( ( string ) $assocArgs['output'], $result );
-				\WP_CLI::log( ( string ) $assocArgs['output'] );
+				Json::writeFileAtomic( (string) $assocArgs['output'], $result );
+				\WP_CLI::log( (string) $assocArgs['output'] );
 			} else {
 				\WP_CLI::line( Json::encode( $result ) );
 			}
@@ -79,35 +79,39 @@ final class Command {
 
 	/**
 	 * Print the registered action catalog.
-     *
+	 *
 	 * @subcommand actions
 	 */
 	public function actions( array $args, array $assocArgs ): void {
-		$request = Request::fromArray( array(
-			'version'    => 1,
-			'request_id' => 'actions-list-0001',
-			'action'     => 'connector.actions',
-			'dry_run'    => true,
-			'payload'    => array(),
-		) );
-		$result = $this->runner->run( $request );
+		$request = Request::fromArray(
+			array(
+				'version'    => 1,
+				'request_id' => 'actions-list-0001',
+				'action'     => 'connector.actions',
+				'dry_run'    => true,
+				'payload'    => array(),
+			)
+		);
+		$result  = $this->runner->run( $request );
 		\WP_CLI::line( Json::encode( $result ) );
 	}
 
 	/**
 	 * Run read-only runtime diagnostics.
-     *
+	 *
 	 * @subcommand doctor
 	 */
 	public function doctor( array $args, array $assocArgs ): void {
-		$request = Request::fromArray( array(
-			'version'    => 1,
-			'request_id' => 'doctor-run-00001',
-			'action'     => 'system.doctor',
-			'dry_run'    => true,
-			'payload'    => array(),
-		) );
-		$result = $this->runner->run( $request );
+		$request = Request::fromArray(
+			array(
+				'version'    => 1,
+				'request_id' => 'doctor-run-00001',
+				'action'     => 'system.doctor',
+				'dry_run'    => true,
+				'payload'    => array(),
+			)
+		);
+		$result  = $this->runner->run( $request );
 		\WP_CLI::line( Json::encode( $result ) );
 		if ( empty( $result['ok'] ) || empty( $result['data']['ok'] ) ) {
 			\WP_CLI::halt( 1 );

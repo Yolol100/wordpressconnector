@@ -339,12 +339,12 @@ final class WooCommerceAdapter {
 		global $wpdb;
 		$this->assertWoo();
 		if (
-			! class_exists( 'WC_Shipping_Zones' ) || 
-			! method_exists( 'WC_Shipping_Zones', 'get_zone' ) || 
-			! isset( $wpdb ) || 
-			! is_object( $wpdb ) || 
-			! method_exists( $wpdb, 'prepare' ) || 
-			! method_exists( $wpdb, 'get_results' ) || 
+			! class_exists( 'WC_Shipping_Zones' ) ||
+			! method_exists( 'WC_Shipping_Zones', 'get_zone' ) ||
+			! isset( $wpdb ) ||
+			! is_object( $wpdb ) ||
+			! method_exists( $wpdb, 'prepare' ) ||
+			! method_exists( $wpdb, 'get_results' ) ||
 			! method_exists( $wpdb, 'get_var' )
 		) {
 			throw new RuntimeException( 'WooCommerce shipping zone API is unavailable.' );
@@ -353,19 +353,21 @@ final class WooCommerceAdapter {
 		$page  = isset( $payload['page'] ) ? max( 1, min( 100000, (int) $payload['page'] ) ) : 1;
 		$table = $wpdb->prefix . 'woocommerce_shipping_zones';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded live WooCommerce count; caching may return stale state.
-		$total_value = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE `zone_id` > %d", $table, 0 ) );
+		$total_value = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE `zone_id` > %d', $table, 0 ) );
 		if ( null === $total_value || false === $total_value ) {
 			throw new RuntimeException( 'WooCommerce shipping zones could not be counted.' );
 		}
 		$total = (int) $total_value + 1;
 		$pages = max( 1, (int) ceil( $total / $limit ) );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded live WooCommerce zone listing; avoid stale zone reads.
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` > 0 ORDER BY `zone_order` ASC, `zone_id` ASC LIMIT %d OFFSET %d",
-			$table,
-			$limit,
-			( $page - 1 ) * $limit
-		) );
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` > 0 ORDER BY `zone_order` ASC, `zone_id` ASC LIMIT %d OFFSET %d',
+				$table,
+				$limit,
+				( $page - 1 ) * $limit
+			)
+		);
 		if ( ! is_array( $rows ) ) {
 			throw new RuntimeException( 'WooCommerce shipping zones could not be read.' );
 		}
@@ -408,13 +410,13 @@ final class WooCommerceAdapter {
 		$validated_id = filter_var( (string) $id_value, FILTER_VALIDATE_INT );
 		global $wpdb;
 		if (
-			false === $validated_id || 
-			$validated_id < 0 || 
-			! class_exists( 'WC_Shipping_Zones' ) || 
-			! isset( $wpdb ) || 
-			! is_object( $wpdb ) || 
-			! method_exists( $wpdb, 'prepare' ) || 
-			! method_exists( $wpdb, 'get_results' ) || 
+			false === $validated_id ||
+			$validated_id < 0 ||
+			! class_exists( 'WC_Shipping_Zones' ) ||
+			! isset( $wpdb ) ||
+			! is_object( $wpdb ) ||
+			! method_exists( $wpdb, 'prepare' ) ||
+			! method_exists( $wpdb, 'get_results' ) ||
 			! method_exists( $wpdb, 'get_var' )
 		) {
 			throw new RuntimeException( 'A valid shipping zone id is required.' );
@@ -429,11 +431,11 @@ final class WooCommerceAdapter {
 		} else {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zones';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared exact-ID WooCommerce zone lookup must return current data.
-			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` = %d LIMIT 1", $table, $id ) );
+			$rows = $wpdb->get_results( $wpdb->prepare( 'SELECT `zone_id`, `zone_name`, `zone_order` FROM %i WHERE `zone_id` = %d LIMIT 1', $table, $id ) );
 			if (
-				! is_array( $rows ) || 
-				empty( $rows[0] ) || 
-				! is_object( $rows[0] ) || 
+				! is_array( $rows ) ||
+				empty( $rows[0] ) ||
+				! is_object( $rows[0] ) ||
 				! isset( $rows[0]->zone_id, $rows[0]->zone_name, $rows[0]->zone_order )
 			) {
 				throw new RuntimeException( 'WooCommerce shipping zone not found.' );
@@ -487,12 +489,12 @@ final class WooCommerceAdapter {
 		global $wpdb;
 		$this->assertWoo();
 		if (
-			! class_exists( 'WC_Tax' ) || 
-			! method_exists( 'WC_Tax', 'get_tax_class_slugs' ) || 
-			! isset( $wpdb ) || 
-			! is_object( $wpdb ) || 
-			! method_exists( $wpdb, 'prepare' ) || 
-			! method_exists( $wpdb, 'get_results' ) || 
+			! class_exists( 'WC_Tax' ) ||
+			! method_exists( 'WC_Tax', 'get_tax_class_slugs' ) ||
+			! isset( $wpdb ) ||
+			! is_object( $wpdb ) ||
+			! method_exists( $wpdb, 'prepare' ) ||
+			! method_exists( $wpdb, 'get_results' ) ||
 			! method_exists( $wpdb, 'get_var' )
 		) {
 			throw new RuntimeException( 'WooCommerce tax rate API is unavailable.' );
@@ -500,7 +502,7 @@ final class WooCommerceAdapter {
 		$class         = isset( $payload['tax_class'] ) ? sanitize_title( (string) $payload['tax_class'] ) : '';
 		$valid_classes = array( '' => true );
 		foreach ( \WC_Tax::get_tax_class_slugs() as $slug ) {
-			$valid_classes[(string) $slug] = true;
+			$valid_classes[ (string) $slug ] = true;
 		}
 		if ( ! isset( $valid_classes[ $class ] ) ) {
 			throw new RuntimeException( 'Unknown WooCommerce tax class.' );
@@ -511,19 +513,21 @@ final class WooCommerceAdapter {
 		$rates_table     = $wpdb->prefix . 'woocommerce_tax_rates';
 		$locations_table = $wpdb->prefix . 'woocommerce_tax_rate_locations';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared WooCommerce tax count must reflect latest tax settings.
-		$total_value = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE `tax_rate_class` = %s", $rates_table, $class ) );
+		$total_value = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE `tax_rate_class` = %s', $rates_table, $class ) );
 		if ( null === $total_value || false === $total_value ) {
 			throw new RuntimeException( 'WooCommerce tax rates could not be counted.' );
 		}
 		$total = (int) $total_value;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-rate listing must reflect latest tax settings.
-		$rate_rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT `tax_rate_id`, `tax_rate_country`, `tax_rate_state`, `tax_rate`, `tax_rate_name`, `tax_rate_priority`, `tax_rate_compound`, `tax_rate_shipping`, `tax_rate_order` FROM %i WHERE `tax_rate_class` = %s ORDER BY `tax_rate_order` ASC, `tax_rate_id` ASC LIMIT %d OFFSET %d",
-			$rates_table,
-			$class,
-			$limit,
-			$offset
-		) );
+		$rate_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT `tax_rate_id`, `tax_rate_country`, `tax_rate_state`, `tax_rate`, `tax_rate_name`, `tax_rate_priority`, `tax_rate_compound`, `tax_rate_shipping`, `tax_rate_order` FROM %i WHERE `tax_rate_class` = %s ORDER BY `tax_rate_order` ASC, `tax_rate_id` ASC LIMIT %d OFFSET %d',
+				$rates_table,
+				$class,
+				$limit,
+				$offset
+			)
+		);
 		if ( ! is_array( $rate_rows ) ) {
 			throw new RuntimeException( 'WooCommerce tax rates could not be read.' );
 		}
@@ -537,17 +541,19 @@ final class WooCommerceAdapter {
 		if ( $rate_ids ) {
 			$placeholders = implode( ',', array_fill( 0, count( $rate_ids ), '%d' ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location count uses live rate IDs.
-			$count_rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
-				$locations_table,
-				...array_map( 'intval', $rate_ids )
-			) );
+			$count_rows = $wpdb->get_results(
+				$wpdb->prepare(
+					"SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
+					$locations_table,
+					...array_map( 'intval', $rate_ids )
+				)
+			);
 			if ( ! is_array( $count_rows ) ) {
 				throw new RuntimeException( 'WooCommerce tax rate locations could not be counted.' );
 			}
 			foreach ( $count_rows as $count_row ) {
 				if ( is_object( $count_row ) && isset( $count_row->tax_rate_id, $count_row->location_count ) ) {
-					$location_counts[(int) $count_row->tax_rate_id] = (int) $count_row->location_count;
+					$location_counts[ (int) $count_row->tax_rate_id ] = (int) $count_row->location_count;
 				}
 			}
 		}
@@ -557,12 +563,14 @@ final class WooCommerceAdapter {
 			$rate_id        = isset( $rate->tax_rate_id ) ? (int) $rate->tax_rate_id : 0;
 			$location_count = $location_counts[ $rate_id ] ?? 0;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location list must reflect latest tax settings.
-			$locations = $location_count > 0 ? $wpdb->get_results( $wpdb->prepare(
-				"SELECT `location_type`, `location_code` FROM %i WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
-				$locations_table,
-				$rate_id,
-				100
-			) ) : array();
+			$locations = $location_count > 0 ? $wpdb->get_results(
+				$wpdb->prepare(
+					'SELECT `location_type`, `location_code` FROM %i WHERE `tax_rate_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d',
+					$locations_table,
+					$rate_id,
+					100
+				)
+			) : array();
 			if ( ! is_array( $locations ) ) {
 				throw new RuntimeException( 'WooCommerce tax rate locations could not be read.' );
 			}
@@ -675,10 +683,12 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $this->productSnapshot( $product ),
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'  => true,
-					'type' => $type,
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'  => true,
+						'type' => $type,
+					)
+				),
 			);
 		}
 
@@ -794,10 +804,12 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $this->variationSnapshot( $variation ),
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'       => true,
-					'parent_id' => $parent_id,
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'       => true,
+						'parent_id' => $parent_id,
+					)
+				),
 			);
 		}
 		$id = $variation->save();
@@ -884,10 +896,12 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $args,
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'  => true,
-					'slug' => $args['slug'],
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'  => true,
+						'slug' => $args['slug'],
+					)
+				),
 			);
 		}
 		$id = wc_create_attribute( $args );
@@ -983,13 +997,15 @@ final class WooCommerceAdapter {
 	 */
 	public function couponList( array $payload ): array {
 		$this->assertWoo();
-		$query = new \WP_Query( array(
-			'post_type'      => 'shop_coupon',
-			'post_status'    => 'any',
-			'posts_per_page' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
-			'paged'          => isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1,
-			's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
-		) );
+		$query = new \WP_Query(
+			array(
+				'post_type'      => 'shop_coupon',
+				'post_status'    => 'any',
+				'posts_per_page' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+				'paged'          => isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1,
+				's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
+			)
+		);
 		$items = array();
 		foreach ( $query->posts as $post ) {
 			$coupon  = new \WC_Coupon( (int) $post->ID );
@@ -1149,10 +1165,14 @@ final class WooCommerceAdapter {
 	 */
 	private function newProduct( string $type ): \WC_Product {
 		switch ( $type ) {
-			case 'variable': return new \WC_Product_Variable();
-			case 'grouped': return new \WC_Product_Grouped();
-			case 'external': return new \WC_Product_External();
-			case 'simple': return new \WC_Product_Simple();
+			case 'variable':
+				return new \WC_Product_Variable();
+			case 'grouped':
+				return new \WC_Product_Grouped();
+			case 'external':
+				return new \WC_Product_External();
+			case 'simple':
+				return new \WC_Product_Simple();
 			default:
 				$class = wc_get_product_classname( 0, $type );
 				if ( class_exists( $class ) && is_subclass_of( $class, 'WC_Product' ) ) {
@@ -1203,7 +1223,9 @@ final class WooCommerceAdapter {
 			'download_expiry'    => 'set_download_expiry',
 		);
 		foreach ( $setters as $key => $method ) {
-			if ( array_key_exists( $key, $payload ) && method_exists( $product, $method ) ) $product->{$method}( $payload[ $key ] );
+			if ( array_key_exists( $key, $payload ) && method_exists( $product, $method ) ) {
+				$product->{$method}( $payload[ $key ] );
+			}
 		}
 
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
@@ -1279,7 +1301,11 @@ final class WooCommerceAdapter {
 			'download_expiry' => 'set_download_expiry',
 			'description'     => 'set_description',
 		);
-		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $variation->{$method}( $payload[ $key ] );
+		foreach ( $setters as $key => $method ) {
+			if ( array_key_exists( $key, $payload ) ) {
+				$variation->{$method}( $payload[ $key ] );
+			}
+		}
 		if ( isset( $payload['attributes'] ) ) {
 			$variation->set_attributes( (array) $payload['attributes'] );
 		}
@@ -1445,12 +1471,14 @@ final class WooCommerceAdapter {
 
 		try {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded order-item count uses prepared SQL and requires fresh data.
-			$total_raw = $wpdb->get_var( $wpdb->prepare(
-				'SELECT COUNT(*) FROM %i WHERE order_id = %d AND order_item_type = %s',
-				$table,
-				$order_id,
-				'line_item'
-			) );
+			$total_raw = $wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT COUNT(*) FROM %i WHERE order_id = %d AND order_item_type = %s',
+					$table,
+					$order_id,
+					'line_item'
+				)
+			);
 		} catch ( \Throwable $error ) {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
@@ -1473,13 +1501,15 @@ final class WooCommerceAdapter {
 
 		try {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded order-item ID lookup uses prepared SQL and requires fresh data.
-			$raw_item_ids = $wpdb->get_col( $wpdb->prepare(
-				'SELECT order_item_id FROM %i WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d',
-				$table,
-				$order_id,
-				'line_item',
-				50
-			) );
+			$raw_item_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					'SELECT order_item_id FROM %i WHERE order_id = %d AND order_item_type = %s ORDER BY order_item_id ASC LIMIT %d',
+					$table,
+					$order_id,
+					'line_item',
+					50
+				)
+			);
 		} catch ( \Throwable $error ) {
 			throw new RuntimeException( 'WooCommerce order items could not be read.' );
 		}
@@ -1497,7 +1527,7 @@ final class WooCommerceAdapter {
 			if ( false === $validated_id || $validated_id < 1 ) {
 				throw new RuntimeException( 'WooCommerce order items could not be read.' );
 			}
-			$item_ids[(int) $validated_id] = (int) $validated_id;
+			$item_ids[ (int) $validated_id ] = (int) $validated_id;
 		}
 
 		$item_ids = array_values( $item_ids );
@@ -1568,19 +1598,21 @@ final class WooCommerceAdapter {
 		if ( $zoneId > 0 && isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'prepare' ) && method_exists( $wpdb, 'get_results' ) && method_exists( $wpdb, 'get_var' ) ) {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared zone-location count must reflect current shipping settings.
-			$count_value = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE `zone_id` = %d", $table, $zoneId ) );
+			$count_value = $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE `zone_id` = %d', $table, $zoneId ) );
 			if ( null === $count_value || false === $count_value ) {
 				throw new RuntimeException( 'WooCommerce shipping zone locations could not be counted.' );
 			}
 			$location_count = (int) $count_value;
 			if ( $location_count > 0 ) {
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded shipping-location list must reflect current settings.
-				$location_rows = $wpdb->get_results( $wpdb->prepare(
-					"SELECT `location_code`, `location_type` FROM %i WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d",
-					$table,
-					$zoneId,
-					100
-				) );
+				$location_rows = $wpdb->get_results(
+					$wpdb->prepare(
+						'SELECT `location_code`, `location_type` FROM %i WHERE `zone_id` = %d ORDER BY `location_type` ASC, `location_code` ASC LIMIT %d',
+						$table,
+						$zoneId,
+						100
+					)
+				);
 				if ( ! is_array( $location_rows ) ) {
 					throw new RuntimeException( 'WooCommerce shipping zone locations could not be read.' );
 				}
@@ -1752,7 +1784,8 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function variationRollbackPayload( array $snapshot ): array { return $snapshot; }
+	private function variationRollbackPayload( array $snapshot ): array {
+		return $snapshot; }
 
 	/**
 	 * Handle internal build attributes logic.
@@ -1822,7 +1855,7 @@ final class WooCommerceAdapter {
 			}
 			$download->set_name( isset( $item['name'] ) ? (string) $item['name'] : basename( (string) $item['file'] ) );
 			$download->set_file( (string) $item['file'] );
-			$downloads[$download->get_id()] = $download;
+			$downloads[ $download->get_id() ] = $download;
 		}
 		return $downloads;
 	}
@@ -1891,7 +1924,11 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function findAttribute( int $id ) {
-		foreach ( wc_get_attribute_taxonomies() as $attribute ) if ( (int) $attribute->attribute_id === $id ) return $attribute;
+		foreach ( wc_get_attribute_taxonomies() as $attribute ) {
+			if ( (int) $attribute->attribute_id === $id ) {
+				return $attribute;
+			}
+		}
 		throw new RuntimeException( 'Attribute not found.' );
 	}
 
@@ -1935,7 +1972,11 @@ final class WooCommerceAdapter {
 			'minimum_amount'         => 'set_minimum_amount',
 			'maximum_amount'         => 'set_maximum_amount',
 		);
-		foreach ( $setters as $key => $method ) if ( array_key_exists( $key, $payload ) ) $coupon->{$method}( $payload[ $key ] );
+		foreach ( $setters as $key => $method ) {
+			if ( array_key_exists( $key, $payload ) ) {
+				$coupon->{$method}( $payload[ $key ] );
+			}
+		}
 		if ( isset( $payload['product_ids'] ) ) {
 			$coupon->set_product_ids( array_map( 'intval', (array) $payload['product_ids'] ) );
 		}

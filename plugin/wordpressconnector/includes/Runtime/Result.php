@@ -14,8 +14,8 @@ use Webactueel\WordPressConnector\Security\Policy;
 /**
  * Provides Result behavior for connector request processing.
  */
-final class Result
-{
+final class Result {
+
 	/**
 	 * Build a redacted successful connector response.
 	 *
@@ -25,8 +25,7 @@ final class Result
 	 *
 	 * @return array Redacted successful response.
 	 */
-	public static function success( Request $request, array $data, array $meta = array() ): array
-	{
+	public static function success( Request $request, array $data, array $meta = array() ): array {
 		return Policy::redact(
 			array(
 				'version'          => 1,
@@ -50,8 +49,7 @@ final class Result
 	 *
 	 * @return array Redacted failure response.
 	 */
-	public static function failure( Request $request, string $message, array $meta = array() ): array
-	{
+	public static function failure( Request $request, string $message, array $meta = array() ): array {
 		return Policy::redact(
 			array(
 				'version'          => 1,

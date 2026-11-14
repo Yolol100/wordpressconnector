@@ -316,15 +316,17 @@ final class CoreAdapter {
 		$per_page  = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50;
 		$page      = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
 
-		$query    = new \WP_Query( array(
-			'post_type'      => $post_type,
-			'post_status'    => $status,
-			's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
-			'posts_per_page' => $per_page,
-			'paged'          => $page,
-			'orderby'        => isset( $payload['orderby'] ) ? sanitize_key( (string) $payload['orderby'] ) : 'ID',
-			'order'          => isset( $payload['order'] ) && 'ASC' === strtoupper( (string) $payload['order'] ) ? 'ASC' : 'DESC',
-		) );
+		$query = new \WP_Query(
+			array(
+				'post_type'      => $post_type,
+				'post_status'    => $status,
+				's'              => isset( $payload['search'] ) ? sanitize_text_field( (string) $payload['search'] ) : '',
+				'posts_per_page' => $per_page,
+				'paged'          => $page,
+				'orderby'        => isset( $payload['orderby'] ) ? sanitize_key( (string) $payload['orderby'] ) : 'ID',
+				'order'          => isset( $payload['order'] ) && 'ASC' === strtoupper( (string) $payload['order'] ) ? 'ASC' : 'DESC',
+			)
+		);
 
 		$items = array();
 		foreach ( $query->posts as $post ) {
@@ -388,10 +390,12 @@ final class CoreAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $fields,
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'       => true,
-					'post_type' => $fields['post_type'],
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'       => true,
+						'post_type' => $fields['post_type'],
+					)
+				),
 			);
 		}
 
@@ -452,9 +456,9 @@ final class CoreAdapter {
 	}
 
 	/**
-     * Surgical public page copy correction. The caller never receives raw page
-     * content, and the original is held only in the site's rollback snapshot.
-     */
+	 * Surgical public page copy correction. The caller never receives raw page
+	 * content, and the original is held only in the site's rollback snapshot.
+	 */
 	public function postLiteralReplace( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'find', 'replace', 'expected_matches' ) ) ) {
 			throw new RuntimeException( 'Literal replacement contains unsupported fields.' );
@@ -467,8 +471,8 @@ final class CoreAdapter {
 		$find    = isset( $payload['find'] ) && is_string( $payload['find'] ) ? $payload['find'] : '';
 		$replace = isset( $payload['replace'] ) && is_string( $payload['replace'] ) ? $payload['replace'] : '';
 		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $find )
- || ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $replace )
- || hash_equals( $find, $replace ) ) {
+		|| ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9 &.,_-]{2,79}$/D', $replace )
+		|| hash_equals( $find, $replace ) ) {
 			throw new RuntimeException( 'Literal replacement requires distinct, safe plain-text phrases.' );
 		}
 		$expected = $payload['expected_matches'] ?? null;
@@ -508,19 +512,29 @@ final class CoreAdapter {
 		if ( '' === $guard || ! hash_equals( $guard, $before_fingerprint ) ) {
 			throw new RuntimeException( 'Literal replacement must match the confirmed dry-run fingerprint.' );
 		}
-		$updated = wp_update_post( wp_slash( array(
-			'ID'           => (int) $post->ID,
-			'post_content' => $next,
-		) ), true );
+		$updated = wp_update_post(
+			wp_slash(
+				array(
+					'ID'           => (int) $post->ID,
+					'post_content' => $next,
+				)
+			),
+			true
+		);
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		$actual = get_post( (int) $post->ID );
 		if ( ! $actual instanceof \WP_Post || (string) $actual->post_content !== $next ) {
-			wp_update_post( wp_slash( array(
-				'ID'           => (int) $post->ID,
-				'post_content' => $original,
-			) ), true );
+			wp_update_post(
+				wp_slash(
+					array(
+						'ID'           => (int) $post->ID,
+						'post_content' => $original,
+					)
+				),
+				true
+			);
 			throw new RuntimeException( 'Literal replacement readback failed; prior content restore attempted.' );
 		}
 		$result['readback_verified'] = true;
@@ -837,10 +851,12 @@ final class CoreAdapter {
 					'name'     => $name,
 					'args'     => $args,
 				),
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'      => true,
-					'taxonomy' => $taxonomy,
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'      => true,
+						'taxonomy' => $taxonomy,
+					)
+				),
 			);
 		}
 		$created = wp_insert_term( $name, $taxonomy, $args );
@@ -850,11 +866,13 @@ final class CoreAdapter {
 		$id = (int) $created['term_id'];
 		return array(
 			'term'      => $this->termSnapshot( get_term( $id, $taxonomy ) ),
-			'_rollback' => array( 'action' => 'term.delete',
-				'payload'                  => array(
-				'taxonomy' => $taxonomy,
-				'id'       => $id,
-			), ),
+			'_rollback' => array(
+				'action'  => 'term.delete',
+				'payload' => array(
+					'taxonomy' => $taxonomy,
+					'id'       => $id,
+				),
+			),
 		);
 	}
 
@@ -904,10 +922,13 @@ final class CoreAdapter {
 		$result['after']     = $this->termSnapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array(
 			'action'  => 'term.update',
-			'payload' => array_merge( array(
-				'taxonomy' => $taxonomy,
-				'id'       => $id,
-			), $before ),
+			'payload' => array_merge(
+				array(
+					'taxonomy' => $taxonomy,
+					'id'       => $id,
+				),
+				$before
+			),
 		);
 		return $result;
 	}
@@ -1257,11 +1278,13 @@ final class CoreAdapter {
 		return array(
 			'location'  => $location,
 			'menu_id'   => $menu_id,
-			'_rollback' => array( 'action' => 'menu.location_set',
-				'payload'                  => array(
-				'location' => $location,
-				'menu_id'  => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'menu.location_set',
+				'payload' => array(
+					'location' => $location,
+					'menu_id'  => $before,
+				),
+			),
 		);
 	}
 
@@ -1305,11 +1328,13 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_option( $name, null ),
-			'_rollback' => array( 'action' => 'option.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'option.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1334,11 +1359,13 @@ final class CoreAdapter {
 		delete_option( $name );
 		return array(
 			'deleted'   => $name,
-			'_rollback' => array( 'action' => 'option.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'option.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1392,11 +1419,13 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_site_option( $name, null ),
-			'_rollback' => array( 'action' => 'network_option.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'network_option.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1426,11 +1455,13 @@ final class CoreAdapter {
 		delete_site_option( $name );
 		return array(
 			'deleted'   => $name,
-			'_rollback' => array( 'action' => 'network_option.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'network_option.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1474,11 +1505,13 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_theme_mod( $name, null ),
-			'_rollback' => array( 'action' => 'theme_mod.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'theme_mod.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1503,11 +1536,13 @@ final class CoreAdapter {
 		remove_theme_mod( $name );
 		return array(
 			'removed'   => $name,
-			'_rollback' => array( 'action' => 'theme_mod.update',
-				'payload'                  => array(
-				'name'  => $name,
-				'value' => $before,
-			), ),
+			'_rollback' => array(
+				'action'  => 'theme_mod.update',
+				'payload' => array(
+					'name'  => $name,
+					'value' => $before,
+				),
+			),
 		);
 	}
 
@@ -1519,12 +1554,14 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function commentList( array $payload ): array {
-		$comments = get_comments( array(
-			'post_id' => isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0,
-			'status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'all',
-			'number'  => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
-			'offset'  => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
-		) );
+		$comments = get_comments(
+			array(
+				'post_id' => isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0,
+				'status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'all',
+				'number'  => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+				'offset'  => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
+			)
+		);
 		return array( 'comments' => array_map( array( $this, 'commentSnapshot' ), $comments ) );
 	}
 
@@ -1587,15 +1624,17 @@ final class CoreAdapter {
 		}
 		return array(
 			'comment'   => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ),
-			'_rollback' => array( 'action' => 'comment.update',
-				'payload'                  => array(
-				'id'           => (int) $comment->comment_ID,
-				'content'      => $before['content'],
-				'author'       => $before['author'],
-				'author_email' => $before['author_email'],
-				'author_url'   => $before['author_url'],
-				'approved'     => $before['approved'],
-			), ),
+			'_rollback' => array(
+				'action'  => 'comment.update',
+				'payload' => array(
+					'id'           => (int) $comment->comment_ID,
+					'content'      => $before['content'],
+					'author'       => $before['author'],
+					'author_email' => $before['author_email'],
+					'author_url'   => $before['author_url'],
+					'approved'     => $before['approved'],
+				),
+			),
 		);
 	}
 
@@ -1653,7 +1692,7 @@ final class CoreAdapter {
 	 * Validate and sanitize post fields for the requested operation.
 	 *
 	 * @param array $payload Request parameters.
-	 * @param bool $partial Whether partial updates are allowed.
+	 * @param bool  $partial Whether partial updates are allowed.
 	 *
 	 * @return array Result of this operation.
 	 */

@@ -7,6 +7,7 @@
 
 declare( strict_types = 1 );
 namespace Webactueel\WordPressConnector\Adapters;
+
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
@@ -105,7 +106,8 @@ final class YoastTemplateSettingsAdapter {
 	public function update( array $payload, array $context ): array {
 		$changes = $this->validateFields( $payload['fields'] ?? null, false );
 		$this->assertProviderSupportsFields( $changes );
-		$before = $this->snapshot();$after = array_replace( $before, $changes );
+		$before = $this->snapshot();
+		$after  = array_replace( $before, $changes );
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
@@ -115,25 +117,30 @@ final class YoastTemplateSettingsAdapter {
 			return $result;
 		}
 		$options = $this->options();
-		foreach ( $changes as $key => $value )$options[self::KEYS[ $key ]] = $value;
+		foreach ( $changes as $key => $value ) {
+			$options[ self::KEYS[ $key ] ] = $value;
+		}
 		update_option( 'wpseo_titles', $options );
 		$verified = $this->snapshot();
-		if ( $verified !== $after ){
-			foreach ( $changes as $key => $value ){
+		if ( $verified !== $after ) {
+			foreach ( $changes as $key => $value ) {
 				if ( null === $before[ $key ] ) {
-					unset( $options[self::KEYS[ $key ]] );
+					unset( $options[ self::KEYS[ $key ] ] );
 				} else {
-					$options[self::KEYS[ $key ]] = $before[ $key ];
+					$options[ self::KEYS[ $key ] ] = $before[ $key ];
 				}
 			}
 			update_option( 'wpseo_titles', $options );
 			throw new RuntimeException( 'Yoast template readback mismatch; requested fields restored.' );
 		}
-		$result['after'] = $verified;
-		$result['_rollback'] = array( 'action' => 'yoast.templates.restore',
-			'payload'                          => array(
-			'fields'                     => array_intersect_key( $before, $changes ),
-			'expected_after_fingerprint' => Fingerprint::make( $verified ), ), );
+		$result['after']     = $verified;
+		$result['_rollback'] = array(
+			'action'  => 'yoast.templates.restore',
+			'payload' => array(
+				'fields'                     => array_intersect_key( $before, $changes ),
+				'expected_after_fingerprint' => Fingerprint::make( $verified ),
+			),
+		);
 		return $result;
 	}
 	/**
@@ -152,23 +159,25 @@ final class YoastTemplateSettingsAdapter {
 		}
 		$current  = $this->snapshot();
 		$expected = $payload['expected_after_fingerprint'] ?? '';
-		if ( ! is_string( $expected ) || ! hash_equals( Fingerprint::make( $current ), $expected ) )
+		if ( ! is_string( $expected ) || ! hash_equals( Fingerprint::make( $current ), $expected ) ) {
 			throw new RuntimeException( 'Yoast templates changed since write.' );
+		}
 		$previous = $this->validateFields( $payload['fields'] ?? null, true );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => array_keys( $previous ) );
 		}
 		$options = $this->options();
-		foreach ( $previous as $key => $value ){
+		foreach ( $previous as $key => $value ) {
 			if ( $value === null ) {
-				unset( $options[self::KEYS[ $key ]] );
+				unset( $options[ self::KEYS[ $key ] ] );
 			} else {
-				$options[self::KEYS[ $key ]] = $value;
+				$options[ self::KEYS[ $key ] ] = $value;
 			}
 		}
 		update_option( 'wpseo_titles', $options );
-		if ( array_intersect_key( $this->snapshot(), $previous ) !== $previous )
+		if ( array_intersect_key( $this->snapshot(), $previous ) !== $previous ) {
 			throw new RuntimeException( 'Yoast template rollback readback mismatch.' );
+		}
 		return array( 'restored' => true );
 	}
 	/**
@@ -182,24 +191,27 @@ final class YoastTemplateSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function validateFields( $fields, bool $restore ): array {
-		if ( ! is_array( $fields ) || ! $fields || count( $fields )>count( self::KEYS ) )
+		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS ) ) {
 			throw new RuntimeException( 'Expected bounded template fields.' );
+		}
 		$clean = array();
-		foreach ( $fields as $key => $value ){
-			if ( ! is_string( $key ) || ! isset( self::KEYS[ $key ] ) || 
-				( ! is_string( $value ) && ! ( $restore && $value === null ) ) )
+		foreach ( $fields as $key => $value ) {
+			if ( ! is_string( $key ) || ! isset( self::KEYS[ $key ] ) ||
+				( ! is_string( $value ) && ! ( $restore && $value === null ) ) ) {
 				throw new RuntimeException( 'Unsupported Yoast template field.' );
-			if ( $value !== null ){
-				$maxBytes = ( strpos( $key, 'description' ) !== false ? 320 : 190 );
+			}
+			if ( $value !== null ) {
+				$max_bytes = ( strpos( $key, 'description' ) !== false ? 320 : 190 );
 				if ( $key === 'breadcrumb_separator' ) {
-					$maxBytes = 20;
+					$max_bytes = 20;
 				} elseif ( strpos( $key, 'breadcrumb_' ) === 0 ) {
-					$maxBytes = 120;
+					$max_bytes = 120;
 				}
-				if ( strlen( $value )>$maxBytes || 
-					( ! $restore && trim( $value ) === '' ) )
+				if ( strlen( $value ) > $max_bytes ||
+					( ! $restore && trim( $value ) === '' ) ) {
 					throw new RuntimeException( 'Invalid template length.' );
-				$value = $restore?$value:sanitize_text_field( $value );
+				}
+				$value = $restore ? $value : sanitize_text_field( $value );
 				if ( ! $restore && trim( $value ) === '' ) {
 					throw new RuntimeException( 'Invalid template text.' );
 				}
@@ -221,8 +233,16 @@ final class YoastTemplateSettingsAdapter {
 			// Yoast template manager. Recheck on the WordPress server as well
 			// as in the repository's request validator.
 			foreach ( $changes as $key => $value ) {
-				if ( ! in_array( $key, array( 'category_title', 'product_category_title',
-					'product_title', 'product_description', ), true ) ) {
+				if ( ! in_array(
+					$key,
+					array(
+						'category_title',
+						'product_category_title',
+						'product_title',
+						'product_description',
+					),
+					true
+				) ) {
 					throw new RuntimeException( 'Public Yoast template field is not allowed.' );
 				}
 				$token = in_array( $key, array( 'category_title', 'product_category_title' ), true )
@@ -274,8 +294,11 @@ final class YoastTemplateSettingsAdapter {
 	 * @return array Operation result.
 	 */
 	private function snapshot(): array {
-		$opts = $this->options();$fields = array();
-		foreach ( self::KEYS as $key => $option )$fields[ $key ] = isset( $opts[ $option ] )?(string)$opts[ $option ]:null;
+		$opts   = $this->options();
+		$fields = array();
+		foreach ( self::KEYS as $key => $option ) {
+			$fields[ $key ] = isset( $opts[ $option ] ) ? (string) $opts[ $option ] : null;
+		}
 		return $fields;
 	}
 }

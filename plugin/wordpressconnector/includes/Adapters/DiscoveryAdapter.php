@@ -22,14 +22,22 @@ final class DiscoveryAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'connector.discover', array( $this, 'discover' ), array(
-			'description' => 'Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities.',
-		) );
-		$registry->register( 'connector.rest_catalog', array( $this, 'restCatalog' ), array(
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Discover bounded WordPress REST namespaces, route patterns and methods without calling endpoints.',
-		) );
+		$registry->register(
+			'connector.discover',
+			array( $this, 'discover' ),
+			array(
+				'description' => 'Discover WordPress, plugins, post types, taxonomies, builders, media sizes and connector capabilities.',
+			)
+		);
+		$registry->register(
+			'connector.rest_catalog',
+			array( $this, 'restCatalog' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Discover bounded WordPress REST namespaces, route patterns and methods without calling endpoints.',
+			)
+		);
 	}
 
 	/**
@@ -43,9 +51,9 @@ final class DiscoveryAdapter {
 	public function discover( array $payload, array $context ): array {
 		global $wp_version;
 
-		$postTypes = array();
+		$post_types = array();
 		foreach ( get_post_types( array(), 'objects' ) as $name => $object ) {
-			$postTypes[ $name ] = array(
+			$post_types[ $name ] = array(
 				'label'        => $object->label,
 				'public'       => (bool) $object->public,
 				'show_ui'      => (bool) $object->show_ui,
@@ -82,16 +90,16 @@ final class DiscoveryAdapter {
 			}
 		}
 
-		$imageSizes = array();
+		$image_sizes = array();
 		foreach ( wp_get_registered_image_subsizes() as $name => $size ) {
-			$imageSizes[ $name ] = array(
+			$image_sizes[ $name ] = array(
 				'width'  => (int) $size['width'],
 				'height' => (int) $size['height'],
 				'crop'   => $size['crop'],
 			);
 		}
 
-		$yoastVersion = defined( 'WPSEO_VERSION' )
+		$yoast_version = defined( 'WPSEO_VERSION' )
 			? WPSEO_VERSION
 			: ( defined( 'YOAST_SEO_VERSION' ) ? YOAST_SEO_VERSION : null );
 
@@ -105,8 +113,8 @@ final class DiscoveryAdapter {
 			'woocommerce_version'   => defined( 'WC_VERSION' ) ? WC_VERSION : null,
 			'acf'                   => function_exists( 'get_fields' ),
 			'acf_version'           => defined( 'ACF_VERSION' ) ? ACF_VERSION : null,
-			'yoast'                 => null !== $yoastVersion || class_exists( 'WPSEO_Options' ),
-			'yoast_version'         => $yoastVersion,
+			'yoast'                 => null !== $yoast_version || class_exists( 'WPSEO_Options' ),
+			'yoast_version'         => $yoast_version,
 			'wordpress_abilities'   => function_exists( 'wp_get_abilities' ),
 		);
 
@@ -126,10 +134,10 @@ final class DiscoveryAdapter {
 				'version'    => (string) $theme->get( 'Version' ),
 			),
 			'plugins'                => $plugins,
-			'post_types'             => $postTypes,
+			'post_types'             => $post_types,
 			'taxonomies'             => $taxonomies,
 			'post_statuses'          => get_post_stati( array(), 'objects' ),
-			'image_sizes'            => $imageSizes,
+			'image_sizes'            => $image_sizes,
 			'builders'               => $builders,
 			'rest_api_discovery'     => array(
 				'available'         => function_exists( 'rest_get_server' ),
@@ -147,9 +155,9 @@ final class DiscoveryAdapter {
 	}
 
 	/**
-     * Inspect only REST routing metadata. This is not an arbitrary REST proxy.
-     * Native rest_endpoints filters may run during get_routes() as in Core.
-     */
+	 * Inspect only REST routing metadata. This is not an arbitrary REST proxy.
+	 * Native rest_endpoints filters may run during get_routes() as in Core.
+	 */
 	public function restCatalog( array $payload, array $context = array() ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( $key, array( 'namespace', 'page', 'per_page' ), true ) ) {
@@ -158,11 +166,11 @@ final class DiscoveryAdapter {
 		}
 
 		$page            = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
-		$perPage         = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
-		$namespaceFilter = $payload['namespace'] ?? null;
-		if ( null !== $namespaceFilter &&
-			( ! is_string( $namespaceFilter ) || strlen( $namespaceFilter ) > 120 ||
-             1 !== preg_match( '~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $namespaceFilter ) ) ) {
+		$per_page         = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
+		$namespace_filter = $payload['namespace'] ?? null;
+		if ( null !== $namespace_filter &&
+			( ! is_string( $namespace_filter ) || strlen( $namespace_filter ) > 120 ||
+			1 !== preg_match( '~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $namespace_filter ) ) ) {
 			throw new \RuntimeException( 'Invalid REST namespace filter.' );
 		}
 
@@ -171,7 +179,7 @@ final class DiscoveryAdapter {
 			'discovery_only'    => true,
 			'execution_enabled' => false,
 			'page'              => $page,
-			'per_page'          => $perPage,
+			'per_page'          => $per_page,
 			'pages'             => 1,
 			'total'             => 0,
 			'namespaces'        => array(),
@@ -193,16 +201,24 @@ final class DiscoveryAdapter {
 			throw new \RuntimeException( 'REST discovery registry is invalid or exceeds the limit.' );
 		}
 
-		$namespaces = array_values( array_filter( $namespaces, static function ( $name ): bool {
-			return is_string( $name ) && strlen( $name ) <= 120 &&
-				1 === preg_match( '~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $name );
-		} ) );
-		usort( $namespaces, static function ( string $a, string $b ): int {
-			return strlen( $b ) <=> strlen( $a );
-		} );
+		$namespaces = array_values(
+			array_filter(
+				$namespaces,
+				static function ( $name ): bool {
+					return is_string( $name ) && strlen( $name ) <= 120 &&
+					1 === preg_match( '~^[a-z0-9][a-z0-9._-]*(?:/[a-z0-9][a-z0-9._-]*){1,4}$~D', $name );
+				}
+			)
+		);
+		usort(
+			$namespaces,
+			static function ( string $a, string $b ): int {
+				return strlen( $b ) <=> strlen( $a );
+			}
+		);
 
-		$safeRoutes        = array();
-		$visibleNamespaces = array();
+		$safe_routes        = array();
+		$visible_namespaces = array();
 		foreach ( $registered as $route => $endpoints ) {
 			if ( ! is_string( $route ) || 1 !== preg_match( '/^[\x21-\x7e]{1,240}$/D', $route ) ||
 				preg_match( '/[a-f0-9]{24,}/i', $route ) ||
@@ -210,17 +226,17 @@ final class DiscoveryAdapter {
 				preg_match( '~(?:token|secret|password|credential)~i', $route ) ) {
 				continue;
 			}
-			$routeNamespace = null;
+			$route_namespace = null;
 			foreach ( $namespaces as $name ) {
 				if ( $route === '/' . $name || 0 === strpos( $route, '/' . $name . '/' ) ) {
-					$routeNamespace = $name;
+					$route_namespace = $name;
 					break;
 				}
 			}
-			if ( null === $routeNamespace ||
-				( null !== $namespaceFilter && $namespaceFilter !== $routeNamespace ) ||
-				$route === '/' . $routeNamespace ||
-				$route === '/' . $routeNamespace . '/' ) {
+			if ( null === $route_namespace ||
+				( null !== $namespace_filter && $namespace_filter !== $route_namespace ) ||
+				$route === '/' . $route_namespace ||
+				$route === '/' . $route_namespace . '/' ) {
 				// WordPress generates namespace index routes; they are not plugin actions.
 				continue;
 			}
@@ -261,25 +277,28 @@ final class DiscoveryAdapter {
 			}
 			$methods = array_keys( $verbs );
 			sort( $methods, SORT_STRING );
-			$safeRoutes[] = array(
-				'namespace'          => $routeNamespace,
+			$safe_routes[]                         = array(
+				'namespace'          => $route_namespace,
 				'route_pattern'      => $route,
 				'advertised_methods' => $methods,
 				'execution_enabled'  => false,
 			);
-			$visibleNamespaces[ $routeNamespace ] = true;
+			$visible_namespaces[ $route_namespace ] = true;
 		}
 
-		usort( $safeRoutes, static function ( array $a, array $b ): int {
-			return strcmp( $a['route_pattern'], $b['route_pattern'] );
-		} );
-		$namespaceList = array_keys( $visibleNamespaces );
-		sort( $namespaceList, SORT_STRING );
-		$result['available'] = true;
-		$result['namespaces'] = $namespaceList;
-		$result['total'] = count( $safeRoutes );
-		$result['pages'] = max( 1, (int) ceil( $result['total'] / $perPage ) );
-		$result['routes'] = array_slice( $safeRoutes, ( $page - 1 ) * $perPage, $perPage );
+		usort(
+			$safe_routes,
+			static function ( array $a, array $b ): int {
+				return strcmp( $a['route_pattern'], $b['route_pattern'] );
+			}
+		);
+		$namespace_list = array_keys( $visible_namespaces );
+		sort( $namespace_list, SORT_STRING );
+		$result['available']  = true;
+		$result['namespaces'] = $namespace_list;
+		$result['total']      = count( $safe_routes );
+		$result['pages']      = max( 1, (int) ceil( $result['total'] / $per_page ) );
+		$result['routes']     = array_slice( $safe_routes, ( $page - 1 ) * $per_page, $per_page );
 		$encoded              = function_exists( 'wp_json_encode' ) ? wp_json_encode( $result ) : json_encode( $result );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 131072 ) {
 			throw new \RuntimeException( 'REST discovery output exceeds its transport budget.' );

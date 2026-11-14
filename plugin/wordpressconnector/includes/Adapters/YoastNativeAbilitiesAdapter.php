@@ -65,33 +65,53 @@ final class YoastNativeAbilitiesAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'yoast.native.capabilities', array( $this, 'capabilities' ), array(
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Discover the five official Yoast SEO Abilities with exact version/availability; private transport only.',
-		) );
-		$registry->register( 'yoast.native.scores', array( $this, 'scores' ), array(
-			'privileged'  => true,
-			'capability'  => 'wpseo_manage_options',
-			'description' => 'Read bounded official Yoast SEO, readability or inclusive-language analysis scores.',
-		) );
-		$registry->register( 'yoast.native.post.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'capability'  => 'wpseo_edit_advanced_metadata',
-			'description' => 'Read native Yoast post, page or WooCommerce product SEO metadata and rendered output.',
-		) );
-		$registry->register( 'yoast.native.post.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'wpseo_edit_advanced_metadata',
-			'description' => 'Guarded single-post Yoast metadata update via official Ability, with fingerprint, readback and rollback.',
-		) );
-		$registry->register( 'yoast.native.post.restore', array( $this, 'restore' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'wpseo_edit_advanced_metadata',
-			'description' => 'Rollback-only restore of an earlier native Yoast SEO metadata change.',
-		) );
+		$registry->register(
+			'yoast.native.capabilities',
+			array( $this, 'capabilities' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Discover the five official Yoast SEO Abilities with exact version/availability; private transport only.',
+			)
+		);
+		$registry->register(
+			'yoast.native.scores',
+			array( $this, 'scores' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'wpseo_manage_options',
+				'description' => 'Read bounded official Yoast SEO, readability or inclusive-language analysis scores.',
+			)
+		);
+		$registry->register(
+			'yoast.native.post.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'wpseo_edit_advanced_metadata',
+				'description' => 'Read native Yoast post, page or WooCommerce product SEO metadata and rendered output.',
+			)
+		);
+		$registry->register(
+			'yoast.native.post.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'wpseo_edit_advanced_metadata',
+				'description' => 'Guarded single-post Yoast metadata update via official Ability, with fingerprint, readback and rollback.',
+			)
+		);
+		$registry->register(
+			'yoast.native.post.restore',
+			array( $this, 'restore' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'wpseo_edit_advanced_metadata',
+				'description' => 'Rollback-only restore of an earlier native Yoast SEO metadata change.',
+			)
+		);
 	}
 
 	/**
@@ -113,7 +133,7 @@ final class YoastNativeAbilitiesAdapter {
 			( defined( 'WPSEO_VERSION' ) || defined( 'YOAST_SEO_VERSION' ) );
 		$actions   = array();
 		foreach ( self::ABILITIES as $kind => $name ) {
-			$ability        = $available ? wp_get_ability( $name ) : null;
+			$ability          = $available ? wp_get_ability( $name ) : null;
 			$actions[ $kind ] = is_object( $ability ) && method_exists( $ability, 'execute' );
 		}
 		return array(
@@ -178,12 +198,17 @@ final class YoastNativeAbilitiesAdapter {
 			'post_id'     => $id,
 			'fields'      => $this->snapshot( $data ),
 			'rendered'    => $this->renderedFields( $data ),
-			'analysis'    => array_intersect_key( $data, array_flip( array(
-				'focus_keyphrase',
-				'seo_score',
-				'readability_score',
-				'inclusive_language_score',
-			) ) ),
+			'analysis'    => array_intersect_key(
+				$data,
+				array_flip(
+					array(
+						'focus_keyphrase',
+						'seo_score',
+						'readability_score',
+						'inclusive_language_score',
+					)
+				)
+			),
 			'fingerprint' => Fingerprint::make( $this->snapshot( $data ) ),
 		);
 	}
@@ -219,18 +244,18 @@ final class YoastNativeAbilitiesAdapter {
 			return $result;
 		}
 		if ( $before === $proposed ) {
-			$result['no_change'] = true;
+			$result['no_change']         = true;
 			$result['readback_verified'] = true;
 			return $result;
 		}
 
-		$restoreFields = array_intersect_key( $before, $fields );
+		$restore_fields = array_intersect_key( $before, $fields );
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $fields ) );
 		$after = $this->snapshot( $this->postData( $id ) );
 		foreach ( $fields as $field => $value ) {
 			if ( $after[ $field ] !== $value ) {
 				try {
-					$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $restoreFields ) );
+					$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $restore_fields ) );
 					$restored = $this->snapshot( $this->postData( $id ) );
 					if ( $restored !== $before ) {
 						throw new RuntimeException( 'Automatic restoration mismatch.' );
@@ -242,13 +267,13 @@ final class YoastNativeAbilitiesAdapter {
 			}
 		}
 
-		$result['after'] = array_intersect_key( $after, $fields );
+		$result['after']             = array_intersect_key( $after, $fields );
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'yoast.native.post.restore',
 			'payload' => array(
 				'post_id'                    => $id,
-				'fields'                     => $restoreFields,
+				'fields'                     => $restore_fields,
 				'expected_after_fingerprint' => Fingerprint::make( $after ),
 			),
 		);
@@ -419,9 +444,15 @@ final class YoastNativeAbilitiesAdapter {
 	 */
 	private function renderedFields( array $data ): array {
 		$fields = array();
-		foreach ( array( 'seo_title_rendered', 'meta_description_rendered', 'canonical_rendered',
-			'open_graph_title_rendered', 'open_graph_description_rendered',
-			'twitter_title_rendered', 'twitter_description_rendered', ) as $name ) {
+		foreach ( array(
+			'seo_title_rendered',
+			'meta_description_rendered',
+			'canonical_rendered',
+			'open_graph_title_rendered',
+			'open_graph_description_rendered',
+			'twitter_title_rendered',
+			'twitter_description_rendered',
+		) as $name ) {
 			$fields[ $name ] = isset( $data[ $name ] ) && is_scalar( $data[ $name ] ) ?
 				(string) $data[ $name ] : null;
 		}
@@ -466,7 +497,7 @@ final class YoastNativeAbilitiesAdapter {
 					}
 					if ( 'canonical' === $name && '' !== $value &&
 						( ! filter_var( $value, FILTER_VALIDATE_URL ) ||
-                         0 !== strpos( strtolower( $value ), 'https://' ) ) ) {
+						0 !== strpos( strtolower( $value ), 'https://' ) ) ) {
 						throw new RuntimeException( 'Yoast canonical must be an HTTPS URL or null.' );
 					}
 				}

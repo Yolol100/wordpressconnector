@@ -42,18 +42,46 @@ final class WooCommerceOperationsAdapter {
 			'capability' => 'manage_woocommerce',
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
-		$registry->register( 'woocommerce.operations.list', array( $this, 'lists' ), array_merge( $read, array(
-			'description' => 'Read bounded provider-owned shipping zones/methods, tax rates and gateway summaries.',
-		) ) );
-		$registry->register( 'woocommerce.operations.inspect', array( $this, 'inspect' ), array_merge( $read, array(
-			'description' => 'Inspect exactly one shipping zone or method, tax rate, or payment gateway with secret redaction.',
-		) ) );
-		$registry->register( 'woocommerce.operations.update', array( $this, 'update' ), array_merge( $write, array(
-			'description' => 'Guarded provider REST update for WooCommerce shipping, tax and payment settings (not secrets).',
-		) ) );
-		$registry->register( 'woocommerce.operations.restore', array( $this, 'restore' ), array_merge( $write, array(
-			'description' => 'Rollback-only restore after explicit critical-setting changes.',
-		) ) );
+		$registry->register(
+			'woocommerce.operations.list',
+			array( $this, 'lists' ),
+			array_merge(
+				$read,
+				array(
+					'description' => 'Read bounded provider-owned shipping zones/methods, tax rates and gateway summaries.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.operations.inspect',
+			array( $this, 'inspect' ),
+			array_merge(
+				$read,
+				array(
+					'description' => 'Inspect exactly one shipping zone or method, tax rate, or payment gateway with secret redaction.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.operations.update',
+			array( $this, 'update' ),
+			array_merge(
+				$write,
+				array(
+					'description' => 'Guarded provider REST update for WooCommerce shipping, tax and payment settings (not secrets).',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.operations.restore',
+			array( $this, 'restore' ),
+			array_merge(
+				$write,
+				array(
+					'description' => 'Rollback-only restore after explicit critical-setting changes.',
+				)
+			)
+		);
 	}
 
 	/**
@@ -69,8 +97,16 @@ final class WooCommerceOperationsAdapter {
 	public function lists( array $payload = array(), array $context = array() ): array {
 		$this->assertKeys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
 		$area = $payload['area'] ?? null;
-		if ( ! is_string( $area ) || ! in_array( $area, array(
-			'shipping_zones', 'shipping_methods', 'tax_rates', 'payment_gateways', ), true ) ) {
+		if ( ! is_string( $area ) || ! in_array(
+			$area,
+			array(
+				'shipping_zones',
+				'shipping_methods',
+				'tax_rates',
+				'payment_gateways',
+			),
+			true
+		) ) {
 			throw new RuntimeException( 'Unrecognized WooCommerce operations inventory area.' );
 		}
 		$path = array(
@@ -79,20 +115,20 @@ final class WooCommerceOperationsAdapter {
 			'payment_gateways' => '/wc/v3/payment_gateways',
 		)[ $area ] ?? '';
 		if ( $area === 'shipping_methods' ) {
-			$zoneId = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
-			$path   = '/wc/v3/shipping/zones/' . $zoneId . '/methods';
+			$zone_id = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
+			$path   = '/wc/v3/shipping/zones/' . $zone_id . '/methods';
 		} elseif ( array_key_exists( 'zone_id', $payload ) ) {
 			throw new RuntimeException( 'Unexpected zone_id for WooCommerce operations inventory.' );
 		}
 		$page    = $payload['page'] ?? 1;
-		$perPage = $payload['per_page'] ?? 50;
+		$per_page = $payload['per_page'] ?? 50;
 		if ( ! is_int( $page ) || $page < 1 || $page > 1000
- || ! is_int( $perPage ) || $perPage < 1 || $perPage > 100 ) {
+		|| ! is_int( $per_page ) || $per_page < 1 || $per_page > 100 ) {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
 		$query    = $area === 'tax_rates' ? array(
 			'page'     => $page,
-			'per_page' => $perPage,
+			'per_page' => $per_page,
 		) : array();
 		$response = $this->request( 'GET', $path, $query );
 		if ( count( $response ) > 150 ) {
@@ -118,8 +154,8 @@ final class WooCommerceOperationsAdapter {
 			'items'    => $out,
 			'count'    => count( $out ),
 			'page'     => $page,
-			'per_page' => $perPage,
-			'has_more' => $area === 'tax_rates' && count( $response ) >= $perPage,
+			'per_page' => $per_page,
+			'has_more' => $area === 'tax_rates' && count( $response ) >= $per_page,
 		);
 	}
 
@@ -155,11 +191,19 @@ final class WooCommerceOperationsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->assertKeys( $payload, array(
-			'area', 'id', 'zone_id', 'fields', 'critical_confirm',
-			'restore_verified', 'expected_before_fingerprint',
-			'sandbox_verified',
-		) );
+		$this->assertKeys(
+			$payload,
+			array(
+				'area',
+				'id',
+				'zone_id',
+				'fields',
+				'critical_confirm',
+				'restore_verified',
+				'expected_before_fingerprint',
+				'sandbox_verified',
+			)
+		);
 		$area   = $this->area( $payload );
 		$path   = $this->path( $area, $payload );
 		$fields = $payload['fields'] ?? null;
@@ -181,17 +225,17 @@ final class WooCommerceOperationsAdapter {
 		}
 		$this->criticalGate( $payload, $fingerprint );
 		if ( $area === 'payment_gateway' && ! empty( $updates['enabled'] )
- && $updates['enabled'] === true
- && ( ! defined( 'WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE' )
- || WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE !== true
- || ( $payload['sandbox_verified'] ?? null ) !== true ) ) {
+		&& $updates['enabled'] === true
+		&& ( ! defined( 'WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE' )
+		|| WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE !== true
+		|| ( $payload['sandbox_verified'] ?? null ) !== true ) ) {
 			throw new RuntimeException( 'Enabling payment gateways requires a separate site-local payment gate and sandbox verification.' );
 		}
 		$previous = array();
 		foreach ( $updates as $key => $value ) {
 			if ( $key === 'settings' ) {
 				$previous[ $key ] = array();
-				foreach ( $value as $setting => $newValue ) {
+				foreach ( $value as $setting => $new_value ) {
 					if ( ! isset( $raw['settings'][ $setting ] ) || ! array_key_exists( 'value', $raw['settings'][ $setting ] ) ) {
 						throw new RuntimeException( 'Provider settings readback cannot produce rollback data.' );
 					}
@@ -205,8 +249,8 @@ final class WooCommerceOperationsAdapter {
 			}
 		}
 		$this->request( 'PUT', $path, $updates );
-		$afterRaw = $this->request( 'GET', $path );
-		if ( ! $this->matches( $afterRaw, $updates ) ) {
+		$after_raw = $this->request( 'GET', $path );
+		if ( ! $this->matches( $after_raw, $updates ) ) {
 			try {
 				$this->request( 'PUT', $path, $previous );
 			} catch ( Throwable $error ) {
@@ -217,8 +261,8 @@ final class WooCommerceOperationsAdapter {
 			}
 			throw new RuntimeException( 'WooCommerce provider did not retain requested settings; previous state restored.' );
 		}
-		$after = $this->summarize( $afterRaw, $area );
-		$result['after'] = $after;
+		$after               = $this->summarize( $after_raw, $area );
+		$result['after']     = $after;
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.operations.restore',
 			'payload' => array(
@@ -249,14 +293,14 @@ final class WooCommerceOperationsAdapter {
 		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id', 'fields', 'expected_after_fingerprint' ) );
 		$area      = $this->area( $payload );
 		$path      = $this->path( $area, $payload );
-		$beforeRaw = $this->request( 'GET', $path );
-		$before    = $this->summarize( $beforeRaw, $area );
+		$before_raw = $this->request( 'GET', $path );
+		$before    = $this->summarize( $before_raw, $area );
 		$expected  = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
- || ! hash_equals( Fingerprint::make( $before ), $expected ) ) {
+		|| ! hash_equals( Fingerprint::make( $before ), $expected ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback blocked due to changed remote state.' );
 		}
-		$changes = $this->validateChanges( $area, $payload['fields'] ?? null, $beforeRaw );
+		$changes = $this->validateChanges( $area, $payload['fields'] ?? null, $before_raw );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => array_keys( $changes ) );
 		}
@@ -290,11 +334,11 @@ final class WooCommerceOperationsAdapter {
 			}
 		}
 		if ( in_array( $area, array( 'shipping_method', 'payment_gateway' ), true )
- && isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
+		&& isset( $data['settings'] ) && is_array( $data['settings'] ) ) {
 			$options = array();
 			foreach ( array_slice( $data['settings'], 0, 150, true ) as $id => $setting ) {
 				if ( ! is_string( $id ) || ! preg_match( '/^[a-z0-9_\-]{1,100}$/D', $id )
- || ! is_array( $setting ) ) {
+				|| ! is_array( $setting ) ) {
 					continue;
 				}
 				$type    = isset( $setting['type'] ) && is_string( $setting['type'] ) ? $setting['type'] : '';
@@ -334,25 +378,25 @@ final class WooCommerceOperationsAdapter {
 		$updates = array();
 		foreach ( $fields as $key => $value ) {
 			if ( ! is_string( $key ) || ! in_array( $key, self::AREAS[ $area ], true )
- || ! array_key_exists( $key, $before ) ) {
+			|| ! array_key_exists( $key, $before ) ) {
 				throw new RuntimeException( 'WooCommerce provider setting is unavailable or disallowed.' );
 			}
 			if ( $key === 'settings' ) {
 				if ( ! in_array( $area, array( 'payment_gateway', 'shipping_method' ), true )
- || ! is_array( $value ) || ! $value || count( $value ) > 12 || ! is_array( $before['settings'] ) ) {
+				|| ! is_array( $value ) || ! $value || count( $value ) > 12 || ! is_array( $before['settings'] ) ) {
 					throw new RuntimeException( 'Unsupported WooCommerce provider-specific settings payload.' );
 				}
 				$options = array();
-				foreach ( $value as $optionId => $desired ) {
-					if ( ! is_string( $optionId ) || ! preg_match( '/^[a-z0-9_\-]{1,100}$/D', $optionId )
- || ! isset( $before['settings'][ $optionId ] )
- || $this->secret( $optionId, (string) ( $before['settings'][ $optionId ]['type'] ?? '' ) )
- || ! $this->exposableSetting( $area, $optionId )
- || ( $area === 'payment_gateway'
- && preg_match( '/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $optionId ) ) ) {
+				foreach ( $value as $option_id => $desired ) {
+					if ( ! is_string( $option_id ) || ! preg_match( '/^[a-z0-9_\-]{1,100}$/D', $option_id )
+					|| ! isset( $before['settings'][ $option_id ] )
+					|| $this->secret( $option_id, (string) ( $before['settings'][ $option_id ]['type'] ?? '' ) )
+					|| ! $this->exposableSetting( $area, $option_id )
+					|| ( $area === 'payment_gateway'
+					&& preg_match( '/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $option_id ) ) ) {
 						throw new RuntimeException( 'Protected WooCommerce provider credential or setting.' );
 					}
-					$field = $before['settings'][ $optionId ];
+					$field = $before['settings'][ $option_id ];
 					$type  = (string) ( $field['type'] ?? '' );
 					if ( ! is_string( $desired ) || strlen( $desired ) > 300 ) {
 						throw new RuntimeException( 'Provider setting value must be a bounded string.' );
@@ -364,14 +408,14 @@ final class WooCommerceOperationsAdapter {
 						throw new RuntimeException( 'Provider numeric setting contains unsupported data.' );
 					}
 					if ( ! in_array( $type, array( 'text', 'textarea', 'checkbox', 'number', 'select', 'radio' ), true )
- || preg_match( '/[<>\\x00-\\x1F]/', $desired ) ) {
+					|| preg_match( '/[<>\\x00-\\x1F]/', $desired ) ) {
 						throw new RuntimeException( 'Provider field requires a dedicated validation contract.' );
 					}
 					if ( $type === 'select' && isset( $field['options'] ) && is_array( $field['options'] )
- && ! array_key_exists( $desired, $field['options'] ) ) {
+					&& ! array_key_exists( $desired, $field['options'] ) ) {
 						throw new RuntimeException( 'Provider dropdown value is not recognized.' );
 					}
-					$options[ $optionId ] = $desired;
+					$options[ $option_id ] = $desired;
 				}
 				$updates[ $key ] = $options;
 				continue;
@@ -423,9 +467,9 @@ final class WooCommerceOperationsAdapter {
 	private function matches( array $actual, array $expected ): bool {
 		foreach ( $expected as $key => $value ) {
 			if ( $key === 'settings' ) {
-				foreach ( $value as $optionId => $wanted ) {
-					if ( ! isset( $actual['settings'][ $optionId ] )
- || ( $actual['settings'][ $optionId ]['value'] ?? null ) !== $wanted ) {
+				foreach ( $value as $option_id => $wanted ) {
+					if ( ! isset( $actual['settings'][ $option_id ] )
+					|| ( $actual['settings'][ $option_id ]['value'] ?? null ) !== $wanted ) {
 						return false;
 					}
 				}
@@ -447,12 +491,12 @@ final class WooCommerceOperationsAdapter {
 	private function criticalGate( array $payload, string $fingerprint ): void {
 		$expected = $payload['expected_before_fingerprint'] ?? null;
 		if ( ! defined( 'WPCONNECTOR_ALLOW_WOO_CRITICAL' ) || WPCONNECTOR_ALLOW_WOO_CRITICAL !== true
- || ( $payload['critical_confirm'] ?? null ) !== true
- || ( $payload['restore_verified'] ?? null ) !== true ) {
+		|| ( $payload['critical_confirm'] ?? null ) !== true
+		|| ( $payload['restore_verified'] ?? null ) !== true ) {
 			throw new RuntimeException( 'WooCommerce provider settings require site-local critical gate and verified restore.' );
 		}
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
- || ! hash_equals( $fingerprint, $expected ) ) {
+		|| ! hash_equals( $fingerprint, $expected ) ) {
 			throw new RuntimeException( 'WooCommerce provider settings have changed since preview.' );
 		}
 	}
@@ -614,10 +658,12 @@ final class WooCommerceOperationsAdapter {
 			throw new RuntimeException( 'WooCommerce REST runtime is unavailable.' );
 		}
 		$request = new \WP_REST_Request( $method, $path );
-		foreach ( $params as $key => $value ) $request->set_param( $key, $value );
+		foreach ( $params as $key => $value ) {
+			$request->set_param( $key, $value );
+		}
 		$response = rest_do_request( $request );
 		if ( ! is_object( $response ) || ! method_exists( $response, 'get_status' )
- || ! method_exists( $response, 'get_data' ) ) {
+		|| ! method_exists( $response, 'get_data' ) ) {
 			throw new RuntimeException( 'WooCommerce provider REST response is invalid.' );
 		}
 		$status = (int) $response->get_status();

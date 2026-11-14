@@ -15,9 +15,9 @@ use Throwable;
  * Supports Elementor Json Export workflows in WordPress administration.
  */
 final class ElementorJsonExport {
-	private const ACTION = 'wpconnector_export_elementor_json';
-	private const POST_TYPES = array( 'page', 'post', 'elementor_library' );
-	private const BUNDLE_FORMAT = 'wordpressconnector/elementor-site-parts-bundle';
+	private const ACTION         = 'wpconnector_export_elementor_json';
+	private const POST_TYPES     = array( 'page', 'post', 'elementor_library' );
+	private const BUNDLE_FORMAT  = 'wordpressconnector/elementor-site-parts-bundle';
 	private const BUNDLE_VERSION = 1;
 
 	/**
@@ -83,11 +83,9 @@ final class ElementorJsonExport {
 			if ( ! is_string( $json ) || '' === $json ) {
 				throw new RuntimeException( 'WordPress could not encode the Elementor export as JSON.' );
 			}
-		}
-		catch ( RuntimeException $error ) {
+		} catch ( RuntimeException $error ) {
 			wp_die( esc_html( $error->getMessage() ), '', array( 'response' => 400 ) );
-		}
-		catch ( Throwable $error ) {
+		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The Elementor JSON export could not be completed.', 'wordpressconnector' ), '', array( 'response' => 500 ) );
 		}
 		$slug     = '' !== (string) $post->post_name ? (string) $post->post_name : (string) $post->post_type . '-' . $postId;
@@ -110,11 +108,17 @@ final class ElementorJsonExport {
 	 * @return string Operation result.
 	 */
 	private function exportUrl( int $postId, bool $includeSiteParts ): string {
-		return wp_nonce_url( add_query_arg( array(
-			'action'             => self::ACTION,
-			'post_id'            => $postId,
-			'include_site_parts' => $includeSiteParts ? 1 : 0,
-		), admin_url( 'admin-post.php' ) ), self::ACTION . '_' . $postId );
+		return wp_nonce_url(
+			add_query_arg(
+				array(
+					'action'             => self::ACTION,
+					'post_id'            => $postId,
+					'include_site_parts' => $includeSiteParts ? 1 : 0,
+				),
+				admin_url( 'admin-post.php' )
+			),
+			self::ACTION . '_' . $postId
+		);
 	}
 
 	/**
@@ -131,12 +135,12 @@ final class ElementorJsonExport {
 		if ( ! method_exists( $document, 'get_export_data' ) ) {
 			throw new RuntimeException( 'This Elementor version does not expose document export data.' );
 		}
-		$templateData = $document->get_export_data();
-		if ( ! is_array( $templateData ) ) {
+		$template_data = $document->get_export_data();
+		if ( ! is_array( $template_data ) ) {
 			throw new RuntimeException( 'Elementor returned invalid export data.' );
 		}
-		$content  = isset( $templateData['content'] ) && is_array( $templateData['content'] ) ? $templateData['content'] : array();
-		$settings = isset( $templateData['settings'] ) && is_array( $templateData['settings'] ) ? $templateData['settings'] : array();
+		$content  = isset( $template_data['content'] ) && is_array( $template_data['content'] ) ? $template_data['content'] : array();
+		$settings = isset( $template_data['settings'] ) && is_array( $template_data['settings'] ) ? $template_data['settings'] : array();
 		if ( empty( $content ) ) {
 			throw new RuntimeException( 'The Elementor document is empty.' );
 		}
@@ -225,12 +229,15 @@ final class ElementorJsonExport {
 			if ( ! is_object( $conditions ) || ! method_exists( $conditions, 'get_documents_for_location' ) ) {
 				return $this->unsupportedSiteParts();
 			}
-			$matches = $this->withSingularQuery( $sourcePost, static function()use( $conditions ):array {
-				return array(
-					'header' => $conditions->get_documents_for_location( 'header' ),
-					'footer' => $conditions->get_documents_for_location( 'footer' ),
-				);
-			} );
+			$matches  = $this->withSingularQuery(
+				$sourcePost,
+				static function () use ( $conditions ): array {
+					return array(
+						'header' => $conditions->get_documents_for_location( 'header' ),
+						'footer' => $conditions->get_documents_for_location( 'footer' ),
+					);
+				}
+			);
 			$header   = $this->firstSitePart( $matches['header'] ?? array(), 'header' );
 			$footer   = $this->firstSitePart( $matches['footer'] ?? array(), 'footer' );
 			$warnings = array();
@@ -245,8 +252,7 @@ final class ElementorJsonExport {
 				'footer'   => $footer,
 				'warnings' => $warnings,
 			);
-		}
-		catch ( Throwable $error ) {
+		} catch ( Throwable $error ) {
 			return $this->unsupportedSiteParts( 'Elementor Pro Theme Builder could not resolve the matching site parts for this document.' );
 		}
 	}
@@ -264,33 +270,31 @@ final class ElementorJsonExport {
 			return null;
 		}
 		foreach ( $matches as $key => $document ) {
-			$templateId = 0;
+			$template_id = 0;
 			$template   = null;
 			if ( is_object( $document ) && method_exists( $document, 'get_post' ) ) {
 				$template = $document->get_post();
 				if ( $template instanceof \WP_Post ) {
-					$templateId = (int) $template->ID;
+					$template_id = (int) $template->ID;
 				}
+			} elseif ( is_numeric( $key ) ) {
+				$template_id = (int) $key;
+			} elseif ( is_numeric( $document ) ) {
+				$template_id = (int) $document;
 			}
-			elseif ( is_numeric( $key ) ) {
-				$templateId = (int) $key;
-			}
-			elseif ( is_numeric( $document ) ) {
-				$templateId = (int) $document;
-			}
-			if ( $templateId < 1 ) {
+			if ( $template_id < 1 ) {
 				continue;
 			}
-			$template = $template instanceof \WP_Post ? $template : get_post( $templateId );
-			if ( ! $template instanceof \WP_Post || ! current_user_can( 'edit_post', $templateId ) ) {
+			$template = $template instanceof \WP_Post ? $template : get_post( $template_id );
+			if ( ! $template instanceof \WP_Post || ! current_user_can( 'edit_post', $template_id ) ) {
 				continue;
 			}
-			$payload = $this->exportPayload( $this->document( $templateId ), $template );
+			$payload = $this->exportPayload( $this->document( $template_id ), $template );
 			if ( (string) ( $payload['type'] ?? '' ) !== $location ) {
 				continue;
 			}
 			return array(
-				'id'      => $templateId,
+				'id'      => $template_id,
 				'title'   => (string) $template->post_title,
 				'payload' => $payload,
 			);
@@ -310,9 +314,9 @@ final class ElementorJsonExport {
 	 */
 	private function withSingularQuery( \WP_Post $sourcePost, callable $callback ) {
 		global $post, $wp_query, $wp_the_query;
-		$previousPost     = $post ?? null;
-		$previousQuery    = $wp_query ?? null;
-		$previousTheQuery = $wp_the_query ?? null;
+		$previous_post     = $post ?? null;
+		$previous_query    = $wp_query ?? null;
+		$previous_the_query = $wp_the_query ?? null;
 		$args             = array(
 			'post_type'           => (string) $sourcePost->post_type,
 			'post_status'         => 'any',
@@ -322,8 +326,7 @@ final class ElementorJsonExport {
 		);
 		if ( 'page' === (string) $sourcePost->post_type ) {
 			$args['page_id'] = (int) $sourcePost->ID;
-		}
-		else {
+		} else {
 			$args['p'] = (int) $sourcePost->ID;
 		}
 		$query = new \WP_Query( $args );
@@ -335,14 +338,13 @@ final class ElementorJsonExport {
 		$query->the_post();
 		try {
 			return $callback();
-		}
-		finally {
+		} finally {
 			$query->reset_postdata();
-			$wp_query     = $previousQuery;
-			$wp_the_query = $previousTheQuery;
-			$post         = $previousPost;
-			if ( $previousPost instanceof \WP_Post ) {
-				setup_postdata( $previousPost );
+			$wp_query     = $previous_query;
+			$wp_the_query = $previous_the_query;
+			$post         = $previous_post;
+			if ( $previous_post instanceof \WP_Post ) {
+				setup_postdata( $previous_post );
 			}
 		}
 	}
@@ -390,8 +392,7 @@ final class ElementorJsonExport {
 		try {
 			$this->document( $postId );
 			return true;
-		}
-		catch ( RuntimeException $error ) {
+		} catch ( RuntimeException $error ) {
 			return false;
 		}
 	}

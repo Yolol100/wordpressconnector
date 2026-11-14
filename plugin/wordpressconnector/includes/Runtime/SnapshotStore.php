@@ -25,7 +25,7 @@ final class SnapshotStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function put( string $requestId, array $rollback, array $metadata = array() ): void {
-		$key = self::key( $requestId );
+		$key    = self::key( $requestId );
 		$record = array(
 			'created_at'             => time(),
 			'rollback'               => $rollback,
@@ -92,7 +92,7 @@ final class SnapshotStore {
 		global $wpdb;
 		$like = $wpdb->esc_like( self::PREFIX ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared compensation cleanup must observe fresh durable rollback snapshots.
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
+		$rows    = $wpdb->get_results( $wpdb->prepare( "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s", $like ) );
 		$deleted = 0;
 		if ( ! is_array( $rows ) ) {
 			throw new \RuntimeException( 'Rollback cleanup could not inspect WordPress options storage.' );

@@ -17,10 +17,10 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Cache Maintenance connector actions.
  */
 final class CacheMaintenanceAdapter {
-	private const LAYERS = array( 'elementor', 'wp_rocket', 'asset_cleanup' );
+	private const LAYERS                        = array( 'elementor', 'wp_rocket', 'asset_cleanup' );
 	private const ASSET_CLEANUP_LOOPBACK_ACTION = 'wpconnector_asset_cleanup_flush';
-	private const ASSET_CLEANUP_TOKEN_PREFIX = 'wpconnector_ac_flush_';
-	private const ASSET_CLEANUP_TOKEN_TTL = 60;
+	private const ASSET_CLEANUP_TOKEN_PREFIX    = 'wpconnector_ac_flush_';
+	private const ASSET_CLEANUP_TOKEN_TTL       = 60;
 
 	/**
 	 * Register the CacheMaintenance adapter actions and handlers.
@@ -31,19 +31,27 @@ final class CacheMaintenanceAdapter {
 		add_action( 'admin_post_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array( $this, 'handleAssetCleanupLoopback' ) );
 		add_action( 'admin_post_nopriv_' . self::ASSET_CLEANUP_LOOPBACK_ACTION, array( $this, 'handleAssetCleanupLoopback' ) );
 
-		$registry->register( 'maintenance.cache_capabilities', array( $this, 'capabilities' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Inspect availability and versions for the bounded Elementor, WP Rocket and Asset CleanUp cache maintenance layers.',
-		) );
+		$registry->register(
+			'maintenance.cache_capabilities',
+			array( $this, 'capabilities' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Inspect availability and versions for the bounded Elementor, WP Rocket and Asset CleanUp cache maintenance layers.',
+			)
+		);
 
-		$registry->register( 'maintenance.cache_flush', array( $this, 'flush' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Flush one bounded cache layer: Elementor files/data, WP Rocket full-domain page cache, or Asset CleanUp CSS/JS cache metadata.',
-		) );
+		$registry->register(
+			'maintenance.cache_flush',
+			array( $this, 'flush' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Flush one bounded cache layer: Elementor files/data, WP Rocket full-domain page cache, or Asset CleanUp CSS/JS cache metadata.',
+			)
+		);
 	}
 
 	/**
@@ -96,8 +104,8 @@ final class CacheMaintenanceAdapter {
 
 		if ( $regenerate ) {
 			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
-			$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
-			if ( ! is_object( $filesManager ) || ! method_exists( $filesManager, 'generate_css' ) ) {
+			$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
+			if ( ! is_object( $files_manager ) || ! method_exists( $files_manager, 'generate_css' ) ) {
 				throw new RuntimeException( 'Elementor CSS regeneration API is unavailable.' );
 			}
 		}
@@ -121,7 +129,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		if ( ! empty( $context['dry_run'] ) ) {
-			$result['would_flush'] = true;
+			$result['would_flush']       = true;
 			$result['readback_verified'] = null;
 			return $result;
 		}
@@ -143,7 +151,7 @@ final class CacheMaintenanceAdapter {
 				} finally {
 					remove_action( 'elementor/core/files/after_generate_css', $callback, PHP_INT_MAX );
 				}
-				$result['regenerate_invoked'] = true;
+				$result['regenerate_invoked']    = true;
 				$result['regeneration_verified'] = $regenerated;
 				if ( ! $regenerated ) {
 					throw new RuntimeException( 'Elementor CSS regeneration completion was not verified.' );
@@ -152,7 +160,7 @@ final class CacheMaintenanceAdapter {
 		} elseif ( 'wp_rocket' === $layer ) {
 			$result['readback_verified'] = $this->flushWpRocket();
 		} else {
-			$result['readback_verified'] = $this->flushAssetCleanup();
+			$result['readback_verified']      = $this->flushAssetCleanup();
 			$result['json_cache_files_after'] = $this->countAssetCleanupJsonFiles();
 		}
 
@@ -173,10 +181,10 @@ final class CacheMaintenanceAdapter {
 	private function layerState( string $layer ): array {
 		if ( 'elementor' === $layer ) {
 			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
-			$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
+			$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 			return array(
 				'provider'  => 'Elementor',
-				'available' => is_object( $filesManager ) && method_exists( $filesManager, 'clear_cache' ),
+				'available' => is_object( $files_manager ) && method_exists( $files_manager, 'clear_cache' ),
 				'version'   => defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : '',
 			);
 		}
@@ -209,8 +217,8 @@ final class CacheMaintenanceAdapter {
 	 */
 	private function flushElementor(): bool {
 		$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
-		$filesManager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
-		if ( ! is_object( $filesManager ) || ! method_exists( $filesManager, 'clear_cache' ) ) {
+		$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
+		if ( ! is_object( $files_manager ) || ! method_exists( $files_manager, 'clear_cache' ) ) {
 			throw new RuntimeException( 'Elementor cache API is unavailable.' );
 		}
 
@@ -221,7 +229,7 @@ final class CacheMaintenanceAdapter {
 
 		add_action( 'elementor/core/files/clear_cache', $callback, PHP_INT_MAX, 0 );
 		try {
-			$filesManager->clear_cache();
+			$files_manager->clear_cache();
 		} finally {
 			remove_action( 'elementor/core/files/clear_cache', $callback, PHP_INT_MAX );
 		}
@@ -261,19 +269,19 @@ final class CacheMaintenanceAdapter {
 			return false;
 		}
 
-		$fallbackVerified = false;
-		$fallbackCallback = static function () use ( &$fallbackVerified ): void {
-			$fallbackVerified = true;
+		$fallback_verified = false;
+		$fallback_callback = static function () use ( &$fallback_verified ): void {
+			$fallback_verified = true;
 		};
 
-		add_action( 'after_rocket_clean_cache_dir', $fallbackCallback, PHP_INT_MAX, 0 );
+		add_action( 'after_rocket_clean_cache_dir', $fallback_callback, PHP_INT_MAX, 0 );
 		try {
 			rocket_clean_cache_dir();
 		} finally {
-			remove_action( 'after_rocket_clean_cache_dir', $fallbackCallback, PHP_INT_MAX );
+			remove_action( 'after_rocket_clean_cache_dir', $fallback_callback, PHP_INT_MAX );
 		}
 
-		return $fallbackVerified;
+		return $fallback_verified;
 	}
 
 	/**
@@ -307,22 +315,25 @@ final class CacheMaintenanceAdapter {
 		}
 
 		try {
-			$response = wp_remote_post( admin_url( 'admin-post.php' ), array(
-				'timeout'     => 30,
-				'redirection' => 0,
-				'blocking'    => true,
-				'sslverify'   => true,
-				'headers'     => array(
-					'Accept'                    => 'application/json',
-					'Cache-Control'             => 'no-store',
-					'User-Agent'                => 'Webactueel-WordPressConnector/asset-cleanup-loopback',
-					'X-WPConnector-Cache-Key'   => $key,
-					'X-WPConnector-Cache-Token' => $token,
-				),
-				'body'        => array(
-					'action' => self::ASSET_CLEANUP_LOOPBACK_ACTION,
-				),
-			) );
+			$response = wp_remote_post(
+				admin_url( 'admin-post.php' ),
+				array(
+					'timeout'     => 30,
+					'redirection' => 0,
+					'blocking'    => true,
+					'sslverify'   => true,
+					'headers'     => array(
+						'Accept'                    => 'application/json',
+						'Cache-Control'             => 'no-store',
+						'User-Agent'                => 'Webactueel-WordPressConnector/asset-cleanup-loopback',
+						'X-WPConnector-Cache-Key'   => $key,
+						'X-WPConnector-Cache-Token' => $token,
+					),
+					'body'        => array(
+						'action' => self::ASSET_CLEANUP_LOOPBACK_ACTION,
+					),
+				)
+			);
 		} finally {
 			delete_transient( $transient );
 		}
@@ -381,11 +392,13 @@ final class CacheMaintenanceAdapter {
 		}
 
 		nocache_headers();
-		wp_send_json_success( array(
-			'verified' => true,
-			'provider' => 'Asset CleanUp',
-			'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? (string) WPACU_PLUGIN_VERSION : '',
-		) );
+		wp_send_json_success(
+			array(
+				'verified' => true,
+				'provider' => 'Asset CleanUp',
+				'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? (string) WPACU_PLUGIN_VERSION : '',
+			)
+		);
 	}
 
 	/**
@@ -433,18 +446,18 @@ final class CacheMaintenanceAdapter {
 		}
 
 		/*
-         * Asset CleanUp owns two completion signals after clearCache():
-         * - the wpacu_clear_cache_after action;
-         * - the <plugin-id>_last_clear_cache transient.
-         *
-         * Either signal proves the provider reached its completion boundary.
-         * Do not plant connector-owned sentinel transients: Asset CleanUp is
-         * not required to purge arbitrary transient names, which caused false
-         * negatives even when the provider flush completed successfully.
-         */
+		 * Asset CleanUp owns two completion signals after clearCache():
+		 * - the wpacu_clear_cache_after action;
+		 * - the <plugin-id>_last_clear_cache transient.
+		 *
+		 * Either signal proves the provider reached its completion boundary.
+		 * Do not plant connector-owned sentinel transients: Asset CleanUp is
+		 * not required to purge arbitrary transient names, which caused false
+		 * negatives even when the provider flush completed successfully.
+		 */
 		$transient      = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
 		$before         = get_transient( $transient );
-		$startedAt      = time();
+		$started_at      = time();
 		$verifiedByHook = false;
 		$callback       = static function () use ( &$verifiedByHook ): void {
 			$verifiedByHook = true;
@@ -458,10 +471,10 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$after             = get_transient( $transient );
-		$beforeValue       = is_numeric( $before ) ? (int) $before : 0;
-		$afterValue        = is_numeric( $after ) ? (int) $after : 0;
-		$timestampVerified = $afterValue >= ( $startedAt - 1 )
-			&& $afterValue >= $beforeValue;
+		$before_value       = is_numeric( $before ) ? (int) $before : 0;
+		$after_value        = is_numeric( $after ) ? (int) $after : 0;
+		$timestampVerified = $after_value >= ( $started_at - 1 )
+			&& $after_value >= $before_value;
 
 		return $verifiedByHook || $timestampVerified;
 	}
@@ -477,20 +490,20 @@ final class CacheMaintenanceAdapter {
 			return $class;
 		}
 
-		$classesPath = defined( 'WPACU_PLUGIN_CLASSES_PATH' )
+		$classes_path = defined( 'WPACU_PLUGIN_CLASSES_PATH' )
 			? (string) WPACU_PLUGIN_CLASSES_PATH
 			: ( defined( 'WPACU_PLUGIN_DIR' )
 				? rtrim( (string) WPACU_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . 'classes'
 				: '' );
 
-		$base = '' !== $classesPath ? realpath( $classesPath ) : false;
+		$base = '' !== $classes_path ? realpath( $classes_path ) : false;
 		if ( false === $base || ! is_dir( $base ) ) {
 			return '';
 		}
 
-		static $autoloadRegistered = false;
+		static $autoload_registered = false;
 
-		if ( ! $autoloadRegistered ) {
+		if ( ! $autoload_registered ) {
 			$prefix = 'WpAssetCleanUp\\';
 
 			spl_autoload_register(
@@ -520,7 +533,7 @@ final class CacheMaintenanceAdapter {
 				}
 			);
 
-			$autoloadRegistered = true;
+			$autoload_registered = true;
 		}
 
 		return class_exists( $class ) ? $class : '';

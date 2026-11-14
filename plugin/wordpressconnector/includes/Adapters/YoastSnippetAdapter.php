@@ -30,22 +30,34 @@ final class YoastSnippetAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'yoast.snippet.inspect', array( $this, 'inspect' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'description'            => 'Inspect only the public title and meta description overrides of a published post.',
-		) );
-		$registry->register( 'yoast.snippet.update', array( $this, 'update' ), array(
-			'mutation'               => true,
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'description'            => 'Guarded edit of public Yoast SEO title and description overrides only.',
-		) );
-		$registry->register( 'yoast.snippet.restore', array( $this, 'restore' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Internal stale-state-guarded rollback of a previous snippet edit.',
-		) );
+		$registry->register(
+			'yoast.snippet.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'description'            => 'Inspect only the public title and meta description overrides of a published post.',
+			)
+		);
+		$registry->register(
+			'yoast.snippet.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'               => true,
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'description'            => 'Guarded edit of public Yoast SEO title and description overrides only.',
+			)
+		);
+		$registry->register(
+			'yoast.snippet.restore',
+			array( $this, 'restore' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Internal stale-state-guarded rollback of a previous snippet edit.',
+			)
+		);
 	}
 
 	/**
@@ -86,7 +98,7 @@ final class YoastSnippetAdapter {
 	private function fields( int $id ): array {
 		$values = array();
 		foreach ( self::KEYS as $key => $meta ) {
-			$raw          = get_post_meta( $id, $meta, true );
+			$raw            = get_post_meta( $id, $meta, true );
 			$values[ $key ] = is_string( $raw ) && $raw !== '' ? $raw : null;
 		}
 		return $values;
@@ -214,7 +226,7 @@ final class YoastSnippetAdapter {
 			clean_post_cache( (int) $post->ID );
 			throw new RuntimeException( 'Snippet readback mismatch; prior values restored.' );
 		}
-		$result['after'] = $actual;
+		$result['after']     = $actual;
 		$previous            = array_intersect_key( $before['fields'], $updates );
 		$result['_rollback'] = array(
 			'action'  => 'yoast.snippet.restore',
@@ -245,13 +257,13 @@ final class YoastSnippetAdapter {
 		$previous  = self::validateFields( $payload['fields'] ?? null, true );
 		$expected  = $payload['expected_after_fingerprint'] ?? null;
 		$current   = $this->state( (int) $post->ID );
-		$currentFp = Fingerprint::make( $current );
-		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) || ! hash_equals( $expected, $currentFp ) ) {
+		$current_fp = Fingerprint::make( $current );
+		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) || ! hash_equals( $expected, $current_fp ) ) {
 			throw new RuntimeException( 'Snippet changed after edit; rollback refused.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'_current_fingerprint' => $currentFp,
+				'_current_fingerprint' => $current_fp,
 				'would_restore'        => array_keys( $previous ),
 			);
 		}

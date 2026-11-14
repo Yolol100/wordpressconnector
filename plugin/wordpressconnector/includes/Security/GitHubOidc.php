@@ -15,11 +15,11 @@ use RuntimeException;
  * Applies Git Hub Oidc safeguards to connector operations.
  */
 final class GitHubOidc {
-	private const HEADER = 'x-webactueel-github-oidc';
-	private const ISSUER = 'https://token.actions.githubusercontent.com';
-	private const JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
-	private const REPOSITORY_OWNER_ID = '22932777';
-	private const TRUSTED_RUNTIMES = array(
+	private const HEADER               = 'x-webactueel-github-oidc';
+	private const ISSUER               = 'https://token.actions.githubusercontent.com';
+	private const JWKS_URL             = 'https://token.actions.githubusercontent.com/.well-known/jwks';
+	private const REPOSITORY_OWNER_ID  = '22932777';
+	private const TRUSTED_RUNTIMES     = array(
 		'Yolol100/wordpressconnector' => array(
 			'repository_id' => '1341990468',
 			'workflow_ref'  => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
@@ -31,9 +31,9 @@ final class GitHubOidc {
 			'visibility'    => array( 'private' ),
 		),
 	);
-	private const CLOCK_SKEW = 60;
-	private const MAX_TOKEN_AGE = 600;
-	private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
+	private const CLOCK_SKEW           = 60;
+	private const MAX_TOKEN_AGE        = 600;
+	private const JWKS_TRANSIENT       = 'wpconnector_github_oidc_jwks_v1';
 	private const REPLAY_OPTION_PREFIX = 'wpconnector_oidc_replay_';
 
 	/**
@@ -76,8 +76,8 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC token has an invalid key id.' );
 		}
 
-		$publicKey = $this->publicKey( $kid );
-		$verified  = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $publicKey, OPENSSL_ALGO_SHA256 );
+		$public_key = $this->publicKey( $kid );
+		$verified  = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $public_key, OPENSSL_ALGO_SHA256 );
 		if ( 1 !== $verified ) {
 			throw new RuntimeException( 'GitHub OIDC signature verification failed.' );
 		}
@@ -130,7 +130,7 @@ final class GitHubOidc {
 		if ( ! isset( self::TRUSTED_RUNTIMES[ $repository ] ) ) {
 			throw new RuntimeException( 'GitHub OIDC repository is not trusted.' );
 		}
-		$runtime  = self::TRUSTED_RUNTIMES[ $repository ];
+		$runtime = self::TRUSTED_RUNTIMES[ $repository ];
 
 		$expected = array(
 			'repository_id'       => (string) $runtime['repository_id'],
@@ -190,37 +190,39 @@ final class GitHubOidc {
 	}
 
 	/**
-     * Bounded cleanup for the privileged connector.cleanup action.
-     * Only claims older than both the retention window and their expiry
-     * are removed. Never delete a recently issued or malformed claim.
-     */
+	 * Bounded cleanup for the privileged connector.cleanup action.
+	 * Only claims older than both the retention window and their expiry
+	 * are removed. Never delete a recently issued or malformed claim.
+	 */
 	public static function cleanupReplayClaims( int $olderThanSeconds ): int {
 		global $wpdb;
 		if ( ! is_object( $wpdb ) || ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_results' )
- || ! method_exists( $wpdb, 'esc_like' ) ) {
+		|| ! method_exists( $wpdb, 'esc_like' ) ) {
 			throw new RuntimeException( 'OIDC replay cleanup requires WordPress options storage.' );
 		}
 		$cutoff = time() - max( self::MAX_TOKEN_AGE + 2 * self::CLOCK_SKEW, $olderThanSeconds );
 		$like   = $wpdb->esc_like( self::REPLAY_OPTION_PREFIX ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded replay-claim cleanup needs a fresh prepared options read; do not cache security state.
-		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
-			$like,
-			500
-		) );
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
+				$like,
+				500
+			)
+		);
 		if ( ! is_array( $rows ) ) {
 			throw new RuntimeException( 'OIDC replay cleanup could not inspect WordPress options storage.' );
 		}
 		$deleted = 0;
 		foreach ( $rows as $row ) {
 			if ( ! is_object( $row ) || ! is_string( $row->option_name ?? null )
- || 0 !== strpos( $row->option_name, self::REPLAY_OPTION_PREFIX ) ) {
+			|| 0 !== strpos( $row->option_name, self::REPLAY_OPTION_PREFIX ) ) {
 				continue;
 			}
 			$record = maybe_unserialize( $row->option_value ?? null );
 			if ( ! is_array( $record ) || ! is_int( $record['created_at'] ?? null )
- || ! is_int( $record['expires_at'] ?? null )
- || $record['created_at'] >= $cutoff || $record['expires_at'] >= $cutoff ) {
+			|| ! is_int( $record['expires_at'] ?? null )
+			|| $record['created_at'] >= $cutoff || $record['expires_at'] >= $cutoff ) {
 				continue;
 			}
 			delete_option( $row->option_name );
@@ -271,11 +273,11 @@ final class GitHubOidc {
 		}
 
 		$pem       = $this->keyPem( $key );
-		$publicKey = openssl_pkey_get_public( $pem );
-		if ( false === $publicKey ) {
+		$public_key = openssl_pkey_get_public( $pem );
+		if ( false === $public_key ) {
 			throw new RuntimeException( 'GitHub OIDC public key could not be loaded.' );
 		}
-		return $publicKey;
+		return $public_key;
 	}
 
 	/**
@@ -295,12 +297,15 @@ final class GitHubOidc {
 			}
 		}
 
-		$response = wp_safe_remote_get( self::JWKS_URL, array(
-			'timeout'     => 5,
-			'redirection' => 0,
-			'sslverify'   => true,
-			'headers'     => array( 'Accept' => 'application/json' ),
-		) );
+		$response = wp_safe_remote_get(
+			self::JWKS_URL,
+			array(
+				'timeout'     => 5,
+				'redirection' => 0,
+				'sslverify'   => true,
+				'headers'     => array( 'Accept' => 'application/json' ),
+			)
+		);
 		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			throw new RuntimeException( 'GitHub OIDC signing keys could not be fetched.' );
 		}
@@ -363,8 +368,8 @@ final class GitHubOidc {
 		if ( false === $algorithm ) {
 			throw new RuntimeException( 'Could not construct RSA algorithm identifier.' );
 		}
-		$bitString = "\x03" . $this->asn1Length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
-		$spki      = $this->asn1Sequence( $algorithm . $bitString );
+		$bit_string = "\x03" . $this->asn1Length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
+		$spki      = $this->asn1Sequence( $algorithm . $bit_string );
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 
@@ -410,7 +415,7 @@ final class GitHubOidc {
 		}
 		$encoded = '';
 		while ( $length > 0 ) {
-			$encoded = chr( $length & 0xff ) . $encoded;
+			$encoded  = chr( $length & 0xff ) . $encoded;
 			$length >>= 8;
 		}
 		return chr( 0x80 | strlen( $encoded ) ) . $encoded;

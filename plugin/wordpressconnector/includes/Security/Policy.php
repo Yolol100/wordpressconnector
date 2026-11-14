@@ -90,8 +90,8 @@ final class Policy {
 		'theme.install_package',
 	);
 
-	private static ?bool $runtimePublicRepository = null;
-	private static bool $requestConfirmed = false;
+	private static ?bool $runtime_public_repository = null;
+	private static bool $request_confirmed         = false;
 
 	/**
 	 * Ensure action allowed for the Policy component.
@@ -103,7 +103,7 @@ final class Policy {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function assertActionAllowed( array $descriptor, bool $dryRun, bool $confirm ): void {
-		self::$requestConfirmed = $confirm;
+		self::$request_confirmed = $confirm;
 
 		if ( self::publicRepositoryContext() ) {
 			$action = isset( $descriptor['name'] ) ? (string) $descriptor['name'] : '';
@@ -215,7 +215,8 @@ final class Policy {
 	 */
 	public static function assertPostReadable( \WP_Post $post ): void {
 		self::assertReadablePostType( (string) $post->post_type );
-		if ( ! self::publicRepositoryContext() ) { return; }
+		if ( ! self::publicRepositoryContext() ) {
+			return; }
 		if ( 'attachment' === $post->post_type ) {
 			if ( (int) $post->post_parent > 0 ) {
 				$parent = get_post( (int) $post->post_parent );
@@ -341,12 +342,14 @@ final class Policy {
 	 * @return mixed Operation result.
 	 */
 	public static function redact( $value ) {
-		if ( ! is_array( $value ) ) { return $value; }
+		if ( ! is_array( $value ) ) {
+			return $value; }
 		$redacted = array();
 		foreach ( $value as $key => $item ) {
 			$name = (string) $key;
 			if ( (bool) preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|consumer_secret|authorization|cookie)/i', $name ) ) {
-				$redacted[ $key ] = '[redacted]'; continue;
+				$redacted[ $key ] = '[redacted]';
+				continue;
 			}
 			$redacted[ $key ] = self::redact( $item );
 		}
@@ -358,7 +361,8 @@ final class Policy {
 	 *
 	 * @param bool $isPublic Input for the operation.
 	 */
-	public static function setPublicRepositoryContext( bool $isPublic ): void { self::$runtimePublicRepository = $isPublic; }
+	public static function setPublicRepositoryContext( bool $isPublic ): void {
+		self::$runtime_public_repository = $isPublic; }
 
 	/**
 	 * Process the public repository context operation in the Policy component.
@@ -366,7 +370,8 @@ final class Policy {
 	 * @return bool Operation result.
 	 */
 	public static function publicRepositoryContext(): bool {
-		if ( null !== self::$runtimePublicRepository ) { return self::$runtimePublicRepository; }
+		if ( null !== self::$runtime_public_repository ) {
+			return self::$runtime_public_repository; }
 		return self::flag( 'WPCONNECTOR_PUBLIC_REPOSITORY' );
 	}
 
@@ -378,10 +383,13 @@ final class Policy {
 	 * @return bool Operation result.
 	 */
 	public static function flag( string $name ): bool {
-		if ( defined( $name ) ) { return self::truthy( constant( $name ) ); }
+		if ( defined( $name ) ) {
+			return self::truthy( constant( $name ) ); }
 		$environment = getenv( $name );
-		if ( false !== $environment && '' !== (string) $environment ) { return self::truthy( $environment ); }
-		if ( in_array( $name, self::AUTO_ENABLED_FLAGS, true ) ) { return true; }
+		if ( false !== $environment && '' !== (string) $environment ) {
+			return self::truthy( $environment ); }
+		if ( in_array( $name, self::AUTO_ENABLED_FLAGS, true ) ) {
+			return true; }
 		return false;
 	}
 
@@ -393,7 +401,8 @@ final class Policy {
 	 * @return bool Operation result.
 	 */
 	private static function truthy( $value ): bool {
-		if ( true === $value || 1 === $value ) { return true; }
+		if ( true === $value || 1 === $value ) {
+			return true; }
 		return in_array( strtolower( (string) $value ), array( '1', 'true', 'yes', 'on' ), true );
 	}
 
@@ -403,6 +412,6 @@ final class Policy {
 	 * @return bool Operation result.
 	 */
 	private static function sensitiveExportAllowed(): bool {
-		return self::$requestConfirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
+		return self::$request_confirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
 	}
 }

@@ -38,16 +38,24 @@ final class PortfolioStatsAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'acf.portfolio_stats_update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update only the eight existing portfolio-stat ACF text fields on one standard WordPress post, including unpublished targets.',
-		) );
-		$registry->register( 'portfolio.case_text_update', array( $this, 'updateCaseText' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update only portfolio intro content plus description_1 and description_2 on one standard WordPress post, including unpublished targets.',
-		) );
+		$registry->register(
+			'acf.portfolio_stats_update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update only the eight existing portfolio-stat ACF text fields on one standard WordPress post, including unpublished targets.',
+			)
+		);
+		$registry->register(
+			'portfolio.case_text_update',
+			array( $this, 'updateCaseText' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update only portfolio intro content plus description_1 and description_2 on one standard WordPress post, including unpublished targets.',
+			)
+		);
 	}
 
 
@@ -105,9 +113,15 @@ final class PortfolioStatsAdapter {
 			}
 			$allowed_parents = array();
 			foreach ( (array) acf_get_field_groups( array( 'post_id' => $post_id ) ) as $group ) {
-				if ( ! is_array( $group ) ) continue;
-				if ( ! empty( $group['key'] ) ) $allowed_parents[(string) $group['key']] = true;
-				if ( ! empty( $group['ID'] ) ) $allowed_parents[(string) $group['ID']] = true;
+				if ( ! is_array( $group ) ) {
+					continue;
+				}
+				if ( ! empty( $group['key'] ) ) {
+					$allowed_parents[ (string) $group['key'] ] = true;
+				}
+				if ( ! empty( $group['ID'] ) ) {
+					$allowed_parents[ (string) $group['ID'] ] = true;
+				}
 			}
 			if ( ! $allowed_parents ) {
 				throw new RuntimeException( 'No ACF field group applies to the portfolio case text target.' );
@@ -119,7 +133,7 @@ final class PortfolioStatsAdapter {
 				}
 				$field_key = $field_map[ $name ];
 				$field     = acf_get_field( $field_key );
-				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text', 'textarea', 'wysiwyg' ), true ) || ! isset( $allowed_parents[(string) ( $field['parent'] ?? '' )] ) ) {
+				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text', 'textarea', 'wysiwyg' ), true ) || ! isset( $allowed_parents[ (string) ( $field['parent'] ?? '' ) ] ) ) {
 					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . $name );
 				}
 				$requested[ $name ] = $value;
@@ -143,15 +157,22 @@ final class PortfolioStatsAdapter {
 			'after'                => $requested,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 
 		try {
 			if ( array_key_exists( 'content', $requested ) ) {
-				$updated = wp_update_post( array(
-					'ID'           => $post_id,
-					'post_content' => $requested['content'],
-				), true );
-				if ( is_wp_error( $updated ) ) throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
+				$updated = wp_update_post(
+					array(
+						'ID'           => $post_id,
+						'post_content' => $requested['content'],
+					),
+					true
+				);
+				if ( is_wp_error( $updated ) ) {
+					throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
+				}
 			}
 			foreach ( $description_keys as $name ) {
 				$field_key = $field_map[ $name ];
@@ -163,31 +184,44 @@ final class PortfolioStatsAdapter {
 			$after      = array();
 			foreach ( $requested as $name => $value ) {
 				$actual = 'content' === $name ? ( $after_post instanceof \WP_Post ? (string) $after_post->post_content : null ) : get_field( $field_map[ $name ], $post_id, false );
-				if ( $actual !== $value ) throw new RuntimeException( 'Portfolio case readback mismatch for: ' . $name );
+				if ( $actual !== $value ) {
+					throw new RuntimeException( 'Portfolio case readback mismatch for: ' . $name );
+				}
 				$after[ $name ] = $actual;
 			}
 			$result['after'] = $after;
 		} catch ( Throwable $error ) {
 			$failures = array();
 			if ( array_key_exists( 'content', $before ) ) {
-				$restore       = wp_update_post( array(
-					'ID'           => $post_id,
-					'post_content' => $before['content'],
-				), true );
+				$restore       = wp_update_post(
+					array(
+						'ID'           => $post_id,
+						'post_content' => $before['content'],
+					),
+					true
+				);
 				$restored_post = get_post( $post_id );
-				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) $failures[] = 'content';
+				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) {
+					$failures[] = 'content';
+				}
 			}
 			foreach ( $description_keys as $name ) {
 				$field_key = $field_map[ $name ];
 				update_field( $field_key, $before[ $name ], $post_id );
-				if ( get_field( $field_key, $post_id, false ) !== $before[ $name ] ) $failures[] = $name;
+				if ( get_field( $field_key, $post_id, false ) !== $before[ $name ] ) {
+					$failures[] = $name;
+				}
 			}
-			if ( $failures ) throw new RuntimeException( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), 0, $error );
+			if ( $failures ) {
+				throw new RuntimeException( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), 0, $error );
+			}
 			throw $error;
 		}
 
 		$rollback_payload = array( 'post_id' => $post_id );
-		foreach ( $before as $name => $value ) $rollback_payload[ $name ] = $value;
+		foreach ( $before as $name => $value ) {
+			$rollback_payload[ $name ] = $value;
+		}
 		$result['_rollback'] = array(
 			'action'  => 'portfolio.case_text_update',
 			'payload' => $rollback_payload,
@@ -249,10 +283,10 @@ final class PortfolioStatsAdapter {
 				continue;
 			}
 			if ( ! empty( $group['key'] ) ) {
-				$allowed_parents[(string) $group['key']] = true;
+				$allowed_parents[ (string) $group['key'] ] = true;
 			}
 			if ( ! empty( $group['ID'] ) ) {
-				$allowed_parents[(string) $group['ID']] = true;
+				$allowed_parents[ (string) $group['ID'] ] = true;
 			}
 		}
 		if ( ! $allowed_parents ) {
@@ -316,7 +350,7 @@ final class PortfolioStatsAdapter {
 				if ( $actual !== $value ) {
 					throw new RuntimeException( 'Portfolio stats readback mismatch for field: ' . (string) $field_key );
 				}
-				$after[(string) $field_key] = $actual;
+				$after[ (string) $field_key ] = $actual;
 			}
 			$result['after'] = $after;
 		} catch ( Throwable $error ) {

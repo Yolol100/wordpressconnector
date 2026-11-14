@@ -48,34 +48,54 @@ final class YoastAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'yoast.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'description' => 'Read supported Yoast SEO and Yoast SEO Premium fields for one WordPress content object.',
-		) );
-		$registry->register( 'yoast.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support.',
-		) );
-		$registry->register( 'yoast.site_representation.inspect', array( $this, 'inspectSiteRepresentation' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Read allowlisted Yoast Organization name, logo and description fields.',
-		) );
-		$registry->register( 'yoast.site_representation.update', array( $this, 'updateSiteRepresentation' ), array(
-			'mutation'               => true,
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Patch 1-3 allowlisted Yoast Organization fields using validated media ID with dry-run, readback and rollback.',
-		) );
-		$registry->register( 'yoast.site_representation.restore', array( $this, 'restoreSiteRepresentation' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Internal rollback only for a prior Yoast Organization change.',
-		) );
+		$registry->register(
+			'yoast.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read supported Yoast SEO and Yoast SEO Premium fields for one WordPress content object.',
+			)
+		);
+		$registry->register(
+			'yoast.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update supported Yoast SEO and Premium post fields with dry-run, fingerprint, readback and rollback support.',
+			)
+		);
+		$registry->register(
+			'yoast.site_representation.inspect',
+			array( $this, 'inspectSiteRepresentation' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Read allowlisted Yoast Organization name, logo and description fields.',
+			)
+		);
+		$registry->register(
+			'yoast.site_representation.update',
+			array( $this, 'updateSiteRepresentation' ),
+			array(
+				'mutation'               => true,
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Patch 1-3 allowlisted Yoast Organization fields using validated media ID with dry-run, readback and rollback.',
+			)
+		);
+		$registry->register(
+			'yoast.site_representation.restore',
+			array( $this, 'restoreSiteRepresentation' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Internal rollback only for a prior Yoast Organization change.',
+			)
+		);
 	}
 
 	/**
@@ -145,11 +165,11 @@ final class YoastAdapter {
 		}
 
 		foreach ( $updates as $field => $value ) {
-			$metaKey = self::FIELDS[ $field ];
+			$meta_key = self::FIELDS[ $field ];
 			if ( null === $value || '' === (string) $value ) {
-				delete_post_meta( (int) $post->ID, $metaKey );
+				delete_post_meta( (int) $post->ID, $meta_key );
 			} else {
-				update_post_meta( (int) $post->ID, $metaKey, $this->sanitizeField( (string) $field, $value ) );
+				update_post_meta( (int) $post->ID, $meta_key, $this->sanitizeField( (string) $field, $value ) );
 			}
 		}
 
@@ -162,7 +182,7 @@ final class YoastAdapter {
 			}
 		}
 
-		$result['after'] = $readback;
+		$result['after']     = $readback;
 		$result['_rollback'] = array(
 			'action'  => 'yoast.update',
 			'payload' => array(
@@ -201,8 +221,8 @@ final class YoastAdapter {
 	 */
 	private function snapshot( int $postId ): array {
 		$result = array();
-		foreach ( self::FIELDS as $field => $metaKey ) {
-			$value = get_post_meta( $postId, $metaKey, true );
+		foreach ( self::FIELDS as $field => $meta_key ) {
+			$value            = get_post_meta( $postId, $meta_key, true );
 			$result[ $field ] = '' === $value ? null : (string) $value;
 		}
 		return $result;
@@ -264,9 +284,9 @@ final class YoastAdapter {
 	}
 
 	/**
-     * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
-     * The WordPress media library is the only accepted source for a logo.
-     */
+	 * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
+	 * The WordPress media library is the only accepted source for a logo.
+	 */
 	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
 		$fields = $this->siteRepresentationSnapshot();
 		return array(
@@ -297,7 +317,7 @@ final class YoastAdapter {
 		}
 
 		$options      = get_option( 'wpseo_titles', null );
-		$afterOptions = $options;
+		$after_options = $options;
 		foreach ( $updates as $key => $value ) {
 			if ( 'logo_attachment_id' === $key ) {
 				if ( ! is_int( $value ) || $value < 1 ) {
@@ -315,20 +335,20 @@ final class YoastAdapter {
 				if ( ! is_string( $url ) || 'https' !== strtolower( (string) parse_url( $url, PHP_URL_SCHEME ) ) ) {
 					throw new RuntimeException( 'Organization logo must have a valid HTTPS media URL.' );
 				}
-				$afterOptions['company_logo_id'] = $value;
-				$afterOptions['company_logo'] = esc_url_raw( $url );
-				$afterOptions['company_logo_meta'] = false;
+				$after_options['company_logo_id']   = $value;
+				$after_options['company_logo']      = esc_url_raw( $url );
+				$after_options['company_logo_meta'] = false;
 			} elseif ( 'company_name' === $key || 'org_description' === $key ) {
 				if ( ! is_string( $value ) || '' === trim( $value ) || strlen( $value ) > 500 ) {
 					throw new RuntimeException( 'Organization text must be a nonempty string up to 500 bytes.' );
 				}
-				$afterOptions['company_name' === $key ? 'company_name' : 'org-description'] = sanitize_text_field( $value );
+				$after_options[ 'company_name' === $key ? 'company_name' : 'org-description' ] = sanitize_text_field( $value );
 			} else {
 				throw new RuntimeException( 'Unsupported site representation field: ' . (string) $key );
 			}
 		}
 
-		$after  = $this->siteRepresentationFields( $afterOptions );
+		$after  = $this->siteRepresentationFields( $after_options );
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
@@ -337,12 +357,12 @@ final class YoastAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		update_option( 'wpseo_titles', $afterOptions );
+		update_option( 'wpseo_titles', $after_options );
 		$readback = $this->siteRepresentationSnapshot();
 		if ( Fingerprint::make( $readback ) !== Fingerprint::make( $after ) ) {
 			throw new RuntimeException( 'Yoast organization settings readback failed.' );
 		}
-		$result['after'] = $readback;
+		$result['after']     = $readback;
 		$result['_rollback'] = array(
 			'action'  => 'yoast.site_representation.restore',
 			'payload' => array(
@@ -354,13 +374,15 @@ final class YoastAdapter {
 	}
 
 	/**
-     * Internal compensation only. Direct requests must never overwrite an arbitrary snapshot.
-     */
+	 * Internal compensation only. Direct requests must never overwrite an arbitrary snapshot.
+	 */
 	public function restoreSiteRepresentation( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Organization settings restore is reserved for connector rollback.' );
 		}
-		if ( ! current_user_can( 'manage_options' ) ) throw new RuntimeException( 'Organization restore requires manage_options.' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			throw new RuntimeException( 'Organization restore requires manage_options.' );
+		}
 		$before   = $this->siteRepresentationSnapshot();
 		$expected = isset( $payload['expected_after_fingerprint'] ) ? (string) $payload['expected_after_fingerprint'] : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}$/', $expected ) || ! hash_equals( $expected, Fingerprint::make( $before ) ) ) {
@@ -376,13 +398,13 @@ final class YoastAdapter {
 		if ( array_keys( $fields ) !== array_keys( $before ) ) {
 			throw new RuntimeException( 'Organization rollback snapshot has unexpected fields.' );
 		}
-		$options = get_option( 'wpseo_titles', null );
+		$options                      = get_option( 'wpseo_titles', null );
 		$options['company_or_person'] = $fields['company_or_person'];
-		$options['company_name'] = $fields['company_name'];
-		$options['company_logo'] = $fields['company_logo'];
-		$options['company_logo_id'] = $fields['company_logo_id'];
+		$options['company_name']      = $fields['company_name'];
+		$options['company_logo']      = $fields['company_logo'];
+		$options['company_logo_id']   = $fields['company_logo_id'];
 		$options['company_logo_meta'] = $fields['company_logo_meta'];
-		$options['org-description'] = $fields['org_description'];
+		$options['org-description']   = $fields['org_description'];
 		update_option( 'wpseo_titles', $options );
 		if ( Fingerprint::make( $this->siteRepresentationSnapshot() ) !== Fingerprint::make( $fields ) ) {
 			throw new RuntimeException( 'Yoast organization rollback readback failed.' );
@@ -428,5 +450,4 @@ final class YoastAdapter {
 			'org_description'   => (string) ( $options['org-description'] ?? '' ),
 		);
 	}
-
 }

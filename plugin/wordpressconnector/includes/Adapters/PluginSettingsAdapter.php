@@ -336,37 +336,53 @@ final class PluginSettingsAdapter {
 	 * @param Registry $registry Connector action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'plugin.settings.catalog', array( $this, 'catalog' ), array(
-			'privileged'  => true,
-			'description' => 'List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets.',
-		) );
-		$registry->register( 'plugin.audit.inspect', array( $this, 'audit' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Read-only inventory of every installed plugin and narrowly scoped nonsecret checks; no raw settings, passwords or versions are exported.',
-		) );
-		$registry->register( 'plugin.settings.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'description' => 'Read allowlisted settings through a plugin-owned API and return a state fingerprint.',
-		) );
-		$registry->register( 'plugin.settings.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback.',
-		) );
+		$registry->register(
+			'plugin.settings.catalog',
+			array( $this, 'catalog' ),
+			array(
+				'privileged'  => true,
+				'description' => 'List installed plugins and their safe ChatGPT/GitHub control mode without exposing secrets.',
+			)
+		);
+		$registry->register(
+			'plugin.audit.inspect',
+			array( $this, 'audit' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Read-only inventory of every installed plugin and narrowly scoped nonsecret checks; no raw settings, passwords or versions are exported.',
+			)
+		);
+		$registry->register(
+			'plugin.settings.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read allowlisted settings through a plugin-owned API and return a state fingerprint.',
+			)
+		);
+		$registry->register(
+			'plugin.settings.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update allowlisted plugin settings through plugin-owned APIs with dry-run, readback and rollback.',
+			)
+		);
 	}
 
 	/**
-     * Inspect every installed plugin without exporting provider configuration.
-     *
-     * The existing catalog is the single source of plugin identity, presence,
-     * activation state, declared integration mode and registered capabilities.
-     * Only explicitly modeled nonsecret indicators are read below. Anything
-     * else remains inventory-only rather than pretending to be an audit pass.
+	 * Inspect every installed plugin without exporting provider configuration.
+	 *
+	 * The existing catalog is the single source of plugin identity, presence,
+	 * activation state, declared integration mode and registered capabilities.
+	 * Only explicitly modeled nonsecret indicators are read below. Anything
+	 * else remains inventory-only rather than pretending to be an audit pass.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
-     */
+	 */
 	public function audit( array $payload = array(), array $context = array() ): array {
 		if ( $payload ) {
 			throw new RuntimeException( 'Plugin audit accepts no arguments or arbitrary option keys.' );
@@ -386,21 +402,21 @@ final class PluginSettingsAdapter {
 		}
 
 		$items        = array();
-		$activeCount  = 0;
-		$unknownCount = 0;
-		$checkedCount = 0;
-		$activeIds    = array();
+		$active_count  = 0;
+		$unknown_count = 0;
+		$checked_count = 0;
+		$active_ids    = array();
 		$indicators   = array();
 		foreach ( $installed as $plugin ) {
 			$known = (string) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
-			$id    = $known ? (string) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknownCount );
+			$id    = $known ? (string) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknown_count );
 			if ( ! preg_match( '/^[a-z][a-z0-9_-]{1,79}\\z/', $id ) ) {
 				throw new RuntimeException( 'Plugin integration identifier is invalid.' );
 			}
 			$active       = true === ( $plugin['active'] ?? null );
-			$activeCount += $active ? 1 : 0;
+			$active_count += $active ? 1 : 0;
 			if ( $active ) {
-				$activeIds[ $id ] = true;
+				$active_ids[ $id ] = true;
 			}
 
 			$registration = (string) ( $plugin['registered_action_status'] ?? 'not_checked' );
@@ -409,11 +425,19 @@ final class PluginSettingsAdapter {
 					: ( $registration === 'complete' ? 'registered'
 						: ( $registration === 'partial' ? 'partial' : 'not_checked' ) ) );
 			// Provider-version restrictions take precedence over generic action registration.
-			if ( $known && in_array( (string) ( $plugin['mode'] ?? '' ), array(
-				'version_bound_unsupported', 'optimizer_version_unsupported',
-				'security_provider_contract_needed', 'external_account_bound',
-				'secret_bound', 'filesystem_bound', 'system_operation',
-			), true ) ) {
+			if ( $known && in_array(
+				(string) ( $plugin['mode'] ?? '' ),
+				array(
+					'version_bound_unsupported',
+					'optimizer_version_unsupported',
+					'security_provider_contract_needed',
+					'external_account_bound',
+					'secret_bound',
+					'filesystem_bound',
+					'system_operation',
+				),
+				true
+			) ) {
 				$coverage = 'restricted';
 			}
 
@@ -428,7 +452,7 @@ final class PluginSettingsAdapter {
 				}
 			}
 			if ( $checks ) {
-				++$checkedCount;
+				++$checked_count;
 				$indicators[ $id ] = $checks;
 			}
 			$items[] = array(
@@ -440,16 +464,16 @@ final class PluginSettingsAdapter {
 		}
 
 		// These indicators concern configuration only, not tested frontend behavior.
-		$lazyloadOverlap = 'unverified';
-		if ( isset( $activeIds['wp_rocket'], $activeIds['ewww_image_optimizer'] )
+		$lazyload_overlap = 'unverified';
+		if ( isset( $active_ids['wp_rocket'], $active_ids['ewww_image_optimizer'] )
 			&& isset( $indicators['wp_rocket']['image_lazyload'], $indicators['ewww_image_optimizer']['image_lazyload'] ) ) {
 			$rocket = $indicators['wp_rocket']['image_lazyload'];
 			$ewww   = $indicators['ewww_image_optimizer']['image_lazyload'];
 			if ( 'enabled' === $rocket && 'enabled' === $ewww ) {
-				$lazyloadOverlap = 'possible_overlap';
+				$lazyload_overlap = 'possible_overlap';
 			} elseif ( ( 'enabled' === $rocket || 'disabled' === $rocket )
 				&& ( 'enabled' === $ewww || 'disabled' === $ewww ) ) {
-				$lazyloadOverlap = 'no_overlap_observed';
+				$lazyload_overlap = 'no_overlap_observed';
 			}
 		}
 
@@ -457,12 +481,12 @@ final class PluginSettingsAdapter {
 			'installed_count'           => count( $items ),
 			'must_use_count'            => $this->auditCorePluginCount( 'get_mu_plugins' ),
 			'dropin_count'              => $this->auditCorePluginCount( 'get_dropins' ),
-			'active_count'              => $activeCount,
-			'inactive_count'            => count( $items ) - $activeCount,
-			'unmodeled_count'           => $unknownCount,
-			'provider_checks_count'     => $checkedCount,
+			'active_count'              => $active_count,
+			'inactive_count'            => count( $items ) - $active_count,
+			'unmodeled_count'           => $unknown_count,
+			'provider_checks_count'     => $checked_count,
 			'plugins'                   => $items,
-			'image_lazyload_overlap'    => $lazyloadOverlap,
+			'image_lazyload_overlap'    => $lazyload_overlap,
 			'checkout_qa'               => 'not_run',
 			'smtp_delivery_qa'          => 'not_run',
 			'translation_browser_qa'    => 'not_run',
@@ -471,10 +495,10 @@ final class PluginSettingsAdapter {
 	}
 
 	/**
-     * All keys and all values in these checks are fixed enumerations.
-     * Never return plugin-header text, unrestricted option data, credentials,
-     * SMTP addresses, firewall rules, payment settings or source file paths.
-     */
+	 * All keys and all values in these checks are fixed enumerations.
+	 * Never return plugin-header text, unrestricted option data, credentials,
+	 * SMTP addresses, firewall rules, payment settings or source file paths.
+	 */
 	private function auditNonsecretChecks( string $id, string $mode ): array {
 		if ( ! function_exists( 'get_option' ) ) {
 			return array();
@@ -666,7 +690,7 @@ final class PluginSettingsAdapter {
 	 */
 	public function catalog( array $payload = array(), array $context = array() ): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$registeredActions = isset( $context['registry'] ) && $context['registry'] instanceof Registry
+		$registered_actions = isset( $context['registry'] ) && $context['registry'] instanceof Registry
 			? $context['registry']->catalog() : null;
 		$items             = array();
 		foreach ( get_plugins() as $file => $data ) {
@@ -679,43 +703,54 @@ final class PluginSettingsAdapter {
 			// Only advertise optimizer controls that the installed provider can actually support.
 			if ( 'ewww-image-optimizer/ewww-image-optimizer.php' === $file ) {
 				if ( ! is_plugin_active( $file ) || ! preg_match( '/^8\\.8\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
-					$integration['mode'] = 'version_bound_unsupported';
+					$integration['mode']    = 'version_bound_unsupported';
 					$integration['actions'] = array();
-					$integration['note'] = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
+					$integration['note']    = 'EWWW optimizer actions require an active, verified 8.8.x provider.';
 				}
 			} elseif ( 'wp-asset-clean-up/wpacu.php' === $file ) {
 				if ( ! is_plugin_active( $file ) ) {
-					$integration['mode'] = 'inactive';
+					$integration['mode']    = 'inactive';
 					$integration['actions'] = array();
-					$integration['note'] = 'Asset CleanUp is inactive.';
+					$integration['note']    = 'Asset CleanUp is inactive.';
 				} elseif ( ! preg_match( '/^1\\.4\\.0\\.[0-9]+$/D', (string) ( $data['Version'] ?? '' ) ) ) {
-					$integration['mode'] = 'optimizer_version_unsupported';
+					$integration['mode']    = 'optimizer_version_unsupported';
 					$integration['actions'] = array( 'maintenance.cache_capabilities', 'maintenance.cache_flush' );
-					$integration['note'] = 'Optimizer inspection requires a verified 1.4.0.x provider; cache availability is checked independently.';
+					$integration['note']    = 'Optimizer inspection requires a verified 1.4.0.x provider; cache availability is checked independently.';
 				} else {
-					$integration['mode'] = 'inspect_only_provider_api_required';
+					$integration['mode']    = 'inspect_only_provider_api_required';
 					$integration['actions'] = array( 'optimizer.settings.inspect', 'maintenance.cache_capabilities', 'maintenance.cache_flush' );
-					$integration['note'] = 'Raw settings inspection is not effective-provider readback; optimizer writes are blocked pending provider API verification.';
+					$integration['note']    = 'Raw settings inspection is not effective-provider readback; optimizer writes are blocked pending provider API verification.';
 				}
 			}
-			$item = array_merge( array(
-				'file'    => (string) $file,
-				'name'    => isset( $data['Name'] ) ? (string) $data['Name'] : (string) $file,
-				'version' => isset( $data['Version'] ) ? (string) $data['Version'] : '',
-				'active'  => is_plugin_active( $file ),
-			), $integration );
-			if ( null !== $registeredActions ) {
-				$missing                            = array_values( array_filter( (array) $item['actions'], static function ( $action ) use ( $registeredActions ): bool {
-					return ! is_string( $action ) || ! isset( $registeredActions[ $action ] );
-				} ) );
-				$item['registered_action_status'] = ! $item['actions'] ? 'not_modeled' : ( $missing ? 'partial' : 'complete' );
+			$item = array_merge(
+				array(
+					'file'    => (string) $file,
+					'name'    => isset( $data['Name'] ) ? (string) $data['Name'] : (string) $file,
+					'version' => isset( $data['Version'] ) ? (string) $data['Version'] : '',
+					'active'  => is_plugin_active( $file ),
+				),
+				$integration
+			);
+			if ( null !== $registered_actions ) {
+				$missing                            = array_values(
+					array_filter(
+						(array) $item['actions'],
+						static function ( $action ) use ( $registered_actions ): bool {
+							return ! is_string( $action ) || ! isset( $registered_actions[ $action ] );
+						}
+					)
+				);
+				$item['registered_action_status']   = ! $item['actions'] ? 'not_modeled' : ( $missing ? 'partial' : 'complete' );
 				$item['missing_registered_actions'] = $missing;
 			}
 			$items[] = $item;
 		}
-		usort( $items, static function ( array $a, array $b ): int {
-			return strcasecmp( (string) $a['name'], (string) $b['name'] );
-		} );
+		usort(
+			$items,
+			static function ( array $a, array $b ): int {
+				return strcasecmp( (string) $a['name'], (string) $b['name'] );
+			}
+		);
 
 		return array(
 			'plugins'                    => $items,

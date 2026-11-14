@@ -73,21 +73,56 @@ final class WooCommerceSettingsAdapter {
 		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 
-		$registry->register( 'woocommerce.settings.catalog', array( $this, 'catalog' ), array_merge( $read, array(
-			'description' => 'Discover real WooCommerce Settings REST groups and available admin tabs and subtabs; no option values.',
-		) ) );
-		$registry->register( 'woocommerce.settings.inspect', array( $this, 'inspect' ), array_merge( $read, array(
-			'description' => 'Read one bounded WooCommerce settings group; redact secrets and mark non-allowlisted fields read-only.',
-		) ) );
-		$registry->register( 'woocommerce.settings.section.inspect', array( $this, 'inspectSection' ), array_merge( $read, array(
-			'description' => 'Inventory one installed WooCommerce admin tab/subtab, including plugin-owned fields, with secrets withheld.',
-		) ) );
-		$registry->register( 'woocommerce.settings.update', array( $this, 'update' ), array_merge( $write, array(
-			'description' => 'Update one allowlisted WooCommerce setting through the official REST controller, with dry-run/readback/rollback.',
-		) ) );
-		$registry->register( 'woocommerce.settings.restore', array( $this, 'restore' ), array_merge( $write, array(
-			'description' => 'Rollback-only restoration of one WooCommerce-owned setting with stale-state protection.',
-		) ) );
+		$registry->register(
+			'woocommerce.settings.catalog',
+			array( $this, 'catalog' ),
+			array_merge(
+				$read,
+				array(
+					'description' => 'Discover real WooCommerce Settings REST groups and available admin tabs and subtabs; no option values.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.settings.inspect',
+			array( $this, 'inspect' ),
+			array_merge(
+				$read,
+				array(
+					'description' => 'Read one bounded WooCommerce settings group; redact secrets and mark non-allowlisted fields read-only.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.settings.section.inspect',
+			array( $this, 'inspectSection' ),
+			array_merge(
+				$read,
+				array(
+					'description' => 'Inventory one installed WooCommerce admin tab/subtab, including plugin-owned fields, with secrets withheld.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.settings.update',
+			array( $this, 'update' ),
+			array_merge(
+				$write,
+				array(
+					'description' => 'Update one allowlisted WooCommerce setting through the official REST controller, with dry-run/readback/rollback.',
+				)
+			)
+		);
+		$registry->register(
+			'woocommerce.settings.restore',
+			array( $this, 'restore' ),
+			array_merge(
+				$write,
+				array(
+					'description' => 'Rollback-only restoration of one WooCommerce-owned setting with stale-state protection.',
+				)
+			)
+		);
 	}
 
 	/**
@@ -214,13 +249,22 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->rejectExtra( $payload, array( 'group', 'id', 'value',
-			'critical_confirm', 'restore_verified', 'expected_before_fingerprint', ) );
+		$this->rejectExtra(
+			$payload,
+			array(
+				'group',
+				'id',
+				'value',
+				'critical_confirm',
+				'restore_verified',
+				'expected_before_fingerprint',
+			)
+		);
 		$group    = $this->groupId( $payload );
 		$id       = $this->settingId( $payload );
-		$lowRisk  = $this->editable( $group, $id );
-		$critical = ! $lowRisk && $this->criticalEditable( $group, $id );
-		if ( ( ! $lowRisk && ! $critical ) || $this->isPrivate( $id, '' ) ) {
+		$low_risk  = $this->editable( $group, $id );
+		$critical = ! $low_risk && $this->criticalEditable( $group, $id );
+		if ( ( ! $low_risk && ! $critical ) || $this->isPrivate( $id, '' ) ) {
 			throw new RuntimeException( 'WooCommerce setting requires a separate guarded provider workflow.' );
 		}
 		if ( ! array_key_exists( 'value', $payload ) ) {
@@ -265,7 +309,7 @@ final class WooCommerceSettingsAdapter {
 			throw new RuntimeException( 'WooCommerce setting was not accepted; previous state restored.' );
 		}
 
-		$result['after'] = $this->safeValue( $readback['value'] );
+		$result['after']     = $this->safeValue( $readback['value'] );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.settings.restore',
 			'payload' => array(
@@ -377,18 +421,18 @@ final class WooCommerceSettingsAdapter {
 			$id   = isset( $definition['id'] ) && is_scalar( $definition['id'] ) ? (string) $definition['id'] : '';
 			$type = isset( $definition['type'] ) && is_string( $definition['type'] ) ? $definition['type'] : '';
 			// Structural headings are not editable controls.
-			$providerField = (bool) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
+			$provider_field = (bool) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
 			$private       = $this->isPrivate( $id, $type );
-			$editable      = $providerField && ! $private && $this->editable( $tab, $id );
+			$editable      = $provider_field && ! $private && $this->editable( $tab, $id );
 			$entry         = array(
 				'id'          => $this->shortText( $id ),
 				'label'       => $this->shortText( $definition['title'] ?? $definition['label'] ?? '' ),
 				'type'        => $this->shortText( $type ),
 				'mode'        => $private ? 'secret_blocked' : ( $editable ? 'editable_via_rest' : 'read_only_provider_specific' ),
-				'value_state' => $private ? 'withheld' : ( $providerField ? 'visible_if_simple' : 'provider_value_withheld' ),
+				'value_state' => $private ? 'withheld' : ( $provider_field ? 'visible_if_simple' : 'provider_value_withheld' ),
 			);
-			if ( $providerField && ! $private && ! in_array( $type, array( 'title', 'sectionend', 'info', 'html' ), true ) ) {
-				$stored = get_option( $id, $definition['default'] ?? null );
+			if ( $provider_field && ! $private && ! in_array( $type, array( 'title', 'sectionend', 'info', 'html' ), true ) ) {
+				$stored         = get_option( $id, $definition['default'] ?? null );
 				$entry['value'] = $this->safeValue( $stored );
 			}
 			$fields[] = $entry;
@@ -447,8 +491,8 @@ final class WooCommerceSettingsAdapter {
 					|| ! method_exists( $page, 'get_label' ) || ! method_exists( $page, 'get_sections' ) ) {
 					continue;
 				}
-				$tabId = (string) $page->get_id();
-				if ( ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $tabId ) ) {
+				$tab_id = (string) $page->get_id();
+				if ( ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $tab_id ) ) {
 					continue;
 				}
 				$sections = $page->get_sections();
@@ -462,22 +506,26 @@ final class WooCommerceSettingsAdapter {
 					}
 				}
 				$tabs[] = array(
-					'id'       => $tabId,
+					'id'       => $tab_id,
 					'label'    => $this->shortText( $page->get_label() ),
 					'subtabs'  => $subtabs,
-					'provider' => in_array( $tabId, array(
-						'general',
-						'products',
-						'shipping',
-						'checkout',
-						'account',
-						'email',
-						'integration',
-						'advanced',
-						'tax',
-						'site_visibility',
-						'point_of_sale',
-					), true ) ? 'woocommerce' : 'extension_or_custom',
+					'provider' => in_array(
+						$tab_id,
+						array(
+							'general',
+							'products',
+							'shipping',
+							'checkout',
+							'account',
+							'email',
+							'integration',
+							'advanced',
+							'tax',
+							'site_visibility',
+							'point_of_sale',
+						),
+						true
+					) ? 'woocommerce' : 'extension_or_custom',
 				);
 			}
 			return array(
@@ -677,11 +725,13 @@ final class WooCommerceSettingsAdapter {
 	 * @return string Operation result.
 	 */
 	private function valueFingerprint( string $group, string $id, $value ): string {
-		return Fingerprint::make( array(
-			'group' => $group,
-			'id'    => $id,
-			'value' => $value,
-		) );
+		return Fingerprint::make(
+			array(
+				'group' => $group,
+				'id'    => $id,
+				'value' => $value,
+			)
+		);
 	}
 
 	/**
