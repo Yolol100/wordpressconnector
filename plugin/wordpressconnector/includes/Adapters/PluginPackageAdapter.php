@@ -130,8 +130,8 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Theme ZIP replacement requires explicit server-side authorization and staging restore proof.' );
 		}
 		$style_path       = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
-		$before_style_hash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
-		if ( $overwrite && ( ! is_string( $before_style_hash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $before_style_hash ) ) ) {
+		$beforeStyleHash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
+		if ( $overwrite && ( ! is_string( $beforeStyleHash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $beforeStyleHash ) ) ) {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
 		}
 		$upgrader        = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -190,7 +190,7 @@ final class PluginPackageAdapter {
 				wp_clean_themes_cache();
 				$restored_style_hash = is_file( $style_path ) ? hash_file( 'sha256', $style_path ) : false;
 				if ( true !== $restored || ! wp_get_theme( $expected )->exists()
-					|| ! is_string( $restored_style_hash ) || ! hash_equals( $before_style_hash, $restored_style_hash ) ) {
+					|| ! is_string( $restored_style_hash ) || ! hash_equals( $beforeStyleHash, $restored_style_hash ) ) {
 					throw new RuntimeException( 'Theme replacement failed and automatic recovery could not be verified. Manual recovery is required.' );
 				}
 				throw new RuntimeException( 'Theme replacement failed; original theme restored: ' . $error->getMessage() );
