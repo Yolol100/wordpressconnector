@@ -264,8 +264,8 @@ final class AcfAdapter {
 			$global = acf_get_field( $key );
 			if ( is_array( $global ) ) {
 				$summary  = $this->fieldSummary( $global );
-				$global_id = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
-				if ( $global_id <= 0
+				$globalId = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
+				if ( $globalId <= 0
  || 0 !== (int) ( $summary['parent'] ?? 0 )
  || (string) ( $summary['name'] ?? '' ) !== $name
  || 'text' !== (string) ( $summary['type'] ?? '' )
@@ -273,7 +273,7 @@ final class AcfAdapter {
 					throw new RuntimeException( 'Existing global ACF field conflicts with requested text field: ' . $key );
 				}
 				$before[ $key ] = $summary;
-				$recoverable[ $key ] = $global_id;
+				$recoverable[ $key ] = $globalId;
 				$would_create[] = $definition;
 				continue;
 			}
