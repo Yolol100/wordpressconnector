@@ -498,7 +498,7 @@ final class ConnectorUpdateAdapter {
 		$package_url     = '';
 		$checksum_url    = '';
 		$sbom_url        = '';
-		$package_digest  = '';
+		$packageDigest  = '';
 		$checksum_digest = '';
 		foreach ( $decoded['assets'] as $asset ) {
 			if ( ! is_array( $asset ) || empty( $asset['name'] ) || empty( $asset['browser_download_url'] ) ) {
@@ -508,7 +508,7 @@ final class ConnectorUpdateAdapter {
 			$url  = (string) $asset['browser_download_url'];
 			if ( self::PACKAGE_ASSET === $name ) {
 				$package_url    = $url;
-				$package_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
+				$packageDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::CHECKSUM_ASSET === $name ) {
 				$checksum_url    = $url;
 				$checksum_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
@@ -527,7 +527,7 @@ final class ConnectorUpdateAdapter {
 		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quoted_tag . '/wordpressconnector\.spdx\.json\z#', $sbom_url ) ) {
 			throw new RuntimeException( 'Canonical release is missing the expected SPDX SBOM asset.' );
 		}
-		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $package_digest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksum_digest ) ) {
+		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $packageDigest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksum_digest ) ) {
 			throw new RuntimeException( 'Canonical release assets are missing GitHub SHA-256 digests.' );
 		}
 
@@ -537,7 +537,7 @@ final class ConnectorUpdateAdapter {
 			'package_url'     => $package_url,
 			'checksum_url'    => $checksum_url,
 			'sbom_url'        => $sbom_url,
-			'package_digest'  => $package_digest,
+			'package_digest'  => $packageDigest,
 			'checksum_digest' => $checksum_digest,
 		);
 	}
