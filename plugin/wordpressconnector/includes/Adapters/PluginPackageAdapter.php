@@ -301,7 +301,7 @@ final class PluginPackageAdapter {
 					throw new RuntimeException( 'Theme ZIP folder or duplicate path mismatch.' );
 				}
 				foreach ( $segments as $segment ) {
-					if ( $segment === '' || $segment === '.' || $segment === '..' ) {
+					if ( '' === $segment || '.' === $segment || '..' === $segment ) {
 						throw new RuntimeException( 'Theme ZIP contains traversal or invalid path.' );
 					}
 				}

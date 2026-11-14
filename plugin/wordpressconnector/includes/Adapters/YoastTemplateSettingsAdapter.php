@@ -168,7 +168,7 @@ final class YoastTemplateSettingsAdapter {
 		}
 		$options = $this->options();
 		foreach ( $previous as $key => $value ) {
-			if ( $value === null ) {
+			if ( null === $value ) {
 				unset( $options[ self::KEYS[ $key ] ] );
 			} else {
 				$options[ self::KEYS[ $key ] ] = $value;
@@ -197,12 +197,12 @@ final class YoastTemplateSettingsAdapter {
 		$clean = array();
 		foreach ( $fields as $key => $value ) {
 			if ( ! is_string( $key ) || ! isset( self::KEYS[ $key ] ) ||
-				( ! is_string( $value ) && ! ( $restore && $value === null ) ) ) {
+				( ! is_string( $value ) && ! ( $restore && null === $value ) ) ) {
 				throw new RuntimeException( 'Unsupported Yoast template field.' );
 			}
-			if ( $value !== null ) {
+			if ( null !== $value ) {
 				$max_bytes = ( strpos( $key, 'description' ) !== false ? 320 : 190 );
-				if ( $key === 'breadcrumb_separator' ) {
+				if ( 'breadcrumb_separator' === $key ) {
 					$max_bytes = 20;
 				} elseif ( strpos( $key, 'breadcrumb_' ) === 0 ) {
 					$max_bytes = 120;
@@ -246,7 +246,7 @@ final class YoastTemplateSettingsAdapter {
 					throw new RuntimeException( 'Public Yoast template field is not allowed.' );
 				}
 				$token = in_array( $key, array( 'category_title', 'product_category_title' ), true )
-					? '%%term_title%%' : ( $key === 'product_title' ? '%%title%%' : '%%excerpt%%' );
+					? '%%term_title%%' : ( 'product_title' === $key ? '%%title%%' : '%%excerpt%%' );
 				if ( ! is_string( $value ) || false === strpos( $value, $token ) ) {
 					throw new RuntimeException( 'Public Yoast template requires its content-specific variable.' );
 				}

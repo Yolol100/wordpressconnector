@@ -164,13 +164,13 @@ final class WooCommerceFulfillmentAdapter {
 			if ( ! is_array( $candidate ) ) {
 				continue;
 			}
-			if ( $type === 'shipping_zone' && strcasecmp( (string) ( $candidate['name'] ?? '' ), $fields['name'] ) === 0 ) {
+			if ( 'shipping_zone' === $type && strcasecmp( (string) ( $candidate['name'] ?? '' ), $fields['name'] ) === 0 ) {
 				throw new RuntimeException( 'Shipping zone name already exists.' );
 			}
-			if ( $type === 'shipping_method' && ( $candidate['method_id'] ?? '' ) === $fields['method_id'] ) {
+			if ( 'shipping_method' === $type && ( $candidate['method_id'] ?? '' ) === $fields['method_id'] ) {
 				throw new RuntimeException( 'Shipping zone already contains this method.' );
 			}
-			if ( $type === 'tax_rate' && ( $candidate['country'] ?? '' ) === $fields['country']
+			if ( 'tax_rate' === $type && ( $candidate['country'] ?? '' ) === $fields['country']
 			&& ( $candidate['rate'] ?? '' ) === $fields['rate']
 			&& ( $candidate['name'] ?? '' ) === $fields['name'] ) {
 				throw new RuntimeException( 'A matching tax rate already exists.' );
@@ -187,19 +187,19 @@ final class WooCommerceFulfillmentAdapter {
 			return $result;
 		}
 		$this->gate( $payload, $fp );
-		if ( $type === 'tax_rate' && ( ! defined( 'WPCONNECTOR_ALLOW_WOO_TAX_CREATE' )
+		if ( 'tax_rate' === $type && ( ! defined( 'WPCONNECTOR_ALLOW_WOO_TAX_CREATE' )
 		|| WPCONNECTOR_ALLOW_WOO_TAX_CREATE !== true ) ) {
 			throw new RuntimeException( 'Tax creation requires separate site-local tax policy gate.' );
 		}
 		$created = $this->api( 'POST', $path, $fields );
-		$id      = $type === 'shipping_method' ? ( $created['instance_id'] ?? null ) : ( $created['id'] ?? null );
+		$id      = 'shipping_method' === $type ? ( $created['instance_id'] ?? null ) : ( $created['id'] ?? null );
 		if ( ! is_int( $id ) || $id < 1 ) {
 			throw new RuntimeException( 'WooCommerce provider creation returned no valid ID; inspect site state manually.' );
 		}
 		$resource_path = $path . '/' . $id;
 		try {
 			$current = $this->api( 'GET', $resource_path );
-			if ( $type === 'shipping_method' && ( $current['enabled'] ?? null ) !== false ) {
+			if ( 'shipping_method' === $type && ( $current['enabled'] ?? null ) !== false ) {
 				// Provider may ignore enabled=false on create: disable before reporting success.
 				$this->api( 'PUT', $resource_path, array( 'enabled' => false ) );
 				$current = $this->api( 'GET', $resource_path );
@@ -207,10 +207,10 @@ final class WooCommerceFulfillmentAdapter {
 					throw new RuntimeException( 'New shipping method could not be disabled.' );
 				}
 			}
-			if ( $type === 'shipping_zone' && ( $current['name'] ?? '' ) !== $fields['name'] ) {
+			if ( 'shipping_zone' === $type && ( $current['name'] ?? '' ) !== $fields['name'] ) {
 				throw new RuntimeException( 'Created shipping zone name was changed by the provider.' );
 			}
-			if ( $type === 'tax_rate' && ( $current['rate'] ?? '' ) !== $fields['rate'] ) {
+			if ( 'tax_rate' === $type && ( $current['rate'] ?? '' ) !== $fields['rate'] ) {
 				throw new RuntimeException( 'Created tax rate was changed by the provider.' );
 			}
 		} catch ( Throwable $error ) {
@@ -262,7 +262,7 @@ final class WooCommerceFulfillmentAdapter {
 		|| ! hash_equals( Fingerprint::make( $snapshot ), $expected ) ) {
 			throw new RuntimeException( 'Created WooCommerce resource has changed; automatic removal unsafe.' );
 		}
-		if ( $type === 'shipping_zone' ) {
+		if ( 'shipping_zone' === $type ) {
 			$methods   = $this->api( 'GET', $path . '/methods' );
 			$locations = $this->api( 'GET', $path . '/locations' );
 			if ( $methods || $locations ) {
@@ -294,12 +294,12 @@ final class WooCommerceFulfillmentAdapter {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 9 ) {
 			throw new RuntimeException( 'WooCommerce provisioning requires explicit bounded fields.' );
 		}
-		$allowed = $type === 'shipping_zone' ? array( 'name', 'order' )
-			: ( $type === 'shipping_method' ? array( 'method_id' ) : array( 'country', 'state', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
+		$allowed = 'shipping_zone' === $type ? array( 'name', 'order' )
+			: ( 'shipping_method' === $type ? array( 'method_id' ) : array( 'country', 'state', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
 		if ( array_diff( array_keys( $fields ), $allowed ) ) {
 			throw new RuntimeException( 'Provisioning includes unsupported provider settings.' );
 		}
-		if ( $type === 'shipping_zone' ) {
+		if ( 'shipping_zone' === $type ) {
 			$name = $fields['name'] ?? null;
 			if ( ! is_string( $name ) || strlen( trim( $name ) ) < 2 || strlen( $name ) > 80
 			|| preg_match( '/[<>\\x00-\\x1F]/', $name ) ) {
@@ -314,7 +314,7 @@ final class WooCommerceFulfillmentAdapter {
 			}
 			return $data;
 		}
-		if ( $type === 'shipping_method' ) {
+		if ( 'shipping_method' === $type ) {
 			$method = $fields['method_id'] ?? null;
 			if ( ! is_string( $method ) || ! preg_match( '/^[a-z0-9_]{2,80}$/D', $method ) ) {
 				throw new RuntimeException( 'Invalid shipping method provider ID.' );
@@ -447,8 +447,8 @@ final class WooCommerceFulfillmentAdapter {
 	 * @return array Operation result.
 	 */
 	private function resourceSnapshot( string $type, array $item ): array {
-		$keys = $type === 'shipping_zone' ? array( 'id', 'name', 'order' )
-			: ( $type === 'shipping_method' ? array( 'instance_id', 'method_id', 'order', 'enabled' )
+		$keys = 'shipping_zone' === $type ? array( 'id', 'name', 'order' )
+			: ( 'shipping_method' === $type ? array( 'instance_id', 'method_id', 'order', 'enabled' )
 			: array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
 		$out  = array();
 		foreach ( $keys as $key ) {
@@ -458,7 +458,7 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		// Hash provider-specific settings so a later method edit invalidates
 		// rollback without exporting any credential or private configuration.
-		if ( $type === 'shipping_method' && isset( $item['settings'] ) && is_array( $item['settings'] ) ) {
+		if ( 'shipping_method' === $type && isset( $item['settings'] ) && is_array( $item['settings'] ) ) {
 			$out['settings_fingerprint'] = Fingerprint::make( $item['settings'] );
 		}
 		return $out;
@@ -512,9 +512,9 @@ final class WooCommerceFulfillmentAdapter {
 	 */
 	private function collectionPath( string $type, array $payload ): string {
 		$path = self::TYPES[ $type ];
-		if ( $type === 'shipping_method' ) {
+		if ( 'shipping_method' === $type ) {
 			$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
-		} elseif ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null ) {
+		} elseif ( array_key_exists( 'zone_id', $payload ) && null !== $payload['zone_id'] ) {
 			throw new RuntimeException( 'Provisioning zone_id is only valid for shipping methods.' );
 		}
 		return $path;

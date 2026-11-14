@@ -422,8 +422,8 @@ final class PluginSettingsAdapter {
 			$registration = (string) ( $plugin['registered_action_status'] ?? 'not_checked' );
 			$coverage     = ! $known ? 'unmodeled'
 				: ( empty( $plugin['actions'] ) ? 'inventory_only'
-					: ( $registration === 'complete' ? 'registered'
-						: ( $registration === 'partial' ? 'partial' : 'not_checked' ) ) );
+					: ( 'complete' === $registration ? 'registered'
+						: ( 'partial' === $registration ? 'partial' : 'not_checked' ) ) );
 			// Provider-version restrictions take precedence over generic action registration.
 			if ( $known && in_array(
 				(string) ( $plugin['mode'] ?? '' ),

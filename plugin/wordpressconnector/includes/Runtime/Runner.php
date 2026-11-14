@@ -862,7 +862,7 @@ final class Runner {
 				if ( ! is_string( $url ) || strlen( $url ) > 500 || ! filter_var( $url, FILTER_VALIDATE_URL )
 				|| wp_parse_url( $url, PHP_URL_SCHEME ) !== 'https'
 				|| strtolower( (string) wp_parse_url( $url, PHP_URL_HOST ) ) !== $home_host
-				|| ( $field === 'to' && ( null !== wp_parse_url( $url, PHP_URL_QUERY ) || null !== wp_parse_url( $url, PHP_URL_FRAGMENT ) ) ) ) {
+				|| ( 'to' === $field && ( null !== wp_parse_url( $url, PHP_URL_QUERY ) || null !== wp_parse_url( $url, PHP_URL_FRAGMENT ) ) ) ) {
 					throw new RuntimeException( 'Header link URLs must be exact HTTPS same-site URLs.' );
 				}
 			}

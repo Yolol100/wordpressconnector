@@ -1941,7 +1941,7 @@ final class SystemAdapter {
 		if ( ! is_array( $parts ) || ( $parts['scheme'] ?? '' ) !== 'https' ||
 			( $parts['host'] ?? '' ) !== 'downloads.wordpress.org' ||
 			isset( $parts['user'] ) || isset( $parts['pass'] ) || isset( $parts['query'] ) ||
-			isset( $parts['fragment'] ) || ( isset( $parts['port'] ) && (int) $parts['port'] !== 443 ) ) {
+			isset( $parts['fragment'] ) || ( isset( $parts['port'] ) && (int) 443 !== $parts['port'] ) ) {
 			throw new RuntimeException( 'Directory package URL is not a canonical HTTPS WordPress.org download.' );
 		}
 		$pattern = '#\A/' . $kind . '/' . preg_quote( $slug, '#' ) .

@@ -632,7 +632,7 @@ final class WooCommerceSettingsAdapter {
 	 */
 	private function validateValue( $value, array $option ) {
 		$type = (string) ( $option['type'] ?? '' );
-		if ( $type === 'multiselect' ) {
+		if ( 'multiselect' === $type ) {
 			if ( ! is_array( $value ) || count( $value ) > 24 || ! isset( $option['options'] )
 				|| ! is_array( $option['options'] ) ) {
 				throw new RuntimeException( 'WooCommerce multiselect requires provider-owned choices.' );
@@ -800,7 +800,7 @@ final class WooCommerceSettingsAdapter {
 	 * @return mixed Operation result.
 	 */
 	private function safeValue( $value ) {
-		if ( $value === null || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
+		if ( null === $value || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 			return $value;
 		}
 		if ( is_string( $value ) ) {

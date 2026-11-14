@@ -173,7 +173,7 @@ final class CodeSnippetsAdapter {
 		}
 		$state = self::catalogState( $snippet );
 		if ( $state['id'] <= 0 || $state['name'] !== self::CATALOG_NAME ||
-			$state['scope'] !== 'global' || $state['type'] !== 'php' ||
+			'global' !== $state['scope'] || 'php' !== $state['type'] ||
 			$state['network'] || $state['trashed'] || $state['locked'] ||
 			! hash_equals( hash( 'sha256', $expectedCode ), $state['code_sha256'] ) ) {
 			throw new RuntimeException( 'Existing catalogue snippet differs from audited preset. No changes performed.' );

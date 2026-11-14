@@ -99,7 +99,7 @@ final class YoastSnippetAdapter {
 		$values = array();
 		foreach ( self::KEYS as $key => $meta ) {
 			$raw            = get_post_meta( $id, $meta, true );
-			$values[ $key ] = is_string( $raw ) && $raw !== '' ? $raw : null;
+			$values[ $key ] = is_string( $raw ) && '' !== $raw ? $raw : null;
 		}
 		return $values;
 	}

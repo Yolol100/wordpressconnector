@@ -114,7 +114,7 @@ final class WooCommerceOperationsAdapter {
 			'tax_rates'        => '/wc/v3/taxes',
 			'payment_gateways' => '/wc/v3/payment_gateways',
 		)[ $area ] ?? '';
-		if ( $area === 'shipping_methods' ) {
+		if ( 'shipping_methods' === $area ) {
 			$zone_id = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
 			$path    = '/wc/v3/shipping/zones/' . $zone_id . '/methods';
 		} elseif ( array_key_exists( 'zone_id', $payload ) ) {
@@ -126,7 +126,7 @@ final class WooCommerceOperationsAdapter {
 		|| ! is_int( $per_page ) || $per_page < 1 || $per_page > 100 ) {
 			throw new RuntimeException( 'WooCommerce provider pagination is outside safe bounds.' );
 		}
-		$query    = $area === 'tax_rates' ? array(
+		$query    = 'tax_rates' === $area ? array(
 			'page'     => $page,
 			'per_page' => $per_page,
 		) : array();
@@ -139,11 +139,11 @@ final class WooCommerceOperationsAdapter {
 			if ( ! is_array( $item ) ) {
 				continue;
 			}
-			if ( $area === 'tax_rates' ) {
+			if ( 'tax_rates' === $area ) {
 				$out[] = $this->summarize( $item, 'tax_rate' );
-			} elseif ( $area === 'payment_gateways' ) {
+			} elseif ( 'payment_gateways' === $area ) {
 				$out[] = $this->summarize( $item, 'payment_gateway' );
-			} elseif ( $area === 'shipping_methods' ) {
+			} elseif ( 'shipping_methods' === $area ) {
 				$out[] = $this->summarize( $item, 'shipping_method' );
 			} else {
 				$out[] = $this->summarize( $item, 'shipping_zone' );
@@ -155,7 +155,7 @@ final class WooCommerceOperationsAdapter {
 			'count'    => count( $out ),
 			'page'     => $page,
 			'per_page' => $per_page,
-			'has_more' => $area === 'tax_rates' && count( $response ) >= $per_page,
+			'has_more' => 'tax_rates' === $area && count( $response ) >= $per_page,
 		);
 	}
 
@@ -224,8 +224,8 @@ final class WooCommerceOperationsAdapter {
 			return $result;
 		}
 		$this->criticalGate( $payload, $fingerprint );
-		if ( $area === 'payment_gateway' && ! empty( $updates['enabled'] )
-		&& $updates['enabled'] === true
+		if ( 'payment_gateway' === $area && ! empty( $updates['enabled'] )
+		&& true === $updates['enabled']
 		&& ( ! defined( 'WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE' )
 		|| WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE !== true
 		|| ( $payload['sandbox_verified'] ?? null ) !== true ) ) {
@@ -233,7 +233,7 @@ final class WooCommerceOperationsAdapter {
 		}
 		$previous = array();
 		foreach ( $updates as $key => $value ) {
-			if ( $key === 'settings' ) {
+			if ( 'settings' === $key ) {
 				$previous[ $key ] = array();
 				foreach ( $value as $setting => $new_value ) {
 					if ( ! isset( $raw['settings'][ $setting ] ) || ! array_key_exists( 'value', $raw['settings'][ $setting ] ) ) {
@@ -324,9 +324,9 @@ final class WooCommerceOperationsAdapter {
 	 */
 	private function summarize( array $data, string $area ): array {
 		$out  = array();
-		$keys = $area === 'shipping_zone' ? array( 'id', 'name', 'order' )
-			: ( $area === 'shipping_method' ? array( 'instance_id', 'method_id', 'title', 'order', 'enabled' )
-			: ( $area === 'tax_rate' ? array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' )
+		$keys = 'shipping_zone' === $area ? array( 'id', 'name', 'order' )
+			: ( 'shipping_method' === $area ? array( 'instance_id', 'method_id', 'title', 'order', 'enabled' )
+			: ( 'tax_rate' === $area ? array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' )
 			: array( 'id', 'title', 'description', 'order', 'enabled', 'method_title' ) ) );
 		foreach ( $keys as $key ) {
 			if ( array_key_exists( $key, $data ) ) {
@@ -381,7 +381,7 @@ final class WooCommerceOperationsAdapter {
 			|| ! array_key_exists( $key, $before ) ) {
 				throw new RuntimeException( 'WooCommerce provider setting is unavailable or disallowed.' );
 			}
-			if ( $key === 'settings' ) {
+			if ( 'settings' === $key ) {
 				if ( ! in_array( $area, array( 'payment_gateway', 'shipping_method' ), true )
 				|| ! is_array( $value ) || ! $value || count( $value ) > 12 || ! is_array( $before['settings'] ) ) {
 					throw new RuntimeException( 'Unsupported WooCommerce provider-specific settings payload.' );
@@ -392,7 +392,7 @@ final class WooCommerceOperationsAdapter {
 					|| ! isset( $before['settings'][ $option_id ] )
 					|| $this->secret( $option_id, (string) ( $before['settings'][ $option_id ]['type'] ?? '' ) )
 					|| ! $this->exposableSetting( $area, $option_id )
-					|| ( $area === 'payment_gateway'
+					|| ( 'payment_gateway' === $area
 					&& preg_match( '/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $option_id ) ) ) {
 						throw new RuntimeException( 'Protected WooCommerce provider credential or setting.' );
 					}
@@ -401,17 +401,17 @@ final class WooCommerceOperationsAdapter {
 					if ( ! is_string( $desired ) || strlen( $desired ) > 300 ) {
 						throw new RuntimeException( 'Provider setting value must be a bounded string.' );
 					}
-					if ( $type === 'checkbox' && ! in_array( $desired, array( 'yes', 'no' ), true ) ) {
+					if ( 'checkbox' === $type && ! in_array( $desired, array( 'yes', 'no' ), true ) ) {
 						throw new RuntimeException( 'Provider checkbox value must be yes or no.' );
 					}
-					if ( $type === 'number' && ! preg_match( '/^\\d{1,10}(?:\\.\\d{1,4})?$/D', $desired ) ) {
+					if ( 'number' === $type && ! preg_match( '/^\\d{1,10}(?:\\.\\d{1,4})?$/D', $desired ) ) {
 						throw new RuntimeException( 'Provider numeric setting contains unsupported data.' );
 					}
 					if ( ! in_array( $type, array( 'text', 'textarea', 'checkbox', 'number', 'select', 'radio' ), true )
 					|| preg_match( '/[<>\\x00-\\x1F]/', $desired ) ) {
 						throw new RuntimeException( 'Provider field requires a dedicated validation contract.' );
 					}
-					if ( $type === 'select' && isset( $field['options'] ) && is_array( $field['options'] )
+					if ( 'select' === $type && isset( $field['options'] ) && is_array( $field['options'] )
 					&& ! array_key_exists( $desired, $field['options'] ) ) {
 						throw new RuntimeException( 'Provider dropdown value is not recognized.' );
 					}
@@ -420,7 +420,7 @@ final class WooCommerceOperationsAdapter {
 				$updates[ $key ] = $options;
 				continue;
 			}
-			if ( $key === 'enabled' || $key === 'compound' || $key === 'shipping' ) {
+			if ( 'enabled' === $key || 'compound' === $key || 'shipping' === $key ) {
 				if ( ! is_bool( $value ) ) {
 					throw new RuntimeException( 'Provider boolean setting must be true or false.' );
 				}
@@ -441,13 +441,13 @@ final class WooCommerceOperationsAdapter {
 				if ( ! is_string( $value ) || strlen( $value ) > 255 || preg_match( '/[<>\\r\\n]/', $value ) ) {
 					throw new RuntimeException( 'Provider text setting is invalid.' );
 				}
-				if ( $key === 'rate' && ! preg_match( '/^\\d{1,2}(?:\\.\\d{1,4})?$/D', $value ) ) {
+				if ( 'rate' === $key && ! preg_match( '/^\\d{1,2}(?:\\.\\d{1,4})?$/D', $value ) ) {
 					throw new RuntimeException( 'Tax rate requires an explicit decimal percentage.' );
 				}
-				if ( $key === 'country' && $value !== '' && ! preg_match( '/^[A-Z]{2}$/D', $value ) ) {
+				if ( 'country' === $key && '' !== $value && ! preg_match( '/^[A-Z]{2}$/D', $value ) ) {
 					throw new RuntimeException( 'Tax country requires an ISO 3166 code.' );
 				}
-				if ( $key === 'state' && strlen( $value ) > 32 ) {
+				if ( 'state' === $key && strlen( $value ) > 32 ) {
 					throw new RuntimeException( 'Tax state exceeds safe length.' );
 				}
 			}
@@ -466,7 +466,7 @@ final class WooCommerceOperationsAdapter {
 	 */
 	private function matches( array $actual, array $expected ): bool {
 		foreach ( $expected as $key => $value ) {
-			if ( $key === 'settings' ) {
+			if ( 'settings' === $key ) {
 				foreach ( $value as $option_id => $wanted ) {
 					if ( ! isset( $actual['settings'][ $option_id ] )
 					|| ( $actual['settings'][ $option_id ]['value'] ?? null ) !== $wanted ) {
@@ -559,7 +559,7 @@ final class WooCommerceOperationsAdapter {
 	 * @return bool Operation result.
 	 */
 	private function secret( string $id, string $type ): bool {
-		return $type === 'password' || (bool) preg_match( self::SENSITIVE_PATTERN, $id );
+		return 'password' === $type || (bool) preg_match( self::SENSITIVE_PATTERN, $id );
 	}
 
 	/**
@@ -591,21 +591,21 @@ final class WooCommerceOperationsAdapter {
 	 */
 	private function path( string $area, array $payload ): string {
 		$id = $payload['id'] ?? null;
-		if ( $area === 'payment_gateway' ) {
+		if ( 'payment_gateway' === $area ) {
 			if ( ! is_string( $id ) || ! preg_match( '/^[a-zA-Z0-9_\-]{1,95}$/D', $id ) ) {
 				throw new RuntimeException( 'Invalid WooCommerce payment gateway ID.' );
 			}
 			return '/wc/v3/payment_gateways/' . $id;
 		}
 		$id = $this->number( $id, 'id' );
-		if ( $area === 'shipping_method' ) {
+		if ( 'shipping_method' === $area ) {
 			$zone = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
 			return '/wc/v3/shipping/zones/' . $zone . '/methods/' . $id;
 		}
-		if ( array_key_exists( 'zone_id', $payload ) && $payload['zone_id'] !== null ) {
+		if ( array_key_exists( 'zone_id', $payload ) && null !== $payload['zone_id'] ) {
 			throw new RuntimeException( 'Unexpected zone ID.' );
 		}
-		if ( $area === 'shipping_zone' ) {
+		if ( 'shipping_zone' === $area ) {
 			return '/wc/v3/shipping/zones/' . $id;
 		}
 		return '/wc/v3/taxes/' . $id;

@@ -247,7 +247,7 @@ final class GTranslateSettingsAdapter {
 		$out = array();
 		foreach ( array_merge( self::KEYS, self::READ_ONLY ) as $key ) {
 			$value = $raw[ $key ] ?? null;
-			if ( $value === null || is_bool( $value ) || is_int( $value )
+			if ( null === $value || is_bool( $value ) || is_int( $value )
 				|| ( is_string( $value ) && strlen( $value ) <= 100 ) ) {
 				$out[ $key ] = $value;
 			} elseif ( is_array( $value ) && count( $value ) <= 80
@@ -278,15 +278,15 @@ final class GTranslateSettingsAdapter {
 			if ( ! in_array( $key, self::KEYS, true ) ) {
 				throw new RuntimeException( 'GTranslate setting is not in the write allowlist.' );
 			}
-			if ( $key === 'default_language' ) {
-				if ( $value !== 'nl' && $value !== 'en' ) {
+			if ( 'default_language' === $key ) {
+				if ( 'nl' !== $value && 'en' !== $value ) {
 					throw new RuntimeException( 'Supported GTranslate source language must be Dutch or English.' );
 				}
-			} elseif ( $key === 'incl_langs' || $key === 'fincl_langs' ) {
+			} elseif ( 'incl_langs' === $key || 'fincl_langs' === $key ) {
 				if ( ! is_array( $value ) || array_values( array_unique( $value ) ) !== array( 'nl', 'en' ) ) {
 					throw new RuntimeException( 'TPS Pack GTranslate languages must be exactly Dutch and English.' );
 				}
-			} elseif ( $value !== 0 && $value !== 1 ) {
+			} elseif ( 0 !== $value && 1 !== $value ) {
 				throw new RuntimeException( 'GTranslate browser-language detection accepts 0 or 1.' );
 			}
 			$out[ $key ] = $value;

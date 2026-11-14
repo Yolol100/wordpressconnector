@@ -190,7 +190,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			$data = $this->elementorData( (int) $postId, $warnings );
-			if ( $data === null ) {
+			if ( null === $data ) {
 				continue;
 			}
 
@@ -532,12 +532,12 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$plugin = $this->pluginForFile( $file );
-		if ( $plugin !== null ) {
+		if ( null !== $plugin ) {
 			return $this->source( 'addon', $plugin['slug'], $plugin['name'], $plugin['version'], 'runtime_file', $className );
 		}
 
 		$theme = $this->themeForFile( $file );
-		if ( $theme !== null ) {
+		if ( null !== $theme ) {
 			return $this->source( 'theme', $theme['slug'], $theme['name'], $theme['version'], 'runtime_file', $className );
 		}
 

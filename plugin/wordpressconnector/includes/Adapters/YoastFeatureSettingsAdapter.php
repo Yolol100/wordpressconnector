@@ -211,7 +211,7 @@ final class YoastFeatureSettingsAdapter {
 		$options     = $old_options;
 		foreach ( $previous as $name => $value ) {
 			$key = self::FIELDS[ $name ][1];
-			if ( $value === null ) {
+			if ( null === $value ) {
 				unset( $options[ $key ] );
 			} else {
 				$options[ $key ] = $value;
@@ -290,7 +290,7 @@ final class YoastFeatureSettingsAdapter {
 		}
 		foreach ( $fields as $name => $value ) {
 			if ( ! is_string( $name ) || ! isset( self::FIELDS[ $name ] )
-				|| ( ! is_bool( $value ) && ! ( $restore && $value === null ) ) ) {
+				|| ( ! is_bool( $value ) && ! ( $restore && null === $value ) ) ) {
 				throw new RuntimeException( 'Unsupported Yoast feature field or value.' );
 			}
 		}
@@ -334,10 +334,10 @@ final class YoastFeatureSettingsAdapter {
 				continue;
 			}
 			$value = $groups[ $group ][ $key ];
-			if ( ! is_bool( $value ) && $value !== 0 && $value !== 1 && $value !== '0' && $value !== '1' ) {
+			if ( ! is_bool( $value ) && 0 !== $value && 1 !== $value && '0' !== $value && '1' !== $value ) {
 				throw new RuntimeException( 'Yoast feature stored value has an unexpected type.' );
 			}
-			$fields[ $name ] = $value === true || $value === 1 || $value === '1';
+			$fields[ $name ] = true === $value || 1 === $value || '1' === $value;
 		}
 		return $fields;
 	}

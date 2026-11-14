@@ -78,11 +78,11 @@ final class OptimizerSettingsAdapter {
 		return array(
 			'provider'                 => $provider,
 			'fields'                   => $this->publicFields( $provider, $state ),
-			'write_scope'              => $provider === 'asset_cleanup' ? 'read_only_provider_api_required' : 'image_display_options_only',
+			'write_scope'              => 'asset_cleanup' === $provider ? 'read_only_provider_api_required' : 'image_display_options_only',
 			'fingerprint'              => Fingerprint::make( $state ),
 			'wp_rocket'                => $this->rocketSummary(),
-			'effective_state_verified' => $provider === 'ewww',
-			'settings_source'          => $provider === 'ewww' ? 'ewww_provider_accessor' : 'stored_option_only',
+			'effective_state_verified' => 'ewww' === $provider,
+			'settings_source'          => 'ewww' === $provider ? 'ewww_provider_accessor' : 'stored_option_only',
 		);
 	}
 
@@ -101,7 +101,7 @@ final class OptimizerSettingsAdapter {
 		$provider = $this->provider( $payload );
 		// Raw Asset CleanUp options bypass its filtered and cached effective settings.
 		// Until an installed-version provider API is verified, writes fail closed.
-		if ( $provider === 'asset_cleanup' ) {
+		if ( 'asset_cleanup' === $provider ) {
 			throw new RuntimeException( 'Asset CleanUp settings writes require a verified provider API.' );
 		}
 		$fields = $payload['fields'] ?? null;
@@ -138,10 +138,10 @@ final class OptimizerSettingsAdapter {
 		if ( isset( $payload['expected_before_fingerprint'] ) ) {
 			$this->expected( $payload['expected_before_fingerprint'], $fingerprint );
 		}
-		if ( $provider === 'ewww' && ( $old[ $key ] === null || ! $this->ewwwStoredOptionExists( $key ) ) ) {
+		if ( 'ewww' === $provider && ( null === $old[ $key ] || ! $this->ewwwStoredOptionExists( $key ) ) ) {
 			throw new RuntimeException( 'EWWW option must exist before a guarded write.' );
 		}
-		if ( $provider === 'ewww' ) {
+		if ( 'ewww' === $provider ) {
 			$this->assertEwwwWriteCapability();
 		}
 		$previous_exists = array_key_exists( $key, $old );
@@ -199,7 +199,7 @@ final class OptimizerSettingsAdapter {
 		$this->keys( $payload, array( 'provider', 'field', 'exists', 'value', 'expected_after_fingerprint' ) );
 		$provider = $this->provider( $payload );
 		// Old rollback snapshots are not permission to bypass the provider API gate.
-		if ( $provider === 'asset_cleanup' ) {
+		if ( 'asset_cleanup' === $provider ) {
 			throw new RuntimeException( 'Asset CleanUp rollback is blocked until provider API verification.' );
 		}
 		$key = $payload['field'] ?? null;
@@ -207,7 +207,7 @@ final class OptimizerSettingsAdapter {
 		|| ! array_key_exists( 'exists', $payload ) || ! is_bool( $payload['exists'] ) ) {
 			throw new RuntimeException( 'Optimizer rollback field is invalid.' );
 		}
-		if ( $payload['exists'] === true ) {
+		if ( true === $payload['exists'] ) {
 			$this->validate( $provider, $key, $payload['value'] ?? null, true );
 		}
 		$current = $this->state( $provider );
@@ -215,12 +215,12 @@ final class OptimizerSettingsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => $key );
 		}
-		if ( $provider === 'ewww' ) {
+		if ( 'ewww' === $provider ) {
 			$this->assertEwwwWriteCapability();
 		}
 		$this->write( $provider, $current, $key, $payload['value'] ?? null, $payload['exists'] );
 		$readback = $this->state( $provider );
-		if ( $payload['exists'] === true ) {
+		if ( true === $payload['exists'] ) {
 			if ( ! array_key_exists( $key, $readback )
 			|| $readback[ $key ] !== $payload['value'] ) {
 				throw new RuntimeException( 'Optimizer rollback mismatch.' );
@@ -246,7 +246,7 @@ final class OptimizerSettingsAdapter {
 	 */
 	private function state( string $provider ): array {
 		$this->version( $provider );
-		if ( $provider === 'asset_cleanup' ) {
+		if ( 'asset_cleanup' === $provider ) {
 			$stored = get_option( 'wpassetcleanup_settings', null );
 			if ( is_array( $stored ) ) {
 				if ( count( $stored ) > 250 ) {
@@ -254,7 +254,7 @@ final class OptimizerSettingsAdapter {
 				}
 				return $stored;
 			}
-			if ( ! is_string( $stored ) || strlen( $stored ) > 250000 || $stored === '' ) {
+			if ( ! is_string( $stored ) || strlen( $stored ) > 250000 || '' === $stored ) {
 				throw new RuntimeException( 'Asset CleanUp has no supported serialized settings baseline.' );
 			}
 			$data = json_decode( $stored, true );
@@ -269,7 +269,7 @@ final class OptimizerSettingsAdapter {
 		$fields = array();
 		foreach ( self::EWWW_FIELDS as $key ) {
 			$value = ewww_image_optimizer_get_option( $key, null );
-			if ( $value !== null && ! is_scalar( $value ) ) {
+			if ( null !== $value && ! is_scalar( $value ) ) {
 				throw new RuntimeException( 'EWWW option has an unsupported provider value.' );
 			}
 			$fields[ $key ] = $value;
@@ -289,7 +289,7 @@ final class OptimizerSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function write( string $provider, array $state, string $key, $value, bool $exists = true ): void {
-		if ( $provider === 'asset_cleanup' ) {
+		if ( 'asset_cleanup' === $provider ) {
 			throw new RuntimeException( 'Asset CleanUp settings writes require a verified provider API.' );
 		}
 		if ( ! $exists ) {
@@ -310,14 +310,14 @@ final class OptimizerSettingsAdapter {
 	 * @return array Operation result.
 	 */
 	private function publicFields( string $provider, array $state ): array {
-		$keys = $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_FIELDS;
+		$keys = 'asset_cleanup' === $provider ? self::ASSET_FIELDS : self::EWWW_FIELDS;
 		$out  = array();
 		foreach ( $keys as $key ) {
 			if ( ! array_key_exists( $key, $state ) ) {
 				$out[ $key ] = null;
 			} else {
 				$raw         = $state[ $key ];
-				$out[ $key ] = is_scalar( $raw ) || $raw === null ? $raw : '[unsupported_value_withheld]';
+				$out[ $key ] = is_scalar( $raw ) || null === $raw ? $raw : '[unsupported_value_withheld]';
 			}
 		}
 		return $out;
@@ -340,33 +340,33 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Optimizer setting is not in the safe write allowlist.' );
 		}
 		$value = is_bool( $value ) ? ( $value ? '1' : '0' ) : (string) $value;
-		if ( $provider === 'asset_cleanup' ) {
+		if ( 'asset_cleanup' === $provider ) {
 			if ( $restore ) {
-				if ( $key === 'critical_css_status' && in_array( $value, array( 'on', 'off' ), true ) ) {
+				if ( 'critical_css_status' === $key && in_array( $value, array( 'on', 'off' ), true ) ) {
 					return $value;
 				}
-				if ( $key !== 'critical_css_status' && in_array( $value, array( '0', '1' ), true ) ) {
+				if ( 'critical_css_status' !== $key && in_array( $value, array( '0', '1' ), true ) ) {
 					return $value;
 				}
 			}
-			if ( $key === 'critical_css_status' && $value === 'off' ) {
+			if ( 'critical_css_status' === $key && 'off' === $value ) {
 				return $value;
 			}
-			if ( $key !== 'critical_css_status' && $value === '0' ) {
+			if ( 'critical_css_status' !== $key && '0' === $value ) {
 				return $value;
 			}
 			throw new RuntimeException( 'Asset CleanUp may only disable duplicate CSS/JS optimization.' );
 		}
-		if ( $key === 'ewww_image_optimizer_ll_abovethefold' ) {
+		if ( 'ewww_image_optimizer_ll_abovethefold' === $key ) {
 			if ( preg_match( '/^[0-6]$/D', $value ) ) {
 				return $value;
 			}
 			throw new RuntimeException( 'EWWW above-fold count must be between 0 and 6.' );
 		}
-		if ( $restore && $value === '' ) {
+		if ( $restore && '' === $value ) {
 			return $value;
 		}
-		if ( $value !== '0' && $value !== '1' ) {
+		if ( '0' !== $value && '1' !== $value ) {
 			throw new RuntimeException( 'EWWW toggle accepts only zero or one.' );
 		}
 		return $value;
@@ -414,14 +414,14 @@ final class OptimizerSettingsAdapter {
 	 */
 	private function conflicts( string $provider, string $key, string $value ): void {
 		$rocket = $this->rocketSummary();
-		if ( $provider !== 'ewww' || $value !== '1' ) {
+		if ( 'ewww' !== $provider || '1' !== $value ) {
 			return;
 		}
-		if ( $key === 'ewww_image_optimizer_lazy_load'
+		if ( 'ewww_image_optimizer_lazy_load' === $key
 		&& ( $rocket['lazyload'] ?? null ) === '1' ) {
 			throw new RuntimeException( 'WP Rocket image LazyLoad is already active.' );
 		}
-		if ( $key === 'ewww_image_optimizer_add_missing_dims'
+		if ( 'ewww_image_optimizer_add_missing_dims' === $key
 		&& ( $rocket['image_dimensions'] ?? null ) === '1' ) {
 			throw new RuntimeException( 'WP Rocket already owns missing image dimensions.' );
 		}
@@ -453,7 +453,7 @@ final class OptimizerSettingsAdapter {
 	 * @return bool Operation result.
 	 */
 	private function isWritable( string $provider, string $key ): bool {
-		return in_array( $key, $provider === 'asset_cleanup' ? self::ASSET_FIELDS : self::EWWW_WRITE, true );
+		return in_array( $key, 'asset_cleanup' === $provider ? self::ASSET_FIELDS : self::EWWW_WRITE, true );
 	}
 
 	/**
@@ -471,9 +471,9 @@ final class OptimizerSettingsAdapter {
 		if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) ) {
 			throw new RuntimeException( 'WordPress plugin inventory is unavailable.' );
 		}
-		$file    = $provider === 'asset_cleanup' ? 'wp-asset-clean-up/wpacu.php' : 'ewww-image-optimizer/ewww-image-optimizer.php';
+		$file    = 'asset_cleanup' === $provider ? 'wp-asset-clean-up/wpacu.php' : 'ewww-image-optimizer/ewww-image-optimizer.php';
 		$version = get_plugins()[ $file ]['Version'] ?? '';
-		$pattern = $provider === 'asset_cleanup' ? '/^1\\.4\\.0\\.[0-9]+$/D' : '/^8\\.8\\.[0-9]+$/D';
+		$pattern = 'asset_cleanup' === $provider ? '/^1\\.4\\.0\\.[0-9]+$/D' : '/^8\\.8\\.[0-9]+$/D';
 		if ( ! is_plugin_active( $file ) || ! is_string( $version ) || ! preg_match( $pattern, $version ) ) {
 			throw new RuntimeException( 'Unsupported or inactive optimizer plugin version.' );
 		}
@@ -490,7 +490,7 @@ final class OptimizerSettingsAdapter {
 	 */
 	private function provider( array $payload ): string {
 		$provider = $payload['provider'] ?? null;
-		if ( $provider !== 'asset_cleanup' && $provider !== 'ewww' ) {
+		if ( 'asset_cleanup' !== $provider && 'ewww' !== $provider ) {
 			throw new RuntimeException( 'Unsupported optimizer provider.' );
 		}
 		return $provider;
