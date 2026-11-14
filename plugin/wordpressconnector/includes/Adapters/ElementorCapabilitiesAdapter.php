@@ -78,7 +78,7 @@ final class ElementorCapabilitiesAdapter {
 		$warnings          = array();
 		$elementor         = \Elementor\Plugin::$instance;
 		$registeredWidgets = $this->widgets( $elementor, $warnings );
-		$post_types         = $this->inventoryPostTypes( $payload, $warnings );
+		$post_types        = $this->inventoryPostTypes( $payload, $warnings );
 		$statuses          = $this->inventoryStatuses( $payload );
 		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
 		$offset            = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
@@ -133,9 +133,9 @@ final class ElementorCapabilitiesAdapter {
 			$ids = array_slice( $ids, 0, $limit );
 		}
 
-		$usedWidgets        = array();
-		$elementTypes       = array();
-		$documents          = array();
+		$usedWidgets         = array();
+		$elementTypes        = array();
+		$documents           = array();
 		$architecture_totals = array( 'legacy' => 0, 'container' => 0, 'atomic' => 0, 'mixed' => 0, 'widget-only' => 0 );
 		$widget_instances    = 0;
 
@@ -157,13 +157,13 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 
-			$document_widgets      = array();
+			$document_widgets       = array();
 			$document_element_types = array();
-			$families             = array( 'legacy' => false, 'container' => false, 'atomic' => false );
+			$families               = array( 'legacy' => false, 'container' => false, 'atomic' => false );
 			$this->collectElementUsage( $data, $document_widgets, $document_element_types, $families );
 
 			$document_widget_instances = array_sum( $document_widgets );
-			$widget_instances += $document_widget_instances;
+			$widget_instances         += $document_widget_instances;
 			foreach ( $document_widgets as $widget_name => $count ) {
 				if ( ! isset( $usedWidgets[ $widget_name ] ) ) {
 					$usedWidgets[ $widget_name ] = array(
@@ -269,7 +269,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			try {
-				$properties               = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
+				$properties             = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
 				$result[(string) $type] = array(
 					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( (string) $className::get_title() ) : (string) $type,
 					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', (array) $properties['cpt'] ) ) : array(),
@@ -304,8 +304,8 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 			try {
-				$controls                 = method_exists( $widget, 'get_controls' ) ? (array) $widget->get_controls() : array();
-				$categories               = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', (array) $widget->get_categories() ) ) : array();
+				$controls               = method_exists( $widget, 'get_controls' ) ? (array) $widget->get_controls() : array();
+				$categories             = method_exists( $widget, 'get_categories' ) ? array_values( array_map( 'strval', (array) $widget->get_categories() ) ) : array();
 				$result[(string) $name] = array(
 					'name'          => method_exists( $widget, 'get_name' ) ? (string) $widget->get_name() : (string) $name,
 					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( (string) $widget->get_title() ) : (string) $name,
@@ -422,7 +422,7 @@ final class ElementorCapabilitiesAdapter {
 		$file      = '';
 		try {
 			$reflection = new ReflectionClass( $widget );
-			$file_name   = $reflection->getFileName();
+			$file_name  = $reflection->getFileName();
 			$file       = is_string( $file_name ) ? $file_name : '';
 		} catch ( Throwable $error ) {
 			$file = '';
@@ -518,7 +518,7 @@ final class ElementorCapabilitiesAdapter {
 	}
 
 	private function installedPlugins( bool $mu ): array {
-		static $regular = null;
+		static $regular  = null;
 		static $must_use = null;
 
 		if ( $mu ) {
@@ -622,7 +622,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 			$element_type = isset( $element['elType'] ) ? (string) $element['elType'] : '';
 			if ( 'widget' === $element_type && isset( $element['widgetType'] ) && '' !== (string) $element['widgetType'] ) {
-				$widget_name           = (string) $element['widgetType'];
+				$widget_name             = (string) $element['widgetType'];
 				$widgets[ $widget_name ] = isset( $widgets[ $widget_name ] ) ? $widgets[ $widget_name ] + 1 : 1;
 			} elseif ( '' !== $element_type ) {
 				$elementTypes[ $element_type ] = isset( $elementTypes[ $element_type ] ) ? $elementTypes[ $element_type ] + 1 : 1;

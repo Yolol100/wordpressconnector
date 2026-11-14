@@ -30,7 +30,7 @@ final class Runner {
 	private ProcessedStore $processed;
 
 	public function __construct( Registry $registry, SnapshotStore $snapshots, ProcessedStore $processed ) {
-		$this->registry = $registry;
+		$this->registry  = $registry;
 		$this->snapshots = $snapshots;
 		$this->processed = $processed;
 		$this->registry->register( 'connector.actions', array( $this, 'actions' ), array( 'description' => 'List registered actions and security metadata.' ) );
@@ -93,19 +93,19 @@ final class Runner {
 				// must reconcile the original request instead of repeating it.
 				$this->processed->begin( $request->id(), $requestFingerprint, $request->action() );
 			}
-			$context['dry_run'] = $request->dryRun();
-			$context['confirm'] = $request->confirm();
+			$context['dry_run']    = $request->dryRun();
+			$context['confirm']    = $request->confirm();
 			$context['request_id'] = $request->id();
-			$context['registry'] = $this->registry;
-			$data = $this->executeWithStateGuards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			$context['registry']   = $this->registry;
+			$data                  = $this->executeWithStateGuards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
 			if ( isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['fingerprint'] ) ) {
 				$data['state_token'] = Fingerprint::siteTokenFromFingerprint( $data['fingerprint'] );
 			}
 			if ( isset( $data['_current_fingerprint'] ) && is_string( $data['_current_fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['_current_fingerprint'] ) ) {
 				$data['current_state_token'] = Fingerprint::siteTokenFromFingerprint( $data['_current_fingerprint'] );
 			}
-			$rollback      = isset( $data['_rollback'] ) && is_array( $data['_rollback'] ) ? $data['_rollback'] : null;
-			$terminal_error = isset( $data['_terminal_error'] ) && is_string( $data['_terminal_error'] )
+			$rollback         = isset( $data['_rollback'] ) && is_array( $data['_rollback'] ) ? $data['_rollback'] : null;
+			$terminal_error   = isset( $data['_terminal_error'] ) && is_string( $data['_terminal_error'] )
 				? trim( $data['_terminal_error'] )
 				: '';
 			$terminal_context = array();
@@ -352,15 +352,15 @@ final class Runner {
  || 1 !== preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $payload['request_id'] ) ) {
 			throw new RuntimeException( 'Mutation status requires only a valid request_id.' );
 		}
-		$request_id    = $payload['request_id'];
-		$record       = $this->processed->get( $request_id );
-		$state        = 'not_verified';
-		$outcome      = 'unknown';
-		$action       = null;
+		$request_id     = $payload['request_id'];
+		$record         = $this->processed->get( $request_id );
+		$state          = 'not_verified';
+		$outcome        = 'unknown';
+		$action         = null;
 		$created_at_gmt = null;
 
 		if ( is_array( $record ) ) {
-			$action = isset( $record['action'] ) && is_string( $record['action'] )
+			$action    = isset( $record['action'] ) && is_string( $record['action'] )
  && 1 === preg_match( '/^[a-z0-9][a-z0-9._-]*\z/', $record['action'] )
 				? $record['action'] : null;
 			$timestamp = $record['created_at'] ?? null;
@@ -405,7 +405,7 @@ final class Runner {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_delete_state_older_than_days' => $days );
 		}
-		$seconds           = $days * DAY_IN_SECONDS;
+		$seconds             = $days * DAY_IN_SECONDS;
 		$oidc_replay_deleted = class_exists( \Webactueel\WordPressConnector\Security\GitHubOidc::class )
 			? \Webactueel\WordPressConnector\Security\GitHubOidc::cleanupReplayClaims( $seconds )
 			: 0;
@@ -450,7 +450,7 @@ final class Runner {
 				if ( array_diff( array_keys( $payload ), array( 'fields' ) ) ) {
 					throw new RuntimeException( 'Public Yoast template update accepts only fields.' );
 				}
-				$fields           = $payload['fields'] ?? null;
+				$fields            = $payload['fields'] ?? null;
 				$allowed_variables = array(
 					'category_title'         => '%%term_title%%',
 					'product_category_title' => '%%term_title%%',
@@ -474,7 +474,7 @@ final class Runner {
 					throw new RuntimeException( 'Confirmed public Yoast templates require a dry-run fingerprint.' );
 				}
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -509,7 +509,7 @@ final class Runner {
 			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio stats update requires expected_fingerprint from the preceding dry-run.' );
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -518,7 +518,7 @@ final class Runner {
 			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio case text update requires expected_fingerprint from the preceding dry-run.' );
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -532,7 +532,7 @@ final class Runner {
 			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public custom_css.patch requires expected_fingerprint from the preceding dry-run.' );
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -541,7 +541,7 @@ final class Runner {
 			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public cache flush requires expected_fingerprint from the preceding dry-run.' );
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -550,7 +550,7 @@ final class Runner {
 			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public Code Snippets patch requires expected_fingerprint from the preceding dry-run.' );
 			}
-			$descriptor['privileged'] = false;
+			$descriptor['privileged']             = false;
 			$descriptor['public_repository_safe'] = false;
 			return $descriptor;
 		}
@@ -628,7 +628,7 @@ final class Runner {
 		if ( ! $dryRun ) {
 			throw new RuntimeException( 'Header diagnostics are read-only.' );
 		}
-		$descriptor['privileged'] = false;
+		$descriptor['privileged']             = false;
 		$descriptor['public_repository_safe'] = false;
 		return $descriptor;
 	}
@@ -643,7 +643,7 @@ final class Runner {
 			throw new RuntimeException( 'Header link repair requires 1-4 replacements.' );
 		}
 		$home_host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
-		$seen     = array();
+		$seen      = array();
 		foreach ( $changes as $change ) {
 			if ( ! is_array( $change ) || array_diff( array_keys( $change ), array( 'element_id', 'from', 'to' ) ) ) {
 				throw new RuntimeException( 'Header link replacement keys are not allowed.' );
@@ -670,7 +670,7 @@ final class Runner {
 		if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
 			throw new RuntimeException( 'Confirmed public header repair requires expected_fingerprint.' );
 		}
-		$descriptor['privileged'] = false;
+		$descriptor['privileged']             = false;
 		$descriptor['public_repository_safe'] = false;
 		return $descriptor;
 	}
@@ -827,7 +827,7 @@ final class Runner {
 		}
 
 		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$marker    = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
+		$marker     = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
 			? $payload['match_code_contains']
 			: '';
 
@@ -864,12 +864,12 @@ final class Runner {
 			}
 		}
 
-		$preview = $this->registry->execute( 'code_snippets.patch', $payload, array(
+		$preview     = $this->registry->execute( 'code_snippets.patch', $payload, array(
 			'dry_run'           => true,
 			'confirm'           => true,
 			'public_validation' => true,
 		) );
-		$target_id    = isset( $preview['snippet']['id'] ) ? (int) $preview['snippet']['id'] : 0;
+		$target_id   = isset( $preview['snippet']['id'] ) ? (int) $preview['snippet']['id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 		if ( $target_id <= 0 || ! preg_match( '/^[a-f0-9]{64}\\z/', $fingerprint ) ) {
 			throw new RuntimeException( 'Public Code Snippets validation did not produce a guarded target fingerprint.' );
@@ -880,7 +880,7 @@ final class Runner {
 
 	private function assertPublicPortfolioCaseTextPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'portfolio.case_text_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
-		$post_id      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
+		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 		if ( $post_id <= 0 || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 			throw new RuntimeException( 'Portfolio case text public validation did not produce a guarded target fingerprint.' );
@@ -890,7 +890,7 @@ final class Runner {
 
 	private function assertPublicPortfolioStatsPayload( array $payload ): int {
 		$preview     = $this->registry->execute( 'acf.portfolio_stats_update', $payload, array( 'dry_run' => true, 'confirm' => true, 'public_validation' => true ) );
-		$post_id      = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
+		$post_id     = isset( $preview['post_id'] ) ? (int) $preview['post_id'] : 0;
 		$fingerprint = isset( $preview['_current_fingerprint'] ) ? (string) $preview['_current_fingerprint'] : '';
 		if ( $post_id <= 0 || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 			throw new RuntimeException( 'Portfolio stats public validation did not produce a guarded target fingerprint.' );
@@ -958,7 +958,7 @@ final class Runner {
 			if ( ! is_string( $value ) || strlen( $value ) > 1000 || preg_match( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value ) ) {
 				throw new RuntimeException( 'Public ACF values must be text strings up to 1000 bytes without control characters.' );
 			}
-			$field     = acf_get_field( $field_key );
+			$field      = acf_get_field( $field_key );
 			$field_type = is_array( $field ) ? (string) ( $field['type'] ?? '' ) : '';
 			if ( ! is_array( $field ) || ! in_array( $field_type, array( 'text', 'textarea', 'wysiwyg' ), true ) ) {
 				throw new RuntimeException( 'Public ACF field is missing or is not an allowed textual field: ' . $field_key );
@@ -981,9 +981,9 @@ final class Runner {
 			throw new RuntimeException( 'Rollback snapshot was not created by the guarded public runtime.' );
 		}
 		$source_action   = (string) ( $record['source_action'] ?? '' );
-		$rollback       = isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : array();
+		$rollback        = isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : array();
 		$rollback_action = (string) ( $rollback['action'] ?? '' );
-		$allowed        = array(
+		$allowed         = array(
 			'acf.update'                       => array( 'acf.update' ),
 			'acf.portfolio_stats_update'       => array( 'acf.portfolio_stats_update', 'acf.update' ),
 			'portfolio.case_text_update'       => array( 'portfolio.case_text_update' ),
@@ -1018,8 +1018,8 @@ final class Runner {
 		} elseif ( 'code_snippets.patch' === $source_action ) {
 			$rollback_payload = (array) ( $rollback['payload'] ?? array() );
 			$snippet_id       = isset( $rollback_payload['snippet_id'] ) ? (int) $rollback_payload['snippet_id'] : 0;
-			$code            = isset( $rollback_payload['code'] ) && is_string( $rollback_payload['code'] ) ? $rollback_payload['code'] : null;
-			$expected        = isset( $rollback_payload['expected_code_fingerprint'] ) ? (string) $rollback_payload['expected_code_fingerprint'] : '';
+			$code             = isset( $rollback_payload['code'] ) && is_string( $rollback_payload['code'] ) ? $rollback_payload['code'] : null;
+			$expected         = isset( $rollback_payload['expected_code_fingerprint'] ) ? (string) $rollback_payload['expected_code_fingerprint'] : '';
 			if ( $snippet_id <= 0 || null === $code || strlen( $code ) > 1048576 || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected ) ) {
 				throw new RuntimeException( 'Public Code Snippets rollback snapshot is invalid.' );
 			}

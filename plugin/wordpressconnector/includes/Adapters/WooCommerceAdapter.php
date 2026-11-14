@@ -218,11 +218,11 @@ final class WooCommerceAdapter {
 			'total_spent'        => (string) $customer->get_total_spent(),
 		);
 		if ( Input::bool( $payload, 'include_personal_data', false ) ) {
-			$snapshot['email'] = (string) $customer->get_email();
+			$snapshot['email']      = (string) $customer->get_email();
 			$snapshot['first_name'] = (string) $customer->get_first_name();
-			$snapshot['last_name'] = (string) $customer->get_last_name();
-			$snapshot['billing'] = $this->customerAddressSnapshot( $customer->get_billing() );
-			$snapshot['shipping'] = $this->customerAddressSnapshot( $customer->get_shipping() );
+			$snapshot['last_name']  = (string) $customer->get_last_name();
+			$snapshot['billing']    = $this->customerAddressSnapshot( $customer->get_billing() );
+			$snapshot['shipping']   = $this->customerAddressSnapshot( $customer->get_shipping() );
 		}
 		return array( 'customer' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
@@ -382,7 +382,7 @@ final class WooCommerceAdapter {
 		) {
 			throw new RuntimeException( 'WooCommerce tax rate API is unavailable.' );
 		}
-		$class        = isset( $payload['tax_class'] ) ? sanitize_title( (string) $payload['tax_class'] ) : '';
+		$class         = isset( $payload['tax_class'] ) ? sanitize_title( (string) $payload['tax_class'] ) : '';
 		$valid_classes = array( '' => true );
 		foreach ( \WC_Tax::get_tax_class_slugs() as $slug ) {
 			$valid_classes[(string) $slug] = true;
@@ -390,9 +390,9 @@ final class WooCommerceAdapter {
 		if ( ! isset( $valid_classes[ $class ] ) ) {
 			throw new RuntimeException( 'Unknown WooCommerce tax class.' );
 		}
-		$limit          = isset( $payload['per_page'] ) ? max( 1, min( 50, (int) $payload['per_page'] ) ) : 25;
-		$page           = isset( $payload['page'] ) ? max( 1, min( 100000, (int) $payload['page'] ) ) : 1;
-		$offset         = ( $page - 1 ) * $limit;
+		$limit           = isset( $payload['per_page'] ) ? max( 1, min( 50, (int) $payload['per_page'] ) ) : 25;
+		$page            = isset( $payload['page'] ) ? max( 1, min( 100000, (int) $payload['page'] ) ) : 1;
+		$offset          = ( $page - 1 ) * $limit;
 		$rates_table     = $wpdb->prefix . 'woocommerce_tax_rates';
 		$locations_table = $wpdb->prefix . 'woocommerce_tax_rate_locations';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared WooCommerce tax count must reflect latest tax settings.
@@ -438,7 +438,7 @@ final class WooCommerceAdapter {
 		}
 		$items = array();
 		foreach ( $rate_rows as $rate ) {
-			$snapshot      = $this->taxRateSnapshot( $rate );
+			$snapshot       = $this->taxRateSnapshot( $rate );
 			$rate_id        = isset( $rate->tax_rate_id ) ? (int) $rate->tax_rate_id : 0;
 			$location_count = $location_counts[ $rate_id ] ?? 0;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location list must reflect latest tax settings.
@@ -457,9 +457,9 @@ final class WooCommerceAdapter {
 					$snapshot['locations'][] = array( 'type' => (string) $location->location_type, 'code' => (string) $location->location_code );
 				}
 			}
-			$snapshot['location_count'] = $location_count;
+			$snapshot['location_count']      = $location_count;
 			$snapshot['locations_truncated'] = $location_count > count( $snapshot['locations'] );
-			$items[] = $snapshot;
+			$items[]                         = $snapshot;
 		}
 		return array( 'tax_class' => $class, 'rates' => $items, 'page' => $page, 'per_page' => $limit, 'total' => $total, 'pages' => (int) ceil( $total / $limit ) );
 	}
@@ -577,7 +577,7 @@ final class WooCommerceAdapter {
 
 		$this->applyProduct( $product, $payload );
 		$product->save();
-		$result['after'] = $this->productSnapshot( wc_get_product( $product->get_id() ) );
+		$result['after']     = $this->productSnapshot( wc_get_product( $product->get_id() ) );
 		$result['_rollback'] = array( 'action' => 'woocommerce.product.update', 'payload' => $this->productRollbackPayload( $before ) );
 		return $result;
 	}
@@ -594,7 +594,7 @@ final class WooCommerceAdapter {
 	public function variationList( array $payload ): array {
 		$this->assertWoo();
 		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent   = wc_get_product( $parent_id );
+		$parent    = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable product not found.' );
 		}
@@ -634,7 +634,7 @@ final class WooCommerceAdapter {
 	public function variationCreate( array $payload, array $context ): array {
 		$this->assertWoo();
 		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent   = wc_get_product( $parent_id );
+		$parent    = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable parent product not found.' );
 		}
@@ -680,7 +680,7 @@ final class WooCommerceAdapter {
 		if ( ! $updated_variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Updated WooCommerce variation could not be read back.' );
 		}
-		$result['after'] = $this->variationSnapshot( $updated_variation );
+		$result['after']     = $this->variationSnapshot( $updated_variation );
 		$result['_rollback'] = array( 'action' => 'woocommerce.variation.update', 'payload' => $this->variationRollbackPayload( $before ) );
 		return $result;
 	}
@@ -735,11 +735,11 @@ final class WooCommerceAdapter {
 	 */
 	public function attributeUpdate( array $payload, array $context ): array {
 		$this->assertWoo();
-		$id        = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id         = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$before_obj = $this->findAttribute( $id );
-		$before    = $this->attributeSnapshot( $before_obj );
-		$args      = $this->attributeArgs( $payload, true );
-		$result    = array( 'before' => $before, 'changes' => $args, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$before     = $this->attributeSnapshot( $before_obj );
+		$args       = $this->attributeArgs( $payload, true );
+		$result     = array( 'before' => $before, 'changes' => $args, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -748,7 +748,7 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
-		$result['after'] = $this->attributeSnapshot( $this->findAttribute( $id ) );
+		$result['after']     = $this->attributeSnapshot( $this->findAttribute( $id ) );
 		$result['_rollback'] = array( 'action' => 'woocommerce.attribute.update', 'payload' => array_merge( array( 'id' => $id ), $before ) );
 		return $result;
 	}
@@ -867,7 +867,7 @@ final class WooCommerceAdapter {
 		}
 		$this->applyCoupon( $coupon, $payload );
 		$coupon->save();
-		$result['after'] = $this->couponSnapshot( new \WC_Coupon( $coupon->get_id() ) );
+		$result['after']     = $this->couponSnapshot( new \WC_Coupon( $coupon->get_id() ) );
 		$result['_rollback'] = array( 'action' => 'woocommerce.coupon.update', 'payload' => array_merge( array( 'id' => $coupon->get_id() ), $before ) );
 		return $result;
 	}
@@ -1054,7 +1054,7 @@ final class WooCommerceAdapter {
 		$item_details = $includeItems
 			? $this->orderItemsSnapshot( $order )
 			: array( 'items' => array(), 'item_count' => 0, 'items_truncated' => false );
-		$snapshot    = array(
+		$snapshot     = array(
 			'id'              => (int) $order->get_id(),
 			'status'          => (string) $order->get_status(),
 			'currency'        => (string) $order->get_currency(),
@@ -1068,13 +1068,13 @@ final class WooCommerceAdapter {
 			'shipping_method' => (string) $order->get_shipping_method(),
 		);
 		if ( $includeItems ) {
-			$snapshot['items'] = $item_details['items'];
-			$snapshot['item_count'] = $item_details['item_count'];
+			$snapshot['items']           = $item_details['items'];
+			$snapshot['item_count']      = $item_details['item_count'];
 			$snapshot['items_truncated'] = $item_details['items_truncated'];
 		}
 		if ( $includePersonalData ) {
 			$snapshot['customer_id'] = (int) $order->get_customer_id();
-			$snapshot['billing'] = array(
+			$snapshot['billing']     = array(
 				'first_name' => (string) $order->get_billing_first_name(),
 				'last_name'  => (string) $order->get_billing_last_name(),
 				'company'    => (string) $order->get_billing_company(),
@@ -1087,7 +1087,7 @@ final class WooCommerceAdapter {
 				'email'      => (string) $order->get_billing_email(),
 				'phone'      => (string) $order->get_billing_phone(),
 			);
-			$snapshot['shipping'] = array(
+			$snapshot['shipping']    = array(
 				'first_name' => (string) $order->get_shipping_first_name(),
 				'last_name'  => (string) $order->get_shipping_last_name(),
 				'company'    => (string) $order->get_shipping_company(),
@@ -1112,7 +1112,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function orderItemsSnapshot( \WC_Order $order ): array {
-		$selection   = $this->boundedCoreOrderItemIds( $order );
+		$selection    = $this->boundedCoreOrderItemIds( $order );
 		$selected_ids = $selection['ids'];
 
 		if ( $selected_ids && ! class_exists( 'WC_Order_Factory' ) ) {
@@ -1302,7 +1302,7 @@ final class WooCommerceAdapter {
 	 */
 	private function shippingZoneSnapshot( int $zoneId, string $zoneName, int $zoneOrder ): array {
 		global $wpdb;
-		$locations     = array();
+		$locations      = array();
 		$location_count = 0;
 		if ( $zoneId > 0 && isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'prepare' ) && method_exists( $wpdb, 'get_results' ) && method_exists( $wpdb, 'get_var' ) ) {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zone_locations';
@@ -1393,7 +1393,7 @@ final class WooCommerceAdapter {
 		);
 		if ( $product instanceof \WC_Product_External ) {
 			$data['external_url'] = (string) $product->get_product_url();
-			$data['button_text'] = (string) $product->get_button_text();
+			$data['button_text']  = (string) $product->get_button_text();
 		}
 		if ( $product instanceof \WC_Product_Grouped ) {
 			$data['children'] = array_map( 'intval', $product->get_children() );

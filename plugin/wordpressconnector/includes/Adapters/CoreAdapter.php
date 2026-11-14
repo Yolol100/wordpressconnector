@@ -79,9 +79,9 @@ final class CoreAdapter {
 	 */
 	public function postList( array $payload ): array {
 		$post_type = isset( $payload['post_type'] ) ? $payload['post_type'] : 'post';
-		$status   = isset( $payload['status'] ) ? $payload['status'] : ( Policy::publicRepositoryContext() ? 'publish' : 'any' );
+		$status    = isset( $payload['status'] ) ? $payload['status'] : ( Policy::publicRepositoryContext() ? 'publish' : 'any' );
 		$per_page  = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50;
-		$page     = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
+		$page      = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
 
 		$query    = new \WP_Query( array(
 			'post_type'      => $post_type,
@@ -198,7 +198,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['after'] = $this->postSnapshot( get_post( (int) $updated ) );
+		$result['after']     = $this->postSnapshot( get_post( (int) $updated ) );
 		$result['_rollback'] = array( 'action' => 'post.update', 'payload' => $this->postRollbackPayload( $before ) );
 		return $result;
 	}
@@ -238,10 +238,10 @@ final class CoreAdapter {
 		if ( $count < 1 || $count > 25 || ( null !== $expected && $count !== $expected ) ) {
 			throw new RuntimeException( 'Literal match count is missing, changed or outside the safe range.' );
 		}
-		$state             = array( 'id' => (int) $post->ID, 'status' => (string) $post->post_status, 'content' => $original );
+		$state              = array( 'id' => (int) $post->ID, 'status' => (string) $post->post_status, 'content' => $original );
 		$before_fingerprint = Fingerprint::make( $state );
-		$next              = str_replace( $find, $replace, $original );
-		$result            = array(
+		$next               = str_replace( $find, $replace, $original );
+		$result             = array(
 			'post_id'               => (int) $post->ID,
 			'match_count'           => $count,
 			'before_fingerprint'    => $before_fingerprint,
@@ -266,7 +266,7 @@ final class CoreAdapter {
 			throw new RuntimeException( 'Literal replacement readback failed; prior content restore attempted.' );
 		}
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array( 'action' => 'post.update', 'payload' => array( 'id' => (int) $post->ID, 'content' => $original ) );
+		$result['_rollback']         = array( 'action' => 'post.update', 'payload' => array( 'id' => (int) $post->ID, 'content' => $original ) );
 		return $result;
 	}
 
@@ -292,7 +292,7 @@ final class CoreAdapter {
 		if ( ! $trashed ) {
 			throw new RuntimeException( 'Could not trash post.' );
 		}
-		$result['post'] = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['post']      = $this->postSnapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array( 'action' => 'post.restore', 'payload' => array( 'id' => (int) $post->ID ) );
 		return $result;
 	}
@@ -320,7 +320,7 @@ final class CoreAdapter {
 		if ( ! $restored ) {
 			throw new RuntimeException( 'Could not restore post.' );
 		}
-		$result['post'] = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['post']      = $this->postSnapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $post->ID ) );
 		return $result;
 	}
@@ -354,7 +354,7 @@ final class CoreAdapter {
 	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
 		$revision_id = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
-		$revision   = wp_get_post_revision( $revision_id );
+		$revision    = wp_get_post_revision( $revision_id );
 		if ( ! $revision ) {
 			throw new RuntimeException( 'Revision not found.' );
 		}
@@ -371,7 +371,7 @@ final class CoreAdapter {
 		if ( ! $restored ) {
 			throw new RuntimeException( 'Could not restore revision.' );
 		}
-		$result['after'] = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['after']     = $this->postSnapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array( 'action' => 'post.update', 'payload' => $this->postRollbackPayload( $before ) );
 		return $result;
 	}
@@ -570,7 +570,7 @@ final class CoreAdapter {
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
-		$result['after'] = $this->termSnapshot( get_term( $id, $taxonomy ) );
+		$result['after']     = $this->termSnapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array( 'action' => 'term.update', 'payload' => array_merge( array( 'taxonomy' => $taxonomy, 'id' => $id ), $before ) );
 		return $result;
 	}
@@ -617,9 +617,9 @@ final class CoreAdapter {
 	 */
 	public function termAssign( array $payload, array $context ): array {
 		$object_id = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$terms    = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
-		$append   = Input::bool( $payload, 'append' );
+		$taxonomy  = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
+		$terms     = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
+		$append    = Input::bool( $payload, 'append' );
 		if ( ! $object_id || ! taxonomy_exists( $taxonomy ) ) {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
 		}
@@ -628,7 +628,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $before->get_error_message() );
 		}
 		$term_ids = array_map( 'intval', $terms );
-		$result  = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $term_ids, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result   = array( 'before' => $before, 'after' => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $term_ids, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -820,7 +820,7 @@ final class CoreAdapter {
 	 */
 	public function menuLocationSet( array $payload, array $context ): array {
 		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
-		$menu_id     = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
+		$menu_id    = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
 		$registered = get_registered_nav_menus();
 		if ( ! isset( $registered[ $location ] ) ) {
 			throw new RuntimeException( 'Unknown menu location.' );
@@ -1126,7 +1126,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	private function sanitizePostFields( array $payload, bool $partial ): array {
-		$fields    = array();
+		$fields     = array();
 		$string_map = array(
 			'title'       => 'post_title', 'content' => 'post_content', 'excerpt' => 'post_excerpt', 'status' => 'post_status',
 			'slug'        => 'post_name', 'type' => 'post_type', 'password' => 'post_password', 'comment_status' => 'comment_status',

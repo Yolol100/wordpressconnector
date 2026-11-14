@@ -47,7 +47,7 @@ final class ElementorAdapter {
 
 		$data         = $this->normalizeData( $payload['data'] ?? array() );
 		$pageSettings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array();
-		$post_fields   = array(
+		$post_fields  = array(
 			'post_type'    => $post_type,
 			'post_status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'draft',
 			'post_title'   => isset( $payload['title'] ) ? (string) $payload['title'] : 'Elementor document',
@@ -93,8 +93,8 @@ final class ElementorAdapter {
 			? ( is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array() )
 			: $before['page_settings'];
 
-		$after = $before;
-		$after['data'] = $data;
+		$after                  = $before;
+		$after['data']          = $data;
 		$after['page_settings'] = $pageSettings;
 		foreach ( array( 'template_type', 'conditions', 'edit_mode' ) as $field ) {
 			if ( array_key_exists( $field, $payload ) ) {
@@ -112,7 +112,7 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$result['after'] = $this->applyExistingDocumentMutation(
+		$result['after']     = $this->applyExistingDocumentMutation(
 			(int) $post->ID,
 			$payload,
 			$data,
@@ -131,8 +131,8 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'element_id is required.' );
 		}
 
-		$data          = $before['data'];
-		$element       =& $this->findElement( $data, $elementId );
+		$data           = $before['data'];
+		$element        =& $this->findElement( $data, $elementId );
 		$before_element = $element;
 
 		if ( isset( $payload['replace'] ) && is_array( $payload['replace'] ) ) {
@@ -143,7 +143,7 @@ final class ElementorAdapter {
 			$element = $replacement;
 		} else {
 			if ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ) {
-				$replace_settings = Input::bool( $payload, 'replace_settings' );
+				$replace_settings    = Input::bool( $payload, 'replace_settings' );
 				$element['settings'] = $replace_settings
 					? $payload['settings']
 					: array_replace_recursive( isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array(), $payload['settings'] );
@@ -157,7 +157,7 @@ final class ElementorAdapter {
 		}
 
 		$requested_element = $element;
-		$result           = array(
+		$result            = array(
 			'post_id'              => (int) $post->ID,
 			'element_id'           => $elementId,
 			'before_element'       => $before_element,
@@ -169,7 +169,7 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$readback = $this->applyExistingDocumentMutation(
+		$readback         = $this->applyExistingDocumentMutation(
 			(int) $post->ID,
 			array(),
 			$data,
@@ -184,7 +184,7 @@ final class ElementorAdapter {
 		}
 
 		$result['after_element'] = $readback_element;
-		$result['_rollback'] = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
+		$result['_rollback']     = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
 		return $result;
 	}
 
@@ -222,18 +222,18 @@ final class ElementorAdapter {
 			|| 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
 			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_published_elementor_library', 'checks' => array() );
 		}
-		$can_edit  = current_user_can( 'edit_post', $id );
+		$can_edit = current_user_can( 'edit_post', $id );
 		$snapshot = $this->snapshot( $id );
 		if ( 'header' !== $snapshot['template_type'] ) {
 			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_header_template', 'checks' => array() );
 		}
 		$matches = array();
 		foreach ( $checks as $check ) {
-			$elementId    = $check['element_id'];
+			$elementId     = $check['element_id'];
 			$matches_count = 0;
-			$is_icon_list   = false;
+			$is_icon_list  = false;
 			try {
-				$element    =& $this->findElement( $snapshot['data'], $elementId );
+				$element      =& $this->findElement( $snapshot['data'], $elementId );
 				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
 				if ( $is_icon_list ) {
@@ -294,7 +294,7 @@ final class ElementorAdapter {
 				throw new RuntimeException( 'Header link target, source or destination is not allowed.' );
 			}
 			$seen[ $elementId ] = true;
-			$element =& $this->findElement( $data, $elementId );
+			$element            =& $this->findElement( $data, $elementId );
 			if ( ( $element['widgetType'] ?? '' ) !== 'icon-list'
 				|| ! isset( $element['settings']['icon_list'] )
 				|| ! is_array( $element['settings']['icon_list'] ) ) {
@@ -323,7 +323,7 @@ final class ElementorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$after = $this->applyExistingDocumentMutation(
+		$after                       = $this->applyExistingDocumentMutation(
 			$id, array(), $data, $before['page_settings'], $before
 		);
 		$result['readback_verified'] = true;
@@ -361,14 +361,14 @@ final class ElementorAdapter {
 		if ( $document ) {
 			// Verify the committed document, not the editor document instance which may
 			// keep an earlier in-memory elements tree after save() in this request.
-			$data         = $this->normalizeData( get_post_meta( $postId, '_elementor_data', true ) ?: array() );
-			$settings     = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
-			$settings     = is_array( $settings ) ? $settings : array();
+			$data          = $this->normalizeData( get_post_meta( $postId, '_elementor_data', true ) ?: array() );
+			$settings      = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
+			$settings      = is_array( $settings ) ? $settings : array();
 			$document_type = method_exists( $document, 'get_name' ) ? (string) $document->get_name() : '';
 		} else {
-			$raw          = get_post_meta( $postId, '_elementor_data', true );
-			$data         = $this->normalizeData( $raw ?: array() );
-			$settings     = $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) );
+			$raw           = get_post_meta( $postId, '_elementor_data', true );
+			$data          = $this->normalizeData( $raw ?: array() );
+			$settings      = $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) );
 			$document_type = '';
 		}
 
@@ -429,7 +429,7 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
 		}
 
-		$document           = $this->document( $postId );
+		$document            = $this->document( $postId );
 		$normalized_elements = null;
 		// Elementor normalizes widgets/containers through get_data_for_save().
 		// Its documented after_save event carries the canonical data submitted
