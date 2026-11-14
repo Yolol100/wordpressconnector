@@ -228,7 +228,7 @@ final class MediaAdapter {
 		try {
 			foreach ( $copies as $from => $to ) {
 				$old_path = $directory . DIRECTORY_SEPARATOR . $from;
-				$new_path = $directory . DIRECTORY_SEPARATOR . $to;
+				$newPath = $directory . DIRECTORY_SEPARATOR . $to;
 				$input   = @fopen( $old_path, 'rb' );
 				if ( ! is_resource( $input ) ) {
 					throw new RuntimeException( 'Image copy source is unavailable.' );
@@ -236,12 +236,12 @@ final class MediaAdapter {
 				// Open the destination only after the source; otherwise a failed
 				// source read could leave an untracked empty compatibility file.
 				// 'xb' prevents clobbering a concurrent upload or other rename.
-				$output = @fopen( $new_path, 'xb' );
+				$output = @fopen( $newPath, 'xb' );
 				if ( ! is_resource( $output ) ) {
 					fclose( $input );
 					throw new RuntimeException( 'New filename already exists or cannot be created.' );
 				}
-				$created[] = $new_path;
+				$created[] = $newPath;
 				try {
 					$expected_size = filesize( $old_path );
 					$copied       = stream_copy_to_stream( $input, $output );
@@ -306,7 +306,7 @@ final class MediaAdapter {
 
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$target_id   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$targetId   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type
@@ -321,10 +321,10 @@ final class MediaAdapter {
 
 		switch ( $target_type ) {
 			case 'featured_image':
-				if ( $target_id <= 0 || ! get_post( $target_id ) || ! current_user_can( 'edit_post', $target_id ) ) {
+				if ( $targetId <= 0 || ! get_post( $targetId ) || ! current_user_can( 'edit_post', $targetId ) ) {
 					throw new RuntimeException( 'You cannot edit the featured-image target.' );
 				}
-				$before = (int) get_post_thumbnail_id( $target_id );
+				$before = (int) get_post_thumbnail_id( $targetId );
 				$result = array(
 					'before'               => $before,
 					'after'                => $attachment_id,
@@ -338,30 +338,30 @@ final class MediaAdapter {
 					return $result;
 				}
 				if ( $clear_featured ) {
-					if ( ! delete_post_thumbnail( $target_id ) ) {
+					if ( ! delete_post_thumbnail( $targetId ) ) {
 						throw new RuntimeException( 'Could not clear featured image during rollback.' );
 					}
-				} elseif ( ! set_post_thumbnail( $target_id, $attachment_id ) ) {
+				} elseif ( ! set_post_thumbnail( $targetId, $attachment_id ) ) {
 					throw new RuntimeException( 'Could not assign featured image.' );
 				}
-				if ( (int) get_post_thumbnail_id( $target_id ) !== $attachment_id ) {
+				if ( (int) get_post_thumbnail_id( $targetId ) !== $attachment_id ) {
 					throw new RuntimeException( 'Featured-image assignment readback failed.' );
 				}
 				if ( empty( $context['rollback_mode'] ) ) {
 					$result['_rollback'] = array( 'action' => 'media.assign', 'payload' => array(
-						'id' => $before, 'target_type' => 'featured_image', 'target_id' => $target_id,
+						'id' => $before, 'target_type' => 'featured_image', 'target_id' => $targetId,
 					) );
 				}
 				return $result;
 
 			case 'product_gallery':
-				if ( $target_id <= 0 || ! get_post( $target_id ) || ! current_user_can( 'edit_post', $target_id ) ) {
+				if ( $targetId <= 0 || ! get_post( $targetId ) || ! current_user_can( 'edit_post', $targetId ) ) {
 					throw new RuntimeException( 'You cannot edit the product gallery target.' );
 				}
 				if ( ! function_exists( 'wc_get_product' ) ) {
 					throw new RuntimeException( 'WooCommerce is not active.' );
 				}
-				$product = wc_get_product( $target_id );
+				$product = wc_get_product( $targetId );
 				if ( ! $product instanceof \WC_Product ) {
 					throw new RuntimeException( 'Product not found.' );
 				}
@@ -381,7 +381,7 @@ final class MediaAdapter {
 					throw new RuntimeException( 'Product gallery assignment readback failed.' );
 				}
 				$result['_rollback'] = array( 'action' => 'woocommerce.product.update', 'payload' => array(
-					'id' => $target_id, 'gallery_image_ids' => $before,
+					'id' => $targetId, 'gallery_image_ids' => $before,
 				) );
 				return $result;
 
@@ -481,12 +481,12 @@ final class MediaAdapter {
 			$post_fields['post_content'] = (string) $payload['description'];
 		}
 		if ( array_key_exists( 'parent', $payload ) ) {
-			$parent_id = (int) $payload['parent'];
-			if ( $parent_id < 0 || ( $parent_id > 0
-				&& ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) ) {
+			$parentId = (int) $payload['parent'];
+			if ( $parentId < 0 || ( $parentId > 0
+				&& ( ! get_post( $parentId ) || ! current_user_can( 'edit_post', $parentId ) ) ) ) {
 				throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
 			}
-			$post_fields['post_parent'] = $parent_id;
+			$post_fields['post_parent'] = $parentId;
 		}
 		if ( count( $post_fields ) > 1 ) {
 			$updated = wp_update_post( wp_slash( $post_fields ), true );
