@@ -80,7 +80,7 @@ final class MediaAdapter {
 		$candidate = $asset_root . DIRECTORY_SEPARATOR . ltrim( str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $source ), DIRECTORY_SEPARATOR );
 		$real      = Policy::assertLocalAssetPath( $candidate, $asset_root );
 
-		$max_bytes  = (int) ( getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' ) ?: 20971520 );
+		$max_bytes = (int) ( getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' ) ?: 20971520 );
 		$size      = filesize( $real );
 		if ( false === $size || $size <= 0 || $size > $max_bytes ) {
 			throw new RuntimeException( 'Media file size is invalid or exceeds the configured limit.' );
@@ -147,7 +147,7 @@ final class MediaAdapter {
 			return $result;
 		}
 		$this->applyUpdate( $payload );
-		$result['after'] = $this->snapshot( $id );
+		$result['after']     = $this->snapshot( $id );
 		$result['_rollback'] = array( 'action' => 'media.update', 'payload' => array(
 			'id'          => $id,
 			'title'       => $before['title'],
@@ -197,7 +197,7 @@ final class MediaAdapter {
 		}
 		$old_stem = pathinfo( $old_name, PATHINFO_FILENAME );
 		$new_stem = pathinfo( $requested, PATHINFO_FILENAME );
-		$copies  = array( $old_name => $requested );
+		$copies   = array( $old_name => $requested );
 		foreach ( ( $metadata['sizes'] ?? array() ) as $size ) {
 			if ( ! is_array( $size ) || ! isset( $size['file'] ) || ! is_string( $size['file'] ) ) {
 				throw new RuntimeException( 'Invalid image size metadata.' );
@@ -228,8 +228,8 @@ final class MediaAdapter {
 		try {
 			foreach ( $copies as $from => $to ) {
 				$old_path = $directory . DIRECTORY_SEPARATOR . $from;
-				$newPath = $directory . DIRECTORY_SEPARATOR . $to;
-				$input   = @fopen( $old_path, 'rb' );
+				$newPath  = $directory . DIRECTORY_SEPARATOR . $to;
+				$input    = @fopen( $old_path, 'rb' );
 				if ( ! is_resource( $input ) ) {
 					throw new RuntimeException( 'Image copy source is unavailable.' );
 				}
@@ -244,7 +244,7 @@ final class MediaAdapter {
 				$created[] = $newPath;
 				try {
 					$expected_size = filesize( $old_path );
-					$copied       = stream_copy_to_stream( $input, $output );
+					$copied        = stream_copy_to_stream( $input, $output );
 					if ( false === $expected_size || $expected_size !== $copied ) {
 						throw new RuntimeException( 'Image file copy was incomplete.' );
 					}
@@ -253,7 +253,7 @@ final class MediaAdapter {
 					fclose( $output );
 				}
 			}
-			$after_metadata = $metadata;
+			$after_metadata         = $metadata;
 			$after_metadata['file'] = dirname( $metadata['file'] ) === '.' ? $requested : dirname( $metadata['file'] ) . '/' . $requested;
 			foreach ( ( $after_metadata['sizes'] ?? array() ) as $size_name => $size ) {
 				$after_metadata['sizes'][ $size_name ]['file'] = $copies[$size['file']];
@@ -282,7 +282,7 @@ final class MediaAdapter {
 			clean_post_cache( $id );
 			$restored_path     = get_attached_file( $id, true );
 			$restored_metadata = wp_get_attachment_metadata( $id, true );
-			$restored         = is_string( $restored_path )
+			$restored          = is_string( $restored_path )
 				&& realpath( $restored_path ) === $sourceReal
 				&& is_array( $restored_metadata )
 				&& hash_equals( Fingerprint::make( $metadata ), Fingerprint::make( $restored_metadata ) );
@@ -306,13 +306,13 @@ final class MediaAdapter {
 
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$targetId   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$targetId    = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type
 			&& ! empty( $context['rollback_mode'] )
 			&& isset( $payload['id'] ) && 0 === (int) $payload['id'];
-		$attachment_id = $clear_featured ? 0 : $this->attachmentId( $payload );
+		$attachment_id  = $clear_featured ? 0 : $this->attachmentId( $payload );
 
 		if ( ! current_user_can( 'upload_files' )
 			|| ( $attachment_id > 0 && ! current_user_can( 'edit_post', $attachment_id ) ) ) {
@@ -469,7 +469,7 @@ final class MediaAdapter {
 	}
 
 	private function applyUpdate( array $payload ): void {
-		$id         = $this->attachmentId( $payload );
+		$id          = $this->attachmentId( $payload );
 		$post_fields = array( 'ID' => $id );
 		if ( array_key_exists( 'title', $payload ) ) {
 			$post_fields['post_title'] = sanitize_text_field( (string) $payload['title'] );

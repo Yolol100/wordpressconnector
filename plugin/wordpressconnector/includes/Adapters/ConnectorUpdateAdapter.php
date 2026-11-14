@@ -106,8 +106,8 @@ final class ConnectorUpdateAdapter {
 				if ( ! is_array( $offer ) ) {
 					return false;
 				}
-				$offer['new_version'] = $offer['version'];
-				$offer['plugin'] = self::PLUGIN_FILE;
+				$offer['new_version']                 = $offer['version'];
+				$offer['plugin']                      = self::PLUGIN_FILE;
 				$updates->response[self::PLUGIN_FILE] = (object) $offer;
 				unset( $updates->no_update[self::PLUGIN_FILE] );
 			} elseif ( isset( $updates->response[self::PLUGIN_FILE] ) ) {
@@ -132,7 +132,7 @@ final class ConnectorUpdateAdapter {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return $links;
 		}
-		$url = wp_nonce_url(
+		$url                          = wp_nonce_url(
 			admin_url( 'admin-post.php?action=wpconnector_check_updates' ),
 			'wpconnector_check_updates'
 		);
@@ -166,7 +166,7 @@ final class ConnectorUpdateAdapter {
 		}
 
 		$raw_nonce = wp_unslash( $_GET['wpconnector_notice_nonce'] );
-		$nonce    = sanitize_text_field( $raw_nonce );
+		$nonce     = sanitize_text_field( $raw_nonce );
 		if ( $nonce !== $raw_nonce || ! wp_verify_nonce( $nonce, 'wpconnector_checked_notice' ) ) {
 			return;
 		}
@@ -176,7 +176,7 @@ final class ConnectorUpdateAdapter {
 			return;
 		}
 		$notice_result = sanitize_text_field( $raw_notice_result );
-		$ok           = '1' === $notice_result;
+		$ok            = '1' === $notice_result;
 		echo '<div class="notice ' . ( $ok ? 'notice-success' : 'notice-warning' ) .
 			' is-dismissible"><p>' .
 			esc_html( $ok
@@ -318,7 +318,7 @@ final class ConnectorUpdateAdapter {
 			'plugin_file' => self::PLUGIN_FILE,
 			'version'     => $current,
 		);
-		$plan = array(
+		$plan   = array(
 			'from_version'                    => $current,
 			'to_version'                      => $release['version'],
 			'tag'                             => $release['tag'],
@@ -351,7 +351,7 @@ final class ConnectorUpdateAdapter {
 			// backup. A later fatal error still has no guaranteed automatic recovery.
 			$installation = $this->installWithCoreBackup( $package );
 			wp_clean_plugins_cache( true );
-			$plugins          = get_plugins();
+			$plugins           = get_plugins();
 			$installed_version = isset( $plugins[self::PLUGIN_FILE]['Version'] ) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
 			if ( ! hash_equals( $release['version'], $installed_version ) ) {
 				$this->restoreAfterReadbackFailure( $installation, $current );
@@ -601,7 +601,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Connector checksum asset could not be downloaded.' );
 		}
 
-		$raw_body           = (string) wp_remote_retrieve_body( $response );
+		$raw_body            = (string) wp_remote_retrieve_body( $response );
 		$actual_asset_digest = 'sha256:' . hash( 'sha256', $raw_body );
 		if ( ! hash_equals( $expectedAssetDigest, $actual_asset_digest ) ) {
 			throw new RuntimeException( 'Connector checksum asset GitHub digest verification failed.' );
@@ -628,7 +628,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'Connector release ZIP has an invalid number of entries.' );
 			}
 
-			$paths             = array();
+			$paths              = array();
 			$uncompressed_bytes = 0;
 			for ( $index = 0; $index < $zip->numFiles; ++$index ) {
 				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );

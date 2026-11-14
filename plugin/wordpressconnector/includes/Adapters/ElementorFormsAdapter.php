@@ -117,20 +117,20 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'Requested form family does not match the supplied form JSON.' );
 		}
 
-		$capabilities              = $this->capabilities( array(), array() );
+		$capabilities                = $this->capabilities( array(), array() );
 		$expected_schema_fingerprint = isset( $payload['expected_schema_fingerprint'] ) ? (string) $payload['expected_schema_fingerprint'] : '';
 		if ( '' !== $expected_schema_fingerprint && ! hash_equals( (string) $capabilities['schema_fingerprint'], $expected_schema_fingerprint ) ) {
 			throw new RuntimeException( 'Elementor form schema fingerprint changed; refresh form capabilities before writing.' );
 		}
 
 		$this->validateForm( $form, $family, $capabilities );
-		$form_id          = (string) $form['id'];
-		$existing        = $this->findElementCopy( $data, $form_id );
-		$existing_family  = is_array( $existing ) ? $this->formFamily( $existing ) : null;
+		$form_id           = (string) $form['id'];
+		$existing          = $this->findElementCopy( $data, $form_id );
+		$existing_family   = is_array( $existing ) ? $this->formFamily( $existing ) : null;
 		$parent_element_id = isset( $payload['parent_element_id'] ) ? (string) $payload['parent_element_id'] : '';
-		$position        = array_key_exists( 'position', $payload ) ? (int) $payload['position'] : null;
-		$operation       = 'insert';
-		$before_form      = null;
+		$position          = array_key_exists( 'position', $payload ) ? (int) $payload['position'] : null;
+		$operation         = 'insert';
+		$before_form       = null;
 
 		if ( is_array( $existing ) ) {
 			if ( null === $existing_family ) {
@@ -203,9 +203,9 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'Elementor form mutation failed; previous document restored: ' . $error->getMessage(), 0, $error );
 		}
 
-		$result['after_form'] = $readback;
+		$result['after_form']           = $readback;
 		$result['document_fingerprint'] = Fingerprint::make( $after );
-		$result['_rollback'] = array(
+		$result['_rollback']            = array(
 			'action'  => 'elementor.replace_document',
 			'payload' => array(
 				'id'            => (int) $post->ID,
@@ -237,8 +237,8 @@ final class ElementorFormsAdapter {
 			);
 		}
 
-		$controls   = $this->collectControlSchema( $widgets['form'], $warnings );
-		$field_types = isset( $controls['form_fields']['fields']['field_type']['choice_keys'] )
+		$controls       = $this->collectControlSchema( $widgets['form'], $warnings );
+		$field_types    = isset( $controls['form_fields']['fields']['field_type']['choice_keys'] )
 			? $controls['form_fields']['fields']['field_type']['choice_keys']
 			: array();
 		$submit_actions = isset( $controls['submit_actions']['choice_keys'] ) ? $controls['submit_actions']['choice_keys'] : array();
@@ -269,7 +269,7 @@ final class ElementorFormsAdapter {
 
 		$form_available = isset( $types['e-form'] );
 		$form_config    = $form_available ? $types['e-form']['config'] : array();
-		$props         = isset( $form_config['atomic_props_schema'] ) && is_array( $form_config['atomic_props_schema'] )
+		$props          = isset( $form_config['atomic_props_schema'] ) && is_array( $form_config['atomic_props_schema'] )
 			? array_keys( $form_config['atomic_props_schema'] )
 			: array();
 		sort( $props, SORT_STRING );
@@ -323,7 +323,7 @@ final class ElementorFormsAdapter {
 				if ( ! is_array( $field ) ) {
 					continue;
 				}
-				$key = isset( $field['name'] ) && is_scalar( $field['name'] ) ? (string) $field['name'] : (string) $field_name;
+				$key                      = isset( $field['name'] ) && is_scalar( $field['name'] ) ? (string) $field['name'] : (string) $field_name;
 				$record['fields'][ $key ] = $this->controlRecord( $key, $field );
 			}
 			ksort( $record['fields'], SORT_STRING );
@@ -422,7 +422,7 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $settings['form_fields'] ) ) {
 				throw new RuntimeException( 'V3 settings.form_fields must be an array.' );
 			}
-			$seen_ids       = array();
+			$seen_ids        = array();
 			$seen_custom_ids = array();
 			foreach ( $settings['form_fields'] as $field ) {
 				if ( ! is_array( $field ) ) {
@@ -468,7 +468,7 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'V4 Atomic forms must use elType=e-form.' );
 		}
 		$registered_types = $this->registeredTypeNames();
-		$counts          = array();
+		$counts           = array();
 		$this->validateAtomicNode( $form, $registered_types, $counts, true );
 
 		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $required ) {
@@ -575,7 +575,7 @@ final class ElementorFormsAdapter {
 				continue;
 			}
 			$element_path = array_merge( $path, array( (int) $index ) );
-			$family      = $this->formFamily( $element );
+			$family       = $this->formFamily( $element );
 			if ( null !== $family ) {
 				$forms[] = array(
 					'id'                => isset( $element['id'] ) ? (string) $element['id'] : '',

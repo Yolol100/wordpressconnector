@@ -93,9 +93,9 @@ final class CustomCssAdapter {
 			throw new RuntimeException( 'Additional CSS readback verification failed; the previous CSS was restored.' );
 		}
 
-		$result['after'] = $readback;
+		$result['after']             = $readback;
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'custom_css.update',
 			'payload' => array(
 				'stylesheet' => $stylesheet,
@@ -139,10 +139,10 @@ final class CustomCssAdapter {
 
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
-		$after_css   = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
+		$after_css  = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
 		$this->assertCss( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
 
-		$after = array(
+		$after  = array(
 			'stylesheet' => $stylesheet,
 			'css'        => $after_css,
 			'post_id'    => $before['post_id'],
@@ -185,9 +185,9 @@ final class CustomCssAdapter {
 			throw new RuntimeException( 'Managed Additional CSS patch readback failed; the previous CSS was restored.' );
 		}
 
-		$result['after'] = $readback;
+		$result['after']             = $readback;
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'custom_css.update',
 			'payload' => array(
 				'stylesheet' => $stylesheet,
@@ -199,8 +199,8 @@ final class CustomCssAdapter {
 	}
 
 	private function applyPatch( string $currentCss, string $patchId, string $operation, ?string $patchCss ): string {
-		$start      = '/* ' . self::PATCH_PREFIX . $patchId . ' */';
-		$end        = '/* /' . self::PATCH_PREFIX . $patchId . ' */';
+		$start       = '/* ' . self::PATCH_PREFIX . $patchId . ' */';
+		$end         = '/* /' . self::PATCH_PREFIX . $patchId . ' */';
 		$start_count = substr_count( $currentCss, $start );
 		$end_count   = substr_count( $currentCss, $end );
 

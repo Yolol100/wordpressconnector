@@ -51,9 +51,9 @@ final class AbilitiesAdapter {
 			);
 		}
 
-		$per_page    = $this->catalogPositiveInteger( $payload['per_page'] ?? 10, 10, 'per_page' );
-		$page       = $this->catalogPositiveInteger( $payload['page'] ?? 1, 100000, 'page' );
-		$namespace  = $this->catalogNamespace( $payload['namespace'] ?? null );
+		$per_page  = $this->catalogPositiveInteger( $payload['per_page'] ?? 10, 10, 'per_page' );
+		$page      = $this->catalogPositiveInteger( $payload['page'] ?? 1, 100000, 'page' );
+		$namespace = $this->catalogNamespace( $payload['namespace'] ?? null );
 
 		$registered = (array) wp_get_abilities();
 		if ( count( $registered ) > 10000 ) {
@@ -111,7 +111,7 @@ final class AbilitiesAdapter {
 
 	public function readAbility( array $payload, array $context ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, false );
-		$input = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
+		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		return $this->executeAndSanitize( $name, $ability, $input, $this->safeAnnotations( $ability ), false );
 	}
 
@@ -125,8 +125,8 @@ final class AbilitiesAdapter {
 
 	private function executeMutation( array $payload, array $context, bool $approvedProvider ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, true, $approvedProvider );
-		$input       = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
-		$annotations = $this->safeAnnotations( $ability );
+		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
+		$annotations            = $this->safeAnnotations( $ability );
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			list( $input_schema, $input_schema_omitted ) = $this->boundedCatalogValue(
@@ -144,7 +144,7 @@ final class AbilitiesAdapter {
 			);
 		}
 
-		$result = $this->executeAndSanitize( $name, $ability, $input, $annotations, true );
+		$result                       = $this->executeAndSanitize( $name, $ability, $input, $annotations, true );
 		$result['rollback_supported'] = false;
 		return $result;
 	}
@@ -169,11 +169,11 @@ final class AbilitiesAdapter {
 	}
 
 	private function executeAndSanitize( string $name, object $ability, $input, array $annotations, bool $mutation ): array {
-		$execution_started             = false;
+		$execution_started               = false;
 		$provider_pre_execution_rejected = false;
-		$execution_tracker             = null;
-		$guard_tracker                 = null;
-		$provider                     = null;
+		$execution_tracker               = null;
+		$guard_tracker                   = null;
+		$provider                        = null;
 
 		if ( $mutation ) {
 			$callback = $this->abilityExecuteCallback( $ability );
@@ -285,7 +285,7 @@ final class AbilitiesAdapter {
 		);
 		if ( $mutation ) {
 			$response['execution_completed'] = true;
-			$response['result_omitted'] = false;
+			$response['result_omitted']      = false;
 		}
 		return $response;
 	}
@@ -406,8 +406,8 @@ final class AbilitiesAdapter {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_option' ) ) {
 			return false;
 		}
-		$active        = get_option( 'active_plugins', array() );
-		$active        = is_array( $active ) ? $active : array();
+		$active         = get_option( 'active_plugins', array() );
+		$active         = is_array( $active ) ? $active : array();
 		$network_active = function_exists( 'get_site_option' )
 			? get_site_option( 'active_sitewide_plugins', array() ) : array();
 		$network_active = is_array( $network_active ) ? array_keys( $network_active ) : array();
@@ -540,12 +540,12 @@ final class AbilitiesAdapter {
 			return array();
 		}
 
-		$active        = get_option( 'active_plugins', array() );
-		$active        = is_array( $active ) ? array_values( $active ) : array();
+		$active = get_option( 'active_plugins', array() );
+		$active = is_array( $active ) ? array_values( $active ) : array();
 
 		$network_active = array();
 		if ( function_exists( 'get_site_option' ) ) {
-			$value         = get_site_option( 'active_sitewide_plugins', array() );
+			$value          = get_site_option( 'active_sitewide_plugins', array() );
 			$network_active = is_array( $value ) ? array_keys( $value ) : array();
 		}
 
@@ -601,8 +601,8 @@ final class AbilitiesAdapter {
 	}
 
 	private function safeAnnotations( object $ability ): array {
-		$meta        = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
-		$annotations = is_array( $meta ) && isset( $meta['annotations'] ) && is_array( $meta['annotations'] )
+		$meta             = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
+		$annotations      = is_array( $meta ) && isset( $meta['annotations'] ) && is_array( $meta['annotations'] )
 			? $meta['annotations']
 			: array();
 		$safe_annotations = array();
@@ -615,9 +615,9 @@ final class AbilitiesAdapter {
 	}
 
 	private function descriptor( string $name, object $ability ): array {
-		$safe_annotations          = $this->safeAnnotations( $ability );
-		$read_eligible             = $this->isReadEligible( $ability );
-		$mutation_eligible         = $this->isElementorMutationEligible( $name, $ability );
+		$safe_annotations           = $this->safeAnnotations( $ability );
+		$read_eligible              = $this->isReadEligible( $ability );
+		$mutation_eligible          = $this->isElementorMutationEligible( $name, $ability );
 		$approved_mutation_eligible = $this->isApprovedPluginMutationEligible( $name, $ability );
 
 		list( $input_schema, $input_schema_omitted ) = $this->boundedCatalogValue(

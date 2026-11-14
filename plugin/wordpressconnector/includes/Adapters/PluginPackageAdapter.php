@@ -102,7 +102,7 @@ final class PluginPackageAdapter {
 		}
 		if ( $installed ) {
 			$theme_root = realpath( get_theme_root( $expected ) );
-			$canonical = realpath( get_theme_root() );
+			$canonical  = realpath( get_theme_root() );
 			if ( false === $theme_root || false === $canonical || ! hash_equals( $canonical, $theme_root ) ) {
 				throw new RuntimeException( 'Custom theme roots cannot be overwritten via the connector.' );
 			}
@@ -129,13 +129,13 @@ final class PluginPackageAdapter {
 		if ( $overwrite && ! Policy::flag( 'WPCONNECTOR_ALLOW_THEME_PACKAGE_REPLACE' ) ) {
 			throw new RuntimeException( 'Theme ZIP replacement requires explicit server-side authorization and staging restore proof.' );
 		}
-		$style_path       = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
+		$style_path        = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
 		$beforeStyleHash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
 		if ( $overwrite && ( ! is_string( $beforeStyleHash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $beforeStyleHash ) ) ) {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
 		}
-		$upgrader        = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
-		$backup          = array( 'slug' => $expected, 'src' => get_theme_root(), 'dir' => 'themes' );
+		$upgrader         = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
+		$backup           = array( 'slug' => $expected, 'src' => get_theme_root(), 'dir' => 'themes' );
 		$restore_pending  = false;
 		$shutdown_restore = static function () use ( $upgrader, $backup, &$restore_pending ): void {
 			if ( $restore_pending ) {
@@ -184,7 +184,7 @@ final class PluginPackageAdapter {
 				'version' => (string) $after_theme->get( 'Version' ) );
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
-				$restored       = $upgrader->restore_temp_backup( array( $backup ) );
+				$restored        = $upgrader->restore_temp_backup( array( $backup ) );
 				$restore_pending = false;
 				remove_action( 'shutdown', $shutdown_restore, 10 );
 				wp_clean_themes_cache();
@@ -197,11 +197,11 @@ final class PluginPackageAdapter {
 			}
 			throw $error;
 		}
-		$restore_pending                 = false;
+		$restore_pending                   = false;
 		$temporary_backup_cleanup_verified = null;
 		if ( $overwrite ) {
 			remove_action( 'shutdown', $shutdown_restore, 10 );
-			$cleaned                        = $upgrader->delete_temp_backup( array( $backup ) );
+			$cleaned                           = $upgrader->delete_temp_backup( array( $backup ) );
 			$temporary_backup_cleanup_verified = true === $cleaned;
 		}
 		return array( 'operation' => $overwrite ? 'updated' : 'installed',
@@ -252,7 +252,7 @@ final class PluginPackageAdapter {
 					}
 				}
 				$seen[ $normal ] = true;
-				$bytes = isset( $stat['size'] ) ? (int) $stat['size'] : -1;
+				$bytes           = isset( $stat['size'] ) ? (int) $stat['size'] : -1;
 				if ( $bytes < 0 ) throw new RuntimeException( 'Invalid theme ZIP entry size.' );
 				$total += $bytes;
 				if ( $total > self::MAX_UNCOMPRESSED_BYTES ) throw new RuntimeException( 'Theme ZIP exceeds extracted size budget.' );
@@ -302,7 +302,7 @@ final class PluginPackageAdapter {
 
 		$max_bytes = (int) ( getenv( 'WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES' ) ?: self::MAX_PACKAGE_BYTES );
 		$max_bytes = max( 1048576, min( self::MAX_PACKAGE_BYTES, $max_bytes ) );
-		$size     = filesize( $package );
+		$size      = filesize( $package );
 		if ( false === $size || $size <= 0 || $size > $max_bytes ) {
 			throw new RuntimeException( 'Plugin package is empty or exceeds the configured size limit.' );
 		}
@@ -379,7 +379,7 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( $result->get_error_message() );
 		}
 		if ( true !== $result ) {
-			$errors = isset( $upgrader->skin ) && method_exists( $upgrader->skin, 'get_errors' )
+			$errors  = isset( $upgrader->skin ) && method_exists( $upgrader->skin, 'get_errors' )
 				? $upgrader->skin->get_errors() : null;
 			$details = is_wp_error( $errors ) ? (array) $errors->get_error_messages() : array();
 			$message = $details ? substr( sanitize_text_field( implode( '; ', $details ) ), 0, 280 )
@@ -442,9 +442,9 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Plugin ZIP has an invalid number of entries.' );
 			}
 
-			$roots             = array();
-			$paths             = array();
-			$headers           = array();
+			$roots              = array();
+			$paths              = array();
+			$headers            = array();
 			$uncompressed_bytes = 0;
 
 			for ( $index = 0; $index < $zip->numFiles; ++$index ) {

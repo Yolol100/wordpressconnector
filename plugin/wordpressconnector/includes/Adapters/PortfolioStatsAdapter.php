@@ -56,7 +56,7 @@ final class PortfolioStatsAdapter {
 			throw new RuntimeException( 'Portfolio case text update requires a positive integer post_id.' );
 		}
 		$post_id = $payload['post_id'];
-		$post = get_post( $post_id );
+		$post    = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Portfolio case text target post was not found.' );
 		}
@@ -76,7 +76,7 @@ final class PortfolioStatsAdapter {
 			$requested['content'] = $value;
 		}
 
-		$field_map = array(
+		$field_map        = array(
 			'description_1' => 'field_69deb8ddbcd8d',
 			'description_2' => 'field_69deb8e4bcd8e',
 		);
@@ -102,7 +102,7 @@ final class PortfolioStatsAdapter {
 					throw new RuntimeException( 'Portfolio case descriptions must be plain text up to 5000 bytes without HTML or control characters.' );
 				}
 				$field_key = $field_map[ $name ];
-				$field = acf_get_field( $field_key );
+				$field     = acf_get_field( $field_key );
 				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text','textarea','wysiwyg' ), true ) || ! isset( $allowed_parents[(string) ( $field['parent'] ?? '' )] ) ) {
 					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . $name );
 				}
@@ -136,7 +136,7 @@ final class PortfolioStatsAdapter {
 				}
 			}
 			$after_post = get_post( $post_id );
-			$after = array();
+			$after      = array();
 			foreach ( $requested as $name => $value ) {
 				$actual = 'content' === $name ? ( $after_post instanceof \WP_Post ? (string) $after_post->post_content : null ) : get_field( $field_map[ $name ], $post_id, false );
 				if ( $actual !== $value ) throw new RuntimeException( 'Portfolio case readback mismatch for: ' . $name );
@@ -146,7 +146,7 @@ final class PortfolioStatsAdapter {
 		} catch ( Throwable $error ) {
 			$failures = array();
 			if ( array_key_exists( 'content', $before ) ) {
-				$restore = wp_update_post( array( 'ID' => $post_id, 'post_content' => $before['content'] ), true );
+				$restore       = wp_update_post( array( 'ID' => $post_id, 'post_content' => $before['content'] ), true );
 				$restored_post = get_post( $post_id );
 				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) $failures[] = 'content';
 			}
@@ -177,7 +177,7 @@ final class PortfolioStatsAdapter {
 			throw new RuntimeException( 'Portfolio stats update requires a positive integer post_id.' );
 		}
 		$post_id = $payload['post_id'];
-		$post = get_post( $post_id );
+		$post    = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Portfolio stats target post was not found.' );
 		}
@@ -218,7 +218,7 @@ final class PortfolioStatsAdapter {
 			throw new RuntimeException( 'No ACF field group applies to the portfolio stats target post.' );
 		}
 
-		$before = array();
+		$before     = array();
 		$seen_names = array();
 		foreach ( $fields as $field_key => $value ) {
 			$field_key = (string) $field_key;
@@ -233,7 +233,7 @@ final class PortfolioStatsAdapter {
 			if ( ! is_array( $field ) || 'text' !== (string) ( $field['type'] ?? '' ) ) {
 				throw new RuntimeException( 'Portfolio stats field is missing or is not a text field: ' . $field_key );
 			}
-			$name = (string) ( $field['name'] ?? '' );
+			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
 			if ( ! in_array( $name, self::ALLOWED_FIELD_NAMES, true ) ) {
 				throw new RuntimeException( 'Field is outside the fixed portfolio stats allowlist: ' . $field_key );
@@ -245,7 +245,7 @@ final class PortfolioStatsAdapter {
 				throw new RuntimeException( 'Portfolio stats field does not belong to a field group for the target post: ' . $field_key );
 			}
 			Policy::assertKeyAllowed( $name );
-			$seen_names[ $name ] = true;
+			$seen_names[ $name ]  = true;
 			$before[ $field_key ] = get_field( $field_key, $post_id, false );
 		}
 
