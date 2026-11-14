@@ -454,8 +454,21 @@ final class ElementorJsonImport {
 	private function buildBulkPlan( array $entries ): array {
 		$plan          = array();
 		$seenTargets   = array();
-		$templateTypes = array( 'header', 'footer', 'section', 'single', 'single-post', 'single-page',
-		'archive', 'search-results', 'error-404', 'popup', 'loop-item', 'loop', 'kit' );
+		$templateTypes = array(
+			'header',
+			'footer',
+			'section',
+			'single',
+			'single-post',
+			'single-page',
+			'archive',
+			'search-results',
+			'error-404',
+			'popup',
+			'loop-item',
+			'loop',
+			'kit'
+		);
 		foreach ( $entries as $entry ) {
 			$name         = $entry['name'];
 			$payload      = $entry['payload'];
@@ -485,21 +498,29 @@ final class ElementorJsonImport {
 				$slug = $this->bulkFilenameSlug( $name );
 			}
 			$row = array(
-			'name'     => $name, 'post_type' => $postType, 'slug' => $slug,
-			'post_id'  => 0, 'target_label' => '-', 'status' => 'conflict: unknown type or target',
-			'content'                        => $payload['content'],
-			'settings'                       => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
+			'name'          => $name,
+			'post_type'     => $postType,
+			'slug'          => $slug,
+			'post_id'       => 0,
+			'target_label'  => '-',
+			'status'        => 'conflict: unknown type or target',
+			'content'       => $payload['content'],
+			'settings'      => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 			? $payload['page_settings']
 			: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
-			'template_type' => $documentType, 'fingerprint' => '',
+			'template_type' => $documentType,
+			'fingerprint'   => '',
 			);
 			if ( $familyConflict ) {
 				$row['status'] = 'conflict: source post type does not match Elementor document type';
 			}
 			elseif ( '' !== $postType && '' !== $slug ) {
 				$matches = get_posts( array(
-				'post_type'        => $postType, 'post_status' => 'any',
-				'name'             => $slug, 'posts_per_page' => 3, 'fields' => 'ids',
+				'post_type'        => $postType,
+				'post_status'      => 'any',
+				'name'             => $slug,
+				'posts_per_page'   => 3,
+				'fields'           => 'ids',
 				'suppress_filters' => true,
 				) );
 				if ( 1 === count( $matches ) ) {
