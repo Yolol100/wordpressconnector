@@ -181,7 +181,10 @@ final class Settings {
 			'a' => array( 'href' => true ),
 		);
 		wp_die( wp_kses( $message, $allowed_html ), esc_html__( 'WordPress Connector direct MCP setup', 'wordpressconnector' ),
-			array( 'response' => 200, 'back_link' => false ) );
+			array(
+				'response'  => 200,
+				'back_link' => false
+			) );
 	}
 
 	/**

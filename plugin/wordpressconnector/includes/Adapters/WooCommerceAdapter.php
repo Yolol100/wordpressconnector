@@ -461,7 +461,11 @@ final class WooCommerceAdapter {
 		$classes = array();
 		foreach ( \WC_Tax::get_tax_rate_classes() as $class ) {
 			if ( is_object( $class ) ) {
-				$classes[] = array( 'id' => isset( $class->tax_rate_class_id ) ? (int) $class->tax_rate_class_id : 0, 'name' => isset( $class->name ) ? (string) $class->name : '', 'slug' => isset( $class->slug ) ? (string) $class->slug : '' );
+				$classes[] = array(
+					'id'   => isset( $class->tax_rate_class_id ) ? (int) $class->tax_rate_class_id : 0,
+					'name' => isset( $class->name ) ? (string) $class->name : '',
+					'slug' => isset( $class->slug ) ? (string) $class->slug : ''
+				);
 			}
 		}
 		return array(
@@ -565,7 +569,10 @@ final class WooCommerceAdapter {
 			$snapshot['locations'] = array();
 			foreach ( $locations as $location ) {
 				if ( is_object( $location ) && isset( $location->location_type, $location->location_code ) ) {
-					$snapshot['locations'][] = array( 'type' => (string) $location->location_type, 'code' => (string) $location->location_code );
+					$snapshot['locations'][] = array(
+						'type' => (string) $location->location_type,
+						'code' => (string) $location->location_code
+					);
 				}
 			}
 			$snapshot['location_count']      = $location_count;
@@ -668,7 +675,10 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $this->productSnapshot( $product ),
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'type' => $type ) ),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'  => true,
+					'type' => $type
+				) ),
 			);
 		}
 
@@ -679,7 +689,10 @@ final class WooCommerceAdapter {
 		$saved = wc_get_product( $id );
 		return array(
 			'product'   => $this->productSnapshot( $saved ),
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'post.trash',
+				'payload' => array( 'id' => (int) $id )
+			),
 		);
 	}
 
@@ -781,7 +794,10 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $this->variationSnapshot( $variation ),
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'parent_id' => $parent_id ) ),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'       => true,
+					'parent_id' => $parent_id
+				) ),
 			);
 		}
 		$id = $variation->save();
@@ -794,7 +810,10 @@ final class WooCommerceAdapter {
 		}
 		return array(
 			'variation' => $this->variationSnapshot( $saved_variation ),
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'post.trash',
+				'payload' => array( 'id' => (int) $id )
+			),
 		);
 	}
 
@@ -865,7 +884,10 @@ final class WooCommerceAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $args,
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'slug' => $args['slug'] ) ),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'  => true,
+					'slug' => $args['slug']
+				) ),
 			);
 		}
 		$id = wc_create_attribute( $args );
@@ -875,7 +897,10 @@ final class WooCommerceAdapter {
 		delete_transient( 'wc_attribute_taxonomies' );
 		return array(
 			'attribute_id' => (int) $id,
-			'_rollback'    => array( 'action' => 'woocommerce.attribute.delete', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback'    => array(
+				'action'  => 'woocommerce.attribute.delete',
+				'payload' => array( 'id' => (int) $id )
+			),
 		);
 	}
 
@@ -1020,7 +1045,10 @@ final class WooCommerceAdapter {
 		$id = $coupon->save();
 		return array(
 			'coupon'    => $this->couponSnapshot( new \WC_Coupon( $id ) ),
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'post.trash',
+				'payload' => array( 'id' => (int) $id )
+			),
 		);
 	}
 
@@ -1278,7 +1306,11 @@ final class WooCommerceAdapter {
 	private function orderSnapshot( \WC_Order $order, bool $includePersonalData, bool $includeItems = true ): array {
 		$item_details = $includeItems
 			? $this->orderItemsSnapshot( $order )
-			: array( 'items' => array(), 'item_count' => 0, 'items_truncated' => false );
+			: array(
+				'items'           => array(),
+				'item_count'      => 0,
+				'items_truncated' => false
+			);
 		$snapshot     = array(
 			'id'              => (int) $order->get_id(),
 			'status'          => (string) $order->get_status(),
@@ -1554,7 +1586,10 @@ final class WooCommerceAdapter {
 				}
 				foreach ( $location_rows as $location ) {
 					if ( is_object( $location ) && isset( $location->location_code, $location->location_type ) ) {
-						$locations[] = array( 'code' => (string) $location->location_code, 'type' => (string) $location->location_type );
+						$locations[] = array(
+							'code' => (string) $location->location_code,
+							'type' => (string) $location->location_type
+						);
 					}
 				}
 			}
@@ -1803,7 +1838,11 @@ final class WooCommerceAdapter {
 		$items = array();
 		foreach ( $downloads as $download ) {
 			if ( $download instanceof \WC_Product_Download ) {
-				$items[] = array( 'id' => (string) $download->get_id(), 'name' => (string) $download->get_name(), 'file' => (string) $download->get_file() );
+				$items[] = array(
+					'id'   => (string) $download->get_id(),
+					'name' => (string) $download->get_name(),
+					'file' => (string) $download->get_file()
+				);
 			}
 		}
 		return $items;

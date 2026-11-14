@@ -280,7 +280,10 @@ final class AssetStore {
 		$files = 0;
 		$bytes = 0;
 		if ( ! is_dir( $root ) ) {
-			return array( 'files' => 0, 'bytes' => 0 );
+			return array(
+				'files' => 0,
+				'bytes' => 0
+			);
 		}
 
 		$iterator = new \RecursiveIteratorIterator(
@@ -292,7 +295,10 @@ final class AssetStore {
 				$bytes += (int) $entry->getSize();
 			}
 		}
-		return array( 'files' => $files, 'bytes' => $bytes );
+		return array(
+			'files' => $files,
+			'bytes' => $bytes
+		);
 	}
 
 	/**

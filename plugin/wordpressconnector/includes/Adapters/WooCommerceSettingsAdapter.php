@@ -67,7 +67,10 @@ final class WooCommerceSettingsAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'manage_woocommerce'
+		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 
 		$registry->register( 'woocommerce.settings.catalog', array( $this, 'catalog' ), array_merge( $read, array(
@@ -305,14 +308,21 @@ final class WooCommerceSettingsAdapter {
 		}
 		$previous = $this->validateValue( $payload['value'], $before );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => $id, '_current_fingerprint' => $fingerprint );
+			return array(
+				'would_restore'        => $id,
+				'_current_fingerprint' => $fingerprint
+			);
 		}
 		$this->api( 'PUT', $this->itemPath( $group, $id ), array( 'value' => $previous ) );
 		$readback = $this->item( $group, $id );
 		if ( ( $readback['value'] ?? null ) !== $previous ) {
 			throw new RuntimeException( 'WooCommerce setting rollback readback failed.' );
 		}
-		return array( 'restored' => true, 'group' => $group, 'id' => $id );
+		return array(
+			'restored' => true,
+			'group'    => $group,
+			'id'       => $id
+		);
 	}
 
 	/**
@@ -445,7 +455,10 @@ final class WooCommerceSettingsAdapter {
 				$subtabs  = array();
 				if ( is_array( $sections ) ) {
 					foreach ( array_slice( $sections, 0, 60, true ) as $id => $label ) {
-						$subtabs[] = array( 'id' => $this->shortText( (string) $id ), 'label' => $this->shortText( $label ) );
+						$subtabs[] = array(
+							'id'    => $this->shortText( (string) $id ),
+							'label' => $this->shortText( $label )
+						);
 					}
 				}
 				$tabs[] = array(
@@ -467,9 +480,15 @@ final class WooCommerceSettingsAdapter {
 					), true ) ? 'woocommerce' : 'extension_or_custom',
 				);
 			}
-			return array( 'available' => true, 'tabs' => $tabs );
+			return array(
+				'available' => true,
+				'tabs'      => $tabs
+			);
 		} catch ( Throwable $error ) {
-			return array( 'available' => false, 'reason' => 'admin_settings_inventory_failed' );
+			return array(
+				'available' => false,
+				'reason'    => 'admin_settings_inventory_failed'
+			);
 		}
 	}
 
@@ -600,7 +619,7 @@ final class WooCommerceSettingsAdapter {
 		if ( 'textarea' === $type && ( strlen( $value ) > 1200 || preg_match( '/[<>]/', $value ) ) ) {
 			throw new RuntimeException( 'WooCommerce textarea contains unsupported markup.' );
 		}
-		if ( ! in_array( $type, array( 'select','radio','checkbox','text','number','email','color','textarea' ), true ) ) {
+		if ( ! in_array( $type, array( 'select', 'radio', 'checkbox', 'text', 'number', 'email', 'color', 'textarea' ), true ) ) {
 			throw new RuntimeException( 'WooCommerce setting type is not supported for automated changes.' );
 		}
 		if ( in_array( $type, array( 'text', 'number', 'email' ), true ) && preg_match( '/[<>\\r\\n]/', $value ) ) {
@@ -658,7 +677,11 @@ final class WooCommerceSettingsAdapter {
 	 * @return string Operation result.
 	 */
 	private function valueFingerprint( string $group, string $id, $value ): string {
-		return Fingerprint::make( array( 'group' => $group, 'id' => $id, 'value' => $value ) );
+		return Fingerprint::make( array(
+			'group' => $group,
+			'id'    => $id,
+			'value' => $value
+		) );
 	}
 
 	/**

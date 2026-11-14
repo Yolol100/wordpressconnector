@@ -120,8 +120,11 @@ final class YoastNativeAbilitiesAdapter {
 			'available'     => $available,
 			'yoast_version' => defined( 'WPSEO_VERSION' ) ? (string) WPSEO_VERSION :
 				( defined( 'YOAST_SEO_VERSION' ) ? (string) YOAST_SEO_VERSION : null ),
-			'abilities'     => $actions,
-			'requires' => array( 'wordpress' => '6.9', 'yoast' => '28.6' ),
+			'abilities' => $actions,
+			'requires'  => array(
+				'wordpress' => '6.9',
+				'yoast'     => '28.6'
+			),
 			'transport'     => 'private_authenticated_only',
 		);
 	}
@@ -153,7 +156,11 @@ final class YoastNativeAbilitiesAdapter {
 		if ( ! is_array( $result ) || count( $result ) > $number ) {
 			throw new RuntimeException( 'Yoast analysis response shape was invalid.' );
 		}
-		return array( 'kind' => $kind, 'items' => $result, 'count' => count( $result ) );
+		return array(
+			'kind'  => $kind,
+			'items' => $result,
+			'count' => count( $result )
+		);
 	}
 
 	/**
@@ -168,10 +175,10 @@ final class YoastNativeAbilitiesAdapter {
 		$id   = $this->assertPostAccess( $payload );
 		$data = $this->postData( $id );
 		return array(
-			'post_id'     => $id,
-			'fields'      => $this->snapshot( $data ),
-			'rendered'    => $this->renderedFields( $data ),
-			'analysis'    => array_intersect_key( $data, array_flip( array(
+			'post_id'  => $id,
+			'fields'   => $this->snapshot( $data ),
+			'rendered' => $this->renderedFields( $data ),
+			'analysis' => array_intersect_key( $data, array_flip( array(
 				'focus_keyphrase',
 				'seo_score',
 				'readability_score',
@@ -273,7 +280,10 @@ final class YoastNativeAbilitiesAdapter {
 			throw new RuntimeException( 'Yoast metadata changed since the original write.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => array_keys( $previous ), '_current_fingerprint' => Fingerprint::make( $current ) );
+			return array(
+				'would_restore'        => array_keys( $previous ),
+				'_current_fingerprint' => Fingerprint::make( $current )
+			);
 		}
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $previous ) );
 		$after = $this->snapshot( $this->postData( $id ) );
@@ -282,7 +292,11 @@ final class YoastNativeAbilitiesAdapter {
 				throw new RuntimeException( 'Yoast native rollback readback mismatch.' );
 			}
 		}
-		return array( 'post_id' => $id, 'restored' => true, 'readback_verified' => true );
+		return array(
+			'post_id'           => $id,
+			'restored'          => true,
+			'readback_verified' => true
+		);
 	}
 
 	/**

@@ -241,7 +241,10 @@ final class ProcessedStore {
 		$updated = $wpdb->update(
 			$wpdb->options,
 			array( 'option_value' => $replacement ),
-			array( 'option_name' => self::LOCK_KEY, 'option_value' => $expected ),
+			array(
+				'option_name'  => self::LOCK_KEY,
+				'option_value' => $expected
+			),
 			array( '%s' ),
 			array( '%s', '%s' )
 		);
@@ -265,7 +268,10 @@ final class ProcessedStore {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
 		$deleted = $wpdb->delete(
 			$wpdb->options,
-			array( 'option_name' => self::LOCK_KEY, 'option_value' => $expected ),
+			array(
+				'option_name'  => self::LOCK_KEY,
+				'option_value' => $expected
+			),
 			array( '%s', '%s' )
 		);
 		if ( 1 !== $deleted ) {

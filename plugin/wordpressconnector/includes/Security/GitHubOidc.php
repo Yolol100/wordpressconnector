@@ -127,10 +127,10 @@ final class GitHubOidc {
 		$repository = isset( $claims['repository'] ) && is_string( $claims['repository'] )
 			? $claims['repository']
 			: '';
-		if ( ! isset( self::TRUSTED_RUNTIMES[$repository] ) ) {
+		if ( ! isset( self::TRUSTED_RUNTIMES[ $repository ] ) ) {
 			throw new RuntimeException( 'GitHub OIDC repository is not trusted.' );
 		}
-		$runtime  = self::TRUSTED_RUNTIMES[$repository];
+		$runtime  = self::TRUSTED_RUNTIMES[ $repository ];
 
 		$expected = array(
 			'repository_id'       => (string) $runtime['repository_id'],
@@ -141,7 +141,7 @@ final class GitHubOidc {
 			'runner_environment'  => 'github-hosted',
 		);
 		foreach ( $expected as $name => $value ) {
-			if ( ! isset( $claims[$name] ) || ! is_scalar( $claims[$name] ) || ! hash_equals( $value, (string) $claims[$name] ) ) {
+			if ( ! isset( $claims[ $name ] ) || ! is_scalar( $claims[ $name ] ) || ! hash_equals( $value, (string) $claims[ $name ] ) ) {
 				throw new RuntimeException( 'GitHub OIDC claim is not trusted: ' . $name . '.' );
 			}
 		}
@@ -172,7 +172,10 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC token was already used.' );
 		}
 		$key    = self::REPLAY_OPTION_PREFIX . $hash;
-		$record = array( 'created_at' => time(), 'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW );
+		$record = array(
+			'created_at' => time(),
+			'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW
+		);
 		// add_option() uses the uniquely indexed option_name in WordPress's
 		// database: simultaneous requests cannot consume the same signed JWT.
 		if ( ! add_option( $key, $record, '', false ) ) {
@@ -499,9 +502,9 @@ final class GitHubOidc {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function integerClaim( array $claims, string $name ): int {
-		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[$name] ) && ! ctype_digit( (string) $claims[$name] ) ) ) {
+		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[ $name ] ) && ! ctype_digit( (string) $claims[ $name ] ) ) ) {
 			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . $name . '.' );
 		}
-		return (int) $claims[$name];
+		return (int) $claims[ $name ];
 	}
 }

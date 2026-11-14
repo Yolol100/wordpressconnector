@@ -275,7 +275,10 @@ final class Controller {
 	private function capabilities(): array {
 		return array(
 			'tools'     => array( 'listChanged' => false ),
-			'resources' => array( 'listChanged' => false, 'subscribe' => false ),
+			'resources' => array(
+				'listChanged' => false,
+				'subscribe'   => false
+			),
 			'prompts'   => array( 'listChanged' => false ),
 		);
 	}
@@ -393,7 +396,11 @@ final class Controller {
 		}
 
 		return $this->privateCache( array( 'contents' => array(
-			array( 'uri' => $params['uri'], 'mimeType' => 'text/plain', 'text' => $text ),
+			array(
+				'uri'      => $params['uri'],
+				'mimeType' => 'text/plain',
+				'text'     => $text
+			),
 		) ), $modern, 60000 );
 	}
 
@@ -418,7 +425,11 @@ final class Controller {
 				'title'       => 'Plan a safe WordPress change',
 				'description' => 'Prepare a change with dry-run, approval, readback and rollback steps.',
 				'arguments'   => array(
-					array( 'name' => 'goal', 'description' => 'Optional short description of the intended change.', 'required' => false ),
+					array(
+						'name'        => 'goal',
+						'description' => 'Optional short description of the intended change.',
+						'required'    => false
+					),
 				),
 			),
 		) ), $modern, 300000 );
@@ -480,7 +491,11 @@ final class Controller {
 		}
 		return array(
 			'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
-			'messages'    => array( array( 'role' => 'user', 'content' => array( 'type' => 'text', 'text' => $text ) ) ),
+			'messages'    => array( array( 'role' => 'user',
+				'content' => array(
+				'type'    => 'text',
+				'text'    => $text
+			) ) ),
 		);
 	}
 
@@ -498,19 +513,34 @@ final class Controller {
 					'name'        => 'wordpress_connector_actions',
 					'description' => 'List the WordPress Connector semantic actions and their security metadata. Use this before selecting an action.',
 					'inputSchema' => $this->emptyObjectSchema(),
-					'annotations' => array( 'readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false ),
+					'annotations' => array(
+						'readOnlyHint'    => true,
+						'destructiveHint' => false,
+						'idempotentHint'  => true,
+						'openWorldHint'   => false
+					),
 				),
 				array(
 					'name'        => 'wordpress_connector_discover',
 					'description' => 'Discover the authenticated WordPress runtime, builders, plugins, post types, taxonomies, media sizes and connector capabilities.',
 					'inputSchema' => $this->emptyObjectSchema(),
-					'annotations' => array( 'readOnlyHint' => true, 'destructiveHint' => false, 'idempotentHint' => true, 'openWorldHint' => false ),
+					'annotations' => array(
+						'readOnlyHint'    => true,
+						'destructiveHint' => false,
+						'idempotentHint'  => true,
+						'openWorldHint'   => false
+					),
 				),
 				array(
 					'name'        => 'wordpress_connector_execute',
 					'description' => 'Execute one existing semantic connector action through the normal Runner. Dry-run is the default. Confirmed writes require confirm=true and an explicit stable request_id so retries remain idempotent.',
 					'inputSchema' => $this->executeSchema(),
-					'annotations' => array( 'readOnlyHint' => false, 'destructiveHint' => true, 'idempotentHint' => false, 'openWorldHint' => false ),
+					'annotations' => array(
+						'readOnlyHint'    => false,
+						'destructiveHint' => true,
+						'idempotentHint'  => false,
+						'openWorldHint'   => false
+					),
 				),
 			),
 		);
@@ -712,7 +742,10 @@ final class Controller {
 		return new \WP_REST_Response( array(
 			'jsonrpc' => '2.0',
 			'id'      => $id,
-			'error'   => array( 'code' => $code, 'message' => $this->boundedMessage( $message ) ),
+			'error'   => array(
+				'code'    => $code,
+				'message' => $this->boundedMessage( $message )
+			),
 		), $status );
 	}
 
@@ -743,7 +776,10 @@ final class Controller {
 	 * @return array Result of the operation.
 	 */
 	private function toolError( string $message ): array {
-		$value = array( 'ok' => false, 'error' => $this->boundedMessage( $message ) );
+		$value = array(
+			'ok'    => false,
+			'error' => $this->boundedMessage( $message )
+		);
 		return $this->toolResult( $value, true );
 	}
 
@@ -845,13 +881,31 @@ final class Controller {
 			'type'                 => 'object',
 			'additionalProperties' => false,
 			'properties'           => array(
-				'action'               => array( 'type' => 'string', 'pattern' => '^[a-z0-9][a-z0-9._-]*$' ),
-				'payload'              => array( 'type' => 'object' ),
-				'dry_run'              => array( 'type' => 'boolean', 'default' => true ),
-				'confirm'              => array( 'type' => 'boolean', 'default' => false ),
-				'request_id'           => array( 'type' => 'string', 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$' ),
-				'expected_fingerprint' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
-				'expected_state_token' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
+				'action'               => array(
+					'type'    => 'string',
+					'pattern' => '^[a-z0-9][a-z0-9._-]*$'
+				),
+				'payload' => array( 'type' => 'object' ),
+				'dry_run' => array(
+					'type'    => 'boolean',
+					'default' => true
+				),
+				'confirm'              => array(
+					'type'    => 'boolean',
+					'default' => false
+				),
+				'request_id'           => array(
+					'type'    => 'string',
+					'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$'
+				),
+				'expected_fingerprint' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$'
+				),
+				'expected_state_token' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$'
+				),
 			),
 			'required' => array( 'action', 'payload' ),
 			'allOf'    => array(

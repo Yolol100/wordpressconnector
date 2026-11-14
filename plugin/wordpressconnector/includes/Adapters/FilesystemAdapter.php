@@ -339,10 +339,17 @@ final class FilesystemAdapter {
 		$this->assertNoEmbeddedSecrets( $content );
 		$this->validateText( $relative, $content );
 		$absolute      = $this->resolveNewTextPath( $relative );
-		$expectedState = array( 'path' => $relative, 'exists' => false );
+		$expectedState = array(
+			'path'   => $relative,
+			'exists' => false
+		);
 		$result        = array(
-			'before'                                  => $expectedState,
-			'after'                                   => array( 'path' => $relative, 'bytes' => strlen( $content ), 'sha256' => hash( 'sha256', $content ) ),
+			'before' => $expectedState,
+			'after'  => array(
+				'path'   => $relative,
+				'bytes'  => strlen( $content ),
+				'sha256' => hash( 'sha256', $content )
+			),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 			'_current_fingerprint'                    => Fingerprint::make( $expectedState ),
 		);
@@ -383,8 +390,10 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
 		}
 		$result['after'] = $this->state( $relative, $readback, $absolute );
-		$result['_rollback'] = array( 'action' => 'filesystem.delete_text', 'payload' => array(
-			'path'                       => $relative, 'expected_sha256' => hash( 'sha256', $readback ),
+		$result['_rollback'] = array( 'action' => 'filesystem.delete_text',
+			'payload'                    => array(
+			'path'                       => $relative,
+			'expected_sha256'            => hash( 'sha256', $readback ),
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 		) );
 		return $result;
@@ -414,8 +423,11 @@ final class FilesystemAdapter {
 		$this->assertNoEmbeddedSecrets( $before );
 		$beforeState = $this->state( $relative, $before, $absolute );
 		$result      = array(
-			'before'                                  => $beforeState,
-			'after'                                   => array( 'path' => $relative, 'exists' => false ),
+			'before' => $beforeState,
+			'after'  => array(
+				'path'   => $relative,
+				'exists' => false
+			),
 			'_current_fingerprint'                    => Fingerprint::make( $beforeState ),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 		);
@@ -440,8 +452,10 @@ final class FilesystemAdapter {
 		if ( file_exists( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'File still exists after attempted deletion.' );
 		}
-		$result['_rollback'] = array( 'action' => 'filesystem.create_text', 'payload' => array(
-			'path'                       => $relative, 'content' => $before,
+		$result['_rollback'] = array( 'action' => 'filesystem.create_text',
+			'payload'                    => array(
+			'path'                       => $relative,
+			'content'                    => $before,
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 		) );
 		return $result;
@@ -456,7 +470,7 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function assertLifecyclePermission( array $payload, array $context ): void {
-		if ( array_diff( array_keys( $payload ), array( 'path','content','expected_sha256','acknowledge_active_content' ) ) ) {
+		if ( array_diff( array_keys( $payload ), array( 'path', 'content', 'expected_sha256', 'acknowledge_active_content' ) ) ) {
 			throw new RuntimeException( 'Filesystem lifecycle request contains unsupported fields.' );
 		}
 		if ( empty( $context['dry_run'] ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES' ) ) {

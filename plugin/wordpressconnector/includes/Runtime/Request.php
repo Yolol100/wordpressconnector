@@ -194,13 +194,13 @@ final class Request {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private static function hexGuard( array $data, string $key ): ?string {
-		if ( ! array_key_exists( $key, $data ) || null === $data[$key] ) {
+		if ( ! array_key_exists( $key, $data ) || null === $data[ $key ] ) {
 			return null;
 		}
-		if ( ! is_string( $data[$key] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $data[$key] ) ) {
+		if ( ! is_string( $data[ $key ] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $data[ $key ] ) ) {
 			throw new RuntimeException( $key . ' must be a SHA-256 hex string.' );
 		}
-		return $data[$key];
+		return $data[ $key ];
 	}
 
 	/**

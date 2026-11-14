@@ -269,7 +269,10 @@ final class YoastAdapter {
      */
 	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
 		$fields = $this->siteRepresentationSnapshot();
-		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
+		return array(
+			'fields'      => $fields,
+			'fingerprint' => Fingerprint::make( $fields )
+		);
 	}
 
 	/**
@@ -364,7 +367,10 @@ final class YoastAdapter {
 			throw new RuntimeException( 'Organization settings changed after update; rollback is unsafe.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => true, '_current_fingerprint' => Fingerprint::make( $before ) );
+			return array(
+				'would_restore'        => true,
+				'_current_fingerprint' => Fingerprint::make( $before )
+			);
 		}
 		$fields = isset( $payload['fields'] ) && is_array( $payload['fields'] ) ? $payload['fields'] : array();
 		if ( array_keys( $fields ) !== array_keys( $before ) ) {
@@ -381,7 +387,10 @@ final class YoastAdapter {
 		if ( Fingerprint::make( $this->siteRepresentationSnapshot() ) !== Fingerprint::make( $fields ) ) {
 			throw new RuntimeException( 'Yoast organization rollback readback failed.' );
 		}
-		return array( 'restored' => true, 'fields' => $fields );
+		return array(
+			'restored' => true,
+			'fields'   => $fields
+		);
 	}
 
 	/**

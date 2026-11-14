@@ -80,7 +80,7 @@ final class Fingerprint
 		}
 
 		foreach ( $value as $key => $item ) {
-			$value[$key] = self::normalize( $item );
+			$value[ $key ] = self::normalize( $item );
 		}
 
 		return $value;

@@ -50,11 +50,11 @@ if ( is_multisite() && function_exists( 'get_sites' ) ) {
 	$wpconnector_offset = 0;
 	do {
 		$wpconnector_site_ids = get_sites( array(
-			'fields' => 'ids',
-			'number' => 100,
-			'offset' => $wpconnector_offset,
+			'fields'  => 'ids',
+			'number'  => 100,
+			'offset'  => $wpconnector_offset,
 			'orderby' => 'id',
-			'order' => 'ASC',
+			'order'   => 'ASC',
 		) );
 		foreach ( (array) $wpconnector_site_ids as $wpconnector_site_id ) {
 			switch_to_blog( (int) $wpconnector_site_id );

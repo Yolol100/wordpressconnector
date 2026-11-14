@@ -27,7 +27,10 @@ final class SiteEditorAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'edit_theme_options' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'edit_theme_options'
+		);
 		$write = $read + array( 'mutation' => true );
 		$registry->register( 'site_editor.template.list', array( $this, 'listTemplates' ),
 			$read + array( 'description' => 'List active-theme Site Editor templates or template parts via core REST permissions.' ) );
@@ -58,7 +61,9 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Site Editor page must be an integer between 1 and 100.' );
 		}
 		$response = $this->request( 'GET', $this->route( $kind ), array(
-			'context' => 'edit', 'per_page' => 20, 'page' => $page,
+			'context'  => 'edit',
+			'per_page' => 20,
+			'page'     => $page,
 		) );
 		$data     = $this->data( $response );
 		if ( ! is_array( $data ) ) {
@@ -77,8 +82,12 @@ final class SiteEditorAdapter {
 				'customized' => 'custom' === ( $item['source'] ?? '' ) && (int) ( $item['wp_id'] ?? 0 ) > 0,
 			);
 		}
-		return array( 'kind' => $kind, 'theme' => get_stylesheet(), 'page' => $page,
-			'items' => $rows, 'count' => count( $rows ), 'per_page' => 20 );
+		return array( 'kind' => $kind,
+			'theme'    => get_stylesheet(),
+			'page'     => $page,
+			'items'    => $rows,
+			'count'    => count( $rows ),
+			'per_page' => 20 );
 	}
 
 	/**
@@ -125,8 +134,10 @@ final class SiteEditorAdapter {
 		if ( ! is_string( $json ) || strlen( $json ) > self::MAX_CONTENT_BYTES ) {
 			throw new RuntimeException( 'Global styles exceed the bounded response size.' );
 		}
-		return array( 'theme' => $theme, 'settings' => $settings, 'styles' => $styles,
-			'fingerprint'                           => Fingerprint::make( array( $settings, $styles ) ) );
+		return array( 'theme' => $theme,
+			'settings'    => $settings,
+			'styles'      => $styles,
+			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ) );
 	}
 
 	/**
@@ -149,9 +160,14 @@ final class SiteEditorAdapter {
 		$this->expected( $payload['expected_before_fingerprint'] ?? null, $before['fingerprint'] );
 
 		$result = array(
-			'kind'                 => $kind, 'id' => $id, 'theme' => get_stylesheet(),
-			'would_change'                        => $before['content_sha256'] !== hash( 'sha256', $content ),
-			'before'               => array( 'content_sha256' => $before['content_sha256'], 'modified' => $before['modified'] ),
+			'kind'         => $kind,
+			'id'           => $id,
+			'theme'        => get_stylesheet(),
+			'would_change' => $before['content_sha256'] !== hash( 'sha256', $content ),
+			'before'       => array(
+				'content_sha256' => $before['content_sha256'],
+				'modified'       => $before['modified']
+			),
 			'_current_fingerprint'                => $before['fingerprint'],
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -177,11 +193,16 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Template update was not confirmed; original content restored and verified.' );
 		}
 		$result['updated'] = true;
-		$result['after'] = array( 'content_sha256' => $after['content_sha256'], 'modified' => $after['modified'] );
+		$result['after'] = array(
+			'content_sha256' => $after['content_sha256'],
+			'modified'       => $after['modified']
+		);
 		$result['_rollback'] = array(
 			'action'  => 'site_editor.template.restore',
-			'payload' => array( 'kind' => $kind, 'id' => $id, 'content' => $previous,
-				'expected_after_fingerprint'          => $after['fingerprint'] ),
+			'payload' => array( 'kind' => $kind,
+				'id'                         => $id,
+				'content'                    => $previous,
+				'expected_after_fingerprint' => $after['fingerprint'] ),
 		);
 		return $result;
 	}
@@ -208,7 +229,10 @@ final class SiteEditorAdapter {
 		$this->writable( $before );
 		$this->expected( $payload['expected_after_fingerprint'] ?? null, $before['fingerprint'] );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => $id, '_current_fingerprint' => $before['fingerprint'] );
+			return array(
+				'would_restore'        => $id,
+				'_current_fingerprint' => $before['fingerprint']
+			);
 		}
 		$this->writeAllowed();
 		$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $content ) );
@@ -216,7 +240,10 @@ final class SiteEditorAdapter {
 		if ( $after['content_sha256'] !== hash( 'sha256', $content ) ) {
 			throw new RuntimeException( 'Site Editor rollback readback failed.' );
 		}
-		return array( 'restored' => $id, 'readback_verified' => true );
+		return array(
+			'restored'          => $id,
+			'readback_verified' => true
+		);
 	}
 
 	/**
@@ -256,12 +283,14 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'WordPress Site Editor returned an unexpected theme/template identity.' );
 		}
 		$content              = $this->rawContent( $record );
-		$state   = array( 'kind' => $kind, 'id' => $id, 'theme' => get_stylesheet(),
-			'source'                            => (string) ( $record['source'] ?? '' ),
-			'wp_id'                             => (int) ( $record['wp_id'] ?? 0 ),
-			'modified'                          => (string) ( $record['modified'] ?? '' ),
-			'content_sha256'                    => hash( 'sha256', $content ),
-			'customized'                        => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0 );
+		$state   = array( 'kind' => $kind,
+			'id'             => $id,
+			'theme'          => get_stylesheet(),
+			'source'         => (string) ( $record['source'] ?? '' ),
+			'wp_id'          => (int) ( $record['wp_id'] ?? 0 ),
+			'modified'       => (string) ( $record['modified'] ?? '' ),
+			'content_sha256' => hash( 'sha256', $content ),
+			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0 );
 		$state['fingerprint'] = Fingerprint::make( $state );
 		return $state;
 	}
