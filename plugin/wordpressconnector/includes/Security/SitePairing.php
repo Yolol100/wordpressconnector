@@ -67,6 +67,8 @@ final class SitePairing {
 	 * an automated CLI install, or a network-wide activation.
 	 *
 	 * Existing installations are NOT silently re-paired during upgrades.
+	 *
+	 * @param bool $networkWide Whether the operation is network-wide.
 	 */
 	public static function approveOnActivation( bool $networkWide = false ): void {
 		if ( $networkWide || ! is_admin() ||

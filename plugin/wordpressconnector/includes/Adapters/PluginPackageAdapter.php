@@ -46,6 +46,8 @@ final class PluginPackageAdapter {
 	/**
 	 * A theme ZIP uses the same private request asset store and exact SHA-256
 	 * binding as plugin packages. Public requests cannot invoke this action.
+	 *
+	 * @param Registry $registry Action registry to register handlers with.
 	 */
 	public function registerThemePackage( Registry $registry ): void {
 		$registry->register(

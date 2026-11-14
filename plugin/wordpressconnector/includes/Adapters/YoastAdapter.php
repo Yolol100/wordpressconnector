@@ -286,6 +286,9 @@ final class YoastAdapter {
 	/**
 	 * Patch only the organization fields Yoast owns, never the full wpseo_titles option.
 	 * The WordPress media library is the only accepted source for a logo.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
 	 */
 	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
 		$fields = $this->siteRepresentationSnapshot();
@@ -375,6 +378,11 @@ final class YoastAdapter {
 
 	/**
 	 * Internal compensation only. Direct requests must never overwrite an arbitrary snapshot.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function restoreSiteRepresentation( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {

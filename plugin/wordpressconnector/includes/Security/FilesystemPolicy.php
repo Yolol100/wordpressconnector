@@ -136,6 +136,10 @@ final class FilesystemPolicy {
 	/**
 	 * Creation/deletion is narrower than replacement: executable PHP and
 	 * plugin/theme identity, build and dependency manifests stay deployment-only.
+	 *
+	 * @param string $path Filesystem path to validate.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public static function assertLifecycleText( string $path ): string {
 		$path      = self::assertWritableText( $path );
@@ -167,6 +171,8 @@ final class FilesystemPolicy {
 	/**
 	 * HTML and JavaScript execute in browsers; CSS also changes the rendered
 	 * interface. Treat these as active code assets, not inert text.
+	 *
+	 * @param string $path Filesystem path to validate.
 	 */
 	public static function affectsBrowserExecution( string $path ): bool {
 		// Replacement also edits active browser assets; PHP/INC remain separately

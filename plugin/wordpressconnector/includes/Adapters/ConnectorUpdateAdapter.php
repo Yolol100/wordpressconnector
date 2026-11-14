@@ -86,6 +86,8 @@ final class ConnectorUpdateAdapter {
 	 * Refresh only this plugin's trusted GitHub release when an administrator
 	 * actually visits Plugins or Updates. Do not invalidate other plugins or
 	 * run an unauthenticated global update scan.
+	 *
+	 * @param bool $force Whether to force a refresh.
 	 */
 	public function refreshNativeUpdateNotice( bool $force = false ): bool {
 		if ( ! current_user_can( 'update_plugins' ) ) {
@@ -220,6 +222,10 @@ final class ConnectorUpdateAdapter {
 	 * Other plugins using GitHub's update hostname must remain untouched.
 	 *
 	 * @param array|false $update
+	 * @param array $pluginData Validated plugin metadata.
+	 * @param string $pluginFile Validated plugin file value.
+	 * @param array $locales Validated locales value.
+	 *
 	 * @return array|false
 	 */
 	public function nativeUpdateOffer( $update, array $pluginData, string $pluginFile, array $locales ) {
@@ -268,7 +274,12 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @param false|string|\WP_Error $reply
 	 * @param mixed                  $upgrader
+	 * @param string $package Validated package metadata.
+	 * @param array $hookExtra Validated hook extra value.
+	 *
 	 * @return false|string|\WP_Error
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	public function verifiedNativeDownload( $reply, string $package, $upgrader, array $hookExtra ) {
 		// Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
@@ -437,7 +448,11 @@ final class ConnectorUpdateAdapter {
 	 * Plugin_Upgrader::install(... overwrite_package => true), which has no
 	 * hook_extra.temp_backup and cannot restore after an installation failure.
 	 *
+	 * @param string $package Validated package metadata.
+	 *
 	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	private function installWithCoreBackup( string $package ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
@@ -631,6 +646,10 @@ final class ConnectorUpdateAdapter {
 	 * Shared verification for REST self-update and the native Plugins screen.
 	 * Returns a temporary ZIP owned by the caller. Never trust a ZIP merely
 	 * because it was downloaded from GitHub over HTTPS.
+	 *
+	 * @param array $release Verified release metadata.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	private function downloadVerifiedPackage( array $release ): string {
 		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );

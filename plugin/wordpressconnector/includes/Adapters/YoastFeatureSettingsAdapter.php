@@ -234,6 +234,11 @@ final class YoastFeatureSettingsAdapter {
 	/**
 	 * Feature toggles are only meaningful when the installed Yoast version
 	 * recognizes their exact option keys. Never create phantom settings.
+	 *
+	 * @param string $group Provider settings group.
+	 * @param array $fields Fields to validate.
+	 *
+	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
 	private function assertProviderSupportsFields( string $group, array $fields ): void {
 		if ( ! class_exists( 'WPSEO_Options' ) || ! method_exists( 'WPSEO_Options', 'get_option_instance' ) ) {

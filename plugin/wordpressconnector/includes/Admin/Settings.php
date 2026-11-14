@@ -57,6 +57,8 @@ final class Settings {
 	/**
 	 * Test only the currently authenticated administrator browser session.
 	 * This does not prove external ChatGPT OAuth access.
+	 *
+	 * @param string $hook Registered WordPress hook name.
 	 */
 	public function enqueueConnectionDoctor( string $hook ): void {
 		if ( 'settings_page_' . self::PAGE !== $hook || ! current_user_can( 'manage_options' ) ) {
