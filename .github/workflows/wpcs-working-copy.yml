@@ -1,5 +1,5 @@
-# Temporary diagnostic-only workflow; remove from source branch before review.
-name: Temporary WordPress Connector source snapshot
+# One-time audit diagnostic; never merge this workflow to main.
+name: Temporary WPCS PHPCBF diagnostics
 on:
   push:
     branches:
@@ -7,19 +7,82 @@ on:
 permissions:
   contents: read
 jobs:
-  source-snapshot:
+  wpcs-fixer:
     runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
-      - name: Check out exact branch source
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Create snapshot without Git history or runtime state
-        run: tar -czf "${RUNNER_TEMP}/connector-source.tar.gz" .github plugin scripts tests docs phpcs.xml.dist AGENTS.md REPOSITORY-HYGIENE-POLICY.md README.md
-      - name: Upload one-time source snapshot
+      - name: Set up supported PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xmlreader, xml, dom
+          coverage: none
+      - name: Install isolated exact pinned WPCS tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/wpcs-tools"
+          cat > "${RUNNER_TEMP}/wpcs-tools/composer.json" <<'JSON'
+          {
+            "name": "webactueel/wpcs-one-time-candidate",
+            "require-dev": {
+              "squizlabs/php_codesniffer": "3.13.6",
+              "wp-coding-standards/wpcs": "3.4.1"
+            },
+            "config": {
+              "allow-plugins": {
+                "dealerdirect/phpcodesniffer-composer-installer": true
+              }
+            }
+          }
+          JSON
+          composer install --working-dir="${RUNNER_TEMP}/wpcs-tools" --prefer-dist --no-interaction --no-progress
+          echo "PHPCS=${RUNNER_TEMP}/wpcs-tools/vendor/bin/phpcs" >> "${GITHUB_ENV}"
+          echo "PHPCBF=${RUNNER_TEMP}/wpcs-tools/vendor/bin/phpcbf" >> "${GITHUB_ENV}"
+      - name: Record original audit, apply PHPCBF, record updated audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          before=0
+          "$PHPCS" --standard=phpcs.xml.dist --report=json > "${RUNNER_TEMP}/before.json" || before=$?
+          set +e
+          "$PHPCBF" --standard=phpcs.xml.dist plugin/wordpressconnector > "${RUNNER_TEMP}/phpcbf.log" 2>&1
+          result=$?
+          set -e
+          after=0
+          "$PHPCS" --standard=phpcs.xml.dist --report=json > "${RUNNER_TEMP}/after.json" || after=$?
+          python3 - "${RUNNER_TEMP}/before.json" "${RUNNER_TEMP}/after.json" <<'PY'
+          import json,sys
+          for item in sys.argv[1:]:
+              j=json.load(open(item))
+              print(item, j.get("totals"), len(j.get("files", {})))
+          PY
+          printf "before_exit=%s phpcbf_exit=%s after_exit=%s\n" "$before" "$result" "$after"
+      - name: Execute unmodified canonical contracts against autofix candidate
+        shell: bash
+        run: |
+          set +e
+          bash scripts/run-contracts.sh > "${RUNNER_TEMP}/contracts.log" 2>&1
+          status=$?
+          tail -n 30 "${RUNNER_TEMP}/contracts.log"
+          echo "contracts_exit=$status" | tee "${RUNNER_TEMP}/contracts-status.txt"
+          exit 0
+      - name: Export candidate and independent evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/wpcs-candidate"
+          tar -czf "${RUNNER_TEMP}/wpcs-candidate/autofixed-plugin.tar.gz" plugin/wordpressconnector
+          cp "${RUNNER_TEMP}/before.json" "${RUNNER_TEMP}/after.json" "${RUNNER_TEMP}/phpcbf.log" "${RUNNER_TEMP}/contracts.log" "${RUNNER_TEMP}/contracts-status.txt" "${RUNNER_TEMP}/wpcs-candidate/"
+      - name: Upload diagnostic only, never publish
+        if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
         with:
-          name: temporary-wpcs-source-snapshot
-          path: ${{ runner.temp }}/connector-source.tar.gz
+          name: temporary-wpcs-phpcbf-candidate
+          path: ${{ runner.temp }}/wpcs-candidate
           retention-days: 1
