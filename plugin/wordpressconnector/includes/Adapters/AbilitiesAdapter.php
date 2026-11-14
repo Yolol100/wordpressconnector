@@ -22,29 +22,45 @@ final class AbilitiesAdapter {
 	 * @param Registry $registry Connector action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'wordpress.abilities', array( $this, 'catalog' ), array(
-			'privileged'  => true,
-			'description' => 'Discover exposed WordPress Abilities API entries and their schemas without executing them.',
-		) );
-		$registry->register( 'wordpress.ability.read', array( $this, 'readAbility' ), array(
-			'privileged'  => true,
-			'sensitive'   => true,
-			'capability'  => 'manage_options',
-			'description' => 'Read through an explicitly read-only, client-exposed WordPress Ability; native validation and permission callbacks still run, and mutation-capable abilities remain blocked from this route.',
-		) );
-		$registry->register( 'wordpress.ability.execute', array( $this, 'executeAbility' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Execute one explicitly mutating, MCP-exposed native Elementor Core/Pro Ability after verified provider provenance; native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
-		) );
-		$registry->register( 'wordpress.ability.execute_approved', array( $this, 'executeApprovedAbility' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'sensitive'   => true,
-			'capability'  => 'manage_options',
-			'description' => 'Execute an expressly approved, non-destructive native Ability from a verified active third-party plugin on private authenticated transport only.',
-		) );
+		$registry->register(
+			'wordpress.abilities',
+			array( $this, 'catalog' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Discover exposed WordPress Abilities API entries and their schemas without executing them.',
+			)
+		);
+		$registry->register(
+			'wordpress.ability.read',
+			array( $this, 'readAbility' ),
+			array(
+				'privileged'  => true,
+				'sensitive'   => true,
+				'capability'  => 'manage_options',
+				'description' => 'Read through an explicitly read-only, client-exposed WordPress Ability; native validation and permission callbacks still run, and mutation-capable abilities remain blocked from this route.',
+			)
+		);
+		$registry->register(
+			'wordpress.ability.execute',
+			array( $this, 'executeAbility' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Execute one explicitly mutating, MCP-exposed native Elementor Core/Pro Ability after verified provider provenance; native schema validation, permission callbacks and provider guards remain authoritative. Dry-run never invokes the Ability.',
+			)
+		);
+		$registry->register(
+			'wordpress.ability.execute_approved',
+			array( $this, 'executeApprovedAbility' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'sensitive'   => true,
+				'capability'  => 'manage_options',
+				'description' => 'Execute an expressly approved, non-destructive native Ability from a verified active third-party plugin on private authenticated transport only.',
+			)
+		);
 	}
 
 	/**
@@ -100,7 +116,7 @@ final class AbilitiesAdapter {
 		$pages    = max( 1, (int) ceil( $total / $per_page ) );
 		$selected = array_slice( $eligible, ( $page - 1 ) * $per_page, $per_page, true );
 
-		$result   = array();
+		$result = array();
 		foreach ( $selected as $name => $ability ) {
 			$result[ $name ] = $this->descriptor( $name, $ability );
 		}
@@ -405,10 +421,14 @@ final class AbilitiesAdapter {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function redactAbilityResult( $value, int $depth, \SplObjectStorage $seen, array &$budget ) {
-		if ( ++$budget['nodes'] > 10000 || $depth > 20 ) throw new \RuntimeException( 'WordPress Ability result exceeds the traversal limit.' );
+		if ( ++$budget['nodes'] > 10000 || $depth > 20 ) {
+			throw new \RuntimeException( 'WordPress Ability result exceeds the traversal limit.' );
+		}
 		$object = null;
 		if ( is_object( $value ) ) {
-			if ( $seen->contains( $value ) ) return '[circular object omitted]';
+			if ( $seen->contains( $value ) ) {
+				return '[circular object omitted]';
+			}
 			$seen->attach( $value );
 			$object = $value;
 			$value  = get_object_vars( $value );
@@ -417,17 +437,23 @@ final class AbilitiesAdapter {
 			foreach ( $value as $key => $item ) {
 				if ( is_string( $key ) ) {
 					$budget['bytes'] += strlen( $key );
-					if ( $budget['bytes'] > 262144 ) throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
+					if ( $budget['bytes'] > 262144 ) {
+						throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
+					}
 				}
 				$value[ $key ] = $this->redactAbilityResult( $item, $depth + 1, $seen, $budget );
 			}
 			$value = Policy::redact( $value );
-			if ( null !== $object ) $seen->detach( $object );
+			if ( null !== $object ) {
+				$seen->detach( $object );
+			}
 			return $value;
 		}
 		if ( is_string( $value ) ) {
 			$budget['bytes'] += strlen( $value );
-			if ( $budget['bytes'] > 262144 ) throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
+			if ( $budget['bytes'] > 262144 ) {
+				throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
+			}
 			return $value;
 		}
 		return is_scalar( $value ) || null === $value ? $value : null;
@@ -515,11 +541,11 @@ final class AbilitiesAdapter {
 
 
 	/**
-     * Other plugins may opt into the native Abilities API, but arbitrary
-     * abilities never become callable just because they exist. A server
-     * operator must approve the exact ability AND exact active plugin file
-     * using a JSON mapping in wp-config.php.
-     */
+	 * Other plugins may opt into the native Abilities API, but arbitrary
+	 * abilities never become callable just because they exist. A server
+	 * operator must approve the exact ability AND exact active plugin file
+	 * using a JSON mapping in wp-config.php.
+	 */
 	private function isApprovedPluginMutationEligible( string $name, $ability ): bool {
 		if ( $this->isElementorAbilityName( $name ) || ! is_object( $ability )
 			|| ! Policy::flag( 'WPCONNECTOR_ALLOW_APPROVED_ABILITY_WRITES' )
@@ -838,7 +864,7 @@ final class AbilitiesAdapter {
 		$mutation_eligible          = $this->isElementorMutationEligible( $name, $ability );
 		$approved_mutation_eligible = $this->isApprovedPluginMutationEligible( $name, $ability );
 
-		list( $input_schema, $input_schema_omitted ) = $this->boundedCatalogValue(
+		list( $input_schema, $input_schema_omitted )   = $this->boundedCatalogValue(
 			method_exists( $ability, 'get_input_schema' ) ? $ability->get_input_schema() : null
 		);
 		list( $output_schema, $output_schema_omitted ) = $this->boundedCatalogValue(

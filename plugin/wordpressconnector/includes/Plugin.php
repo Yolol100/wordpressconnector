@@ -62,11 +62,14 @@ final class Plugin {
 	 * Process the boot operation in the Plugin component.
 	 */
 	public static function boot(): void {
-		add_action( 'before_woocommerce_init', static function (): void {
-			if ( class_exists( 'Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {
-				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', WPCONNECTOR_FILE, true );
+		add_action(
+			'before_woocommerce_init',
+			static function (): void {
+				if ( class_exists( 'Automattic\\WooCommerce\\Utilities\\FeaturesUtil' ) ) {
+					\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', WPCONNECTOR_FILE, true );
+				}
 			}
-		} );
+		);
 
 		$registry = new Registry();
 		$adapters = array(
@@ -115,9 +118,9 @@ final class Plugin {
 		( new Settings() )->register();
 		( new ElementorJsonExport() )->register();
 		(new ElementorJsonImport())->register();
-		$restController = new Controller( $runner, new AssetStore() );
-		$restController->register();
-		( new McpController( $runner, $registry, array( $restController, 'authorize' ) ) )->register();
+		$rest_controller = new Controller( $runner, new AssetStore() );
+		$rest_controller->register();
+		( new McpController( $runner, $registry, array( $rest_controller, 'authorize' ) ) )->register();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
 			\WP_CLI::add_command( 'wordpress-connector', new Command( $runner ) );

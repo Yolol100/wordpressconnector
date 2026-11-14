@@ -134,9 +134,9 @@ final class FilesystemPolicy {
 	}
 
 	/**
-     * Creation/deletion is narrower than replacement: executable PHP and
-     * plugin/theme identity, build and dependency manifests stay deployment-only.
-     */
+	 * Creation/deletion is narrower than replacement: executable PHP and
+	 * plugin/theme identity, build and dependency manifests stay deployment-only.
+	 */
 	public static function assertLifecycleText( string $path ): string {
 		$path      = self::assertWritableText( $path );
 		$extension = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
@@ -144,32 +144,39 @@ final class FilesystemPolicy {
 			throw new RuntimeException( 'Create/delete supports only non-PHP theme/plugin text assets.' );
 		}
 		$base = strtolower( (string) basename( $path ) );
-		if ( in_array( $base, array(
-			'style.css',
-			'theme.json',
-			'block.json',
-			'package.json',
-			'package-lock.json',
-			'composer.json',
-			'composer.lock',
-			'readme.txt',
-			'license.txt',
-		), true ) ) {
+		if ( in_array(
+			$base,
+			array(
+				'style.css',
+				'theme.json',
+				'block.json',
+				'package.json',
+				'package-lock.json',
+				'composer.json',
+				'composer.lock',
+				'readme.txt',
+				'license.txt',
+			),
+			true
+		) ) {
 			throw new RuntimeException( 'Package and theme identity files require reviewed deployment rather than direct create/delete.' );
 		}
 		return $path;
 	}
 
 	/**
-     * HTML and JavaScript execute in browsers; CSS also changes the rendered
-     * interface. Treat these as active code assets, not inert text.
-     */
+	 * HTML and JavaScript execute in browsers; CSS also changes the rendered
+	 * interface. Treat these as active code assets, not inert text.
+	 */
 	public static function affectsBrowserExecution( string $path ): bool {
 		// Replacement also edits active browser assets; PHP/INC remain separately
 		// parser-validated under the existing plugin/theme capability gate.
 		$path = self::assertWritableText( $path );
-		return in_array( strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ),
-			array( 'html', 'htm', 'js', 'mjs', 'css' ), true );
+		return in_array(
+			strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ),
+			array( 'html', 'htm', 'js', 'mjs', 'css' ),
+			true
+		);
 	}
 
 	/**

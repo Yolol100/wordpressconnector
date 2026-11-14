@@ -17,9 +17,9 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Custom Css connector actions.
  */
 final class CustomCssAdapter {
-	private const MAX_CSS_BYTES = 524288;
+	private const MAX_CSS_BYTES   = 524288;
 	private const MAX_PATCH_BYTES = 65536;
-	private const PATCH_PREFIX = 'wpconnector:';
+	private const PATCH_PREFIX    = 'wpconnector:';
 
 	/**
 	 * Register the CustomCss adapter actions and handlers.
@@ -27,25 +27,37 @@ final class CustomCssAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'custom_css.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'capability'  => 'edit_css',
-			'description' => 'Read WordPress Additional CSS for one installed theme stylesheet.',
-		) );
+		$registry->register(
+			'custom_css.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'edit_css',
+				'description' => 'Read WordPress Additional CSS for one installed theme stylesheet.',
+			)
+		);
 
-		$registry->register( 'custom_css.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'edit_css',
-			'description' => 'Replace WordPress Additional CSS with stale-state protection, readback and rollback.',
-		) );
+		$registry->register(
+			'custom_css.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'edit_css',
+				'description' => 'Replace WordPress Additional CSS with stale-state protection, readback and rollback.',
+			)
+		);
 
-		$registry->register( 'custom_css.patch', array( $this, 'patch' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'edit_css',
-			'description' => 'Upsert or remove one named managed Additional CSS block while preserving unrelated CSS, with stale-state protection, readback and rollback.',
-		) );
+		$registry->register(
+			'custom_css.patch',
+			array( $this, 'patch' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'edit_css',
+				'description' => 'Upsert or remove one named managed Additional CSS block while preserving unrelated CSS, with stale-state protection, readback and rollback.',
+			)
+		);
 	}
 
 	/**

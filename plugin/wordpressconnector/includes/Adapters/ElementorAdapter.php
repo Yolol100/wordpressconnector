@@ -28,27 +28,47 @@ final class ElementorAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );
-		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array(
-			'mutation'    => true,
-			'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.',
-		) );
-		$registry->register( 'elementor.replace_document', array( $this, 'replaceDocument' ), array(
-			'mutation'    => true,
-			'description' => 'Replace Elementor elements/settings through the Elementor document API.',
-		) );
-		$registry->register( 'elementor.patch_element', array( $this, 'patchElement' ), array(
-			'mutation'    => true,
-			'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.',
-		) );
-		$registry->register( 'elementor.regenerate', array( $this, 'regenerate' ), array(
-			'mutation'    => true,
-			'description' => 'Clear Elementor generated CSS/files cache.',
-		) );
-		$registry->register( 'elementor.header_links.replace', array( $this, 'replaceHeaderLinks' ), array(
-			'mutation'    => true,
-			'capability'  => 'edit_theme_options',
-			'description' => 'Replace exact same-site Icon List links in one published Elementor header.',
-		) );
+		$registry->register(
+			'elementor.create_document',
+			array( $this, 'createDocument' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.',
+			)
+		);
+		$registry->register(
+			'elementor.replace_document',
+			array( $this, 'replaceDocument' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Replace Elementor elements/settings through the Elementor document API.',
+			)
+		);
+		$registry->register(
+			'elementor.patch_element',
+			array( $this, 'patchElement' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.',
+			)
+		);
+		$registry->register(
+			'elementor.regenerate',
+			array( $this, 'regenerate' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Clear Elementor generated CSS/files cache.',
+			)
+		);
+		$registry->register(
+			'elementor.header_links.replace',
+			array( $this, 'replaceHeaderLinks' ),
+			array(
+				'mutation'    => true,
+				'capability'  => 'edit_theme_options',
+				'description' => 'Replace exact same-site Icon List links in one published Elementor header.',
+			)
+		);
 		$registry->register( 'elementor.header_links.inspect', array( $this, 'inspectHeaderLinks' ), array( 'description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.' ) );
 	}
 
@@ -103,10 +123,12 @@ final class ElementorAdapter {
 					'post'      => $post_fields,
 					'elementor' => $this->requestedMeta( $payload, $data ),
 				),
-				'_current_fingerprint' => Fingerprint::make( array(
-					'new'       => true,
-					'post_type' => $post_type,
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'new'       => true,
+						'post_type' => $post_type,
+					)
+				),
 			);
 		}
 
@@ -348,7 +370,9 @@ final class ElementorAdapter {
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
 				if ( $is_icon_list ) {
 					foreach ( $element['settings']['icon_list'] as $item ) {
-						if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) ++$matches_count;
+						if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) {
+							++$matches_count;
+						}
 					}
 				}
 				unset( $element );
@@ -356,9 +380,9 @@ final class ElementorAdapter {
 				// Missing Elementor ID is a bounded diagnostic, never a template export.
 			}
 			$matches[] = array(
-				'element_id'        =>$elementId,
-				'is_icon_list'      =>$is_icon_list,
-				'exact_url_matches' =>min( 2, $matches_count ),
+				'element_id'        => $elementId,
+				'is_icon_list'      => $is_icon_list,
+				'exact_url_matches' => min( 2, $matches_count ),
 			);
 		}
 		$eligible = $can_edit;
@@ -366,11 +390,11 @@ final class ElementorAdapter {
 			$eligible = $eligible && $match['is_icon_list'] && 1 === $match['exact_url_matches'];
 		}
 		return array(
-			'post_id'              =>$id,
-			'eligible'             =>$eligible,
-			'reason_code'          =>!$can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
-			'checks'               =>$matches,
-			'document_fingerprint' =>Fingerprint::make( $snapshot ),
+			'post_id'              => $id,
+			'eligible'             => $eligible,
+			'reason_code'          => ! $can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
+			'checks'               => $matches,
+			'document_fingerprint' => Fingerprint::make( $snapshot ),
 		);
 	}
 
@@ -452,7 +476,11 @@ final class ElementorAdapter {
 			return $result;
 		}
 		$after                       = $this->applyExistingDocumentMutation(
-			$id, array(), $data, $before['page_settings'], $before
+			$id,
+			array(),
+			$data,
+			$before['page_settings'],
+			$before
 		);
 		$result['readback_verified'] = true;
 		$result['after_fingerprint'] = Fingerprint::make( $after );
@@ -624,10 +652,12 @@ final class ElementorAdapter {
 		};
 		add_action( 'elementor/editor/after_save', $listener, 10, 2 );
 		try {
-			$result = $document->save( array(
-				'elements' => $data,
-				'settings' => $pageSettings,
-			) );
+			$result = $document->save(
+				array(
+					'elements' => $data,
+					'settings' => $pageSettings,
+				)
+			);
 		} finally {
 			remove_action( 'elementor/editor/after_save', $listener, 10 );
 		}

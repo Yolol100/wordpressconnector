@@ -363,7 +363,7 @@ final class SystemAdapter {
 			'plugin_update_permission'    => current_user_can( 'update_plugins' ),
 			'plugin_install_permission'   => current_user_can( 'install_plugins' ),
 		);
-		$checks['ok'] = $checks['wordpress_bootstrap'] && $checks['database'];
+		$checks['ok']               = $checks['wordpress_bootstrap'] && $checks['database'];
 		return $checks;
 	}
 
@@ -375,12 +375,14 @@ final class SystemAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function userList( array $payload ): array {
-		$users = get_users( array(
-			'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
-			'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
-			'search' => isset( $payload['search'] ) ? '*' . sanitize_text_field( (string) $payload['search'] ) . '*' : '',
-			'role'   => isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '',
-		) );
+		$users = get_users(
+			array(
+				'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+				'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
+				'search' => isset( $payload['search'] ) ? '*' . sanitize_text_field( (string) $payload['search'] ) . '*' : '',
+				'role'   => isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '',
+			)
+		);
 		return array( 'users' => array_map( array( $this, 'userSnapshot' ), $users ) );
 	}
 
@@ -467,7 +469,11 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Current user is not allowed to change user roles.' );
 		}
 		$after = $before;
-		foreach ( array( 'email', 'display_name', 'first_name', 'last_name', 'description', 'url' ) as $key ) if ( array_key_exists( $key, $payload ) ) $after[ $key ] = $payload[ $key ];
+		foreach ( array( 'email', 'display_name', 'first_name', 'last_name', 'description', 'url' ) as $key ) {
+			if ( array_key_exists( $key, $payload ) ) {
+				$after[ $key ] = $payload[ $key ];
+			}
+		}
 		if ( isset( $payload['role'] ) ) {
 			$after['roles'] = array( sanitize_key( (string) $payload['role'] ) );
 		}
@@ -483,9 +489,17 @@ final class SystemAdapter {
 		if ( isset( $payload['role'] ) ) {
 			$user->set_role( sanitize_key( (string) $payload['role'] ) );
 		}
-		if ( isset( $payload['add_roles'] ) ) foreach ( (array) $payload['add_roles'] as $role ) $user->add_role( sanitize_key( (string) $role ) );
-		if ( isset( $payload['remove_roles'] ) ) foreach ( (array) $payload['remove_roles'] as $role ) $user->remove_role( sanitize_key( (string) $role ) );
-		$result['after'] = $this->userSnapshot( get_user_by( 'id', $user->ID ) );
+		if ( isset( $payload['add_roles'] ) ) {
+			foreach ( (array) $payload['add_roles'] as $role ) {
+				$user->add_role( sanitize_key( (string) $role ) );
+			}
+		}
+		if ( isset( $payload['remove_roles'] ) ) {
+			foreach ( (array) $payload['remove_roles'] as $role ) {
+				$user->remove_role( sanitize_key( (string) $role ) );
+			}
+		}
+		$result['after']     = $this->userSnapshot( get_user_by( 'id', $user->ID ) );
 		$result['_rollback'] = array(
 			'action'  => 'user.update',
 			'payload' => array(
@@ -547,21 +561,21 @@ final class SystemAdapter {
 		$result['sessions_revoked'] = true;
 		if ( is_wp_error( $key ) ) {
 			$result['reset_email_accepted_by_wp_mail'] = false;
-			$result['reset_email_error'] = sanitize_text_field( $key->get_error_message() );
+			$result['reset_email_error']               = sanitize_text_field( $key->get_error_message() );
 			return $result;
 		}
 
-		$siteName = wp_specialchars_decode( (string) get_option( 'blogname' ), ENT_QUOTES );
-		$resetUrl = network_site_url(
+		$site_name = wp_specialchars_decode( (string) get_option( 'blogname' ), ENT_QUOTES );
+		$reset_url = network_site_url(
 			'wp-login.php?action=rp&key=' . rawurlencode( (string) $key ) . '&login=' . rawurlencode( (string) $user->user_login ),
 			'login'
 		);
 		/* translators: %s: WordPress site name. */
-		$subject = sprintf( __( '[%s] Security password reset', 'wordpressconnector' ), $siteName );
+		$subject = sprintf( __( '[%s] Security password reset', 'wordpressconnector' ), $site_name );
 		/* translators: %s: WordPress site name. */
-		$message  = sprintf( __( 'An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector' ), $siteName ) . "\r\n\r\n";
+		$message  = sprintf( __( 'An administrator reset the password for your account on %s as a security measure.', 'wordpressconnector' ), $site_name ) . "\r\n\r\n";
 		$message .= __( 'All active sessions have been signed out. Set a new password using this link:', 'wordpressconnector' ) . "\r\n\r\n";
-		$message .= $resetUrl . "\r\n";
+		$message .= $reset_url . "\r\n";
 
 		$result['reset_email_accepted_by_wp_mail'] = (bool) wp_mail( (string) $user->user_email, $subject, $message );
 		if ( ! $result['reset_email_accepted_by_wp_mail'] ) {
@@ -671,8 +685,8 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function roleUpdate( array $payload, array $context ): array {
-		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
-		$role     = get_role( $roleName );
+		$role_name = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
+		$role      = get_role( $role_name );
 		if ( ! $role ) {
 			throw new RuntimeException( 'Role not found.' );
 		}
@@ -686,12 +700,18 @@ final class SystemAdapter {
 			);
 		}
 		foreach ( (array) ( $payload['add'] ?? array() ) as $cap => $grant ) {
-			if ( is_int( $cap ) ) $role->add_cap( (string) $grant, true ); else $role->add_cap( (string) $cap, Input::boolValue( $grant, 'payload.add.' . (string) $cap ) );
+			if ( is_int( $cap ) ) {
+				$role->add_cap( (string) $grant, true );
+			} else {
+				$role->add_cap( (string) $cap, Input::boolValue( $grant, 'payload.add.' . (string) $cap ) );
+			}
 		}
-		foreach ( (array) ( $payload['remove'] ?? array() ) as $cap ) $role->remove_cap( (string) $cap );
+		foreach ( (array) ( $payload['remove'] ?? array() ) as $cap ) {
+			$role->remove_cap( (string) $cap );
+		}
 		return array(
-			'role'               => $roleName,
-			'capabilities'       => get_role( $roleName )->capabilities,
+			'role'               => $role_name,
+			'capabilities'       => get_role( $role_name )->capabilities,
 			'rollback_supported' => false,
 		);
 	}
@@ -707,12 +727,12 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function roleDelete( array $payload, array $context ): array {
-		$roleName = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
-		$role     = get_role( $roleName );
+		$role_name = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
+		$role      = get_role( $role_name );
 		if ( ! $role ) {
 			throw new RuntimeException( 'Role not found.' );
 		}
-		if ( in_array( $roleName, array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' ), true ) ) {
+		if ( in_array( $role_name, array( 'administrator', 'editor', 'author', 'contributor', 'subscriber' ), true ) ) {
 			throw new RuntimeException( 'Refusing to delete a WordPress core role.' );
 		}
 		$before = $role->capabilities;
@@ -722,9 +742,9 @@ final class SystemAdapter {
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
-		remove_role( $roleName );
+		remove_role( $role_name );
 		return array(
-			'deleted'            => $roleName,
+			'deleted'            => $role_name,
 			'rollback_supported' => false,
 		);
 	}
@@ -736,46 +756,46 @@ final class SystemAdapter {
 	 */
 	public function pluginList(): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$transient = get_site_transient( 'update_plugins' );
-		$offers    = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
+		$transient  = get_site_transient( 'update_plugins' );
+		$offers     = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
 			? $transient->response : array();
-		$checkedAt = is_object( $transient ) && isset( $transient->last_checked )
+		$checked_at = is_object( $transient ) && isset( $transient->last_checked )
 			? (int) $transient->last_checked : 0;
-		$canModify = function_exists( 'wp_is_file_mod_allowed' )
+		$can_modify = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'plugin_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items     = array();
+		$items      = array();
 		foreach ( get_plugins() as $file => $data ) {
 			// Match WordPress Core's REST plugin visibility for multisite site administrators.
 			// Inactive network-only plugins are visible to network plugin managers only.
 			if ( is_multisite() && ! current_user_can( 'manage_network_plugins' )
- && ! is_plugin_active( $file ) && is_network_only_plugin( $file ) ) {
+			&& ! is_plugin_active( $file ) && is_network_only_plugin( $file ) ) {
 				continue;
 			}
-			$network     = is_multisite() ? is_plugin_active_for_network( $file ) : false;
-			$active      = is_plugin_active( $file ) || $network;
-			$offer       = $offers[ $file ] ?? null;
-			$newVersion  = is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null )
+			$network      = is_multisite() ? is_plugin_active_for_network( $file ) : false;
+			$active       = is_plugin_active( $file ) || $network;
+			$offer        = $offers[ $file ] ?? null;
+			$new_version  = is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null )
 				: ( is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null ) : null );
-			$isConnector = 'wordpressconnector/wordpressconnector.php' === $file;
-			$items[] = array(
+			$is_connector = 'wordpressconnector/wordpressconnector.php' === $file;
+			$items[]      = array(
 				'file'              => $file,
 				'name'              => sanitize_text_field( (string) ( $data['Name'] ?? $file ) ),
 				'version'           => (string) ( $data['Version'] ?? '' ),
 				'active'            => $active,
 				'network_active'    => $network,
-				'update_available'  => $checkedAt > 0 ? ( null !== $newVersion ) : null,
-				'available_version' => is_string( $newVersion ) ? $newVersion : null,
+				'update_available'  => $checked_at > 0 ? ( null !== $new_version ) : null,
+				'available_version' => is_string( $new_version ) ? $new_version : null,
 				'can_activate'      => ! $active && current_user_can( 'activate_plugins' ),
-				'can_deactivate'    => $active && ! $network && ! $isConnector && current_user_can( 'activate_plugins' ),
-				'can_update'        => $canModify && current_user_can( 'update_plugins' ),
-				'can_delete'        => ! $active && ! $isConnector && $canModify && current_user_can( 'delete_plugins' ),
+				'can_deactivate'    => $active && ! $network && ! $is_connector && current_user_can( 'activate_plugins' ),
+				'can_update'        => $can_modify && current_user_can( 'update_plugins' ),
+				'can_delete'        => ! $active && ! $is_connector && $can_modify && current_user_can( 'delete_plugins' ),
 			);
 		}
 		return array(
 			'plugins'             => $items,
-			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'updates_checked_gmt' => $checked_at > 0 ? gmdate( 'c', $checked_at ) : null,
+			'update_state'        => $checked_at > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -805,19 +825,24 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Plugin directory pagination is out of bounds.' );
 		}
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
-		$result = plugins_api( 'query_plugins', array(
-			'search'   => $search,
-			'page'     => $page,
-			'per_page' => $limit,
-			'fields'   => array(
-				'sections'          => false,
-				'description'       => false,
-				'short_description' => true,
-			),
-		) );
+		$result = plugins_api(
+			'query_plugins',
+			array(
+				'search'   => $search,
+				'page'     => $page,
+				'per_page' => $limit,
+				'fields'   => array(
+					'sections'          => false,
+					'description'       => false,
+					'short_description' => true,
+				),
+			)
+		);
 		if ( is_wp_error( $result ) || ! is_object( $result ) || ! isset( $result->plugins ) || ! is_array( $result->plugins ) ) {
-			throw new RuntimeException( is_wp_error( $result ) ? $result->get_error_message()
-				: 'WordPress.org plugin directory could not be queried.' );
+			throw new RuntimeException(
+				is_wp_error( $result ) ? $result->get_error_message()
+				: 'WordPress.org plugin directory could not be queried.'
+			);
 		}
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$installed = get_plugins();
@@ -895,19 +920,21 @@ final class SystemAdapter {
 		if ( is_wp_error( $result ) ) {
 			throw new RuntimeException( $result->get_error_message() );
 		}
-		$activeNow = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
-		if ( ! $activeNow ) {
+		$active_now = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
+		if ( ! $active_now ) {
 			throw new RuntimeException( 'Plugin activation did not persist; check plugin requirements or security restrictions.' );
 		}
 		return array(
 			'file'              => $file,
 			'active'            => true,
 			'readback_verified' => true,
-			'_rollback'         => array( 'action' => 'plugin.deactivate',
-				'payload'                          => array(
-				'file'         => $file,
-				'network_wide' => $networkWide,
-			), ),
+			'_rollback'         => array(
+				'action'  => 'plugin.deactivate',
+				'payload' => array(
+					'file'         => $file,
+					'network_wide' => $networkWide,
+				),
+			),
 		);
 	}
 
@@ -944,19 +971,21 @@ final class SystemAdapter {
 			);
 		}
 		deactivate_plugins( $file, false, $networkWide );
-		$stillActive = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
-		if ( $stillActive ) {
+		$still_active = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
+		if ( $still_active ) {
 			throw new RuntimeException( 'Plugin deactivation did not persist; check dependency or security policy.' );
 		}
 		return array(
 			'file'              => $file,
 			'active'            => false,
 			'readback_verified' => true,
-			'_rollback'         => $before ? array( 'action' => 'plugin.activate',
+			'_rollback'         => $before ? array(
+				'action'  => 'plugin.activate',
 				'payload' => array(
-				'file'         => $file,
-				'network_wide' => $networkWide,
-			), ) : null,
+					'file'         => $file,
+					'network_wide' => $networkWide,
+				),
+			) : null,
 		);
 	}
 
@@ -977,10 +1006,13 @@ final class SystemAdapter {
 		}
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-		$api = plugins_api( 'plugin_information', array(
-			'slug'   => $slug,
-			'fields' => array( 'sections' => false ),
-		) );
+		$api = plugins_api(
+			'plugin_information',
+			array(
+				'slug'   => $slug,
+				'fields' => array( 'sections' => false ),
+			)
+		);
 		if ( is_wp_error( $api ) || ! is_object( $api ) || ! is_string( $api->download_link ?? null ) ) {
 			throw new RuntimeException( is_wp_error( $api ) ? $api->get_error_message() : 'Official WordPress.org plugin package not found.' );
 		}
@@ -1005,18 +1037,18 @@ final class SystemAdapter {
 		}
 		wp_clean_plugins_cache( true );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$installedFiles = array();
-		foreach ( get_plugins() as $installedFile => $pluginData ) {
-			if ( dirname( $installedFile ) === $slug || $installedFile === $slug . '.php' ) {
-				$installedFiles[] = $installedFile;
+		$installed_files = array();
+		foreach ( get_plugins() as $installed_file => $plugin_data ) {
+			if ( dirname( $installed_file ) === $slug || $installed_file === $slug . '.php' ) {
+				$installed_files[] = $installed_file;
 			}
 		}
-		if ( ! $installedFiles ) {
+		if ( ! $installed_files ) {
 			throw new RuntimeException( 'Plugin installer returned success, but the requested WordPress.org slug was not found afterward.' );
 		}
 		return array(
 			'installed'          => $slug,
-			'installed_files'    => $installedFiles,
+			'installed_files'    => $installed_files,
 			'readback_verified'  => true,
 			'rollback_supported' => false,
 		);
@@ -1033,32 +1065,32 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginUpdate( array $payload, array $context ): array {
-		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
-		$file           = $this->pluginFile( $payload );
+		$expected_target = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
+		$file            = $this->pluginFile( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'Update WordPress Connector through connector.update.apply or the verified native Plugins updater.' );
 		}
-		$previousVersion = $this->pluginVersion( $file );
-		if ( null !== $expectedTarget && ! version_compare( $expectedTarget, $previousVersion, '>' ) ) {
+		$previous_version = $this->pluginVersion( $file );
+		if ( null !== $expected_target && ! version_compare( $expected_target, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Pinned plugin update target must be newer than the installed version.' );
 		}
-		$offeredVersion = $this->availableUpdateVersion( 'update_plugins', $file );
+		$offered_version = $this->availableUpdateVersion( 'update_plugins', $file );
 		if ( ! empty( $context['dry_run'] ) ) {
-			if ( null !== $expectedTarget && $offeredVersion !== $expectedTarget ) {
+			if ( null !== $expected_target && $offered_version !== $expected_target ) {
 				throw new RuntimeException( 'Plugin update offer differs from the pinned target version.' );
 			}
 			return array(
 				'would_update'         => $file,
-				'from_version'         => $previousVersion,
-				'available_version'    => $offeredVersion,
-				'_current_fingerprint' => Fingerprint::make( $previousVersion ),
+				'from_version'         => $previous_version,
+				'available_version'    => $offered_version,
+				'_current_fingerprint' => Fingerprint::make( $previous_version ),
 			);
 		}
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		wp_update_plugins();
-		if ( null !== $expectedTarget
- && $this->availableUpdateVersion( 'update_plugins', $file ) !== $expectedTarget ) {
+		if ( null !== $expected_target
+		&& $this->availableUpdateVersion( 'update_plugins', $file ) !== $expected_target ) {
 			throw new RuntimeException( 'Plugin update offer changed before execution; no update was started.' );
 		}
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -1068,10 +1100,10 @@ final class SystemAdapter {
 		}
 		wp_clean_plugins_cache( true );
 		$version = $this->pluginVersion( $file );
-		if ( ! version_compare( $version, $previousVersion, '>' ) ) {
+		if ( ! version_compare( $version, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Plugin update could not be verified: installed version did not increase.' );
 		}
-		if ( null !== $expectedTarget && ! hash_equals( $expectedTarget, $version ) ) {
+		if ( null !== $expected_target && ! hash_equals( $expected_target, $version ) ) {
 			throw new RuntimeException( 'Plugin update installed an unexpected version; inspect live state before retrying.' );
 		}
 		return array(
@@ -1131,38 +1163,38 @@ final class SystemAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function themeList(): array {
-		$active       = get_stylesheet();
-		$activeParent = get_template();
-		$transient    = get_site_transient( 'update_themes' );
-		$offers       = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
+		$active        = get_stylesheet();
+		$active_parent = get_template();
+		$transient     = get_site_transient( 'update_themes' );
+		$offers        = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
 			? $transient->response : array();
-		$checkedAt    = is_object( $transient ) && isset( $transient->last_checked )
+		$checked_at    = is_object( $transient ) && isset( $transient->last_checked )
 			? (int) $transient->last_checked : 0;
-		$canModify    = function_exists( 'wp_is_file_mod_allowed' )
+		$can_modify    = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'theme_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items        = array();
+		$items         = array();
 		foreach ( wp_get_themes() as $stylesheet => $theme ) {
-			$offer      = $offers[ $stylesheet ] ?? null;
-			$newVersion = is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null )
+			$offer       = $offers[ $stylesheet ] ?? null;
+			$new_version = is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null )
 				: ( is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null ) : null );
-			$items[] = array(
+			$items[]     = array(
 				'stylesheet'        => $stylesheet,
 				'name'              => $theme->get( 'Name' ),
 				'version'           => $theme->get( 'Version' ),
 				'active'            => $stylesheet === $active,
-				'active_parent'     => $stylesheet !== $active && $stylesheet === $activeParent,
-				'in_use'            => $stylesheet === $active || $stylesheet === $activeParent,
+				'active_parent'     => $stylesheet !== $active && $stylesheet === $active_parent,
+				'in_use'            => $stylesheet === $active || $stylesheet === $active_parent,
 				'template'          => $theme->get_template(),
-				'update_available'  => $checkedAt > 0 ? ( is_string( $newVersion ) && '' !== $newVersion ) : null,
-				'available_version' => is_string( $newVersion ) && '' !== $newVersion ? $newVersion : null,
-				'can_update'        => $canModify && current_user_can( 'update_themes' ),
+				'update_available'  => $checked_at > 0 ? ( is_string( $new_version ) && '' !== $new_version ) : null,
+				'available_version' => is_string( $new_version ) && '' !== $new_version ? $new_version : null,
+				'can_update'        => $can_modify && current_user_can( 'update_themes' ),
 			);
 		}
 		return array(
 			'themes'              => $items,
-			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'updates_checked_gmt' => $checked_at > 0 ? gmdate( 'c', $checked_at ) : null,
+			'update_state'        => $checked_at > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -1195,12 +1227,14 @@ final class SystemAdapter {
 		if ( get_stylesheet() !== $stylesheet ) {
 			throw new RuntimeException( 'Theme activation did not persist; check WordPress theme requirements and site restrictions.' );
 		}
-		return array( 'active' => $stylesheet,
+		return array(
+			'active'            => $stylesheet,
 			'readback_verified' => true,
 			'_rollback'         => array(
 				'action'  => 'theme.switch',
 				'payload' => array( 'stylesheet' => $before ),
-			), );
+			),
+		);
 	}
 
 	/**
@@ -1229,9 +1263,11 @@ final class SystemAdapter {
 		}
 		$url = $this->officialDirectoryPackageUrl( $api->download_link, $slug, 'theme' );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_install' => $slug,
+			return array(
+				'would_install'           => $slug,
 				'verified_package_origin' => 'downloads.wordpress.org',
-				'_current_fingerprint'    => Fingerprint::make( array( 'theme_install' => $slug ) ), );
+				'_current_fingerprint'    => Fingerprint::make( array( 'theme_install' => $slug ) ),
+			);
 		}
 		$upgrader  = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
 		$installed = $upgrader->install( $url );
@@ -1258,33 +1294,33 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeUpdate( array $payload, array $context ): array {
-		$expectedTarget = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
-		$stylesheet     = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
-		$theme          = wp_get_theme( $stylesheet );
+		$expected_target = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
+		$stylesheet      = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
+		$theme           = wp_get_theme( $stylesheet );
 		if ( ! $theme->exists() ) {
 			throw new RuntimeException( 'Theme not found.' );
 		}
-		$previousVersion = (string) $theme->get( 'Version' );
-		if ( null !== $expectedTarget && ! version_compare( $expectedTarget, $previousVersion, '>' ) ) {
+		$previous_version = (string) $theme->get( 'Version' );
+		if ( null !== $expected_target && ! version_compare( $expected_target, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Pinned theme update target must be newer than the installed version.' );
 		}
-		$offeredVersion = $this->availableUpdateVersion( 'update_themes', $stylesheet );
+		$offered_version = $this->availableUpdateVersion( 'update_themes', $stylesheet );
 		if ( ! empty( $context['dry_run'] ) ) {
-			if ( null !== $expectedTarget && $offeredVersion !== $expectedTarget ) {
+			if ( null !== $expected_target && $offered_version !== $expected_target ) {
 				throw new RuntimeException( 'Theme update offer differs from the pinned target version.' );
 			}
 			return array(
 				'would_update'         => $stylesheet,
-				'from_version'         => $previousVersion,
-				'available_version'    => $offeredVersion,
-				'_current_fingerprint' => Fingerprint::make( $previousVersion ),
+				'from_version'         => $previous_version,
+				'available_version'    => $offered_version,
+				'_current_fingerprint' => Fingerprint::make( $previous_version ),
 			);
 		}
 		require_once ABSPATH . 'wp-admin/includes/update.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		wp_update_themes();
-		if ( null !== $expectedTarget
- && $this->availableUpdateVersion( 'update_themes', $stylesheet ) !== $expectedTarget ) {
+		if ( null !== $expected_target
+		&& $this->availableUpdateVersion( 'update_themes', $stylesheet ) !== $expected_target ) {
 			throw new RuntimeException( 'Theme update offer changed before execution; no update was started.' );
 		}
 		$upgrader = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -1295,10 +1331,10 @@ final class SystemAdapter {
 		wp_clean_themes_cache();
 		$after   = wp_get_theme( $stylesheet );
 		$version = $after->exists() ? (string) $after->get( 'Version' ) : '';
-		if ( '' === $version || ! version_compare( $version, $previousVersion, '>' ) ) {
+		if ( '' === $version || ! version_compare( $version, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Theme update could not be verified: installed version did not increase.' );
 		}
-		if ( null !== $expectedTarget && ! hash_equals( $expectedTarget, $version ) ) {
+		if ( null !== $expected_target && ! hash_equals( $expected_target, $version ) ) {
 			throw new RuntimeException( 'Theme update installed an unexpected version; inspect live state before retrying.' );
 		}
 		return array(
@@ -1406,12 +1442,16 @@ final class SystemAdapter {
 		wp_version_check();
 		$updates = get_core_updates( array( 'dismissed' => false ) );
 		$items   = array();
-		if ( is_array( $updates ) ) foreach ( $updates as $update ) $items[] = array(
-			'response' => $update->response ?? null,
-			'current'  => $update->current ?? null,
-			'locale'   => $update->locale ?? null,
-			'package'  => ! empty( $update->package ),
-		);
+		if ( is_array( $updates ) ) {
+			foreach ( $updates as $update ) {
+				$items[] = array(
+					'response' => $update->response ?? null,
+					'current'  => $update->current ?? null,
+					'locale'   => $update->locale ?? null,
+					'package'  => ! empty( $update->package ),
+				);
+			}
+		}
 		return array( 'updates' => $items );
 	}
 
@@ -1474,14 +1514,20 @@ final class SystemAdapter {
 	public function cronList(): array {
 		$cron  = _get_cron_array();
 		$items = array();
-		foreach ( (array) $cron as $timestamp => $hooks ) foreach ( (array) $hooks as $hook => $events ) foreach ( (array) $events as $key => $event ) $items[] = array(
-			'timestamp' => (int) $timestamp,
-			'hook'      => (string) $hook,
-			'schedule'  => $event['schedule'] ?? false,
-			'args'      => $event['args'] ?? array(),
-			'interval'  => $event['interval'] ?? null,
-			'key'       => (string) $key,
-		);
+		foreach ( (array) $cron as $timestamp => $hooks ) {
+			foreach ( (array) $hooks as $hook => $events ) {
+				foreach ( (array) $events as $key => $event ) {
+								$items[] = array(
+									'timestamp' => (int) $timestamp,
+									'hook'      => (string) $hook,
+									'schedule'  => $event['schedule'] ?? false,
+									'args'      => $event['args'] ?? array(),
+									'interval'  => $event['interval'] ?? null,
+									'key'       => (string) $key,
+								);
+				}
+			}
+		}
 		return array( 'events' => $items );
 	}
 
@@ -1588,11 +1634,13 @@ final class SystemAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_schedule'       => $state,
-				'_current_fingerprint' => Fingerprint::make( array(
-					'timestamp' => (int) $existing->timestamp,
-					'schedule'  => $existing->schedule,
-					'args'      => $existing->args,
-				) ),
+				'_current_fingerprint' => Fingerprint::make(
+					array(
+						'timestamp' => (int) $existing->timestamp,
+						'schedule'  => $existing->schedule,
+						'args'      => $existing->args,
+					)
+				),
 			);
 		}
 		$result = '' === $recurrence ? wp_schedule_single_event( $timestamp, $hook, $args, true ) : wp_schedule_event( $timestamp, $recurrence, $hook, $args, true );
@@ -1664,10 +1712,12 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$sites = get_sites( array(
-			'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
-			'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
-		) );
+		$sites = get_sites(
+			array(
+				'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+				'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
+			)
+		);
 		return array( 'sites' => array_map( array( $this, 'siteSnapshot' ), $sites ) );
 	}
 
@@ -1697,20 +1747,22 @@ final class SystemAdapter {
 				'_current_fingerprint' => Fingerprint::make( array( 'new_site' => $domain . $path ) ),
 			);
 		}
-		$siteId = wp_insert_site( array(
-			'domain'     => $domain,
-			'path'       => $path,
-			'network_id' => isset( $payload['network_id'] ) ? (int) $payload['network_id'] : get_current_network_id(),
-			'public'     => (int) $public,
-		) );
-		if ( is_wp_error( $siteId ) ) {
-			throw new RuntimeException( $siteId->get_error_message() );
+		$site_id = wp_insert_site(
+			array(
+				'domain'     => $domain,
+				'path'       => $path,
+				'network_id' => isset( $payload['network_id'] ) ? (int) $payload['network_id'] : get_current_network_id(),
+				'public'     => (int) $public,
+			)
+		);
+		if ( is_wp_error( $site_id ) ) {
+			throw new RuntimeException( $site_id->get_error_message() );
 		}
 		return array(
-			'site'      => $this->siteSnapshot( get_site( $siteId ) ),
+			'site'      => $this->siteSnapshot( get_site( $site_id ) ),
 			'_rollback' => array(
 				'action'  => 'multisite.site.delete',
-				'payload' => array( 'id' => (int) $siteId ),
+				'payload' => array( 'id' => (int) $site_id ),
 			),
 		);
 	}
@@ -1736,8 +1788,16 @@ final class SystemAdapter {
 		}
 		$before = $this->siteSnapshot( $site );
 		$data   = array();
-		foreach ( array( 'domain', 'path', 'registered', 'last_updated' ) as $field ) if ( array_key_exists( $field, $payload ) ) $data[ $field ] = (string) $payload[ $field ];
-		foreach ( array( 'public', 'archived', 'mature', 'spam', 'deleted' ) as $field ) if ( array_key_exists( $field, $payload ) ) $data[ $field ] = (int) Input::bool( $payload, $field );
+		foreach ( array( 'domain', 'path', 'registered', 'last_updated' ) as $field ) {
+			if ( array_key_exists( $field, $payload ) ) {
+				$data[ $field ] = (string) $payload[ $field ];
+			}
+		}
+		foreach ( array( 'public', 'archived', 'mature', 'spam', 'deleted' ) as $field ) {
+			if ( array_key_exists( $field, $payload ) ) {
+				$data[ $field ] = (int) Input::bool( $payload, $field );
+			}
+		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1855,7 +1915,11 @@ final class SystemAdapter {
 			'description'  => 'description',
 			'url'          => 'user_url',
 		);
-		foreach ( $map as $source => $target ) if ( array_key_exists( $source, $payload ) ) $fields[ $target ] = (string) $payload[ $source ];
+		foreach ( $map as $source => $target ) {
+			if ( array_key_exists( $source, $payload ) ) {
+				$fields[ $target ] = (string) $payload[ $source ];
+			}
+		}
 		if ( count( $fields ) > 1 ) {
 			$result = wp_update_user( $fields );
 			if ( is_wp_error( $result ) ) {
@@ -1865,19 +1929,19 @@ final class SystemAdapter {
 	}
 
 	/**
-     * A plugin can filter plugins_api()/themes_api() responses. Never install an
-     * untrusted package URL merely because that API returned it. Custom ZIPs
-     * use plugin.install_package with independent SHA-256 and archive checks.
-     */
+	 * A plugin can filter plugins_api()/themes_api() responses. Never install an
+	 * untrusted package URL merely because that API returned it. Custom ZIPs
+	 * use plugin.install_package with independent SHA-256 and archive checks.
+	 */
 	private function officialDirectoryPackageUrl( string $url, string $slug, string $kind ): string {
 		if ( strlen( $url ) > 320 || ! in_array( $kind, array( 'plugin', 'theme' ), true ) ) {
 			throw new RuntimeException( 'Invalid official directory package reference.' );
 		}
 		$parts = parse_url( $url );
-		if ( ! is_array( $parts ) || ( $parts['scheme'] ?? '' ) !== 'https' || 
-			( $parts['host'] ?? '' ) !== 'downloads.wordpress.org' || 
-			isset( $parts['user'] ) || isset( $parts['pass'] ) || isset( $parts['query'] ) || 
-			isset( $parts['fragment'] ) || ( isset( $parts['port'] ) && (int) $parts['port'] !== 443 ) ) {
+		if ( ! is_array( $parts ) || ( $parts['scheme'] ?? '' ) !== 'https' ||
+			( $parts['host'] ?? '' ) !== 'downloads.wordpress.org' ||
+			isset( $parts['user'] ) || isset( $parts['pass'] ) || isset( $parts['query'] ) ||
+			isset( $parts['fragment'] ) || ( isset( $parts['port'] ) && (int) 443 !== $parts['port'] ) ) {
 			throw new RuntimeException( 'Directory package URL is not a canonical HTTPS WordPress.org download.' );
 		}
 		$pattern = '#\A/' . $kind . '/' . preg_quote( $slug, '#' ) .

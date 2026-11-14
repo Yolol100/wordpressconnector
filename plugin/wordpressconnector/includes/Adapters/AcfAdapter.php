@@ -24,64 +24,104 @@ final class AcfAdapter {
 	 * @param Registry $registry Connector action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'acf.get', array( $this, 'get' ), array(
-			'privileged'  => true,
-			'description' => 'Read ACF values for a post, term, user or options target.',
-		) );
-		$registry->register( 'acf.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update one or more ACF fields through update_field().',
-		) );
-		$registry->register( 'acf.delete', array( $this, 'delete' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Delete one or more ACF field values through delete_field().',
-		) );
-		$registry->register( 'acf.field_groups', array( $this, 'fieldGroups' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'List active ACF field groups and fields for discovery.',
-		) );
-		$registry->register( 'acf.schema.ensure_text_fields', array( $this, 'ensureTextFields' ), array(
-			'mutation'               => true,
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Create a bounded set of new ACF text fields in an existing field group without altering existing fields.',
-		) );
-		$registry->register( 'acf.schema.remove_text_fields', array( $this, 'removeTextFields' ), array(
-			'mutation'               => true,
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'manage_options',
-			'description'            => 'Remove exact ACF text fields created by a prior bounded schema ensure operation.',
-		) );
-		$registry->register( 'acf.schema.ensure_fields', array( $this, 'ensureFields' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Create bounded complex ACF fields in an existing field group without altering existing fields.',
-		) );
-		$registry->register( 'acf.schema.remove_fields', array( $this, 'removeFields' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Remove exact complex ACF fields created by a prior bounded schema ensure operation.',
-		) );
-		$registry->register( 'acf.schema.create_field_group', array( $this, 'createFieldGroup' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Create a new bounded ACF field group with nested fields and location rules.',
-		) );
-		$registry->register( 'acf.schema.delete_field_group', array( $this, 'deleteFieldGroup' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Delete an exact connector-created ACF field group only when its schema still matches.',
-		) );
+		$registry->register(
+			'acf.get',
+			array( $this, 'get' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read ACF values for a post, term, user or options target.',
+			)
+		);
+		$registry->register(
+			'acf.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update one or more ACF fields through update_field().',
+			)
+		);
+		$registry->register(
+			'acf.delete',
+			array( $this, 'delete' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Delete one or more ACF field values through delete_field().',
+			)
+		);
+		$registry->register(
+			'acf.field_groups',
+			array( $this, 'fieldGroups' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'List active ACF field groups and fields for discovery.',
+			)
+		);
+		$registry->register(
+			'acf.schema.ensure_text_fields',
+			array( $this, 'ensureTextFields' ),
+			array(
+				'mutation'               => true,
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Create a bounded set of new ACF text fields in an existing field group without altering existing fields.',
+			)
+		);
+		$registry->register(
+			'acf.schema.remove_text_fields',
+			array( $this, 'removeTextFields' ),
+			array(
+				'mutation'               => true,
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'manage_options',
+				'description'            => 'Remove exact ACF text fields created by a prior bounded schema ensure operation.',
+			)
+		);
+		$registry->register(
+			'acf.schema.ensure_fields',
+			array( $this, 'ensureFields' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Create bounded complex ACF fields in an existing field group without altering existing fields.',
+			)
+		);
+		$registry->register(
+			'acf.schema.remove_fields',
+			array( $this, 'removeFields' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Remove exact complex ACF fields created by a prior bounded schema ensure operation.',
+			)
+		);
+		$registry->register(
+			'acf.schema.create_field_group',
+			array( $this, 'createFieldGroup' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Create a new bounded ACF field group with nested fields and location rules.',
+			)
+		);
+		$registry->register(
+			'acf.schema.delete_field_group',
+			array( $this, 'deleteFieldGroup' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Delete an exact connector-created ACF field group only when its schema still matches.',
+			)
+		);
 	}
 
 	/**
@@ -135,7 +175,7 @@ final class AcfAdapter {
 
 		$before = array();
 		foreach ( $fields as $field => $value ) {
-			$before[(string) $field] = get_field( (string) $field, $target, false );
+			$before[ (string) $field ] = get_field( (string) $field, $target, false );
 		}
 
 		$result = array(
@@ -160,13 +200,15 @@ final class AcfAdapter {
 
 		$result['after'] = array();
 		foreach ( $fields as $field => $value ) {
-			$result['after'][(string) $field] = get_field( (string) $field, $target, false );
+			$result['after'][ (string) $field ] = get_field( (string) $field, $target, false );
 		}
-		$result['_rollback'] = array( 'action' => 'acf.update',
-			'payload'                          => array(
-			'target' => $target,
-			'fields' => $before,
-		), );
+		$result['_rollback'] = array(
+			'action'  => 'acf.update',
+			'payload' => array(
+				'target' => $target,
+				'fields' => $before,
+			),
+		);
 		return $result;
 	}
 
@@ -190,7 +232,7 @@ final class AcfAdapter {
 
 		$before = array();
 		foreach ( $fields as $field ) {
-			$before[(string) $field] = get_field( (string) $field, $target, false );
+			$before[ (string) $field ] = get_field( (string) $field, $target, false );
 		}
 		$result = array(
 			'target'               => $target,
@@ -204,11 +246,13 @@ final class AcfAdapter {
 		foreach ( $fields as $field ) {
 			delete_field( (string) $field, $target );
 		}
-		$result['_rollback'] = array( 'action' => 'acf.update',
-			'payload'                          => array(
-			'target' => $target,
-			'fields' => $before,
-		), );
+		$result['_rollback'] = array(
+			'action'  => 'acf.update',
+			'payload' => array(
+				'target' => $target,
+				'fields' => $before,
+			),
+		);
 		return $result;
 	}
 
@@ -248,15 +292,18 @@ final class AcfAdapter {
 			$result[] = array(
 				'key'    => $group['key'] ?? null,
 				'title'  => $group['title'] ?? null,
-				'fields' => array_map( static function ( array $field ): array {
-					return array(
-						'key'      => $field['key'] ?? null,
-						'name'     => $field['name'] ?? null,
-						'label'    => $field['label'] ?? null,
-						'type'     => $field['type'] ?? null,
-						'required' => ! empty( $field['required'] ),
-					);
-				}, is_array( $fields ) ? $fields : array() ),
+				'fields' => array_map(
+					static function ( array $field ): array {
+						return array(
+							'key'      => $field['key'] ?? null,
+							'name'     => $field['name'] ?? null,
+							'label'    => $field['label'] ?? null,
+							'type'     => $field['type'] ?? null,
+							'required' => ! empty( $field['required'] ),
+						);
+					},
+					is_array( $fields ) ? $fields : array()
+				),
 			);
 		}
 		return array( 'field_groups' => $result );
@@ -284,7 +331,7 @@ final class AcfAdapter {
 			throw new RuntimeException( 'acf.schema.ensure_text_fields requires 1-12 text field definitions.' );
 		}
 		$this->assertGroupAppliesToPost( $groupKey, $postId );
-		$groupId        = $this->groupId( $groupKey );
+		$groupId = $this->groupId( $groupKey );
 
 		$normalized       = $this->normalizeRequestedTextFields( $requested );
 		$existing_fields  = $this->groupFields( $groupKey );
@@ -293,10 +340,10 @@ final class AcfAdapter {
 		$next_menu_order  = 0;
 		foreach ( $existing_fields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
-				$existing_by_key[(string) $field['key']] = $field;
+				$existing_by_key[ (string) $field['key'] ] = $field;
 			}
 			if ( ! empty( $field['name'] ) ) {
-				$existing_by_name[(string) $field['name']] = $field;
+				$existing_by_name[ (string) $field['name'] ] = $field;
 			}
 			$next_menu_order = max( $next_menu_order, ( (int) ( $field['menu_order'] ?? -1 ) ) + 1 );
 		}
@@ -329,10 +376,10 @@ final class AcfAdapter {
 				$summary  = $this->fieldSummary( $global );
 				$globalId = isset( $global['ID'] ) ? (int) $global['ID'] : 0;
 				if ( $globalId <= 0
- || 0 !== (int) ( $summary['parent'] ?? 0 )
- || (string) ( $summary['name'] ?? '' ) !== $name
- || 'text' !== (string) ( $summary['type'] ?? '' )
- || ! empty( $summary['required'] ) ) {
+				|| 0 !== (int) ( $summary['parent'] ?? 0 )
+				|| (string) ( $summary['name'] ?? '' ) !== $name
+				|| 'text' !== (string) ( $summary['type'] ?? '' )
+				|| ! empty( $summary['required'] ) ) {
 					throw new RuntimeException( 'Existing global ACF field conflicts with requested text field: ' . $key );
 				}
 				$before[ $key ]      = $summary;
@@ -355,7 +402,13 @@ final class AcfAdapter {
 			'group_key'            => $groupKey,
 			'before'               => $before,
 			'requested'            => $normalized,
-			'would_create'         => array_values( array_map( static function ( array $field ): string { return $field['key']; }, $would_create ) ),
+			'would_create'         => array_values(
+				array_map(
+					static function ( array $field ): string {
+						return $field['key']; },
+					$would_create
+				)
+			),
 			'_current_fingerprint' => Fingerprint::make( $state ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -385,8 +438,8 @@ final class AcfAdapter {
 				'parent'            => $groupId,
 				'menu_order'        => $next_menu_order++,
 			);
-			if ( isset( $recoverable[$definition['key']] ) ) {
-				$field['ID'] = (int) $recoverable[$definition['key']];
+			if ( isset( $recoverable[ $definition['key'] ] ) ) {
+				$field['ID'] = (int) $recoverable[ $definition['key'] ];
 			}
 			$saved = acf_update_field( $field );
 			if ( ! is_array( $saved ) ) {
@@ -401,11 +454,18 @@ final class AcfAdapter {
 
 		$after = array();
 		foreach ( $normalized as $definition ) {
-			$readback                  = acf_get_field( $definition['key'] );
-			$after[$definition['key']] = is_array( $readback ) ? $this->fieldSummary( $readback ) : null;
+			$readback                    = acf_get_field( $definition['key'] );
+			$after[ $definition['key'] ] = is_array( $readback ) ? $this->fieldSummary( $readback ) : null;
 		}
 		$result['after']   = $after;
-		$result['created'] = array_values( array_map( static function ( array $field ): string { return $field['key']; }, $created ) );
+		$result['created'] = array_values(
+			array_map(
+				static function ( array $field ): string {
+					return $field['key'];
+				},
+				$created
+			)
+		);
 		if ( $created ) {
 			$result['_rollback'] = array(
 				'action'  => 'acf.schema.remove_text_fields',
@@ -441,18 +501,18 @@ final class AcfAdapter {
 		$groupId    = $this->groupId( $groupKey );
 		$normalized = $this->normalizeRequestedTextFields( $requested );
 
-		$before     = array();
+		$before = array();
 		foreach ( $normalized as $definition ) {
 			$existing = acf_get_field( $definition['key'] );
 			if ( ! is_array( $existing ) ) {
-				$before[$definition['key']] = null;
+				$before[ $definition['key'] ] = null;
 				continue;
 			}
 			$summary = $this->fieldSummary( $existing );
 			if ( ! $this->fieldMatchesDefinition( $summary, $definition, $groupId ) ) {
 				throw new RuntimeException( 'Refusing to remove an ACF field that no longer matches the rollback definition: ' . $definition['key'] );
 			}
-			$before[$definition['key']] = $summary;
+			$before[ $definition['key'] ] = $summary;
 		}
 		$state  = array(
 			'post_id'   => $postId,
@@ -523,10 +583,10 @@ final class AcfAdapter {
 		$next_menu_order  = 0;
 		foreach ( $existing_fields as $field ) {
 			if ( ! empty( $field['key'] ) ) {
-				$existing_by_key[(string) $field['key']] = $field;
+				$existing_by_key[ (string) $field['key'] ] = $field;
 			}
 			if ( ! empty( $field['name'] ) ) {
-				$existing_by_name[(string) $field['name']] = $field;
+				$existing_by_name[ (string) $field['name'] ] = $field;
 			}
 			$next_menu_order = max( $next_menu_order, ( (int) ( $field['menu_order'] ?? -1 ) ) + 1 );
 		}
@@ -570,7 +630,13 @@ final class AcfAdapter {
 			'group_key'            => $groupKey,
 			'requested'            => $normalized,
 			'before'               => $before,
-			'would_create'         => array_values( array_map( static function ( array $field ): string { return $field['key']; }, $would_create ) ),
+			'would_create'         => array_values(
+				array_map(
+					static function ( array $field ): string {
+						return $field['key']; },
+					$would_create
+				)
+			),
 			'_current_fingerprint' => Fingerprint::make( $state ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -594,7 +660,7 @@ final class AcfAdapter {
 				if ( ! $this->schemaContains( $definition, $tree ) ) {
 					throw new RuntimeException( 'ACF complex field readback did not match requested schema: ' . $definition['key'] );
 				}
-				$after[$definition['key']] = $tree;
+				$after[ $definition['key'] ] = $tree;
 			}
 		} catch ( \Throwable $error ) {
 			$cleanup_failures = $this->cleanupCreatedFieldNodes( $createdNodes );
@@ -609,7 +675,14 @@ final class AcfAdapter {
 		}
 
 		$result['after']   = $after;
-		$result['created'] = array_values( array_map( static function ( array $field ): string { return $field['key']; }, $created ) );
+		$result['created'] = array_values(
+			array_map(
+				static function ( array $field ): string {
+					return $field['key'];
+				},
+				$created
+			)
+		);
 		if ( $created ) {
 			$result['_rollback'] = array(
 				'action'  => 'acf.schema.remove_fields',
@@ -652,11 +725,11 @@ final class AcfAdapter {
 		$keys       = array();
 		$normalized = $this->normalizeSchemaFields( $requested, 0, $total, $keys );
 
-		$before     = array();
+		$before = array();
 		foreach ( $normalized as $definition ) {
 			$field = acf_get_field( $definition['key'] );
 			if ( ! is_array( $field ) ) {
-				$before[$definition['key']] = null;
+				$before[ $definition['key'] ] = null;
 				continue;
 			}
 			if ( (int) ( $field['parent'] ?? 0 ) !== $groupId ) {
@@ -666,7 +739,7 @@ final class AcfAdapter {
 			if ( ! $this->schemaContains( $definition, $tree ) ) {
 				throw new RuntimeException( 'Refusing to remove an ACF field that no longer matches the rollback schema: ' . $definition['key'] );
 			}
-			$before[$definition['key']] = $tree;
+			$before[ $definition['key'] ] = $tree;
 		}
 
 		$state  = array(
@@ -812,9 +885,9 @@ final class AcfAdapter {
 		$groupKey = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';
 		$expected = isset( $payload['expected_schema'] ) && is_array( $payload['expected_schema'] ) ? $payload['expected_schema'] : array();
 		if ( ! preg_match( '/^group_[A-Za-z0-9_-]{6,80}\z/', $groupKey )
- || ! isset( $expected['group'], $expected['fields'] )
- || ! is_array( $expected['group'] )
- || ! is_array( $expected['fields'] ) ) {
+		|| ! isset( $expected['group'], $expected['fields'] )
+		|| ! is_array( $expected['group'] )
+		|| ! is_array( $expected['fields'] ) ) {
 			throw new RuntimeException( 'acf.schema.delete_field_group requires group_key and expected_schema.' );
 		}
 		$group = $this->normalizeFieldGroup( $expected['group'] );
@@ -836,10 +909,12 @@ final class AcfAdapter {
 		$result = array(
 			'group_key'            => $groupKey,
 			'before'               => $current,
-			'_current_fingerprint' => Fingerprint::make( array(
-				'group_key' => $groupKey,
-				'current'   => $current,
-			) ),
+			'_current_fingerprint' => Fingerprint::make(
+				array(
+					'group_key' => $groupKey,
+					'current'   => $current,
+				)
+			),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -1032,11 +1107,11 @@ final class AcfAdapter {
 	 */
 	private function fieldMatchesDefinition( array $summary, array $definition, int $groupId ): bool {
 		return (string) ( $summary['key'] ?? '' ) === (string) $definition['key']
- && (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
- && (string) ( $summary['label'] ?? '' ) === (string) $definition['label']
- && 'text' === (string) ( $summary['type'] ?? '' )
- && (string) $groupId === (string) ( $summary['parent'] ?? '' )
- && empty( $summary['required'] );
+		&& (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
+		&& (string) ( $summary['label'] ?? '' ) === (string) $definition['label']
+		&& 'text' === (string) ( $summary['type'] ?? '' )
+		&& (string) $groupId === (string) ( $summary['parent'] ?? '' )
+		&& empty( $summary['required'] );
 	}
 
 	/**
@@ -1070,9 +1145,17 @@ final class AcfAdapter {
 	 */
 	private function normalizeFieldGroup( array $group ): array {
 		$allowed = array(
-			'key', 'title', 'location', 'description', 'position', 'style',
-			'label_placement', 'instruction_placement', 'hide_on_screen',
-			'active', 'show_in_rest',
+			'key',
+			'title',
+			'location',
+			'description',
+			'position',
+			'style',
+			'label_placement',
+			'instruction_placement',
+			'hide_on_screen',
+			'active',
+			'show_in_rest',
 		);
 		foreach ( array_keys( $group ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
@@ -1130,9 +1213,21 @@ final class AcfAdapter {
 				throw new RuntimeException( 'Invalid ACF field-group hide_on_screen list.' );
 			}
 			$allowed_hidden = array(
-				'permalink', 'the_content', 'excerpt', 'custom_fields', 'discussion',
-				'comments', 'revisions', 'slug', 'author', 'format', 'page_attributes',
-				'featured_image', 'categories', 'tags', 'send-trackbacks',
+				'permalink',
+				'the_content',
+				'excerpt',
+				'custom_fields',
+				'discussion',
+				'comments',
+				'revisions',
+				'slug',
+				'author',
+				'format',
+				'page_attributes',
+				'featured_image',
+				'categories',
+				'tags',
+				'send-trackbacks',
 			);
 			$hidden         = array_values( array_unique( array_map( 'strval', $group['hide_on_screen'] ) ) );
 			foreach ( $hidden as $item ) {
@@ -1164,7 +1259,7 @@ final class AcfAdapter {
 				continue;
 			}
 			foreach ( $category as $param => $label ) {
-				$types[(string) $param] = true;
+				$types[ (string) $param ] = true;
 			}
 		}
 		$normalized = array();
@@ -1232,16 +1327,16 @@ final class AcfAdapter {
 			if ( ! is_array( $field ) ) {
 				throw new RuntimeException( 'ACF schema field at index ' . $index . ' must be an object.' );
 			}
-			$total++;
+			++$total;
 			if ( $total > 50 ) {
 				throw new RuntimeException( 'ACF schema request exceeds the maximum of 50 total fields.' );
 			}
 			$definition = $this->normalizeSchemaField( $field, $depth, $total, $keys );
-			if ( isset( $names[$definition['name']] ) ) {
+			if ( isset( $names[ $definition['name'] ] ) ) {
 				throw new RuntimeException( 'Duplicate ACF field name at the same schema level: ' . $definition['name'] );
 			}
-			$names[$definition['name']] = true;
-			$normalized[]               = $definition;
+			$names[ $definition['name'] ] = true;
+			$normalized[]                 = $definition;
 		}
 		return $normalized;
 	}
@@ -1509,7 +1604,12 @@ final class AcfAdapter {
 					throw new RuntimeException( 'Invalid repeater collapsed field key for: ' . $key );
 				}
 				if ( '' !== $collapsed ) {
-					$direct_keys = array_map( static function ( array $subField ): string { return (string) $subField['key']; }, $normalized['sub_fields'] );
+					$direct_keys = array_map(
+						static function ( array $subField ): string {
+							return (string) $subField['key'];
+						},
+						$normalized['sub_fields']
+					);
 					if ( ! in_array( $collapsed, $direct_keys, true ) ) {
 						throw new RuntimeException( 'Repeater collapsed field must reference a direct sub field: ' . $key );
 					}
@@ -1717,9 +1817,14 @@ final class AcfAdapter {
 		$tree     = $field;
 		$children = acf_get_fields( $field );
 		if ( is_array( $children ) && $children ) {
-			$tree['sub_fields'] = array_values( array_map( function ( array $child ): array {
-				return $this->hydrateFieldTree( $child );
-			}, $children ) );
+			$tree['sub_fields'] = array_values(
+				array_map(
+					function ( array $child ): array {
+						return $this->hydrateFieldTree( $child );
+					},
+					$children
+				)
+			);
 		} else {
 			unset( $tree['sub_fields'] );
 		}

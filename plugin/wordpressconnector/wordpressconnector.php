@@ -80,9 +80,12 @@ $wpconnector_files = array(
 	'includes/Plugin.php',
 );
 foreach ( $wpconnector_files as $wpconnector_file ) {
-	require_once WPCONNECTOR_PATH.$wpconnector_file;
+	require_once WPCONNECTOR_PATH . $wpconnector_file;
 }
 Plugin::boot();
-register_activation_hook( WPCONNECTOR_FILE, static function ( $networkWide = false ): void {
-	\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $networkWide );
-} );
+register_activation_hook(
+	WPCONNECTOR_FILE,
+	static function ( $networkWide = false ): void {
+		\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $networkWide );
+	}
+);

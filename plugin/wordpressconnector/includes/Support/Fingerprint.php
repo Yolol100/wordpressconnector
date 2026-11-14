@@ -12,8 +12,8 @@ namespace Webactueel\WordPressConnector\Support;
 /**
  * Provides Fingerprint utilities shared by connector services.
  */
-final class Fingerprint
-{
+final class Fingerprint {
+
 	/**
 	 * Create a stable SHA-256 fingerprint of normalized data.
 	 *
@@ -21,8 +21,7 @@ final class Fingerprint
 	 *
 	 * @return string Hexadecimal SHA-256 digest.
 	 */
-	public static function make($value): string
-	{
+	public static function make( $value ): string {
 		return hash( 'sha256', Json::encode( self::normalize( $value ), false ) );
 	}
 
@@ -33,8 +32,7 @@ final class Fingerprint
 	 *
 	 * @return string Site-bound token digest.
 	 */
-	public static function siteToken($value): string
-	{
+	public static function siteToken( $value ): string {
 		return self::siteTokenFromFingerprint( self::make( $value ) );
 	}
 
@@ -45,8 +43,7 @@ final class Fingerprint
 	 *
 	 * @return string Site-scoped HMAC digest.
 	 */
-	public static function siteTokenFromFingerprint(string $fingerprint): string
-	{
+	public static function siteTokenFromFingerprint( string $fingerprint ): string {
 		if ( ! preg_match( '/^[a-f0-9]{64}$/', $fingerprint ) ) {
 			$fingerprint = self::make( $fingerprint );
 		}
@@ -69,8 +66,7 @@ final class Fingerprint
 	 *
 	 * @return mixed Normalized data with sorted associative array keys.
 	 */
-	private static function normalize($value)
-	{
+	private static function normalize( $value ) {
 		if ( ! is_array( $value ) ) {
 			return $value;
 		}

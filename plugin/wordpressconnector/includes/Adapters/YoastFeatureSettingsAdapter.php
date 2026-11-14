@@ -122,8 +122,8 @@ final class YoastFeatureSettingsAdapter {
 		if ( array_diff( array_keys( $payload ), array( 'fields', 'risk_acknowledged' ) ) ) {
 			throw new RuntimeException( 'Yoast feature update accepts only fields and risk_acknowledged.' );
 		}
-		$riskAcknowledged = $payload['risk_acknowledged'] ?? false;
-		if ( ! is_bool( $riskAcknowledged ) ) {
+		$risk_acknowledged = $payload['risk_acknowledged'] ?? false;
+		if ( ! is_bool( $risk_acknowledged ) ) {
 			throw new RuntimeException( 'risk_acknowledged must be boolean.' );
 		}
 		$group = $this->singleGroup( $fields );
@@ -142,7 +142,7 @@ final class YoastFeatureSettingsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		if ( $highImpact && ! $riskAcknowledged ) {
+		if ( $highImpact && ! $risk_acknowledged ) {
 			throw new RuntimeException( 'High-impact indexing, rendering and archive changes require risk_acknowledged=true.' );
 		}
 		if ( $before === $after ) {
@@ -150,22 +150,22 @@ final class YoastFeatureSettingsAdapter {
 			return $result;
 		}
 
-		$existingOptions = $this->options( $group );
-		$newOptions      = $existingOptions;
+		$existing_options = $this->options( $group );
+		$new_options      = $existing_options;
 		foreach ( $fields as $name => $value ) {
-			$newOptions[self::FIELDS[ $name ][1]] = $value;
+			$new_options[ self::FIELDS[ $name ][1] ] = $value;
 		}
-		update_option( $group, $newOptions );
+		update_option( $group, $new_options );
 		$readback = $this->snapshot();
 		if ( $readback !== $after ) {
-			update_option( $group, $existingOptions );
+			update_option( $group, $existing_options );
 			if ( Fingerprint::make( $this->snapshot() ) !== Fingerprint::make( $before ) ) {
 				throw new RuntimeException( 'Yoast feature readback mismatch; rollback also failed.' );
 			}
 			throw new RuntimeException( 'Yoast feature readback mismatch; original options restored.' );
 		}
 
-		$result['after'] = $readback;
+		$result['after']     = $readback;
 		$result['_rollback'] = array(
 			'action'  => 'yoast.features.restore',
 			'payload' => array(
@@ -207,11 +207,11 @@ final class YoastFeatureSettingsAdapter {
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
-		$oldOptions = $this->options( $group );
-		$options    = $oldOptions;
+		$old_options = $this->options( $group );
+		$options     = $old_options;
 		foreach ( $previous as $name => $value ) {
 			$key = self::FIELDS[ $name ][1];
-			if ( $value === null ) {
+			if ( null === $value ) {
 				unset( $options[ $key ] );
 			} else {
 				$options[ $key ] = $value;
@@ -221,7 +221,7 @@ final class YoastFeatureSettingsAdapter {
 		$restored = $this->snapshot();
 		foreach ( $previous as $name => $value ) {
 			if ( $restored[ $name ] !== $value ) {
-				update_option( $group, $oldOptions );
+				update_option( $group, $old_options );
 				throw new RuntimeException( 'Yoast feature rollback readback mismatch.' );
 			}
 		}
@@ -232,9 +232,9 @@ final class YoastFeatureSettingsAdapter {
 	}
 
 	/**
-     * Feature toggles are only meaningful when the installed Yoast version
-     * recognizes their exact option keys. Never create phantom settings.
-     */
+	 * Feature toggles are only meaningful when the installed Yoast version
+	 * recognizes their exact option keys. Never create phantom settings.
+	 */
 	private function assertProviderSupportsFields( string $group, array $fields ): void {
 		if ( ! class_exists( 'WPSEO_Options' ) || ! method_exists( 'WPSEO_Options', 'get_option_instance' ) ) {
 			throw new RuntimeException( 'Yoast option schema API is unavailable.' );
@@ -266,12 +266,12 @@ final class YoastFeatureSettingsAdapter {
 	private function singleGroup( array $fields ): string {
 		$groups = array();
 		foreach ( $fields as $name => $value ) {
-			$groups[self::FIELDS[ $name ][0]] = true;
+			$groups[ self::FIELDS[ $name ][0] ] = true;
 		}
 		if ( count( $groups ) !== 1 ) {
 			throw new RuntimeException( 'A single Yoast feature mutation may target only one option group.' );
 		}
-		return ( string ) array_keys( $groups )[0];
+		return (string) array_keys( $groups )[0];
 	}
 
 	/**
@@ -290,7 +290,7 @@ final class YoastFeatureSettingsAdapter {
 		}
 		foreach ( $fields as $name => $value ) {
 			if ( ! is_string( $name ) || ! isset( self::FIELDS[ $name ] )
-				|| ( ! is_bool( $value ) && ! ( $restore && $value === null ) ) ) {
+				|| ( ! is_bool( $value ) && ! ( $restore && null === $value ) ) ) {
 				throw new RuntimeException( 'Unsupported Yoast feature field or value.' );
 			}
 		}
@@ -334,10 +334,10 @@ final class YoastFeatureSettingsAdapter {
 				continue;
 			}
 			$value = $groups[ $group ][ $key ];
-			if ( ! is_bool( $value ) && $value !== 0 && $value !== 1 && $value !== '0' && $value !== '1' ) {
+			if ( ! is_bool( $value ) && 0 !== $value && 1 !== $value && '0' !== $value && '1' !== $value ) {
 				throw new RuntimeException( 'Yoast feature stored value has an unexpected type.' );
 			}
-			$fields[ $name ] = $value === true || $value === 1 || $value === '1';
+			$fields[ $name ] = true === $value || 1 === $value || '1' === $value;
 		}
 		return $fields;
 	}

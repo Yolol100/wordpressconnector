@@ -44,15 +44,23 @@ final class AutoImageAttributesAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'auto_image_attributes.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'description' => 'Read safe Auto Image Attributes upload and bulk-update settings.',
-		) );
-		$registry->register( 'auto_image_attributes.update', array( $this, 'update' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback.',
-		) );
+		$registry->register(
+			'auto_image_attributes.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read safe Auto Image Attributes upload and bulk-update settings.',
+			)
+		);
+		$registry->register(
+			'auto_image_attributes.update',
+			array( $this, 'update' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback.',
+			)
+		);
 	}
 
 	/**
@@ -90,7 +98,7 @@ final class AutoImageAttributesAdapter {
 		}
 
 		$before = $this->snapshot();
-		$clean = array();
+		$clean  = array();
 		foreach ( $updates as $key => $value ) {
 			if ( ! is_string( $key ) || ! in_array( $key, self::BOOLEAN_FIELDS, true ) ) {
 				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . (string) $key );
@@ -136,7 +144,7 @@ final class AutoImageAttributesAdapter {
 			}
 		}
 
-		$result['after'] = $readback;
+		$result['after']     = $readback;
 		$result['_rollback'] = array(
 			'action'  => 'auto_image_attributes.update',
 			'payload' => array( 'fields' => $rollback ),

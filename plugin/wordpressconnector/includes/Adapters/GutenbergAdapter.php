@@ -26,14 +26,22 @@ final class GutenbergAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'gutenberg.inspect', array( $this, 'inspect' ), array( 'description' => 'Parse Gutenberg/block content into a block tree.' ) );
-		$registry->register( 'gutenberg.replace', array( $this, 'replace' ), array(
-			'mutation'    => true,
-			'description' => 'Replace the entire serialized block document.',
-		) );
-		$registry->register( 'gutenberg.patch', array( $this, 'patch' ), array(
-			'mutation'    => true,
-			'description' => 'Patch one block by nested numeric path.',
-		) );
+		$registry->register(
+			'gutenberg.replace',
+			array( $this, 'replace' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Replace the entire serialized block document.',
+			)
+		);
+		$registry->register(
+			'gutenberg.patch',
+			array( $this, 'patch' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Patch one block by nested numeric path.',
+			)
+		);
 	}
 
 	/**
@@ -65,43 +73,50 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function replace( array $payload, array $context ): array {
-		$post = $this->post( $payload );
-		$beforeContent = (string) $post->post_content;
-		$beforeBlocks = parse_blocks( $beforeContent );
+		$post           = $this->post( $payload );
+		$before_content = (string) $post->post_content;
+		$before_blocks  = parse_blocks( $before_content );
 
 		if ( isset( $payload['blocks'] ) && is_array( $payload['blocks'] ) ) {
-			$afterContent = serialize_blocks( $payload['blocks'] );
+			$after_content = serialize_blocks( $payload['blocks'] );
 		} elseif ( isset( $payload['content'] ) ) {
-			$afterContent = (string) $payload['content'];
-			parse_blocks( $afterContent );
+			$after_content = (string) $payload['content'];
+			parse_blocks( $after_content );
 		} else {
 			throw new RuntimeException( 'gutenberg.replace requires payload.blocks or payload.content.' );
 		}
 
 		$result = array(
 			'post_id'              => (int) $post->ID,
-			'before_blocks'        => $beforeBlocks,
-			'after_blocks'         => parse_blocks( $afterContent ),
-			'_current_fingerprint' => Fingerprint::make( $beforeBlocks ),
+			'before_blocks'        => $before_blocks,
+			'after_blocks'         => parse_blocks( $after_content ),
+			'_current_fingerprint' => Fingerprint::make( $before_blocks ),
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
 
-		$updated = wp_update_post( wp_slash( array(
-			'ID'           => (int) $post->ID,
-			'post_content' => $afterContent,
-		) ), true );
+		$updated = wp_update_post(
+			wp_slash(
+				array(
+					'ID'           => (int) $post->ID,
+					'post_content' => $after_content,
+				)
+			),
+			true
+		);
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
-			'payload'                          => array(
-			'id'      => (int) $post->ID,
-			'content' => $beforeContent,
-		), );
+		$result['_rollback'] = array(
+			'action'  => 'gutenberg.replace',
+			'payload' => array(
+				'id'      => (int) $post->ID,
+				'content' => $before_content,
+			),
+		);
 		return $result;
 	}
 
@@ -116,24 +131,24 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function patch( array $payload, array $context ): array {
-		$post = $this->post( $payload );
-		$beforeContent = (string) $post->post_content;
-		$blocks = parse_blocks( $beforeContent );
-		$path = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
+		$post           = $this->post( $payload );
+		$before_content = (string) $post->post_content;
+		$blocks         = parse_blocks( $before_content );
+		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
 		if ( ! $path ) {
 			throw new RuntimeException( 'gutenberg.patch requires a non-empty numeric payload.path.' );
 		}
 
-		$patched = $blocks;
-		$block =& $this->blockByPath( $patched, $path );
-		$beforeBlock = $block;
+		$patched      = $blocks;
+		$block        =& $this->blockByPath( $patched, $path );
+		$before_block = $block;
 
 		if ( isset( $payload['replace_block'] ) && is_array( $payload['replace_block'] ) ) {
 			$block = $payload['replace_block'];
 		} else {
 			if ( isset( $payload['attrs'] ) && is_array( $payload['attrs'] ) ) {
-				$replaceAttrs = Input::bool( $payload, 'replace_attrs' );
-				$block['attrs'] = $replaceAttrs ? $payload['attrs'] : array_merge( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array(), $payload['attrs'] );
+				$replace_attrs  = Input::bool( $payload, 'replace_attrs' );
+				$block['attrs'] = $replace_attrs ? $payload['attrs'] : array_merge( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array(), $payload['attrs'] );
 			}
 			if ( array_key_exists( 'innerHTML', $payload ) ) {
 				$block['innerHTML'] = (string) $payload['innerHTML'];
@@ -147,11 +162,11 @@ final class GutenbergAdapter {
 			}
 		}
 
-		$afterContent = serialize_blocks( $patched );
-		$result = array(
+		$after_content = serialize_blocks( $patched );
+		$result        = array(
 			'post_id'              => (int) $post->ID,
 			'path'                 => $path,
-			'before_block'         => $beforeBlock,
+			'before_block'         => $before_block,
 			'after_block'          => $block,
 			'_current_fingerprint' => Fingerprint::make( $blocks ),
 		);
@@ -160,19 +175,26 @@ final class GutenbergAdapter {
 			return $result;
 		}
 
-		$updated = wp_update_post( wp_slash( array(
-			'ID'           => (int) $post->ID,
-			'post_content' => $afterContent,
-		) ), true );
+		$updated = wp_update_post(
+			wp_slash(
+				array(
+					'ID'           => (int) $post->ID,
+					'post_content' => $after_content,
+				)
+			),
+			true
+		);
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
-			'payload'                          => array(
-			'id'      => (int) $post->ID,
-			'content' => $beforeContent,
-		), );
+		$result['_rollback'] = array(
+			'action'  => 'gutenberg.replace',
+			'payload' => array(
+				'id'      => (int) $post->ID,
+				'content' => $before_content,
+			),
+		);
 		return $result;
 	}
 

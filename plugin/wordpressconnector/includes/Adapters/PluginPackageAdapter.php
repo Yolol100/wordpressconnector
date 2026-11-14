@@ -19,9 +19,9 @@ use Webactueel\WordPressConnector\Support\Input;
  * Registers and handles Plugin Package connector actions.
  */
 final class PluginPackageAdapter {
-	private const MAX_PACKAGE_BYTES = 20971520;
+	private const MAX_PACKAGE_BYTES      = 20971520;
 	private const MAX_UNCOMPRESSED_BYTES = 104857600;
-	private const MAX_ENTRIES = 2500;
+	private const MAX_ENTRIES            = 2500;
 
 	/**
 	 * Register the PluginPackage adapter actions and handlers.
@@ -44,9 +44,9 @@ final class PluginPackageAdapter {
 	}
 
 	/**
-     * A theme ZIP uses the same private request asset store and exact SHA-256
-     * binding as plugin packages. Public requests cannot invoke this action.
-     */
+	 * A theme ZIP uses the same private request asset store and exact SHA-256
+	 * binding as plugin packages. Public requests cannot invoke this action.
+	 */
 	public function registerThemePackage( Registry $registry ): void {
 		$registry->register(
 			'theme.install_package',
@@ -133,17 +133,21 @@ final class PluginPackageAdapter {
 			'installed'  => $installed,
 			'version'    => $installed ? (string) $current->get( 'Version' ) : null,
 		);
-		$plan   = array( 'stylesheet' => $expected,
-			'source_path'             => $source,
-			'sha256'                  => $sha256,
-			'bytes'                   => (int) $size,
-			'overwrite'               => $overwrite,
-			'archive_entries'         => $info['entries'],
-			'uncompressed_bytes'      => $info['uncompressed_bytes'], );
+		$plan   = array(
+			'stylesheet'         => $expected,
+			'source_path'        => $source,
+			'sha256'             => $sha256,
+			'bytes'              => (int) $size,
+			'overwrite'          => $overwrite,
+			'archive_entries'    => $info['entries'],
+			'uncompressed_bytes' => $info['uncompressed_bytes'],
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_install_theme_package' => $plan,
-				'before'                                => $before,
-				'_current_fingerprint'                  => Fingerprint::make( $before ), );
+			return array(
+				'would_install_theme_package' => $plan,
+				'before'                      => $before,
+				'_current_fingerprint'        => Fingerprint::make( $before ),
+			);
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -154,7 +158,7 @@ final class PluginPackageAdapter {
 		if ( $overwrite && ! Policy::flag( 'WPCONNECTOR_ALLOW_THEME_PACKAGE_REPLACE' ) ) {
 			throw new RuntimeException( 'Theme ZIP replacement requires explicit server-side authorization and staging restore proof.' );
 		}
-		$style_path        = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
+		$style_path      = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
 		$beforeStyleHash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
 		if ( $overwrite && ( ! is_string( $beforeStyleHash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $beforeStyleHash ) ) ) {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
@@ -191,8 +195,10 @@ final class PluginPackageAdapter {
 			if ( true !== $saved ) {
 				$restore_pending = false;
 				remove_action( 'shutdown', $shutdown_restore, 10 );
-				throw new RuntimeException( is_wp_error( $saved ) ? $saved->get_error_message()
-					: 'The original theme could not be backed up safely.' );
+				throw new RuntimeException(
+					is_wp_error( $saved ) ? $saved->get_error_message()
+					: 'The original theme could not be backed up safely.'
+				);
 			}
 		}
 
@@ -201,16 +207,20 @@ final class PluginPackageAdapter {
 			// backup directory, so installation must never clear a live path.
 			$result = $upgrader->install( $package, array( 'overwrite_package' => false ) );
 			if ( is_wp_error( $result ) || true !== $result ) {
-				throw new RuntimeException( is_wp_error( $result ) ? $result->get_error_message()
-					: 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.' );
+				throw new RuntimeException(
+					is_wp_error( $result ) ? $result->get_error_message()
+					: 'Theme ZIP installation failed; check WordPress upgrader and filesystem permissions.'
+				);
 			}
 			wp_clean_themes_cache();
 			$after_theme = wp_get_theme( $expected );
 			if ( ! $after_theme->exists() ) {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
-			$after = array( 'stylesheet' => $expected,
-				'version'                => (string) $after_theme->get( 'Version' ), );
+			$after = array(
+				'stylesheet' => $expected,
+				'version'    => (string) $after_theme->get( 'Version' ),
+			);
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
 				$restored        = $upgrader->restore_temp_backup( array( $backup ) );
@@ -233,7 +243,8 @@ final class PluginPackageAdapter {
 			$cleaned                           = $upgrader->delete_temp_backup( array( $backup ) );
 			$temporary_backup_cleanup_verified = true === $cleaned;
 		}
-		return array( 'operation' => $overwrite ? 'updated' : 'installed',
+		return array(
+			'operation'                         => $overwrite ? 'updated' : 'installed',
 			'package'                           => $plan,
 			'before'                            => $before,
 			'after'                             => $after,
@@ -243,7 +254,8 @@ final class PluginPackageAdapter {
 			// WordPress temp backups may be cleaned up automatically; do not
 			// advertise a durable user-triggered rollback after success.
 			'rollback_supported'                => false,
-			'readback_verified'                 => true, );
+			'readback_verified'                 => true,
+		);
 	}
 
 	/**
@@ -289,16 +301,21 @@ final class PluginPackageAdapter {
 					throw new RuntimeException( 'Theme ZIP folder or duplicate path mismatch.' );
 				}
 				foreach ( $segments as $segment ) {
-					if ( $segment === '' || $segment === '.' || $segment === '..' ) {
+					if ( '' === $segment || '.' === $segment || '..' === $segment ) {
 						throw new RuntimeException( 'Theme ZIP contains traversal or invalid path.' );
 					}
 				}
 				$seen[ $normal ] = true;
 				$bytes           = isset( $stat['size'] ) ? (int) $stat['size'] : -1;
-				if ( $bytes < 0 ) throw new RuntimeException( 'Invalid theme ZIP entry size.' );
+				if ( $bytes < 0 ) {
+					throw new RuntimeException( 'Invalid theme ZIP entry size.' );
+				}
 				$total += $bytes;
-				if ( $total > self::MAX_UNCOMPRESSED_BYTES ) throw new RuntimeException( 'Theme ZIP exceeds extracted size budget.' );
-				$opsys = 0; $attributes = 0;
+				if ( $total > self::MAX_UNCOMPRESSED_BYTES ) {
+					throw new RuntimeException( 'Theme ZIP exceeds extracted size budget.' );
+				}
+				$opsys      = 0;
+				$attributes = 0;
 				if ( $zip->getExternalAttributesIndex( $i, $opsys, $attributes )
 					&& 0xA000 === ( ( $attributes >> 16 ) & 0xF000 ) ) {
 					throw new RuntimeException( 'Theme ZIP must not contain symbolic links.' );
@@ -346,8 +363,10 @@ final class PluginPackageAdapter {
 		// before extraction. A ZIP stored there would be deleted mid-install.
 		if ( defined( 'WP_CONTENT_DIR' ) ) {
 			$content_dir = realpath( WP_CONTENT_DIR );
-			if ( false !== $content_dir && 0 === strpos( $package,
-				rtrim( $content_dir, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . 'upgrade' . DIRECTORY_SEPARATOR ) ) {
+			if ( false !== $content_dir && 0 === strpos(
+				$package,
+				rtrim( $content_dir, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . 'upgrade' . DIRECTORY_SEPARATOR
+			) ) {
 				throw new RuntimeException( 'Plugin ZIP is in WordPress upgrade scratch storage, which Core clears during installation; upload it to the trusted asset store outside wp-content/upgrade.' );
 			}
 		}
@@ -534,7 +553,7 @@ final class PluginPackageAdapter {
 						throw new RuntimeException( 'Plugin ZIP contains path traversal or an invalid path segment.' );
 					}
 				}
-				$roots[$segments[0]] = true;
+				$roots[ $segments[0] ] = true;
 
 				if ( isset( $paths[ $normalized ] ) ) {
 					throw new RuntimeException( 'Plugin ZIP contains duplicate entry paths.' );

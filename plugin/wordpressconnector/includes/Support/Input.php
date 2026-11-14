@@ -14,8 +14,8 @@ use RuntimeException;
 /**
  * Provides Input utilities shared by connector services.
  */
-final class Input
-{
+final class Input {
+
 	/**
 	 * Read an optional boolean input using the validated default.
 	 *
@@ -25,8 +25,7 @@ final class Input
 	 *
 	 * @return bool Validated boolean value.
 	 */
-	public static function bool( array $input, string $key, bool $default = false ): bool
-	{
+	public static function bool( array $input, string $key, bool $default = false ): bool {
 		if ( ! array_key_exists( $key, $input ) ) {
 			return $default;
 		}
@@ -43,8 +42,7 @@ final class Input
 	 * @return bool Validated input value.
 	 * @throws \RuntimeException When the input is not boolean.
 	 */
-	public static function boolValue( $value, string $label ): bool
-	{
+	public static function boolValue( $value, string $label ): bool {
 		if ( ! is_bool( $value ) ) {
 			throw new RuntimeException( $label . ' must be boolean.' );
 		}

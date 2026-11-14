@@ -21,7 +21,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Filesystem connector actions.
  */
 final class FilesystemAdapter {
-	private const MAX_TEXT_BYTES = 131072;
+	private const MAX_TEXT_BYTES   = 131072;
 	private const MAX_LIST_ENTRIES = 200;
 
 	/**
@@ -30,33 +30,57 @@ final class FilesystemAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'filesystem.inspect', array( $this, 'inspect' ), array(
-			'privileged'  => true,
-			'description' => 'Inspect safe WordPress filesystem capabilities and WP File Manager integration state without exposing absolute paths.',
-		) );
-		$registry->register( 'filesystem.list', array( $this, 'listPath' ), array(
-			'privileged'  => true,
-			'description' => 'List a bounded directory inside the WordPress root while hiding secret and dotfile paths.',
-		) );
-		$registry->register( 'filesystem.read_text', array( $this, 'readText' ), array(
-			'privileged'  => true,
-			'description' => 'Read a bounded non-secret text file inside the WordPress root.',
-		) );
-		$registry->register( 'filesystem.write_text', array( $this, 'writeText' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Replace an existing plugin/theme text file with checksum guard, syntax validation, readback and rollback.',
-		) );
-		$registry->register( 'filesystem.create_text', array( $this, 'createText' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Create a new non-PHP plugin/theme text asset in an existing directory with dry-run, readback and rollback.',
-		) );
-		$registry->register( 'filesystem.delete_text', array( $this, 'deleteText' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Delete a guarded non-PHP plugin/theme text asset with exact SHA-256, readback and rollback.',
-		) );
+		$registry->register(
+			'filesystem.inspect',
+			array( $this, 'inspect' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Inspect safe WordPress filesystem capabilities and WP File Manager integration state without exposing absolute paths.',
+			)
+		);
+		$registry->register(
+			'filesystem.list',
+			array( $this, 'listPath' ),
+			array(
+				'privileged'  => true,
+				'description' => 'List a bounded directory inside the WordPress root while hiding secret and dotfile paths.',
+			)
+		);
+		$registry->register(
+			'filesystem.read_text',
+			array( $this, 'readText' ),
+			array(
+				'privileged'  => true,
+				'description' => 'Read a bounded non-secret text file inside the WordPress root.',
+			)
+		);
+		$registry->register(
+			'filesystem.write_text',
+			array( $this, 'writeText' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Replace an existing plugin/theme text file with checksum guard, syntax validation, readback and rollback.',
+			)
+		);
+		$registry->register(
+			'filesystem.create_text',
+			array( $this, 'createText' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Create a new non-PHP plugin/theme text asset in an existing directory with dry-run, readback and rollback.',
+			)
+		);
+		$registry->register(
+			'filesystem.delete_text',
+			array( $this, 'deleteText' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Delete a guarded non-PHP plugin/theme text asset with exact SHA-256, readback and rollback.',
+			)
+		);
 	}
 
 	/**
@@ -71,11 +95,11 @@ final class FilesystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-		$plugins         = get_plugins();
-		$fileManagerFile = 'wp-file-manager/file_folder_manager.php';
-		$fileManager     = isset( $plugins[ $fileManagerFile ] ) ? $plugins[ $fileManagerFile ] : array();
-		$settings        = get_option( 'wp_file_manager_settings', array() );
-		$configuredPath  = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
+		$plugins           = get_plugins();
+		$file_manager_file = 'wp-file-manager/file_folder_manager.php';
+		$file_manager      = isset( $plugins[ $file_manager_file ] ) ? $plugins[ $file_manager_file ] : array();
+		$settings          = get_option( 'wp_file_manager_settings', array() );
+		$configuredPath    = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
 
 		return array(
 			'root'              => 'wordpress_root',
@@ -98,9 +122,9 @@ final class FilesystemAdapter {
 				'rollback'              => true,
 			),
 			'wp_file_manager'   => array(
-				'installed'            => ! empty( $fileManager ),
-				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $fileManagerFile ),
-				'version'              => isset( $fileManager['Version'] ) ? (string) $fileManager['Version'] : null,
+				'installed'            => ! empty( $file_manager ),
+				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $file_manager_file ),
+				'version'              => isset( $file_manager['Version'] ) ? (string) $file_manager['Version'] : null,
 				'configured_root_mode' => $this->fileManagerRootMode( $configuredPath ),
 				'connector_transport'  => 'WP_Filesystem',
 				'private_ajax_reused'  => false,
@@ -138,8 +162,8 @@ final class FilesystemAdapter {
 			}
 			$child = '.' === $relative ? $name : $relative . '/' . $name;
 			try {
-				$child         = FilesystemPolicy::assertListable( $child );
-				$childAbsolute = $this->resolveExisting( $child, true );
+				$child          = FilesystemPolicy::assertListable( $child );
+				$child_absolute = $this->resolveExisting( $child, true );
 			} catch ( RuntimeException $error ) {
 				continue;
 			}
@@ -150,10 +174,10 @@ final class FilesystemAdapter {
 			$items[] = array(
 				'name'                => $name,
 				'path'                => $child,
-				'type'                => is_dir( $childAbsolute ) ? 'directory' : 'file',
-				'bytes'               => is_file( $childAbsolute ) ? (int) filesize( $childAbsolute ) : null,
-				'modified_gmt'        => $this->modifiedGmt( $childAbsolute ),
-				'writable_text_scope' => is_file( $childAbsolute ) && FilesystemPolicy::isWritableText( $child ),
+				'type'                => is_dir( $child_absolute ) ? 'directory' : 'file',
+				'bytes'               => is_file( $child_absolute ) ? (int) filesize( $child_absolute ) : null,
+				'modified_gmt'        => $this->modifiedGmt( $child_absolute ),
+				'writable_text_scope' => is_file( $child_absolute ) && FilesystemPolicy::isWritableText( $child ),
 			);
 		}
 
@@ -214,11 +238,11 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
 		}
 
-		$relative           = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
-		$activeContent      = FilesystemPolicy::affectsBrowserExecution( $relative );
-		$requiredCapability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
-		if ( ! current_user_can( $requiredCapability ) ) {
-			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . $requiredCapability . '.' );
+		$relative            = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
+		$active_content      = FilesystemPolicy::affectsBrowserExecution( $relative );
+		$required_capability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
+		if ( ! current_user_can( $required_capability ) ) {
+			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . $required_capability . '.' );
 		}
 		$absolute = $this->resolveExisting( $relative, false );
 		if ( ! is_file( $absolute ) ) {
@@ -242,35 +266,35 @@ final class FilesystemAdapter {
 
 		$this->validateText( $relative, $content );
 		$this->assertNoEmbeddedSecrets( $content );
-		$beforeState = $this->state( $relative, $before, $absolute );
-		$afterState  = array(
+		$before_state = $this->state( $relative, $before, $absolute );
+		$after_state  = array(
 			'path'   => $relative,
 			'bytes'  => strlen( $content ),
 			'sha256' => hash( 'sha256', $content ),
 		);
-		$result = array(
-			'before'                                  => $beforeState,
-			'after'                                   => $afterState,
-			'_current_fingerprint'                    => Fingerprint::make( $beforeState ),
-			'requires_active_content_acknowledgement' => $activeContent,
+		$result       = array(
+			'before'                                  => $before_state,
+			'after'                                   => $after_state,
+			'_current_fingerprint'                    => Fingerprint::make( $before_state ),
+			'requires_active_content_acknowledgement' => $active_content,
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
 
-		if ( $activeContent && ( $payload['acknowledge_active_content'] ?? null ) !== true ) {
+		if ( $active_content && ( $payload['acknowledge_active_content'] ?? null ) !== true ) {
 			throw new RuntimeException( 'Browser-active HTML, JavaScript and CSS file replacements require acknowledge_active_content=true.' );
 		}
 		if ( function_exists( 'wp_is_file_mod_allowed' ) && ! wp_is_file_mod_allowed( 'connector_filesystem' ) ) {
 			throw new RuntimeException( 'WordPress or a policy plugin disallows file modifications; check DISALLOW_FILE_MODS and file_mod_allowed.' );
 		}
 
-		$expectedSha = isset( $payload['expected_sha256'] ) ? strtolower( (string) $payload['expected_sha256'] ) : '';
-		if ( ! preg_match( '/^[a-f0-9]{64}$/', $expectedSha ) ) {
+		$expected_sha = isset( $payload['expected_sha256'] ) ? strtolower( (string) $payload['expected_sha256'] ) : '';
+		if ( ! preg_match( '/^[a-f0-9]{64}$/', $expected_sha ) ) {
 			throw new RuntimeException( 'Non-dry-run filesystem writes require payload.expected_sha256.' );
 		}
-		if ( ! hash_equals( $expectedSha, $beforeState['sha256'] ) ) {
+		if ( ! hash_equals( $expected_sha, $before_state['sha256'] ) ) {
 			throw new RuntimeException( 'Stale filesystem target: expected_sha256 does not match the current file.' );
 		}
 
@@ -291,26 +315,26 @@ final class FilesystemAdapter {
 			// Runner loses this local before-image when the action fails.
 			try {
 				$filesystem->put_contents( $absolute, $before, $mode );
-			} catch ( Throwable $recoveryError ) {
+			} catch ( Throwable $recovery_error ) {
 				// Readback below is authoritative even if the backend throws
 				// after writing all original bytes.
 			}
 			clearstatcache( true, $absolute );
 			$restored = @file_get_contents( $absolute );
-			if ( ! is_string( $restored ) || ! hash_equals( $beforeState['sha256'], hash( 'sha256', $restored ) ) ) {
+			if ( ! is_string( $restored ) || ! hash_equals( $before_state['sha256'], hash( 'sha256', $restored ) ) ) {
 				throw new RuntimeException( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error );
 			}
 			throw new RuntimeException( $error->getMessage() . ' Recovery complete; original file restored and verified.', 0, $error );
 		}
 
-		$result['after'] = $this->state( $relative, $readback, $absolute );
+		$result['after']     = $this->state( $relative, $readback, $absolute );
 		$result['_rollback'] = array(
 			'action'  => 'filesystem.write_text',
 			'payload' => array(
 				'path'                       => $relative,
 				'content'                    => $before,
 				'expected_sha256'            => hash( 'sha256', $readback ),
-				'acknowledge_active_content' => $activeContent,
+				'acknowledge_active_content' => $active_content,
 			),
 		);
 		return $result;
@@ -338,20 +362,20 @@ final class FilesystemAdapter {
 		}
 		$this->assertNoEmbeddedSecrets( $content );
 		$this->validateText( $relative, $content );
-		$absolute      = $this->resolveNewTextPath( $relative );
-		$expectedState = array(
+		$absolute       = $this->resolveNewTextPath( $relative );
+		$expected_state = array(
 			'path'   => $relative,
 			'exists' => false,
 		);
-		$result        = array(
-			'before'                                  => $expectedState,
+		$result         = array(
+			'before'                                  => $expected_state,
 			'after'                                   => array(
 				'path'   => $relative,
 				'bytes'  => strlen( $content ),
 				'sha256' => hash( 'sha256', $content ),
 			),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-			'_current_fingerprint'                    => Fingerprint::make( $expectedState ),
+			'_current_fingerprint'                    => Fingerprint::make( $expected_state ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -389,13 +413,15 @@ final class FilesystemAdapter {
 			@unlink( $absolute );
 			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
 		}
-		$result['after'] = $this->state( $relative, $readback, $absolute );
-		$result['_rollback'] = array( 'action' => 'filesystem.delete_text',
-			'payload'                          => array(
-			'path'                       => $relative,
-			'expected_sha256'            => hash( 'sha256', $readback ),
-			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-		), );
+		$result['after']     = $this->state( $relative, $readback, $absolute );
+		$result['_rollback'] = array(
+			'action'  => 'filesystem.delete_text',
+			'payload' => array(
+				'path'                       => $relative,
+				'expected_sha256'            => hash( 'sha256', $readback ),
+				'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+			),
+		);
 		return $result;
 	}
 
@@ -421,14 +447,14 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Existing file is unreadable or exceeds safe text limit.' );
 		}
 		$this->assertNoEmbeddedSecrets( $before );
-		$beforeState = $this->state( $relative, $before, $absolute );
-		$result      = array(
-			'before'                                  => $beforeState,
+		$before_state = $this->state( $relative, $before, $absolute );
+		$result       = array(
+			'before'                                  => $before_state,
 			'after'                                   => array(
 				'path'   => $relative,
 				'exists' => false,
 			),
-			'_current_fingerprint'                    => Fingerprint::make( $beforeState ),
+			'_current_fingerprint'                    => Fingerprint::make( $before_state ),
 			'requires_active_content_acknowledgement' => FilesystemPolicy::affectsBrowserExecution( $relative ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -436,7 +462,7 @@ final class FilesystemAdapter {
 		}
 		$expected = $payload['expected_sha256'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) ||
-			! hash_equals( $beforeState['sha256'], $expected ) ) {
+			! hash_equals( $before_state['sha256'], $expected ) ) {
 			throw new RuntimeException( 'Delete refused: exact current file SHA-256 is required.' );
 		}
 		$filesystem = $this->filesystem();
@@ -452,12 +478,14 @@ final class FilesystemAdapter {
 		if ( file_exists( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'File still exists after attempted deletion.' );
 		}
-		$result['_rollback'] = array( 'action' => 'filesystem.create_text',
-			'payload'                          => array(
-			'path'                       => $relative,
-			'content'                    => $before,
-			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
-		), );
+		$result['_rollback'] = array(
+			'action'  => 'filesystem.create_text',
+			'payload' => array(
+				'path'                       => $relative,
+				'content'                    => $before,
+				'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
+			),
+		);
 		return $result;
 	}
 
@@ -500,12 +528,12 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function resolveNewTextPath( string $relative ): string {
-		$parent     = dirname( $relative );
-		$parentPath = $this->resolveExisting( $parent, true );
-		if ( ! is_dir( $parentPath ) ) {
+		$parent      = dirname( $relative );
+		$parent_path = $this->resolveExisting( $parent, true );
+		if ( ! is_dir( $parent_path ) ) {
 			throw new RuntimeException( 'Parent directory must already exist.' );
 		}
-		$candidate = $parentPath . DIRECTORY_SEPARATOR . basename( $relative );
+		$candidate = $parent_path . DIRECTORY_SEPARATOR . basename( $relative );
 		if ( file_exists( $candidate ) || is_link( $candidate ) ) {
 			throw new RuntimeException( 'File already exists; use guarded filesystem.write_text.' );
 		}

@@ -49,19 +49,21 @@ $wpconnector_cleanup_current_site = static function (): void {
 if ( is_multisite() && function_exists( 'get_sites' ) ) {
 	$wpconnector_offset = 0;
 	do {
-		$wpconnector_site_ids = get_sites( array(
-			'fields'  => 'ids',
-			'number'  => 100,
-			'offset'  => $wpconnector_offset,
-			'orderby' => 'id',
-			'order'   => 'ASC',
-		) );
+		$wpconnector_site_ids = get_sites(
+			array(
+				'fields'  => 'ids',
+				'number'  => 100,
+				'offset'  => $wpconnector_offset,
+				'orderby' => 'id',
+				'order'   => 'ASC',
+			)
+		);
 		foreach ( (array) $wpconnector_site_ids as $wpconnector_site_id ) {
 			switch_to_blog( (int) $wpconnector_site_id );
 			$wpconnector_cleanup_current_site();
 			restore_current_blog();
 		}
-		$wpconnector_count = count( (array) $wpconnector_site_ids );
+		$wpconnector_count   = count( (array) $wpconnector_site_ids );
 		$wpconnector_offset += $wpconnector_count;
 	} while ( 100 === $wpconnector_count );
 } else {

@@ -17,18 +17,18 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Connector Update connector actions.
  */
 final class ConnectorUpdateAdapter {
-	private const RELEASE_API = 'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest';
-	private const PACKAGE_ASSET = 'wordpressconnector.zip';
-	private const CHECKSUM_ASSET = 'wordpressconnector.zip.sha256';
-	private const SBOM_ASSET = 'wordpressconnector.spdx.json';
-	private const PLUGIN_FILE = 'wordpressconnector/wordpressconnector.php';
-	private const UPDATE_URI = 'https://github.com/Yolol100/wordpressconnector';
-	private const MAX_PACKAGE_BYTES = 20971520;
-	private const MAX_UNCOMPRESSED_BYTES = 104857600;
-	private const MAX_ENTRIES = 2500;
+	private const RELEASE_API              = 'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest';
+	private const PACKAGE_ASSET            = 'wordpressconnector.zip';
+	private const CHECKSUM_ASSET           = 'wordpressconnector.zip.sha256';
+	private const SBOM_ASSET               = 'wordpressconnector.spdx.json';
+	private const PLUGIN_FILE              = 'wordpressconnector/wordpressconnector.php';
+	private const UPDATE_URI               = 'https://github.com/Yolol100/wordpressconnector';
+	private const MAX_PACKAGE_BYTES        = 20971520;
+	private const MAX_UNCOMPRESSED_BYTES   = 104857600;
+	private const MAX_ENTRIES              = 2500;
 	private const NOTICE_REFRESH_TRANSIENT = 'wpconnector_github_update_notice_v1';
 	// Only the already verified local ZIP for the current guarded REST self-update.
-	private $verifiedSelfUpdatePackagePath = null;
+	private $verified_self_update_package_path = null;
 
 	/**
 	 * Register the ConnectorUpdate adapter actions and handlers.
@@ -36,20 +36,28 @@ final class ConnectorUpdateAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'connector.update.check', array( $this, 'check' ), array(
-			'privileged'             => true,
-			'public_repository_safe' => true,
-			'capability'             => 'update_plugins',
-			'description'            => 'Check the canonical GitHub release for a newer verified WordPress Connector package.',
-		) );
-		$registry->register( 'connector.update.apply', array( $this, 'apply' ), array(
-			'mutation'               => true,
-			'privileged'             => true,
-			'system_update'          => true,
-			'public_repository_safe' => true,
-			'capability'             => 'update_plugins',
-			'description'            => 'Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification.',
-		) );
+		$registry->register(
+			'connector.update.check',
+			array( $this, 'check' ),
+			array(
+				'privileged'             => true,
+				'public_repository_safe' => true,
+				'capability'             => 'update_plugins',
+				'description'            => 'Check the canonical GitHub release for a newer verified WordPress Connector package.',
+			)
+		);
+		$registry->register(
+			'connector.update.apply',
+			array( $this, 'apply' ),
+			array(
+				'mutation'               => true,
+				'privileged'             => true,
+				'system_update'          => true,
+				'public_repository_safe' => true,
+				'capability'             => 'update_plugins',
+				'description'            => 'Update WordPress Connector from its canonical GitHub release after SHA-256 and ZIP identity verification.',
+			)
+		);
 		// WordPress Core owns the dashboard upgrade; the existing adapter still
 		// owns release identity, checksum and archive verification.
 		if ( function_exists( 'add_filter' ) ) {
@@ -66,19 +74,19 @@ final class ConnectorUpdateAdapter {
 	}
 
 	/**
-     * WordPress admin actions must return void while direct refresh callers
-     * retain the explicit boolean result of refreshNativeUpdateNotice().
-     */
+	 * WordPress admin actions must return void while direct refresh callers
+	 * retain the explicit boolean result of refreshNativeUpdateNotice().
+	 */
 	public function refreshNativeUpdateNoticeAction(): void {
 		$this->refreshNativeUpdateNotice();
 	}
 
 	/**
-     * WordPress Core may keep plugin update results for an hour on Plugins.
-     * Refresh only this plugin's trusted GitHub release when an administrator
-     * actually visits Plugins or Updates. Do not invalidate other plugins or
-     * run an unauthenticated global update scan.
-     */
+	 * WordPress Core may keep plugin update results for an hour on Plugins.
+	 * Refresh only this plugin's trusted GitHub release when an administrator
+	 * actually visits Plugins or Updates. Do not invalidate other plugins or
+	 * run an unauthenticated global update scan.
+	 */
 	public function refreshNativeUpdateNotice( bool $force = false ): bool {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return false;
@@ -111,17 +119,17 @@ final class ConnectorUpdateAdapter {
 				if ( ! is_array( $offer ) ) {
 					return false;
 				}
-				$offer['new_version']                 = $offer['version'];
-				$offer['plugin']                      = self::PLUGIN_FILE;
-				$updates->response[self::PLUGIN_FILE] = (object) $offer;
-				unset( $updates->no_update[self::PLUGIN_FILE] );
-			} elseif ( isset( $updates->response[self::PLUGIN_FILE] ) ) {
+				$offer['new_version']                   = $offer['version'];
+				$offer['plugin']                        = self::PLUGIN_FILE;
+				$updates->response[ self::PLUGIN_FILE ] = (object) $offer;
+				unset( $updates->no_update[ self::PLUGIN_FILE ] );
+			} elseif ( isset( $updates->response[ self::PLUGIN_FILE ] ) ) {
 				// Only discard an obsolete update which this connector owns.
-				$existing = $updates->response[self::PLUGIN_FILE];
+				$existing = $updates->response[ self::PLUGIN_FILE ];
 				$identity = is_object( $existing ) ? ( $existing->id ?? null ) :
 					( is_array( $existing ) ? ( $existing['id'] ?? null ) : null );
 				if ( self::UPDATE_URI === $identity ) {
-					unset( $updates->response[self::PLUGIN_FILE] );
+					unset( $updates->response[ self::PLUGIN_FILE ] );
 				}
 			}
 			set_site_transient( 'update_plugins', $updates );
@@ -162,13 +170,15 @@ final class ConnectorUpdateAdapter {
 		}
 		check_admin_referer( 'wpconnector_check_updates' );
 		$ok = $this->refreshNativeUpdateNotice( true );
-		wp_safe_redirect( add_query_arg(
-			array(
-				'wpconnector_update_checked' => $ok ? '1' : '0',
-				'wpconnector_notice_nonce'   => wp_create_nonce( 'wpconnector_checked_notice' ),
-			),
-			admin_url( 'plugins.php' )
-		) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'wpconnector_update_checked' => $ok ? '1' : '0',
+					'wpconnector_notice_nonce'   => wp_create_nonce( 'wpconnector_checked_notice' ),
+				),
+				admin_url( 'plugins.php' )
+			)
+		);
 		exit;
 	}
 
@@ -197,19 +207,21 @@ final class ConnectorUpdateAdapter {
 		$ok            = '1' === $notice_result;
 		echo '<div class="notice ' . ( $ok ? 'notice-success' : 'notice-warning' ) .
 			' is-dismissible"><p>' .
-			esc_html( $ok
+			esc_html(
+				$ok
 				? __( 'WordPress Connector: GitHub release checked. If newer, Update Now appears in the Plugins list.', 'wordpressconnector' )
-				: __( 'WordPress Connector: GitHub update check failed; verify outbound HTTPS, firewall and GitHub availability. Nothing was installed.', 'wordpressconnector' ) ) .
+				: __( 'WordPress Connector: GitHub update check failed; verify outbound HTTPS, firewall and GitHub availability. Nothing was installed.', 'wordpressconnector' )
+			) .
 			'</p></div>';
 	}
 
 	/**
-     * Offer only this plugin's canonical release to WordPress's native updater.
-     * Other plugins using GitHub's update hostname must remain untouched.
-     *
-     * @param array|false $update
-     * @return array|false
-     */
+	 * Offer only this plugin's canonical release to WordPress's native updater.
+	 * Other plugins using GitHub's update hostname must remain untouched.
+	 *
+	 * @param array|false $update
+	 * @return array|false
+	 */
 	public function nativeUpdateOffer( $update, array $pluginData, string $pluginFile, array $locales ) {
 		if ( self::PLUGIN_FILE !== $pluginFile || self::UPDATE_URI !== ( $pluginData['UpdateURI'] ?? '' ) ) {
 			return $update;
@@ -251,13 +263,13 @@ final class ConnectorUpdateAdapter {
 	}
 
 	/**
-     * WordPress checksums are not verified by Core for third-party packages.
-     * Intercept only our own update and pass a verified temporary ZIP to Core.
-     *
-     * @param false|string|\WP_Error $reply
-     * @param mixed $upgrader
-     * @return false|string|\WP_Error
-     */
+	 * WordPress checksums are not verified by Core for third-party packages.
+	 * Intercept only our own update and pass a verified temporary ZIP to Core.
+	 *
+	 * @param false|string|\WP_Error $reply
+	 * @param mixed                  $upgrader
+	 * @return false|string|\WP_Error
+	 */
 	public function verifiedNativeDownload( $reply, string $package, $upgrader, array $hookExtra ) {
 		// Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
 		// while a single-plugin upgrade also provides "type" and "action".
@@ -396,7 +408,7 @@ final class ConnectorUpdateAdapter {
 			$installation = $this->installWithCoreBackup( $package );
 			wp_clean_plugins_cache( true );
 			$plugins           = get_plugins();
-			$installed_version = isset( $plugins[self::PLUGIN_FILE]['Version'] ) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
+			$installed_version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
 			if ( ! hash_equals( $release['version'], $installed_version ) ) {
 				$this->restoreAfterReadbackFailure( $installation, $current );
 				throw new RuntimeException( 'Connector update readback failed: prior version restored; check the release package.' );
@@ -421,12 +433,12 @@ final class ConnectorUpdateAdapter {
 	}
 
 	/**
-     * Use WP_Upgrader's native temporary backup contract, rather than
-     * Plugin_Upgrader::install(... overwrite_package => true), which has no
-     * hook_extra.temp_backup and cannot restore after an installation failure.
-     *
-     * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
-     */
+	 * Use WP_Upgrader's native temporary backup contract, rather than
+	 * Plugin_Upgrader::install(... overwrite_package => true), which has no
+	 * hook_extra.temp_backup and cannot restore after an installation failure.
+	 *
+	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
+	 */
 	private function installWithCoreBackup( string $package ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
 			|| ! is_readable( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE )
@@ -459,19 +471,21 @@ final class ConnectorUpdateAdapter {
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
 		$this->verifiedSelfUpdatePackagePath = $package;
 		try {
-			$result = $upgrader->run( array(
-				'package'                     => $package,
-				'destination'                 => WP_PLUGIN_DIR,
-				'clear_destination'           => true,
-				'abort_if_destination_exists' => false,
-				'clear_working'               => true,
-				'hook_extra'                  => array(
-					'plugin'      => self::PLUGIN_FILE,
-					'type'        => 'plugin',
-					'action'      => 'update',
-					'temp_backup' => $backup,
-				),
-			) );
+			$result = $upgrader->run(
+				array(
+					'package'                     => $package,
+					'destination'                 => WP_PLUGIN_DIR,
+					'clear_destination'           => true,
+					'abort_if_destination_exists' => false,
+					'clear_working'               => true,
+					'hook_extra'                  => array(
+						'plugin'      => self::PLUGIN_FILE,
+						'type'        => 'plugin',
+						'action'      => 'update',
+						'temp_backup' => $backup,
+					),
+				)
+			);
 		} finally {
 			$this->verifiedSelfUpdatePackagePath = null;
 			remove_filter( 'upgrader_source_selection', array( $upgrader, 'check_package' ) );
@@ -521,7 +535,7 @@ final class ConnectorUpdateAdapter {
 		$restored = $upgrader->restore_temp_backup( array( $backup ) );
 		wp_clean_plugins_cache( true );
 		$plugins = get_plugins();
-		$version = isset( $plugins[self::PLUGIN_FILE]['Version'] ) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
+		$version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
 		if ( true !== $restored || ! hash_equals( $expectedVersion, $version ) ) {
 			throw new RuntimeException( 'Connector update readback failed and automatic recovery was not verified. Restore externally before retrying.' );
 		}
@@ -537,15 +551,18 @@ final class ConnectorUpdateAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function release( int $timeout = 10 ): array {
-		$response = wp_safe_remote_get( self::RELEASE_API, array(
-			'timeout'             => $timeout,
-			'redirection'         => 3,
-			'limit_response_size' => 262144,
-			'headers'             => array(
-				'Accept'     => 'application/vnd.github+json',
-				'User-Agent' => 'Webactueel-WordPressConnector',
-			),
-		) );
+		$response = wp_safe_remote_get(
+			self::RELEASE_API,
+			array(
+				'timeout'             => $timeout,
+				'redirection'         => 3,
+				'limit_response_size' => 262144,
+				'headers'             => array(
+					'Accept'     => 'application/vnd.github+json',
+					'User-Agent' => 'Webactueel-WordPressConnector',
+				),
+			)
+		);
 		if ( is_wp_error( $response ) ) {
 			throw new RuntimeException( $response->get_error_message() );
 		}
@@ -563,9 +580,9 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Canonical release tag must use vMAJOR.MINOR.PATCH.' );
 		}
 
-		$package_url     = '';
-		$checksum_url    = '';
-		$sbom_url        = '';
+		$package_url    = '';
+		$checksum_url   = '';
+		$sbom_url       = '';
 		$packageDigest  = '';
 		$checksumDigest = '';
 		foreach ( $decoded['assets'] as $asset ) {
@@ -575,10 +592,10 @@ final class ConnectorUpdateAdapter {
 			$name = (string) $asset['name'];
 			$url  = (string) $asset['browser_download_url'];
 			if ( self::PACKAGE_ASSET === $name ) {
-				$package_url    = $url;
+				$package_url   = $url;
 				$packageDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::CHECKSUM_ASSET === $name ) {
-				$checksum_url    = $url;
+				$checksum_url   = $url;
 				$checksumDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::SBOM_ASSET === $name ) {
 				$sbom_url = $url;
@@ -611,10 +628,10 @@ final class ConnectorUpdateAdapter {
 	}
 
 	/**
-     * Shared verification for REST self-update and the native Plugins screen.
-     * Returns a temporary ZIP owned by the caller. Never trust a ZIP merely
-     * because it was downloaded from GitHub over HTTPS.
-     */
+	 * Shared verification for REST self-update and the native Plugins screen.
+	 * Returns a temporary ZIP owned by the caller. Never trust a ZIP merely
+	 * because it was downloaded from GitHub over HTTPS.
+	 */
 	private function downloadVerifiedPackage( array $release ): string {
 		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
 		if ( ! hash_equals( 'sha256:' . $expectedSha256, $release['package_digest'] ) ) {
@@ -666,12 +683,15 @@ final class ConnectorUpdateAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function checksum( string $url, string $expectedAssetDigest ): string {
-		$response = wp_safe_remote_get( $url, array(
-			'timeout'             => 10,
-			'redirection'         => 5,
-			'limit_response_size' => 1024,
-			'headers'             => array( 'User-Agent' => 'Webactueel-WordPressConnector' ),
-		) );
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'timeout'             => 10,
+				'redirection'         => 5,
+				'limit_response_size' => 1024,
+				'headers'             => array( 'User-Agent' => 'Webactueel-WordPressConnector' ),
+			)
+		);
 		if ( is_wp_error( $response ) ) {
 			throw new RuntimeException( $response->get_error_message() );
 		}
@@ -679,7 +699,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Connector checksum asset could not be downloaded.' );
 		}
 
-		$raw_body            = (string) wp_remote_retrieve_body( $response );
+		$raw_body          = (string) wp_remote_retrieve_body( $response );
 		$actualAssetDigest = 'sha256:' . hash( 'sha256', $raw_body );
 		if ( ! hash_equals( $expectedAssetDigest, $actualAssetDigest ) ) {
 			throw new RuntimeException( 'Connector checksum asset GitHub digest verification failed.' );

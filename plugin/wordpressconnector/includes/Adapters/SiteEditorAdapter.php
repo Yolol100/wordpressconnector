@@ -32,16 +32,31 @@ final class SiteEditorAdapter {
 			'capability' => 'edit_theme_options',
 		);
 		$write = $read + array( 'mutation' => true );
-		$registry->register( 'site_editor.template.list', array( $this, 'listTemplates' ),
-			$read + array( 'description' => 'List active-theme Site Editor templates or template parts via core REST permissions.' ) );
-		$registry->register( 'site_editor.template.inspect', array( $this, 'inspect' ),
-			$read + array( 'description' => 'Inspect one exact active-theme template or part, with source and fingerprint.' ) );
-		$registry->register( 'site_editor.template.update', array( $this, 'update' ),
-			$write + array( 'description' => 'Guarded update of a previously customized Site Editor template or part using core REST validation and exact rollback.' ) );
-		$registry->register( 'site_editor.template.restore', array( $this, 'restore' ),
-			$write + array( 'description' => 'Rollback-only restore for an exact previously customized Site Editor template/part.' ) );
-		$registry->register( 'site_editor.global_styles.inspect', array( $this, 'globalStyles' ),
-			$read + array( 'description' => 'Read the current block theme global style configuration via core REST without changing it.' ) );
+		$registry->register(
+			'site_editor.template.list',
+			array( $this, 'listTemplates' ),
+			$read + array( 'description' => 'List active-theme Site Editor templates or template parts via core REST permissions.' )
+		);
+		$registry->register(
+			'site_editor.template.inspect',
+			array( $this, 'inspect' ),
+			$read + array( 'description' => 'Inspect one exact active-theme template or part, with source and fingerprint.' )
+		);
+		$registry->register(
+			'site_editor.template.update',
+			array( $this, 'update' ),
+			$write + array( 'description' => 'Guarded update of a previously customized Site Editor template or part using core REST validation and exact rollback.' )
+		);
+		$registry->register(
+			'site_editor.template.restore',
+			array( $this, 'restore' ),
+			$write + array( 'description' => 'Rollback-only restore for an exact previously customized Site Editor template/part.' )
+		);
+		$registry->register(
+			'site_editor.global_styles.inspect',
+			array( $this, 'globalStyles' ),
+			$read + array( 'description' => 'Read the current block theme global style configuration via core REST without changing it.' )
+		);
 	}
 
 	/**
@@ -60,11 +75,15 @@ final class SiteEditorAdapter {
 		if ( ! is_int( $page ) || $page < 1 || $page > 100 ) {
 			throw new RuntimeException( 'Site Editor page must be an integer between 1 and 100.' );
 		}
-		$response = $this->request( 'GET', $this->route( $kind ), array(
-			'context'  => 'edit',
-			'per_page' => 20,
-			'page'     => $page,
-		) );
+		$response = $this->request(
+			'GET',
+			$this->route( $kind ),
+			array(
+				'context'  => 'edit',
+				'per_page' => 20,
+				'page'     => $page,
+			)
+		);
 		$data     = $this->data( $response );
 		if ( ! is_array( $data ) ) {
 			throw new RuntimeException( 'WordPress did not return template records.' );
@@ -82,12 +101,14 @@ final class SiteEditorAdapter {
 				'customized' => 'custom' === ( $item['source'] ?? '' ) && (int) ( $item['wp_id'] ?? 0 ) > 0,
 			);
 		}
-		return array( 'kind' => $kind,
-			'theme'          => get_stylesheet(),
-			'page'           => $page,
-			'items'          => $rows,
-			'count'          => count( $rows ),
-			'per_page'       => 20, );
+		return array(
+			'kind'     => $kind,
+			'theme'    => get_stylesheet(),
+			'page'     => $page,
+			'items'    => $rows,
+			'count'    => count( $rows ),
+			'per_page' => 20,
+		);
 	}
 
 	/**
@@ -134,10 +155,12 @@ final class SiteEditorAdapter {
 		if ( ! is_string( $json ) || strlen( $json ) > self::MAX_CONTENT_BYTES ) {
 			throw new RuntimeException( 'Global styles exceed the bounded response size.' );
 		}
-		return array( 'theme' => $theme,
-			'settings'        => $settings,
-			'styles'          => $styles,
-			'fingerprint'     => Fingerprint::make( array( $settings, $styles ) ), );
+		return array(
+			'theme'       => $theme,
+			'settings'    => $settings,
+			'styles'      => $styles,
+			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ),
+		);
 	}
 
 	/**
@@ -192,17 +215,19 @@ final class SiteEditorAdapter {
 			$this->restoreAfterFailure( $kind, $id, $previous );
 			throw new RuntimeException( 'Template update was not confirmed; original content restored and verified.' );
 		}
-		$result['updated'] = true;
-		$result['after'] = array(
+		$result['updated']   = true;
+		$result['after']     = array(
 			'content_sha256' => $after['content_sha256'],
 			'modified'       => $after['modified'],
 		);
 		$result['_rollback'] = array(
 			'action'  => 'site_editor.template.restore',
-			'payload' => array( 'kind' => $kind,
+			'payload' => array(
+				'kind'                       => $kind,
 				'id'                         => $id,
 				'content'                    => $previous,
-				'expected_after_fingerprint' => $after['fingerprint'], ),
+				'expected_after_fingerprint' => $after['fingerprint'],
+			),
 		);
 		return $result;
 	}
@@ -283,14 +308,16 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'WordPress Site Editor returned an unexpected theme/template identity.' );
 		}
 		$content              = $this->rawContent( $record );
-		$state   = array( 'kind' => $kind,
-			'id'                 => $id,
-			'theme'              => get_stylesheet(),
-			'source'             => (string) ( $record['source'] ?? '' ),
-			'wp_id'              => (int) ( $record['wp_id'] ?? 0 ),
-			'modified'           => (string) ( $record['modified'] ?? '' ),
-			'content_sha256'     => hash( 'sha256', $content ),
-			'customized'         => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0, );
+		$state                = array(
+			'kind'           => $kind,
+			'id'             => $id,
+			'theme'          => get_stylesheet(),
+			'source'         => (string) ( $record['source'] ?? '' ),
+			'wp_id'          => (int) ( $record['wp_id'] ?? 0 ),
+			'modified'       => (string) ( $record['modified'] ?? '' ),
+			'content_sha256' => hash( 'sha256', $content ),
+			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0,
+		);
 		$state['fingerprint'] = Fingerprint::make( $state );
 		return $state;
 	}
@@ -304,7 +331,7 @@ final class SiteEditorAdapter {
 	 */
 	private function writable( array $state ): void {
 		if ( ! $state['customized'] || $state['wp_id'] <= 0
- || ! current_user_can( 'edit_post', $state['wp_id'] ) ) {
+		|| ! current_user_can( 'edit_post', $state['wp_id'] ) ) {
 			throw new RuntimeException( 'Only previously customized, editable Site Editor templates can be modified.' );
 		}
 	}
@@ -330,7 +357,7 @@ final class SiteEditorAdapter {
 	 */
 	private function expected( $value, string $actual ): void {
 		if ( ! is_string( $value ) || ! preg_match( '/^[a-f0-9]{64}\z/', $value )
- || ! hash_equals( $actual, $value ) ) {
+		|| ! hash_equals( $actual, $value ) ) {
 			throw new RuntimeException( 'Template content or metadata changed since the exact dry-run fingerprint.' );
 		}
 	}
@@ -346,8 +373,13 @@ final class SiteEditorAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function record( string $kind, string $id ): array {
-		$data = $this->data( $this->request( 'GET', $this->route( $kind ) . '/' . $id,
-			array( 'context' => 'edit' ) ) );
+		$data = $this->data(
+			$this->request(
+				'GET',
+				$this->route( $kind ) . '/' . $id,
+				array( 'context' => 'edit' )
+			)
+		);
 		if ( ! is_array( $data ) ) {
 			throw new RuntimeException( 'WordPress returned an invalid template.' );
 		}
@@ -375,7 +407,7 @@ final class SiteEditorAdapter {
 		}
 		$response = rest_do_request( $request );
 		if ( ! is_object( $response ) || ! method_exists( $response, 'get_status' )
- || $response->get_status() < 200 || $response->get_status() >= 300 ) {
+		|| $response->get_status() < 200 || $response->get_status() >= 300 ) {
 			throw new RuntimeException( 'Native WordPress Site Editor API denied or could not complete the request.' );
 		}
 		return $response;
@@ -422,8 +454,8 @@ final class SiteEditorAdapter {
 	private function content( array $payload ): string {
 		$content = $payload['content'] ?? null;
 		if ( ! is_string( $content ) || strlen( $content ) > self::MAX_CONTENT_BYTES
- || strpos( $content, '<?' ) !== false
- || preg_match( '/<\s*script\b|on(?:load|error|click)\s*=/i', $content ) ) {
+		|| strpos( $content, '<?' ) !== false
+		|| preg_match( '/<\s*script\b|on(?:load|error|click)\s*=/i', $content ) ) {
 			throw new RuntimeException( 'Site Editor content is oversized or contains executable markup.' );
 		}
 		return $content;
@@ -456,9 +488,9 @@ final class SiteEditorAdapter {
 		$id    = $payload['id'] ?? null;
 		$theme = get_stylesheet();
 		if ( ! is_string( $id ) || ! is_string( $theme )
- || ! preg_match( '/^[A-Za-z0-9_-]{1,80}\z/', $theme )
- || ! preg_match( '/^[A-Za-z0-9_-]{1,80}\/\/[A-Za-z0-9_-]{1,80}\z/', $id )
- || strpos( $id, $theme . '//' ) !== 0 ) {
+		|| ! preg_match( '/^[A-Za-z0-9_-]{1,80}\z/', $theme )
+		|| ! preg_match( '/^[A-Za-z0-9_-]{1,80}\/\/[A-Za-z0-9_-]{1,80}\z/', $id )
+		|| strpos( $id, $theme . '//' ) !== 0 ) {
 			throw new RuntimeException( 'Template ID must belong exactly to the active theme.' );
 		}
 		return $id;

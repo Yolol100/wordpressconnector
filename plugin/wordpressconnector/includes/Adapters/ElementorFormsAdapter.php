@@ -41,16 +41,28 @@ final class ElementorFormsAdapter {
 	 * @param Registry $registry Connector action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$registry->register( 'elementor.form_capabilities', array( $this, 'capabilities' ), array(
-			'description' => 'Inspect target-runtime Elementor V3 Form and V4 Atomic Form schemas without exposing form defaults or site secrets.',
-		) );
-		$registry->register( 'elementor.form_inspect', array( $this, 'inspect' ), array(
-			'description' => 'Read complete V3 and V4 Elementor form subtrees from one document.',
-		) );
-		$registry->register( 'elementor.form_upsert', array( $this, 'upsert' ), array(
-			'mutation'    => true,
-			'description' => 'Insert or fully replace one V3 Form widget or V4 Atomic Form subtree through the Elementor document API.',
-		) );
+		$registry->register(
+			'elementor.form_capabilities',
+			array( $this, 'capabilities' ),
+			array(
+				'description' => 'Inspect target-runtime Elementor V3 Form and V4 Atomic Form schemas without exposing form defaults or site secrets.',
+			)
+		);
+		$registry->register(
+			'elementor.form_inspect',
+			array( $this, 'inspect' ),
+			array(
+				'description' => 'Read complete V3 and V4 Elementor form subtrees from one document.',
+			)
+		);
+		$registry->register(
+			'elementor.form_upsert',
+			array( $this, 'upsert' ),
+			array(
+				'mutation'    => true,
+				'description' => 'Insert or fully replace one V3 Form widget or V4 Atomic Form subtree through the Elementor document API.',
+			)
+		);
 	}
 
 	/**
@@ -94,10 +106,12 @@ final class ElementorFormsAdapter {
 			'classic'            => $classic,
 			'atomic'             => $atomic,
 			'recommended_family' => ! empty( $atomic['available'] ) ? 'v4' : ( ! empty( $classic['available'] ) ? 'v3' : null ),
-			'schema_fingerprint' => Fingerprint::make( array(
-				'classic' => $classic,
-				'atomic'  => $atomic,
-			) ),
+			'schema_fingerprint' => Fingerprint::make(
+				array(
+					'classic' => $classic,
+					'atomic'  => $atomic,
+				)
+			),
 			'warnings'           => array_values( array_unique( $warnings ) ),
 		);
 	}
@@ -367,7 +381,7 @@ final class ElementorFormsAdapter {
 		$result = array();
 		foreach ( $raw as $name => $control ) {
 			if ( is_array( $control ) ) {
-				$result[(string) $name] = $this->controlRecord( (string) $name, $control );
+				$result[ (string) $name ] = $this->controlRecord( (string) $name, $control );
 			}
 		}
 		ksort( $result, SORT_STRING );
@@ -482,7 +496,7 @@ final class ElementorFormsAdapter {
 			$types = $this->managerTypes( $elementor, $source[0], $source[1], $warnings, $source[2] );
 			foreach ( $types as $name => $component ) {
 				if ( is_object( $component ) ) {
-					$result[(string) $name] = $component;
+					$result[ (string) $name ] = $component;
 				}
 			}
 		}

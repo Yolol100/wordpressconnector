@@ -33,19 +33,32 @@ final class SiteIdentityAdapter {
 			'public_repository_safe' => true,
 			'capability'             => 'manage_options',
 		);
-		$registry->register( 'site.identity.inspect', array( $this, 'inspect' ),
-			array_merge( $public, array( 'description' => 'Read nonsecret WordPress site title, tagline, timezone and stored locale.' ) ) );
-		$registry->register( 'site.identity.update', array( $this, 'update' ),
-			array_merge( $public, array(
+		$registry->register(
+			'site.identity.inspect',
+			array( $this, 'inspect' ),
+			array_merge( $public, array( 'description' => 'Read nonsecret WordPress site title, tagline, timezone and stored locale.' ) )
+		);
+		$registry->register(
+			'site.identity.update',
+			array( $this, 'update' ),
+			array_merge(
+				$public,
+				array(
+					'mutation'    => true,
+					'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.',
+				)
+			)
+		);
+		$registry->register(
+			'site.identity.restore',
+			array( $this, 'restore' ),
+			array(
 				'mutation'    => true,
-				'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.',
-			) ) );
-		$registry->register( 'site.identity.restore', array( $this, 'restore' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Restore a prior site identity snapshot only via verified connector rollback.',
-		) );
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Restore a prior site identity snapshot only via verified connector rollback.',
+			)
+		);
 	}
 
 	/**
@@ -59,7 +72,9 @@ final class SiteIdentityAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
-		if ( $payload ) throw new RuntimeException( 'Site identity inspect requires an empty payload.' );
+		if ( $payload ) {
+			throw new RuntimeException( 'Site identity inspect requires an empty payload.' );
+		}
 		$state = $this->snapshot();
 		return array(
 			'fields'      => $state,
@@ -93,26 +108,32 @@ final class SiteIdentityAdapter {
 			'after'                => $next,
 			'_current_fingerprint' => $fingerprint,
 		);
-		if ( ! empty( $context['dry_run'] ) ) return $result;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $result;
+		}
 
 		$guard = isset( $context['expected_prewrite_fingerprint'] ) ? (string) $context['expected_prewrite_fingerprint'] : '';
 		if ( '' === $guard || ! hash_equals( $fingerprint, $guard ) ) {
 			throw new RuntimeException( 'Site identity update requires a confirmed dry-run fingerprint.' );
 		}
 		try {
-			foreach ( $values as $key => $value ) update_option( $key, $value );
+			foreach ( $values as $key => $value ) {
+				update_option( $key, $value );
+			}
 			if ( $this->snapshot() !== $next ) {
 				throw new RuntimeException( 'Site identity readback did not retain the requested settings.' );
 			}
 		} catch ( Throwable $error ) {
 			foreach ( $before as $key => $value ) {
-				if ( array_key_exists( $key, $values ) ) update_option( $key, $value );
+				if ( array_key_exists( $key, $values ) ) {
+					update_option( $key, $value );
+				}
 			}
 			throw new RuntimeException( 'Site identity write failed; previous values restoration attempted.' );
 		}
-		$result['after'] = $this->snapshot();
+		$result['after']             = $this->snapshot();
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'site.identity.restore',
 			'payload' => array(
 				'fields'                     => $before,
@@ -133,8 +154,12 @@ final class SiteIdentityAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function restore( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) ) throw new RuntimeException( 'Site identity restore is rollback-only.' );
-		if ( ! current_user_can( 'manage_options' ) ) throw new RuntimeException( 'Site identity restore requires manage_options.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'Site identity restore is rollback-only.' );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			throw new RuntimeException( 'Site identity restore requires manage_options.' );
+		}
 		if ( array_diff( array_keys( $payload ), array( 'fields', 'expected_after_fingerprint' ) ) ) {
 			throw new RuntimeException( 'Site identity restore payload has unexpected keys.' );
 		}
@@ -146,8 +171,8 @@ final class SiteIdentityAdapter {
 		}
 		$fields = $payload['fields'] ?? null;
 		if ( ! is_array( $fields ) || count( $fields ) !== count( self::KEYS )
- || array_diff( array_keys( $fields ), self::KEYS )
- || array_diff( self::KEYS, array_keys( $fields ) ) ) {
+		|| array_diff( array_keys( $fields ), self::KEYS )
+		|| array_diff( self::KEYS, array_keys( $fields ) ) ) {
 			throw new RuntimeException( 'Site identity rollback snapshot is invalid.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -157,10 +182,14 @@ final class SiteIdentityAdapter {
 			);
 		}
 		foreach ( $fields as $key => $value ) {
-			if ( ! is_string( $value ) ) throw new RuntimeException( 'Site identity rollback value must be text.' );
+			if ( ! is_string( $value ) ) {
+				throw new RuntimeException( 'Site identity rollback value must be text.' );
+			}
 			update_option( $key, $value );
 		}
-		if ( $this->snapshot() !== $fields ) throw new RuntimeException( 'Site identity rollback readback failed.' );
+		if ( $this->snapshot() !== $fields ) {
+			throw new RuntimeException( 'Site identity rollback readback failed.' );
+		}
 		return array( 'restored' => true );
 	}
 
@@ -175,7 +204,9 @@ final class SiteIdentityAdapter {
 		$result = array();
 		foreach ( self::KEYS as $key ) {
 			$value = get_option( $key, '' );
-			if ( ! is_scalar( $value ) ) throw new RuntimeException( 'Unexpected site identity value for: ' . $key );
+			if ( ! is_scalar( $value ) ) {
+				throw new RuntimeException( 'Unexpected site identity value for: ' . $key );
+			}
 			$result[ $key ] = (string) $value;
 		}
 		return $result;
@@ -192,7 +223,7 @@ final class SiteIdentityAdapter {
 	 */
 	private function validateFields( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS )
- || array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {
+		|| array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {
 			throw new RuntimeException( 'Site identity update requires 1–4 named fields.' );
 		}
 		$result = array();
@@ -203,8 +234,8 @@ final class SiteIdentityAdapter {
 			if ( 'blogname' === $key || 'blogdescription' === $key ) {
 				$max = 'blogname' === $key ? 100 : 240;
 				if ( '' === trim( $value ) || strlen( $value ) > $max
- || preg_match( '/[\x00-\x1F\x7F<>]/', $value )
- || sanitize_text_field( $value ) !== $value ) {
+				|| preg_match( '/[\x00-\x1F\x7F<>]/', $value )
+				|| sanitize_text_field( $value ) !== $value ) {
 					throw new RuntimeException( 'Site identity text is invalid.' );
 				}
 			} elseif ( 'timezone_string' === $key ) {
@@ -219,7 +250,7 @@ final class SiteIdentityAdapter {
 					throw new RuntimeException( 'Site locale is overridden in wp-config; cannot safely update.' );
 				}
 				if ( 'en_US' !== $value && ( ! function_exists( 'get_available_languages' )
- || ! in_array( $value, get_available_languages(), true ) ) ) {
+				|| ! in_array( $value, get_available_languages(), true ) ) ) {
 					throw new RuntimeException( 'Requested WordPress language pack is not installed.' );
 				}
 			}

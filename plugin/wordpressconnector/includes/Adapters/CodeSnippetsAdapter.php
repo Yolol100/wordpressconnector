@@ -17,10 +17,10 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Code Snippets connector actions.
  */
 final class CodeSnippetsAdapter {
-	private const MAX_CODE_BYTES = 1048576;
+	private const MAX_CODE_BYTES   = 1048576;
 	private const MAX_REPLACEMENTS = 4;
-	private const CATALOG_NAME = 'Webactueel | WooCommerce Catalogue (No Orders)';
-	private const CATALOG_MARKER = 'WAB_CATALOG_ONLY_2026';
+	private const CATALOG_NAME     = 'Webactueel | WooCommerce Catalogue (No Orders)';
+	private const CATALOG_MARKER   = 'WAB_CATALOG_ONLY_2026';
 
 	/**
 	 * Register the CodeSnippets adapter actions and handlers.
@@ -29,34 +29,54 @@ final class CodeSnippetsAdapter {
 	 */
 	public function register( Registry $registry ): void {
 
-		$registry->register( 'code_snippets.catalog_only.inspect', array( $this, 'catalogOnlyInspect' ), array(
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Read safe metadata of the built-in WooCommerce catalogue-only Code Snippets preset.',
-		) );
-		$registry->register( 'code_snippets.catalog_only.ensure', array( $this, 'catalogOnlyEnsure' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Create/activate only the vetted built-in WooCommerce catalogue snippet with rollback. No caller PHP.',
-		) );
-		$registry->register( 'code_snippets.catalog_only.undo', array( $this, 'catalogOnlyUndo' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'capability'  => 'manage_options',
-			'description' => 'Guarded internal rollback of a connector-created/activated catalogue snippet.',
-		) );
-		$registry->register( 'code_snippets.patch', array( $this, 'patch' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Patch one uniquely identified Code Snippets PHP snippet using exact bounded replacements with fingerprint, readback and rollback.',
-		) );
+		$registry->register(
+			'code_snippets.catalog_only.inspect',
+			array( $this, 'catalogOnlyInspect' ),
+			array(
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Read safe metadata of the built-in WooCommerce catalogue-only Code Snippets preset.',
+			)
+		);
+		$registry->register(
+			'code_snippets.catalog_only.ensure',
+			array( $this, 'catalogOnlyEnsure' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Create/activate only the vetted built-in WooCommerce catalogue snippet with rollback. No caller PHP.',
+			)
+		);
+		$registry->register(
+			'code_snippets.catalog_only.undo',
+			array( $this, 'catalogOnlyUndo' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'capability'  => 'manage_options',
+				'description' => 'Guarded internal rollback of a connector-created/activated catalogue snippet.',
+			)
+		);
+		$registry->register(
+			'code_snippets.patch',
+			array( $this, 'patch' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Patch one uniquely identified Code Snippets PHP snippet using exact bounded replacements with fingerprint, readback and rollback.',
+			)
+		);
 
-		$registry->register( 'code_snippets.restore_code', array( $this, 'restoreCode' ), array(
-			'mutation'    => true,
-			'privileged'  => true,
-			'description' => 'Internal rollback action for restoring one Code Snippets record after a guarded patch.',
-		) );
+		$registry->register(
+			'code_snippets.restore_code',
+			array( $this, 'restoreCode' ),
+			array(
+				'mutation'    => true,
+				'privileged'  => true,
+				'description' => 'Internal rollback action for restoring one Code Snippets record after a guarded patch.',
+			)
+		);
 	}
 
 
@@ -107,7 +127,7 @@ final class CodeSnippetsAdapter {
 		foreach ( (array) \Code_Snippets\get_snippets( array(), false ) as $snippet ) {
 			if ( is_object( $snippet ) &&
 				( (string) ( $snippet->name ?? '' ) === self::CATALOG_NAME ||
-                 false !== strpos( (string) ( $snippet->code ?? '' ), self::CATALOG_MARKER ) ) ) {
+				false !== strpos( (string) ( $snippet->code ?? '' ), self::CATALOG_MARKER ) ) ) {
 				$found[] = $snippet;
 			}
 		}
@@ -153,7 +173,7 @@ final class CodeSnippetsAdapter {
 		}
 		$state = self::catalogState( $snippet );
 		if ( $state['id'] <= 0 || $state['name'] !== self::CATALOG_NAME ||
-			$state['scope'] !== 'global' || $state['type'] !== 'php' ||
+			'global' !== $state['scope'] || 'php' !== $state['type'] ||
 			$state['network'] || $state['trashed'] || $state['locked'] ||
 			! hash_equals( hash( 'sha256', $expectedCode ), $state['code_sha256'] ) ) {
 			throw new RuntimeException( 'Existing catalogue snippet differs from audited preset. No changes performed.' );
@@ -215,7 +235,7 @@ final class CodeSnippetsAdapter {
 		);
 		if ( ! empty( $context['dry_run'] ) || ( $existing && $before['active'] ) ) {
 			if ( $existing && $before['active'] ) {
-				$result['snippet'] = $before;
+				$result['snippet']           = $before;
 				$result['readback_verified'] = true;
 			}
 			return $result;
@@ -225,16 +245,18 @@ final class CodeSnippetsAdapter {
 		$id      = $created ? 0 : (int) $existing->id;
 		if ( $created ) {
 			// Only source shipped in the verified connector ZIP reaches this provider API.
-			$snippet = new \Code_Snippets\Model\Snippet( array(
-				'id'       => 0,
-				'name'     => self::CATALOG_NAME,
-				'desc'     => 'Existing WooCommerce prices visible, cart and checkout disabled.',
-				'code'     => $code,
-				'scope'    => 'global',
-				'priority' => 10,
-				'active'   => false,
-				'network'  => false,
-			) );
+			$snippet = new \Code_Snippets\Model\Snippet(
+				array(
+					'id'       => 0,
+					'name'     => self::CATALOG_NAME,
+					'desc'     => 'Existing WooCommerce prices visible, cart and checkout disabled.',
+					'code'     => $code,
+					'scope'    => 'global',
+					'priority' => 10,
+					'active'   => false,
+					'network'  => false,
+				)
+			);
 			$saved   = \Code_Snippets\save_snippet( $snippet );
 			if ( ! is_object( $saved ) || (int) ( $saved->id ?? 0 ) <= 0 ) {
 				throw new RuntimeException( 'Code Snippets provider could not save the audited preset.' );
@@ -265,9 +287,9 @@ final class CodeSnippetsAdapter {
 			}
 			throw new RuntimeException( 'Catalogue preset activation failed; prior state restored.' );
 		}
-		$result['snippet'] = self::catalogState( $after );
+		$result['snippet']           = self::catalogState( $after );
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'code_snippets.catalog_only.undo',
 			'payload' => array(
 				'snippet_id'           => $id,
@@ -354,33 +376,33 @@ final class CodeSnippetsAdapter {
 		}
 
 		$replacements = $this->replacements( $payload );
-		$newCode      = (string) $before['code'];
+		$new_code     = (string) $before['code'];
 
 		foreach ( $replacements as $index => $replacement ) {
-			$occurrences = substr_count( $newCode, $replacement['find'] );
+			$occurrences = substr_count( $new_code, $replacement['find'] );
 			if ( 1 !== $occurrences ) {
 				throw new RuntimeException( 'Replacement ' . $index . ' must match exactly once; matched ' . $occurrences . ' times.' );
 			}
-			$newCode = str_replace( $replacement['find'], $replacement['replace'], $newCode );
+			$new_code = str_replace( $replacement['find'], $replacement['replace'], $new_code );
 		}
 
-		if ( $newCode === (string) $before['code'] ) {
+		if ( $new_code === (string) $before['code'] ) {
 			throw new RuntimeException( 'Code Snippets patch does not change the target code.' );
 		}
-		if ( strlen( $newCode ) > self::MAX_CODE_BYTES ) {
+		if ( strlen( $new_code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Patched Code Snippets code exceeds the 1 MiB connector limit.' );
 		}
 
-		$afterPlanned         = $before;
-		$afterPlanned['code'] = $newCode;
+		$after_planned         = $before;
+		$after_planned['code'] = $new_code;
 
 		$result = array(
 			'snippet'                 => $this->publicSnapshot( $before ),
 			'replacement_count'       => count( $replacements ),
 			'before_code_fingerprint' => hash( 'sha256', (string) $before['code'] ),
-			'after_code_fingerprint'  => hash( 'sha256', $newCode ),
+			'after_code_fingerprint'  => hash( 'sha256', $new_code ),
 			'before_fingerprint'      => Fingerprint::make( $before ),
-			'after_fingerprint'       => Fingerprint::make( $afterPlanned ),
+			'after_fingerprint'       => Fingerprint::make( $after_planned ),
 			'_current_fingerprint'    => Fingerprint::make( $before ),
 		);
 
@@ -389,10 +411,10 @@ final class CodeSnippetsAdapter {
 			return $result;
 		}
 
-		$this->writeCode( (int) $before['id'], $newCode );
+		$this->writeCode( (int) $before['id'], $new_code );
 		$after = $this->snapshot( $this->getSnippet( (int) $before['id'] ) );
 
-		if ( ! $this->sameMetadata( $before, $after ) || $newCode !== (string) $after['code'] ) {
+		if ( ! $this->sameMetadata( $before, $after ) || $new_code !== (string) $after['code'] ) {
 			$this->writeCode( (int) $before['id'], (string) $before['code'] );
 			$restored = $this->snapshot( $this->getSnippet( (int) $before['id'] ) );
 			if ( (string) $restored['code'] !== (string) $before['code'] ) {
@@ -401,14 +423,14 @@ final class CodeSnippetsAdapter {
 			throw new RuntimeException( 'Code Snippets patch readback failed; previous code was restored.' );
 		}
 
-		$result['snippet'] = $this->publicSnapshot( $after );
+		$result['snippet']           = $this->publicSnapshot( $after );
 		$result['readback_verified'] = true;
-		$result['_rollback'] = array(
+		$result['_rollback']         = array(
 			'action'  => 'code_snippets.restore_code',
 			'payload' => array(
 				'snippet_id'                => (int) $before['id'],
 				'code'                      => (string) $before['code'],
-				'expected_code_fingerprint' => hash( 'sha256', $newCode ),
+				'expected_code_fingerprint' => hash( 'sha256', $new_code ),
 			),
 		);
 
@@ -466,7 +488,7 @@ final class CodeSnippetsAdapter {
 			throw new RuntimeException( 'Code Snippets rollback readback verification failed.' );
 		}
 
-		$result['snippet'] = $this->publicSnapshot( $after );
+		$result['snippet']           = $this->publicSnapshot( $after );
 		$result['readback_verified'] = true;
 		return $result;
 	}

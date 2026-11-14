@@ -16,9 +16,9 @@ use Webactueel\WordPressConnector\Security\Policy;
  * Implements Asset Store handling for authenticated REST requests.
  */
 final class AssetStore {
-	private const MAX_FILES = 10;
+	private const MAX_FILES       = 10;
 	private const MAX_TOTAL_BYTES = 26214400;
-	private const MAX_FILE_BYTES = 20971520;
+	private const MAX_FILE_BYTES  = 20971520;
 
 	/**
 	 * Process the put operation in the AssetStore component.
@@ -35,7 +35,7 @@ final class AssetStore {
 		$this->assertRequestId( $requestId );
 		$relativePath = $this->normalizeRelativePath( $relativePath );
 
-		$error        = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		$error = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
 		if ( UPLOAD_ERR_OK !== $error ) {
 			throw new RuntimeException( 'Asset upload failed with PHP upload error ' . $error . '.' );
 		}
@@ -44,16 +44,16 @@ final class AssetStore {
 		if ( '' === $tmpName || ! is_uploaded_file( $tmpName ) ) {
 			throw new RuntimeException( 'Asset upload is not a valid HTTP upload.' );
 		}
-		$actualSize = filesize( $tmpName );
-		if ( false === $actualSize || $actualSize <= 0 || $actualSize > self::MAX_FILE_BYTES ) {
+		$actual_size = filesize( $tmpName );
+		if ( false === $actual_size || $actual_size <= 0 || $actual_size > self::MAX_FILE_BYTES ) {
 			throw new RuntimeException( 'Asset exceeds the per-file size limit.' );
 		}
-		$size     = (int) $actualSize;
+		$size = (int) $actual_size;
 
-		$fileType = $this->allowedFileType( $relativePath );
+		$file_type = $this->allowedFileType( $relativePath );
 
-		$root     = $this->rootForRequest( $requestId, true );
-		$usage    = $this->usage( $root );
+		$root  = $this->rootForRequest( $requestId, true );
+		$usage = $this->usage( $root );
 		if ( $usage['files'] >= self::MAX_FILES || ( $usage['bytes'] + $size ) > self::MAX_TOTAL_BYTES ) {
 			throw new RuntimeException( 'Request asset limit exceeded (max 10 files / 25 MiB total).' );
 		}
@@ -87,7 +87,7 @@ final class AssetStore {
 			'request_id' => $requestId,
 			'asset_path' => $relativePath,
 			'bytes'      => $size,
-			'mime_type'  => (string) $fileType['type'],
+			'mime_type'  => (string) $file_type['type'],
 		);
 	}
 
@@ -166,16 +166,16 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function allowedFileType( string $relativePath ): array {
-		$basename = basename( $relativePath );
-		$fileType = wp_check_filetype( $basename, get_allowed_mime_types() );
-		if ( ! empty( $fileType['ext'] ) && ! empty( $fileType['type'] ) ) {
-			return $fileType;
+		$basename  = basename( $relativePath );
+		$file_type = wp_check_filetype( $basename, get_allowed_mime_types() );
+		if ( ! empty( $file_type['ext'] ) && ! empty( $file_type['type'] ) ) {
+			return $file_type;
 		}
 
 		if ( preg_match( '#^(?:plugin-packages|theme-packages)/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relativePath ) ) {
-			$zipType = wp_check_filetype( $basename, array( 'zip' => 'application/zip' ) );
-			if ( ! empty( $zipType['ext'] ) && ! empty( $zipType['type'] ) ) {
-				return $zipType;
+			$zip_type = wp_check_filetype( $basename, array( 'zip' => 'application/zip' ) );
+			if ( ! empty( $zip_type['ext'] ) && ! empty( $zip_type['type'] ) ) {
+				return $zip_type;
 			}
 		}
 
@@ -203,8 +203,8 @@ final class AssetStore {
 			if ( '' === $temp || ! $this->isAbsolutePath( $temp ) ) {
 				throw new RuntimeException( 'A private system temporary directory is unavailable.' );
 			}
-			$siteNamespace = substr( hash( 'sha256', home_url( '/' ) ), 0, 20 );
-			$base          = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $siteNamespace;
+			$site_namespace = substr( hash( 'sha256', home_url( '/' ) ), 0, 20 );
+			$base           = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $site_namespace;
 		}
 
 		if ( is_link( $base ) ) {
@@ -236,12 +236,12 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function assertOutsideWebRoot( string $path ): void {
-		$webRoot = defined( 'ABSPATH' ) ? realpath( ABSPATH ) : false;
-		if ( false === $webRoot ) {
+		$web_root = defined( 'ABSPATH' ) ? realpath( ABSPATH ) : false;
+		if ( false === $web_root ) {
 			return;
 		}
 
-		$webRoot  = rtrim( $webRoot, DIRECTORY_SEPARATOR );
+		$web_root = rtrim( $web_root, DIRECTORY_SEPARATOR );
 		$resolved = realpath( $path );
 		if ( false !== $resolved ) {
 			$candidate = rtrim( $resolved, DIRECTORY_SEPARATOR );
@@ -253,7 +253,7 @@ final class AssetStore {
 			$candidate = rtrim( $parent, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR . basename( $path );
 		}
 
-		if ( $candidate === $webRoot || 0 === strpos( $candidate, $webRoot . DIRECTORY_SEPARATOR ) ) {
+		if ( $candidate === $web_root || 0 === strpos( $candidate, $web_root . DIRECTORY_SEPARATOR ) ) {
 			throw new RuntimeException( 'Connector request assets must be stored outside the public WordPress root.' );
 		}
 	}

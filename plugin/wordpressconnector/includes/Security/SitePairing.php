@@ -18,7 +18,7 @@ use RuntimeException;
  * Direct authenticated WordPress REST/MCP is intentionally unaffected.
  */
 final class SitePairing {
-	private const OPTION = 'wpconnector_github_oidc_site_pairing_v1';
+	private const OPTION    = 'wpconnector_github_oidc_site_pairing_v1';
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 
 	/**
@@ -61,13 +61,13 @@ final class SitePairing {
 	}
 
 	/**
-     * WordPress plugin activation is an explicit administrator action guarded by
-     * Core's own activation permissions and nonce. Reuse that single step for
-     * this trusted, pinned GitHub control plane; never pair a mere upload,
-     * an automated CLI install, or a network-wide activation.
-     *
-     * Existing installations are NOT silently re-paired during upgrades.
-     */
+	 * WordPress plugin activation is an explicit administrator action guarded by
+	 * Core's own activation permissions and nonce. Reuse that single step for
+	 * this trusted, pinned GitHub control plane; never pair a mere upload,
+	 * an automated CLI install, or a network-wide activation.
+	 *
+	 * Existing installations are NOT silently re-paired during upgrades.
+	 */
 	public static function approveOnActivation( bool $networkWide = false ): void {
 		if ( $networkWide || ! is_admin() ||
 			! current_user_can( 'activate_plugins' ) ||

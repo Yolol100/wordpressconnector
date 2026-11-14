@@ -18,11 +18,11 @@ use Webactueel\WordPressConnector\Adapters\ElementorAdapter;
 final class ElementorJsonImport {
 	private const BULK_PREVIEW = 'wpconnector_elementor_bulk_preview';
 	private const BULK_CONFIRM = 'wpconnector_elementor_bulk_confirm';
-	private const BULK_LIMIT = 20;
-	private const BULK_BYTES = 8388608;
-	private const ACTION = 'wpconnector_import_elementor_json';
-	private const POST_TYPES = array( 'page', 'post', 'elementor_library' );
-	private const MAX_BYTES = 5242880;
+	private const BULK_LIMIT   = 20;
+	private const BULK_BYTES   = 8388608;
+	private const ACTION       = 'wpconnector_import_elementor_json';
+	private const POST_TYPES   = array( 'page', 'post', 'elementor_library' );
+	private const MAX_BYTES    = 5242880;
 
 	/**
 	 * Register the ElementorJsonImport component actions and handlers.
@@ -60,16 +60,37 @@ final class ElementorJsonImport {
 	 */
 	public function registerImportPages(): void {
 		add_management_page( __( 'Elementor bulkimport', 'wordpressconnector' ), __( 'Elementor bulkimport', 'wordpressconnector' ), 'manage_options', 'wpconnector-elementor-bulk', array( $this, 'renderBulkPage' ) );
-		add_submenu_page( 'edit.php?post_type=page', __( 'Import Elementor JSON', 'wordpressconnector' ), __( 'Import Elementor JSON', 'wordpressconnector' ), 'edit_pages', 'wpconnector-import-elementor-page', function():void {
-			$this->renderImportPage( 'page' );
-		} );
-		add_submenu_page( 'edit.php', __( 'Import Elementor JSON', 'wordpressconnector' ), __( 'Import Elementor JSON', 'wordpressconnector' ), 'edit_posts', 'wpconnector-import-elementor-post', function():void {
-			$this->renderImportPage( 'post' );
-		} );
+		add_submenu_page(
+			'edit.php?post_type=page',
+			__( 'Import Elementor JSON', 'wordpressconnector' ),
+			__( 'Import Elementor JSON', 'wordpressconnector' ),
+			'edit_pages',
+			'wpconnector-import-elementor-page',
+			function (): void {
+				$this->renderImportPage( 'page' );
+			}
+		);
+		add_submenu_page(
+			'edit.php',
+			__( 'Import Elementor JSON', 'wordpressconnector' ),
+			__( 'Import Elementor JSON', 'wordpressconnector' ),
+			'edit_posts',
+			'wpconnector-import-elementor-post',
+			function (): void {
+				$this->renderImportPage( 'post' );
+			}
+		);
 		if ( post_type_exists( 'elementor_library' ) ) {
-			add_submenu_page( 'edit.php?post_type=elementor_library', __( 'Import Elementor JSON', 'wordpressconnector' ), __( 'Import Elementor JSON', 'wordpressconnector' ), 'edit_posts', 'wpconnector-import-elementor-template', function():void {
-				$this->renderImportPage( 'elementor_library' );
-			} );
+			add_submenu_page(
+				'edit.php?post_type=elementor_library',
+				__( 'Import Elementor JSON', 'wordpressconnector' ),
+				__( 'Import Elementor JSON', 'wordpressconnector' ),
+				'edit_posts',
+				'wpconnector-import-elementor-template',
+				function (): void {
+					$this->renderImportPage( 'elementor_library' );
+				}
+			);
 		}
 	}
 
@@ -82,23 +103,25 @@ final class ElementorJsonImport {
 		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
-		$selectedId = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$posts      = get_posts( array(
-			'post_type'      => $postType,
-			'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
-			'posts_per_page' => 200,
-			'orderby'        => 'modified',
-			'order'          => 'DESC',
-		) );
+		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
+		$posts       = get_posts(
+			array(
+				'post_type'      => $postType,
+				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+				'posts_per_page' => 200,
+				'orderby'        => 'modified',
+				'order'          => 'DESC',
+			)
+		);
 		echo '<div class="wrap"><h1>' . esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) . '</h1><p>' . esc_html__( 'Upload an Elementor JSON document. Choose an existing item to replace only its Elementor structure/settings, or choose Create new to make a new draft. Existing-item writes use Elementor readback and automatic rollback.', 'wordpressconnector' ) . '</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::ACTION );
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '"><input type="hidden" name="post_type" value="' . esc_attr( $postType ) . '"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">' . esc_html__( 'Target', 'wordpressconnector' ) . '</label></th><td><select id="wpconnector-target-post" name="post_id">';
-		printf( '<option value="0"%1$s>%2$s</option>', selected( $selectedId, 0, false ), esc_html__( 'Create new draft from JSON', 'wordpressconnector' ) );
+		printf( '<option value="0"%1$s>%2$s</option>', selected( $selected_id, 0, false ), esc_html__( 'Create new draft from JSON', 'wordpressconnector' ) );
 		foreach ( $posts as $post ) {
 			if ( ! $post instanceof \WP_Post || ! current_user_can( 'edit_post', (int) $post->ID ) ) {
 				continue;
 			}
-			printf( '<option value="%1$d"%2$s>%3$s (#%1$d)</option>', (int) $post->ID, selected( $selectedId, (int) $post->ID, false ), esc_html( (string) $post->post_title ) );
+			printf( '<option value="%1$d"%2$s>%3$s (#%1$d)</option>', (int) $post->ID, selected( $selected_id, (int) $post->ID, false ), esc_html( (string) $post->post_title ) );
 		}
 		echo '</select></td></tr><tr><th scope="row"><label for="wpconnector-elementor-json">' . esc_html__( 'Elementor JSON file', 'wordpressconnector' ) . '</label></th><td><input id="wpconnector-elementor-json" type="file" name="elementor_json" accept="application/json,.json" required><p class="description">' . esc_html__( 'Accepted fields: content, page_settings (or settings), version, title, type, global_classes and global_variables. Maximum file size: 5 MB.', 'wordpressconnector' ) . '</p></td></tr></tbody></table>';
 		submit_button( __( 'Import Elementor JSON', 'wordpressconnector' ) );
@@ -130,20 +153,19 @@ final class ElementorJsonImport {
 				if ( ! current_user_can( 'edit_post', $postId ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
-				$adapterPayload = array(
+				$adapter_payload = array(
 					'id'            => $postId,
 					'data'          => $data,
 					'page_settings' => $settings,
 					'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $postType ) {
-					$adapterPayload['template_type'] = $this->templateType( $payload );
+					$adapter_payload['template_type'] = $this->templateType( $payload );
 				}
-				$adapter->replaceDocument( $adapterPayload, array( 'dry_run' => false ) );
-				$resultId = $postId;
-			}
-			else {
-				$adapterPayload = array(
+				$adapter->replaceDocument( $adapter_payload, array( 'dry_run' => false ) );
+				$result_id = $postId;
+			} else {
+				$adapter_payload = array(
 					'post_type'     => $postType,
 					'status'        => 'draft',
 					'title'         => $this->importTitle( $payload, $postType ),
@@ -152,26 +174,29 @@ final class ElementorJsonImport {
 					'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $postType ) {
-					$adapterPayload['template_type'] = $this->templateType( $payload );
+					$adapter_payload['template_type'] = $this->templateType( $payload );
 				}
-				$created  = $adapter->createDocument( $adapterPayload, array( 'dry_run' => false ) );
-				$resultId = isset( $created['document']['post_id'] ) ? (int) $created['document']['post_id'] : 0;
-				if ( $resultId < 1 ) {
+				$created   = $adapter->createDocument( $adapter_payload, array( 'dry_run' => false ) );
+				$result_id = isset( $created['document']['post_id'] ) ? (int) $created['document']['post_id'] : 0;
+				if ( $result_id < 1 ) {
 					throw new RuntimeException( 'Elementor JSON was imported but the new document ID could not be verified.' );
 				}
 			}
-		}
-		catch ( RuntimeException $error ) {
+		} catch ( RuntimeException $error ) {
 			wp_die( esc_html( $error->getMessage() ), '', array( 'response' => 400 ) );
-		}
-		catch ( Throwable $error ) {
+		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The Elementor JSON import failed.', 'wordpressconnector' ), '', array( 'response' => 500 ) );
 		}
-		wp_safe_redirect( add_query_arg( array(
-			'post_type'                      => $postType,
-			'wpconnector_elementor_imported' => 1,
-			'post'                           => $resultId,
-		), admin_url( 'edit.php' ) ) );
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'post_type'                      => $postType,
+					'wpconnector_elementor_imported' => 1,
+					'post'                           => $result_id,
+				),
+				admin_url( 'edit.php' )
+			)
+		);
 		exit;
 	}
 
@@ -252,18 +277,22 @@ final class ElementorJsonImport {
 		try {
 			$entries = $this->bulkUploads();
 			$plan    = $this->buildBulkPlan( $entries );
-			$allOk   = true;
+			$all_ok  = true;
 			foreach ( $plan as $row ) {
 				if ( 'ready' !== $row['status'] ) {
-					$allOk = false;
+					$all_ok = false;
 				}
 			}
 			$token = wp_generate_password( 48, false, false );
 			// Store confirmed previews only: cap transient size to avoid large database writes.
-			if ( $allOk && ! set_transient( 'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token ), array(
-				'plan'    => $plan,
-				'created' => time(),
-			), 10 * MINUTE_IN_SECONDS ) ) {
+			if ( $all_ok && ! set_transient(
+				'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token ),
+				array(
+					'plan'    => $plan,
+					'created' => time(),
+				),
+				10 * MINUTE_IN_SECONDS
+			) ) {
 				throw new RuntimeException( 'Could not store this import preview securely. No changes were made.' );
 			}
 			echo '<div class="wrap"><h1>Bulkimport controleren</h1><p>Alleen de hieronder getoonde bestaande Elementor-documenten kunnen worden overschreven. Bij een conflict wordt de hele batch geblokkeerd.</p><table class="widefat striped"><thead><tr><th>Bestand</th><th>Berichttype</th><th>Doel</th><th>Status</th></tr></thead><tbody>';
@@ -271,20 +300,18 @@ final class ElementorJsonImport {
 				echo '<tr><td>' . esc_html( $row['name'] ) . '</td><td>' . esc_html( $row['post_type'] ) . '</td><td>' . esc_html( $row['target_label'] ) . '</td><td>' . esc_html( $row['status'] ) . '</td></tr>';
 			}
 			echo '</tbody></table>';
-			if ( $allOk ) {
+			if ( $all_ok ) {
 				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 				wp_nonce_field( self::BULK_CONFIRM );
 				echo '<input type="hidden" name="action" value="' . esc_attr( self::BULK_CONFIRM ) . '"><input type="hidden" name="token" value="' . esc_attr( $token ) . '">';
 				echo '<p><label><input type="checkbox" name="confirmed" value="yes" required> Ik heb alle doel-ID’s gecontroleerd en geef toestemming om hun Elementor-inhoud te overschrijven.</label></p>';
 				submit_button( 'Bevestig overschrijven van ' . count( $plan ) . ' documenten', 'primary' );
 				echo '</form>';
-			}
-			else {
+			} else {
 				echo '<p><strong>Batch geblokkeerd:</strong> los alle conflicten op en upload opnieuw.</p>';
 			}
 			echo '</div>';
-		}
-		catch ( Throwable $error ) {
+		} catch ( Throwable $error ) {
 			wp_die( esc_html( $error->getMessage() ), '', array( 'response' => 400 ) );
 		}
 	}
@@ -320,10 +347,10 @@ final class ElementorJsonImport {
 		if ( '' === $lock ) {
 			wp_die( 'Another connector mutation is running. Preview again after it finishes.', '', array( 'response' => 409 ) );
 		}
-		$adapter    = new ElementorAdapter();
-		$snapshots  = array();
-		$updated    = array();
-		$inFlightId = 0;
+		$adapter      = new ElementorAdapter();
+		$snapshots    = array();
+		$updated      = array();
+		$in_flight_id = 0;
 		try {
 			foreach ( $plan as $row ) {
 				$id = (int) ( $row['post_id'] ?? 0 );
@@ -332,8 +359,8 @@ final class ElementorJsonImport {
 				}
 				$post = get_post( $id );
 				if ( ! $post instanceof \WP_Post || (string) $post->post_type !== $row['post_type']
- || (string) $post->post_name !== $row['slug']
- || 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
+				|| (string) $post->post_name !== $row['slug']
+				|| 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
 					throw new RuntimeException( 'Target identity or Elementor editing mode changed.' );
 				}
 				$current = $adapter->inspect( array( 'id' => $id ) );
@@ -351,65 +378,62 @@ final class ElementorJsonImport {
 					throw new RuntimeException( 'Document changed during bulk import.' );
 				}
 				$payload = array(
-				'id'            => $id,
-				'data'          => $row['content'],
-				'page_settings' => $row['settings'],
-				'edit_mode'     => 'builder',
+					'id'            => $id,
+					'data'          => $row['content'],
+					'page_settings' => $row['settings'],
+					'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $row['post_type'] ) {
 					$payload['template_type'] = $row['template_type'];
 				}
-				$inFlightId = $id;
+				$in_flight_id = $id;
 				$adapter->replaceDocument( $payload, array( 'dry_run' => false ) );
-				$updated[] = $id;
-				$inFlightId = 0;
+				$updated[]    = $id;
+				$in_flight_id = 0;
 			}
 			echo '<div class="wrap"><h1>Elementor bulkimport voltooid</h1><p>'
 			. count( $updated ) . ' documenten zijn opgeslagen en gecontroleerd.</p>'
 			. '<p>Controleer vervolgens de frontend, formulieren en responsieve opmaak.</p></div>';
-		}
-		catch ( Throwable $error ) {
-			$failedRollbacks = array();
+		} catch ( Throwable $error ) {
+			$failed_rollbacks = array();
 			foreach ( array_reverse( $updated ) as $id ) {
 				try {
 					$before = $snapshots[ $id ];
-					$adapter->replaceDocument( array(
-					'id'            => $id,
-					'data'          => $before['data'],
-					'page_settings' => $before['page_settings'],
-					'edit_mode'     => $before['edit_mode'],
-					'template_type' => $before['template_type'],
-					'conditions'    => $before['conditions'],
-					), array( 'dry_run' => false ) );
-				}
-				catch ( Throwable $rollbackError ) {
-					$failedRollbacks[] = $id;
+					$adapter->replaceDocument(
+						array(
+							'id'            => $id,
+							'data'          => $before['data'],
+							'page_settings' => $before['page_settings'],
+							'edit_mode'     => $before['edit_mode'],
+							'template_type' => $before['template_type'],
+							'conditions'    => $before['conditions'],
+						),
+						array( 'dry_run' => false )
+					);
+				} catch ( Throwable $rollback_error ) {
+					$failed_rollbacks[] = $id;
 				}
 			}
 			$message = 'Bulkimport gestopt: ' . $error->getMessage() . '. ';
-			if ( ! $updated && $inFlightId <= 0 ) {
+			if ( ! $updated && $in_flight_id <= 0 ) {
 				$message .= 'Er is door deze batch geen document bijgewerkt.';
-			}
-			elseif ( ! $updated ) {
-				$message .= 'Een schrijfactie op document-ID ' . $inFlightId
+			} elseif ( ! $updated ) {
+				$message .= 'Een schrijfactie op document-ID ' . $in_flight_id
 				. ' kan gedeeltelijk zijn uitgevoerd. Controleer de Elementor-inhoud en back-up vóór opnieuw importeren.';
-			}
-			elseif ( ! $failedRollbacks ) {
+			} elseif ( ! $failed_rollbacks ) {
 				$message .= 'Eerdere voltooide documenten zijn teruggezet en gecontroleerd.';
-			}
-			else {
+			} else {
 				$message .= 'Herstel moet handmatig worden gecontroleerd voor document-ID(s): '
-				. implode( ', ', $failedRollbacks ) . '. Controleer de back-up of revisies.';
+				. implode( ', ', $failed_rollbacks ) . '. Controleer de back-up of revisies.';
 			}
-			if ( $inFlightId > 0 && $updated ) {
-				$message .= ' Controleer ook het mislukte document-ID ' . $inFlightId
+			if ( $in_flight_id > 0 && $updated ) {
+				$message .= ' Controleer ook het mislukte document-ID ' . $in_flight_id
 				. '; de interne Elementor-rollback kon hier niet onafhankelijk worden bevestigd.';
 			}
 			// wp_die() can terminate PHP without invoking finally: release first.
 			$store->releaseMutationLock( $lock );
 			wp_die( esc_html( $message ), '', array( 'response' => 409 ) );
-		}
-		finally {
+		} finally {
 			$store->releaseMutationLock( $lock );
 		}
 	}
@@ -480,9 +504,9 @@ final class ElementorJsonImport {
 	 * @return array Operation result.
 	 */
 	private function buildBulkPlan( array $entries ): array {
-		$plan          = array();
-		$seenTargets   = array();
-		$templateTypes = array(
+		$plan           = array();
+		$seen_targets   = array();
+		$template_types = array(
 			'header',
 			'footer',
 			'section',
@@ -498,27 +522,25 @@ final class ElementorJsonImport {
 			'kit',
 		);
 		foreach ( $entries as $entry ) {
-			$name         = $entry['name'];
-			$payload      = $entry['payload'];
-			$source       = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
-			$declaredType = sanitize_key( (string) ( $source['post_type'] ?? '' ) );
-			$documentType = sanitize_key( (string) ( $payload['type'] ?? '' ) );
-			$inferredType = '';
-			if ( preg_match( '/^wp-([a-z0-9_-]+)$/D', $documentType, $typeMatch ) ) {
-				$inferredType = $typeMatch[1];
+			$name          = $entry['name'];
+			$payload       = $entry['payload'];
+			$source        = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
+			$declared_type = sanitize_key( (string) ( $source['post_type'] ?? '' ) );
+			$document_type = sanitize_key( (string) ( $payload['type'] ?? '' ) );
+			$inferred_type = '';
+			if ( preg_match( '/^wp-([a-z0-9_-]+)$/D', $document_type, $type_match ) ) {
+				$inferred_type = $type_match[1];
+			} elseif ( 'page' === $document_type ) {
+				$inferred_type = 'page';
+			} elseif ( in_array( $document_type, $template_types, true ) ) {
+				$inferred_type = 'elementor_library';
 			}
-			elseif ( 'page' === $documentType ) {
-				$inferredType = 'page';
-			}
-			elseif ( in_array( $documentType, $templateTypes, true ) ) {
-				$inferredType = 'elementor_library';
-			}
-			$postType       = '' !== $declaredType ? $declaredType : $inferredType;
-			$familyConflict = '' !== $declaredType && '' !== $inferredType
- && $declaredType !== $inferredType
- && ! ( 'elementor_library' === $declaredType && 'page' === $documentType );
+			$postType        = '' !== $declared_type ? $declared_type : $inferred_type;
+			$family_conflict = '' !== $declared_type && '' !== $inferred_type
+			&& $declared_type !== $inferred_type
+			&& ! ( 'elementor_library' === $declared_type && 'page' === $document_type );
 			if ( '' === $postType || ! post_type_exists( $postType )
- || ( ! is_post_type_viewable( $postType ) && 'elementor_library' !== $postType ) ) {
+			|| ( ! is_post_type_viewable( $postType ) && 'elementor_library' !== $postType ) ) {
 				$postType = '';
 			}
 			$slug = isset( $source['slug'] ) ? sanitize_title( (string) $source['slug'] ) : '';
@@ -536,71 +558,64 @@ final class ElementorJsonImport {
 				'settings'      => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 				? $payload['page_settings']
 				: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
-				'template_type' => $documentType,
+				'template_type' => $document_type,
 				'fingerprint'   => '',
 			);
-			if ( $familyConflict ) {
+			if ( $family_conflict ) {
 				$row['status'] = 'conflict: source post type does not match Elementor document type';
-			}
-			elseif ( '' !== $postType && '' !== $slug ) {
-				$matches = get_posts( array(
-					'post_type'        => $postType,
-					'post_status'      => 'any',
-					'name'             => $slug,
-					'posts_per_page'   => 3,
-					'fields'           => 'ids',
-					'suppress_filters' => true,
-				) );
+			} elseif ( '' !== $postType && '' !== $slug ) {
+				$matches = get_posts(
+					array(
+						'post_type'        => $postType,
+						'post_status'      => 'any',
+						'name'             => $slug,
+						'posts_per_page'   => 3,
+						'fields'           => 'ids',
+						'suppress_filters' => true,
+					)
+				);
 				if ( 1 === count( $matches ) ) {
 					$id   = (int) $matches[0];
 					$post = get_post( $id );
 					if ( $post instanceof \WP_Post && (string) $post->post_name === $slug
- && current_user_can( 'edit_post', $id ) ) {
-						$row['post_id'] = $id;
+					&& current_user_can( 'edit_post', $id ) ) {
+						$row['post_id']      = $id;
 						$row['target_label'] = (string) $post->post_title . ' (#' . $id . ')';
-						$storedType          = (string) get_post_meta( $id, '_elementor_template_type', true );
+						$stored_type         = (string) get_post_meta( $id, '_elementor_template_type', true );
 						if ( 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
 							$row['status'] = 'conflict: existing item is not an Elementor document';
-						}
-						elseif ( 'elementor_library' === $postType
- && ( '' === $documentType || $storedType !== $documentType ) ) {
+						} elseif ( 'elementor_library' === $postType
+						&& ( '' === $document_type || $stored_type !== $document_type ) ) {
 							$row['status'] = 'conflict: Elementor template type differs';
-						}
-						else {
+						} else {
 							try {
 								$inspection = ( new ElementorAdapter() )->inspect( array( 'id' => $id ) );
 								$doc        = $inspection['document'] ?? null;
 								if ( ! is_array( $doc ) || empty( $doc['data'] ) ) {
 									$row['status'] = 'conflict: existing Elementor document is empty';
-								}
-								else {
+								} else {
 									$row['fingerprint'] = (string) $inspection['fingerprint'];
-									$row['status'] = 'ready';
+									$row['status']      = 'ready';
 								}
-							}
-							catch ( Throwable $error ) {
+							} catch ( Throwable $error ) {
 								$row['status'] = 'conflict: Elementor document read unavailable';
 							}
 						}
-					}
-					else {
+					} else {
 						$row['status'] = 'conflict: insufficient permission or wrong slug';
 					}
-				}
-				elseif ( count( $matches ) > 1 ) {
+				} elseif ( count( $matches ) > 1 ) {
 					$row['status'] = 'conflict: duplicate slug';
-				}
-				else {
+				} else {
 					$row['status'] = 'conflict: no exact existing slug';
 				}
 			}
 			if ( $row['post_id'] > 0 ) {
-				if ( isset( $seenTargets[$row['post_id']] ) ) {
-					$row['status'] = 'conflict: repeated target';
-					$plan[$seenTargets[$row['post_id']]]['status'] = 'conflict: repeated target';
-				}
-				else {
-					$seenTargets[$row['post_id']] = count( $plan );
+				if ( isset( $seen_targets[ $row['post_id'] ] ) ) {
+					$row['status']                                      = 'conflict: repeated target';
+					$plan[ $seen_targets[ $row['post_id'] ] ]['status'] = 'conflict: repeated target';
+				} else {
+					$seen_targets[ $row['post_id'] ] = count( $plan );
 				}
 			}
 			$plan[] = $row;
@@ -608,11 +623,10 @@ final class ElementorJsonImport {
 		return $plan;
 	}
 	/**
-     * Infer only recognized export filename forms. Unknown suffixes are left
-     * untouched so an accidental filename never becomes a fuzzy target.
-     * Every inferred slug still requires exactly one matching post type.
-     */
-
+	 * Infer only recognized export filename forms. Unknown suffixes are left
+	 * untouched so an accidental filename never becomes a fuzzy target.
+	 * Every inferred slug still requires exactly one matching post type.
+	 */
 	private function bulkFilenameSlug( string $filename ): string {
 		$stem = sanitize_title( (string) pathinfo( $filename, PATHINFO_FILENAME ) );
 		if ( preg_match( '/^(.+)-elementor(?:-(?:with-site-parts|seo-herzien|lang-min125))?(?:-[1-9][0-9]*)?$/D', $stem, $match ) ) {
@@ -657,10 +671,13 @@ final class ElementorJsonImport {
 	private function importUrl( string $postType, int $postId ): string {
 		$slug = 'page' === $postType ? 'wpconnector-import-elementor-page' : ( 'post' === $postType ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
 		$base = 'post' === $postType ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $postType );
-		return add_query_arg( array(
-			'page'    => $slug,
-			'post_id' => $postId,
-		), $base );
+		return add_query_arg(
+			array(
+				'page'    => $slug,
+				'post_id' => $postId,
+			),
+			$base
+		);
 	}
 
 	/**

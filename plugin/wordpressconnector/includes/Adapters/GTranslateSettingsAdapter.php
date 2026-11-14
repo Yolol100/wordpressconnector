@@ -20,7 +20,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * preserved. This is deliberately not a generic arbitrary plugin option editor.
  */
 final class GTranslateSettingsAdapter {
-	private const KEYS = array( 'default_language', 'incl_langs', 'fincl_langs', 'detect_browser_language' );
+	private const KEYS      = array( 'default_language', 'incl_langs', 'fincl_langs', 'detect_browser_language' );
 	private const READ_ONLY = array( 'widget_look', 'flag_style', 'show_in_menu', 'float_switcher_open_direction' );
 
 	/**
@@ -35,14 +35,20 @@ final class GTranslateSettingsAdapter {
 			'capability'             => 'manage_options',
 		);
 		$registry->register( 'gtranslate.settings.inspect', array( $this, 'inspect' ), $read );
-		$registry->register( 'gtranslate.settings.update', array( $this, 'update' ),
-			array_merge( $read, array( 'mutation' => true ) ) );
-		$registry->register( 'gtranslate.settings.restore', array( $this, 'restore' ),
+		$registry->register(
+			'gtranslate.settings.update',
+			array( $this, 'update' ),
+			array_merge( $read, array( 'mutation' => true ) )
+		);
+		$registry->register(
+			'gtranslate.settings.restore',
+			array( $this, 'restore' ),
 			array(
 				'privileged' => true,
 				'capability' => 'manage_options',
 				'mutation'   => true,
-			) );
+			)
+		);
 	}
 
 	/**
@@ -56,7 +62,9 @@ final class GTranslateSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
-		if ( $payload ) throw new RuntimeException( 'GTranslate inspection does not accept extra options.' );
+		if ( $payload ) {
+			throw new RuntimeException( 'GTranslate inspection does not accept extra options.' );
+		}
 		$raw = $this->settings();
 		return array(
 			'version'           => $this->version(),
@@ -78,19 +86,21 @@ final class GTranslateSettingsAdapter {
 	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertKeys( $payload, array( 'fields', 'expected_before_fingerprint' ) );
-		$raw = $this->settings();
-		$before = $this->publicFields( $raw );
+		$raw         = $this->settings();
+		$before      = $this->publicFields( $raw );
 		$fingerprint = Fingerprint::make( $raw );
-		$patch = $this->validatePatch( $payload['fields'] ?? null );
-		$afterRaw = array_replace( $raw, $patch );
-		$this->ensureLanguages( $afterRaw );
+		$patch       = $this->validatePatch( $payload['fields'] ?? null );
+		$after_raw   = array_replace( $raw, $patch );
+		$this->ensureLanguages( $after_raw );
 		$preview = array(
 			'before'               => $before,
-			'after'                => $this->publicFields( $afterRaw ),
+			'after'                => $this->publicFields( $after_raw ),
 			'before_fingerprint'   => $fingerprint,
 			'_current_fingerprint' => $fingerprint,
 		);
-		if ( ! empty( $context['dry_run'] ) ) return $preview;
+		if ( ! empty( $context['dry_run'] ) ) {
+			return $preview;
+		}
 		$this->expectedFingerprint( $payload['expected_before_fingerprint'] ?? null, $fingerprint );
 
 		$old = array();
@@ -101,22 +111,26 @@ final class GTranslateSettingsAdapter {
 			);
 		}
 
-		update_option( 'GTranslate', $afterRaw );
+		update_option( 'GTranslate', $after_raw );
 		$actual = $this->settings();
 		foreach ( $patch as $key => $new ) {
 			if ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $new ) {
-				try { update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {}
-				throw new RuntimeException( 'GTranslate did not retain requested settings; previous state restoration attempted.' );
+				try {
+					update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {
+					}
+					throw new RuntimeException( 'GTranslate did not retain requested settings; previous state restoration attempted.' );
 			}
 		}
 		foreach ( $raw as $key => $value ) {
 			if ( ! array_key_exists( $key, $patch )
 				&& ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $value ) ) {
-				try { update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {}
-				throw new RuntimeException( 'GTranslate modified unrelated settings; previous state restoration attempted.' );
+				try {
+					update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {
+					}
+					throw new RuntimeException( 'GTranslate modified unrelated settings; previous state restoration attempted.' );
 			}
 		}
-		$preview['after'] = $this->publicFields( $actual );
+		$preview['after']     = $this->publicFields( $actual );
 		$preview['_rollback'] = array(
 			'action'  => 'gtranslate.settings.restore',
 			'payload' => array(
@@ -138,8 +152,12 @@ final class GTranslateSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function restore( array $payload, array $context ): array {
-		if ( empty( $context['rollback_mode'] ) ) throw new RuntimeException( 'GTranslate restoration is rollback-only.' );
-		if ( ! current_user_can( 'manage_options' ) ) throw new RuntimeException( 'GTranslate restoration requires manage_options.' );
+		if ( empty( $context['rollback_mode'] ) ) {
+			throw new RuntimeException( 'GTranslate restoration is rollback-only.' );
+		}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			throw new RuntimeException( 'GTranslate restoration requires manage_options.' );
+		}
 		$this->assertKeys( $payload, array( 'previous_fields', 'expected_after_fingerprint' ) );
 		$raw = $this->settings();
 		$this->expectedFingerprint( $payload['expected_after_fingerprint'] ?? null, Fingerprint::make( $raw ) );
@@ -163,10 +181,12 @@ final class GTranslateSettingsAdapter {
 				$before[ $key ] = $entry['value'];
 			}
 		}
-		if ( ! empty( $context['dry_run'] ) ) return array(
-			'would_restore'        => array_keys( $entries ),
-			'_current_fingerprint' => Fingerprint::make( $raw ),
-		);
+		if ( ! empty( $context['dry_run'] ) ) {
+			return array(
+				'would_restore'        => array_keys( $entries ),
+				'_current_fingerprint' => Fingerprint::make( $raw ),
+			);
+		}
 		update_option( 'GTranslate', $before );
 		if ( $this->settings() !== $before ) {
 			throw new RuntimeException( 'GTranslate rollback readback does not match.' );
@@ -190,8 +210,8 @@ final class GTranslateSettingsAdapter {
 		if ( ! function_exists( 'get_plugins' ) || ! function_exists( 'is_plugin_active' ) ) {
 			throw new RuntimeException( 'WordPress plugin inventory is unavailable.' );
 		}
-		$all = get_plugins();
-		$entry = $all['gtranslate/gtranslate.php'] ?? null;
+		$all     = get_plugins();
+		$entry   = $all['gtranslate/gtranslate.php'] ?? null;
 		$version = is_array( $entry ) ? ( $entry['Version'] ?? '' ) : '';
 		if ( ! is_plugin_active( 'gtranslate/gtranslate.php' ) || ! is_string( $version )
 			|| ! preg_match( '/^5\\.0\\.[0-9]+$/D', $version ) ) {
@@ -227,7 +247,7 @@ final class GTranslateSettingsAdapter {
 		$out = array();
 		foreach ( array_merge( self::KEYS, self::READ_ONLY ) as $key ) {
 			$value = $raw[ $key ] ?? null;
-			if ( $value === null || is_bool( $value ) || is_int( $value )
+			if ( null === $value || is_bool( $value ) || is_int( $value )
 				|| ( is_string( $value ) && strlen( $value ) <= 100 ) ) {
 				$out[ $key ] = $value;
 			} elseif ( is_array( $value ) && count( $value ) <= 80
@@ -258,15 +278,15 @@ final class GTranslateSettingsAdapter {
 			if ( ! in_array( $key, self::KEYS, true ) ) {
 				throw new RuntimeException( 'GTranslate setting is not in the write allowlist.' );
 			}
-			if ( $key === 'default_language' ) {
-				if ( $value !== 'nl' && $value !== 'en' ) {
+			if ( 'default_language' === $key ) {
+				if ( 'nl' !== $value && 'en' !== $value ) {
 					throw new RuntimeException( 'Supported GTranslate source language must be Dutch or English.' );
 				}
-			} elseif ( $key === 'incl_langs' || $key === 'fincl_langs' ) {
+			} elseif ( 'incl_langs' === $key || 'fincl_langs' === $key ) {
 				if ( ! is_array( $value ) || array_values( array_unique( $value ) ) !== array( 'nl', 'en' ) ) {
 					throw new RuntimeException( 'TPS Pack GTranslate languages must be exactly Dutch and English.' );
 				}
-			} elseif ( $value !== 0 && $value !== 1 ) {
+			} elseif ( 0 !== $value && 1 !== $value ) {
 				throw new RuntimeException( 'GTranslate browser-language detection accepts 0 or 1.' );
 			}
 			$out[ $key ] = $value;

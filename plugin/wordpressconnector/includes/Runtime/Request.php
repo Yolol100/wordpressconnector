@@ -45,13 +45,13 @@ final class Request {
 		?string $expectedFingerprint,
 		?string $expectedStateToken
 	) {
-		$this->id = $id;
-		$this->action = $action;
-		$this->payload = $payload;
-		$this->dryRun = $dryRun;
-		$this->confirm = $confirm;
+		$this->id                  = $id;
+		$this->action              = $action;
+		$this->payload             = $payload;
+		$this->dryRun              = $dryRun;
+		$this->confirm             = $confirm;
 		$this->expectedFingerprint = $expectedFingerprint;
-		$this->expectedStateToken = $expectedStateToken;
+		$this->expectedStateToken  = $expectedStateToken;
 	}
 
 	/**
@@ -116,7 +116,7 @@ final class Request {
 		}
 		$payload = $data['payload'];
 
-		$dryRun  = true;
+		$dryRun = true;
 		if ( array_key_exists( 'dry_run', $data ) ) {
 			if ( ! is_bool( $data['dry_run'] ) ) {
 				throw new RuntimeException( 'dry_run must be boolean.' );
@@ -138,14 +138,14 @@ final class Request {
 		if ( class_exists( Policy::class ) && Policy::publicRepositoryContext() ) {
 			if ( 'connector.read_batch' === $action ) {
 				$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
-				$safeReads  = array( 'post.list', 'post.get', 'acf.field_groups', 'elementor.inspect', 'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect' );
+				$safe_reads = array( 'post.list', 'post.get', 'acf.field_groups', 'elementor.inspect', 'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect' );
 				if ( array_keys( $payload ) !== array( 'operations' ) || ! $operations || count( $operations ) > 25 ) {
 					throw new RuntimeException( 'Public read batch requires 1-25 operations.' );
 				}
 				foreach ( $operations as $index => $operation ) {
 					$leaf = is_array( $operation ) && isset( $operation['action'] ) && is_string( $operation['action'] ) ? $operation['action'] : '';
-					if ( ! in_array( $leaf, $safeReads, true ) || ! isset( $operation['payload'] ) || ! is_array( $operation['payload'] )
- || array_diff( array_keys( $operation ), array( 'action', 'payload' ) ) ) {
+					if ( ! in_array( $leaf, $safe_reads, true ) || ! isset( $operation['payload'] ) || ! is_array( $operation['payload'] )
+					|| array_diff( array_keys( $operation ), array( 'action', 'payload' ) ) ) {
 						throw new RuntimeException( 'Unsafe public read batch operation at index ' . $index . '.' );
 					}
 				}
@@ -154,20 +154,20 @@ final class Request {
 			if ( 'connector.batch' === $action ) {
 				$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
 				foreach ( $operations as $index => $operation ) {
-					$leafAction = is_array( $operation ) && isset( $operation['action'] ) ? (string) $operation['action'] : '';
-					if ( ! in_array( $leafAction, array( 'post.update', 'acf.update' ), true ) ) {
-						throw new RuntimeException( 'Public connector.batch operation is not allowed at index ' . $index . ': ' . $leafAction . '.' );
+					$leaf_action = is_array( $operation ) && isset( $operation['action'] ) ? (string) $operation['action'] : '';
+					if ( ! in_array( $leaf_action, array( 'post.update', 'acf.update' ), true ) ) {
+						throw new RuntimeException( 'Public connector.batch operation is not allowed at index ' . $index . ': ' . $leaf_action . '.' );
 					}
 				}
 			}
 
-			$fingerprintRequired = array(
+			$fingerprint_required = array(
 				'acf.schema.ensure_text_fields',
 				'elementor.patch_element',
 				'connector.update.apply',
 				'plugin.install_package',
 			);
-			if ( ! $dryRun && in_array( $action, $fingerprintRequired, true ) && null === $expectedFingerprint ) {
+			if ( ! $dryRun && in_array( $action, $fingerprint_required, true ) && null === $expectedFingerprint ) {
 				throw new RuntimeException( 'Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.' );
 			}
 		}
