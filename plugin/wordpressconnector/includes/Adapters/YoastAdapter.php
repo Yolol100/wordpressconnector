@@ -215,14 +215,14 @@ final class YoastAdapter {
 	/**
 	 * Process the snapshot operation in the Yoast adapter.
 	 *
-	 * @param int $postId Input for the operation.
+	 * @param int $post_id Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function snapshot( int $postId ): array {
+	private function snapshot( int $post_id ): array {
 		$result = array();
 		foreach ( self::FIELDS as $field => $meta_key ) {
-			$value            = get_post_meta( $postId, $meta_key, true );
+			$value            = get_post_meta( $post_id, $meta_key, true );
 			$result[ $field ] = '' === $value ? null : (string) $value;
 		}
 		return $result;

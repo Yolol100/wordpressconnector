@@ -614,24 +614,24 @@ final class Runner {
 	 * @param string      $action Input for the operation.
 	 * @param array       $payload Requested action payload.
 	 * @param array       $descriptor Input for the operation.
-	 * @param bool        $dryRun Input for the operation.
-	 * @param string|null $expectedFingerprint Input for the operation.
+	 * @param bool        $dry_run Input for the operation.
+	 * @param string|null $expected_fingerprint Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicDescriptor( string $action, array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint ): array {
+	private function publicDescriptor( string $action, array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
 		if ( 'elementor.header_links.inspect' === $action ) {
-			return $this->publicHeaderLinksInspectDescriptor( $payload, $descriptor, $dryRun );
+			return $this->publicHeaderLinksInspectDescriptor( $payload, $descriptor, $dry_run );
 		}
 		if ( 'elementor.header_links.replace' === $action ) {
-			return $this->publicHeaderLinksReplaceDescriptor( $payload, $descriptor, $dryRun, $expectedFingerprint );
+			return $this->publicHeaderLinksReplaceDescriptor( $payload, $descriptor, $dry_run, $expected_fingerprint );
 		}
 		if ( 'yoast.snippet.inspect' === $action || 'yoast.snippet.update' === $action ) {
 			$inspect = 'yoast.snippet.inspect' === $action;
 			if ( $inspect ) {
-				if ( array_keys( $payload ) !== array( 'id' ) || ! is_int( $payload['id'] ) || $payload['id'] < 1 || ! $dryRun ) {
+				if ( array_keys( $payload ) !== array( 'id' ) || ! is_int( $payload['id'] ) || $payload['id'] < 1 || ! $dry_run ) {
 					throw new RuntimeException( 'Public snippet inspection requires only an id and dry-run.' );
 				}
 			} else {
@@ -640,7 +640,7 @@ final class Runner {
 					throw new RuntimeException( 'Public snippet edit accepts only id and fields.' );
 				}
 				\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields( $payload['fields'] ?? null );
-				if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+				if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 					throw new RuntimeException( 'Confirmed snippet edit requires expected_fingerprint from dry-run.' );
 				}
 			}
@@ -675,7 +675,7 @@ final class Runner {
 						throw new RuntimeException( 'Public Yoast template field or value is not allowed.' );
 					}
 				}
-				if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+				if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 					throw new RuntimeException( 'Confirmed public Yoast templates require a dry-run fingerprint.' );
 				}
 			}
@@ -684,21 +684,21 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( in_array( $action, array( 'gtranslate.settings.update', 'yoast.site_representation.update' ), true ) ) {
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public provider settings update requires expected_fingerprint from dry-run.' );
 			}
 			return $descriptor;
 		}
 
 		if ( 'site.identity.update' === $action ) {
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed site identity update requires expected_fingerprint from the preceding dry-run.' );
 			}
 			return $descriptor;
 		}
 
 		if ( 'post.literal_replace' === $action ) {
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed literal replacement requires expected_fingerprint from the preceding dry-run.' );
 			}
 			return $descriptor;
@@ -711,7 +711,7 @@ final class Runner {
 		}
 		if ( 'acf.portfolio_stats_update' === $action ) {
 			$this->assertPublicPortfolioStatsPayload( $payload );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio stats update requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged']             = false;
@@ -720,7 +720,7 @@ final class Runner {
 		}
 		if ( 'portfolio.case_text_update' === $action ) {
 			$this->assertPublicPortfolioCaseTextPayload( $payload );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio case text update requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged']             = false;
@@ -734,7 +734,7 @@ final class Runner {
 		}
 		if ( 'custom_css.patch' === $action ) {
 			$this->assertPublicCustomCssPayload( $payload, true );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public custom_css.patch requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged']             = false;
@@ -743,7 +743,7 @@ final class Runner {
 		}
 		if ( 'maintenance.cache_flush' === $action ) {
 			$this->assertPublicCacheFlushPayload( $payload );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public cache flush requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged']             = false;
@@ -752,7 +752,7 @@ final class Runner {
 		}
 		if ( 'code_snippets.patch' === $action ) {
 			$this->assertPublicCodeSnippetsPatchPayload( $payload );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public Code Snippets patch requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged']             = false;
@@ -771,7 +771,7 @@ final class Runner {
 			|| $payload['overwrite'] !== false ) {
 				throw new RuntimeException( 'Public theme packages require a new theme, exact ZIP checksum and overwrite=false.' );
 			}
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public theme install requires preceding dry-run fingerprint.' );
 			}
 			$descriptor['public_repository_safe'] = true;
@@ -779,7 +779,7 @@ final class Runner {
 		}
 		if ( 'plugin.install_package' === $action ) {
 			$this->assertPublicPluginInstallPayload( $payload );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public plugin package install requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['public_repository_safe'] = true;
@@ -795,7 +795,7 @@ final class Runner {
 				throw new RuntimeException( 'Rollback snapshot was not found.' );
 			}
 			$this->assertPublicRollbackRecord( $record );
-			if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expectedFingerprint ) ) ) {
+			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public rollback requires expected_fingerprint from the preceding dry-run.' );
 			}
 			$descriptor['privileged'] = false;
@@ -809,13 +809,13 @@ final class Runner {
 	 *
 	 * @param array $payload Requested action payload.
 	 * @param array $descriptor Input for the operation.
-	 * @param bool  $dryRun Input for the operation.
+	 * @param bool  $dry_run Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicHeaderLinksInspectDescriptor( array $payload, array $descriptor, bool $dryRun ): array {
+	private function publicHeaderLinksInspectDescriptor( array $payload, array $descriptor, bool $dry_run ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'checks' ) )
 		|| ! is_int( $payload['post_id'] ?? null ) || $payload['post_id'] < 1 ) {
 			throw new RuntimeException( 'Header diagnostics require only a positive post_id and checks.' );
@@ -841,7 +841,7 @@ final class Runner {
 			}
 			$seen[ $id ] = true;
 		}
-		if ( ! $dryRun ) {
+		if ( ! $dry_run ) {
 			throw new RuntimeException( 'Header diagnostics are read-only.' );
 		}
 		$descriptor['privileged']             = false;
@@ -854,14 +854,14 @@ final class Runner {
 	 *
 	 * @param array       $payload Requested action payload.
 	 * @param array       $descriptor Input for the operation.
-	 * @param bool        $dryRun Input for the operation.
-	 * @param string|null $expectedFingerprint Input for the operation.
+	 * @param bool        $dry_run Input for the operation.
+	 * @param string|null $expected_fingerprint Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicHeaderLinksReplaceDescriptor( array $payload, array $descriptor, bool $dryRun, ?string $expectedFingerprint ): array {
+	private function publicHeaderLinksReplaceDescriptor( array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'changes' ) )
 		|| ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] < 1 ) {
 			throw new RuntimeException( 'Header link repair requires only post_id and changes.' );
@@ -895,7 +895,7 @@ final class Runner {
 				throw new RuntimeException( 'Header link source and destination must differ.' );
 			}
 		}
-		if ( ! $dryRun && ( null === $expectedFingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expectedFingerprint ) ) ) {
+		if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 			throw new RuntimeException( 'Confirmed public header repair requires expected_fingerprint.' );
 		}
 		$descriptor['privileged']             = false;
@@ -1486,24 +1486,24 @@ final class Runner {
 	 * @param string      $action Input for the operation.
 	 * @param array       $payload Requested action payload.
 	 * @param array       $context Authorized execution context.
-	 * @param string|null $expectedFingerprint Input for the operation.
-	 * @param string|null $expectedStateToken Input for the operation.
+	 * @param string|null $expected_fingerprint Input for the operation.
+	 * @param string|null $expected_state_token Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function executeWithStateGuards( string $action, array $payload, array $context, ?string $expectedFingerprint, ?string $expectedStateToken ): array {
-		if ( ( null !== $expectedFingerprint || null !== $expectedStateToken ) && empty( $context['dry_run'] ) ) {
+	private function executeWithStateGuards( string $action, array $payload, array $context, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+		if ( ( null !== $expected_fingerprint || null !== $expected_state_token ) && empty( $context['dry_run'] ) ) {
 			$preview = $this->registry->execute( $action, $payload, array_merge( $context, array( 'dry_run' => true ) ) );
 			if ( ! isset( $preview['_current_fingerprint'] ) || ! is_string( $preview['_current_fingerprint'] ) ) {
 				throw new RuntimeException( 'Action cannot enforce stale-state protection: ' . $action );
 			}
 			$current = $preview['_current_fingerprint'];
-			if ( null !== $expectedFingerprint && ! hash_equals( $expectedFingerprint, $current ) ) {
+			if ( null !== $expected_fingerprint && ! hash_equals( $expected_fingerprint, $current ) ) {
 				throw new RuntimeException( 'Stale target: expected_fingerprint does not match current state.' );
 			}
-			if ( null !== $expectedStateToken && ! hash_equals( $expectedStateToken, Fingerprint::siteTokenFromFingerprint( $current ) ) ) {
+			if ( null !== $expected_state_token && ! hash_equals( $expected_state_token, Fingerprint::siteTokenFromFingerprint( $current ) ) ) {
 				throw new RuntimeException( 'Stale target: expected_state_token does not match current site state.' );
 			}
 			$context['expected_prewrite_fingerprint'] = $current;

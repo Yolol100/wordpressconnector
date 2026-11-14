@@ -287,14 +287,14 @@ final class GitHubOidc {
 	/**
 	 * Process the jwks operation in the GitHubOidc component.
 	 *
-	 * @param bool $forceRefresh Input for the operation.
+	 * @param bool $force_refresh Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function jwks( bool $forceRefresh ): array {
-		if ( ! $forceRefresh ) {
+	private function jwks( bool $force_refresh ): array {
+		if ( ! $force_refresh ) {
 			$cached = get_transient( self::JWKS_TRANSIENT );
 			if ( is_array( $cached ) && isset( $cached['keys'] ) && is_array( $cached['keys'] ) ) {
 				return $cached['keys'];

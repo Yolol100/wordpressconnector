@@ -533,11 +533,11 @@ final class ConnectorUpdateAdapter {
 	 * Restore after readback failure for the ConnectorUpdate adapter.
 	 *
 	 * @param array  $installation Input for the operation.
-	 * @param string $expectedVersion Input for the operation.
+	 * @param string $expected_version Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function restoreAfterReadbackFailure( array $installation, string $expectedVersion ): void {
+	private function restoreAfterReadbackFailure( array $installation, string $expected_version ): void {
 		$upgrader = $installation['upgrader'];
 		$backup   = $installation['backup'];
 		// A failed readback must never turn into an unconditional directory
@@ -551,7 +551,7 @@ final class ConnectorUpdateAdapter {
 		wp_clean_plugins_cache( true );
 		$plugins = get_plugins();
 		$version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
-		if ( true !== $restored || ! hash_equals( $expectedVersion, $version ) ) {
+		if ( true !== $restored || ! hash_equals( $expected_version, $version ) ) {
 			throw new RuntimeException( 'Connector update readback failed and automatic recovery was not verified. Restore externally before retrying.' );
 		}
 	}

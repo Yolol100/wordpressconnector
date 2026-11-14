@@ -338,13 +338,13 @@ final class Controller {
 	 *
 	 * @param array $result Value used by this operation.
 	 * @param bool  $modern Value used by this operation.
-	 * @param int   $ttlMs Value used by this operation.
+	 * @param int   $ttl_ms Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function privateCache( array $result, bool $modern, int $ttlMs ): array {
+	private function privateCache( array $result, bool $modern, int $ttl_ms ): array {
 		if ( $modern ) {
-			$result['ttlMs']      = $ttlMs;
+			$result['ttlMs']      = $ttl_ms;
 			$result['cacheScope'] = 'private';
 		}
 		return $result;
@@ -595,14 +595,14 @@ final class Controller {
 	/**
 	 * Process the call tool operation in the MCP controller.
 	 *
-	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param mixed $rpc_id Identifier of the requested object.
 	 * @param array $params Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function callTool( $rpcId, array $params ): array {
+	private function callTool( $rpc_id, array $params ): array {
 		$allowed = array( 'name', 'arguments', '_meta' );
 		foreach ( array_keys( $params ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
@@ -623,12 +623,12 @@ final class Controller {
 
 		if ( 'wordpress_connector_discover' === $name ) {
 			$this->assertNoArguments( $arguments, $name );
-			$result = $this->runSemantic( $rpcId, $name, 'connector.discover', array(), true, false, null, null, null );
+			$result = $this->runSemantic( $rpc_id, $name, 'connector.discover', array(), true, false, null, null, null );
 			return $this->toolResult( $result, empty( $result['ok'] ) );
 		}
 
 		if ( 'wordpress_connector_execute' === $name ) {
-			return $this->executeTool( $rpcId, $name, $arguments );
+			return $this->executeTool( $rpc_id, $name, $arguments );
 		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
@@ -637,13 +637,13 @@ final class Controller {
 	/**
 	 * Process the execute tool operation in the MCP controller.
 	 *
-	 * @param mixed  $rpcId Identifier of the requested object.
-	 * @param string $toolName Value used by this operation.
+	 * @param mixed  $rpc_id Identifier of the requested object.
+	 * @param string $tool_name Value used by this operation.
 	 * @param array  $arguments Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function executeTool( $rpcId, string $toolName, array $arguments ): array {
+	private function executeTool( $rpc_id, string $tool_name, array $arguments ): array {
 		$allowed = array( 'action', 'payload', 'dry_run', 'confirm', 'request_id', 'expected_fingerprint', 'expected_state_token' );
 		foreach ( array_keys( $arguments ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
@@ -684,8 +684,8 @@ final class Controller {
 
 		try {
 			$result = $this->runSemantic(
-				$rpcId,
-				$toolName,
+				$rpc_id,
+				$tool_name,
 				$action,
 				$arguments['payload'],
 				$dryRun,
@@ -704,36 +704,36 @@ final class Controller {
 	/**
 	 * Process the run semantic operation in the MCP controller.
 	 *
-	 * @param mixed       $rpcId Identifier of the requested object.
-	 * @param string      $toolName Value used by this operation.
+	 * @param mixed       $rpc_id Identifier of the requested object.
+	 * @param string      $tool_name Value used by this operation.
 	 * @param string      $action Value used by this operation.
 	 * @param array       $payload Requested action payload.
-	 * @param bool        $dryRun Value used by this operation.
+	 * @param bool        $dry_run Value used by this operation.
 	 * @param bool        $confirm Value used by this operation.
-	 * @param string|null $requestId Identifier of the requested object.
-	 * @param string|null $expectedFingerprint Value used by this operation.
-	 * @param string|null $expectedStateToken Value used by this operation.
+	 * @param string|null $request_id Identifier of the requested object.
+	 * @param string|null $expected_fingerprint Value used by this operation.
+	 * @param string|null $expected_state_token Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function runSemantic( $rpcId, string $toolName, string $action, array $payload, bool $dryRun, bool $confirm, ?string $requestId, ?string $expectedFingerprint, ?string $expectedStateToken ): array {
-		if ( null === $requestId ) {
-			$requestId = $this->generatedRequestId( $rpcId, $toolName, $action, $payload );
+	private function runSemantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+		if ( null === $request_id ) {
+			$request_id = $this->generatedRequestId( $rpc_id, $tool_name, $action, $payload );
 		}
 
 		$data = array(
 			'version'    => 1,
-			'request_id' => $requestId,
+			'request_id' => $request_id,
 			'action'     => $action,
-			'dry_run'    => $dryRun,
+			'dry_run'    => $dry_run,
 			'confirm'    => $confirm,
 			'payload'    => $payload,
 		);
-		if ( null !== $expectedFingerprint ) {
-			$data['expected_fingerprint'] = $expectedFingerprint;
+		if ( null !== $expected_fingerprint ) {
+			$data['expected_fingerprint'] = $expected_fingerprint;
 		}
-		if ( null !== $expectedStateToken ) {
-			$data['expected_state_token'] = $expectedStateToken;
+		if ( null !== $expected_state_token ) {
+			$data['expected_state_token'] = $expected_state_token;
 		}
 
 		$connector_request = Request::fromArray( $data );
@@ -803,11 +803,11 @@ final class Controller {
 	 * Process the tool result operation in the MCP controller.
 	 *
 	 * @param array $value Value used by this operation.
-	 * @param bool  $isError Value used by this operation.
+	 * @param bool  $is_error Value used by this operation.
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function toolResult( array $value, bool $isError ): array {
+	private function toolResult( array $value, bool $is_error ): array {
 		return array(
 			'content'           => array(
 				array(
@@ -816,7 +816,7 @@ final class Controller {
 				),
 			),
 			'structuredContent' => array( 'result' => $value ),
-			'isError'           => $isError,
+			'isError'           => $is_error,
 		);
 	}
 
@@ -853,8 +853,8 @@ final class Controller {
 	/**
 	 * Process the generated request id operation in the MCP controller.
 	 *
-	 * @param mixed  $rpcId Identifier of the requested object.
-	 * @param string $toolName Value used by this operation.
+	 * @param mixed  $rpc_id Identifier of the requested object.
+	 * @param string $tool_name Value used by this operation.
 	 * @param string $action Value used by this operation.
 	 * @param array  $payload Requested action payload.
 	 *
@@ -862,11 +862,11 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function generatedRequestId( $rpcId, string $toolName, string $action, array $payload ): string {
+	private function generatedRequestId( $rpc_id, string $tool_name, string $action, array $payload ): string {
 		$json = json_encode(
 			array(
-				'rpc_id'  => $rpcId,
-				'tool'    => $toolName,
+				'rpc_id'  => $rpc_id,
+				'tool'    => $tool_name,
 				'action'  => $action,
 				'payload' => $payload,
 				'user_id' => get_current_user_id(),
@@ -901,13 +901,13 @@ final class Controller {
 	 * Ensure no arguments in the MCP controller.
 	 *
 	 * @param array  $arguments Value used by this operation.
-	 * @param string $toolName Value used by this operation.
+	 * @param string $tool_name Value used by this operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertNoArguments( array $arguments, string $toolName ): void {
+	private function assertNoArguments( array $arguments, string $tool_name ): void {
 		if ( array() !== $arguments ) {
-			throw new RuntimeException( $toolName . ' does not accept arguments.' );
+			throw new RuntimeException( $tool_name . ' does not accept arguments.' );
 		}
 	}
 

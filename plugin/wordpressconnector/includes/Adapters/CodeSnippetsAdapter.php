@@ -163,11 +163,11 @@ final class CodeSnippetsAdapter {
 	 * Process the catalog guard operation in the CodeSnippets adapter.
 	 *
 	 * @param object|null $snippet Input for the operation.
-	 * @param string      $expectedCode Input for the operation.
+	 * @param string      $expected_code Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function catalogGuard( ?object $snippet, string $expectedCode ): void {
+	private function catalogGuard( ?object $snippet, string $expected_code ): void {
 		if ( null === $snippet ) {
 			return;
 		}
@@ -175,7 +175,7 @@ final class CodeSnippetsAdapter {
 		if ( $state['id'] <= 0 || $state['name'] !== self::CATALOG_NAME ||
 			'global' !== $state['scope'] || 'php' !== $state['type'] ||
 			$state['network'] || $state['trashed'] || $state['locked'] ||
-			! hash_equals( hash( 'sha256', $expectedCode ), $state['code_sha256'] ) ) {
+			! hash_equals( hash( 'sha256', $expected_code ), $state['code_sha256'] ) ) {
 			throw new RuntimeException( 'Existing catalogue snippet differs from audited preset. No changes performed.' );
 		}
 	}
@@ -561,15 +561,15 @@ final class CodeSnippetsAdapter {
 	/**
 	 * Retrieve snippet for the CodeSnippets adapter.
 	 *
-	 * @param int $snippetId Input for the operation.
+	 * @param int $snippet_id Input for the operation.
 	 *
 	 * @return mixed Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function getSnippet( int $snippetId ) {
-		$snippet = \Code_Snippets\get_snippet( $snippetId, false );
-		if ( ! is_object( $snippet ) || (int) ( $snippet->id ?? 0 ) !== $snippetId ) {
+	private function getSnippet( int $snippet_id ) {
+		$snippet = \Code_Snippets\get_snippet( $snippet_id, false );
+		if ( ! is_object( $snippet ) || (int) ( $snippet->id ?? 0 ) !== $snippet_id ) {
 			throw new RuntimeException( 'Code Snippets target was not found.' );
 		}
 		return $snippet;
@@ -624,17 +624,17 @@ final class CodeSnippetsAdapter {
 	/**
 	 * Write code for the CodeSnippets adapter.
 	 *
-	 * @param int    $snippetId Input for the operation.
+	 * @param int    $snippet_id Input for the operation.
 	 * @param string $code Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function writeCode( int $snippetId, string $code ): void {
+	private function writeCode( int $snippet_id, string $code ): void {
 		if ( strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets code exceeds the 1 MiB connector limit.' );
 		}
 
-		\Code_Snippets\update_snippet_fields( $snippetId, array( 'code' => $code ), false );
+		\Code_Snippets\update_snippet_fields( $snippet_id, array( 'code' => $code ), false );
 	}
 
 	/**

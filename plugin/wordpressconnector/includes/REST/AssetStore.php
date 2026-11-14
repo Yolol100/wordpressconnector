@@ -159,20 +159,20 @@ final class AssetStore {
 	/**
 	 * Process the allowed file type operation in the AssetStore component.
 	 *
-	 * @param string $relativePath Input for the operation.
+	 * @param string $relative_path Input for the operation.
 	 *
 	 * @return array Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function allowedFileType( string $relativePath ): array {
-		$basename  = basename( $relativePath );
+	private function allowedFileType( string $relative_path ): array {
+		$basename  = basename( $relative_path );
 		$file_type = wp_check_filetype( $basename, get_allowed_mime_types() );
 		if ( ! empty( $file_type['ext'] ) && ! empty( $file_type['type'] ) ) {
 			return $file_type;
 		}
 
-		if ( preg_match( '#^(?:plugin-packages|theme-packages)/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relativePath ) ) {
+		if ( preg_match( '#^(?:plugin-packages|theme-packages)/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.zip\z#', $relative_path ) ) {
 			$zip_type = wp_check_filetype( $basename, array( 'zip' => 'application/zip' ) );
 			if ( ! empty( $zip_type['ext'] ) && ! empty( $zip_type['type'] ) ) {
 				return $zip_type;
@@ -331,12 +331,12 @@ final class AssetStore {
 	/**
 	 * Ensure request id for the AssetStore component.
 	 *
-	 * @param string $requestId Input for the operation.
+	 * @param string $request_id Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertRequestId( string $requestId ): void {
-		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $requestId ) ) {
+	private function assertRequestId( string $request_id ): void {
+		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $request_id ) ) {
 			throw new RuntimeException( 'request_id must be 8-100 safe characters.' );
 		}
 	}

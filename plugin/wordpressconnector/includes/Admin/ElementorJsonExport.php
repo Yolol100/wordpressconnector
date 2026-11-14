@@ -102,22 +102,22 @@ final class ElementorJsonExport {
 	/**
 	 * Process the export url operation in the ElementorJsonExport component.
 	 *
-	 * @param int  $postId Input for the operation.
-	 * @param bool $includeSiteParts Input for the operation.
+	 * @param int  $post_id Input for the operation.
+	 * @param bool $include_site_parts Input for the operation.
 	 *
 	 * @return string Operation result.
 	 */
-	private function exportUrl( int $postId, bool $includeSiteParts ): string {
+	private function exportUrl( int $post_id, bool $include_site_parts ): string {
 		return wp_nonce_url(
 			add_query_arg(
 				array(
 					'action'             => self::ACTION,
-					'post_id'            => $postId,
-					'include_site_parts' => $includeSiteParts ? 1 : 0,
+					'post_id'            => $post_id,
+					'include_site_parts' => $include_site_parts ? 1 : 0,
 				),
 				admin_url( 'admin-post.php' )
 			),
-			self::ACTION . '_' . $postId
+			self::ACTION . '_' . $post_id
 		);
 	}
 
@@ -180,11 +180,11 @@ final class ElementorJsonExport {
 	 * Process the bundle with site parts operation in the ElementorJsonExport component.
 	 *
 	 * @param \WP_Post $post Input for the operation.
-	 * @param array    $documentPayload Input for the operation.
+	 * @param array    $document_payload Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function bundleWithSiteParts( \WP_Post $post, array $documentPayload ): array {
+	private function bundleWithSiteParts( \WP_Post $post, array $document_payload ): array {
 		$parts = $this->sitePartsForPost( $post );
 		return array(
 			'format'         => self::BUNDLE_FORMAT,
@@ -194,7 +194,7 @@ final class ElementorJsonExport {
 				'post_type' => (string) $post->post_type,
 				'title'     => (string) $post->post_title,
 			),
-			'document'       => $documentPayload,
+			'document'       => $document_payload,
 			'header'         => isset( $parts['header']['payload'] ) ? $parts['header']['payload'] : null,
 			'footer'         => isset( $parts['footer']['payload'] ) ? $parts['footer']['payload'] : null,
 			'site_part_meta' => array(
@@ -305,29 +305,29 @@ final class ElementorJsonExport {
 	/**
 	 * Process the with singular query operation in the ElementorJsonExport component.
 	 *
-	 * @param \WP_Post $sourcePost Input for the operation.
+	 * @param \WP_Post $source_post Input for the operation.
 	 * @param callable $callback Input for the operation.
 	 *
 	 * @return mixed Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function withSingularQuery( \WP_Post $sourcePost, callable $callback ) {
+	private function withSingularQuery( \WP_Post $source_post, callable $callback ) {
 		global $post, $wp_query, $wp_the_query;
 		$previous_post      = $post ?? null;
 		$previous_query     = $wp_query ?? null;
 		$previous_the_query = $wp_the_query ?? null;
 		$args               = array(
-			'post_type'           => (string) $sourcePost->post_type,
+			'post_type'           => (string) $source_post->post_type,
 			'post_status'         => 'any',
 			'posts_per_page'      => 1,
 			'ignore_sticky_posts' => true,
 			'no_found_rows'       => true,
 		);
-		if ( 'page' === (string) $sourcePost->post_type ) {
-			$args['page_id'] = (int) $sourcePost->ID;
+		if ( 'page' === (string) $source_post->post_type ) {
+			$args['page_id'] = (int) $source_post->ID;
 		} else {
-			$args['p'] = (int) $sourcePost->ID;
+			$args['p'] = (int) $source_post->ID;
 		}
 		$query = new \WP_Query( $args );
 		if ( ! $query->have_posts() ) {
@@ -381,16 +381,16 @@ final class ElementorJsonExport {
 	/**
 	 * Check whether elementor document for the ElementorJsonExport component.
 	 *
-	 * @param int $postId Input for the operation.
+	 * @param int $post_id Input for the operation.
 	 *
 	 * @return bool Operation result.
 	 */
-	private function isElementorDocument( int $postId ): bool {
-		if ( 'builder' !== (string) get_post_meta( $postId, '_elementor_edit_mode', true ) ) {
+	private function isElementorDocument( int $post_id ): bool {
+		if ( 'builder' !== (string) get_post_meta( $post_id, '_elementor_edit_mode', true ) ) {
 			return false;
 		}
 		try {
-			$this->document( $postId );
+			$this->document( $post_id );
 			return true;
 		} catch ( RuntimeException $error ) {
 			return false;
@@ -400,13 +400,13 @@ final class ElementorJsonExport {
 	/**
 	 * Process the document operation in the ElementorJsonExport component.
 	 *
-	 * @param int $postId Input for the operation.
+	 * @param int $post_id Input for the operation.
 	 *
 	 * @return object Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function document( int $postId ): object {
+	private function document( int $post_id ): object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
 		}
@@ -415,7 +415,7 @@ final class ElementorJsonExport {
 		if ( ! is_object( $manager ) || ! method_exists( $manager, 'get' ) ) {
 			throw new RuntimeException( 'Elementor document manager is unavailable.' );
 		}
-		$document = $manager->get( $postId );
+		$document = $manager->get( $post_id );
 		if ( ! is_object( $document ) || ! method_exists( $document, 'get_elements_data' ) || ! method_exists( $document, 'get_export_data' ) ) {
 			throw new RuntimeException( 'This item is not an exportable Elementor document.' );
 		}
@@ -425,11 +425,11 @@ final class ElementorJsonExport {
 	/**
 	 * Check support for post type for the ElementorJsonExport component.
 	 *
-	 * @param string $postType Input for the operation.
+	 * @param string $post_type Input for the operation.
 	 *
 	 * @return bool Operation result.
 	 */
-	private function supportsPostType( string $postType ): bool {
-		return in_array( $postType, self::POST_TYPES, true );
+	private function supportsPostType( string $post_type ): bool {
+		return in_array( $post_type, self::POST_TYPES, true );
 	}
 }
