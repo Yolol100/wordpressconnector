@@ -15,6 +15,15 @@ use RuntimeException;
  * Provides Json utilities shared by connector services.
  */
 final class Json {
+	/**
+	 * Process the decode operation in the Json component.
+	 *
+	 * @param string $json Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function decode( string $json ): array {
 		try {
 			$value = json_decode( $json, true, 512, JSON_THROW_ON_ERROR );
@@ -29,6 +38,16 @@ final class Json {
 		return $value;
 	}
 
+	/**
+	 * Process the encode operation in the Json component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 * @param bool  $pretty Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function encode( $value, bool $pretty = true ): string {
 		$flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 		if ( $pretty ) {
@@ -42,6 +61,15 @@ final class Json {
 		}
 	}
 
+	/**
+	 * Read file for the Json component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function readFile( string $path ): array {
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			throw new RuntimeException( 'JSON file is not readable: ' . $path );
@@ -55,6 +83,15 @@ final class Json {
 		return self::decode( $contents );
 	}
 
+	/**
+	 * Write file atomic for the Json component.
+	 *
+	 * @param string $path Input for the operation.
+	 * @param array  $data Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation cannot be completed safely.
+	 */
 	public static function writeFileAtomic( string $path, array $data ): void {
 		// Encode before any side effects; never overwrite after partial writes.
 		$encoded   = self::encode( $data ) . PHP_EOL;

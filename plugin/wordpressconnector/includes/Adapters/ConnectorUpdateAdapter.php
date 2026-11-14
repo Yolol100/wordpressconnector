@@ -30,6 +30,11 @@ final class ConnectorUpdateAdapter {
 	// Only the already verified local ZIP for the current guarded REST self-update.
 	private $verifiedSelfUpdatePackagePath = null;
 
+	/**
+	 * Register the ConnectorUpdate adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'connector.update.check', array( $this, 'check' ), array(
 			'privileged'             => true,
@@ -128,6 +133,13 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
+	/**
+	 * Process the plugin action links operation in the ConnectorUpdate adapter.
+	 *
+	 * @param array $links Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	public function pluginActionLinks( array $links ): array {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			return $links;
@@ -141,6 +153,9 @@ final class ConnectorUpdateAdapter {
 		return $links;
 	}
 
+	/**
+	 * Process the force native update check operation in the ConnectorUpdate adapter.
+	 */
 	public function forceNativeUpdateCheck(): void {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			wp_die( esc_html__( 'Plugin update permission is required.', 'wordpressconnector' ) );
@@ -157,6 +172,9 @@ final class ConnectorUpdateAdapter {
 		exit;
 	}
 
+	/**
+	 * Process the checked notice operation in the ConnectorUpdate adapter.
+	 */
 	public function checkedNotice(): void {
 		if ( ! current_user_can( 'update_plugins' )
 			|| ! isset( $_GET['wpconnector_update_checked'], $_GET['wpconnector_notice_nonce'] )
@@ -209,6 +227,14 @@ final class ConnectorUpdateAdapter {
 	}
 
 	/** @return array<string, mixed>|false */
+	/**
+	 * Process the native offer from release operation in the ConnectorUpdate adapter.
+	 *
+	 * @param array  $release Input for the operation.
+	 * @param string $installed Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	private function nativeOfferFromRelease( array $release, string $installed ) {
 		if ( '' === $installed || ! version_compare( $release['version'], $installed, '>' ) ) {
 			return false;
@@ -273,6 +299,14 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
+	/**
+	 * Process the check operation in the ConnectorUpdate adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function check( array $payload = array(), array $context = array() ): array {
 		$release = $this->release();
 		$current = defined( 'WPCONNECTOR_VERSION' ) ? (string) WPCONNECTOR_VERSION : '0.0.0';
@@ -293,6 +327,16 @@ final class ConnectorUpdateAdapter {
 		);
 	}
 
+	/**
+	 * Process the apply operation in the ConnectorUpdate adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function apply( array $payload, array $context ): array {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to update plugins.' );
@@ -449,6 +493,14 @@ final class ConnectorUpdateAdapter {
 		return array( 'upgrader' => $upgrader, 'backup' => $backup );
 	}
 
+	/**
+	 * Restore after readback failure for the ConnectorUpdate adapter.
+	 *
+	 * @param array  $installation Input for the operation.
+	 * @param string $expectedVersion Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function restoreAfterReadbackFailure( array $installation, string $expectedVersion ): void {
 		$upgrader = $installation['upgrader'];
 		$backup   = $installation['backup'];
@@ -468,6 +520,15 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
+	/**
+	 * Process the release operation in the ConnectorUpdate adapter.
+	 *
+	 * @param int $timeout Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function release( int $timeout = 10 ): array {
 		$response = wp_safe_remote_get( self::RELEASE_API, array(
 			'timeout'             => $timeout,
@@ -587,6 +648,16 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
+	/**
+	 * Process the checksum operation in the ConnectorUpdate adapter.
+	 *
+	 * @param string $url Input for the operation.
+	 * @param string $expectedAssetDigest Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function checksum( string $url, string $expectedAssetDigest ): string {
 		$response = wp_safe_remote_get( $url, array(
 			'timeout'             => 10,
@@ -613,6 +684,15 @@ final class ConnectorUpdateAdapter {
 		return (string) $matches[1];
 	}
 
+	/**
+	 * Inspect package for the ConnectorUpdate adapter.
+	 *
+	 * @param string $package Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function inspectPackage( string $package ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for connector release verification.' );

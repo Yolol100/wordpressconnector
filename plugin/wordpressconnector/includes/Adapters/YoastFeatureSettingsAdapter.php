@@ -68,6 +68,11 @@ final class YoastFeatureSettingsAdapter {
 		'page_noindex'                 => true,
 	);
 
+	/**
+	 * Register the YoastFeatureSettings adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$security = array(
 			'privileged'  => true,
@@ -79,6 +84,16 @@ final class YoastFeatureSettingsAdapter {
 		$registry->register( 'yoast.features.restore', array( $this, 'restore' ), array_merge( $security, array( 'mutation' => true ) ) );
 	}
 
+	/**
+	 * Process the inspect operation in the YoastFeatureSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		$this->assertPrivateProvider();
 		if ( $payload ) {
@@ -88,6 +103,16 @@ final class YoastFeatureSettingsAdapter {
 		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
 	}
 
+	/**
+	 * Process the update operation in the YoastFeatureSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertPrivateProvider();
 		$fields = $this->validateFields( $payload['fields'] ?? null, false );
@@ -148,6 +173,16 @@ final class YoastFeatureSettingsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the YoastFeatureSettings adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		$this->assertPrivateProvider();
 		if ( empty( $context['rollback_mode'] ) ) {
@@ -210,6 +245,15 @@ final class YoastFeatureSettingsAdapter {
 		}
 	}
 
+	/**
+	 * Process the single group operation in the YoastFeatureSettings adapter.
+	 *
+	 * @param array $fields Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function singleGroup( array $fields ): string {
 		$groups = array();
 		foreach ( $fields as $name => $value ) {
@@ -221,6 +265,16 @@ final class YoastFeatureSettingsAdapter {
 		return ( string ) array_keys( $groups )[0];
 	}
 
+	/**
+	 * Validate fields for the YoastFeatureSettings adapter.
+	 *
+	 * @param mixed $fields Input for the operation.
+	 * @param bool  $restore Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateFields( $fields, bool $restore ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 8 ) {
 			throw new RuntimeException( 'Yoast feature update requires 1-8 allowlisted booleans.' );
@@ -234,6 +288,15 @@ final class YoastFeatureSettingsAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Process the options operation in the YoastFeatureSettings adapter.
+	 *
+	 * @param string $group Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function options( string $group ): array {
 		$options = get_option( $group, null );
 		if ( ! is_array( $options ) ) {
@@ -242,6 +305,13 @@ final class YoastFeatureSettingsAdapter {
 		return $options;
 	}
 
+	/**
+	 * Process the snapshot operation in the YoastFeatureSettings adapter.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function snapshot(): array {
 		$groups = array(
 			'wpseo'        => $this->options( 'wpseo' ),
@@ -263,6 +333,11 @@ final class YoastFeatureSettingsAdapter {
 		return $fields;
 	}
 
+	/**
+	 * Ensure private provider for the YoastFeatureSettings adapter.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertPrivateProvider(): void {
 		if ( Policy::publicRepositoryContext() ) {
 			throw new RuntimeException( 'Yoast feature settings are not exposed in the public GitHub runtime.' );

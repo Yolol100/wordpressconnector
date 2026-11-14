@@ -23,6 +23,11 @@ final class PluginPackageAdapter {
 	private const MAX_UNCOMPRESSED_BYTES = 104857600;
 	private const MAX_ENTRIES = 2500;
 
+	/**
+	 * Register the PluginPackage adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register(
 			'plugin.install_package',
@@ -56,6 +61,17 @@ final class PluginPackageAdapter {
 		);
 	}
 
+	/**
+	 * Process the install theme package operation in the PluginPackage adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation cannot be completed safely.
+	 */
 	public function installThemePackage( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'source_path', 'sha256', 'expected_stylesheet', 'overwrite' ) ) ) {
 			throw new RuntimeException( 'Theme package request contains unsupported fields.' );
@@ -214,6 +230,16 @@ final class PluginPackageAdapter {
 			'rollback_supported' => false, 'readback_verified' => true );
 	}
 
+	/**
+	 * Inspect theme package for the PluginPackage adapter.
+	 *
+	 * @param string $package Input for the operation.
+	 * @param string $expected Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function inspectThemePackage( string $package, string $expected ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for theme package inspection.' );
@@ -274,6 +300,16 @@ final class PluginPackageAdapter {
 		}
 	}
 
+	/**
+	 * Process the install package operation in the PluginPackage adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function installPackage( array $payload, array $context ): array {
 		$asset_root = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $asset_root ) {
@@ -426,6 +462,15 @@ final class PluginPackageAdapter {
 		);
 	}
 
+	/**
+	 * Inspect package for the PluginPackage adapter.
+	 *
+	 * @param string $package Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function inspectPackage( string $package ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for safe plugin package inspection.' );
@@ -531,6 +576,15 @@ final class PluginPackageAdapter {
 		}
 	}
 
+	/**
+	 * Ensure capabilities for the PluginPackage adapter.
+	 *
+	 * @param bool $overwrite Input for the operation.
+	 * @param bool $activate Input for the operation.
+	 * @param bool $networkWide Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertCapabilities( bool $overwrite, bool $activate, bool $networkWide ): void {
 		if ( ! current_user_can( 'install_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to install plugins.' );
@@ -551,12 +605,27 @@ final class PluginPackageAdapter {
 		}
 	}
 
+	/**
+	 * Ensure not self for the PluginPackage adapter.
+	 *
+	 * @param string $pluginFile Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertNotSelf( string $pluginFile ): void {
 		if ( defined( 'WPCONNECTOR_FILE' ) && function_exists( 'plugin_basename' ) && hash_equals( str_replace( '\\', '/', plugin_basename( WPCONNECTOR_FILE ) ), $pluginFile ) ) {
 			throw new RuntimeException( 'WordPress Connector cannot replace its own active runtime through plugin.install_package. Use the repository release/deployment path.' );
 		}
 	}
 
+	/**
+	 * Process the snapshot operation in the PluginPackage adapter.
+	 *
+	 * @param string $pluginFile Input for the operation.
+	 * @param array  $plugins Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( string $pluginFile, array $plugins ): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		if ( ! isset( $plugins[ $pluginFile ] ) ) {

@@ -21,6 +21,11 @@ use Webactueel\WordPressConnector\Support\Input;
  * Registers and handles Elementor connector actions.
  */
 final class ElementorAdapter {
+	/**
+	 * Register the Elementor adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );
 		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array( 'mutation' => true, 'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.' ) );
@@ -31,6 +36,13 @@ final class ElementorAdapter {
 		$registry->register( 'elementor.header_links.inspect', array( $this, 'inspectHeaderLinks' ), array( 'description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.' ) );
 	}
 
+	/**
+	 * Process the inspect operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload ): array {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
@@ -38,6 +50,17 @@ final class ElementorAdapter {
 		return array( 'document' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
 	}
 
+	/**
+	 * Create document for the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation cannot be completed safely.
+	 */
 	public function createDocument( array $payload, array $context ): array {
 		$post_type = isset( $payload['post_type'] ) ? sanitize_key( (string) $payload['post_type'] ) : 'page';
 		if ( ! post_type_exists( $post_type ) ) {
@@ -85,6 +108,14 @@ final class ElementorAdapter {
 		);
 	}
 
+	/**
+	 * Process the replace document operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function replaceDocument( array $payload, array $context ): array {
 		$post         = $this->post( $payload );
 		$before       = $this->snapshot( (int) $post->ID );
@@ -123,6 +154,16 @@ final class ElementorAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the patch element operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function patchElement( array $payload, array $context ): array {
 		$post      = $this->post( $payload );
 		$before    = $this->snapshot( (int) $post->ID );
@@ -188,6 +229,16 @@ final class ElementorAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the regenerate operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function regenerate( array $payload, array $context ): array {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
@@ -199,6 +250,15 @@ final class ElementorAdapter {
 		return array( 'cleared' => true, 'rollback_supported' => false );
 	}
 
+	/**
+	 * Inspect header links for the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspectHeaderLinks( array $payload ): array {
 		$id     = isset( $payload['post_id'] ) && is_int( $payload['post_id'] ) ? $payload['post_id'] : 0;
 		$checks = isset( $payload['checks'] ) && is_array( $payload['checks'] ) ? $payload['checks'] : array();
@@ -260,6 +320,16 @@ final class ElementorAdapter {
 		);
 	}
 
+	/**
+	 * Process the replace header links operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function replaceHeaderLinks( array $payload, array $context ): array {
 		$id   = isset( $payload['post_id'] ) && is_int( $payload['post_id'] ) ? $payload['post_id'] : 0;
 		$post = $id > 0 ? get_post( $id ) : null;
@@ -331,6 +401,14 @@ final class ElementorAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the same site header url operation in the Elementor adapter.
+	 *
+	 * @param string $url Input for the operation.
+	 * @param bool   $destination Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function sameSiteHeaderUrl( string $url, bool $destination ): bool {
 		if ( strlen( $url ) > 500 || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
 			return false;
@@ -347,6 +425,15 @@ final class ElementorAdapter {
 		return ! $destination || ( ! isset( $parts['query'] ) && ! isset( $parts['fragment'] ) );
 	}
 
+	/**
+	 * Process the post operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return \WP_Post Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function post( array $payload ): \WP_Post {
 		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $post instanceof \WP_Post ) {
@@ -356,6 +443,13 @@ final class ElementorAdapter {
 		return $post;
 	}
 
+	/**
+	 * Process the snapshot operation in the Elementor adapter.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( int $postId ): array {
 		$document = $this->documentOrNull( $postId );
 		if ( $document ) {
@@ -391,6 +485,14 @@ final class ElementorAdapter {
 		);
 	}
 
+	/**
+	 * Process the requested meta operation in the Elementor adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $data Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function requestedMeta( array $payload, array $data ): array {
 		return array(
 			'data'          => $data,
@@ -402,6 +504,12 @@ final class ElementorAdapter {
 		);
 	}
 
+	/**
+	 * Prepare document meta for the Elementor adapter.
+	 *
+	 * @param int   $postId Input for the operation.
+	 * @param array $payload Requested action payload.
+	 */
 	private function prepareDocumentMeta( int $postId, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
 			update_post_meta( $postId, '_elementor_template_type', (string) $payload['template_type'] );
@@ -409,6 +517,12 @@ final class ElementorAdapter {
 		update_post_meta( $postId, '_elementor_edit_mode', isset( $payload['edit_mode'] ) ? (string) $payload['edit_mode'] : 'builder' );
 	}
 
+	/**
+	 * Write supplemental meta for the Elementor adapter.
+	 *
+	 * @param int   $postId Input for the operation.
+	 * @param array $payload Requested action payload.
+	 */
 	private function writeSupplementalMeta( int $postId, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
 			update_post_meta( $postId, '_elementor_template_type', (string) $payload['template_type'] );
@@ -424,6 +538,17 @@ final class ElementorAdapter {
 		}
 	}
 
+	/**
+	 * Process the save document via api operation in the Elementor adapter.
+	 *
+	 * @param int   $postId Input for the operation.
+	 * @param array $data Input for the operation.
+	 * @param array $pageSettings Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function saveDocumentViaApi( int $postId, array $data, array $pageSettings ): array {
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $postId ) ) {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
@@ -463,6 +588,15 @@ final class ElementorAdapter {
 		return $normalized_elements;
 	}
 
+	/**
+	 * Process the matches requested element patch operation in the Elementor adapter.
+	 *
+	 * @param array $requested Input for the operation.
+	 * @param array $actual Input for the operation.
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function matchesRequestedElementPatch( array $requested, array $actual, array $payload ): bool {
 		foreach ( array( 'id', 'elType', 'widgetType' ) as $field ) {
 			if ( isset( $requested[ $field ] ) && ( ! isset( $actual[ $field ] ) || (string) $requested[ $field ] !== (string) $actual[ $field ] ) ) {
@@ -485,6 +619,19 @@ final class ElementorAdapter {
 		return true;
 	}
 
+	/**
+	 * Process the apply existing document mutation operation in the Elementor adapter.
+	 *
+	 * @param int   $postId Input for the operation.
+	 * @param array $payload Requested action payload.
+	 * @param array $data Input for the operation.
+	 * @param array $pageSettings Input for the operation.
+	 * @param array $before Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function applyExistingDocumentMutation( int $postId, array $payload, array $data, array $pageSettings, array $before ): array {
 		try {
 			$savedElements = $this->saveDocumentViaApi( $postId, $data, $pageSettings );
@@ -507,6 +654,13 @@ final class ElementorAdapter {
 		}
 	}
 
+	/**
+	 * Restore snapshot for the Elementor adapter.
+	 *
+	 * @param array $snapshot Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function restoreSnapshot( array $snapshot ): void {
 		$postId = isset( $snapshot['post_id'] ) ? (int) $snapshot['post_id'] : 0;
 		if ( $postId < 1 ) {
@@ -528,6 +682,15 @@ final class ElementorAdapter {
 		}
 	}
 
+	/**
+	 * Process the document operation in the Elementor adapter.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return object Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function document( int $postId ): object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
@@ -547,6 +710,13 @@ final class ElementorAdapter {
 		return $document;
 	}
 
+	/**
+	 * Process the document or null operation in the Elementor adapter.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return object|null Operation result.
+	 */
 	private function documentOrNull( int $postId ): ?object {
 		try {
 			return $this->document( $postId );
@@ -555,6 +725,15 @@ final class ElementorAdapter {
 		}
 	}
 
+	/**
+	 * Ensure document readback for the Elementor adapter.
+	 *
+	 * @param array $actual Input for the operation.
+	 * @param array $expectedData Input for the operation.
+	 * @param array $expectedSettings Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertDocumentReadback( array $actual, array $expectedData, array $expectedSettings ): void {
 		if ( ! hash_equals( Fingerprint::make( $expectedData ), Fingerprint::make( $actual['data'] ) ) ) {
 			throw new RuntimeException( 'Elementor document readback verification failed for elements.' );
@@ -580,6 +759,15 @@ final class ElementorAdapter {
 		}
 	}
 
+	/**
+	 * Normalize data for the Elementor adapter.
+	 *
+	 * @param mixed $data Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function normalizeData( $data ): array {
 		if ( is_string( $data ) ) {
 			$trimmed = trim( $data );
@@ -594,6 +782,13 @@ final class ElementorAdapter {
 		return $data;
 	}
 
+	/**
+	 * Normalize meta array for the Elementor adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function normalizeMetaArray( $value ): array {
 		if ( is_array( $value ) ) {
 			return $value;
@@ -607,6 +802,16 @@ final class ElementorAdapter {
 		return array();
 	}
 
+	/**
+	 * Find element for the Elementor adapter.
+	 *
+	 * @param array  $elements Value updated by reference.
+	 * @param string $elementId Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function &findElement( array &$elements, string $elementId ): array {
 		foreach ( $elements as &$element ) {
 			if ( ! is_array( $element ) ) {
@@ -627,6 +832,13 @@ final class ElementorAdapter {
 		throw new RuntimeException( 'Elementor element not found: ' . $elementId );
 	}
 
+	/**
+	 * Process the rollback payload operation in the Elementor adapter.
+	 *
+	 * @param array $snapshot Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function rollbackPayload( array $snapshot ): array {
 		return array(
 			'id'            => $snapshot['post_id'],
@@ -638,6 +850,9 @@ final class ElementorAdapter {
 		);
 	}
 
+	/**
+	 * Process the clear cache operation in the Elementor adapter.
+	 */
 	private function clearCache(): void {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return;

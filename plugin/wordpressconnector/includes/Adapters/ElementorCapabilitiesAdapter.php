@@ -18,6 +18,11 @@ use Webactueel\WordPressConnector\Security\Policy;
  * Registers and handles Elementor Capabilities connector actions.
  */
 final class ElementorCapabilitiesAdapter {
+	/**
+	 * Register the ElementorCapabilities adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.capabilities', array( $this, 'capabilities' ), array(
 			'description' => 'Inspect active Elementor document types, widgets, elements, dynamic tags and responsive capabilities.',
@@ -27,6 +32,14 @@ final class ElementorCapabilitiesAdapter {
 		) );
 	}
 
+	/**
+	 * Process the capabilities operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function capabilities( array $payload, array $context ): array {
 		$environment = $this->environment();
 
@@ -58,6 +71,14 @@ final class ElementorCapabilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the inventory operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inventory( array $payload, array $context ): array {
 		$environment = $this->environment();
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
@@ -240,6 +261,11 @@ final class ElementorCapabilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the environment operation in the ElementorCapabilities adapter.
+	 *
+	 * @return array Operation result.
+	 */
 	private function environment(): array {
 		return array(
 			'elementor'     => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
@@ -249,6 +275,14 @@ final class ElementorCapabilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the document types operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $elementor Input for the operation.
+	 * @param array  $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function documentTypes( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->documents ) || ! is_object( $elementor->documents ) || ! method_exists( $elementor->documents, 'get_document_types' ) ) {
 			$warnings[] = 'documents_manager_unavailable';
@@ -285,6 +319,14 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the widgets operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $elementor Input for the operation.
+	 * @param array  $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function widgets( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->widgets_manager ) || ! is_object( $elementor->widgets_manager ) || ! method_exists( $elementor->widgets_manager, 'get_widget_types' ) ) {
 			$warnings[] = 'widgets_manager_unavailable';
@@ -322,6 +364,14 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the elements operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $elementor Input for the operation.
+	 * @param array  $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function elements( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->elements_manager ) || ! is_object( $elementor->elements_manager ) || ! method_exists( $elementor->elements_manager, 'get_element_types' ) ) {
 			$warnings[] = 'elements_manager_unavailable';
@@ -355,6 +405,14 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the dynamic tags operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $elementor Input for the operation.
+	 * @param array  $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function dynamicTags( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->dynamic_tags ) || ! is_object( $elementor->dynamic_tags ) || ! method_exists( $elementor->dynamic_tags, 'get_tags' ) ) {
 			return array();
@@ -389,6 +447,14 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the breakpoints operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $elementor Input for the operation.
+	 * @param array  $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function breakpoints( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->breakpoints ) || ! is_object( $elementor->breakpoints ) || ! method_exists( $elementor->breakpoints, 'get_active_breakpoints' ) ) {
 			return array();
@@ -417,6 +483,13 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the widget source operation in the ElementorCapabilities adapter.
+	 *
+	 * @param object $widget Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function widgetSource( object $widget ): array {
 		$className = get_class( $widget );
 		$file      = '';
@@ -455,6 +528,18 @@ final class ElementorCapabilitiesAdapter {
 		return $this->source( 'unknown', null, null, null, 'unknown', $className );
 	}
 
+	/**
+	 * Process the source operation in the ElementorCapabilities adapter.
+	 *
+	 * @param string      $family Input for the operation.
+	 * @param string|null $slug Input for the operation.
+	 * @param string|null $name Input for the operation.
+	 * @param string|null $version Input for the operation.
+	 * @param string      $confidence Input for the operation.
+	 * @param string      $className Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function source( string $family, ?string $slug, ?string $name, ?string $version, string $confidence, string $className ): array {
 		return array(
 			'family'     => $family,
@@ -466,10 +551,26 @@ final class ElementorCapabilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the path within defined root operation in the ElementorCapabilities adapter.
+	 *
+	 * @param string $file Input for the operation.
+	 * @param string $constant Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function pathWithinDefinedRoot( string $file, string $constant ): bool {
 		return '' !== $file && defined( $constant ) && $this->pathWithin( $file, (string) constant( $constant ) );
 	}
 
+	/**
+	 * Process the path within operation in the ElementorCapabilities adapter.
+	 *
+	 * @param string $file Input for the operation.
+	 * @param string $root Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function pathWithin( string $file, string $root ): bool {
 		if ( '' === $file || '' === $root ) {
 			return false;
@@ -479,6 +580,13 @@ final class ElementorCapabilitiesAdapter {
 		return 0 === strpos( $file, $root );
 	}
 
+	/**
+	 * Process the plugin for file operation in the ElementorCapabilities adapter.
+	 *
+	 * @param string $file Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function pluginForFile( string $file ): ?array {
 		if ( '' === $file ) {
 			return null;
@@ -517,6 +625,13 @@ final class ElementorCapabilitiesAdapter {
 		return null;
 	}
 
+	/**
+	 * Process the installed plugins operation in the ElementorCapabilities adapter.
+	 *
+	 * @param bool $mu Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function installedPlugins( bool $mu ): array {
 		static $regular  = null;
 		static $must_use = null;
@@ -542,6 +657,13 @@ final class ElementorCapabilitiesAdapter {
 		return $regular;
 	}
 
+	/**
+	 * Process the theme for file operation in the ElementorCapabilities adapter.
+	 *
+	 * @param string $file Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function themeForFile( string $file ): ?array {
 		if ( '' === $file || ! function_exists( 'get_theme_root' ) ) {
 			return null;
@@ -561,6 +683,14 @@ final class ElementorCapabilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the inventory post types operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array Operation result.
+	 */
 	private function inventoryPostTypes( array $payload, array &$warnings ): array {
 		$requested = isset( $payload['post_types'] ) ? (array) $payload['post_types'] : array();
 		if ( empty( $requested ) ) {
@@ -587,6 +717,13 @@ final class ElementorCapabilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the inventory statuses operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Operation result.
+	 */
 	private function inventoryStatuses( array $payload ): array {
 		$requested = isset( $payload['post_statuses'] ) ? (array) $payload['post_statuses'] : array( 'publish', 'draft', 'pending', 'private', 'future' );
 		$result    = array();
@@ -599,6 +736,14 @@ final class ElementorCapabilitiesAdapter {
 		return ! empty( $result ) ? array_values( array_unique( $result ) ) : array( 'publish' );
 	}
 
+	/**
+	 * Process the elementor data operation in the ElementorCapabilities adapter.
+	 *
+	 * @param int   $postId Input for the operation.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function elementorData( int $postId, array &$warnings ): ?array {
 		$raw = get_post_meta( $postId, '_elementor_data', true );
 		if ( is_array( $raw ) ) {
@@ -615,6 +760,14 @@ final class ElementorCapabilitiesAdapter {
 		return $decoded;
 	}
 
+	/**
+	 * Collect element usage for the ElementorCapabilities adapter.
+	 *
+	 * @param array $elements Input for the operation.
+	 * @param array $widgets Value updated by reference.
+	 * @param array $elementTypes Value updated by reference.
+	 * @param array $families Value updated by reference.
+	 */
 	private function collectElementUsage( array $elements, array &$widgets, array &$elementTypes, array &$families ): void {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
@@ -645,6 +798,13 @@ final class ElementorCapabilitiesAdapter {
 		ksort( $elementTypes, SORT_STRING );
 	}
 
+	/**
+	 * Process the architecture label operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $families Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function architectureLabel( array $families ): string {
 		$active = array_keys( array_filter( $families ) );
 		if ( count( $active ) > 1 ) {
@@ -653,6 +813,14 @@ final class ElementorCapabilitiesAdapter {
 		return isset( $active[0] ) ? (string) $active[0] : 'widget-only';
 	}
 
+	/**
+	 * Process the merge usage into widgets operation in the ElementorCapabilities adapter.
+	 *
+	 * @param array $registeredWidgets Input for the operation.
+	 * @param array $usedWidgets Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function mergeUsageIntoWidgets( array $registeredWidgets, array $usedWidgets ): array {
 		foreach ( $registeredWidgets as $name => &$widget ) {
 			$widget['usage'] = isset( $usedWidgets[ $name ] )

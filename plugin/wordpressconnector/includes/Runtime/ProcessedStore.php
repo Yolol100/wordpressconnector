@@ -38,6 +38,18 @@ final class ProcessedStore {
 		}
 	}
 
+	/**
+	 * Process the put operation in the ProcessedStore component.
+	 *
+	 * @param string      $requestId Input for the operation.
+	 * @param string      $fingerprint Input for the operation.
+	 * @param string      $action Input for the operation.
+	 * @param string      $resultHash Input for the operation.
+	 * @param bool        $ok Input for the operation.
+	 * @param string|null $terminalError Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function put( string $requestId, string $fingerprint, string $action, string $resultHash, bool $ok = true, ?string $terminalError = null ): void {
 		$key      = self::key( $requestId );
 		$previous = $this->get( $requestId );
@@ -65,6 +77,13 @@ final class ProcessedStore {
 		}
 	}
 
+	/**
+	 * Process the get operation in the ProcessedStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	public function get( string $requestId ): ?array {
 		$value = get_option( self::key( $requestId ), null );
 		return is_array( $value ) ? $value : null;
@@ -96,6 +115,13 @@ final class ProcessedStore {
 		return hash_equals( $owner, $requestId ) ? 'held_for_request' : 'held_for_another_request';
 	}
 
+	/**
+	 * Process the acquire mutation lock operation in the ProcessedStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	public function acquireMutationLock( string $requestId = '' ): string {
 		$token = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : bin2hex( random_bytes( 16 ) );
 		$value = wp_json_encode( array(
@@ -141,6 +167,11 @@ final class ProcessedStore {
 		return $this->compareAndSwapLock( $existing, $value ) ? $token : '';
 	}
 
+	/**
+	 * Process the release mutation lock operation in the ProcessedStore component.
+	 *
+	 * @param string $token Input for the operation.
+	 */
 	public function releaseMutationLock( string $token ): void {
 		$existing = get_option( self::LOCK_KEY, '' );
 		$data     = is_string( $existing ) ? json_decode( $existing, true ) : null;
@@ -151,6 +182,15 @@ final class ProcessedStore {
 		$this->deleteLockIfValue( $existing );
 	}
 
+	/**
+	 * Process the cleanup operation in the ProcessedStore component.
+	 *
+	 * @param int $olderThanSeconds Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function cleanup( int $olderThanSeconds ): int {
 		global $wpdb;
 		$like = $wpdb->esc_like( self::PREFIX ) . '%';
@@ -187,6 +227,14 @@ final class ProcessedStore {
 		return $deleted;
 	}
 
+	/**
+	 * Process the compare and swap lock operation in the ProcessedStore component.
+	 *
+	 * @param string $expected Input for the operation.
+	 * @param string $replacement Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function compareAndSwapLock( string $expected, string $replacement ): bool {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on the options row is necessary for the mutation lock; cache invalidated below.
@@ -205,6 +253,13 @@ final class ProcessedStore {
 		return true;
 	}
 
+	/**
+	 * Delete lock if value for the ProcessedStore component.
+	 *
+	 * @param string $expected Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function deleteLockIfValue( string $expected ): bool {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
@@ -221,6 +276,13 @@ final class ProcessedStore {
 		return true;
 	}
 
+	/**
+	 * Process the bounded terminal error operation in the ProcessedStore component.
+	 *
+	 * @param string|null $message Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function boundedTerminalError( ?string $message ): string {
 		$message = is_string( $message ) ? trim( $message ) : '';
 		if ( '' === $message ) {
@@ -229,6 +291,13 @@ final class ProcessedStore {
 		return strlen( $message ) > 500 ? substr( $message, 0, 500 ) : $message;
 	}
 
+	/**
+	 * Process the key operation in the ProcessedStore component.
+	 *
+	 * @param string $requestId Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private static function key( string $requestId ): string {
 		return self::PREFIX . hash( 'sha256', $requestId );
 	}

@@ -21,6 +21,11 @@ final class CustomCssAdapter {
 	private const MAX_PATCH_BYTES = 65536;
 	private const PATCH_PREFIX = 'wpconnector:';
 
+	/**
+	 * Register the CustomCss adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'custom_css.inspect', array( $this, 'inspect' ), array(
 			'privileged'  => true,
@@ -43,6 +48,14 @@ final class CustomCssAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the CustomCss adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload, array $context ): array {
 		$snapshot = $this->snapshot( $this->stylesheet( $payload ) );
 
@@ -52,6 +65,16 @@ final class CustomCssAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the CustomCss adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		if ( ! array_key_exists( 'css', $payload ) || ! is_string( $payload['css'] ) ) {
 			throw new RuntimeException( 'custom_css.update requires payload.css as a string.' );
@@ -106,6 +129,16 @@ final class CustomCssAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the patch operation in the CustomCss adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function patch( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'stylesheet', 'patch_id', 'operation', 'css' ), true ) ) {
@@ -198,6 +231,18 @@ final class CustomCssAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the apply patch operation in the CustomCss adapter.
+	 *
+	 * @param string      $currentCss Input for the operation.
+	 * @param string      $patchId Input for the operation.
+	 * @param string      $operation Input for the operation.
+	 * @param string|null $patchCss Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function applyPatch( string $currentCss, string $patchId, string $operation, ?string $patchCss ): string {
 		$start       = '/* ' . self::PATCH_PREFIX . $patchId . ' */';
 		$end         = '/* /' . self::PATCH_PREFIX . $patchId . ' */';
@@ -236,6 +281,13 @@ final class CustomCssAdapter {
 		return $currentCss . $separator . $block . "\n";
 	}
 
+	/**
+	 * Process the snapshot operation in the CustomCss adapter.
+	 *
+	 * @param string $stylesheet Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function snapshot( string $stylesheet ): array {
 		$post = wp_get_custom_css_post( $stylesheet );
 
@@ -246,6 +298,15 @@ final class CustomCssAdapter {
 		);
 	}
 
+	/**
+	 * Process the stylesheet operation in the CustomCss adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function stylesheet( array $payload ): string {
 		$stylesheet = isset( $payload['stylesheet'] )
 			? sanitize_text_field( (string) $payload['stylesheet'] )
@@ -263,6 +324,15 @@ final class CustomCssAdapter {
 		return $stylesheet;
 	}
 
+	/**
+	 * Ensure css for the CustomCss adapter.
+	 *
+	 * @param string $css Input for the operation.
+	 * @param int    $maxBytes Input for the operation.
+	 * @param string $label Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertCss( string $css, int $maxBytes, string $label ): void {
 		if ( strlen( $css ) > $maxBytes ) {
 			throw new RuntimeException( $label . ' exceeds the connector size limit.' );

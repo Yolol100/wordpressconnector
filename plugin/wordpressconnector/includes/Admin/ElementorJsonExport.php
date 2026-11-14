@@ -20,6 +20,9 @@ final class ElementorJsonExport {
 	private const BUNDLE_FORMAT = 'wordpressconnector/elementor-site-parts-bundle';
 	private const BUNDLE_VERSION = 1;
 
+	/**
+	 * Register the ElementorJsonExport component actions and handlers.
+	 */
 	public function register(): void {
 		if ( ! is_admin() ) {
 			return;
@@ -29,6 +32,14 @@ final class ElementorJsonExport {
 		add_action( 'admin_post_' . self::ACTION, array( $this, 'download' ) );
 	}
 
+	/**
+	 * Process the row actions operation in the ElementorJsonExport component.
+	 *
+	 * @param array    $actions Input for the operation.
+	 * @param \WP_Post $post Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	public function rowActions( array $actions, \WP_Post $post ): array {
 		if ( ! $this->supportsPostType( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) || ! $this->isElementorDocument( (int) $post->ID ) ) {
 			return $actions;
@@ -43,6 +54,11 @@ final class ElementorJsonExport {
 		return $actions;
 	}
 
+	/**
+	 * Process the download operation in the ElementorJsonExport component.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function download(): void {
 		$postId           = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
 		$includeSiteParts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
@@ -85,10 +101,28 @@ final class ElementorJsonExport {
 		exit;
 	}
 
+	/**
+	 * Process the export url operation in the ElementorJsonExport component.
+	 *
+	 * @param int  $postId Input for the operation.
+	 * @param bool $includeSiteParts Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function exportUrl( int $postId, bool $includeSiteParts ): string {
 		return wp_nonce_url( add_query_arg( array( 'action' => self::ACTION, 'post_id' => $postId, 'include_site_parts' => $includeSiteParts ? 1 : 0 ), admin_url( 'admin-post.php' ) ), self::ACTION . '_' . $postId );
 	}
 
+	/**
+	 * Process the export payload operation in the ElementorJsonExport component.
+	 *
+	 * @param object   $document Input for the operation.
+	 * @param \WP_Post $post Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function exportPayload( object $document, \WP_Post $post ): array {
 		if ( ! method_exists( $document, 'get_export_data' ) ) {
 			throw new RuntimeException( 'This Elementor version does not expose document export data.' );
@@ -128,6 +162,14 @@ final class ElementorJsonExport {
 		return $payload;
 	}
 
+	/**
+	 * Process the bundle with site parts operation in the ElementorJsonExport component.
+	 *
+	 * @param \WP_Post $post Input for the operation.
+	 * @param array    $documentPayload Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function bundleWithSiteParts( \WP_Post $post, array $documentPayload ): array {
 		$parts = $this->sitePartsForPost( $post );
 		return array(
@@ -142,6 +184,13 @@ final class ElementorJsonExport {
 		);
 	}
 
+	/**
+	 * Process the site parts for post operation in the ElementorJsonExport component.
+	 *
+	 * @param \WP_Post $sourcePost Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function sitePartsForPost( \WP_Post $sourcePost ): array {
 		if ( ! class_exists( 'ElementorPro\\Modules\\ThemeBuilder\\Module' ) ) {
 			return array( 'header' => null, 'footer' => null, 'warnings' => array( 'Elementor Pro Theme Builder is not active.' ) );
@@ -174,6 +223,14 @@ final class ElementorJsonExport {
 		}
 	}
 
+	/**
+	 * Process the first site part operation in the ElementorJsonExport component.
+	 *
+	 * @param mixed  $matches Input for the operation.
+	 * @param string $location Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function firstSitePart( $matches, string $location ): ?array {
 		if ( ! is_array( $matches ) || empty( $matches ) ) {
 			return null;
@@ -209,6 +266,16 @@ final class ElementorJsonExport {
 		return null;
 	}
 
+	/**
+	 * Process the with singular query operation in the ElementorJsonExport component.
+	 *
+	 * @param \WP_Post $sourcePost Input for the operation.
+	 * @param callable $callback Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function withSingularQuery( \WP_Post $sourcePost, callable $callback ) {
 		global $post, $wp_query, $wp_the_query;
 		$previousPost     = $post ?? null;
@@ -242,14 +309,35 @@ final class ElementorJsonExport {
 		}
 	}
 
+	/**
+	 * Process the unsupported site parts operation in the ElementorJsonExport component.
+	 *
+	 * @param string $warning Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function unsupportedSiteParts( string $warning = 'The active Elementor Pro version does not expose the Theme Builder condition API required for site-parts export.' ): array {
 		return array( 'header' => null, 'footer' => null, 'warnings' => array( $warning ) );
 	}
 
+	/**
+	 * Process the site part meta operation in the ElementorJsonExport component.
+	 *
+	 * @param array|null $part Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
 	private function sitePartMeta( ?array $part ): ?array {
 		return null === $part ? null : array( 'id' => (int) ( $part['id'] ?? 0 ), 'title' => (string) ( $part['title'] ?? '' ) );
 	}
 
+	/**
+	 * Check whether elementor document for the ElementorJsonExport component.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function isElementorDocument( int $postId ): bool {
 		if ( 'builder' !== (string) get_post_meta( $postId, '_elementor_edit_mode', true ) ) {
 			return false;
@@ -263,6 +351,15 @@ final class ElementorJsonExport {
 		}
 	}
 
+	/**
+	 * Process the document operation in the ElementorJsonExport component.
+	 *
+	 * @param int $postId Input for the operation.
+	 *
+	 * @return object Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function document( int $postId ): object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			throw new RuntimeException( 'Elementor is not active.' );
@@ -279,6 +376,13 @@ final class ElementorJsonExport {
 		return $document;
 	}
 
+	/**
+	 * Check support for post type for the ElementorJsonExport component.
+	 *
+	 * @param string $postType Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function supportsPostType( string $postType ): bool {
 		return in_array( $postType, self::POST_TYPES, true );
 	}

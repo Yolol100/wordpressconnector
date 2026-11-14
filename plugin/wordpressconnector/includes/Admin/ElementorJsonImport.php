@@ -24,6 +24,9 @@ final class ElementorJsonImport {
 	private const POST_TYPES = array( 'page', 'post', 'elementor_library' );
 	private const MAX_BYTES = 5242880;
 
+	/**
+	 * Register the ElementorJsonImport component actions and handlers.
+	 */
 	public function register(): void {
 		if ( ! is_admin() ) {
 			return;
@@ -36,6 +39,14 @@ final class ElementorJsonImport {
 		add_action( 'admin_post_' . self::BULK_CONFIRM, array( $this, 'confirmBulk' ) );
 	}
 
+	/**
+	 * Process the row actions operation in the ElementorJsonImport component.
+	 *
+	 * @param array    $actions Input for the operation.
+	 * @param \WP_Post $post Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	public function rowActions( array $actions, \WP_Post $post ): array {
 		if ( ! $this->supportsPostType( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) ) {
 			return $actions;
@@ -44,6 +55,9 @@ final class ElementorJsonImport {
 		return $actions;
 	}
 
+	/**
+	 * Process the register import pages operation in the ElementorJsonImport component.
+	 */
 	public function registerImportPages(): void {
 		add_management_page( __( 'Elementor bulkimport', 'wordpressconnector' ), __( 'Elementor bulkimport', 'wordpressconnector' ), 'manage_options', 'wpconnector-elementor-bulk', array( $this, 'renderBulkPage' ) );
 		add_submenu_page( 'edit.php?post_type=page', __( 'Import Elementor JSON', 'wordpressconnector' ), __( 'Import Elementor JSON', 'wordpressconnector' ), 'edit_pages', 'wpconnector-import-elementor-page', function():void {
@@ -59,6 +73,11 @@ final class ElementorJsonImport {
 		}
 	}
 
+	/**
+	 * Render import page for the ElementorJsonImport component.
+	 *
+	 * @param string $postType Input for the operation.
+	 */
 	public function renderImportPage( string $postType ): void {
 		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
@@ -80,6 +99,11 @@ final class ElementorJsonImport {
 		echo '</form></div>';
 	}
 
+	/**
+	 * Process the handle import operation in the ElementorJsonImport component.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
 		$postId   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
@@ -129,6 +153,13 @@ final class ElementorJsonImport {
 		exit;
 	}
 
+	/**
+	 * Process the uploaded payload operation in the ElementorJsonImport component.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function uploadedPayload(): array {
 		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
@@ -170,6 +201,9 @@ final class ElementorJsonImport {
 		return $decoded;
 	}
 
+	/**
+	 * Render bulk page for the ElementorJsonImport component.
+	 */
 	public function renderBulkPage(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Not allowed.', '', array( 'response' => 403 ) );
@@ -183,6 +217,11 @@ final class ElementorJsonImport {
 		echo '</form></div>';
 	}
 
+	/**
+	 * Process the preview bulk operation in the ElementorJsonImport component.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function previewBulk(): void {
 		check_admin_referer( self::BULK_PREVIEW );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -225,6 +264,11 @@ final class ElementorJsonImport {
 		}
 	}
 
+	/**
+	 * Process the confirm bulk operation in the ElementorJsonImport component.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function confirmBulk(): void {
 		check_admin_referer( self::BULK_CONFIRM );
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -345,6 +389,13 @@ final class ElementorJsonImport {
 		}
 	}
 
+	/**
+	 * Process the bulk uploads operation in the ElementorJsonImport component.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function bulkUploads(): array {
 		$files = $_FILES['elementor_jsons'] ?? null;
 		if ( ! is_array( $files ) || ! isset( $files['name'] ) || ! is_array( $files['name'] ) ) {
@@ -393,6 +444,13 @@ final class ElementorJsonImport {
 		return $entries;
 	}
 
+	/**
+	 * Build bulk plan for the ElementorJsonImport component.
+	 *
+	 * @param array $entries Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function buildBulkPlan( array $entries ): array {
 		$plan          = array();
 		$seenTargets   = array();
@@ -514,26 +572,63 @@ final class ElementorJsonImport {
 		return $stem;
 	}
 
+	/**
+	 * Process the import title operation in the ElementorJsonImport component.
+	 *
+	 * @param array  $payload Requested action payload.
+	 * @param string $postType Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function importTitle( array $payload, string $postType ): string {
 		$title = isset( $payload['title'] ) && is_string( $payload['title'] ) ? sanitize_text_field( $payload['title'] ) : '';
 		return '' !== $title ? $title : ( 'elementor_library' === $postType ? 'Imported Elementor Template' : 'Imported Elementor ' . ucfirst( $postType ) );
 	}
 
+	/**
+	 * Process the template type operation in the ElementorJsonImport component.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 */
 	private function templateType( array $payload ): string {
 		$type = isset( $payload['type'] ) && is_string( $payload['type'] ) ? sanitize_key( $payload['type'] ) : '';
 		return '' !== $type ? $type : 'page';
 	}
 
+	/**
+	 * Process the import url operation in the ElementorJsonImport component.
+	 *
+	 * @param string $postType Input for the operation.
+	 * @param int    $postId Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function importUrl( string $postType, int $postId ): string {
 		$slug = 'page' === $postType ? 'wpconnector-import-elementor-page' : ( 'post' === $postType ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
 		$base = 'post' === $postType ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $postType );
 		return add_query_arg( array( 'page' => $slug, 'post_id' => $postId ), $base );
 	}
 
+	/**
+	 * Process the capability for post type operation in the ElementorJsonImport component.
+	 *
+	 * @param string $postType Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	private function capabilityForPostType( string $postType ): string {
 		return 'page' === $postType ? 'edit_pages' : 'edit_posts';
 	}
 
+	/**
+	 * Check support for post type for the ElementorJsonImport component.
+	 *
+	 * @param string $postType Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function supportsPostType( string $postType ): bool {
 		return in_array( $postType, self::POST_TYPES, true );
 	}

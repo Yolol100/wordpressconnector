@@ -24,6 +24,15 @@ final class FilesystemPolicy {
 		'wp-content/themes/',
 	);
 
+	/**
+	 * Process the normalize operation in the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function normalize( string $path ): string {
 		$path = trim( $path );
 		if ( '.' === $path ) {
@@ -49,6 +58,13 @@ final class FilesystemPolicy {
 		return implode( '/', $segments );
 	}
 
+	/**
+	 * Ensure listable for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
 	public static function assertListable( string $path ): string {
 		$path = self::normalize( $path );
 		if ( '.' !== $path ) {
@@ -58,6 +74,15 @@ final class FilesystemPolicy {
 		return $path;
 	}
 
+	/**
+	 * Ensure readable text for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertReadableText( string $path ): string {
 		$path = self::normalize( $path );
 		if ( '.' === $path ) {
@@ -69,6 +94,15 @@ final class FilesystemPolicy {
 		return $path;
 	}
 
+	/**
+	 * Ensure writable text for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function assertWritableText( string $path ): string {
 		$path    = self::assertReadableText( $path );
 		$allowed = false;
@@ -120,6 +154,13 @@ final class FilesystemPolicy {
 			array( 'html', 'htm', 'js', 'mjs', 'css' ), true );
 	}
 
+	/**
+	 * Check whether writable text for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	public static function isWritableText( string $path ): bool {
 		try {
 			self::assertWritableText( $path );
@@ -129,6 +170,13 @@ final class FilesystemPolicy {
 		}
 	}
 
+	/**
+	 * Ensure text extension for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private static function assertTextExtension( string $path ): void {
 		$extension = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
 		if ( '' === $extension || ! in_array( $extension, self::TEXT_EXTENSIONS, true ) ) {
@@ -136,6 +184,13 @@ final class FilesystemPolicy {
 		}
 	}
 
+	/**
+	 * Ensure no managed data path for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private static function assertNoManagedDataPath( string $path ): void {
 		$normalized = strtolower( rtrim( $path, '/' ) );
 		foreach ( array(
@@ -152,6 +207,13 @@ final class FilesystemPolicy {
 		}
 	}
 
+	/**
+	 * Ensure no hidden or secret path for the FilesystemPolicy component.
+	 *
+	 * @param string $path Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private static function assertNoHiddenOrSecretPath( string $path ): void {
 		$segments = explode( '/', $path );
 		foreach ( $segments as $segment ) {

@@ -28,6 +28,11 @@ final class ConnectionReadinessAdapter {
 		'backwpup/backwpup.php'                           => 'BackWPup',
 	);
 
+	/**
+	 * Register the ConnectionReadiness adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'connector.setup.inspect', array( $this, 'inspect' ), array(
 			'privileged'  => true,
@@ -36,6 +41,16 @@ final class ConnectionReadinessAdapter {
 		) );
 	}
 
+	/**
+	 * Process the inspect operation in the ConnectionReadiness adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		if ( array() !== $payload ) {
 			throw new RuntimeException( 'Connection readiness does not accept parameters.' );
@@ -106,6 +121,11 @@ final class ConnectionReadinessAdapter {
 		);
 	}
 
+	/**
+	 * Process the active backup providers operation in the ConnectionReadiness adapter.
+	 *
+	 * @return array Operation result.
+	 */
 	private function activeBackupProviders(): array {
 		$active = function_exists( 'get_option' )
 			? get_option( 'active_plugins', array() ) : array();

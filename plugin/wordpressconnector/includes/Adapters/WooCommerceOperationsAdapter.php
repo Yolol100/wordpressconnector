@@ -31,6 +31,11 @@ final class WooCommerceOperationsAdapter {
 
 	private const SENSITIVE_PATTERN = '/(api[_-]?key|password|passwd|secret|token|credential|consumer|merchant|bank|iban|routing|account|user[_-]?name|username|access[_-]?key|public[_-]?key|private[_-]?key|client|signature|certificate|authorization|webhook|private|license|smtp|auth|oauth)/i';
 
+	/**
+	 * Register the WooCommerceOperations adapter actions and handlers.
+	 *
+	 * @param Registry $registry Action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$read  = array( 'privileged' => true, 'capability' => 'manage_woocommerce' );
 		$write = array_merge( $read, array( 'mutation' => true ) );
@@ -48,6 +53,16 @@ final class WooCommerceOperationsAdapter {
 		) ) );
 	}
 
+	/**
+	 * List s for the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function lists( array $payload = array(), array $context = array() ): array {
 		$this->assertKeys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
 		$area = $payload['area'] ?? null;
@@ -99,6 +114,14 @@ final class WooCommerceOperationsAdapter {
 		);
 	}
 
+	/**
+	 * Process the inspect operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id' ) );
 		$area  = $this->area( $payload );
@@ -112,6 +135,16 @@ final class WooCommerceOperationsAdapter {
 		);
 	}
 
+	/**
+	 * Process the update operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertKeys( $payload, array(
 			'area', 'id', 'zone_id', 'fields', 'critical_confirm',
@@ -190,6 +223,16 @@ final class WooCommerceOperationsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the restore operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public function restore( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'WooCommerce provider restoration is rollback-only.' );
@@ -215,6 +258,14 @@ final class WooCommerceOperationsAdapter {
 		return array( 'restored' => true, 'area' => $area );
 	}
 
+	/**
+	 * Process the summarize operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array  $data Input for the operation.
+	 * @param string $area Input for the operation.
+	 *
+	 * @return array Operation result.
+	 */
 	private function summarize( array $data, string $area ): array {
 		$out  = array();
 		$keys = $area === 'shipping_zone' ? array( 'id', 'name', 'order' )
@@ -252,6 +303,17 @@ final class WooCommerceOperationsAdapter {
 		return $out;
 	}
 
+	/**
+	 * Validate changes for the WooCommerceOperations adapter.
+	 *
+	 * @param string $area Input for the operation.
+	 * @param mixed  $fields Input for the operation.
+	 * @param array  $before Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function validateChanges( string $area, $fields, array $before ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 12 ) {
 			throw new RuntimeException( 'Invalid WooCommerce provider settings payload.' );
@@ -337,6 +399,14 @@ final class WooCommerceOperationsAdapter {
 		return $updates;
 	}
 
+	/**
+	 * Process the matches operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array $actual Input for the operation.
+	 * @param array $expected Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function matches( array $actual, array $expected ): bool {
 		foreach ( $expected as $key => $value ) {
 			if ( $key === 'settings' ) {
@@ -353,6 +423,14 @@ final class WooCommerceOperationsAdapter {
 		return true;
 	}
 
+	/**
+	 * Process the critical gate operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array  $payload Requested action payload.
+	 * @param string $fingerprint Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function criticalGate( array $payload, string $fingerprint ): void {
 		$expected = $payload['expected_before_fingerprint'] ?? null;
 		if ( ! defined( 'WPCONNECTOR_ALLOW_WOO_CRITICAL' ) || WPCONNECTOR_ALLOW_WOO_CRITICAL !== true
@@ -366,6 +444,13 @@ final class WooCommerceOperationsAdapter {
 		}
 	}
 
+	/**
+	 * Process the safe public value operation in the WooCommerceOperations adapter.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 */
 	private function safePublicValue( $value ) {
 		if ( is_null( $value ) || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 			return $value;
@@ -387,6 +472,14 @@ final class WooCommerceOperationsAdapter {
 		return '[complex_value_withheld]';
 	}
 
+	/**
+	 * Process the exposable setting operation in the WooCommerceOperations adapter.
+	 *
+	 * @param string $area Input for the operation.
+	 * @param string $id Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function exposableSetting( string $area, string $id ): bool {
 		// Third-party plugins may store credentials under innocent-looking
 		// keys. Only provider-owned display fields are safe to echo to GitHub.
@@ -400,10 +493,27 @@ final class WooCommerceOperationsAdapter {
 		return false;
 	}
 
+	/**
+	 * Process the secret operation in the WooCommerceOperations adapter.
+	 *
+	 * @param string $id Input for the operation.
+	 * @param string $type Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
 	private function secret( string $id, string $type ): bool {
 		return $type === 'password' || (bool) preg_match( self::SENSITIVE_PATTERN, $id );
 	}
 
+	/**
+	 * Process the area operation in the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function area( array $payload ): string {
 		$area = $payload['area'] ?? null;
 		if ( ! is_string( $area ) || ! isset( self::AREAS[ $area ] ) ) {
@@ -412,6 +522,16 @@ final class WooCommerceOperationsAdapter {
 		return $area;
 	}
 
+	/**
+	 * Process the path operation in the WooCommerceOperations adapter.
+	 *
+	 * @param string $area Input for the operation.
+	 * @param array  $payload Requested action payload.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function path( string $area, array $payload ): string {
 		$id = $payload['id'] ?? null;
 		if ( $area === 'payment_gateway' ) {
@@ -434,6 +554,16 @@ final class WooCommerceOperationsAdapter {
 		return '/wc/v3/taxes/' . $id;
 	}
 
+	/**
+	 * Process the number operation in the WooCommerceOperations adapter.
+	 *
+	 * @param mixed  $value Input for the operation.
+	 * @param string $field Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function number( $value, string $field ): int {
 		if ( ! is_int( $value ) || $value < 1 || $value > 2147483647 ) {
 			throw new RuntimeException( 'WooCommerce ' . $field . ' must be a positive integer.' );
@@ -441,12 +571,31 @@ final class WooCommerceOperationsAdapter {
 		return $value;
 	}
 
+	/**
+	 * Ensure keys for the WooCommerceOperations adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $allowed Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function assertKeys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Unexpected WooCommerce provider settings arguments.' );
 		}
 	}
 
+	/**
+	 * Process the request operation in the WooCommerceOperations adapter.
+	 *
+	 * @param string $method Input for the operation.
+	 * @param string $path Input for the operation.
+	 * @param array  $params Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	private function request( string $method, string $path, array $params = array() ): array {
 		if ( ! class_exists( 'WP_REST_Request' ) || ! function_exists( 'rest_do_request' ) ) {
 			throw new RuntimeException( 'WooCommerce REST runtime is unavailable.' );

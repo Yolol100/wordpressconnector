@@ -20,6 +20,11 @@ use Webactueel\WordPressConnector\Support\Json;
 final class Command {
 	private Runner $runner;
 
+	/**
+	 * Initialize the Command component dependencies.
+	 *
+	 * @param Runner $runner Input for the operation.
+	 */
 	public function __construct( Runner $runner ) {
 		$this->runner = $runner;
 	}

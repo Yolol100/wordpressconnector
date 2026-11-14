@@ -21,14 +21,29 @@ final class SitePairing {
 	private const OPTION = 'wpconnector_github_oidc_site_pairing_v1';
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 
+	/**
+	 * Process the audience operation in the SitePairing component.
+	 *
+	 * @return string Operation result.
+	 */
 	public static function audience(): string {
 		return rtrim( (string) rest_url( self::NAMESPACE ), '/' );
 	}
 
+	/**
+	 * Process the fingerprint operation in the SitePairing component.
+	 *
+	 * @return string Operation result.
+	 */
 	private static function fingerprint(): string {
 		return hash( 'sha256', self::audience() );
 	}
 
+	/**
+	 * Process the paired administrator id operation in the SitePairing component.
+	 *
+	 * @return int Operation result.
+	 */
 	public static function pairedAdministratorId(): int {
 		$state = get_option( self::OPTION, null );
 		if ( ! is_array( $state ) ||
@@ -66,6 +81,13 @@ final class SitePairing {
 		self::enableForAdministrator( $userId );
 	}
 
+	/**
+	 * Process the enable for administrator operation in the SitePairing component.
+	 *
+	 * @param int $administratorId Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
 	public static function enableForAdministrator( int $administratorId ): void {
 		if ( $administratorId <= 0 || ! user_can( $administratorId, 'manage_options' ) ) {
 			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
@@ -84,6 +106,9 @@ final class SitePairing {
 		}
 	}
 
+	/**
+	 * Process the disable operation in the SitePairing component.
+	 */
 	public static function disable(): void {
 		delete_option( self::OPTION );
 	}
