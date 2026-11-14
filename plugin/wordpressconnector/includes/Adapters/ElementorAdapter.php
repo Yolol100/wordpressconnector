@@ -39,16 +39,16 @@ final class ElementorAdapter {
 	}
 
 	public function createDocument( array $payload, array $context ): array {
-		$postType = isset( $payload['post_type'] ) ? sanitize_key( (string) $payload['post_type'] ) : 'page';
-		if ( ! post_type_exists( $postType ) ) {
-			throw new RuntimeException( 'Unknown post type: ' . $postType );
+		$post_type = isset( $payload['post_type'] ) ? sanitize_key( (string) $payload['post_type'] ) : 'page';
+		if ( ! post_type_exists( $post_type ) ) {
+			throw new RuntimeException( 'Unknown post type: ' . $post_type );
 		}
-		Policy::assertReadablePostType( $postType );
+		Policy::assertReadablePostType( $post_type );
 
 		$data         = $this->normalizeData( $payload['data'] ?? array() );
 		$pageSettings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array();
-		$postFields   = array(
-			'post_type'    => $postType,
+		$post_fields  = array(
+			'post_type'    => $post_type,
 			'post_status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'draft',
 			'post_title'   => isset( $payload['title'] ) ? (string) $payload['title'] : 'Elementor document',
 			'post_name'    => isset( $payload['slug'] ) ? sanitize_title( (string) $payload['slug'] ) : '',
@@ -57,12 +57,12 @@ final class ElementorAdapter {
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => array( 'post' => $postFields, 'elementor' => $this->requestedMeta( $payload, $data ) ),
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'post_type' => $postType ) ),
+				'would_create'         => array( 'post' => $post_fields, 'elementor' => $this->requestedMeta( $payload, $data ) ),
+				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'post_type' => $post_type ) ),
 			);
 		}
 
-		$id = wp_insert_post( wp_slash( $postFields ), true );
+		$id = wp_insert_post( wp_slash( $post_fields ), true );
 		if ( is_wp_error( $id ) ) {
 			throw new RuntimeException( $id->get_error_message() );
 		}
@@ -93,8 +93,8 @@ final class ElementorAdapter {
 			? ( is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array() )
 			: $before['page_settings'];
 
-		$after = $before;
-		$after['data'] = $data;
+		$after                  = $before;
+		$after['data']          = $data;
 		$after['page_settings'] = $pageSettings;
 		foreach ( array( 'template_type', 'conditions', 'edit_mode' ) as $field ) {
 			if ( array_key_exists( $field, $payload ) ) {
@@ -112,7 +112,7 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$result['after'] = $this->applyExistingDocumentMutation(
+		$result['after']     = $this->applyExistingDocumentMutation(
 			(int) $post->ID,
 			$payload,
 			$data,
@@ -131,9 +131,9 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'element_id is required.' );
 		}
 
-		$data          = $before['data'];
-		$element       =& $this->findElement( $data, $elementId );
-		$beforeElement = $element;
+		$data           = $before['data'];
+		$element        =& $this->findElement( $data, $elementId );
+		$before_element = $element;
 
 		if ( isset( $payload['replace'] ) && is_array( $payload['replace'] ) ) {
 			$replacement = $payload['replace'];
@@ -143,8 +143,8 @@ final class ElementorAdapter {
 			$element = $replacement;
 		} else {
 			if ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ) {
-				$replaceSettings = Input::bool( $payload, 'replace_settings' );
-				$element['settings'] = $replaceSettings
+				$replace_settings    = Input::bool( $payload, 'replace_settings' );
+				$element['settings'] = $replace_settings
 					? $payload['settings']
 					: array_replace_recursive( isset( $element['settings'] ) && is_array( $element['settings'] ) ? $element['settings'] : array(), $payload['settings'] );
 			}
@@ -156,12 +156,12 @@ final class ElementorAdapter {
 			}
 		}
 
-		$requestedElement = $element;
-		$result           = array(
+		$requested_element = $element;
+		$result            = array(
 			'post_id'              => (int) $post->ID,
 			'element_id'           => $elementId,
-			'before_element'       => $beforeElement,
-			'after_element'        => $requestedElement,
+			'before_element'       => $before_element,
+			'after_element'        => $requested_element,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 
@@ -169,22 +169,22 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$readback = $this->applyExistingDocumentMutation(
+		$readback         = $this->applyExistingDocumentMutation(
 			(int) $post->ID,
 			array(),
 			$data,
 			$before['page_settings'],
 			$before
 		);
-		$readbackData    = $readback['data'];
-		$readbackElement =& $this->findElement( $readbackData, $elementId );
-		if ( ! $this->matchesRequestedElementPatch( $requestedElement, $readbackElement, $payload ) ) {
+		$readback_data    = $readback['data'];
+		$readback_element =& $this->findElement( $readback_data, $elementId );
+		if ( ! $this->matchesRequestedElementPatch( $requested_element, $readback_element, $payload ) ) {
 			$this->restoreSnapshot( $before );
 			throw new RuntimeException( 'Elementor element readback verification failed; previous snapshot restored.' );
 		}
 
-		$result['after_element'] = $readbackElement;
-		$result['_rollback'] = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
+		$result['after_element'] = $readback_element;
+		$result['_rollback']     = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
 		return $result;
 	}
 
@@ -222,39 +222,39 @@ final class ElementorAdapter {
 			|| 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
 			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_published_elementor_library', 'checks' => array() );
 		}
-		$canEdit  = current_user_can( 'edit_post', $id );
+		$can_edit = current_user_can( 'edit_post', $id );
 		$snapshot = $this->snapshot( $id );
 		if ( 'header' !== $snapshot['template_type'] ) {
 			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_header_template', 'checks' => array() );
 		}
 		$matches = array();
 		foreach ( $checks as $check ) {
-			$elementId    = $check['element_id'];
-			$matchesCount = 0;
-			$isIconList   = false;
+			$elementId     = $check['element_id'];
+			$matches_count = 0;
+			$is_icon_list  = false;
 			try {
-				$element    =& $this->findElement( $snapshot['data'], $elementId );
-				$isIconList = ( $element['widgetType'] ?? '' ) === 'icon-list'
+				$element      =& $this->findElement( $snapshot['data'], $elementId );
+				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
-				if ( $isIconList ) {
+				if ( $is_icon_list ) {
 					foreach ( $element['settings']['icon_list'] as $item ) {
-						if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) ++$matchesCount;
+						if ( is_array( $item ) && ( $item['link']['url'] ?? null ) === $check['from'] ) ++$matches_count;
 					}
 				}
 				unset( $element );
 			} catch ( RuntimeException $error ) {
 				// Missing Elementor ID is a bounded diagnostic, never a template export.
 			}
-			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$isIconList, 'exact_url_matches'=>min( 2,$matchesCount ) );
+			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$is_icon_list, 'exact_url_matches'=>min( 2,$matches_count ) );
 		}
-		$eligible = $canEdit;
+		$eligible = $can_edit;
 		foreach ( $matches as $match ) {
 			$eligible = $eligible && $match['is_icon_list'] && 1 === $match['exact_url_matches'];
 		}
 		return array(
 			'post_id'=>$id,
 			'eligible'=>$eligible,
-			'reason_code'=>!$canEdit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
+			'reason_code'=>!$can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
 			'checks'=>$matches,
 			'document_fingerprint'=>Fingerprint::make( $snapshot ),
 		);
@@ -294,7 +294,7 @@ final class ElementorAdapter {
 				throw new RuntimeException( 'Header link target, source or destination is not allowed.' );
 			}
 			$seen[ $elementId ] = true;
-			$element =& $this->findElement( $data, $elementId );
+			$element            =& $this->findElement( $data, $elementId );
 			if ( ( $element['widgetType'] ?? '' ) !== 'icon-list'
 				|| ! isset( $element['settings']['icon_list'] )
 				|| ! is_array( $element['settings']['icon_list'] ) ) {
@@ -323,7 +323,7 @@ final class ElementorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$after = $this->applyExistingDocumentMutation(
+		$after                       = $this->applyExistingDocumentMutation(
 			$id, array(), $data, $before['page_settings'], $before
 		);
 		$result['readback_verified'] = true;
@@ -361,28 +361,28 @@ final class ElementorAdapter {
 		if ( $document ) {
 			// Verify the committed document, not the editor document instance which may
 			// keep an earlier in-memory elements tree after save() in this request.
-			$data         = $this->normalizeData( get_post_meta( $postId, '_elementor_data', true ) ?: array() );
-			$settings     = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
-			$settings     = is_array( $settings ) ? $settings : array();
-			$documentType = method_exists( $document, 'get_name' ) ? (string) $document->get_name() : '';
+			$data          = $this->normalizeData( get_post_meta( $postId, '_elementor_data', true ) ?: array() );
+			$settings      = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
+			$settings      = is_array( $settings ) ? $settings : array();
+			$document_type = method_exists( $document, 'get_name' ) ? (string) $document->get_name() : '';
 		} else {
-			$raw          = get_post_meta( $postId, '_elementor_data', true );
-			$data         = $this->normalizeData( $raw ?: array() );
-			$settings     = $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) );
-			$documentType = '';
+			$raw           = get_post_meta( $postId, '_elementor_data', true );
+			$data          = $this->normalizeData( $raw ?: array() );
+			$settings      = $this->normalizeMetaArray( get_post_meta( $postId, '_elementor_page_settings', true ) );
+			$document_type = '';
 		}
 
 		// Elementor stores the WordPress page layout outside _elementor_page_settings.
 		// Retain it in snapshots so a failed import can restore that layout too.
-		$savedPageTemplate = (string) get_post_meta( $postId, '_wp_page_template', true );
-		if ( '' !== $savedPageTemplate || 'page' === get_post_type( $postId ) ) {
-			$settings['template'] = '' !== $savedPageTemplate ? $savedPageTemplate : 'default';
+		$saved_page_template = (string) get_post_meta( $postId, '_wp_page_template', true );
+		if ( '' !== $saved_page_template || 'page' === get_post_type( $postId ) ) {
+			$settings['template'] = '' !== $saved_page_template ? $saved_page_template : 'default';
 		}
 
 		return array(
 			'post_id'           => $postId,
 			'data'              => $data,
-			'document_type'     => $documentType,
+			'document_type'     => $document_type,
 			'edit_mode'         => (string) get_post_meta( $postId, '_elementor_edit_mode', true ),
 			'template_type'     => (string) get_post_meta( $postId, '_elementor_template_type', true ),
 			'page_settings'     => $settings,
@@ -429,14 +429,14 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
 		}
 
-		$document           = $this->document( $postId );
-		$normalizedElements = null;
+		$document            = $this->document( $postId );
+		$normalized_elements = null;
 		// Elementor normalizes widgets/containers through get_data_for_save().
 		// Its documented after_save event carries the canonical data submitted
 		// to update_metadata(). Compare that against the separately read DB data.
-		$listener = static function ( $savedId, $elements ) use ( $postId, &$normalizedElements ): void {
+		$listener = static function ( $savedId, $elements ) use ( $postId, &$normalized_elements ): void {
 			if ( (int) $savedId === $postId && is_array( $elements ) ) {
-				$normalizedElements = $elements;
+				$normalized_elements = $elements;
 			}
 		};
 		add_action( 'elementor/editor/after_save', $listener, 10, 2 );
@@ -455,12 +455,12 @@ final class ElementorAdapter {
 		if ( false === $result || null === $result ) {
 			throw new RuntimeException( 'Elementor rejected the document save.' );
 		}
-		if ( ! is_array( $normalizedElements ) ) {
+		if ( ! is_array( $normalized_elements ) ) {
 			throw new RuntimeException( 'Elementor did not expose normalized saved elements for verification.' );
 		}
 
 		clean_post_cache( $postId );
-		return $normalizedElements;
+		return $normalized_elements;
 	}
 
 	private function matchesRequestedElementPatch( array $requested, array $actual, array $payload ): bool {
@@ -496,9 +496,9 @@ final class ElementorAdapter {
 		} catch ( Throwable $error ) {
 			try {
 				$this->restoreSnapshot( $before );
-			} catch ( Throwable $rollbackError ) {
+			} catch ( Throwable $rollback_error ) {
 				throw new RuntimeException(
-					'Elementor mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollbackError->getMessage(),
+					'Elementor mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollback_error->getMessage(),
 					0,
 					$error
 				);
@@ -515,12 +515,12 @@ final class ElementorAdapter {
 
 		$payload = $this->rollbackPayload( $snapshot );
 		$this->prepareDocumentMeta( $postId, $payload );
-		$restoredElements = $this->saveDocumentViaApi( $postId, $snapshot['data'], $snapshot['page_settings'] );
+		$restored_elements = $this->saveDocumentViaApi( $postId, $snapshot['data'], $snapshot['page_settings'] );
 		$this->writeSupplementalMeta( $postId, $payload );
 		$this->clearCache();
 
 		$restored = $this->snapshot( $postId );
-		$this->assertDocumentReadback( $restored, $restoredElements, $snapshot['page_settings'] );
+		$this->assertDocumentReadback( $restored, $restored_elements, $snapshot['page_settings'] );
 		foreach ( array( 'edit_mode', 'template_type', 'conditions' ) as $field ) {
 			if ( ! hash_equals( Fingerprint::make( $snapshot[ $field ] ), Fingerprint::make( $restored[ $field ] ) ) ) {
 				throw new RuntimeException( 'Elementor rollback readback failed for: ' . $field );
@@ -560,13 +560,13 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'Elementor document readback verification failed for elements.' );
 		}
 
-		foreach ( $expectedSettings as $key => $expectedValue ) {
+		foreach ( $expectedSettings as $key => $expected_value ) {
 			if ( 'template' === $key ) {
 				// Elementor's Page Settings Manager saves this field in WordPress'
 				// _wp_page_template meta, not in _elementor_page_settings.
 				$saved = (string) get_post_meta( (int) $actual['post_id'], '_wp_page_template', true );
 				$saved = '' !== $saved ? $saved : 'default';
-				if ( ! is_string( $expectedValue ) || ! hash_equals( $expectedValue, $saved ) ) {
+				if ( ! is_string( $expected_value ) || ! hash_equals( $expected_value, $saved ) ) {
 					throw new RuntimeException( 'Elementor page template readback verification failed.' );
 				}
 				continue;
@@ -574,7 +574,7 @@ final class ElementorAdapter {
 			if ( ! array_key_exists( $key, $actual['page_settings'] ) ) {
 				throw new RuntimeException( 'Elementor document readback is missing page setting: ' . (string) $key );
 			}
-			if ( ! hash_equals( Fingerprint::make( $expectedValue ), Fingerprint::make( $actual['page_settings'][ $key ] ) ) ) {
+			if ( ! hash_equals( Fingerprint::make( $expected_value ), Fingerprint::make( $actual['page_settings'][ $key ] ) ) ) {
 				throw new RuntimeException( 'Elementor page setting readback verification failed: ' . (string) $key );
 			}
 		}
