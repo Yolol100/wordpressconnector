@@ -166,7 +166,7 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function allowedFileType( string $relativePath ): array {
-		$basename = basename( $relativePath );
+		$basename  = basename( $relativePath );
 		$file_type = wp_check_filetype( $basename, get_allowed_mime_types() );
 		if ( ! empty( $file_type['ext'] ) && ! empty( $file_type['type'] ) ) {
 			return $file_type;
@@ -204,7 +204,7 @@ final class AssetStore {
 				throw new RuntimeException( 'A private system temporary directory is unavailable.' );
 			}
 			$site_namespace = substr( hash( 'sha256', home_url( '/' ) ), 0, 20 );
-			$base          = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $site_namespace;
+			$base           = $temp . DIRECTORY_SEPARATOR . 'wpconnector-inbox-' . $site_namespace;
 		}
 
 		if ( is_link( $base ) ) {
@@ -241,7 +241,7 @@ final class AssetStore {
 			return;
 		}
 
-		$web_root  = rtrim( $web_root, DIRECTORY_SEPARATOR );
+		$web_root = rtrim( $web_root, DIRECTORY_SEPARATOR );
 		$resolved = realpath( $path );
 		if ( false !== $resolved ) {
 			$candidate = rtrim( $resolved, DIRECTORY_SEPARATOR );

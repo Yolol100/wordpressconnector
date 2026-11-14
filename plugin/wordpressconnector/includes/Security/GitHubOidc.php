@@ -77,7 +77,7 @@ final class GitHubOidc {
 		}
 
 		$public_key = $this->publicKey( $kid );
-		$verified  = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $public_key, OPENSSL_ALGO_SHA256 );
+		$verified   = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $public_key, OPENSSL_ALGO_SHA256 );
 		if ( 1 !== $verified ) {
 			throw new RuntimeException( 'GitHub OIDC signature verification failed.' );
 		}
@@ -272,7 +272,7 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC signing key is unavailable.' );
 		}
 
-		$pem       = $this->keyPem( $key );
+		$pem        = $this->keyPem( $key );
 		$public_key = openssl_pkey_get_public( $pem );
 		if ( false === $public_key ) {
 			throw new RuntimeException( 'GitHub OIDC public key could not be loaded.' );
@@ -369,7 +369,7 @@ final class GitHubOidc {
 			throw new RuntimeException( 'Could not construct RSA algorithm identifier.' );
 		}
 		$bit_string = "\x03" . $this->asn1Length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
-		$spki      = $this->asn1Sequence( $algorithm . $bit_string );
+		$spki       = $this->asn1Sequence( $algorithm . $bit_string );
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 

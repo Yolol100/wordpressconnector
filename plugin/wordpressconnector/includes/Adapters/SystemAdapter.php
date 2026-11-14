@@ -686,7 +686,7 @@ final class SystemAdapter {
 	 */
 	public function roleUpdate( array $payload, array $context ): array {
 		$role_name = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
-		$role     = get_role( $role_name );
+		$role      = get_role( $role_name );
 		if ( ! $role ) {
 			throw new RuntimeException( 'Role not found.' );
 		}
@@ -728,7 +728,7 @@ final class SystemAdapter {
 	 */
 	public function roleDelete( array $payload, array $context ): array {
 		$role_name = isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '';
-		$role     = get_role( $role_name );
+		$role      = get_role( $role_name );
 		if ( ! $role ) {
 			throw new RuntimeException( 'Role not found.' );
 		}
@@ -756,15 +756,15 @@ final class SystemAdapter {
 	 */
 	public function pluginList(): array {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$transient = get_site_transient( 'update_plugins' );
-		$offers    = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
+		$transient  = get_site_transient( 'update_plugins' );
+		$offers     = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
 			? $transient->response : array();
 		$checked_at = is_object( $transient ) && isset( $transient->last_checked )
 			? (int) $transient->last_checked : 0;
 		$can_modify = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'plugin_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items     = array();
+		$items      = array();
 		foreach ( get_plugins() as $file => $data ) {
 			// Match WordPress Core's REST plugin visibility for multisite site administrators.
 			// Inactive network-only plugins are visible to network plugin managers only.
@@ -772,13 +772,13 @@ final class SystemAdapter {
 			&& ! is_plugin_active( $file ) && is_network_only_plugin( $file ) ) {
 				continue;
 			}
-			$network     = is_multisite() ? is_plugin_active_for_network( $file ) : false;
-			$active      = is_plugin_active( $file ) || $network;
-			$offer       = $offers[ $file ] ?? null;
+			$network      = is_multisite() ? is_plugin_active_for_network( $file ) : false;
+			$active       = is_plugin_active( $file ) || $network;
+			$offer        = $offers[ $file ] ?? null;
 			$new_version  = is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null )
 				: ( is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null ) : null );
 			$is_connector = 'wordpressconnector/wordpressconnector.php' === $file;
-			$items[]     = array(
+			$items[]      = array(
 				'file'              => $file,
 				'name'              => sanitize_text_field( (string) ( $data['Name'] ?? $file ) ),
 				'version'           => (string) ( $data['Version'] ?? '' ),
@@ -1066,7 +1066,7 @@ final class SystemAdapter {
 	 */
 	public function pluginUpdate( array $payload, array $context ): array {
 		$expected_target = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
-		$file           = $this->pluginFile( $payload );
+		$file            = $this->pluginFile( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'Update WordPress Connector through connector.update.apply or the verified native Plugins updater.' );
 		}
@@ -1163,22 +1163,22 @@ final class SystemAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function themeList(): array {
-		$active       = get_stylesheet();
+		$active        = get_stylesheet();
 		$active_parent = get_template();
-		$transient    = get_site_transient( 'update_themes' );
-		$offers       = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
+		$transient     = get_site_transient( 'update_themes' );
+		$offers        = is_object( $transient ) && isset( $transient->response ) && is_array( $transient->response )
 			? $transient->response : array();
 		$checked_at    = is_object( $transient ) && isset( $transient->last_checked )
 			? (int) $transient->last_checked : 0;
 		$can_modify    = function_exists( 'wp_is_file_mod_allowed' )
 			? wp_is_file_mod_allowed( 'theme_update' )
 			: ( ! defined( 'DISALLOW_FILE_MODS' ) || ! DISALLOW_FILE_MODS );
-		$items        = array();
+		$items         = array();
 		foreach ( wp_get_themes() as $stylesheet => $theme ) {
-			$offer      = $offers[ $stylesheet ] ?? null;
+			$offer       = $offers[ $stylesheet ] ?? null;
 			$new_version = is_array( $offer ) ? ( $offer['new_version'] ?? $offer['version'] ?? null )
 				: ( is_object( $offer ) ? ( $offer->new_version ?? $offer->version ?? null ) : null );
-			$items[]    = array(
+			$items[]     = array(
 				'stylesheet'        => $stylesheet,
 				'name'              => $theme->get( 'Name' ),
 				'version'           => $theme->get( 'Version' ),
@@ -1295,8 +1295,8 @@ final class SystemAdapter {
 	 */
 	public function themeUpdate( array $payload, array $context ): array {
 		$expected_target = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
-		$stylesheet     = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
-		$theme          = wp_get_theme( $stylesheet );
+		$stylesheet      = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
+		$theme           = wp_get_theme( $stylesheet );
 		if ( ! $theme->exists() ) {
 			throw new RuntimeException( 'Theme not found.' );
 		}

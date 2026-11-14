@@ -316,7 +316,7 @@ final class YoastAdapter {
 			throw new RuntimeException( 'Site representation is not set to Organization in Yoast.' );
 		}
 
-		$options      = get_option( 'wpseo_titles', null );
+		$options       = get_option( 'wpseo_titles', null );
 		$after_options = $options;
 		foreach ( $updates as $key => $value ) {
 			if ( 'logo_attachment_id' === $key ) {

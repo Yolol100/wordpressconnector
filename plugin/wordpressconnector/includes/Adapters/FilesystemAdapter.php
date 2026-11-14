@@ -95,11 +95,11 @@ final class FilesystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 
-		$plugins         = get_plugins();
+		$plugins           = get_plugins();
 		$file_manager_file = 'wp-file-manager/file_folder_manager.php';
-		$file_manager     = isset( $plugins[ $file_manager_file ] ) ? $plugins[ $file_manager_file ] : array();
-		$settings        = get_option( 'wp_file_manager_settings', array() );
-		$configuredPath  = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
+		$file_manager      = isset( $plugins[ $file_manager_file ] ) ? $plugins[ $file_manager_file ] : array();
+		$settings          = get_option( 'wp_file_manager_settings', array() );
+		$configuredPath    = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
 
 		return array(
 			'root'              => 'wordpress_root',
@@ -162,7 +162,7 @@ final class FilesystemAdapter {
 			}
 			$child = '.' === $relative ? $name : $relative . '/' . $name;
 			try {
-				$child         = FilesystemPolicy::assertListable( $child );
+				$child          = FilesystemPolicy::assertListable( $child );
 				$child_absolute = $this->resolveExisting( $child, true );
 			} catch ( RuntimeException $error ) {
 				continue;
@@ -238,7 +238,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Filesystem writes are disabled. Enable the dedicated filesystem-writes gate first.' );
 		}
 
-		$relative           = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
+		$relative            = FilesystemPolicy::assertWritableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
 		$active_content      = FilesystemPolicy::affectsBrowserExecution( $relative );
 		$required_capability = 0 === strpos( $relative, 'wp-content/plugins/' ) ? 'edit_plugins' : 'edit_themes';
 		if ( ! current_user_can( $required_capability ) ) {
@@ -272,7 +272,7 @@ final class FilesystemAdapter {
 			'bytes'  => strlen( $content ),
 			'sha256' => hash( 'sha256', $content ),
 		);
-		$result      = array(
+		$result       = array(
 			'before'                                  => $before_state,
 			'after'                                   => $after_state,
 			'_current_fingerprint'                    => Fingerprint::make( $before_state ),
@@ -362,12 +362,12 @@ final class FilesystemAdapter {
 		}
 		$this->assertNoEmbeddedSecrets( $content );
 		$this->validateText( $relative, $content );
-		$absolute      = $this->resolveNewTextPath( $relative );
+		$absolute       = $this->resolveNewTextPath( $relative );
 		$expected_state = array(
 			'path'   => $relative,
 			'exists' => false,
 		);
-		$result        = array(
+		$result         = array(
 			'before'                                  => $expected_state,
 			'after'                                   => array(
 				'path'   => $relative,
@@ -448,7 +448,7 @@ final class FilesystemAdapter {
 		}
 		$this->assertNoEmbeddedSecrets( $before );
 		$before_state = $this->state( $relative, $before, $absolute );
-		$result      = array(
+		$result       = array(
 			'before'                                  => $before_state,
 			'after'                                   => array(
 				'path'   => $relative,
@@ -528,7 +528,7 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function resolveNewTextPath( string $relative ): string {
-		$parent     = dirname( $relative );
+		$parent      = dirname( $relative );
 		$parent_path = $this->resolveExisting( $parent, true );
 		if ( ! is_dir( $parent_path ) ) {
 			throw new RuntimeException( 'Parent directory must already exist.' );

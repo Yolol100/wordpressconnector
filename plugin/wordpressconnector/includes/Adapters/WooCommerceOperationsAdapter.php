@@ -116,11 +116,11 @@ final class WooCommerceOperationsAdapter {
 		)[ $area ] ?? '';
 		if ( $area === 'shipping_methods' ) {
 			$zone_id = $this->number( $payload['zone_id'] ?? null, 'zone_id' );
-			$path   = '/wc/v3/shipping/zones/' . $zone_id . '/methods';
+			$path    = '/wc/v3/shipping/zones/' . $zone_id . '/methods';
 		} elseif ( array_key_exists( 'zone_id', $payload ) ) {
 			throw new RuntimeException( 'Unexpected zone_id for WooCommerce operations inventory.' );
 		}
-		$page    = $payload['page'] ?? 1;
+		$page     = $payload['page'] ?? 1;
 		$per_page = $payload['per_page'] ?? 50;
 		if ( ! is_int( $page ) || $page < 1 || $page > 1000
 		|| ! is_int( $per_page ) || $per_page < 1 || $per_page > 100 ) {
@@ -291,11 +291,11 @@ final class WooCommerceOperationsAdapter {
 			throw new RuntimeException( 'WooCommerce provider restoration is rollback-only.' );
 		}
 		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id', 'fields', 'expected_after_fingerprint' ) );
-		$area      = $this->area( $payload );
-		$path      = $this->path( $area, $payload );
+		$area       = $this->area( $payload );
+		$path       = $this->path( $area, $payload );
 		$before_raw = $this->request( 'GET', $path );
-		$before    = $this->summarize( $before_raw, $area );
-		$expected  = $payload['expected_after_fingerprint'] ?? null;
+		$before     = $this->summarize( $before_raw, $area );
+		$expected   = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 		|| ! hash_equals( Fingerprint::make( $before ), $expected ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback blocked due to changed remote state.' );

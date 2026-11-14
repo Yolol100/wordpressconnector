@@ -138,7 +138,7 @@ final class Request {
 		if ( class_exists( Policy::class ) && Policy::publicRepositoryContext() ) {
 			if ( 'connector.read_batch' === $action ) {
 				$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
-				$safe_reads  = array( 'post.list', 'post.get', 'acf.field_groups', 'elementor.inspect', 'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect' );
+				$safe_reads = array( 'post.list', 'post.get', 'acf.field_groups', 'elementor.inspect', 'connector.update.check', 'maintenance.cache_capabilities', 'custom_css.inspect' );
 				if ( array_keys( $payload ) !== array( 'operations' ) || ! $operations || count( $operations ) > 25 ) {
 					throw new RuntimeException( 'Public read batch requires 1-25 operations.' );
 				}

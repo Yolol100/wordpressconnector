@@ -262,7 +262,7 @@ final class WooCommerceSettingsAdapter {
 		);
 		$group    = $this->groupId( $payload );
 		$id       = $this->settingId( $payload );
-		$low_risk  = $this->editable( $group, $id );
+		$low_risk = $this->editable( $group, $id );
 		$critical = ! $low_risk && $this->criticalEditable( $group, $id );
 		if ( ( ! $low_risk && ! $critical ) || $this->isPrivate( $id, '' ) ) {
 			throw new RuntimeException( 'WooCommerce setting requires a separate guarded provider workflow.' );
@@ -422,9 +422,9 @@ final class WooCommerceSettingsAdapter {
 			$type = isset( $definition['type'] ) && is_string( $definition['type'] ) ? $definition['type'] : '';
 			// Structural headings are not editable controls.
 			$provider_field = (bool) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
-			$private       = $this->isPrivate( $id, $type );
-			$editable      = $provider_field && ! $private && $this->editable( $tab, $id );
-			$entry         = array(
+			$private        = $this->isPrivate( $id, $type );
+			$editable       = $provider_field && ! $private && $this->editable( $tab, $id );
+			$entry          = array(
 				'id'          => $this->shortText( $id ),
 				'label'       => $this->shortText( $definition['title'] ?? $definition['label'] ?? '' ),
 				'type'        => $this->shortText( $type ),

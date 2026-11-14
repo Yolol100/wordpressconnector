@@ -208,7 +208,7 @@ final class YoastFeatureSettingsAdapter {
 			);
 		}
 		$old_options = $this->options( $group );
-		$options    = $old_options;
+		$options     = $old_options;
 		foreach ( $previous as $name => $value ) {
 			$key = self::FIELDS[ $name ][1];
 			if ( $value === null ) {

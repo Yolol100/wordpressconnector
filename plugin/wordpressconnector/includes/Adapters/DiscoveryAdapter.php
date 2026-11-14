@@ -165,7 +165,7 @@ final class DiscoveryAdapter {
 			}
 		}
 
-		$page            = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
+		$page             = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
 		$per_page         = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
 		$namespace_filter = $payload['namespace'] ?? null;
 		if ( null !== $namespace_filter &&
@@ -277,7 +277,7 @@ final class DiscoveryAdapter {
 			}
 			$methods = array_keys( $verbs );
 			sort( $methods, SORT_STRING );
-			$safe_routes[]                         = array(
+			$safe_routes[]                          = array(
 				'namespace'          => $route_namespace,
 				'route_pattern'      => $route,
 				'advertised_methods' => $methods,

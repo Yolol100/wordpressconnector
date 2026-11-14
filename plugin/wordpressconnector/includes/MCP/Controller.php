@@ -99,7 +99,7 @@ final class Controller {
 		}
 
 		$id_present = array_key_exists( 'id', $message );
-		$id        = $id_present ? $message['id'] : null;
+		$id         = $id_present ? $message['id'] : null;
 		if ( $id_present && ! is_int( $id ) && ! is_string( $id ) ) {
 			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
 		}

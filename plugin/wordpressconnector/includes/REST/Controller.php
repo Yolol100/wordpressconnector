@@ -215,7 +215,7 @@ final class Controller {
 			);
 		} catch ( Throwable $error ) {
 			// Storage and provider exceptions may expose server paths.
-			$reason      = $error->getMessage();
+			$reason       = $error->getMessage();
 			$client_error = $error instanceof RuntimeException && (
 				in_array(
 					$reason,

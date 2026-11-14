@@ -271,7 +271,7 @@ final class ElementorJsonExport {
 		}
 		foreach ( $matches as $key => $document ) {
 			$template_id = 0;
-			$template   = null;
+			$template    = null;
 			if ( is_object( $document ) && method_exists( $document, 'get_post' ) ) {
 				$template = $document->get_post();
 				if ( $template instanceof \WP_Post ) {
@@ -314,10 +314,10 @@ final class ElementorJsonExport {
 	 */
 	private function withSingularQuery( \WP_Post $sourcePost, callable $callback ) {
 		global $post, $wp_query, $wp_the_query;
-		$previous_post     = $post ?? null;
-		$previous_query    = $wp_query ?? null;
+		$previous_post      = $post ?? null;
+		$previous_query     = $wp_query ?? null;
 		$previous_the_query = $wp_the_query ?? null;
-		$args             = array(
+		$args               = array(
 			'post_type'           => (string) $sourcePost->post_type,
 			'post_status'         => 'any',
 			'posts_per_page'      => 1,

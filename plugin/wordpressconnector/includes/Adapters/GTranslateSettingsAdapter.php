@@ -90,7 +90,7 @@ final class GTranslateSettingsAdapter {
 		$before      = $this->publicFields( $raw );
 		$fingerprint = Fingerprint::make( $raw );
 		$patch       = $this->validatePatch( $payload['fields'] ?? null );
-		$after_raw    = array_replace( $raw, $patch );
+		$after_raw   = array_replace( $raw, $patch );
 		$this->ensureLanguages( $after_raw );
 		$preview = array(
 			'before'               => $before,

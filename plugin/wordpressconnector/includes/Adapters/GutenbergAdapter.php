@@ -73,7 +73,7 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function replace( array $payload, array $context ): array {
-		$post          = $this->post( $payload );
+		$post           = $this->post( $payload );
 		$before_content = (string) $post->post_content;
 		$before_blocks  = parse_blocks( $before_content );
 
@@ -131,23 +131,23 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function patch( array $payload, array $context ): array {
-		$post          = $this->post( $payload );
+		$post           = $this->post( $payload );
 		$before_content = (string) $post->post_content;
-		$blocks        = parse_blocks( $before_content );
-		$path          = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
+		$blocks         = parse_blocks( $before_content );
+		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
 		if ( ! $path ) {
 			throw new RuntimeException( 'gutenberg.patch requires a non-empty numeric payload.path.' );
 		}
 
-		$patched     = $blocks;
-		$block       =& $this->blockByPath( $patched, $path );
+		$patched      = $blocks;
+		$block        =& $this->blockByPath( $patched, $path );
 		$before_block = $block;
 
 		if ( isset( $payload['replace_block'] ) && is_array( $payload['replace_block'] ) ) {
 			$block = $payload['replace_block'];
 		} else {
 			if ( isset( $payload['attrs'] ) && is_array( $payload['attrs'] ) ) {
-				$replace_attrs   = Input::bool( $payload, 'replace_attrs' );
+				$replace_attrs  = Input::bool( $payload, 'replace_attrs' );
 				$block['attrs'] = $replace_attrs ? $payload['attrs'] : array_merge( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array(), $payload['attrs'] );
 			}
 			if ( array_key_exists( 'innerHTML', $payload ) ) {
@@ -163,7 +163,7 @@ final class GutenbergAdapter {
 		}
 
 		$after_content = serialize_blocks( $patched );
-		$result       = array(
+		$result        = array(
 			'post_id'              => (int) $post->ID,
 			'path'                 => $path,
 			'before_block'         => $before_block,

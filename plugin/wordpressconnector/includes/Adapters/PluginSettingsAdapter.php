@@ -401,19 +401,19 @@ final class PluginSettingsAdapter {
 			throw new RuntimeException( 'Plugin inventory exceeds the bounded audit limit.' );
 		}
 
-		$items        = array();
+		$items         = array();
 		$active_count  = 0;
 		$unknown_count = 0;
 		$checked_count = 0;
 		$active_ids    = array();
-		$indicators   = array();
+		$indicators    = array();
 		foreach ( $installed as $plugin ) {
 			$known = (string) ( $plugin['mode'] ?? '' ) !== 'unmodeled';
 			$id    = $known ? (string) ( $plugin['id'] ?? '' ) : 'unmodeled_' . ( ++$unknown_count );
 			if ( ! preg_match( '/^[a-z][a-z0-9_-]{1,79}\\z/', $id ) ) {
 				throw new RuntimeException( 'Plugin integration identifier is invalid.' );
 			}
-			$active       = true === ( $plugin['active'] ?? null );
+			$active        = true === ( $plugin['active'] ?? null );
 			$active_count += $active ? 1 : 0;
 			if ( $active ) {
 				$active_ids[ $id ] = true;
@@ -692,7 +692,7 @@ final class PluginSettingsAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$registered_actions = isset( $context['registry'] ) && $context['registry'] instanceof Registry
 			? $context['registry']->catalog() : null;
-		$items             = array();
+		$items              = array();
 		foreach ( get_plugins() as $file => $data ) {
 			$integration = self::INTEGRATIONS[ $file ] ?? array(
 				'id'      => sanitize_key( (string) dirname( $file ) ),

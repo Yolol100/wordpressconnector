@@ -376,7 +376,7 @@ final class CodeSnippetsAdapter {
 		}
 
 		$replacements = $this->replacements( $payload );
-		$new_code      = (string) $before['code'];
+		$new_code     = (string) $before['code'];
 
 		foreach ( $replacements as $index => $replacement ) {
 			$occurrences = substr_count( $new_code, $replacement['find'] );

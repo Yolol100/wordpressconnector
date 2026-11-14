@@ -253,10 +253,10 @@ final class YoastSnippetAdapter {
 		if ( empty( $context['rollback_mode'] ) || array_diff( array_keys( $payload ), array( 'id', 'fields', 'expected_after_fingerprint' ) ) ) {
 			throw new RuntimeException( 'Snippet restore is reserved for guarded rollback.' );
 		}
-		$post      = $this->target( $payload, true );
-		$previous  = self::validateFields( $payload['fields'] ?? null, true );
-		$expected  = $payload['expected_after_fingerprint'] ?? null;
-		$current   = $this->state( (int) $post->ID );
+		$post       = $this->target( $payload, true );
+		$previous   = self::validateFields( $payload['fields'] ?? null, true );
+		$expected   = $payload['expected_after_fingerprint'] ?? null;
+		$current    = $this->state( (int) $post->ID );
 		$current_fp = Fingerprint::make( $current );
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) || ! hash_equals( $expected, $current_fp ) ) {
 			throw new RuntimeException( 'Snippet changed after edit; rollback refused.' );

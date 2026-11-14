@@ -104,7 +104,7 @@ final class ElementorJsonImport {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$posts      = get_posts(
+		$posts       = get_posts(
 			array(
 				'post_type'      => $postType,
 				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
@@ -176,7 +176,7 @@ final class ElementorJsonImport {
 				if ( 'elementor_library' === $postType ) {
 					$adapter_payload['template_type'] = $this->templateType( $payload );
 				}
-				$created  = $adapter->createDocument( $adapter_payload, array( 'dry_run' => false ) );
+				$created   = $adapter->createDocument( $adapter_payload, array( 'dry_run' => false ) );
 				$result_id = isset( $created['document']['post_id'] ) ? (int) $created['document']['post_id'] : 0;
 				if ( $result_id < 1 ) {
 					throw new RuntimeException( 'Elementor JSON was imported but the new document ID could not be verified.' );
@@ -277,7 +277,7 @@ final class ElementorJsonImport {
 		try {
 			$entries = $this->bulkUploads();
 			$plan    = $this->buildBulkPlan( $entries );
-			$all_ok   = true;
+			$all_ok  = true;
 			foreach ( $plan as $row ) {
 				if ( 'ready' !== $row['status'] ) {
 					$all_ok = false;
@@ -347,9 +347,9 @@ final class ElementorJsonImport {
 		if ( '' === $lock ) {
 			wp_die( 'Another connector mutation is running. Preview again after it finishes.', '', array( 'response' => 409 ) );
 		}
-		$adapter    = new ElementorAdapter();
-		$snapshots  = array();
-		$updated    = array();
+		$adapter      = new ElementorAdapter();
+		$snapshots    = array();
+		$updated      = array();
 		$in_flight_id = 0;
 		try {
 			foreach ( $plan as $row ) {
@@ -388,7 +388,7 @@ final class ElementorJsonImport {
 				}
 				$in_flight_id = $id;
 				$adapter->replaceDocument( $payload, array( 'dry_run' => false ) );
-				$updated[]  = $id;
+				$updated[]    = $id;
 				$in_flight_id = 0;
 			}
 			echo '<div class="wrap"><h1>Elementor bulkimport voltooid</h1><p>'
@@ -504,7 +504,7 @@ final class ElementorJsonImport {
 	 * @return array Operation result.
 	 */
 	private function buildBulkPlan( array $entries ): array {
-		$plan          = array();
+		$plan           = array();
 		$seen_targets   = array();
 		$template_types = array(
 			'header',
@@ -522,9 +522,9 @@ final class ElementorJsonImport {
 			'kit',
 		);
 		foreach ( $entries as $entry ) {
-			$name         = $entry['name'];
-			$payload      = $entry['payload'];
-			$source       = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
+			$name          = $entry['name'];
+			$payload       = $entry['payload'];
+			$source        = isset( $payload['source'] ) && is_array( $payload['source'] ) ? $payload['source'] : array();
 			$declared_type = sanitize_key( (string) ( $source['post_type'] ?? '' ) );
 			$document_type = sanitize_key( (string) ( $payload['type'] ?? '' ) );
 			$inferred_type = '';
@@ -535,7 +535,7 @@ final class ElementorJsonImport {
 			} elseif ( in_array( $document_type, $template_types, true ) ) {
 				$inferred_type = 'elementor_library';
 			}
-			$postType       = '' !== $declared_type ? $declared_type : $inferred_type;
+			$postType        = '' !== $declared_type ? $declared_type : $inferred_type;
 			$family_conflict = '' !== $declared_type && '' !== $inferred_type
 			&& $declared_type !== $inferred_type
 			&& ! ( 'elementor_library' === $declared_type && 'page' === $document_type );
@@ -581,7 +581,7 @@ final class ElementorJsonImport {
 					&& current_user_can( 'edit_post', $id ) ) {
 						$row['post_id']      = $id;
 						$row['target_label'] = (string) $post->post_title . ' (#' . $id . ')';
-						$stored_type          = (string) get_post_meta( $id, '_elementor_template_type', true );
+						$stored_type         = (string) get_post_meta( $id, '_elementor_template_type', true );
 						if ( 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
 							$row['status'] = 'conflict: existing item is not an Elementor document';
 						} elseif ( 'elementor_library' === $postType
@@ -612,7 +612,7 @@ final class ElementorJsonImport {
 			}
 			if ( $row['post_id'] > 0 ) {
 				if ( isset( $seen_targets[ $row['post_id'] ] ) ) {
-					$row['status']                                     = 'conflict: repeated target';
+					$row['status']                                      = 'conflict: repeated target';
 					$plan[ $seen_targets[ $row['post_id'] ] ]['status'] = 'conflict: repeated target';
 				} else {
 					$seen_targets[ $row['post_id'] ] = count( $plan );

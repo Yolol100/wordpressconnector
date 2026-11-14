@@ -103,7 +103,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		if ( $regenerate ) {
-			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+			$plugin        = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 			$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 			if ( ! is_object( $files_manager ) || ! method_exists( $files_manager, 'generate_css' ) ) {
 				throw new RuntimeException( 'Elementor CSS regeneration API is unavailable.' );
@@ -180,7 +180,7 @@ final class CacheMaintenanceAdapter {
 	 */
 	private function layerState( string $layer ): array {
 		if ( 'elementor' === $layer ) {
-			$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+			$plugin        = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 			$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 			return array(
 				'provider'  => 'Elementor',
@@ -216,7 +216,7 @@ final class CacheMaintenanceAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function flushElementor(): bool {
-		$plugin       = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
+		$plugin        = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 		$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 		if ( ! is_object( $files_manager ) || ! method_exists( $files_manager, 'clear_cache' ) ) {
 			throw new RuntimeException( 'Elementor cache API is unavailable.' );
@@ -457,7 +457,7 @@ final class CacheMaintenanceAdapter {
 		 */
 		$transient      = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
 		$before         = get_transient( $transient );
-		$started_at      = time();
+		$started_at     = time();
 		$verifiedByHook = false;
 		$callback       = static function () use ( &$verifiedByHook ): void {
 			$verifiedByHook = true;
@@ -471,8 +471,8 @@ final class CacheMaintenanceAdapter {
 		}
 
 		$after             = get_transient( $transient );
-		$before_value       = is_numeric( $before ) ? (int) $before : 0;
-		$after_value        = is_numeric( $after ) ? (int) $after : 0;
+		$before_value      = is_numeric( $before ) ? (int) $before : 0;
+		$after_value       = is_numeric( $after ) ? (int) $after : 0;
 		$timestampVerified = $after_value >= ( $started_at - 1 )
 			&& $after_value >= $before_value;
 
