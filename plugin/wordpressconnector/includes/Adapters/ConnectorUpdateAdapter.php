@@ -165,18 +165,18 @@ final class ConnectorUpdateAdapter {
 			return;
 		}
 
-		$rawNonce = wp_unslash( $_GET['wpconnector_notice_nonce'] );
-		$nonce    = sanitize_text_field( $rawNonce );
-		if ( $nonce !== $rawNonce || ! wp_verify_nonce( $nonce, 'wpconnector_checked_notice' ) ) {
+		$raw_nonce = wp_unslash( $_GET['wpconnector_notice_nonce'] );
+		$nonce    = sanitize_text_field( $raw_nonce );
+		if ( $nonce !== $raw_nonce || ! wp_verify_nonce( $nonce, 'wpconnector_checked_notice' ) ) {
 			return;
 		}
-		$rawNoticeResult = wp_unslash( $_GET['wpconnector_update_checked'] );
+		$raw_notice_result = wp_unslash( $_GET['wpconnector_update_checked'] );
 		// Reject malformed values rather than normalizing markup into a trusted result.
-		if ( ! in_array( $rawNoticeResult, array( '0', '1' ), true ) ) {
+		if ( ! in_array( $raw_notice_result, array( '0', '1' ), true ) ) {
 			return;
 		}
-		$noticeResult = sanitize_text_field( $rawNoticeResult );
-		$ok           = '1' === $noticeResult;
+		$notice_result = sanitize_text_field( $raw_notice_result );
+		$ok           = '1' === $notice_result;
 		echo '<div class="notice ' . ( $ok ? 'notice-success' : 'notice-warning' ) .
 			' is-dismissible"><p>' .
 			esc_html( $ok
@@ -345,15 +345,15 @@ final class ConnectorUpdateAdapter {
 
 		$package = $this->downloadVerifiedPackage( $release );
 		try {
-			$actualSha256 = substr( $release['package_digest'], 7 );
+			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
 			// backup. A later fatal error still has no guaranteed automatic recovery.
 			$installation = $this->installWithCoreBackup( $package );
 			wp_clean_plugins_cache( true );
 			$plugins          = get_plugins();
-			$installedVersion = isset( $plugins[self::PLUGIN_FILE]['Version'] ) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
-			if ( ! hash_equals( $release['version'], $installedVersion ) ) {
+			$installed_version = isset( $plugins[self::PLUGIN_FILE]['Version'] ) ? (string) $plugins[self::PLUGIN_FILE]['Version'] : '';
+			if ( ! hash_equals( $release['version'], $installed_version ) ) {
 				$this->restoreAfterReadbackFailure( $installation, $current );
 				throw new RuntimeException( 'Connector update readback failed: prior version restored; check the release package.' );
 			}
@@ -363,9 +363,9 @@ final class ConnectorUpdateAdapter {
 				'before'    => $before,
 				'after'     => array(
 					'plugin_file' => self::PLUGIN_FILE,
-					'version'     => $installedVersion,
+					'version'     => $installed_version,
 				),
-				'package_sha256'     => $actualSha256,
+				'package_sha256'     => $actual_sha256,
 				'release_tag'        => $release['tag'],
 				'rollback_supported' => false,
 			);
@@ -392,8 +392,8 @@ final class ConnectorUpdateAdapter {
 
 		// A self-update runs through REST, not through the normal wp-admin update
 		// screen. Record the active state before overwriting the files.
-		$wasActive = is_plugin_active( self::PLUGIN_FILE );
-		if ( ! $wasActive ) {
+		$was_active = is_plugin_active( self::PLUGIN_FILE );
+		if ( ! $was_active ) {
 			throw new RuntimeException( 'Connector self-update requires an active Connector plugin.' );
 		}
 
@@ -438,7 +438,7 @@ final class ConnectorUpdateAdapter {
 		if ( ! is_array( $result ) ) {
 			throw new RuntimeException( 'Connector installation did not complete; verify WordPress Core backup recovery before retrying.' );
 		}
-		if ( $wasActive && ! is_plugin_active( self::PLUGIN_FILE ) ) {
+		if ( $was_active && ! is_plugin_active( self::PLUGIN_FILE ) ) {
 			// Preserve the activation state held before the guarded upgrade.
 			// Never report a successful install if REST routes will disappear.
 			$activation = activate_plugin( self::PLUGIN_FILE, '', false, true );
@@ -495,11 +495,11 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Canonical release tag must use vMAJOR.MINOR.PATCH.' );
 		}
 
-		$packageUrl     = '';
-		$checksumUrl    = '';
-		$sbomUrl        = '';
-		$packageDigest  = '';
-		$checksumDigest = '';
+		$package_url     = '';
+		$checksum_url    = '';
+		$sbom_url        = '';
+		$package_digest  = '';
+		$checksum_digest = '';
 		foreach ( $decoded['assets'] as $asset ) {
 			if ( ! is_array( $asset ) || empty( $asset['name'] ) || empty( $asset['browser_download_url'] ) ) {
 				continue;
@@ -507,38 +507,38 @@ final class ConnectorUpdateAdapter {
 			$name = (string) $asset['name'];
 			$url  = (string) $asset['browser_download_url'];
 			if ( self::PACKAGE_ASSET === $name ) {
-				$packageUrl    = $url;
-				$packageDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
+				$package_url    = $url;
+				$package_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::CHECKSUM_ASSET === $name ) {
-				$checksumUrl    = $url;
-				$checksumDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
+				$checksum_url    = $url;
+				$checksum_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::SBOM_ASSET === $name ) {
-				$sbomUrl = $url;
+				$sbom_url = $url;
 			}
 		}
 
-		$quotedTag = preg_quote( $tag, '#' );
-		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\.zip\z#', $packageUrl ) ) {
+		$quoted_tag = preg_quote( $tag, '#' );
+		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quoted_tag . '/wordpressconnector\.zip\z#', $package_url ) ) {
 			throw new RuntimeException( 'Canonical release is missing the expected connector package asset.' );
 		}
-		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\.zip\.sha256\z#', $checksumUrl ) ) {
+		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quoted_tag . '/wordpressconnector\.zip\.sha256\z#', $checksum_url ) ) {
 			throw new RuntimeException( 'Canonical release is missing the expected checksum asset.' );
 		}
-		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quotedTag . '/wordpressconnector\.spdx\.json\z#', $sbomUrl ) ) {
+		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quoted_tag . '/wordpressconnector\.spdx\.json\z#', $sbom_url ) ) {
 			throw new RuntimeException( 'Canonical release is missing the expected SPDX SBOM asset.' );
 		}
-		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $packageDigest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksumDigest ) ) {
+		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $package_digest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksum_digest ) ) {
 			throw new RuntimeException( 'Canonical release assets are missing GitHub SHA-256 digests.' );
 		}
 
 		return array(
 			'tag'             => $tag,
 			'version'         => (string) $matches[1],
-			'package_url'     => $packageUrl,
-			'checksum_url'    => $checksumUrl,
-			'sbom_url'        => $sbomUrl,
-			'package_digest'  => $packageDigest,
-			'checksum_digest' => $checksumDigest,
+			'package_url'     => $package_url,
+			'checksum_url'    => $checksum_url,
+			'sbom_url'        => $sbom_url,
+			'package_digest'  => $package_digest,
+			'checksum_digest' => $checksum_digest,
 		);
 	}
 
@@ -548,8 +548,8 @@ final class ConnectorUpdateAdapter {
      * because it was downloaded from GitHub over HTTPS.
      */
 	private function downloadVerifiedPackage( array $release ): string {
-		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
-		if ( ! hash_equals( 'sha256:' . $expectedSha256, $release['package_digest'] ) ) {
+		$expected_sha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
+		if ( ! hash_equals( 'sha256:' . $expected_sha256, $release['package_digest'] ) ) {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
 		}
 
@@ -566,15 +566,15 @@ final class ConnectorUpdateAdapter {
 			if ( false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES ) {
 				throw new RuntimeException( 'Connector release package is empty or exceeds the 20 MiB limit.' );
 			}
-			$actualSha256 = hash_file( 'sha256', $package );
-			if ( ! is_string( $actualSha256 ) || ! hash_equals( $expectedSha256, strtolower( $actualSha256 ) )
-				|| ! hash_equals( $release['package_digest'], 'sha256:' . strtolower( $actualSha256 ) ) ) {
+			$actual_sha256 = hash_file( 'sha256', $package );
+			if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expected_sha256, strtolower( $actual_sha256 ) )
+				|| ! hash_equals( $release['package_digest'], 'sha256:' . strtolower( $actual_sha256 ) ) ) {
 				throw new RuntimeException( 'Connector release package SHA-256 verification failed.' );
 			}
 
-			$packageInfo = $this->inspectPackage( $package );
-			if ( ! hash_equals( self::PLUGIN_FILE, $packageInfo['plugin_file'] )
-				|| ! hash_equals( $release['version'], $packageInfo['version'] ) ) {
+			$package_info = $this->inspectPackage( $package );
+			if ( ! hash_equals( self::PLUGIN_FILE, $package_info['plugin_file'] )
+				|| ! hash_equals( $release['version'], $package_info['version'] ) ) {
 				throw new RuntimeException( 'Connector release ZIP identity or version does not match the published release.' );
 			}
 
@@ -601,12 +601,12 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Connector checksum asset could not be downloaded.' );
 		}
 
-		$rawBody           = (string) wp_remote_retrieve_body( $response );
-		$actualAssetDigest = 'sha256:' . hash( 'sha256', $rawBody );
-		if ( ! hash_equals( $expectedAssetDigest, $actualAssetDigest ) ) {
+		$raw_body           = (string) wp_remote_retrieve_body( $response );
+		$actual_asset_digest = 'sha256:' . hash( 'sha256', $raw_body );
+		if ( ! hash_equals( $expectedAssetDigest, $actual_asset_digest ) ) {
 			throw new RuntimeException( 'Connector checksum asset GitHub digest verification failed.' );
 		}
-		$body = trim( $rawBody );
+		$body = trim( $raw_body );
 		if ( ! preg_match( '/^([a-f0-9]{64})  wordpressconnector\.zip\z/', $body, $matches ) ) {
 			throw new RuntimeException( 'Connector checksum asset has an invalid format.' );
 		}
@@ -629,7 +629,7 @@ final class ConnectorUpdateAdapter {
 			}
 
 			$paths             = array();
-			$uncompressedBytes = 0;
+			$uncompressed_bytes = 0;
 			for ( $index = 0; $index < $zip->numFiles; ++$index ) {
 				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
@@ -658,12 +658,12 @@ final class ConnectorUpdateAdapter {
 				}
 				$paths[ $normalized ] = true;
 
-				$entryBytes = isset( $stat['size'] ) ? (int) $stat['size'] : 0;
-				if ( $entryBytes < 0 ) {
+				$entry_bytes = isset( $stat['size'] ) ? (int) $stat['size'] : 0;
+				if ( $entry_bytes < 0 ) {
 					throw new RuntimeException( 'Connector release ZIP contains an invalid entry size.' );
 				}
-				$uncompressedBytes += $entryBytes;
-				if ( $uncompressedBytes > self::MAX_UNCOMPRESSED_BYTES ) {
+				$uncompressed_bytes += $entry_bytes;
+				if ( $uncompressed_bytes > self::MAX_UNCOMPRESSED_BYTES ) {
 					throw new RuntimeException( 'Connector release ZIP exceeds the uncompressed size limit.' );
 				}
 

@@ -109,50 +109,50 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'form must be a V3 widgetType=form element or a V4 elType=e-form element.' );
 		}
 
-		$requestedFamily = isset( $payload['family'] ) ? strtolower( (string) $payload['family'] ) : 'auto';
-		if ( ! in_array( $requestedFamily, array( 'auto', 'v3', 'v4' ), true ) ) {
+		$requested_family = isset( $payload['family'] ) ? strtolower( (string) $payload['family'] ) : 'auto';
+		if ( ! in_array( $requested_family, array( 'auto', 'v3', 'v4' ), true ) ) {
 			throw new RuntimeException( 'family must be auto, v3 or v4.' );
 		}
-		if ( 'auto' !== $requestedFamily && $requestedFamily !== $family ) {
+		if ( 'auto' !== $requested_family && $requested_family !== $family ) {
 			throw new RuntimeException( 'Requested form family does not match the supplied form JSON.' );
 		}
 
 		$capabilities              = $this->capabilities( array(), array() );
-		$expectedSchemaFingerprint = isset( $payload['expected_schema_fingerprint'] ) ? (string) $payload['expected_schema_fingerprint'] : '';
-		if ( '' !== $expectedSchemaFingerprint && ! hash_equals( (string) $capabilities['schema_fingerprint'], $expectedSchemaFingerprint ) ) {
+		$expected_schema_fingerprint = isset( $payload['expected_schema_fingerprint'] ) ? (string) $payload['expected_schema_fingerprint'] : '';
+		if ( '' !== $expected_schema_fingerprint && ! hash_equals( (string) $capabilities['schema_fingerprint'], $expected_schema_fingerprint ) ) {
 			throw new RuntimeException( 'Elementor form schema fingerprint changed; refresh form capabilities before writing.' );
 		}
 
 		$this->validateForm( $form, $family, $capabilities );
-		$formId          = (string) $form['id'];
-		$existing        = $this->findElementCopy( $data, $formId );
-		$existingFamily  = is_array( $existing ) ? $this->formFamily( $existing ) : null;
-		$parentElementId = isset( $payload['parent_element_id'] ) ? (string) $payload['parent_element_id'] : '';
+		$form_id          = (string) $form['id'];
+		$existing        = $this->findElementCopy( $data, $form_id );
+		$existing_family  = is_array( $existing ) ? $this->formFamily( $existing ) : null;
+		$parent_element_id = isset( $payload['parent_element_id'] ) ? (string) $payload['parent_element_id'] : '';
 		$position        = array_key_exists( 'position', $payload ) ? (int) $payload['position'] : null;
 		$operation       = 'insert';
-		$beforeForm      = null;
+		$before_form      = null;
 
 		if ( is_array( $existing ) ) {
-			if ( null === $existingFamily ) {
+			if ( null === $existing_family ) {
 				throw new RuntimeException( 'The supplied form id already belongs to a non-form Elementor element.' );
 			}
-			if ( $existingFamily !== $family && empty( $payload['allow_family_change'] ) ) {
+			if ( $existing_family !== $family && empty( $payload['allow_family_change'] ) ) {
 				throw new RuntimeException( 'Changing an existing form between V3 and V4 requires allow_family_change=true.' );
 			}
-			if ( '' !== $parentElementId || null !== $position ) {
+			if ( '' !== $parent_element_id || null !== $position ) {
 				throw new RuntimeException( 'parent_element_id and position are only valid when inserting a new form id.' );
 			}
-			$beforeForm = $existing;
-			if ( ! $this->replaceElementById( $data, $formId, $form ) ) {
+			$before_form = $existing;
+			if ( ! $this->replaceElementById( $data, $form_id, $form ) ) {
 				throw new RuntimeException( 'Unable to replace the existing Elementor form.' );
 			}
 			$operation = 'replace';
 		} else {
-			if ( 'v3' === $family && '' === $parentElementId ) {
+			if ( 'v3' === $family && '' === $parent_element_id ) {
 				throw new RuntimeException( 'A new V3 Form widget requires parent_element_id so it is inserted into an existing Elementor layout element.' );
 			}
-			if ( '' !== $parentElementId ) {
-				if ( ! $this->insertIntoParent( $data, $parentElementId, $form, $position ) ) {
+			if ( '' !== $parent_element_id ) {
+				if ( ! $this->insertIntoParent( $data, $parent_element_id, $form, $position ) ) {
 					throw new RuntimeException( 'parent_element_id was not found in the Elementor document.' );
 				}
 			} else {
@@ -167,10 +167,10 @@ final class ElementorFormsAdapter {
 			'post_id'              => (int) $post->ID,
 			'operation'            => $operation,
 			'family'               => $family,
-			'form_id'              => $formId,
-			'parent_element_id'    => '' !== $parentElementId ? $parentElementId : null,
+			'form_id'              => $form_id,
+			'parent_element_id'    => '' !== $parent_element_id ? $parent_element_id : null,
 			'position'             => $position,
-			'before_form'          => $beforeForm,
+			'before_form'          => $before_form,
 			'after_form'           => $form,
 			'schema_fingerprint'   => $capabilities['schema_fingerprint'],
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -184,7 +184,7 @@ final class ElementorFormsAdapter {
 			$this->saveDocument( (int) $post->ID, $data, $before['page_settings'] );
 			$this->clearCache();
 			$after    = $this->snapshot( (int) $post->ID );
-			$readback = $this->findElementCopy( $after['data'], $formId );
+			$readback = $this->findElementCopy( $after['data'], $form_id );
 			if ( ! is_array( $readback ) || ! hash_equals( Fingerprint::make( $form ), Fingerprint::make( $readback ) ) ) {
 				throw new RuntimeException( 'Elementor form readback verification failed.' );
 			}
@@ -193,9 +193,9 @@ final class ElementorFormsAdapter {
 		} catch ( Throwable $error ) {
 			try {
 				$this->restoreSnapshot( $before );
-			} catch ( Throwable $rollbackError ) {
+			} catch ( Throwable $rollback_error ) {
 				throw new RuntimeException(
-					'Elementor form mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollbackError->getMessage(),
+					'Elementor form mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollback_error->getMessage(),
 					0,
 					$error
 				);
@@ -238,18 +238,18 @@ final class ElementorFormsAdapter {
 		}
 
 		$controls   = $this->collectControlSchema( $widgets['form'], $warnings );
-		$fieldTypes = isset( $controls['form_fields']['fields']['field_type']['choice_keys'] )
+		$field_types = isset( $controls['form_fields']['fields']['field_type']['choice_keys'] )
 			? $controls['form_fields']['fields']['field_type']['choice_keys']
 			: array();
-		$submitActions = isset( $controls['submit_actions']['choice_keys'] ) ? $controls['submit_actions']['choice_keys'] : array();
+		$submit_actions = isset( $controls['submit_actions']['choice_keys'] ) ? $controls['submit_actions']['choice_keys'] : array();
 
 		return array(
 			'available'                 => true,
 			'widget_type'               => 'form',
 			'class'                     => get_class( $widgets['form'] ),
 			'controls'                  => $controls,
-			'field_type_choice_keys'    => $fieldTypes,
-			'submit_action_choice_keys' => $submitActions,
+			'field_type_choice_keys'    => $field_types,
+			'submit_action_choice_keys' => $submit_actions,
 		);
 	}
 
@@ -267,15 +267,15 @@ final class ElementorFormsAdapter {
 		}
 		ksort( $types, SORT_STRING );
 
-		$formAvailable = isset( $types['e-form'] );
-		$formConfig    = $formAvailable ? $types['e-form']['config'] : array();
-		$props         = isset( $formConfig['atomic_props_schema'] ) && is_array( $formConfig['atomic_props_schema'] )
-			? array_keys( $formConfig['atomic_props_schema'] )
+		$form_available = isset( $types['e-form'] );
+		$form_config    = $form_available ? $types['e-form']['config'] : array();
+		$props         = isset( $form_config['atomic_props_schema'] ) && is_array( $form_config['atomic_props_schema'] )
+			? array_keys( $form_config['atomic_props_schema'] )
 			: array();
 		sort( $props, SORT_STRING );
 
 		return array(
-			'available'            => $formAvailable,
+			'available'            => $form_available,
 			'root_type'            => 'e-form',
 			'types'                => $types,
 			'root_setting_keys'    => $props,
@@ -319,11 +319,11 @@ final class ElementorFormsAdapter {
 		}
 		if ( isset( $control['fields'] ) && is_array( $control['fields'] ) ) {
 			$record['fields'] = array();
-			foreach ( $control['fields'] as $fieldName => $field ) {
+			foreach ( $control['fields'] as $field_name => $field ) {
 				if ( ! is_array( $field ) ) {
 					continue;
 				}
-				$key = isset( $field['name'] ) && is_scalar( $field['name'] ) ? (string) $field['name'] : (string) $fieldName;
+				$key = isset( $field['name'] ) && is_scalar( $field['name'] ) ? (string) $field['name'] : (string) $field_name;
 				$record['fields'][ $key ] = $this->controlRecord( $key, $field );
 			}
 			ksort( $record['fields'], SORT_STRING );
@@ -422,25 +422,25 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $settings['form_fields'] ) ) {
 				throw new RuntimeException( 'V3 settings.form_fields must be an array.' );
 			}
-			$seenIds       = array();
-			$seenCustomIds = array();
+			$seen_ids       = array();
+			$seen_custom_ids = array();
 			foreach ( $settings['form_fields'] as $field ) {
 				if ( ! is_array( $field ) ) {
 					throw new RuntimeException( 'Each V3 form field must be an object/array.' );
 				}
 				$id = isset( $field['_id'] ) ? (string) $field['_id'] : '';
 				if ( '' !== $id ) {
-					if ( isset( $seenIds[ $id ] ) ) {
+					if ( isset( $seen_ids[ $id ] ) ) {
 						throw new RuntimeException( 'Duplicate V3 form field _id: ' . $id );
 					}
-					$seenIds[ $id ] = true;
+					$seen_ids[ $id ] = true;
 				}
-				$customId = isset( $field['custom_id'] ) ? (string) $field['custom_id'] : '';
-				if ( '' !== $customId ) {
-					if ( isset( $seenCustomIds[ $customId ] ) ) {
-						throw new RuntimeException( 'Duplicate V3 form field custom_id: ' . $customId );
+				$custom_id = isset( $field['custom_id'] ) ? (string) $field['custom_id'] : '';
+				if ( '' !== $custom_id ) {
+					if ( isset( $seen_custom_ids[ $custom_id ] ) ) {
+						throw new RuntimeException( 'Duplicate V3 form field custom_id: ' . $custom_id );
 					}
-					$seenCustomIds[ $customId ] = true;
+					$seen_custom_ids[ $custom_id ] = true;
 				}
 			}
 		}
@@ -467,17 +467,17 @@ final class ElementorFormsAdapter {
 		if ( 'e-form' !== (string) ( $form['elType'] ?? '' ) ) {
 			throw new RuntimeException( 'V4 Atomic forms must use elType=e-form.' );
 		}
-		$registeredTypes = $this->registeredTypeNames();
+		$registered_types = $this->registeredTypeNames();
 		$counts          = array();
-		$this->validateAtomicNode( $form, $registeredTypes, $counts, true );
+		$this->validateAtomicNode( $form, $registered_types, $counts, true );
 
 		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $required ) {
 			if ( empty( $counts[ $required ] ) ) {
 				throw new RuntimeException( 'V4 Atomic Form is missing required descendant: ' . $required );
 			}
 		}
-		$submitCount = isset( $counts['e-form-submit-button'] ) ? (int) $counts['e-form-submit-button'] : 0;
-		if ( 1 !== $submitCount ) {
+		$submit_count = isset( $counts['e-form-submit-button'] ) ? (int) $counts['e-form-submit-button'] : 0;
+		if ( 1 !== $submit_count ) {
 			throw new RuntimeException( 'V4 Atomic Form must contain exactly one e-form-submit-button.' );
 		}
 		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $messageType ) {
@@ -528,9 +528,9 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $value ) ) {
 				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' must be a typed prop object.' );
 			}
-			$isTyped = isset( $value['$$type'] ) && is_string( $value['$$type'] ) && array_key_exists( 'value', $value );
-			$isMulti = ! empty( $value['$$multi-props'] ) && array_key_exists( 'value', $value );
-			if ( ! $isTyped && ! $isMulti ) {
+			$is_typed = isset( $value['$$type'] ) && is_string( $value['$$type'] ) && array_key_exists( 'value', $value );
+			$is_multi = ! empty( $value['$$multi-props'] ) && array_key_exists( 'value', $value );
+			if ( ! $is_typed && ! $is_multi ) {
 				throw new RuntimeException( 'Atomic setting ' . (string) $key . ' on ' . $type . ' is missing $$type/value metadata.' );
 			}
 		}
@@ -558,12 +558,12 @@ final class ElementorFormsAdapter {
 	}
 
 	private function formFamily( array $element ): ?string {
-		$elType     = isset( $element['elType'] ) ? (string) $element['elType'] : '';
-		$widgetType = isset( $element['widgetType'] ) ? (string) $element['widgetType'] : '';
-		if ( 'widget' === $elType && 'form' === $widgetType ) {
+		$el_type     = isset( $element['elType'] ) ? (string) $element['elType'] : '';
+		$widget_type = isset( $element['widgetType'] ) ? (string) $element['widgetType'] : '';
+		if ( 'widget' === $el_type && 'form' === $widget_type ) {
 			return 'v3';
 		}
-		if ( 'e-form' === $elType || 'e-form' === $widgetType ) {
+		if ( 'e-form' === $el_type || 'e-form' === $widget_type ) {
 			return 'v4';
 		}
 		return null;
@@ -574,14 +574,14 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			$elementPath = array_merge( $path, array( (int) $index ) );
+			$element_path = array_merge( $path, array( (int) $index ) );
 			$family      = $this->formFamily( $element );
 			if ( null !== $family ) {
 				$forms[] = array(
 					'id'                => isset( $element['id'] ) ? (string) $element['id'] : '',
 					'family'            => $family,
 					'parent_element_id' => $parentId,
-					'path'              => $elementPath,
+					'path'              => $element_path,
 					'form'              => $element,
 				);
 			}
@@ -589,7 +589,7 @@ final class ElementorFormsAdapter {
 				$this->collectForms(
 					$element['elements'],
 					$forms,
-					array_merge( $elementPath, array( 'elements' ) ),
+					array_merge( $element_path, array( 'elements' ) ),
 					isset( $element['id'] ) ? (string) $element['id'] : $parentId
 				);
 			}
@@ -696,12 +696,12 @@ final class ElementorFormsAdapter {
 			if ( ! is_array( $element ) ) {
 				continue;
 			}
-			$isForm = null !== $this->formFamily( $element );
-			if ( $insideForm && $isForm ) {
+			$is_form = null !== $this->formFamily( $element );
+			if ( $insideForm && $is_form ) {
 				throw new RuntimeException( 'Elementor forms cannot be nested inside another form.' );
 			}
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				$this->assertNoNestedForms( $element['elements'], $insideForm || $isForm );
+				$this->assertNoNestedForms( $element['elements'], $insideForm || $is_form );
 			}
 		}
 	}

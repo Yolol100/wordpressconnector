@@ -139,24 +139,24 @@ final class CustomCssAdapter {
 
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
-		$afterCss   = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
-		$this->assertCss( $afterCss, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
+		$after_css   = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
+		$this->assertCss( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
 
 		$after = array(
 			'stylesheet' => $stylesheet,
-			'css'        => $afterCss,
+			'css'        => $after_css,
 			'post_id'    => $before['post_id'],
 		);
 		$result = array(
 			'patch_id'             => $patchId,
 			'operation'            => $operation,
-			'changed'              => $afterCss !== (string) $before['css'],
+			'changed'              => $after_css !== (string) $before['css'],
 			'before'               => $before,
 			'after'                => $after,
 			'before_css_bytes'     => strlen( (string) $before['css'] ),
-			'after_css_bytes'      => strlen( $afterCss ),
+			'after_css_bytes'      => strlen( $after_css ),
 			'before_css_sha256'    => hash( 'sha256', (string) $before['css'] ),
-			'after_css_sha256'     => hash( 'sha256', $afterCss ),
+			'after_css_sha256'     => hash( 'sha256', $after_css ),
 			'readback_verified'    => null,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
@@ -170,7 +170,7 @@ final class CustomCssAdapter {
 			return $result;
 		}
 
-		$updated = wp_update_custom_css_post( $afterCss, array( 'stylesheet' => $stylesheet ) );
+		$updated = wp_update_custom_css_post( $after_css, array( 'stylesheet' => $stylesheet ) );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
@@ -180,7 +180,7 @@ final class CustomCssAdapter {
 
 		clean_post_cache( (int) $updated->ID );
 		$readback = $this->snapshot( $stylesheet );
-		if ( $readback['css'] !== $afterCss ) {
+		if ( $readback['css'] !== $after_css ) {
 			wp_update_custom_css_post( (string) $before['css'], array( 'stylesheet' => $stylesheet ) );
 			throw new RuntimeException( 'Managed Additional CSS patch readback failed; the previous CSS was restored.' );
 		}
@@ -201,31 +201,31 @@ final class CustomCssAdapter {
 	private function applyPatch( string $currentCss, string $patchId, string $operation, ?string $patchCss ): string {
 		$start      = '/* ' . self::PATCH_PREFIX . $patchId . ' */';
 		$end        = '/* /' . self::PATCH_PREFIX . $patchId . ' */';
-		$startCount = substr_count( $currentCss, $start );
-		$endCount   = substr_count( $currentCss, $end );
+		$start_count = substr_count( $currentCss, $start );
+		$end_count   = substr_count( $currentCss, $end );
 
-		if ( $startCount > 1 || $endCount > 1 || $startCount !== $endCount ) {
+		if ( $start_count > 1 || $end_count > 1 || $start_count !== $end_count ) {
 			throw new RuntimeException( 'Managed CSS patch markers are duplicated or incomplete for patch_id: ' . $patchId );
 		}
 
-		$startPos = strpos( $currentCss, $start );
-		$endPos   = false !== $startPos ? strpos( $currentCss, $end, $startPos + strlen( $start ) ) : false;
-		if ( false !== $startPos && ( false === $endPos || $endPos < $startPos ) ) {
+		$start_pos = strpos( $currentCss, $start );
+		$end_pos   = false !== $start_pos ? strpos( $currentCss, $end, $start_pos + strlen( $start ) ) : false;
+		if ( false !== $start_pos && ( false === $end_pos || $end_pos < $start_pos ) ) {
 			throw new RuntimeException( 'Managed CSS patch markers are malformed for patch_id: ' . $patchId );
 		}
 
 		if ( 'remove' === $operation ) {
-			if ( false === $startPos || false === $endPos ) {
+			if ( false === $start_pos || false === $end_pos ) {
 				return $currentCss;
 			}
-			$endAfter = $endPos + strlen( $end );
-			return substr( $currentCss, 0, $startPos ) . substr( $currentCss, $endAfter );
+			$end_after = $end_pos + strlen( $end );
+			return substr( $currentCss, 0, $start_pos ) . substr( $currentCss, $end_after );
 		}
 
 		$block = $start . "\n" . rtrim( (string) $patchCss ) . "\n" . $end;
-		if ( false !== $startPos && false !== $endPos ) {
-			$endAfter = $endPos + strlen( $end );
-			return substr( $currentCss, 0, $startPos ) . $block . substr( $currentCss, $endAfter );
+		if ( false !== $start_pos && false !== $end_pos ) {
+			$end_after = $end_pos + strlen( $end );
+			return substr( $currentCss, 0, $start_pos ) . $block . substr( $currentCss, $end_after );
 		}
 
 		if ( '' === $currentCss ) {
