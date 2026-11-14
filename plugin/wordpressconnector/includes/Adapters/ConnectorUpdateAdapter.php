@@ -548,8 +548,8 @@ final class ConnectorUpdateAdapter {
      * because it was downloaded from GitHub over HTTPS.
      */
 	private function downloadVerifiedPackage( array $release ): string {
-		$expected_sha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
-		if ( ! hash_equals( 'sha256:' . $expected_sha256, $release['package_digest'] ) ) {
+		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
+		if ( ! hash_equals( 'sha256:' . $expectedSha256, $release['package_digest'] ) ) {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
 		}
 
@@ -567,7 +567,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'Connector release package is empty or exceeds the 20 MiB limit.' );
 			}
 			$actual_sha256 = hash_file( 'sha256', $package );
-			if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expected_sha256, strtolower( $actual_sha256 ) )
+			if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expectedSha256, strtolower( $actual_sha256 ) )
 				|| ! hash_equals( $release['package_digest'], 'sha256:' . strtolower( $actual_sha256 ) ) ) {
 				throw new RuntimeException( 'Connector release package SHA-256 verification failed.' );
 			}
