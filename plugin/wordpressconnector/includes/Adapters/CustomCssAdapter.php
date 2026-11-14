@@ -93,7 +93,7 @@ final class CustomCssAdapter {
 		}
 
 		$css = $payload['css'];
-		$this->assertCss( $css, self::MAX_CSS_BYTES, 'Additional CSS' );
+		$this->assert_css( $css, self::MAX_CSS_BYTES, 'Additional CSS' );
 
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
@@ -174,7 +174,7 @@ final class CustomCssAdapter {
 				throw new RuntimeException( 'custom_css.patch upsert requires non-empty payload.css.' );
 			}
 			$patchCss = $payload['css'];
-			$this->assertCss( $patchCss, self::MAX_PATCH_BYTES, 'Managed CSS patch' );
+			$this->assert_css( $patchCss, self::MAX_PATCH_BYTES, 'Managed CSS patch' );
 			if ( false !== stripos( $patchCss, self::PATCH_PREFIX ) ) {
 				throw new RuntimeException( 'Managed CSS patch may not contain connector patch markers.' );
 			}
@@ -185,7 +185,7 @@ final class CustomCssAdapter {
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
 		$after_css  = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
-		$this->assertCss( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
+		$this->assert_css( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
 
 		$after  = array(
 			'stylesheet' => $stylesheet,
@@ -345,7 +345,7 @@ final class CustomCssAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertCss( string $css, int $max_bytes, string $label ): void {
+	private function assert_css( string $css, int $max_bytes, string $label ): void {
 		if ( strlen( $css ) > $max_bytes ) {
 			throw new RuntimeException( $label . ' exceeds the connector size limit.' );
 		}

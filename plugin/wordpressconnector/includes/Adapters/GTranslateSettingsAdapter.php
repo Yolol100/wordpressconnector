@@ -89,9 +89,9 @@ final class GTranslateSettingsAdapter {
 		$raw         = $this->settings();
 		$before      = $this->publicFields( $raw );
 		$fingerprint = Fingerprint::make( $raw );
-		$patch       = $this->validatePatch( $payload['fields'] ?? null );
+		$patch       = $this->validate_patch( $payload['fields'] ?? null );
 		$after_raw   = array_replace( $raw, $patch );
-		$this->ensureLanguages( $after_raw );
+		$this->ensure_languages( $after_raw );
 		$preview = array(
 			'before'               => $before,
 			'after'                => $this->publicFields( $after_raw ),
@@ -269,7 +269,7 @@ final class GTranslateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validatePatch( $fields ): array {
+	private function validate_patch( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS ) ) {
 			throw new RuntimeException( 'GTranslate update needs 1-4 selected fields.' );
 		}
@@ -301,7 +301,7 @@ final class GTranslateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function ensureLanguages( array $raw ): void {
+	private function ensure_languages( array $raw ): void {
 		// Never leave the source language unavailable in the selected list.
 		foreach ( array( 'incl_langs', 'fincl_langs' ) as $key ) {
 			if ( ! isset( $raw[ $key ] ) || ! is_array( $raw[ $key ] )

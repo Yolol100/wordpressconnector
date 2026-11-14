@@ -80,7 +80,7 @@ final class OptimizerSettingsAdapter {
 			'fields'                   => $this->publicFields( $provider, $state ),
 			'write_scope'              => 'asset_cleanup' === $provider ? 'read_only_provider_api_required' : 'image_display_options_only',
 			'fingerprint'              => Fingerprint::make( $state ),
-			'wp_rocket'                => $this->rocketSummary(),
+			'wp_rocket'                => $this->rocket_summary(),
 			'effective_state_verified' => 'ewww' === $provider,
 			'settings_source'          => 'ewww' === $provider ? 'ewww_provider_accessor' : 'stored_option_only',
 		);
@@ -138,11 +138,11 @@ final class OptimizerSettingsAdapter {
 		if ( isset( $payload['expected_before_fingerprint'] ) ) {
 			$this->expected( $payload['expected_before_fingerprint'], $fingerprint );
 		}
-		if ( 'ewww' === $provider && ( null === $old[ $key ] || ! $this->ewwwStoredOptionExists( $key ) ) ) {
+		if ( 'ewww' === $provider && ( null === $old[ $key ] || ! $this->ewww_stored_option_exists( $key ) ) ) {
 			throw new RuntimeException( 'EWWW option must exist before a guarded write.' );
 		}
 		if ( 'ewww' === $provider ) {
-			$this->assertEwwwWriteCapability();
+			$this->assert_ewww_write_capability();
 		}
 		$previous_exists = array_key_exists( $key, $old );
 		$previous_value  = $previous_exists ? $old[ $key ] : null;
@@ -203,7 +203,7 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Asset CleanUp rollback is blocked until provider API verification.' );
 		}
 		$key = $payload['field'] ?? null;
-		if ( ! is_string( $key ) || ! $this->isWritable( $provider, $key )
+		if ( ! is_string( $key ) || ! $this->is_writable( $provider, $key )
 		|| ! array_key_exists( 'exists', $payload ) || ! is_bool( $payload['exists'] ) ) {
 			throw new RuntimeException( 'Optimizer rollback field is invalid.' );
 		}
@@ -216,7 +216,7 @@ final class OptimizerSettingsAdapter {
 			return array( 'would_restore' => $key );
 		}
 		if ( 'ewww' === $provider ) {
-			$this->assertEwwwWriteCapability();
+			$this->assert_ewww_write_capability();
 		}
 		$this->write( $provider, $current, $key, $payload['value'] ?? null, $payload['exists'] );
 		$readback = $this->state( $provider );
@@ -336,7 +336,7 @@ final class OptimizerSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function validate( string $provider, string $key, $value, bool $restore = false ): string {
-		if ( ! $this->isWritable( $provider, $key ) || ( ! is_string( $value ) && ! is_int( $value ) && ! is_bool( $value ) ) ) {
+		if ( ! $this->is_writable( $provider, $key ) || ( ! is_string( $value ) && ! is_int( $value ) && ! is_bool( $value ) ) ) {
 			throw new RuntimeException( 'Optimizer setting is not in the safe write allowlist.' );
 		}
 		$value = is_bool( $value ) ? ( $value ? '1' : '0' ) : (string) $value;
@@ -379,7 +379,7 @@ final class OptimizerSettingsAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function ewwwStoredOptionExists( string $key ): bool {
+	private function ewww_stored_option_exists( string $key ): bool {
 		$missing = new \stdClass();
 		$network = function_exists( 'is_multisite' ) && is_multisite()
 		&& function_exists( 'is_plugin_active_for_network' )
@@ -393,7 +393,7 @@ final class OptimizerSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertEwwwWriteCapability(): void {
+	private function assert_ewww_write_capability(): void {
 		if ( function_exists( 'is_multisite' ) && is_multisite()
 		&& function_exists( 'is_plugin_active_for_network' )
 		&& is_plugin_active_for_network( 'ewww-image-optimizer/ewww-image-optimizer.php' )
@@ -413,7 +413,7 @@ final class OptimizerSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function conflicts( string $provider, string $key, string $value ): void {
-		$rocket = $this->rocketSummary();
+		$rocket = $this->rocket_summary();
 		if ( 'ewww' !== $provider || '1' !== $value ) {
 			return;
 		}
@@ -432,7 +432,7 @@ final class OptimizerSettingsAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function rocketSummary(): array {
+	private function rocket_summary(): array {
 		if ( ! function_exists( 'get_rocket_option' ) ) {
 			return array( 'available' => false );
 		}
@@ -452,7 +452,7 @@ final class OptimizerSettingsAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function isWritable( string $provider, string $key ): bool {
+	private function is_writable( string $provider, string $key ): bool {
 		return in_array( $key, 'asset_cleanup' === $provider ? self::ASSET_FIELDS : self::EWWW_WRITE, true );
 	}
 

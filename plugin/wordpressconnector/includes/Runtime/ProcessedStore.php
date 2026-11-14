@@ -73,7 +73,7 @@ final class ProcessedStore {
 			'state'          => 'completed',
 			'result_hash'    => $resultHash,
 			'ok'             => $ok,
-			'terminal_error' => $ok ? null : $this->boundedTerminalError( $terminalError ),
+			'terminal_error' => $ok ? null : $this->bounded_terminal_error( $terminalError ),
 		);
 		update_option( $key, $record, false );
 		if ( get_option( $key, null ) !== $record ) {
@@ -299,7 +299,7 @@ final class ProcessedStore {
 	 *
 	 * @return string Operation result.
 	 */
-	private function boundedTerminalError( ?string $message ): string {
+	private function bounded_terminal_error( ?string $message ): string {
 		$message = is_string( $message ) ? trim( $message ) : '';
 		if ( '' === $message ) {
 			return 'Completed mutation ended with a terminal execution failure.';

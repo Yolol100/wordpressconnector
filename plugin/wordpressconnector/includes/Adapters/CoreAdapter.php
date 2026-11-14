@@ -335,7 +335,7 @@ final class CoreAdapter {
 			}
 			try {
 				Policy::assertPostReadable( $post );
-				$items[] = $this->postSnapshot( $post );
+				$items[] = $this->post_snapshot( $post );
 			} catch ( RuntimeException $error ) {
 				continue;
 			}
@@ -358,11 +358,11 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function postGet( array $payload ): array {
-		$post = $this->requirePost( $payload );
+		$post = $this->require_post( $payload );
 		Policy::assertPostReadable( $post );
 		return array(
-			'post'        => $this->postSnapshot( $post ),
-			'fingerprint' => Fingerprint::make( $this->postSnapshot( $post ) ),
+			'post'        => $this->post_snapshot( $post ),
+			'fingerprint' => Fingerprint::make( $this->post_snapshot( $post ) ),
 		);
 	}
 
@@ -377,7 +377,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postCreate( array $payload, array $context ): array {
-		$fields = $this->sanitizePostFields( $payload, false );
+		$fields = $this->sanitize_post_fields( $payload, false );
 		if ( empty( $fields['post_type'] ) ) {
 			$fields['post_type'] = 'post';
 		}
@@ -406,7 +406,7 @@ final class CoreAdapter {
 
 		$post = get_post( (int) $id );
 		return array(
-			'post'      => $this->postSnapshot( $post ),
+			'post'      => $this->post_snapshot( $post ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
 				'payload' => array( 'id' => (int) $id ),
@@ -425,13 +425,13 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postUpdate( array $payload, array $context ): array {
-		$post = $this->requirePost( $payload );
+		$post = $this->require_post( $payload );
 		Policy::assertReadablePostType( (string) $post->post_type );
-		$before       = $this->postSnapshot( $post );
-		$fields       = $this->sanitizePostFields( $payload, true );
+		$before       = $this->post_snapshot( $post );
+		$fields       = $this->sanitize_post_fields( $payload, true );
 		$fields['ID'] = (int) $post->ID;
 
-		$after  = array_merge( $before, $this->snapshotFromUpdateFields( $fields ) );
+		$after  = array_merge( $before, $this->snapshot_from_update_fields( $fields ) );
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
@@ -447,10 +447,10 @@ final class CoreAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['after']     = $this->postSnapshot( get_post( (int) $updated ) );
+		$result['after']     = $this->post_snapshot( get_post( (int) $updated ) );
 		$result['_rollback'] = array(
 			'action'  => 'post.update',
-			'payload' => $this->postRollbackPayload( $before ),
+			'payload' => $this->post_rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -468,7 +468,7 @@ final class CoreAdapter {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'find', 'replace', 'expected_matches' ) ) ) {
 			throw new RuntimeException( 'Literal replacement contains unsupported fields.' );
 		}
-		$post = $this->requirePost( $payload );
+		$post = $this->require_post( $payload );
 		if ( 'page' !== (string) $post->post_type ) {
 			throw new RuntimeException( 'Literal replacement is limited to existing pages.' );
 		}
@@ -564,8 +564,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postTrash( array $payload, array $context ): array {
-		$post   = $this->requirePost( $payload );
-		$before = $this->postSnapshot( $post );
+		$post   = $this->require_post( $payload );
+		$before = $this->post_snapshot( $post );
 		$result = array(
 			'before'               => $before,
 			'would_status'         => 'trash',
@@ -579,7 +579,7 @@ final class CoreAdapter {
 		if ( ! $trashed ) {
 			throw new RuntimeException( 'Could not trash post.' );
 		}
-		$result['post']      = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['post']      = $this->post_snapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array(
 			'action'  => 'post.restore',
 			'payload' => array( 'id' => (int) $post->ID ),
@@ -598,8 +598,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestore( array $payload, array $context ): array {
-		$post   = $this->requirePost( $payload );
-		$before = $this->postSnapshot( $post );
+		$post   = $this->require_post( $payload );
+		$before = $this->post_snapshot( $post );
 		$result = array(
 			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -613,7 +613,7 @@ final class CoreAdapter {
 		if ( ! $restored ) {
 			throw new RuntimeException( 'Could not restore post.' );
 		}
-		$result['post']      = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['post']      = $this->post_snapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array(
 			'action'  => 'post.trash',
 			'payload' => array( 'id' => (int) $post->ID ),
@@ -629,11 +629,11 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function postRevisions( array $payload ): array {
-		$post = $this->requirePost( $payload );
+		$post = $this->require_post( $payload );
 		Policy::assertPostReadable( $post );
 		$items = array();
 		foreach ( wp_get_post_revisions( (int) $post->ID ) as $revision ) {
-			$items[] = $this->postSnapshot( $revision );
+			$items[] = $this->post_snapshot( $revision );
 		}
 		return array( 'revisions' => $items );
 	}
@@ -658,10 +658,10 @@ final class CoreAdapter {
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Revision parent not found.' );
 		}
-		$before = $this->postSnapshot( $post );
+		$before = $this->post_snapshot( $post );
 		$result = array(
 			'before'               => $before,
-			'revision'             => $this->postSnapshot( $revision ),
+			'revision'             => $this->post_snapshot( $revision ),
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -671,10 +671,10 @@ final class CoreAdapter {
 		if ( ! $restored ) {
 			throw new RuntimeException( 'Could not restore revision.' );
 		}
-		$result['after']     = $this->postSnapshot( get_post( (int) $post->ID ) );
+		$result['after']     = $this->post_snapshot( get_post( (int) $post->ID ) );
 		$result['_rollback'] = array(
 			'action'  => 'post.update',
-			'payload' => $this->postRollbackPayload( $before ),
+			'payload' => $this->post_rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -687,7 +687,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function metaGet( array $payload ): array {
-		list( $type, $id, $key ) = $this->metaTarget( $payload );
+		list( $type, $id, $key ) = $this->meta_target( $payload );
 		Policy::assertMetaKeyAllowed( $key );
 		return array( 'value' => get_metadata( $type, $id, $key, true ) );
 	}
@@ -703,7 +703,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function metaUpdate( array $payload, array $context ): array {
-		list( $type, $id, $key ) = $this->metaTarget( $payload );
+		list( $type, $id, $key ) = $this->meta_target( $payload );
 		Policy::assertMetaKeyAllowed( $key );
 		$before = get_metadata( $type, $id, $key, true );
 		$after  = array_key_exists( 'value', $payload ) ? $payload['value'] : null;
@@ -742,7 +742,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function metaDelete( array $payload, array $context ): array {
-		list( $type, $id, $key ) = $this->metaTarget( $payload );
+		list( $type, $id, $key ) = $this->meta_target( $payload );
 		Policy::assertMetaKeyAllowed( $key );
 		$before = get_metadata( $type, $id, $key, true );
 		$result = array(
@@ -1301,7 +1301,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function optionGet( array $payload ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array(
 			'name'  => $name,
@@ -1318,7 +1318,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function optionUpdate( array $payload, array $context ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_option( $name, null );
 		$value  = $payload['value'] ?? null;
@@ -1352,7 +1352,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function optionDelete( array $payload, array $context ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_option( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -1387,7 +1387,7 @@ final class CoreAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		return array(
 			'name'  => $name,
@@ -1409,7 +1409,7 @@ final class CoreAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_site_option( $name, null );
 		$value  = $payload['value'] ?? null;
@@ -1448,7 +1448,7 @@ final class CoreAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertOptionKeyAllowed( $name );
 		$before = get_site_option( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -1478,7 +1478,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function themeModGet( array $payload ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		return array(
 			'name'  => $name,
@@ -1495,7 +1495,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function themeModUpdate( array $payload, array $context ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		$before = get_theme_mod( $name, null );
 		$value  = $payload['value'] ?? null;
@@ -1529,7 +1529,7 @@ final class CoreAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function themeModRemove( array $payload, array $context ): array {
-		$name = $this->requireKey( $payload, 'name' );
+		$name = $this->require_key( $payload, 'name' );
 		Policy::assertKeyAllowed( $name );
 		$before = get_theme_mod( $name, null );
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -1684,7 +1684,7 @@ final class CoreAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function requirePost( array $payload ): \WP_Post {
+	private function require_post( array $payload ): \WP_Post {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
@@ -1701,7 +1701,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function sanitizePostFields( array $payload, bool $partial ): array {
+	private function sanitize_post_fields( array $payload, bool $partial ): array {
 		$fields     = array();
 		$string_map = array(
 			'title'          => 'post_title',
@@ -1743,7 +1743,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function postSnapshot( \WP_Post $post ): array {
+	private function post_snapshot( \WP_Post $post ): array {
 		return array(
 			'id'                 => (int) $post->ID,
 			'type'               => (string) $post->post_type,
@@ -1774,7 +1774,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function postRollbackPayload( array $snapshot ): array {
+	private function post_rollback_payload( array $snapshot ): array {
 		return array(
 			'id'             => $snapshot['id'],
 			'title'          => $snapshot['title'],
@@ -1797,7 +1797,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function snapshotFromUpdateFields( array $fields ): array {
+	private function snapshot_from_update_fields( array $fields ): array {
 		$reverse = array(
 			'post_title'     => 'title',
 			'post_content'   => 'content',
@@ -1828,13 +1828,13 @@ final class CoreAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function metaTarget( array $payload ): array {
+	private function meta_target( array $payload ): array {
 		$type = isset( $payload['object_type'] ) ? sanitize_key( (string) $payload['object_type'] ) : '';
 		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) {
 			throw new RuntimeException( 'object_type must be post, term, user or comment.' );
 		}
 		$id  = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$key = $this->requireKey( $payload, 'key' );
+		$key = $this->require_key( $payload, 'key' );
 		if ( ! $id ) {
 			throw new RuntimeException( 'object_id is required.' );
 		}
@@ -1894,7 +1894,7 @@ final class CoreAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function requireKey( array $payload, string $field ): string {
+	private function require_key( array $payload, string $field ): string {
 		$value = isset( $payload[ $field ] ) ? (string) $payload[ $field ] : '';
 		if ( '' === $value || strlen( $value ) > 191 ) {
 			throw new RuntimeException( $field . ' is required and must be <= 191 characters.' );

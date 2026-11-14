@@ -51,7 +51,7 @@ final class ElementorJsonImport {
 		if ( ! $this->supportsPostType( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) ) {
 			return $actions;
 		}
-		$actions['wpconnector_import_elementor_json'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->importUrl( (string) $post->post_type, (int) $post->ID ) ), esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) );
+		$actions['wpconnector_import_elementor_json'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->import_url( (string) $post->post_type, (int) $post->ID ) ), esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) );
 		return $actions;
 	}
 
@@ -100,7 +100,7 @@ final class ElementorJsonImport {
 	 * @param string $postType Input for the operation.
 	 */
 	public function renderImportPage( string $postType ): void {
-		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
+		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
@@ -137,11 +137,11 @@ final class ElementorJsonImport {
 		check_admin_referer( self::ACTION );
 		$postId   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 		$postType = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
-		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capabilityForPostType( $postType ) ) ) {
+		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
-			$payload  = $this->uploadedPayload();
+			$payload  = $this->uploaded_payload();
 			$data     = $payload['content'];
 			$settings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() );
 			$adapter  = new ElementorAdapter();
@@ -168,7 +168,7 @@ final class ElementorJsonImport {
 				$adapter_payload = array(
 					'post_type'     => $postType,
 					'status'        => 'draft',
-					'title'         => $this->importTitle( $payload, $postType ),
+					'title'         => $this->import_title( $payload, $postType ),
 					'data'          => $data,
 					'page_settings' => $settings,
 					'edit_mode'     => 'builder',
@@ -207,7 +207,7 @@ final class ElementorJsonImport {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function uploadedPayload(): array {
+	private function uploaded_payload(): array {
 		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
@@ -275,7 +275,7 @@ final class ElementorJsonImport {
 			wp_die( 'Not allowed.', '', array( 'response' => 403 ) );
 		}
 		try {
-			$entries = $this->bulkUploads();
+			$entries = $this->bulk_uploads();
 			$plan    = $this->buildBulkPlan( $entries );
 			$all_ok  = true;
 			foreach ( $plan as $row ) {
@@ -445,7 +445,7 @@ final class ElementorJsonImport {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function bulkUploads(): array {
+	private function bulk_uploads(): array {
 		$files = $_FILES['elementor_jsons'] ?? null;
 		if ( ! is_array( $files ) || ! isset( $files['name'] ) || ! is_array( $files['name'] ) ) {
 			throw new RuntimeException( 'No files uploaded.' );
@@ -545,7 +545,7 @@ final class ElementorJsonImport {
 			}
 			$slug = isset( $source['slug'] ) ? sanitize_title( (string) $source['slug'] ) : '';
 			if ( '' === $slug ) {
-				$slug = $this->bulkFilenameSlug( $name );
+				$slug = $this->bulk_filename_slug( $name );
 			}
 			$row = array(
 				'name'          => $name,
@@ -629,7 +629,7 @@ final class ElementorJsonImport {
 	 *
 	 * @param string $filename Filename to process.
 	 */
-	private function bulkFilenameSlug( string $filename ): string {
+	private function bulk_filename_slug( string $filename ): string {
 		$stem = sanitize_title( (string) pathinfo( $filename, PATHINFO_FILENAME ) );
 		if ( preg_match( '/^(.+)-elementor(?:-(?:with-site-parts|seo-herzien|lang-min125))?(?:-[1-9][0-9]*)?$/D', $stem, $match ) ) {
 			return $match[1];
@@ -645,7 +645,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return string Operation result.
 	 */
-	private function importTitle( array $payload, string $post_type ): string {
+	private function import_title( array $payload, string $post_type ): string {
 		$title = isset( $payload['title'] ) && is_string( $payload['title'] ) ? sanitize_text_field( $payload['title'] ) : '';
 		return '' !== $title ? $title : ( 'elementor_library' === $post_type ? 'Imported Elementor Template' : 'Imported Elementor ' . ucfirst( $post_type ) );
 	}
@@ -670,7 +670,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return string Operation result.
 	 */
-	private function importUrl( string $post_type, int $post_id ): string {
+	private function import_url( string $post_type, int $post_id ): string {
 		$slug = 'page' === $post_type ? 'wpconnector-import-elementor-page' : ( 'post' === $post_type ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
 		$base = 'post' === $post_type ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $post_type );
 		return add_query_arg(
@@ -689,7 +689,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return string Operation result.
 	 */
-	private function capabilityForPostType( string $post_type ): string {
+	private function capability_for_post_type( string $post_type ): string {
 		return 'page' === $post_type ? 'edit_pages' : 'edit_posts';
 	}
 

@@ -103,7 +103,7 @@ final class AssetStore {
 	 */
 	public function rootForRequest( string $requestId, bool $create = false ): string {
 		$this->assertRequestId( $requestId );
-		$base      = $this->baseRoot( $create );
+		$base      = $this->base_root( $create );
 		$directory = $base . DIRECTORY_SEPARATOR . hash( 'sha256', home_url( '/' ) . '|' . $requestId );
 
 		if ( is_link( $directory ) ) {
@@ -137,7 +137,7 @@ final class AssetStore {
 	 * @param int $olderThanSeconds Input for the operation.
 	 */
 	public function cleanupExpired( int $olderThanSeconds = DAY_IN_SECONDS ): void {
-		$base = $this->baseRoot( false );
+		$base = $this->base_root( false );
 		if ( ! is_dir( $base ) ) {
 			return;
 		}
@@ -191,16 +191,16 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function baseRoot( bool $create ): string {
+	private function base_root( bool $create ): string {
 		$configured = defined( 'WPCONNECTOR_ASSET_ROOT' ) ? trim( (string) constant( 'WPCONNECTOR_ASSET_ROOT' ) ) : '';
 		if ( '' !== $configured ) {
-			if ( ! $this->isAbsolutePath( $configured ) ) {
+			if ( ! $this->is_absolute_path( $configured ) ) {
 				throw new RuntimeException( 'WPCONNECTOR_ASSET_ROOT must be an absolute private filesystem path.' );
 			}
 			$base = rtrim( $configured, '/\\' );
 		} else {
 			$temp = rtrim( (string) sys_get_temp_dir(), '/\\' );
-			if ( '' === $temp || ! $this->isAbsolutePath( $temp ) ) {
+			if ( '' === $temp || ! $this->is_absolute_path( $temp ) ) {
 				throw new RuntimeException( 'A private system temporary directory is unavailable.' );
 			}
 			$site_namespace = substr( hash( 'sha256', home_url( '/' ) ), 0, 20 );
@@ -265,7 +265,7 @@ final class AssetStore {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function isAbsolutePath( string $path ): bool {
+	private function is_absolute_path( string $path ): bool {
 		return '/' === substr( $path, 0, 1 ) || 1 === preg_match( '/^[A-Za-z]:[\\\\\/]/', $path );
 	}
 
@@ -352,7 +352,7 @@ final class AssetStore {
 		if ( is_link( $directory ) ) {
 			throw new RuntimeException( 'Refusing symbolic link request asset root.' );
 		}
-		$base = realpath( $this->baseRoot( false ) );
+		$base = realpath( $this->base_root( false ) );
 		$real = realpath( $directory );
 		if ( false === $base || false === $real ) {
 			throw new RuntimeException( 'Could not resolve private request asset cleanup path.' );

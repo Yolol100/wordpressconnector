@@ -64,7 +64,7 @@ final class ConnectionReadinessAdapter {
 		$https     = is_ssl() && is_string( $endpoint )
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
-		$providers = $this->activeBackupProviders();
+		$providers = $this->active_backup_providers();
 
 		return array(
 			'read_only'                 => true,
@@ -87,7 +87,7 @@ final class ConnectionReadinessAdapter {
 				'staging_restore_verified'       => false,
 				'state'                          => 'independent_host_backup_and_staging_restore_required',
 			),
-			'management'                => $this->managementReadiness(),
+			'management'                => $this->management_readiness(),
 			'high_risk_changes_cleared' => false,
 		);
 	}
@@ -96,7 +96,7 @@ final class ConnectionReadinessAdapter {
 	 * Capability and server-policy indicators are not proof that a write will succeed.
 	 * The connected client's authentication, filesystem and hosting must be tested separately.
 	 */
-	private function managementReadiness(): array {
+	private function management_readiness(): array {
 		$capabilities = array();
 		foreach ( array(
 			'manage_options',
@@ -142,7 +142,7 @@ final class ConnectionReadinessAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function activeBackupProviders(): array {
+	private function active_backup_providers(): array {
 		$active = function_exists( 'get_option' )
 			? get_option( 'active_plugins', array() ) : array();
 		$active = is_array( $active ) ? $active : array();

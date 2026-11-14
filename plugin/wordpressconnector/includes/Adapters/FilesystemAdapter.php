@@ -125,7 +125,7 @@ final class FilesystemAdapter {
 				'installed'            => ! empty( $file_manager ),
 				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $file_manager_file ),
 				'version'              => isset( $file_manager['Version'] ) ? (string) $file_manager['Version'] : null,
-				'configured_root_mode' => $this->fileManagerRootMode( $configuredPath ),
+				'configured_root_mode' => $this->file_manager_root_mode( $configuredPath ),
 				'connector_transport'  => 'WP_Filesystem',
 				'private_ajax_reused'  => false,
 			),
@@ -144,7 +144,7 @@ final class FilesystemAdapter {
 	 */
 	public function listPath( array $payload, array $context = array() ): array {
 		$relative = FilesystemPolicy::assertListable( isset( $payload['path'] ) ? (string) $payload['path'] : '.' );
-		$absolute = $this->resolveExisting( $relative, true );
+		$absolute = $this->resolve_existing( $relative, true );
 		if ( ! is_dir( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a directory.' );
 		}
@@ -163,7 +163,7 @@ final class FilesystemAdapter {
 			$child = '.' === $relative ? $name : $relative . '/' . $name;
 			try {
 				$child          = FilesystemPolicy::assertListable( $child );
-				$child_absolute = $this->resolveExisting( $child, true );
+				$child_absolute = $this->resolve_existing( $child, true );
 			} catch ( RuntimeException $error ) {
 				continue;
 			}
@@ -201,7 +201,7 @@ final class FilesystemAdapter {
 	 */
 	public function readText( array $payload, array $context = array() ): array {
 		$relative = FilesystemPolicy::assertReadableText( isset( $payload['path'] ) ? (string) $payload['path'] : '' );
-		$absolute = $this->resolveExisting( $relative, false );
+		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'Filesystem path is not a regular file.' );
 		}
@@ -210,7 +210,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'Text file exceeds the connector read limit.' );
 		}
 		$content = file_get_contents( $absolute );
-		if ( false === $content || ! $this->isUtf8( $content ) ) {
+		if ( false === $content || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'Filesystem file is not readable UTF-8 text.' );
 		}
 		$this->assertNoEmbeddedSecrets( $content );
@@ -244,12 +244,12 @@ final class FilesystemAdapter {
 		if ( ! current_user_can( $required_capability ) ) {
 			throw new RuntimeException( 'Current user lacks the required filesystem capability: ' . $required_capability . '.' );
 		}
-		$absolute = $this->resolveExisting( $relative, false );
+		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'filesystem.write_text only replaces existing regular files.' );
 		}
 		$before = file_get_contents( $absolute );
-		if ( false === $before || ! $this->isUtf8( $before ) ) {
+		if ( false === $before || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is not readable UTF-8 text.' );
 		}
 		if ( strlen( $before ) > self::MAX_TEXT_BYTES ) {
@@ -260,11 +260,11 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'filesystem.write_text requires payload.content as UTF-8 text.' );
 		}
 		$content = $payload['content'];
-		if ( strlen( $content ) > self::MAX_TEXT_BYTES || ! $this->isUtf8( $content ) ) {
+		if ( strlen( $content ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'Replacement content must be UTF-8 text within the connector write limit.' );
 		}
 
-		$this->validateText( $relative, $content );
+		$this->validate_text( $relative, $content );
 		$this->assertNoEmbeddedSecrets( $content );
 		$before_state = $this->state( $relative, $before, $absolute );
 		$after_state  = array(
@@ -351,18 +351,18 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function createText( array $payload, array $context ): array {
-		$this->assertLifecyclePermission( $payload, $context );
+		$this->assert_lifecycle_permission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
 		if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
 			throw new RuntimeException( 'filesystem.create_text requires UTF-8 content.' );
 		}
 		$content = $payload['content'];
-		if ( strlen( $content ) > self::MAX_TEXT_BYTES || ! $this->isUtf8( $content ) ) {
+		if ( strlen( $content ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'New text asset exceeds the UTF-8 text limit.' );
 		}
 		$this->assertNoEmbeddedSecrets( $content );
-		$this->validateText( $relative, $content );
-		$absolute       = $this->resolveNewTextPath( $relative );
+		$this->validate_text( $relative, $content );
+		$absolute       = $this->resolve_new_text_path( $relative );
 		$expected_state = array(
 			'path'   => $relative,
 			'exists' => false,
@@ -436,14 +436,14 @@ final class FilesystemAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function deleteText( array $payload, array $context ): array {
-		$this->assertLifecyclePermission( $payload, $context );
+		$this->assert_lifecycle_permission( $payload, $context );
 		$relative = FilesystemPolicy::assertLifecycleText( (string) ( $payload['path'] ?? '' ) );
-		$absolute = $this->resolveExisting( $relative, false );
+		$absolute = $this->resolve_existing( $relative, false );
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Text deletion requires a regular non-symlink file.' );
 		}
 		$before = @file_get_contents( $absolute );
-		if ( ! is_string( $before ) || strlen( $before ) > self::MAX_TEXT_BYTES || ! $this->isUtf8( $before ) ) {
+		if ( ! is_string( $before ) || strlen( $before ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is unreadable or exceeds safe text limit.' );
 		}
 		$this->assertNoEmbeddedSecrets( $before );
@@ -497,7 +497,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertLifecyclePermission( array $payload, array $context ): void {
+	private function assert_lifecycle_permission( array $payload, array $context ): void {
 		if ( array_diff( array_keys( $payload ), array( 'path', 'content', 'expected_sha256', 'acknowledge_active_content' ) ) ) {
 			throw new RuntimeException( 'Filesystem lifecycle request contains unsupported fields.' );
 		}
@@ -527,9 +527,9 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function resolveNewTextPath( string $relative ): string {
+	private function resolve_new_text_path( string $relative ): string {
 		$parent      = dirname( $relative );
-		$parent_path = $this->resolveExisting( $parent, true );
+		$parent_path = $this->resolve_existing( $parent, true );
 		if ( ! is_dir( $parent_path ) ) {
 			throw new RuntimeException( 'Parent directory must already exist.' );
 		}
@@ -573,7 +573,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function resolveExisting( string $relative, bool $directory_allowed ): string {
+	private function resolve_existing( string $relative, bool $directory_allowed ): string {
 		$root = realpath( ABSPATH );
 		if ( false === $root ) {
 			throw new RuntimeException( 'WordPress root could not be resolved.' );
@@ -587,7 +587,7 @@ final class FilesystemAdapter {
 		if ( $real !== $root && 0 !== strpos( $real, $root . DIRECTORY_SEPARATOR ) ) {
 			throw new RuntimeException( 'Filesystem path escapes the WordPress root.' );
 		}
-		$this->assertNoSymlinkComponents( $candidate, $root );
+		$this->assert_no_symlink_components( $candidate, $root );
 		if ( ! $directory_allowed && is_dir( $real ) ) {
 			throw new RuntimeException( 'A file path is required.' );
 		}
@@ -602,7 +602,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertNoSymlinkComponents( string $candidate, string $root ): void {
+	private function assert_no_symlink_components( string $candidate, string $root ): void {
 		if ( $candidate === $root ) {
 			return;
 		}
@@ -655,7 +655,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateText( string $relative, string $content ): void {
+	private function validate_text( string $relative, string $content ): void {
 		$extension = strtolower( (string) pathinfo( $relative, PATHINFO_EXTENSION ) );
 		if ( 'php' === $extension || 'inc' === $extension ) {
 			try {
@@ -703,7 +703,7 @@ final class FilesystemAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function isUtf8( string $value ): bool {
+	private function is_utf8( string $value ): bool {
 		return 1 === preg_match( '//u', $value );
 	}
 
@@ -714,7 +714,7 @@ final class FilesystemAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function fileManagerRootMode( string $configured_path ): string {
+	private function file_manager_root_mode( string $configured_path ): string {
 		if ( '' === trim( $configured_path ) ) {
 			return 'wordpress_root';
 		}
