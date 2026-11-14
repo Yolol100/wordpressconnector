@@ -55,15 +55,15 @@ final class PortfolioStatsAdapter {
 		if ( ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] <= 0 ) {
 			throw new RuntimeException( 'Portfolio case text update requires a positive integer post_id.' );
 		}
-		$postId = $payload['post_id'];
-		$post = get_post( $postId );
+		$post_id = $payload['post_id'];
+		$post    = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Portfolio case text target post was not found.' );
 		}
 		if ( 'post' !== (string) $post->post_type || ! in_array( (string) $post->post_status, self::ALLOWED_POST_STATUSES, true ) ) {
 			throw new RuntimeException( 'Portfolio case text target must be a normal WordPress post in an allowed content status.' );
 		}
-		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $postId ) ) {
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'Current user lacks permission to edit the portfolio case text target.' );
 		}
 
@@ -76,34 +76,34 @@ final class PortfolioStatsAdapter {
 			$requested['content'] = $value;
 		}
 
-		$fieldMap = array(
+		$field_map        = array(
 			'description_1' => 'field_69deb8ddbcd8d',
 			'description_2' => 'field_69deb8e4bcd8e',
 		);
-		$descriptionKeys = array_intersect( array_keys( $fieldMap ), array_keys( $payload ) );
-		if ( $descriptionKeys ) {
+		$description_keys = array_intersect( array_keys( $field_map ), array_keys( $payload ) );
+		if ( $description_keys ) {
 			foreach ( array( 'acf_get_field_groups', 'acf_get_field', 'get_field', 'update_field' ) as $function ) {
 				if ( ! function_exists( $function ) ) {
 					throw new RuntimeException( 'Portfolio case text ACF API is unavailable: ' . $function );
 				}
 			}
-			$allowedParents = array();
-			foreach ( (array) acf_get_field_groups( array( 'post_id' => $postId ) ) as $group ) {
+			$allowed_parents = array();
+			foreach ( (array) acf_get_field_groups( array( 'post_id' => $post_id ) ) as $group ) {
 				if ( ! is_array( $group ) ) continue;
-				if ( ! empty( $group['key'] ) ) $allowedParents[(string) $group['key']] = true;
-				if ( ! empty( $group['ID'] ) ) $allowedParents[(string) $group['ID']] = true;
+				if ( ! empty( $group['key'] ) ) $allowed_parents[(string) $group['key']] = true;
+				if ( ! empty( $group['ID'] ) ) $allowed_parents[(string) $group['ID']] = true;
 			}
-			if ( ! $allowedParents ) {
+			if ( ! $allowed_parents ) {
 				throw new RuntimeException( 'No ACF field group applies to the portfolio case text target.' );
 			}
-			foreach ( $descriptionKeys as $name ) {
+			foreach ( $description_keys as $name ) {
 				$value = $payload[ $name ];
 				if ( ! is_string( $value ) || strlen( $value ) > 5000 || preg_match( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value ) || false !== strpos( $value, '<' ) || false !== strpos( $value, '>' ) ) {
 					throw new RuntimeException( 'Portfolio case descriptions must be plain text up to 5000 bytes without HTML or control characters.' );
 				}
-				$fieldKey = $fieldMap[ $name ];
-				$field = acf_get_field( $fieldKey );
-				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text','textarea','wysiwyg' ), true ) || ! isset( $allowedParents[(string) ( $field['parent'] ?? '' )] ) ) {
+				$field_key = $field_map[ $name ];
+				$field     = acf_get_field( $field_key );
+				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text','textarea','wysiwyg' ), true ) || ! isset( $allowed_parents[(string) ( $field['parent'] ?? '' )] ) ) {
 					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . $name );
 				}
 				$requested[ $name ] = $value;
@@ -118,27 +118,27 @@ final class PortfolioStatsAdapter {
 			if ( 'content' === $name ) {
 				$before[ $name ] = (string) $post->post_content;
 			} else {
-				$before[ $name ] = get_field( $fieldMap[ $name ], $postId, false );
+				$before[ $name ] = get_field( $field_map[ $name ], $post_id, false );
 			}
 		}
-		$result = array( 'post_id' => $postId, 'before' => $before, 'after' => $requested, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array( 'post_id' => $post_id, 'before' => $before, 'after' => $requested, '_current_fingerprint' => Fingerprint::make( $before ) );
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 
 		try {
 			if ( array_key_exists( 'content', $requested ) ) {
-				$updated = wp_update_post( array( 'ID' => $postId, 'post_content' => $requested['content'] ), true );
+				$updated = wp_update_post( array( 'ID' => $post_id, 'post_content' => $requested['content'] ), true );
 				if ( is_wp_error( $updated ) ) throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
 			}
-			foreach ( $descriptionKeys as $name ) {
-				$fieldKey = $fieldMap[ $name ];
-				if ( false === update_field( $fieldKey, $requested[ $name ], $postId ) && get_field( $fieldKey, $postId, false ) !== $requested[ $name ] ) {
+			foreach ( $description_keys as $name ) {
+				$field_key = $field_map[ $name ];
+				if ( false === update_field( $field_key, $requested[ $name ], $post_id ) && get_field( $field_key, $post_id, false ) !== $requested[ $name ] ) {
 					throw new RuntimeException( 'Portfolio case ACF update failed for: ' . $name );
 				}
 			}
-			$afterPost = get_post( $postId );
-			$after = array();
+			$after_post = get_post( $post_id );
+			$after      = array();
 			foreach ( $requested as $name => $value ) {
-				$actual = 'content' === $name ? ( $afterPost instanceof \WP_Post ? (string) $afterPost->post_content : null ) : get_field( $fieldMap[ $name ], $postId, false );
+				$actual = 'content' === $name ? ( $after_post instanceof \WP_Post ? (string) $after_post->post_content : null ) : get_field( $field_map[ $name ], $post_id, false );
 				if ( $actual !== $value ) throw new RuntimeException( 'Portfolio case readback mismatch for: ' . $name );
 				$after[ $name ] = $actual;
 			}
@@ -146,22 +146,22 @@ final class PortfolioStatsAdapter {
 		} catch ( Throwable $error ) {
 			$failures = array();
 			if ( array_key_exists( 'content', $before ) ) {
-				$restore = wp_update_post( array( 'ID' => $postId, 'post_content' => $before['content'] ), true );
-				$restoredPost = get_post( $postId );
-				if ( is_wp_error( $restore ) || ! $restoredPost instanceof \WP_Post || (string) $restoredPost->post_content !== $before['content'] ) $failures[] = 'content';
+				$restore       = wp_update_post( array( 'ID' => $post_id, 'post_content' => $before['content'] ), true );
+				$restored_post = get_post( $post_id );
+				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) $failures[] = 'content';
 			}
-			foreach ( $descriptionKeys as $name ) {
-				$fieldKey = $fieldMap[ $name ];
-				update_field( $fieldKey, $before[ $name ], $postId );
-				if ( get_field( $fieldKey, $postId, false ) !== $before[ $name ] ) $failures[] = $name;
+			foreach ( $description_keys as $name ) {
+				$field_key = $field_map[ $name ];
+				update_field( $field_key, $before[ $name ], $post_id );
+				if ( get_field( $field_key, $post_id, false ) !== $before[ $name ] ) $failures[] = $name;
 			}
 			if ( $failures ) throw new RuntimeException( 'Portfolio case compensation failed for: ' . implode( ', ', $failures ) . '. Original error: ' . $error->getMessage(), 0, $error );
 			throw $error;
 		}
 
-		$rollbackPayload = array( 'post_id' => $postId );
-		foreach ( $before as $name => $value ) $rollbackPayload[ $name ] = $value;
-		$result['_rollback'] = array( 'action' => 'portfolio.case_text_update', 'payload' => $rollbackPayload );
+		$rollback_payload = array( 'post_id' => $post_id );
+		foreach ( $before as $name => $value ) $rollback_payload[ $name ] = $value;
+		$result['_rollback'] = array( 'action' => 'portfolio.case_text_update', 'payload' => $rollback_payload );
 		return $result;
 	}
 
@@ -176,8 +176,8 @@ final class PortfolioStatsAdapter {
 		if ( ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] <= 0 ) {
 			throw new RuntimeException( 'Portfolio stats update requires a positive integer post_id.' );
 		}
-		$postId = $payload['post_id'];
-		$post = get_post( $postId );
+		$post_id = $payload['post_id'];
+		$post    = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Portfolio stats target post was not found.' );
 		}
@@ -187,7 +187,7 @@ final class PortfolioStatsAdapter {
 		if ( ! in_array( (string) $post->post_status, self::ALLOWED_POST_STATUSES, true ) ) {
 			throw new RuntimeException( 'Portfolio stats target has an unsupported post status.' );
 		}
-		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $postId ) ) {
+		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'Current user lacks permission to edit the portfolio stats target post.' );
 		}
 
@@ -202,55 +202,55 @@ final class PortfolioStatsAdapter {
 			throw new RuntimeException( 'Portfolio stats update requires a 1-8 field object.' );
 		}
 
-		$allowedParents = array();
-		foreach ( (array) acf_get_field_groups( array( 'post_id' => $postId ) ) as $group ) {
+		$allowed_parents = array();
+		foreach ( (array) acf_get_field_groups( array( 'post_id' => $post_id ) ) as $group ) {
 			if ( ! is_array( $group ) ) {
 				continue;
 			}
 			if ( ! empty( $group['key'] ) ) {
-				$allowedParents[(string) $group['key']] = true;
+				$allowed_parents[(string) $group['key']] = true;
 			}
 			if ( ! empty( $group['ID'] ) ) {
-				$allowedParents[(string) $group['ID']] = true;
+				$allowed_parents[(string) $group['ID']] = true;
 			}
 		}
-		if ( ! $allowedParents ) {
+		if ( ! $allowed_parents ) {
 			throw new RuntimeException( 'No ACF field group applies to the portfolio stats target post.' );
 		}
 
-		$before = array();
-		$seenNames = array();
-		foreach ( $fields as $fieldKey => $value ) {
-			$fieldKey = (string) $fieldKey;
-			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $fieldKey ) ) {
+		$before     = array();
+		$seen_names = array();
+		foreach ( $fields as $field_key => $value ) {
+			$field_key = (string) $field_key;
+			if ( ! preg_match( '/^field_[A-Za-z0-9_-]{6,80}\z/', $field_key ) ) {
 				throw new RuntimeException( 'Portfolio stats update requires ACF field keys, not field names.' );
 			}
-			Policy::assertKeyAllowed( $fieldKey );
+			Policy::assertKeyAllowed( $field_key );
 			if ( ! is_string( $value ) || strlen( $value ) > 1000 || preg_match( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $value ) ) {
 				throw new RuntimeException( 'Portfolio stats values must be text strings up to 1000 bytes without control characters.' );
 			}
-			$field = acf_get_field( $fieldKey );
+			$field = acf_get_field( $field_key );
 			if ( ! is_array( $field ) || 'text' !== (string) ( $field['type'] ?? '' ) ) {
-				throw new RuntimeException( 'Portfolio stats field is missing or is not a text field: ' . $fieldKey );
+				throw new RuntimeException( 'Portfolio stats field is missing or is not a text field: ' . $field_key );
 			}
-			$name = (string) ( $field['name'] ?? '' );
+			$name   = (string) ( $field['name'] ?? '' );
 			$parent = (string) ( $field['parent'] ?? '' );
 			if ( ! in_array( $name, self::ALLOWED_FIELD_NAMES, true ) ) {
-				throw new RuntimeException( 'Field is outside the fixed portfolio stats allowlist: ' . $fieldKey );
+				throw new RuntimeException( 'Field is outside the fixed portfolio stats allowlist: ' . $field_key );
 			}
-			if ( isset( $seenNames[ $name ] ) ) {
+			if ( isset( $seen_names[ $name ] ) ) {
 				throw new RuntimeException( 'Duplicate portfolio stats field name in one request: ' . $name );
 			}
-			if ( ! isset( $allowedParents[ $parent ] ) ) {
-				throw new RuntimeException( 'Portfolio stats field does not belong to a field group for the target post: ' . $fieldKey );
+			if ( ! isset( $allowed_parents[ $parent ] ) ) {
+				throw new RuntimeException( 'Portfolio stats field does not belong to a field group for the target post: ' . $field_key );
 			}
 			Policy::assertKeyAllowed( $name );
-			$seenNames[ $name ] = true;
-			$before[ $fieldKey ] = get_field( $fieldKey, $postId, false );
+			$seen_names[ $name ]  = true;
+			$before[ $field_key ] = get_field( $field_key, $post_id, false );
 		}
 
 		$result = array(
-			'post_id' => $postId,
+			'post_id' => $post_id,
 			'before' => $before,
 			'after' => $fields,
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -260,36 +260,36 @@ final class PortfolioStatsAdapter {
 		}
 
 		try {
-			foreach ( $fields as $fieldKey => $value ) {
-				if ( false === update_field( (string) $fieldKey, $value, $postId ) ) {
-					$current = get_field( (string) $fieldKey, $postId, false );
+			foreach ( $fields as $field_key => $value ) {
+				if ( false === update_field( (string) $field_key, $value, $post_id ) ) {
+					$current = get_field( (string) $field_key, $post_id, false );
 					if ( $current !== $value ) {
-						throw new RuntimeException( 'Portfolio stats ACF update failed for field: ' . (string) $fieldKey );
+						throw new RuntimeException( 'Portfolio stats ACF update failed for field: ' . (string) $field_key );
 					}
 				}
 			}
 
 			$after = array();
-			foreach ( $fields as $fieldKey => $value ) {
-				$actual = get_field( (string) $fieldKey, $postId, false );
+			foreach ( $fields as $field_key => $value ) {
+				$actual = get_field( (string) $field_key, $post_id, false );
 				if ( $actual !== $value ) {
-					throw new RuntimeException( 'Portfolio stats readback mismatch for field: ' . (string) $fieldKey );
+					throw new RuntimeException( 'Portfolio stats readback mismatch for field: ' . (string) $field_key );
 				}
-				$after[(string) $fieldKey] = $actual;
+				$after[(string) $field_key] = $actual;
 			}
 			$result['after'] = $after;
 		} catch ( Throwable $error ) {
-			$restoreFailures = array();
-			foreach ( $before as $fieldKey => $oldValue ) {
-				update_field( (string) $fieldKey, $oldValue, $postId );
-				$restored = get_field( (string) $fieldKey, $postId, false );
-				if ( $restored !== $oldValue ) {
-					$restoreFailures[] = (string) $fieldKey;
+			$restore_failures = array();
+			foreach ( $before as $field_key => $old_value ) {
+				update_field( (string) $field_key, $old_value, $post_id );
+				$restored = get_field( (string) $field_key, $post_id, false );
+				if ( $restored !== $old_value ) {
+					$restore_failures[] = (string) $field_key;
 				}
 			}
-			if ( $restoreFailures ) {
+			if ( $restore_failures ) {
 				throw new RuntimeException(
-					'Portfolio stats compensation readback failed for: ' . implode( ', ', $restoreFailures ) . '. Original error: ' . $error->getMessage(),
+					'Portfolio stats compensation readback failed for: ' . implode( ', ', $restore_failures ) . '. Original error: ' . $error->getMessage(),
 					0,
 					$error
 				);
@@ -299,7 +299,7 @@ final class PortfolioStatsAdapter {
 
 		$result['_rollback'] = array(
 			'action' => 'acf.portfolio_stats_update',
-			'payload' => array( 'post_id' => $postId, 'fields' => $before ),
+			'payload' => array( 'post_id' => $post_id, 'fields' => $before ),
 		);
 		return $result;
 	}

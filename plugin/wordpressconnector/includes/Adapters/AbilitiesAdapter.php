@@ -51,9 +51,9 @@ final class AbilitiesAdapter {
 			);
 		}
 
-		$perPage    = $this->catalogPositiveInteger( $payload['per_page'] ?? 10, 10, 'per_page' );
-		$page       = $this->catalogPositiveInteger( $payload['page'] ?? 1, 100000, 'page' );
-		$namespace  = $this->catalogNamespace( $payload['namespace'] ?? null );
+		$per_page  = $this->catalogPositiveInteger( $payload['per_page'] ?? 10, 10, 'per_page' );
+		$page      = $this->catalogPositiveInteger( $payload['page'] ?? 1, 100000, 'page' );
+		$namespace = $this->catalogNamespace( $payload['namespace'] ?? null );
 
 		$registered = (array) wp_get_abilities();
 		if ( count( $registered ) > 10000 ) {
@@ -82,8 +82,8 @@ final class AbilitiesAdapter {
 
 		ksort( $eligible, SORT_STRING );
 		$total    = count( $eligible );
-		$pages    = max( 1, (int) ceil( $total / $perPage ) );
-		$selected = array_slice( $eligible, ( $page - 1 ) * $perPage, $perPage, true );
+		$pages    = max( 1, (int) ceil( $total / $per_page ) );
+		$selected = array_slice( $eligible, ( $page - 1 ) * $per_page, $per_page, true );
 
 		$result   = array();
 		foreach ( $selected as $name => $ability ) {
@@ -94,7 +94,7 @@ final class AbilitiesAdapter {
 			'available' => true,
 			'abilities' => $result,
 			'page'      => $page,
-			'per_page'  => $perPage,
+			'per_page'  => $per_page,
 			'total'     => $total,
 			'pages'     => $pages,
 		);
@@ -111,7 +111,7 @@ final class AbilitiesAdapter {
 
 	public function readAbility( array $payload, array $context ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, false );
-		$input = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
+		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		return $this->executeAndSanitize( $name, $ability, $input, $this->safeAnnotations( $ability ), false );
 	}
 
@@ -125,26 +125,26 @@ final class AbilitiesAdapter {
 
 	private function executeMutation( array $payload, array $context, bool $approvedProvider ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, true, $approvedProvider );
-		$input       = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
-		$annotations = $this->safeAnnotations( $ability );
+		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
+		$annotations            = $this->safeAnnotations( $ability );
 
 		if ( ! empty( $context['dry_run'] ) ) {
-			list( $inputSchema, $inputSchemaOmitted ) = $this->boundedCatalogValue(
+			list( $input_schema, $input_schema_omitted ) = $this->boundedCatalogValue(
 				method_exists( $ability, 'get_input_schema' ) ? $ability->get_input_schema() : null
 			);
 			return array(
 				'name'                         => $name,
 				'would_execute'                => true,
 				'annotations'                  => $annotations,
-				'input_schema'                 => $inputSchema,
-				'input_schema_omitted'         => $inputSchemaOmitted,
+				'input_schema'                 => $input_schema,
+				'input_schema_omitted'         => $input_schema_omitted,
 				'native_validation_on_confirm' => true,
 				'rollback_supported'           => false,
 				'note'                         => 'Dry-run does not invoke the Ability. Native input validation, permission callbacks and provider-specific conflict guards run on confirmed execution.',
 			);
 		}
 
-		$result = $this->executeAndSanitize( $name, $ability, $input, $annotations, true );
+		$result                       = $this->executeAndSanitize( $name, $ability, $input, $annotations, true );
 		$result['rollback_supported'] = false;
 		return $result;
 	}
@@ -169,11 +169,11 @@ final class AbilitiesAdapter {
 	}
 
 	private function executeAndSanitize( string $name, object $ability, $input, array $annotations, bool $mutation ): array {
-		$executionStarted             = false;
-		$providerPreExecutionRejected = false;
-		$executionTracker             = null;
-		$guardTracker                 = null;
-		$provider                     = null;
+		$execution_started               = false;
+		$provider_pre_execution_rejected = false;
+		$execution_tracker               = null;
+		$guard_tracker                   = null;
+		$provider                        = null;
 
 		if ( $mutation ) {
 			$callback = $this->abilityExecuteCallback( $ability );
@@ -183,7 +183,7 @@ final class AbilitiesAdapter {
 		}
 
 		if ( $mutation && function_exists( 'add_action' ) && function_exists( 'remove_action' ) ) {
-			$executionTracker = static function ( $abilityName, $normalizedInput, $executingAbility = null ) use ( &$executionStarted, &$providerPreExecutionRejected, $name, $ability, $provider ): void {
+			$execution_tracker = static function ( $abilityName, $normalizedInput, $executingAbility = null ) use ( &$execution_started, &$provider_pre_execution_rejected, $name, $ability, $provider ): void {
 				if ( $abilityName !== $name ) {
 					return;
 				}
@@ -191,7 +191,7 @@ final class AbilitiesAdapter {
 					return;
 				}
 
-				$executionStarted = true;
+				$execution_started = true;
 				if ( ! is_object( $provider ) || ! method_exists( $provider, 'is_available' ) ) {
 					return;
 				}
@@ -199,58 +199,58 @@ final class AbilitiesAdapter {
 				try {
 					$availability = $provider->is_available();
 					if ( function_exists( 'is_wp_error' ) && is_wp_error( $availability ) ) {
-						$providerPreExecutionRejected = true;
+						$provider_pre_execution_rejected = true;
 					}
 				} catch ( \Throwable $error ) {
-					$providerPreExecutionRejected = true;
+					$provider_pre_execution_rejected = true;
 				}
 			};
-			add_action( 'wp_before_execute_ability', $executionTracker, PHP_INT_MAX, 3 );
+			add_action( 'wp_before_execute_ability', $execution_tracker, PHP_INT_MAX, 3 );
 		}
 
 		if ( $mutation && function_exists( 'add_filter' ) && function_exists( 'remove_filter' ) ) {
-			$guardTracker = static function ( $guard ) use ( &$executionStarted, &$providerPreExecutionRejected ) {
-				if ( $executionStarted && function_exists( 'is_wp_error' ) && is_wp_error( $guard ) ) {
-					$providerPreExecutionRejected = true;
+			$guard_tracker = static function ( $guard ) use ( &$execution_started, &$provider_pre_execution_rejected ) {
+				if ( $execution_started && function_exists( 'is_wp_error' ) && is_wp_error( $guard ) ) {
+					$provider_pre_execution_rejected = true;
 				}
 				return $guard;
 			};
-			add_filter( 'elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX, 1 );
+			add_filter( 'elementor/mcp/pre_execute_guard', $guard_tracker, PHP_INT_MAX, 1 );
 		}
 
 		try {
 			$result = $ability->execute( $input );
 		} catch ( \Throwable $error ) {
-			if ( $mutation && $executionStarted && ! $providerPreExecutionRejected ) {
+			if ( $mutation && $execution_started && ! $provider_pre_execution_rejected ) {
 				return $this->terminalMutationFailure( $name, $annotations, null );
 			}
 			throw new \RuntimeException( 'WordPress Ability failed.' );
 		} finally {
-			if ( null !== $executionTracker ) {
-				remove_action( 'wp_before_execute_ability', $executionTracker, PHP_INT_MAX );
+			if ( null !== $execution_tracker ) {
+				remove_action( 'wp_before_execute_ability', $execution_tracker, PHP_INT_MAX );
 			}
-			if ( null !== $guardTracker ) {
-				remove_filter( 'elementor/mcp/pre_execute_guard', $guardTracker, PHP_INT_MAX );
+			if ( null !== $guard_tracker ) {
+				remove_filter( 'elementor/mcp/pre_execute_guard', $guard_tracker, PHP_INT_MAX );
 			}
 		}
 
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
-			if ( $mutation && $executionStarted && ! $providerPreExecutionRejected ) {
-				$errorCode = method_exists( $result, 'get_error_code' ) ? (string) $result->get_error_code() : null;
-				return $this->terminalMutationFailure( $name, $annotations, $errorCode );
+			if ( $mutation && $execution_started && ! $provider_pre_execution_rejected ) {
+				$error_code = method_exists( $result, 'get_error_code' ) ? (string) $result->get_error_code() : null;
+				return $this->terminalMutationFailure( $name, $annotations, $error_code );
 			}
 			throw new \RuntimeException( 'WordPress Ability failed.' );
 		}
 
 		if ( $mutation && is_array( $result ) && 'error' === ( $result['status'] ?? null ) ) {
-			$errorCode = null;
+			$error_code = null;
 			foreach ( array( 'code', 'error_code' ) as $key ) {
 				if ( isset( $result[ $key ] ) && ( is_string( $result[ $key ] ) || is_int( $result[ $key ] ) ) ) {
-					$errorCode = (string) $result[ $key ];
+					$error_code = (string) $result[ $key ];
 					break;
 				}
 			}
-			return $this->terminalMutationFailure( $name, $annotations, $errorCode );
+			return $this->terminalMutationFailure( $name, $annotations, $error_code );
 		}
 
 		try {
@@ -285,22 +285,22 @@ final class AbilitiesAdapter {
 		);
 		if ( $mutation ) {
 			$response['execution_completed'] = true;
-			$response['result_omitted'] = false;
+			$response['result_omitted']      = false;
 		}
 		return $response;
 	}
 
 	private function terminalMutationFailure( string $name, array $annotations, ?string $providerErrorCode ): array {
-		$safeCode = null;
+		$safe_code = null;
 		if ( is_string( $providerErrorCode ) && 1 === preg_match( '/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode ) ) {
-			$safeCode = $providerErrorCode;
+			$safe_code = $providerErrorCode;
 		}
 
 		return array(
 			'name'                       => $name,
 			'annotations'                => $annotations,
 			'execution_may_have_started' => true,
-			'provider_error_code'        => $safeCode,
+			'provider_error_code'        => $safe_code,
 			'result'                     => null,
 			'result_omitted'             => true,
 			'_terminal_error'            => 'Native WordPress Ability execution ended with a terminal provider failure; this request_id will not execute again.',
@@ -401,23 +401,23 @@ final class AbilitiesAdapter {
 		if ( ! isset( $approved[ $name ] ) ) {
 			return false;
 		}
-		$pluginFile = $approved[ $name ];
+		$plugin_file = $approved[ $name ];
 
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_option' ) ) {
 			return false;
 		}
-		$active        = get_option( 'active_plugins', array() );
-		$active        = is_array( $active ) ? $active : array();
-		$networkActive = function_exists( 'get_site_option' )
+		$active         = get_option( 'active_plugins', array() );
+		$active         = is_array( $active ) ? $active : array();
+		$network_active = function_exists( 'get_site_option' )
 			? get_site_option( 'active_sitewide_plugins', array() ) : array();
-		$networkActive = is_array( $networkActive ) ? array_keys( $networkActive ) : array();
-		if ( ! in_array( $pluginFile, $active, true ) && ! in_array( $pluginFile, $networkActive, true ) ) {
+		$network_active = is_array( $network_active ) ? array_keys( $network_active ) : array();
+		if ( ! in_array( $plugin_file, $active, true ) && ! in_array( $plugin_file, $network_active, true ) ) {
 			return false;
 		}
 
-		$pluginRoot = rtrim( (string) WP_PLUGIN_DIR, '/\\' );
-		$mainFile   = realpath( $pluginRoot . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $pluginFile ) );
-		if ( ! is_string( $mainFile ) || ! is_file( $mainFile ) ) {
+		$plugin_root = rtrim( (string) WP_PLUGIN_DIR, '/\\' );
+		$main_file   = realpath( $plugin_root . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $plugin_file ) );
+		if ( ! is_string( $main_file ) || ! is_file( $main_file ) ) {
 			return false;
 		}
 		$callback = $this->abilityExecuteCallback( $ability );
@@ -425,10 +425,10 @@ final class AbilitiesAdapter {
 		if ( null === $file ) {
 			return false;
 		}
-		$canonicalCallback = realpath( $file );
-		$canonicalPlugin   = realpath( dirname( $mainFile ) );
-		return is_string( $canonicalCallback ) && is_string( $canonicalPlugin )
-			&& $this->pathWithinRoot( $canonicalCallback, $canonicalPlugin );
+		$canonical_callback = realpath( $file );
+		$canonical_plugin   = realpath( dirname( $main_file ) );
+		return is_string( $canonical_callback ) && is_string( $canonical_plugin )
+			&& $this->pathWithinRoot( $canonical_callback, $canonical_plugin );
 	}
 
 	private function approvedAbilityProviders(): array {
@@ -442,13 +442,13 @@ final class AbilitiesAdapter {
 			return array();
 		}
 		$approved = array();
-		foreach ( $value as $name => $pluginFile ) {
+		foreach ( $value as $name => $plugin_file ) {
 			if ( ! is_string( $name ) || ! $this->isValidName( $name )
-				|| ! is_string( $pluginFile )
-				|| ! preg_match( '#^[A-Za-z0-9][A-Za-z0-9._-]{0,79}/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.php\z#D', $pluginFile ) ) {
+				|| ! is_string( $plugin_file )
+				|| ! preg_match( '#^[A-Za-z0-9][A-Za-z0-9._-]{0,79}/[A-Za-z0-9][A-Za-z0-9._-]{0,79}\.php\z#D', $plugin_file ) ) {
 				return array();
 			}
-			$approved[ $name ] = $pluginFile;
+			$approved[ $name ] = $plugin_file;
 		}
 		return $approved;
 	}
@@ -497,21 +497,21 @@ final class AbilitiesAdapter {
 		}
 
 		try {
-			$providerFile = ( new \ReflectionObject( $provider ) )->getFileName();
+			$provider_file = ( new \ReflectionObject( $provider ) )->getFileName();
 		} catch ( \Throwable $error ) {
 			return false;
 		}
-		if ( ! is_string( $providerFile ) || '' === $providerFile ) {
+		if ( ! is_string( $provider_file ) || '' === $provider_file ) {
 			return false;
 		}
 
-		$providerPath = realpath( $providerFile );
-		if ( false === $providerPath ) {
+		$provider_path = realpath( $provider_file );
+		if ( false === $provider_path ) {
 			return false;
 		}
 
 		foreach ( $this->trustedElementorPluginRoots() as $root ) {
-			if ( $this->pathWithinRoot( $providerPath, $root ) ) {
+			if ( $this->pathWithinRoot( $provider_path, $root ) ) {
 				return true;
 			}
 		}
@@ -540,27 +540,27 @@ final class AbilitiesAdapter {
 			return array();
 		}
 
-		$active        = get_option( 'active_plugins', array() );
-		$active        = is_array( $active ) ? array_values( $active ) : array();
+		$active = get_option( 'active_plugins', array() );
+		$active = is_array( $active ) ? array_values( $active ) : array();
 
-		$networkActive = array();
+		$network_active = array();
 		if ( function_exists( 'get_site_option' ) ) {
-			$value         = get_site_option( 'active_sitewide_plugins', array() );
-			$networkActive = is_array( $value ) ? array_keys( $value ) : array();
+			$value          = get_site_option( 'active_sitewide_plugins', array() );
+			$network_active = is_array( $value ) ? array_keys( $value ) : array();
 		}
 
 		$roots = array();
-		foreach ( array( 'elementor/elementor.php', 'elementor-pro/elementor-pro.php' ) as $pluginFile ) {
-			if ( ! in_array( $pluginFile, $active, true ) && ! in_array( $pluginFile, $networkActive, true ) ) {
+		foreach ( array( 'elementor/elementor.php', 'elementor-pro/elementor-pro.php' ) as $plugin_file ) {
+			if ( ! in_array( $plugin_file, $active, true ) && ! in_array( $plugin_file, $network_active, true ) ) {
 				continue;
 			}
 
-			$mainFile = realpath( rtrim( (string) WP_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $pluginFile ) );
-			if ( false === $mainFile || ! is_file( $mainFile ) ) {
+			$main_file = realpath( rtrim( (string) WP_PLUGIN_DIR, '/\\' ) . DIRECTORY_SEPARATOR . str_replace( '/', DIRECTORY_SEPARATOR, $plugin_file ) );
+			if ( false === $main_file || ! is_file( $main_file ) ) {
 				continue;
 			}
 
-			$root = realpath( dirname( $mainFile ) );
+			$root = realpath( dirname( $main_file ) );
 			if ( false !== $root && ! in_array( $root, $roots, true ) ) {
 				$roots[] = $root;
 			}
@@ -601,29 +601,29 @@ final class AbilitiesAdapter {
 	}
 
 	private function safeAnnotations( object $ability ): array {
-		$meta        = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
-		$annotations = is_array( $meta ) && isset( $meta['annotations'] ) && is_array( $meta['annotations'] )
+		$meta             = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
+		$annotations      = is_array( $meta ) && isset( $meta['annotations'] ) && is_array( $meta['annotations'] )
 			? $meta['annotations']
 			: array();
-		$safeAnnotations = array();
+		$safe_annotations = array();
 		foreach ( array( 'readonly', 'destructive', 'idempotent' ) as $key ) {
 			if ( array_key_exists( $key, $annotations ) && ( is_bool( $annotations[ $key ] ) || null === $annotations[ $key ] ) ) {
-				$safeAnnotations[ $key ] = $annotations[ $key ];
+				$safe_annotations[ $key ] = $annotations[ $key ];
 			}
 		}
-		return $safeAnnotations;
+		return $safe_annotations;
 	}
 
 	private function descriptor( string $name, object $ability ): array {
-		$safeAnnotations          = $this->safeAnnotations( $ability );
-		$readEligible             = $this->isReadEligible( $ability );
-		$mutationEligible         = $this->isElementorMutationEligible( $name, $ability );
-		$approvedMutationEligible = $this->isApprovedPluginMutationEligible( $name, $ability );
+		$safe_annotations           = $this->safeAnnotations( $ability );
+		$read_eligible              = $this->isReadEligible( $ability );
+		$mutation_eligible          = $this->isElementorMutationEligible( $name, $ability );
+		$approved_mutation_eligible = $this->isApprovedPluginMutationEligible( $name, $ability );
 
-		list( $inputSchema, $inputSchemaOmitted ) = $this->boundedCatalogValue(
+		list( $input_schema, $input_schema_omitted ) = $this->boundedCatalogValue(
 			method_exists( $ability, 'get_input_schema' ) ? $ability->get_input_schema() : null
 		);
-		list( $outputSchema, $outputSchemaOmitted ) = $this->boundedCatalogValue(
+		list( $output_schema, $output_schema_omitted ) = $this->boundedCatalogValue(
 			method_exists( $ability, 'get_output_schema' ) ? $ability->get_output_schema() : null
 		);
 
@@ -632,16 +632,16 @@ final class AbilitiesAdapter {
 			'label'                      => $this->boundedCatalogText( method_exists( $ability, 'get_label' ) ? (string) $ability->get_label() : $name, 512 ),
 			'description'                => $this->boundedCatalogText( method_exists( $ability, 'get_description' ) ? (string) $ability->get_description() : '', 4096 ),
 			'category'                   => $this->boundedCatalogText( method_exists( $ability, 'get_category' ) ? (string) $ability->get_category() : '', 512 ),
-			'input_schema'               => $inputSchema,
-			'input_schema_omitted'       => $inputSchemaOmitted,
-			'output_schema'              => $outputSchema,
-			'output_schema_omitted'      => $outputSchemaOmitted,
-			'annotations'                => $safeAnnotations,
-			'execution_exposed'          => $readEligible,
-			'mutation_execution_exposed' => $mutationEligible || $approvedMutationEligible,
-			'connector_action'           => $readEligible ? 'wordpress.ability.read'
-				: ( $mutationEligible ? 'wordpress.ability.execute'
-					: ( $approvedMutationEligible ? 'wordpress.ability.execute_approved' : null ) ),
+			'input_schema'               => $input_schema,
+			'input_schema_omitted'       => $input_schema_omitted,
+			'output_schema'              => $output_schema,
+			'output_schema_omitted'      => $output_schema_omitted,
+			'annotations'                => $safe_annotations,
+			'execution_exposed'          => $read_eligible,
+			'mutation_execution_exposed' => $mutation_eligible || $approved_mutation_eligible,
+			'connector_action'           => $read_eligible ? 'wordpress.ability.read'
+				: ( $mutation_eligible ? 'wordpress.ability.execute'
+					: ( $approved_mutation_eligible ? 'wordpress.ability.execute_approved' : null ) ),
 		);
 	}
 
