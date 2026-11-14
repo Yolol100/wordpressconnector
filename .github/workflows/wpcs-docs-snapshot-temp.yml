@@ -1,0 +1,27 @@
+# One-time read-only source snapshot: delete this workflow before opening PR.
+name: Temporary WPCS Docs Source Snapshot
+on:
+  push:
+    branches:
+      - fix/wpcs-docs-contracts-20261115
+permissions:
+  contents: read
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Export bounded implementation and tests
+        run: |
+          set -euo pipefail
+          tar -czf "${RUNNER_TEMP}/source.tar.gz" plugin scripts tests docs .github phpcs.xml.dist README.md AGENTS.md REPOSITORY-HYGIENE-POLICY.md
+      - name: Upload temporary snapshot
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
+        with:
+          name: temporary-wpcs-docs-source
+          path: ${{ runner.temp }}/source.tar.gz
+          retention-days: 1
