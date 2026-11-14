@@ -176,17 +176,17 @@ final class MediaAdapter {
 		$source     = get_attached_file( $id );
 		$uploads    = wp_get_upload_dir();
 		$root       = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
-		$source_real = is_string( $source ) ? realpath( $source ) : false;
-		if ( ! is_string( $root ) || ! is_string( $source_real ) || ! is_file( $source_real ) ||
-			0 !== strpos( $source_real, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
+		$sourceReal = is_string( $source ) ? realpath( $source ) : false;
+		if ( ! is_string( $root ) || ! is_string( $sourceReal ) || ! is_file( $sourceReal ) ||
+			0 !== strpos( $sourceReal, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
 			throw new RuntimeException( 'Image must be a regular file inside WordPress uploads.' );
 		}
-		$directory = dirname( $source_real );
-		$extension = strtolower( (string) pathinfo( $source_real, PATHINFO_EXTENSION ) );
+		$directory = dirname( $sourceReal );
+		$extension = strtolower( (string) pathinfo( $sourceReal, PATHINFO_EXTENSION ) );
 		if ( strtolower( (string) pathinfo( $requested, PATHINFO_EXTENSION ) ) !== $extension ) {
 			throw new RuntimeException( 'Image format changes require a separate conversion.' );
 		}
-		$old_name = basename( $source_real );
+		$old_name = basename( $sourceReal );
 		if ( $requested === $old_name ) {
 			return array( 'unchanged' => true, 'attachment_id' => $id, '_current_fingerprint' => Fingerprint::make( $this->snapshot( $id ) ) );
 		}
@@ -268,7 +268,7 @@ final class MediaAdapter {
 			$readback = $this->snapshot( $id );
 			if ( realpath( (string) $readback['file'] ) !== realpath( $directory . DIRECTORY_SEPARATOR . $requested ) ||
 				Fingerprint::make( $readback['metadata'] ) !== Fingerprint::make( $after_metadata ) ||
-				! is_file( $source_real ) ) {
+				! is_file( $sourceReal ) ) {
 				throw new RuntimeException( 'Image rename readback verification failed.' );
 			}
 			return array( 'renamed' => $plan, 'after' => $readback,
@@ -277,13 +277,13 @@ final class MediaAdapter {
 			// A metadata write can fail after another part already committed.
 			// Never delete new files unless BOTH original WordPress pointers
 			// were independently read back as restored.
-			update_attached_file( $id, $source_real );
+			update_attached_file( $id, $sourceReal );
 			wp_update_attachment_metadata( $id, $metadata );
 			clean_post_cache( $id );
 			$restored_path     = get_attached_file( $id, true );
 			$restored_metadata = wp_get_attachment_metadata( $id, true );
 			$restored         = is_string( $restored_path )
-				&& realpath( $restored_path ) === $source_real
+				&& realpath( $restored_path ) === $sourceReal
 				&& is_array( $restored_metadata )
 				&& hash_equals( Fingerprint::make( $metadata ), Fingerprint::make( $restored_metadata ) );
 			if ( ! $restored ) {
