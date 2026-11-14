@@ -16,7 +16,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Create snapshot without Git history or runtime state
-        run: tar -czf "${RUNNER_TEMP}/connector-source.tar.gz" plugin scripts tests docs phpcs.xml.dist AGENTS.md REPOSITORY-HYGIENE-POLICY.md
+        run: tar -czf "${RUNNER_TEMP}/connector-source.tar.gz" .github plugin scripts tests docs phpcs.xml.dist AGENTS.md REPOSITORY-HYGIENE-POLICY.md README.md
       - name: Upload one-time source snapshot
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
         with:
