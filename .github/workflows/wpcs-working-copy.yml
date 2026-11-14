@@ -72,6 +72,16 @@ jobs:
           PY
           php scripts/wpcs-temp-rename-locals.php plugin/wordpressconnector > "$RUNNER_TEMP/rename-locals.log"
           find plugin/wordpressconnector -name '*.php' -print0 | xargs -0 -n1 php -l > "$RUNNER_TEMP/php-lint.log"
+          git add plugin/wordpressconnector
+          test -n "$(git diff --cached --name-only)"
+          while IFS= read -r f; do
+              case "$f" in plugin/wordpressconnector/*.php) ;; *) printf 'Unexpected changed file: %s\n' "$f"; exit 1 ;; esac
+          done < <(git diff --cached --name-only)
+          git diff --cached --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m "style(wpcs): apply token-reviewed PHPCBF and safe local variable names"
+          # Canonical preflight requires a clean tracked source tree; the commit is local until all tests succeed.
           bash scripts/run-contracts.sh > "$RUNNER_TEMP/contracts.log" 2>&1 || { tail -n 50 "$RUNNER_TEMP/contracts.log"; exit 1; }
           scan_status=0
           "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=phpcs.xml.dist --report=json > "$RUNNER_TEMP/wpcs-final.json" || scan_status=$?
@@ -83,15 +93,6 @@ jobs:
           print("WPCS exact candidate:",t)
           assert t['errors']<4767 and t['warnings']<506, 'Candidate must improve errors and warnings'
           PY
-          git add plugin/wordpressconnector
-          test -n "$(git diff --cached --name-only)"
-          while IFS= read -r f; do
-              case "$f" in plugin/wordpressconnector/*.php) ;; *) printf 'Unexpected changed file: %s\n' "$f"; exit 1 ;; esac
-          done < <(git diff --cached --name-only)
-          git diff --cached --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "style(wpcs): apply token-reviewed PHPCBF and safe local variable names"
           git push origin "HEAD:refs/heads/fix/wpcs-remaining-20261115"
           printf 'committed_sha=%s\n' "$(git rev-parse HEAD)"
           
