@@ -22,7 +22,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
 final class OptimizerSettingsAdapter {
 	private const ASSET_FIELDS = array(
 		'minify_loaded_css', 'minify_loaded_js', 'combine_loaded_css',
-		'combine_loaded_js', 'inline_css_files', 'critical_css_status'
+		'combine_loaded_js', 'inline_css_files', 'critical_css_status',
 	);
 	private const EWWW_FIELDS = array(
 		'ewww_image_optimizer_lazy_load', 'ewww_image_optimizer_ll_autoscale',
@@ -33,7 +33,7 @@ final class OptimizerSettingsAdapter {
 	);
 	private const EWWW_WRITE = array(
 		'ewww_image_optimizer_lazy_load', 'ewww_image_optimizer_ll_autoscale',
-		'ewww_image_optimizer_ll_abovethefold', 'ewww_image_optimizer_add_missing_dims'
+		'ewww_image_optimizer_ll_abovethefold', 'ewww_image_optimizer_add_missing_dims',
 	);
 
 	/**
@@ -42,7 +42,10 @@ final class OptimizerSettingsAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$read  = array( 'privileged' => true, 'capability' => 'manage_options' );
+		$read  = array(
+			'privileged' => true,
+			'capability' => 'manage_options',
+		);
 		$write = array_merge( $read, array( 'mutation' => true ) );
 		$registry->register( 'optimizer.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'optimizer.settings.update', array( $this, 'update' ), $write );
@@ -104,7 +107,9 @@ final class OptimizerSettingsAdapter {
 		$after[ $key ] = $value;
 		$this->conflicts( $provider, $key, $value );
 		$out = array(
-			'provider'             => $provider, 'before' => $before, 'after' => $after,
+			'provider'             => $provider,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -149,10 +154,14 @@ final class OptimizerSettingsAdapter {
 			throw new RuntimeException( 'Optimizer did not retain requested setting; previous state restored.' );
 		}
 		$out['after'] = $this->publicFields( $provider, $next );
-		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore', 'payload' => array(
-			'provider' => $provider, 'field' => $key, 'exists' => $previousExists,
-			'value'    => $previousValue, 'expected_after_fingerprint' => Fingerprint::make( $next ),
-		) );
+		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore',
+			'payload'                       => array(
+			'provider'                   => $provider,
+			'field'                      => $key,
+			'exists'                     => $previousExists,
+			'value'                      => $previousValue,
+			'expected_after_fingerprint' => Fingerprint::make( $next ),
+		), );
 		return $out;
 	}
 
@@ -198,7 +207,11 @@ final class OptimizerSettingsAdapter {
 		}elseif ( array_key_exists( $key, $readback ) ){
 			throw new RuntimeException( 'Optimizer rollback failed to remove the new field.' );
 		}
-		return array( 'restored' => true, 'provider' => $provider, 'field' => $key );
+		return array(
+			'restored' => true,
+			'provider' => $provider,
+			'field'    => $key,
+		);
 	}
 
 	/**

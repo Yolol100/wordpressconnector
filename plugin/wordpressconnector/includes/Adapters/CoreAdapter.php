@@ -388,7 +388,10 @@ final class CoreAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $fields,
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'post_type' => $fields['post_type'] ) ),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'       => true,
+					'post_type' => $fields['post_type'],
+				) ),
 			);
 		}
 
@@ -400,7 +403,10 @@ final class CoreAdapter {
 		$post = get_post( (int) $id );
 		return array(
 			'post'      => $this->postSnapshot( $post ),
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'post.trash',
+				'payload' => array( 'id' => (int) $id ),
+			),
 		);
 	}
 
@@ -502,19 +508,28 @@ final class CoreAdapter {
 		if ( '' === $guard || ! hash_equals( $guard, $before_fingerprint ) ) {
 			throw new RuntimeException( 'Literal replacement must match the confirmed dry-run fingerprint.' );
 		}
-		$updated = wp_update_post( wp_slash( array( 'ID' => (int) $post->ID, 'post_content' => $next ) ), true );
+		$updated = wp_update_post( wp_slash( array(
+			'ID'           => (int) $post->ID,
+			'post_content' => $next,
+		) ), true );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		$actual = get_post( (int) $post->ID );
 		if ( ! $actual instanceof \WP_Post || (string) $actual->post_content !== $next ) {
-			wp_update_post( wp_slash( array( 'ID' => (int) $post->ID, 'post_content' => $original ) ), true );
+			wp_update_post( wp_slash( array(
+				'ID'           => (int) $post->ID,
+				'post_content' => $original,
+			) ), true );
 			throw new RuntimeException( 'Literal replacement readback failed; prior content restore attempted.' );
 		}
 		$result['readback_verified'] = true;
 		$result['_rollback']         = array(
 			'action'  => 'post.update',
-			'payload' => array( 'id' => (int) $post->ID, 'content' => $original ),
+			'payload' => array(
+				'id'      => (int) $post->ID,
+				'content' => $original,
+			),
 		);
 		return $result;
 	}
@@ -689,7 +704,12 @@ final class CoreAdapter {
 		}
 		$result['_rollback'] = array(
 			'action'  => 'meta.update',
-			'payload' => array( 'object_type' => $type, 'object_id' => $id, 'key' => $key, 'value' => $before ),
+			'payload' => array(
+				'object_type' => $type,
+				'object_id'   => $id,
+				'key'         => $key,
+				'value'       => $before,
+			),
 		);
 		return $result;
 	}
@@ -716,7 +736,12 @@ final class CoreAdapter {
 		delete_metadata( $type, $id, $key );
 		$result['_rollback'] = array(
 			'action'  => 'meta.update',
-			'payload' => array( 'object_type' => $type, 'object_id' => $id, 'key' => $key, 'value' => $before ),
+			'payload' => array(
+				'object_type' => $type,
+				'object_id'   => $id,
+				'key'         => $key,
+				'value'       => $before,
+			),
 		);
 		return $result;
 	}
@@ -807,8 +832,15 @@ final class CoreAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => array( 'taxonomy' => $taxonomy, 'name' => $name, 'args' => $args ),
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'taxonomy' => $taxonomy ) ),
+				'would_create'         => array(
+					'taxonomy' => $taxonomy,
+					'name'     => $name,
+					'args'     => $args,
+				),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'      => true,
+					'taxonomy' => $taxonomy,
+				) ),
 			);
 		}
 		$created = wp_insert_term( $name, $taxonomy, $args );
@@ -818,7 +850,11 @@ final class CoreAdapter {
 		$id = (int) $created['term_id'];
 		return array(
 			'term'      => $this->termSnapshot( get_term( $id, $taxonomy ) ),
-			'_rollback' => array( 'action' => 'term.delete', 'payload' => array( 'taxonomy' => $taxonomy, 'id' => $id ) ),
+			'_rollback' => array( 'action' => 'term.delete',
+				'payload'                  => array(
+				'taxonomy' => $taxonomy,
+				'id'       => $id,
+			), ),
 		);
 	}
 
@@ -868,7 +904,10 @@ final class CoreAdapter {
 		$result['after']     = $this->termSnapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array(
 			'action'  => 'term.update',
-			'payload' => array_merge( array( 'taxonomy' => $taxonomy, 'id' => $id ), $before ),
+			'payload' => array_merge( array(
+				'taxonomy' => $taxonomy,
+				'id'       => $id,
+			), $before ),
 		);
 		return $result;
 	}
@@ -946,7 +985,12 @@ final class CoreAdapter {
 		}
 		$result['_rollback'] = array(
 			'action'  => 'term.assign',
-			'payload' => array( 'object_id' => $object_id, 'taxonomy' => $taxonomy, 'terms' => array_map( 'intval', $before ), 'append' => false ),
+			'payload' => array(
+				'object_id' => $object_id,
+				'taxonomy'  => $taxonomy,
+				'terms'     => array_map( 'intval', $before ),
+				'append'    => false,
+			),
 		);
 		return $result;
 	}
@@ -959,7 +1003,12 @@ final class CoreAdapter {
 	public function menuList(): array {
 		$menus = array();
 		foreach ( wp_get_nav_menus() as $menu ) {
-			$menus[] = array( 'term_id' => (int) $menu->term_id, 'name' => (string) $menu->name, 'slug' => (string) $menu->slug, 'count' => (int) $menu->count );
+			$menus[] = array(
+				'term_id' => (int) $menu->term_id,
+				'name'    => (string) $menu->name,
+				'slug'    => (string) $menu->slug,
+				'count'   => (int) $menu->count,
+			);
 		}
 		return array(
 			'menus'                => $menus,
@@ -998,7 +1047,11 @@ final class CoreAdapter {
 			);
 		}
 		return array(
-			'menu'  => array( 'term_id' => (int) $menu->term_id, 'name' => (string) $menu->name, 'slug' => (string) $menu->slug ),
+			'menu'  => array(
+				'term_id' => (int) $menu->term_id,
+				'name'    => (string) $menu->name,
+				'slug'    => (string) $menu->slug,
+			),
 			'items' => $items,
 		);
 	}
@@ -1030,7 +1083,10 @@ final class CoreAdapter {
 		}
 		return array(
 			'menu_id'   => (int) $id,
-			'_rollback' => array( 'action' => 'menu.delete', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'menu.delete',
+				'payload' => array( 'id' => (int) $id ),
+			),
 		);
 	}
 
@@ -1058,7 +1114,10 @@ final class CoreAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
-				'after'                => array( 'id' => $id, 'name' => $name ),
+				'after'                => array(
+					'id'   => $id,
+					'name' => $name,
+				),
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
@@ -1068,7 +1127,10 @@ final class CoreAdapter {
 		}
 		return array(
 			'menu_id'   => (int) $updated,
-			'_rollback' => array( 'action' => 'menu.update', 'payload' => $before ),
+			'_rollback' => array(
+				'action'  => 'menu.update',
+				'payload' => $before,
+			),
 		);
 	}
 
@@ -1146,7 +1208,11 @@ final class CoreAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_upsert'         => array( 'menu_id' => $menu_id, 'item_id' => $item_id, 'args' => $args ),
+				'would_upsert'         => array(
+					'menu_id' => $menu_id,
+					'item_id' => $item_id,
+					'args'    => $args,
+				),
 				'_current_fingerprint' => Fingerprint::make( $before ? get_post_meta( $item_id ) : array( 'new' => true ) ),
 			);
 		}
@@ -1191,7 +1257,11 @@ final class CoreAdapter {
 		return array(
 			'location'  => $location,
 			'menu_id'   => $menu_id,
-			'_rollback' => array( 'action' => 'menu.location_set', 'payload' => array( 'location' => $location, 'menu_id' => $before ) ),
+			'_rollback' => array( 'action' => 'menu.location_set',
+				'payload'                  => array(
+				'location' => $location,
+				'menu_id'  => $before,
+			), ),
 		);
 	}
 
@@ -1235,7 +1305,11 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_option( $name, null ),
-			'_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'option.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1260,7 +1334,11 @@ final class CoreAdapter {
 		delete_option( $name );
 		return array(
 			'deleted'   => $name,
-			'_rollback' => array( 'action' => 'option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'option.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1314,7 +1392,11 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_site_option( $name, null ),
-			'_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'network_option.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1344,7 +1426,11 @@ final class CoreAdapter {
 		delete_site_option( $name );
 		return array(
 			'deleted'   => $name,
-			'_rollback' => array( 'action' => 'network_option.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'network_option.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1388,7 +1474,11 @@ final class CoreAdapter {
 		return array(
 			'name'      => $name,
 			'value'     => get_theme_mod( $name, null ),
-			'_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'theme_mod.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1413,7 +1503,11 @@ final class CoreAdapter {
 		remove_theme_mod( $name );
 		return array(
 			'removed'   => $name,
-			'_rollback' => array( 'action' => 'theme_mod.update', 'payload' => array( 'name' => $name, 'value' => $before ) ),
+			'_rollback' => array( 'action' => 'theme_mod.update',
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
+			), ),
 		);
 	}
 
@@ -1493,7 +1587,15 @@ final class CoreAdapter {
 		}
 		return array(
 			'comment'   => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ),
-			'_rollback' => array( 'action' => 'comment.update', 'payload' => array( 'id' => (int) $comment->comment_ID, 'content' => $before['content'], 'author' => $before['author'], 'author_email' => $before['author_email'], 'author_url' => $before['author_url'], 'approved' => $before['approved'] ) ),
+			'_rollback' => array( 'action' => 'comment.update',
+				'payload'                  => array(
+				'id'           => (int) $comment->comment_ID,
+				'content'      => $before['content'],
+				'author'       => $before['author'],
+				'author_email' => $before['author_email'],
+				'author_url'   => $before['author_url'],
+				'approved'     => $before['approved'],
+			), ),
 		);
 	}
 
@@ -1723,10 +1825,18 @@ final class CoreAdapter {
 	 */
 	private function commentSnapshot( \WP_Comment $comment ): array {
 		return array(
-			'id'           => (int) $comment->comment_ID, 'post_id' => (int) $comment->comment_post_ID, 'author' => (string) $comment->comment_author,
-			'author_email' => (string) $comment->comment_author_email, 'author_url' => (string) $comment->comment_author_url,
-			'author_ip'    => (string) $comment->comment_author_IP, 'date' => (string) $comment->comment_date, 'content' => (string) $comment->comment_content,
-			'approved'     => (string) $comment->comment_approved, 'type' => (string) $comment->comment_type, 'parent' => (int) $comment->comment_parent, 'user_id' => (int) $comment->user_id,
+			'id'           => (int) $comment->comment_ID,
+			'post_id'      => (int) $comment->comment_post_ID,
+			'author'       => (string) $comment->comment_author,
+			'author_email' => (string) $comment->comment_author_email,
+			'author_url'   => (string) $comment->comment_author_url,
+			'author_ip'    => (string) $comment->comment_author_IP,
+			'date'         => (string) $comment->comment_date,
+			'content'      => (string) $comment->comment_content,
+			'approved'     => (string) $comment->comment_approved,
+			'type'         => (string) $comment->comment_type,
+			'parent'       => (int) $comment->comment_parent,
+			'user_id'      => (int) $comment->user_id,
 		);
 	}
 

@@ -45,12 +45,12 @@ final class AutoImageAttributesAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'auto_image_attributes.inspect', array( $this, 'inspect' ), array(
-			'privileged' => true,
+			'privileged'  => true,
 			'description' => 'Read safe Auto Image Attributes upload and bulk-update settings.',
 		) );
 		$registry->register( 'auto_image_attributes.update', array( $this, 'update' ), array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'    => true,
+			'privileged'  => true,
 			'description' => 'Update allowlisted Auto Image Attributes settings with dry-run, readback and rollback.',
 		) );
 	}
@@ -66,9 +66,9 @@ final class AutoImageAttributesAdapter {
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		$fields = $this->snapshot();
 		return array(
-			'active' => defined( 'IAFF_VERSION_NUM' ) || function_exists( 'iaff_get_settings' ),
-			'version' => defined( 'IAFF_VERSION_NUM' ) ? (string) IAFF_VERSION_NUM : null,
-			'fields' => $fields,
+			'active'      => defined( 'IAFF_VERSION_NUM' ) || function_exists( 'iaff_get_settings' ),
+			'version'     => defined( 'IAFF_VERSION_NUM' ) ? (string) IAFF_VERSION_NUM : null,
+			'fields'      => $fields,
 			'fingerprint' => Fingerprint::make( $fields ),
 		);
 	}
@@ -95,17 +95,17 @@ final class AutoImageAttributesAdapter {
 			if ( ! is_string( $key ) || ! in_array( $key, self::BOOLEAN_FIELDS, true ) ) {
 				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . (string) $key );
 			}
-			$clean[$key] = $this->booleanString( $value );
+			$clean[ $key ] = $this->booleanString( $value );
 		}
 
 		$after = $before;
 		foreach ( $clean as $key => $value ) {
-			$after[$key] = $value;
+			$after[ $key ] = $value;
 		}
 
 		$result = array(
-			'before' => $before,
-			'after' => $after,
+			'before'               => $before,
+			'after'                => $after,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 
@@ -118,13 +118,13 @@ final class AutoImageAttributesAdapter {
 			throw new RuntimeException( 'Auto Image Attributes settings are unavailable or malformed.' );
 		}
 		foreach ( $clean as $key => $value ) {
-			$raw[$key] = $value;
+			$raw[ $key ] = $value;
 		}
 
 		update_option( 'iaff_settings', $raw, false );
 		$readback = $this->snapshot();
 		foreach ( $clean as $key => $value ) {
-			if ( ! isset( $readback[$key] ) || (string) $readback[$key] !== $value ) {
+			if ( ! isset( $readback[ $key ] ) || (string) $readback[ $key ] !== $value ) {
 				throw new RuntimeException( 'Auto Image Attributes readback verification failed for: ' . $key );
 			}
 		}
@@ -132,13 +132,13 @@ final class AutoImageAttributesAdapter {
 		$rollback = array();
 		foreach ( $clean as $key => $value ) {
 			if ( array_key_exists( $key, $before ) ) {
-				$rollback[$key] = $before[$key];
+				$rollback[ $key ] = $before[ $key ];
 			}
 		}
 
 		$result['after'] = $readback;
 		$result['_rollback'] = array(
-			'action' => 'auto_image_attributes.update',
+			'action'  => 'auto_image_attributes.update',
 			'payload' => array( 'fields' => $rollback ),
 		);
 		return $result;
@@ -160,7 +160,7 @@ final class AutoImageAttributesAdapter {
 		$result = array();
 		foreach ( self::BOOLEAN_FIELDS as $key ) {
 			if ( array_key_exists( $key, $raw ) ) {
-				$result[$key] = $this->booleanString( $raw[$key] );
+				$result[ $key ] = $this->booleanString( $raw[ $key ] );
 			}
 		}
 		return $result;

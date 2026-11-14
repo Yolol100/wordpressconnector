@@ -403,9 +403,9 @@ final class ConnectorUpdateAdapter {
 			}
 
 			return array(
-				'operation' => 'updated',
-				'before'    => $before,
-				'after'     => array(
+				'operation'          => 'updated',
+				'before'             => $before,
+				'after'              => array(
 					'plugin_file' => self::PLUGIN_FILE,
 					'version'     => $installed_version,
 				),
@@ -442,7 +442,11 @@ final class ConnectorUpdateAdapter {
 		}
 
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
-		$backup   = array( 'slug' => 'wordpressconnector', 'src' => WP_PLUGIN_DIR, 'dir' => 'plugins' );
+		$backup   = array(
+			'slug' => 'wordpressconnector',
+			'src'  => WP_PLUGIN_DIR,
+			'dir'  => 'plugins',
+		);
 
 		$upgrader->init();
 		$upgrader->upgrade_strings();
@@ -490,7 +494,10 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'Connector upgrade left the plugin inactive; reactivation failed. Manual WP Admin recovery is required.' );
 			}
 		}
-		return array( 'upgrader' => $upgrader, 'backup' => $backup );
+		return array(
+			'upgrader' => $upgrader,
+			'backup'   => $backup,
+		);
 	}
 
 	/**

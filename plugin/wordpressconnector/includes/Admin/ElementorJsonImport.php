@@ -83,7 +83,13 @@ final class ElementorJsonImport {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selectedId = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$posts      = get_posts( array( 'post_type' => $postType, 'post_status' => array( 'publish', 'draft', 'pending', 'private', 'future' ), 'posts_per_page' => 200, 'orderby' => 'modified', 'order' => 'DESC' ) );
+		$posts      = get_posts( array(
+			'post_type'      => $postType,
+			'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
+			'posts_per_page' => 200,
+			'orderby'        => 'modified',
+			'order'          => 'DESC',
+		) );
 		echo '<div class="wrap"><h1>' . esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) . '</h1><p>' . esc_html__( 'Upload an Elementor JSON document. Choose an existing item to replace only its Elementor structure/settings, or choose Create new to make a new draft. Existing-item writes use Elementor readback and automatic rollback.', 'wordpressconnector' ) . '</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::ACTION );
 		echo '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '"><input type="hidden" name="post_type" value="' . esc_attr( $postType ) . '"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">' . esc_html__( 'Target', 'wordpressconnector' ) . '</label></th><td><select id="wpconnector-target-post" name="post_id">';
@@ -124,7 +130,12 @@ final class ElementorJsonImport {
 				if ( ! current_user_can( 'edit_post', $postId ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
-				$adapterPayload = array( 'id' => $postId, 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
+				$adapterPayload = array(
+					'id'            => $postId,
+					'data'          => $data,
+					'page_settings' => $settings,
+					'edit_mode'     => 'builder',
+				);
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -132,7 +143,14 @@ final class ElementorJsonImport {
 				$resultId = $postId;
 			}
 			else {
-				$adapterPayload = array( 'post_type' => $postType, 'status' => 'draft', 'title' => $this->importTitle( $payload, $postType ), 'data' => $data, 'page_settings' => $settings, 'edit_mode' => 'builder' );
+				$adapterPayload = array(
+					'post_type'     => $postType,
+					'status'        => 'draft',
+					'title'         => $this->importTitle( $payload, $postType ),
+					'data'          => $data,
+					'page_settings' => $settings,
+					'edit_mode'     => 'builder',
+				);
 				if ( 'elementor_library' === $postType ) {
 					$adapterPayload['template_type'] = $this->templateType( $payload );
 				}
@@ -149,7 +167,11 @@ final class ElementorJsonImport {
 		catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The Elementor JSON import failed.', 'wordpressconnector' ), '', array( 'response' => 500 ) );
 		}
-		wp_safe_redirect( add_query_arg( array( 'post_type' => $postType, 'wpconnector_elementor_imported' => 1, 'post' => $resultId ), admin_url( 'edit.php' ) ) );
+		wp_safe_redirect( add_query_arg( array(
+			'post_type'                      => $postType,
+			'wpconnector_elementor_imported' => 1,
+			'post'                           => $resultId,
+		), admin_url( 'edit.php' ) ) );
 		exit;
 	}
 
@@ -238,7 +260,10 @@ final class ElementorJsonImport {
 			}
 			$token = wp_generate_password( 48, false, false );
 			// Store confirmed previews only: cap transient size to avoid large database writes.
-			if ( $allOk && ! set_transient( 'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token ), array( 'plan' => $plan, 'created' => time() ), 10 * MINUTE_IN_SECONDS ) ) {
+			if ( $allOk && ! set_transient( 'wpconnector_bulk_' . get_current_user_id() . '_' . hash( 'sha256', $token ), array(
+				'plan'    => $plan,
+				'created' => time(),
+			), 10 * MINUTE_IN_SECONDS ) ) {
 				throw new RuntimeException( 'Could not store this import preview securely. No changes were made.' );
 			}
 			echo '<div class="wrap"><h1>Bulkimport controleren</h1><p>Alleen de hieronder getoonde bestaande Elementor-documenten kunnen worden overschreven. Bij een conflict wordt de hele batch geblokkeerd.</p><table class="widefat striped"><thead><tr><th>Bestand</th><th>Berichttype</th><th>Doel</th><th>Status</th></tr></thead><tbody>';
@@ -439,7 +464,10 @@ final class ElementorJsonImport {
 			if ( ! isset( $payload['content'] ) || ! is_array( $payload['content'] ) || empty( $payload['content'] ) ) {
 				throw new RuntimeException( 'Missing Elementor content in ' . $name );
 			}
-			$entries[] = array( 'name' => $name, 'payload' => $payload );
+			$entries[] = array(
+				'name'    => $name,
+				'payload' => $payload,
+			);
 		}
 		return $entries;
 	}
@@ -467,7 +495,7 @@ final class ElementorJsonImport {
 			'popup',
 			'loop-item',
 			'loop',
-			'kit'
+			'kit',
 		);
 		foreach ( $entries as $entry ) {
 			$name         = $entry['name'];
@@ -629,7 +657,10 @@ final class ElementorJsonImport {
 	private function importUrl( string $postType, int $postId ): string {
 		$slug = 'page' === $postType ? 'wpconnector-import-elementor-page' : ( 'post' === $postType ? 'wpconnector-import-elementor-post' : 'wpconnector-import-elementor-template' );
 		$base = 'post' === $postType ? admin_url( 'edit.php' ) : admin_url( 'edit.php?post_type=' . $postType );
-		return add_query_arg( array( 'page' => $slug, 'post_id' => $postId ), $base );
+		return add_query_arg( array(
+			'page'    => $slug,
+			'post_id' => $postId,
+		), $base );
 	}
 
 	/**

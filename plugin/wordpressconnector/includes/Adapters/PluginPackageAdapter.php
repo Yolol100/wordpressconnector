@@ -128,13 +128,22 @@ final class PluginPackageAdapter {
 				}
 			}
 		}
-		$before = array( 'stylesheet' => $expected, 'installed' => $installed, 'version' => $installed ? (string) $current->get( 'Version' ) : null );
-		$plan   = array( 'stylesheet' => $expected, 'source_path' => $source,
-			'sha256'          => $sha256, 'bytes' => (int) $size, 'overwrite' => $overwrite,
-			'archive_entries' => $info['entries'], 'uncompressed_bytes' => $info['uncompressed_bytes'] );
+		$before = array(
+			'stylesheet' => $expected,
+			'installed'  => $installed,
+			'version'    => $installed ? (string) $current->get( 'Version' ) : null,
+		);
+		$plan   = array( 'stylesheet' => $expected,
+			'source_path'             => $source,
+			'sha256'                  => $sha256,
+			'bytes'                   => (int) $size,
+			'overwrite'               => $overwrite,
+			'archive_entries'         => $info['entries'],
+			'uncompressed_bytes'      => $info['uncompressed_bytes'], );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_install_theme_package' => $plan, 'before' => $before,
-				'_current_fingerprint' => Fingerprint::make( $before ) );
+			return array( 'would_install_theme_package' => $plan,
+				'before'                                => $before,
+				'_current_fingerprint'                  => Fingerprint::make( $before ), );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -151,7 +160,11 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
 		}
 		$upgrader         = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
-		$backup           = array( 'slug' => $expected, 'src' => get_theme_root(), 'dir' => 'themes' );
+		$backup           = array(
+			'slug' => $expected,
+			'src'  => get_theme_root(),
+			'dir'  => 'themes',
+		);
 		$restore_pending  = false;
 		$shutdown_restore = static function () use ( $upgrader, $backup, &$restore_pending ): void {
 			if ( $restore_pending ) {
@@ -197,7 +210,7 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
 			$after = array( 'stylesheet' => $expected,
-				'version' => (string) $after_theme->get( 'Version' ) );
+				'version'                => (string) $after_theme->get( 'Version' ), );
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
 				$restored        = $upgrader->restore_temp_backup( array( $backup ) );
@@ -221,13 +234,16 @@ final class PluginPackageAdapter {
 			$temporary_backup_cleanup_verified = true === $cleaned;
 		}
 		return array( 'operation' => $overwrite ? 'updated' : 'installed',
-			'package'                           => $plan, 'before' => $before, 'after' => $after,
+			'package'                           => $plan,
+			'before'                            => $before,
+			'after'                             => $after,
 			'on_failure_restore_supported'      => $overwrite,
 			'temporary_backup_cleanup_verified' => $temporary_backup_cleanup_verified,
 			'manual_cleanup_required'           => $overwrite && ! $temporary_backup_cleanup_verified,
 			// WordPress temp backups may be cleaned up automatically; do not
 			// advertise a durable user-triggered rollback after success.
-			'rollback_supported' => false, 'readback_verified' => true );
+			'rollback_supported'                => false,
+			'readback_verified'                 => true, );
 	}
 
 	/**
@@ -294,7 +310,10 @@ final class PluginPackageAdapter {
 			if ( '' === $style || ! preg_match( '/(?:^|\n)[ \t\/\*#@]*Theme Name:\s*\S/i', $style ) ) {
 				throw new RuntimeException( 'Theme ZIP lacks a valid root style.css theme header.' );
 			}
-			return array( 'entries' => $zip->numFiles, 'uncompressed_bytes' => $total );
+			return array(
+				'entries'            => $zip->numFiles,
+				'uncompressed_bytes' => $total,
+			);
 		} finally {
 			$zip->close();
 		}

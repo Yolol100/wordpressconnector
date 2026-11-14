@@ -77,7 +77,7 @@ final class SystemAdapter {
 			$sensitive + array(
 				'mutation'    => true,
 				'capability'  => 'edit_users',
-				'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.'
+				'description' => 'Immediately rotate a WordPress user password, revoke active sessions and send a dedicated security reset link without exposing secret material. Non-rollbackable.',
 			)
 		);
 		$registry->register(
@@ -443,7 +443,10 @@ final class SystemAdapter {
 		return array(
 			'user'                           => $this->userSnapshot( get_user_by( 'id', $id ) ),
 			'password_generated_server_side' => true,
-			'_rollback'                      => array( 'action' => 'user.delete', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback'                      => array(
+				'action'  => 'user.delete',
+				'payload' => array( 'id' => (int) $id ),
+			),
 		);
 	}
 
@@ -493,8 +496,8 @@ final class SystemAdapter {
 				'last_name'    => $before['last_name'],
 				'description'  => $before['description'],
 				'url'          => $before['url'],
-				'role'         => $before['roles'][0] ?? 'subscriber'
-			)
+				'role'         => $before['roles'][0] ?? 'subscriber',
+			),
 		);
 		return $result;
 	}
@@ -637,7 +640,11 @@ final class SystemAdapter {
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => array( 'role' => $role, 'name' => $name, 'capabilities' => $caps ),
+				'would_create'         => array(
+					'role'         => $role,
+					'name'         => $name,
+					'capabilities' => $caps,
+				),
 				'_current_fingerprint' => Fingerprint::make( array( 'new_role' => $role ) ),
 			);
 		}
@@ -646,7 +653,10 @@ final class SystemAdapter {
 		}
 		return array(
 			'role'      => $role,
-			'_rollback' => array( 'action' => 'role.delete', 'payload' => array( 'role' => $role ) ),
+			'_rollback' => array(
+				'action'  => 'role.delete',
+				'payload' => array( 'role' => $role ),
+			),
 		);
 	}
 
@@ -799,7 +809,11 @@ final class SystemAdapter {
 			'search'   => $search,
 			'page'     => $page,
 			'per_page' => $limit,
-			'fields'   => array( 'sections' => false, 'description' => false, 'short_description' => true ),
+			'fields'   => array(
+				'sections'          => false,
+				'description'       => false,
+				'short_description' => true,
+			),
 		) );
 		if ( is_wp_error( $result ) || ! is_object( $result ) || ! isset( $result->plugins ) || ! is_array( $result->plugins ) ) {
 			throw new RuntimeException( is_wp_error( $result ) ? $result->get_error_message()
@@ -889,7 +903,11 @@ final class SystemAdapter {
 			'file'              => $file,
 			'active'            => true,
 			'readback_verified' => true,
-			'_rollback'         => array( 'action' => 'plugin.deactivate', 'payload' => array( 'file' => $file, 'network_wide' => $networkWide ) ),
+			'_rollback'         => array( 'action' => 'plugin.deactivate',
+				'payload'                          => array(
+				'file'         => $file,
+				'network_wide' => $networkWide,
+			), ),
 		);
 	}
 
@@ -934,7 +952,11 @@ final class SystemAdapter {
 			'file'              => $file,
 			'active'            => false,
 			'readback_verified' => true,
-			'_rollback'         => $before ? array( 'action' => 'plugin.activate', 'payload' => array( 'file' => $file, 'network_wide' => $networkWide ) ) : null,
+			'_rollback'         => $before ? array( 'action' => 'plugin.activate',
+				'payload' => array(
+				'file'         => $file,
+				'network_wide' => $networkWide,
+			), ) : null,
 		);
 	}
 
@@ -955,7 +977,10 @@ final class SystemAdapter {
 		}
 		require_once ABSPATH . 'wp-admin/includes/plugin-install.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
-		$api = plugins_api( 'plugin_information', array( 'slug' => $slug, 'fields' => array( 'sections' => false ) ) );
+		$api = plugins_api( 'plugin_information', array(
+			'slug'   => $slug,
+			'fields' => array( 'sections' => false ),
+		) );
 		if ( is_wp_error( $api ) || ! is_object( $api ) || ! is_string( $api->download_link ?? null ) ) {
 			throw new RuntimeException( is_wp_error( $api ) ? $api->get_error_message() : 'Official WordPress.org plugin package not found.' );
 		}
@@ -1170,8 +1195,12 @@ final class SystemAdapter {
 		if ( get_stylesheet() !== $stylesheet ) {
 			throw new RuntimeException( 'Theme activation did not persist; check WordPress theme requirements and site restrictions.' );
 		}
-		return array( 'active' => $stylesheet, 'readback_verified' => true,
-			'_rollback' => array( 'action' => 'theme.switch', 'payload' => array( 'stylesheet' => $before ) ) );
+		return array( 'active' => $stylesheet,
+			'readback_verified' => true,
+			'_rollback'         => array(
+				'action'  => 'theme.switch',
+				'payload' => array( 'stylesheet' => $before ),
+			), );
 	}
 
 	/**
@@ -1200,8 +1229,9 @@ final class SystemAdapter {
 		}
 		$url = $this->officialDirectoryPackageUrl( $api->download_link, $slug, 'theme' );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_install' => $slug, 'verified_package_origin' => 'downloads.wordpress.org',
-				'_current_fingerprint' => Fingerprint::make( array( 'theme_install' => $slug ) ) );
+			return array( 'would_install' => $slug,
+				'verified_package_origin' => 'downloads.wordpress.org',
+				'_current_fingerprint'    => Fingerprint::make( array( 'theme_install' => $slug ) ), );
 		}
 		$upgrader  = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
 		$installed = $upgrader->install( $url );
@@ -1376,7 +1406,12 @@ final class SystemAdapter {
 		wp_version_check();
 		$updates = get_core_updates( array( 'dismissed' => false ) );
 		$items   = array();
-		if ( is_array( $updates ) ) foreach ( $updates as $update ) $items[] = array( 'response' => $update->response ?? null, 'current' => $update->current ?? null, 'locale' => $update->locale ?? null, 'package' => ! empty( $update->package ) );
+		if ( is_array( $updates ) ) foreach ( $updates as $update ) $items[] = array(
+			'response' => $update->response ?? null,
+			'current'  => $update->current ?? null,
+			'locale'   => $update->locale ?? null,
+			'package'  => ! empty( $update->package ),
+		);
 		return array( 'updates' => $items );
 	}
 
@@ -1445,7 +1480,7 @@ final class SystemAdapter {
 			'schedule'  => $event['schedule'] ?? false,
 			'args'      => $event['args'] ?? array(),
 			'interval'  => $event['interval'] ?? null,
-			'key'       => (string) $key
+			'key'       => (string) $key,
 		);
 		return array( 'events' => $items );
 	}
@@ -1553,7 +1588,11 @@ final class SystemAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_schedule'       => $state,
-				'_current_fingerprint' => Fingerprint::make( array( 'timestamp' => (int) $existing->timestamp, 'schedule' => $existing->schedule, 'args' => $existing->args ) ),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'timestamp' => (int) $existing->timestamp,
+					'schedule'  => $existing->schedule,
+					'args'      => $existing->args,
+				) ),
 			);
 		}
 		$result = '' === $recurrence ? wp_schedule_single_event( $timestamp, $hook, $args, true ) : wp_schedule_event( $timestamp, $recurrence, $hook, $args, true );
@@ -1625,7 +1664,10 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$sites = get_sites( array( 'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50, 'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0 ) );
+		$sites = get_sites( array(
+			'number' => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
+			'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
+		) );
 		return array( 'sites' => array_map( array( $this, 'siteSnapshot' ), $sites ) );
 	}
 
@@ -1655,13 +1697,21 @@ final class SystemAdapter {
 				'_current_fingerprint' => Fingerprint::make( array( 'new_site' => $domain . $path ) ),
 			);
 		}
-		$siteId = wp_insert_site( array( 'domain' => $domain, 'path' => $path, 'network_id' => isset( $payload['network_id'] ) ? (int) $payload['network_id'] : get_current_network_id(), 'public' => (int) $public ) );
+		$siteId = wp_insert_site( array(
+			'domain'     => $domain,
+			'path'       => $path,
+			'network_id' => isset( $payload['network_id'] ) ? (int) $payload['network_id'] : get_current_network_id(),
+			'public'     => (int) $public,
+		) );
 		if ( is_wp_error( $siteId ) ) {
 			throw new RuntimeException( $siteId->get_error_message() );
 		}
 		return array(
 			'site'      => $this->siteSnapshot( get_site( $siteId ) ),
-			'_rollback' => array( 'action' => 'multisite.site.delete', 'payload' => array( 'id' => (int) $siteId ) ),
+			'_rollback' => array(
+				'action'  => 'multisite.site.delete',
+				'payload' => array( 'id' => (int) $siteId ),
+			),
 		);
 	}
 
@@ -1701,7 +1751,10 @@ final class SystemAdapter {
 		}
 		return array(
 			'site'      => $this->siteSnapshot( get_site( $id ) ),
-			'_rollback' => array( 'action' => 'multisite.site.update', 'payload' => $before ),
+			'_rollback' => array(
+				'action'  => 'multisite.site.update',
+				'payload' => $before,
+			),
 		);
 	}
 
@@ -1780,7 +1833,7 @@ final class SystemAdapter {
 			'description'  => (string) $user->description,
 			'url'          => (string) $user->user_url,
 			'roles'        => array_values( $user->roles ),
-			'capabilities' => $user->allcaps
+			'capabilities' => $user->allcaps,
 		);
 	}
 
@@ -1888,7 +1941,7 @@ final class SystemAdapter {
 			'archived'     => (int) $site->archived,
 			'mature'       => (int) $site->mature,
 			'spam'         => (int) $site->spam,
-			'deleted'      => (int) $site->deleted
+			'deleted'      => (int) $site->deleted,
 		);
 	}
 }

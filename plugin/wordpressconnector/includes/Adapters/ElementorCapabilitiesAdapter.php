@@ -157,7 +157,13 @@ final class ElementorCapabilitiesAdapter {
 		$usedWidgets         = array();
 		$elementTypes        = array();
 		$documents           = array();
-		$architecture_totals = array( 'legacy' => 0, 'container' => 0, 'atomic' => 0, 'mixed' => 0, 'widget-only' => 0 );
+		$architecture_totals = array(
+			'legacy'      => 0,
+			'container'   => 0,
+			'atomic'      => 0,
+			'mixed'       => 0,
+			'widget-only' => 0,
+		);
 		$widget_instances    = 0;
 
 		foreach ( $ids as $postId ) {
@@ -180,7 +186,11 @@ final class ElementorCapabilitiesAdapter {
 
 			$document_widgets       = array();
 			$document_element_types = array();
-			$families               = array( 'legacy' => false, 'container' => false, 'atomic' => false );
+			$families               = array(
+				'legacy'    => false,
+				'container' => false,
+				'atomic'    => false,
+			);
 			$this->collectElementUsage( $data, $document_widgets, $document_element_types, $families );
 
 			$document_widget_instances = array_sum( $document_widgets );
@@ -200,7 +210,10 @@ final class ElementorCapabilitiesAdapter {
 
 			foreach ( $document_element_types as $element_type => $count ) {
 				if ( ! isset( $elementTypes[ $element_type ] ) ) {
-					$elementTypes[ $element_type ] = array( 'instances' => 0, 'documents' => 0 );
+					$elementTypes[ $element_type ] = array(
+						'instances' => 0,
+						'documents' => 0,
+					);
 				}
 				$elementTypes[ $element_type ]['instances'] += $count;
 				$elementTypes[ $element_type ]['documents']++;
@@ -594,10 +607,16 @@ final class ElementorCapabilitiesAdapter {
 
 		$roots = array();
 		if ( defined( 'WP_PLUGIN_DIR' ) ) {
-			$roots[] = array( 'path' => (string) WP_PLUGIN_DIR, 'mu' => false );
+			$roots[] = array(
+				'path' => (string) WP_PLUGIN_DIR,
+				'mu'   => false,
+			);
 		}
 		if ( defined( 'WPMU_PLUGIN_DIR' ) ) {
-			$roots[] = array( 'path' => (string) WPMU_PLUGIN_DIR, 'mu' => true );
+			$roots[] = array(
+				'path' => (string) WPMU_PLUGIN_DIR,
+				'mu'   => true,
+			);
 		}
 
 		foreach ( $roots as $root ) {
@@ -619,7 +638,11 @@ final class ElementorCapabilitiesAdapter {
 					'version' => isset( $data['Version'] ) && '' !== (string) $data['Version'] ? (string) $data['Version'] : null,
 				);
 			}
-			return array( 'slug' => (string) $slug, 'name' => (string) $slug, 'version' => null );
+			return array(
+				'slug'    => (string) $slug,
+				'name'    => (string) $slug,
+				'version' => null,
+			);
 		}
 
 		return null;
@@ -825,7 +848,11 @@ final class ElementorCapabilitiesAdapter {
 		foreach ( $registeredWidgets as $name => &$widget ) {
 			$widget['usage'] = isset( $usedWidgets[ $name ] )
 				? $usedWidgets[ $name ]
-				: array( 'instances' => 0, 'documents' => 0, 'document_ids' => array() );
+				: array(
+					'instances'    => 0,
+					'documents'    => 0,
+					'document_ids' => array(),
+				);
 		}
 		unset( $widget );
 		return $registeredWidgets;

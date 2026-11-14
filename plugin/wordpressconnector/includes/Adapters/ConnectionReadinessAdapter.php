@@ -100,7 +100,7 @@ final class ConnectionReadinessAdapter {
 			'update_themes', 'delete_themes', 'edit_themes', 'edit_theme_options',
 			'update_core', 'list_users', 'edit_users', 'promote_users',
 		) as $capability ) {
-			$capabilities[$capability] = function_exists( 'current_user_can' )
+			$capabilities[ $capability ] = function_exists( 'current_user_can' )
 				&& current_user_can( $capability );
 		}
 

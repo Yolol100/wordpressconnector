@@ -84,11 +84,11 @@ final class Command {
 	 */
 	public function actions( array $args, array $assocArgs ): void {
 		$request = Request::fromArray( array(
-			'version' => 1,
+			'version'    => 1,
 			'request_id' => 'actions-list-0001',
-			'action' => 'connector.actions',
-			'dry_run' => true,
-			'payload' => array(),
+			'action'     => 'connector.actions',
+			'dry_run'    => true,
+			'payload'    => array(),
 		) );
 		$result = $this->runner->run( $request );
 		\WP_CLI::line( Json::encode( $result ) );
@@ -101,11 +101,11 @@ final class Command {
 	 */
 	public function doctor( array $args, array $assocArgs ): void {
 		$request = Request::fromArray( array(
-			'version' => 1,
+			'version'    => 1,
 			'request_id' => 'doctor-run-00001',
-			'action' => 'system.doctor',
-			'dry_run' => true,
-			'payload' => array(),
+			'action'     => 'system.doctor',
+			'dry_run'    => true,
+			'payload'    => array(),
 		) );
 		$result = $this->runner->run( $request );
 		\WP_CLI::line( Json::encode( $result ) );

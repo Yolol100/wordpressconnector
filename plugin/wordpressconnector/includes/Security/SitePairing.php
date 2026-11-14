@@ -93,8 +93,8 @@ final class SitePairing {
 			throw new RuntimeException( 'Only a current site administrator may approve GitHub OIDC.' );
 		}
 		$state = array(
-			'enabled' => 1,
-			'audience_sha256' => self::fingerprint(),
+			'enabled'          => 1,
+			'audience_sha256'  => self::fingerprint(),
 			'administrator_id' => $administratorId,
 		);
 		if ( ! update_option( self::OPTION, $state, false ) ) {

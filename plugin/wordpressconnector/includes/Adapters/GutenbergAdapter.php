@@ -26,8 +26,14 @@ final class GutenbergAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'gutenberg.inspect', array( $this, 'inspect' ), array( 'description' => 'Parse Gutenberg/block content into a block tree.' ) );
-		$registry->register( 'gutenberg.replace', array( $this, 'replace' ), array( 'mutation' => true, 'description' => 'Replace the entire serialized block document.' ) );
-		$registry->register( 'gutenberg.patch', array( $this, 'patch' ), array( 'mutation' => true, 'description' => 'Patch one block by nested numeric path.' ) );
+		$registry->register( 'gutenberg.replace', array( $this, 'replace' ), array(
+			'mutation'    => true,
+			'description' => 'Replace the entire serialized block document.',
+		) );
+		$registry->register( 'gutenberg.patch', array( $this, 'patch' ), array(
+			'mutation'    => true,
+			'description' => 'Patch one block by nested numeric path.',
+		) );
 	}
 
 	/**
@@ -42,8 +48,8 @@ final class GutenbergAdapter {
 		Policy::assertPostReadable( $post );
 		$blocks = parse_blocks( (string) $post->post_content );
 		return array(
-			'post_id' => (int) $post->ID,
-			'blocks' => $blocks,
+			'post_id'     => (int) $post->ID,
+			'blocks'      => $blocks,
 			'fingerprint' => Fingerprint::make( $blocks ),
 		);
 	}
@@ -73,9 +79,9 @@ final class GutenbergAdapter {
 		}
 
 		$result = array(
-			'post_id' => (int) $post->ID,
-			'before_blocks' => $beforeBlocks,
-			'after_blocks' => parse_blocks( $afterContent ),
+			'post_id'              => (int) $post->ID,
+			'before_blocks'        => $beforeBlocks,
+			'after_blocks'         => parse_blocks( $afterContent ),
 			'_current_fingerprint' => Fingerprint::make( $beforeBlocks ),
 		);
 
@@ -83,12 +89,19 @@ final class GutenbergAdapter {
 			return $result;
 		}
 
-		$updated = wp_update_post( wp_slash( array( 'ID' => (int) $post->ID, 'post_content' => $afterContent ) ), true );
+		$updated = wp_update_post( wp_slash( array(
+			'ID'           => (int) $post->ID,
+			'post_content' => $afterContent,
+		) ), true );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['_rollback'] = array( 'action' => 'gutenberg.replace', 'payload' => array( 'id' => (int) $post->ID, 'content' => $beforeContent ) );
+		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
+			'payload'                          => array(
+			'id'      => (int) $post->ID,
+			'content' => $beforeContent,
+		), );
 		return $result;
 	}
 
@@ -136,10 +149,10 @@ final class GutenbergAdapter {
 
 		$afterContent = serialize_blocks( $patched );
 		$result = array(
-			'post_id' => (int) $post->ID,
-			'path' => $path,
-			'before_block' => $beforeBlock,
-			'after_block' => $block,
+			'post_id'              => (int) $post->ID,
+			'path'                 => $path,
+			'before_block'         => $beforeBlock,
+			'after_block'          => $block,
 			'_current_fingerprint' => Fingerprint::make( $blocks ),
 		);
 
@@ -147,12 +160,19 @@ final class GutenbergAdapter {
 			return $result;
 		}
 
-		$updated = wp_update_post( wp_slash( array( 'ID' => (int) $post->ID, 'post_content' => $afterContent ) ), true );
+		$updated = wp_update_post( wp_slash( array(
+			'ID'           => (int) $post->ID,
+			'post_content' => $afterContent,
+		) ), true );
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 
-		$result['_rollback'] = array( 'action' => 'gutenberg.replace', 'payload' => array( 'id' => (int) $post->ID, 'content' => $beforeContent ) );
+		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
+			'payload'                          => array(
+			'id'      => (int) $post->ID,
+			'content' => $beforeContent,
+		), );
 		return $result;
 	}
 

@@ -27,9 +27,9 @@ final class SnapshotStore {
 	public function put( string $requestId, array $rollback, array $metadata = array() ): void {
 		$key = self::key( $requestId );
 		$record = array(
-			'created_at' => time(),
-			'rollback' => $rollback,
-			'source_action' => isset( $metadata['source_action'] ) ? (string) $metadata['source_action'] : '',
+			'created_at'             => time(),
+			'rollback'               => $rollback,
+			'source_action'          => isset( $metadata['source_action'] ) ? (string) $metadata['source_action'] : '',
 			'public_repository_mode' => ! empty( $metadata['public_repository_mode'] ),
 		);
 		update_option( $key, $record, false );
@@ -63,9 +63,9 @@ final class SnapshotStore {
 			return null;
 		}
 		return array(
-			'created_at' => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
-			'rollback' => $value['rollback'],
-			'source_action' => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
+			'created_at'             => isset( $value['created_at'] ) ? (int) $value['created_at'] : 0,
+			'rollback'               => $value['rollback'],
+			'source_action'          => isset( $value['source_action'] ) ? (string) $value['source_action'] : '',
 			'public_repository_mode' => ! empty( $value['public_repository_mode'] ),
 		);
 	}

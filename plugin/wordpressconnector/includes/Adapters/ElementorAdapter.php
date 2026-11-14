@@ -28,11 +28,27 @@ final class ElementorAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.inspect', array( $this, 'inspect' ), array( 'description' => 'Read Elementor document JSON and document metadata.' ) );
-		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array( 'mutation' => true, 'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.' ) );
-		$registry->register( 'elementor.replace_document', array( $this, 'replaceDocument' ), array( 'mutation' => true, 'description' => 'Replace Elementor elements/settings through the Elementor document API.' ) );
-		$registry->register( 'elementor.patch_element', array( $this, 'patchElement' ), array( 'mutation' => true, 'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.' ) );
-		$registry->register( 'elementor.regenerate', array( $this, 'regenerate' ), array( 'mutation' => true, 'description' => 'Clear Elementor generated CSS/files cache.' ) );
-		$registry->register( 'elementor.header_links.replace', array( $this, 'replaceHeaderLinks' ), array( 'mutation' => true, 'capability' => 'edit_theme_options', 'description' => 'Replace exact same-site Icon List links in one published Elementor header.' ) );
+		$registry->register( 'elementor.create_document', array( $this, 'createDocument' ), array(
+			'mutation'    => true,
+			'description' => 'Create a page, post, product or Elementor library document through the Elementor document API.',
+		) );
+		$registry->register( 'elementor.replace_document', array( $this, 'replaceDocument' ), array(
+			'mutation'    => true,
+			'description' => 'Replace Elementor elements/settings through the Elementor document API.',
+		) );
+		$registry->register( 'elementor.patch_element', array( $this, 'patchElement' ), array(
+			'mutation'    => true,
+			'description' => 'Patch an Elementor element by stable element id and save through the Elementor document API.',
+		) );
+		$registry->register( 'elementor.regenerate', array( $this, 'regenerate' ), array(
+			'mutation'    => true,
+			'description' => 'Clear Elementor generated CSS/files cache.',
+		) );
+		$registry->register( 'elementor.header_links.replace', array( $this, 'replaceHeaderLinks' ), array(
+			'mutation'    => true,
+			'capability'  => 'edit_theme_options',
+			'description' => 'Replace exact same-site Icon List links in one published Elementor header.',
+		) );
 		$registry->register( 'elementor.header_links.inspect', array( $this, 'inspectHeaderLinks' ), array( 'description' => 'Read non-sensitive eligibility and exact-match counts for header Icon List links.' ) );
 	}
 
@@ -47,7 +63,10 @@ final class ElementorAdapter {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
 		$snapshot = $this->snapshot( (int) $post->ID );
-		return array( 'document' => $snapshot, 'fingerprint' => Fingerprint::make( $snapshot ) );
+		return array(
+			'document'    => $snapshot,
+			'fingerprint' => Fingerprint::make( $snapshot ),
+		);
 	}
 
 	/**
@@ -80,8 +99,14 @@ final class ElementorAdapter {
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => array( 'post' => $post_fields, 'elementor' => $this->requestedMeta( $payload, $data ) ),
-				'_current_fingerprint' => Fingerprint::make( array( 'new' => true, 'post_type' => $post_type ) ),
+				'would_create'         => array(
+					'post'      => $post_fields,
+					'elementor' => $this->requestedMeta( $payload, $data ),
+				),
+				'_current_fingerprint' => Fingerprint::make( array(
+					'new'       => true,
+					'post_type' => $post_type,
+				) ),
 			);
 		}
 
@@ -104,7 +129,10 @@ final class ElementorAdapter {
 
 		return array(
 			'document'  => $after,
-			'_rollback' => array( 'action' => 'post.trash', 'payload' => array( 'id' => (int) $id ) ),
+			'_rollback' => array(
+				'action'  => 'post.trash',
+				'payload' => array( 'id' => (int) $id ),
+			),
 		);
 	}
 
@@ -150,7 +178,10 @@ final class ElementorAdapter {
 			$pageSettings,
 			$before
 		);
-		$result['_rollback'] = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
+		$result['_rollback'] = array(
+			'action'  => 'elementor.replace_document',
+			'payload' => $this->rollbackPayload( $before ),
+		);
 		return $result;
 	}
 
@@ -225,7 +256,10 @@ final class ElementorAdapter {
 		}
 
 		$result['after_element'] = $readback_element;
-		$result['_rollback']     = array( 'action' => 'elementor.replace_document', 'payload' => $this->rollbackPayload( $before ) );
+		$result['_rollback']     = array(
+			'action'  => 'elementor.replace_document',
+			'payload' => $this->rollbackPayload( $before ),
+		);
 		return $result;
 	}
 
@@ -244,10 +278,16 @@ final class ElementorAdapter {
 			throw new RuntimeException( 'Elementor is not active.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_clear_elementor_cache' => true, '_current_fingerprint' => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) ) );
+			return array(
+				'would_clear_elementor_cache' => true,
+				'_current_fingerprint'        => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) ),
+			);
 		}
 		$this->clearCache();
-		return array( 'cleared' => true, 'rollback_supported' => false );
+		return array(
+			'cleared'            => true,
+			'rollback_supported' => false,
+		);
 	}
 
 	/**
@@ -269,7 +309,7 @@ final class ElementorAdapter {
 		foreach ( $checks as $check ) {
 			$elementId = is_array( $check ) ? ( $check['element_id'] ?? null ) : null;
 			$url       = is_array( $check ) ? ( $check['from'] ?? null ) : null;
-			if ( ! is_array( $check ) || array_diff( array_keys( $check ), array( 'element_id','from' ) )
+			if ( ! is_array( $check ) || array_diff( array_keys( $check ), array( 'element_id', 'from' ) )
 				|| ! is_string( $elementId ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $elementId )
 				|| isset( $seen[ $elementId ] ) || ! is_string( $url )
 				|| ! $this->sameSiteHeaderUrl( $url, false ) ) {
@@ -280,12 +320,22 @@ final class ElementorAdapter {
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post || 'elementor_library' !== $post->post_type
 			|| 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
-			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_published_elementor_library', 'checks' => array() );
+			return array(
+				'post_id'     => $id,
+				'eligible'    => false,
+				'reason_code' => 'not_published_elementor_library',
+				'checks'      => array(),
+			);
 		}
 		$can_edit = current_user_can( 'edit_post', $id );
 		$snapshot = $this->snapshot( $id );
 		if ( 'header' !== $snapshot['template_type'] ) {
-			return array( 'post_id' => $id, 'eligible' => false, 'reason_code' => 'not_header_template', 'checks' => array() );
+			return array(
+				'post_id'     => $id,
+				'eligible'    => false,
+				'reason_code' => 'not_header_template',
+				'checks'      => array(),
+			);
 		}
 		$matches = array();
 		foreach ( $checks as $check ) {
@@ -305,18 +355,22 @@ final class ElementorAdapter {
 			} catch ( RuntimeException $error ) {
 				// Missing Elementor ID is a bounded diagnostic, never a template export.
 			}
-			$matches[] = array( 'element_id'=>$elementId, 'is_icon_list'=>$is_icon_list, 'exact_url_matches'=>min( 2,$matches_count ) );
+			$matches[] = array(
+				'element_id'        =>$elementId,
+				'is_icon_list'      =>$is_icon_list,
+				'exact_url_matches' =>min( 2, $matches_count ),
+			);
 		}
 		$eligible = $can_edit;
 		foreach ( $matches as $match ) {
 			$eligible = $eligible && $match['is_icon_list'] && 1 === $match['exact_url_matches'];
 		}
 		return array(
-			'post_id'=>$id,
-			'eligible'=>$eligible,
-			'reason_code'=>!$can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
-			'checks'=>$matches,
-			'document_fingerprint'=>Fingerprint::make( $snapshot ),
+			'post_id'              =>$id,
+			'eligible'             =>$eligible,
+			'reason_code'          =>!$can_edit ? 'edit_post_denied' : ( ! $eligible ? 'widget_or_source_mismatch' : 'ready' ),
+			'checks'               =>$matches,
+			'document_fingerprint' =>Fingerprint::make( $snapshot ),
 		);
 	}
 
@@ -351,7 +405,7 @@ final class ElementorAdapter {
 		$results = array();
 		$seen    = array();
 		foreach ( $changes as $change ) {
-			if ( ! is_array( $change ) || array_diff( array_keys( $change ), array( 'element_id','from','to' ) ) ) {
+			if ( ! is_array( $change ) || array_diff( array_keys( $change ), array( 'element_id', 'from', 'to' ) ) ) {
 				throw new RuntimeException( 'Invalid Elementor header link replacement keys.' );
 			}
 			$elementId = $change['element_id'] ?? '';
@@ -381,7 +435,11 @@ final class ElementorAdapter {
 			if ( 1 !== $matches ) {
 				throw new RuntimeException( 'Header link source URL must appear exactly once in the requested widget.' );
 			}
-			$results[] = array( 'element_id' => $elementId, 'from' => $from, 'to' => $to );
+			$results[] = array(
+				'element_id' => $elementId,
+				'from'       => $from,
+				'to'         => $to,
+			);
 		}
 		$result = array(
 			'post_id'              => $id,

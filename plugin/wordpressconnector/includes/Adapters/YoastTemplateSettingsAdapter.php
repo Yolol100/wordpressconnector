@@ -55,7 +55,7 @@ final class YoastTemplateSettingsAdapter {
 		'breadcrumb_search_prefix'        => 'breadcrumbs-searchprefix',
 		'breadcrumb_404_label'            => 'breadcrumbs-404crumb',
 		'product_category_title'          => 'title-tax-product_cat',
-		'product_category_description'    => 'metadesc-tax-product_cat'
+		'product_category_description'    => 'metadesc-tax-product_cat',
 	);
 	/**
 	 * Register the YoastTemplateSettings adapter actions and handlers.
@@ -63,7 +63,10 @@ final class YoastTemplateSettingsAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$security = array( 'privileged' => true, 'capability' => 'manage_options' );
+		$security = array(
+			'privileged' => true,
+			'capability' => 'manage_options',
+		);
 		$registry->register( 'yoast.templates.inspect', array( $this, 'inspect' ), $security );
 		$registry->register( 'yoast.templates.update', array( $this, 'update' ), array_merge( $security, array( 'mutation' => true ) ) );
 		$registry->register( 'yoast.templates.restore', array( $this, 'restore' ), array_merge( $security, array( 'mutation' => true ) ) );
@@ -79,9 +82,15 @@ final class YoastTemplateSettingsAdapter {
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		$fields = $this->snapshot();
 		if ( Policy::publicRepositoryContext() ) {
-			return array( 'fields' => array_intersect_key( $fields, array_flip( array( 'category_title', 'product_category_title', 'product_title', 'product_description' ) ) ), 'fingerprint' => Fingerprint::make( $fields ) );
+			return array(
+				'fields'      => array_intersect_key( $fields, array_flip( array( 'category_title', 'product_category_title', 'product_title', 'product_description' ) ) ),
+				'fingerprint' => Fingerprint::make( $fields ),
+			);
 		}
-		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
+		return array(
+			'fields'      => $fields,
+			'fingerprint' => Fingerprint::make( $fields ),
+		);
 	}
 	/**
 	 * Process the update operation in the YoastTemplateSettings adapter.
@@ -97,7 +106,11 @@ final class YoastTemplateSettingsAdapter {
 		$changes = $this->validateFields( $payload['fields'] ?? null, false );
 		$this->assertProviderSupportsFields( $changes );
 		$before = $this->snapshot();$after = array_replace( $before, $changes );
-		$result = array( 'before' => $before, 'after' => $after, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'before'               => $before,
+			'after'                => $after,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -117,9 +130,10 @@ final class YoastTemplateSettingsAdapter {
 			throw new RuntimeException( 'Yoast template readback mismatch; requested fields restored.' );
 		}
 		$result['after'] = $verified;
-		$result['_rollback'] = array( 'action' => 'yoast.templates.restore', 'payload' => array(
+		$result['_rollback'] = array( 'action' => 'yoast.templates.restore',
+			'payload'                          => array(
 			'fields'                     => array_intersect_key( $before, $changes ),
-			'expected_after_fingerprint' => Fingerprint::make( $verified ) ) );
+			'expected_after_fingerprint' => Fingerprint::make( $verified ), ), );
 		return $result;
 	}
 	/**
@@ -208,7 +222,7 @@ final class YoastTemplateSettingsAdapter {
 			// as in the repository's request validator.
 			foreach ( $changes as $key => $value ) {
 				if ( ! in_array( $key, array( 'category_title', 'product_category_title',
-					'product_title', 'product_description' ), true ) ) {
+					'product_title', 'product_description', ), true ) ) {
 					throw new RuntimeException( 'Public Yoast template field is not allowed.' );
 				}
 				$token = in_array( $key, array( 'category_title', 'product_category_title' ), true )

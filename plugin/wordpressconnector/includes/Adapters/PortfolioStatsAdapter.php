@@ -39,13 +39,13 @@ final class PortfolioStatsAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'acf.portfolio_stats_update', array( $this, 'update' ), array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'    => true,
+			'privileged'  => true,
 			'description' => 'Update only the eight existing portfolio-stat ACF text fields on one standard WordPress post, including unpublished targets.',
 		) );
 		$registry->register( 'portfolio.case_text_update', array( $this, 'updateCaseText' ), array(
-			'mutation' => true,
-			'privileged' => true,
+			'mutation'    => true,
+			'privileged'  => true,
 			'description' => 'Update only portfolio intro content plus description_1 and description_2 on one standard WordPress post, including unpublished targets.',
 		) );
 	}
@@ -119,7 +119,7 @@ final class PortfolioStatsAdapter {
 				}
 				$field_key = $field_map[ $name ];
 				$field     = acf_get_field( $field_key );
-				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text','textarea','wysiwyg' ), true ) || ! isset( $allowed_parents[(string) ( $field['parent'] ?? '' )] ) ) {
+				if ( ! is_array( $field ) || (string) ( $field['name'] ?? '' ) !== $name || ! in_array( (string) ( $field['type'] ?? '' ), array( 'text', 'textarea', 'wysiwyg' ), true ) || ! isset( $allowed_parents[(string) ( $field['parent'] ?? '' )] ) ) {
 					throw new RuntimeException( 'Portfolio case description field is missing or outside the target field group: ' . $name );
 				}
 				$requested[ $name ] = $value;
@@ -137,12 +137,20 @@ final class PortfolioStatsAdapter {
 				$before[ $name ] = get_field( $field_map[ $name ], $post_id, false );
 			}
 		}
-		$result = array( 'post_id' => $post_id, 'before' => $before, 'after' => $requested, '_current_fingerprint' => Fingerprint::make( $before ) );
+		$result = array(
+			'post_id'              => $post_id,
+			'before'               => $before,
+			'after'                => $requested,
+			'_current_fingerprint' => Fingerprint::make( $before ),
+		);
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 
 		try {
 			if ( array_key_exists( 'content', $requested ) ) {
-				$updated = wp_update_post( array( 'ID' => $post_id, 'post_content' => $requested['content'] ), true );
+				$updated = wp_update_post( array(
+					'ID'           => $post_id,
+					'post_content' => $requested['content'],
+				), true );
 				if ( is_wp_error( $updated ) ) throw new RuntimeException( 'Portfolio case content update failed: ' . $updated->get_error_message() );
 			}
 			foreach ( $description_keys as $name ) {
@@ -162,7 +170,10 @@ final class PortfolioStatsAdapter {
 		} catch ( Throwable $error ) {
 			$failures = array();
 			if ( array_key_exists( 'content', $before ) ) {
-				$restore       = wp_update_post( array( 'ID' => $post_id, 'post_content' => $before['content'] ), true );
+				$restore       = wp_update_post( array(
+					'ID'           => $post_id,
+					'post_content' => $before['content'],
+				), true );
 				$restored_post = get_post( $post_id );
 				if ( is_wp_error( $restore ) || ! $restored_post instanceof \WP_Post || (string) $restored_post->post_content !== $before['content'] ) $failures[] = 'content';
 			}
@@ -177,7 +188,10 @@ final class PortfolioStatsAdapter {
 
 		$rollback_payload = array( 'post_id' => $post_id );
 		foreach ( $before as $name => $value ) $rollback_payload[ $name ] = $value;
-		$result['_rollback'] = array( 'action' => 'portfolio.case_text_update', 'payload' => $rollback_payload );
+		$result['_rollback'] = array(
+			'action'  => 'portfolio.case_text_update',
+			'payload' => $rollback_payload,
+		);
 		return $result;
 	}
 
@@ -277,9 +291,9 @@ final class PortfolioStatsAdapter {
 		}
 
 		$result = array(
-			'post_id' => $post_id,
-			'before' => $before,
-			'after' => $fields,
+			'post_id'              => $post_id,
+			'before'               => $before,
+			'after'                => $fields,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -325,8 +339,11 @@ final class PortfolioStatsAdapter {
 		}
 
 		$result['_rollback'] = array(
-			'action' => 'acf.portfolio_stats_update',
-			'payload' => array( 'post_id' => $post_id, 'fields' => $before ),
+			'action'  => 'acf.portfolio_stats_update',
+			'payload' => array(
+				'post_id' => $post_id,
+				'fields'  => $before,
+			),
 		);
 		return $result;
 	}

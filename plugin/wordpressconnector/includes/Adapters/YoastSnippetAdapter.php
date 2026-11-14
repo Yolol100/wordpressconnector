@@ -87,7 +87,7 @@ final class YoastSnippetAdapter {
 		$values = array();
 		foreach ( self::KEYS as $key => $meta ) {
 			$raw          = get_post_meta( $id, $meta, true );
-			$values[$key] = is_string( $raw ) && $raw !== '' ? $raw : null;
+			$values[ $key ] = is_string( $raw ) && $raw !== '' ? $raw : null;
 		}
 		return $values;
 	}
@@ -100,7 +100,10 @@ final class YoastSnippetAdapter {
 	 * @return array Operation result.
 	 */
 	private function state( int $id ): array {
-		return array( 'post_id' => $id, 'fields' => $this->fields( $id ) );
+		return array(
+			'post_id' => $id,
+			'fields'  => $this->fields( $id ),
+		);
 	}
 
 	/** Shared server-side validation; request/runner also validate independently. */
@@ -124,7 +127,7 @@ final class YoastSnippetAdapter {
 				throw new RuntimeException( 'Unsupported public snippet field.' );
 			}
 			if ( $restore && null === $value ) {
-				$validated[$key] = null;
+				$validated[ $key ] = null;
 				continue;
 			}
 			$max = 'title' === $key ? 190 : 320;
@@ -137,7 +140,7 @@ final class YoastSnippetAdapter {
 			if ( ! hash_equals( $value, $clean ) ) {
 				throw new RuntimeException( 'Snippet text changed after sanitization.' );
 			}
-			$validated[$key] = $clean;
+			$validated[ $key ] = $clean;
 		}
 		return $validated;
 	}
@@ -184,7 +187,7 @@ final class YoastSnippetAdapter {
 		$before  = $this->state( (int) $post->ID );
 		$after   = $before;
 		foreach ( $updates as $key => $value ) {
-			$after['fields'][$key] = $value;
+			$after['fields'][ $key ] = $value;
 		}
 		$result = array(
 			'post_id'              => (int) $post->ID,
@@ -196,16 +199,16 @@ final class YoastSnippetAdapter {
 			return $result;
 		}
 		foreach ( $updates as $key => $value ) {
-			update_post_meta( (int) $post->ID, self::KEYS[$key], $value );
+			update_post_meta( (int) $post->ID, self::KEYS[ $key ], $value );
 		}
 		clean_post_cache( (int) $post->ID );
 		$actual = $this->state( (int) $post->ID );
 		if ( $actual !== $after ) {
 			foreach ( $updates as $key => $value ) {
-				if ( null === $before['fields'][$key] ) {
-					delete_post_meta( (int) $post->ID, self::KEYS[$key] );
+				if ( null === $before['fields'][ $key ] ) {
+					delete_post_meta( (int) $post->ID, self::KEYS[ $key ] );
 				} else {
-					update_post_meta( (int) $post->ID, self::KEYS[$key], $before['fields'][$key] );
+					update_post_meta( (int) $post->ID, self::KEYS[ $key ], $before['fields'][ $key ] );
 				}
 			}
 			clean_post_cache( (int) $post->ID );
@@ -247,22 +250,28 @@ final class YoastSnippetAdapter {
 			throw new RuntimeException( 'Snippet changed after edit; rollback refused.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( '_current_fingerprint' => $currentFp, 'would_restore' => array_keys( $previous ) );
+			return array(
+				'_current_fingerprint' => $currentFp,
+				'would_restore'        => array_keys( $previous ),
+			);
 		}
 		foreach ( $previous as $key => $value ) {
 			if ( null === $value ) {
-				delete_post_meta( (int) $post->ID, self::KEYS[$key] );
+				delete_post_meta( (int) $post->ID, self::KEYS[ $key ] );
 			} else {
-				update_post_meta( (int) $post->ID, self::KEYS[$key], $value );
+				update_post_meta( (int) $post->ID, self::KEYS[ $key ], $value );
 			}
 		}
 		clean_post_cache( (int) $post->ID );
 		$after = $this->state( (int) $post->ID );
 		foreach ( $previous as $key => $value ) {
-			if ( $after['fields'][$key] !== $value ) {
+			if ( $after['fields'][ $key ] !== $value ) {
 				throw new RuntimeException( 'Snippet rollback readback mismatch.' );
 			}
 		}
-		return array( 'restored' => true, 'post_id' => (int) $post->ID );
+		return array(
+			'restored' => true,
+			'post_id'  => (int) $post->ID,
+		);
 	}
 }

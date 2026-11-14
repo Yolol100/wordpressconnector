@@ -100,7 +100,10 @@ final class YoastFeatureSettingsAdapter {
 			throw new RuntimeException( 'Yoast feature inspection does not accept arbitrary option keys.' );
 		}
 		$fields = $this->snapshot();
-		return array( 'fields' => $fields, 'fingerprint' => Fingerprint::make( $fields ) );
+		return array(
+			'fields'      => $fields,
+			'fingerprint' => Fingerprint::make( $fields ),
+		);
 	}
 
 	/**
@@ -150,7 +153,7 @@ final class YoastFeatureSettingsAdapter {
 		$existingOptions = $this->options( $group );
 		$newOptions      = $existingOptions;
 		foreach ( $fields as $name => $value ) {
-			$newOptions[self::FIELDS[$name][1]] = $value;
+			$newOptions[self::FIELDS[ $name ][1]] = $value;
 		}
 		update_option( $group, $newOptions );
 		$readback = $this->snapshot();
@@ -199,27 +202,33 @@ final class YoastFeatureSettingsAdapter {
 		$previous = $this->validateFields( $payload['fields'] ?? null, true );
 		$group    = $this->singleGroup( $previous );
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => array_keys( $previous ), '_current_fingerprint' => Fingerprint::make( $before ) );
+			return array(
+				'would_restore'        => array_keys( $previous ),
+				'_current_fingerprint' => Fingerprint::make( $before ),
+			);
 		}
 		$oldOptions = $this->options( $group );
 		$options    = $oldOptions;
 		foreach ( $previous as $name => $value ) {
-			$key = self::FIELDS[$name][1];
+			$key = self::FIELDS[ $name ][1];
 			if ( $value === null ) {
-				unset( $options[$key] );
+				unset( $options[ $key ] );
 			} else {
-				$options[$key] = $value;
+				$options[ $key ] = $value;
 			}
 		}
 		update_option( $group, $options );
 		$restored = $this->snapshot();
 		foreach ( $previous as $name => $value ) {
-			if ( $restored[$name] !== $value ) {
+			if ( $restored[ $name ] !== $value ) {
 				update_option( $group, $oldOptions );
 				throw new RuntimeException( 'Yoast feature rollback readback mismatch.' );
 			}
 		}
-		return array( 'restored' => true, 'fields' => array_keys( $previous ) );
+		return array(
+			'restored' => true,
+			'fields'   => array_keys( $previous ),
+		);
 	}
 
 	/**
@@ -239,7 +248,7 @@ final class YoastFeatureSettingsAdapter {
 			throw new RuntimeException( 'Installed Yoast option schema was not an array.' );
 		}
 		foreach ( $fields as $name => $value ) {
-			if ( ! array_key_exists( self::FIELDS[$name][1], $defaults ) ) {
+			if ( ! array_key_exists( self::FIELDS[ $name ][1], $defaults ) ) {
 				throw new RuntimeException( 'Installed Yoast version does not recognize the requested feature.' );
 			}
 		}
@@ -257,7 +266,7 @@ final class YoastFeatureSettingsAdapter {
 	private function singleGroup( array $fields ): string {
 		$groups = array();
 		foreach ( $fields as $name => $value ) {
-			$groups[self::FIELDS[$name][0]] = true;
+			$groups[self::FIELDS[ $name ][0]] = true;
 		}
 		if ( count( $groups ) !== 1 ) {
 			throw new RuntimeException( 'A single Yoast feature mutation may target only one option group.' );
@@ -280,7 +289,7 @@ final class YoastFeatureSettingsAdapter {
 			throw new RuntimeException( 'Yoast feature update requires 1-8 allowlisted booleans.' );
 		}
 		foreach ( $fields as $name => $value ) {
-			if ( ! is_string( $name ) || ! isset( self::FIELDS[$name] )
+			if ( ! is_string( $name ) || ! isset( self::FIELDS[ $name ] )
 				|| ( ! is_bool( $value ) && ! ( $restore && $value === null ) ) ) {
 				throw new RuntimeException( 'Unsupported Yoast feature field or value.' );
 			}
@@ -320,15 +329,15 @@ final class YoastFeatureSettingsAdapter {
 		$fields = array();
 		foreach ( self::FIELDS as $name => $reference ) {
 			list( $group, $key ) = $reference;
-			if ( ! array_key_exists( $key, $groups[$group] ) ) {
-				$fields[$name] = null;
+			if ( ! array_key_exists( $key, $groups[ $group ] ) ) {
+				$fields[ $name ] = null;
 				continue;
 			}
-			$value = $groups[$group][$key];
+			$value = $groups[ $group ][ $key ];
 			if ( ! is_bool( $value ) && $value !== 0 && $value !== 1 && $value !== '0' && $value !== '1' ) {
 				throw new RuntimeException( 'Yoast feature stored value has an unexpected type.' );
 			}
-			$fields[$name] = $value === true || $value === 1 || $value === '1';
+			$fields[ $name ] = $value === true || $value === 1 || $value === '1';
 		}
 		return $fields;
 	}

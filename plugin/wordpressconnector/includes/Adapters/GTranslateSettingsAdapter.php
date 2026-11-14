@@ -29,12 +29,20 @@ final class GTranslateSettingsAdapter {
 	 * @param Registry $registry Action registry.
 	 */
 	public function register( Registry $registry ): void {
-		$read = array( 'privileged' => true, 'public_repository_safe' => true, 'capability' => 'manage_options' );
+		$read = array(
+			'privileged'             => true,
+			'public_repository_safe' => true,
+			'capability'             => 'manage_options',
+		);
 		$registry->register( 'gtranslate.settings.inspect', array( $this, 'inspect' ), $read );
 		$registry->register( 'gtranslate.settings.update', array( $this, 'update' ),
 			array_merge( $read, array( 'mutation' => true ) ) );
 		$registry->register( 'gtranslate.settings.restore', array( $this, 'restore' ),
-			array( 'privileged' => true, 'capability' => 'manage_options', 'mutation' => true ) );
+			array(
+				'privileged' => true,
+				'capability' => 'manage_options',
+				'mutation'   => true,
+			) );
 	}
 
 	/**
@@ -51,10 +59,10 @@ final class GTranslateSettingsAdapter {
 		if ( $payload ) throw new RuntimeException( 'GTranslate inspection does not accept extra options.' );
 		$raw = $this->settings();
 		return array(
-			'version' => $this->version(),
-			'fields' => $this->publicFields( $raw ),
+			'version'           => $this->version(),
+			'fields'            => $this->publicFields( $raw ),
 			'modifiable_fields' => self::KEYS,
-			'fingerprint' => Fingerprint::make( $raw ),
+			'fingerprint'       => Fingerprint::make( $raw ),
 		);
 	}
 
@@ -77,9 +85,9 @@ final class GTranslateSettingsAdapter {
 		$afterRaw = array_replace( $raw, $patch );
 		$this->ensureLanguages( $afterRaw );
 		$preview = array(
-			'before' => $before,
-			'after' => $this->publicFields( $afterRaw ),
-			'before_fingerprint' => $fingerprint,
+			'before'               => $before,
+			'after'                => $this->publicFields( $afterRaw ),
+			'before_fingerprint'   => $fingerprint,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) return $preview;
@@ -87,32 +95,32 @@ final class GTranslateSettingsAdapter {
 
 		$old = array();
 		foreach ( $patch as $key => $new ) {
-			$old[$key] = array(
+			$old[ $key ] = array(
 				'exists' => array_key_exists( $key, $raw ),
-				'value' => $raw[$key] ?? null,
+				'value'  => $raw[ $key ] ?? null,
 			);
 		}
 
 		update_option( 'GTranslate', $afterRaw );
 		$actual = $this->settings();
 		foreach ( $patch as $key => $new ) {
-			if ( ! array_key_exists( $key, $actual ) || $actual[$key] !== $new ) {
+			if ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $new ) {
 				try { update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {}
 				throw new RuntimeException( 'GTranslate did not retain requested settings; previous state restoration attempted.' );
 			}
 		}
 		foreach ( $raw as $key => $value ) {
 			if ( ! array_key_exists( $key, $patch )
-				&& ( ! array_key_exists( $key, $actual ) || $actual[$key] !== $value ) ) {
+				&& ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $value ) ) {
 				try { update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {}
 				throw new RuntimeException( 'GTranslate modified unrelated settings; previous state restoration attempted.' );
 			}
 		}
 		$preview['after'] = $this->publicFields( $actual );
 		$preview['_rollback'] = array(
-			'action' => 'gtranslate.settings.restore',
+			'action'  => 'gtranslate.settings.restore',
 			'payload' => array(
-				'previous_fields' => $old,
+				'previous_fields'            => $old,
 				'expected_after_fingerprint' => Fingerprint::make( $actual ),
 			),
 		);
@@ -147,15 +155,18 @@ final class GTranslateSettingsAdapter {
 				throw new RuntimeException( 'Invalid GTranslate rollback field.' );
 			}
 			if ( ! $entry['exists'] ) {
-				unset( $before[$key] );
+				unset( $before[ $key ] );
 			} else {
 				if ( ! array_key_exists( 'value', $entry ) ) {
 					throw new RuntimeException( 'Incomplete GTranslate rollback field.' );
 				}
-				$before[$key] = $entry['value'];
+				$before[ $key ] = $entry['value'];
 			}
 		}
-		if ( ! empty( $context['dry_run'] ) ) return array( 'would_restore' => array_keys( $entries ), '_current_fingerprint' => Fingerprint::make( $raw ) );
+		if ( ! empty( $context['dry_run'] ) ) return array(
+			'would_restore'        => array_keys( $entries ),
+			'_current_fingerprint' => Fingerprint::make( $raw ),
+		);
 		update_option( 'GTranslate', $before );
 		if ( $this->settings() !== $before ) {
 			throw new RuntimeException( 'GTranslate rollback readback does not match.' );
@@ -215,15 +226,15 @@ final class GTranslateSettingsAdapter {
 	private function publicFields( array $raw ): array {
 		$out = array();
 		foreach ( array_merge( self::KEYS, self::READ_ONLY ) as $key ) {
-			$value = $raw[$key] ?? null;
+			$value = $raw[ $key ] ?? null;
 			if ( $value === null || is_bool( $value ) || is_int( $value )
 				|| ( is_string( $value ) && strlen( $value ) <= 100 ) ) {
-				$out[$key] = $value;
+				$out[ $key ] = $value;
 			} elseif ( is_array( $value ) && count( $value ) <= 80
 				&& count( array_filter( $value, 'is_string' ) ) === count( $value ) ) {
-				$out[$key] = array_values( $value );
+				$out[ $key ] = array_values( $value );
 			} else {
-				$out[$key] = '[unsupported_value_withheld]';
+				$out[ $key ] = '[unsupported_value_withheld]';
 			}
 		}
 		return $out;
@@ -258,7 +269,7 @@ final class GTranslateSettingsAdapter {
 			} elseif ( $value !== 0 && $value !== 1 ) {
 				throw new RuntimeException( 'GTranslate browser-language detection accepts 0 or 1.' );
 			}
-			$out[$key] = $value;
+			$out[ $key ] = $value;
 		}
 		return $out;
 	}
@@ -272,9 +283,9 @@ final class GTranslateSettingsAdapter {
 	 */
 	private function ensureLanguages( array $raw ): void {
 		// Never leave the source language unavailable in the selected list.
-		foreach ( array( 'incl_langs','fincl_langs' ) as $key ) {
-			if ( ! isset( $raw[$key] ) || ! is_array( $raw[$key] )
-				|| ! in_array( $raw['default_language'] ?? '', $raw[$key], true ) ) {
+		foreach ( array( 'incl_langs', 'fincl_langs' ) as $key ) {
+			if ( ! isset( $raw[ $key ] ) || ! is_array( $raw[ $key ] )
+				|| ! in_array( $raw['default_language'] ?? '', $raw[ $key ], true ) ) {
 				throw new RuntimeException( 'GTranslate language selector must include its source language.' );
 			}
 		}

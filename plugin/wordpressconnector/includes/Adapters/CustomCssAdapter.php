@@ -86,8 +86,8 @@ final class CustomCssAdapter {
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
 		$result     = array(
-			'before' => $before,
-			'after'  => array(
+			'before'               => $before,
+			'after'                => array(
 				'stylesheet' => $stylesheet,
 				'css'        => $css,
 				'post_id'    => $before['post_id'],

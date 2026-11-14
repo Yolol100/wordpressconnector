@@ -36,9 +36,14 @@ final class SiteIdentityAdapter {
 		$registry->register( 'site.identity.inspect', array( $this, 'inspect' ),
 			array_merge( $public, array( 'description' => 'Read nonsecret WordPress site title, tagline, timezone and stored locale.' ) ) );
 		$registry->register( 'site.identity.update', array( $this, 'update' ),
-			array_merge( $public, array( 'mutation' => true, 'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.' ) ) );
+			array_merge( $public, array(
+				'mutation'    => true,
+				'description' => 'Update bounded site identity with dry-run, stale-state protection and rollback.',
+			) ) );
 		$registry->register( 'site.identity.restore', array( $this, 'restore' ), array(
-			'mutation'    => true, 'privileged' => true, 'capability' => 'manage_options',
+			'mutation'    => true,
+			'privileged'  => true,
+			'capability'  => 'manage_options',
 			'description' => 'Restore a prior site identity snapshot only via verified connector rollback.',
 		) );
 	}
@@ -56,7 +61,10 @@ final class SiteIdentityAdapter {
 	public function inspect( array $payload = array(), array $context = array() ): array {
 		if ( $payload ) throw new RuntimeException( 'Site identity inspect requires an empty payload.' );
 		$state = $this->snapshot();
-		return array( 'fields' => $state, 'fingerprint' => Fingerprint::make( $state ) );
+		return array(
+			'fields'      => $state,
+			'fingerprint' => Fingerprint::make( $state ),
+		);
 	}
 
 	/**
@@ -80,7 +88,11 @@ final class SiteIdentityAdapter {
 		$before      = $this->snapshot();
 		$next        = array_replace( $before, $values );
 		$fingerprint = Fingerprint::make( $before );
-		$result      = array( 'before' => $before, 'after' => $next, '_current_fingerprint' => $fingerprint );
+		$result      = array(
+			'before'               => $before,
+			'after'                => $next,
+			'_current_fingerprint' => $fingerprint,
+		);
 		if ( ! empty( $context['dry_run'] ) ) return $result;
 
 		$guard = isset( $context['expected_prewrite_fingerprint'] ) ? (string) $context['expected_prewrite_fingerprint'] : '';
@@ -139,7 +151,10 @@ final class SiteIdentityAdapter {
 			throw new RuntimeException( 'Site identity rollback snapshot is invalid.' );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
-			return array( 'would_restore' => true, '_current_fingerprint' => $fingerprint );
+			return array(
+				'would_restore'        => true,
+				'_current_fingerprint' => $fingerprint,
+			);
 		}
 		foreach ( $fields as $key => $value ) {
 			if ( ! is_string( $value ) ) throw new RuntimeException( 'Site identity rollback value must be text.' );
@@ -161,7 +176,7 @@ final class SiteIdentityAdapter {
 		foreach ( self::KEYS as $key ) {
 			$value = get_option( $key, '' );
 			if ( ! is_scalar( $value ) ) throw new RuntimeException( 'Unexpected site identity value for: ' . $key );
-			$result[$key] = (string) $value;
+			$result[ $key ] = (string) $value;
 		}
 		return $result;
 	}
@@ -208,7 +223,7 @@ final class SiteIdentityAdapter {
 					throw new RuntimeException( 'Requested WordPress language pack is not installed.' );
 				}
 			}
-			$result[$key] = $value;
+			$result[ $key ] = $value;
 		}
 		return $result;
 	}
