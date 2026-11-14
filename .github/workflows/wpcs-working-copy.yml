@@ -1,0 +1,25 @@
+# Temporary diagnostic-only workflow; remove from source branch before review.
+name: Temporary WordPress Connector source snapshot
+on:
+  push:
+    branches:
+      - fix/wpcs-remaining-20261115
+permissions:
+  contents: read
+jobs:
+  source-snapshot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out exact branch source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Create snapshot without Git history or runtime state
+        run: tar -czf "${RUNNER_TEMP}/connector-source.tar.gz" plugin scripts tests docs phpcs.xml.dist AGENTS.md REPOSITORY-HYGIENE-POLICY.md
+      - name: Upload one-time source snapshot
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
+        with:
+          name: temporary-wpcs-source-snapshot
+          path: ${{ runner.temp }}/connector-source.tar.gz
+          retention-days: 1
