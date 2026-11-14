@@ -211,7 +211,7 @@ final class MediaAdapter {
 			}
 		}
 		if ( count( $update ) > 1 ) {
-			$this->applyUpdate( $update );
+			$this->apply_update( $update );
 		}
 
 		return array(
@@ -253,7 +253,7 @@ final class MediaAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->applyUpdate( $payload );
+		$this->apply_update( $payload );
 		$result['after']     = $this->snapshot( $id );
 		$result['_rollback'] = array(
 			'action'  => 'media.update',
@@ -692,7 +692,7 @@ final class MediaAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function applyUpdate( array $payload ): void {
+	private function apply_update( array $payload ): void {
 		$id          = $this->attachmentId( $payload );
 		$post_fields = array( 'ID' => $id );
 		if ( array_key_exists( 'title', $payload ) ) {

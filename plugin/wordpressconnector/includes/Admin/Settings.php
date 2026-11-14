@@ -227,7 +227,7 @@ final class Settings {
 
 		$presence_url  = rest_url( 'webactueel-wordpress-connector/v1/presence' );
 		$health_url    = rest_url( 'webactueel-wordpress-connector/v1/health' );
-		$legacy_active = $this->legacyBridgeActive();
+		$legacy_active = $this->legacy_bridge_active();
 
 		echo '<div class="wrap">';
 		echo '<h1>' . esc_html__( 'WordPress Connector', 'wordpressconnector' ) . '</h1>';
@@ -394,7 +394,7 @@ final class Settings {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function legacyBridgeActive(): bool {
+	private function legacy_bridge_active(): bool {
 		if ( class_exists( 'Webactueel\\ElementorJsonBridge\\Plugin' ) ) {
 			return true; }
 		if ( ! function_exists( 'is_plugin_active' ) ) {

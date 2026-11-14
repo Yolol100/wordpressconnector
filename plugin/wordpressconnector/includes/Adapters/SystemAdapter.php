@@ -441,7 +441,7 @@ final class SystemAdapter {
 		if ( isset( $payload['role'] ) ) {
 			$user->set_role( sanitize_key( (string) $payload['role'] ) );
 		}
-		$this->applyUserFields( $id, $payload );
+		$this->apply_user_fields( $id, $payload );
 		return array(
 			'user'                           => $this->userSnapshot( get_user_by( 'id', $id ) ),
 			'password_generated_server_side' => true,
@@ -485,7 +485,7 @@ final class SystemAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->applyUserFields( (int) $user->ID, $payload );
+		$this->apply_user_fields( (int) $user->ID, $payload );
 		if ( isset( $payload['role'] ) ) {
 			$user->set_role( sanitize_key( (string) $payload['role'] ) );
 		}
@@ -1065,16 +1065,16 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginUpdate( array $payload, array $context ): array {
-		$expected_target = $this->expectedUpdateVersion( $payload, array( 'file', 'expected_target_version' ) );
+		$expected_target = $this->expected_update_version( $payload, array( 'file', 'expected_target_version' ) );
 		$file            = $this->pluginFile( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'Update WordPress Connector through connector.update.apply or the verified native Plugins updater.' );
 		}
-		$previous_version = $this->pluginVersion( $file );
+		$previous_version = $this->plugin_version( $file );
 		if ( null !== $expected_target && ! version_compare( $expected_target, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Pinned plugin update target must be newer than the installed version.' );
 		}
-		$offered_version = $this->availableUpdateVersion( 'update_plugins', $file );
+		$offered_version = $this->available_update_version( 'update_plugins', $file );
 		if ( ! empty( $context['dry_run'] ) ) {
 			if ( null !== $expected_target && $offered_version !== $expected_target ) {
 				throw new RuntimeException( 'Plugin update offer differs from the pinned target version.' );
@@ -1090,7 +1090,7 @@ final class SystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		wp_update_plugins();
 		if ( null !== $expected_target
-		&& $this->availableUpdateVersion( 'update_plugins', $file ) !== $expected_target ) {
+		&& $this->available_update_version( 'update_plugins', $file ) !== $expected_target ) {
 			throw new RuntimeException( 'Plugin update offer changed before execution; no update was started.' );
 		}
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -1099,7 +1099,7 @@ final class SystemAdapter {
 			throw new RuntimeException( is_wp_error( $updated ) ? $updated->get_error_message() : 'Plugin update failed or no update is available.' );
 		}
 		wp_clean_plugins_cache( true );
-		$version = $this->pluginVersion( $file );
+		$version = $this->plugin_version( $file );
 		if ( ! version_compare( $version, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Plugin update could not be verified: installed version did not increase.' );
 		}
@@ -1136,7 +1136,7 @@ final class SystemAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_delete'         => $file,
-				'_current_fingerprint' => Fingerprint::make( $this->pluginVersion( $file ) ),
+				'_current_fingerprint' => Fingerprint::make( $this->plugin_version( $file ) ),
 			);
 		}
 		$deleted = delete_plugins( array( $file ) );
@@ -1294,7 +1294,7 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function themeUpdate( array $payload, array $context ): array {
-		$expected_target = $this->expectedUpdateVersion( $payload, array( 'stylesheet', 'expected_target_version' ) );
+		$expected_target = $this->expected_update_version( $payload, array( 'stylesheet', 'expected_target_version' ) );
 		$stylesheet      = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
 		$theme           = wp_get_theme( $stylesheet );
 		if ( ! $theme->exists() ) {
@@ -1304,7 +1304,7 @@ final class SystemAdapter {
 		if ( null !== $expected_target && ! version_compare( $expected_target, $previous_version, '>' ) ) {
 			throw new RuntimeException( 'Pinned theme update target must be newer than the installed version.' );
 		}
-		$offered_version = $this->availableUpdateVersion( 'update_themes', $stylesheet );
+		$offered_version = $this->available_update_version( 'update_themes', $stylesheet );
 		if ( ! empty( $context['dry_run'] ) ) {
 			if ( null !== $expected_target && $offered_version !== $expected_target ) {
 				throw new RuntimeException( 'Theme update offer differs from the pinned target version.' );
@@ -1320,7 +1320,7 @@ final class SystemAdapter {
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 		wp_update_themes();
 		if ( null !== $expected_target
-		&& $this->availableUpdateVersion( 'update_themes', $stylesheet ) !== $expected_target ) {
+		&& $this->available_update_version( 'update_themes', $stylesheet ) !== $expected_target ) {
 			throw new RuntimeException( 'Theme update offer changed before execution; no update was started.' );
 		}
 		$upgrader = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -1355,7 +1355,7 @@ final class SystemAdapter {
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */
-	private function expectedUpdateVersion( array $payload, array $allowed_fields ): ?string {
+	private function expected_update_version( array $payload, array $allowed_fields ): ?string {
 		if ( array_diff( array_keys( $payload ), $allowed_fields ) ) {
 			throw new RuntimeException( 'Update request contains unsupported fields.' );
 		}
@@ -1377,7 +1377,7 @@ final class SystemAdapter {
 	 *
 	 * @return string|null Result of this operation.
 	 */
-	private function availableUpdateVersion( string $transient_name, string $identity ): ?string {
+	private function available_update_version( string $transient_name, string $identity ): ?string {
 		$transient = get_site_transient( $transient_name );
 		$offers    = is_object( $transient ) ? ( $transient->response ?? null ) : null;
 		if ( ! is_array( $offers ) || ! isset( $offers[ $identity ] ) ) {
@@ -1907,7 +1907,7 @@ final class SystemAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function applyUserFields( int $id, array $payload ): void {
+	private function apply_user_fields( int $id, array $payload ): void {
 		$fields = array( 'ID' => $id );
 		$map    = array(
 			'email'        => 'user_email',
@@ -1988,7 +1988,7 @@ final class SystemAdapter {
 	 *
 	 * @return string Result of this operation.
 	 */
-	private function pluginVersion( string $file ): string {
+	private function plugin_version( string $file ): string {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins = get_plugins();
 		return isset( $plugins[ $file ]['Version'] ) ? (string) $plugins[ $file ]['Version'] : '';

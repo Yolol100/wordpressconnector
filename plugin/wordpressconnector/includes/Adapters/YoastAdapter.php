@@ -150,7 +150,7 @@ final class YoastAdapter {
 		$before = $this->snapshot( (int) $post->ID );
 		$after  = $before;
 		foreach ( $updates as $field => $value ) {
-			$after[ $field ] = null === $value ? null : $this->sanitizeField( (string) $field, $value );
+			$after[ $field ] = null === $value ? null : $this->sanitize_field( (string) $field, $value );
 		}
 
 		$result = array(
@@ -169,14 +169,14 @@ final class YoastAdapter {
 			if ( null === $value || '' === (string) $value ) {
 				delete_post_meta( (int) $post->ID, $meta_key );
 			} else {
-				update_post_meta( (int) $post->ID, $meta_key, $this->sanitizeField( (string) $field, $value ) );
+				update_post_meta( (int) $post->ID, $meta_key, $this->sanitize_field( (string) $field, $value ) );
 			}
 		}
 
 		clean_post_cache( (int) $post->ID );
 		$readback = $this->snapshot( (int) $post->ID );
 		foreach ( $updates as $field => $value ) {
-			$expected = null === $value || '' === (string) $value ? null : $this->sanitizeField( (string) $field, $value );
+			$expected = null === $value || '' === (string) $value ? null : $this->sanitize_field( (string) $field, $value );
 			if ( $readback[ $field ] !== $expected ) {
 				throw new RuntimeException( 'Yoast readback verification failed for field: ' . (string) $field );
 			}
@@ -238,7 +238,7 @@ final class YoastAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function sanitizeField( string $field, $value ): string {
+	private function sanitize_field( string $field, $value ): string {
 		$value = (string) $value;
 
 		if ( in_array( $field, array( 'canonical', 'redirect', 'opengraph_image', 'twitter_image' ), true ) ) {
@@ -291,7 +291,7 @@ final class YoastAdapter {
 	 * @param array $context Authorized execution context.
 	 */
 	public function inspectSiteRepresentation( array $payload = array(), array $context = array() ): array {
-		$fields = $this->siteRepresentationSnapshot();
+		$fields = $this->site_representation_snapshot();
 		return array(
 			'fields'      => $fields,
 			'fingerprint' => Fingerprint::make( $fields ),
@@ -314,7 +314,7 @@ final class YoastAdapter {
 			throw new RuntimeException( 'Site representation requires 1-3 allowlisted fields.' );
 		}
 
-		$before = $this->siteRepresentationSnapshot();
+		$before = $this->site_representation_snapshot();
 		if ( 'company' !== $before['company_or_person'] ) {
 			throw new RuntimeException( 'Site representation is not set to Organization in Yoast.' );
 		}
@@ -351,7 +351,7 @@ final class YoastAdapter {
 			}
 		}
 
-		$after  = $this->siteRepresentationFields( $after_options );
+		$after  = $this->site_representation_fields( $after_options );
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
@@ -361,7 +361,7 @@ final class YoastAdapter {
 			return $result;
 		}
 		update_option( 'wpseo_titles', $after_options );
-		$readback = $this->siteRepresentationSnapshot();
+		$readback = $this->site_representation_snapshot();
 		if ( Fingerprint::make( $readback ) !== Fingerprint::make( $after ) ) {
 			throw new RuntimeException( 'Yoast organization settings readback failed.' );
 		}
@@ -391,7 +391,7 @@ final class YoastAdapter {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			throw new RuntimeException( 'Organization restore requires manage_options.' );
 		}
-		$before   = $this->siteRepresentationSnapshot();
+		$before   = $this->site_representation_snapshot();
 		$expected = isset( $payload['expected_after_fingerprint'] ) ? (string) $payload['expected_after_fingerprint'] : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}$/', $expected ) || ! hash_equals( $expected, Fingerprint::make( $before ) ) ) {
 			throw new RuntimeException( 'Organization settings changed after update; rollback is unsafe.' );
@@ -414,7 +414,7 @@ final class YoastAdapter {
 		$options['company_logo_meta'] = $fields['company_logo_meta'];
 		$options['org-description']   = $fields['org_description'];
 		update_option( 'wpseo_titles', $options );
-		if ( Fingerprint::make( $this->siteRepresentationSnapshot() ) !== Fingerprint::make( $fields ) ) {
+		if ( Fingerprint::make( $this->site_representation_snapshot() ) !== Fingerprint::make( $fields ) ) {
 			throw new RuntimeException( 'Yoast organization rollback readback failed.' );
 		}
 		return array(
@@ -430,7 +430,7 @@ final class YoastAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function siteRepresentationSnapshot(): array {
+	private function site_representation_snapshot(): array {
 		if ( ! defined( 'WPSEO_VERSION' ) && ! defined( 'YOAST_SEO_VERSION' ) ) {
 			throw new RuntimeException( 'Yoast SEO is not active.' );
 		}
@@ -438,7 +438,7 @@ final class YoastAdapter {
 		if ( ! is_array( $options ) ) {
 			throw new RuntimeException( 'Yoast SEO site representation options are not available.' );
 		}
-		return $this->siteRepresentationFields( $options );
+		return $this->site_representation_fields( $options );
 	}
 
 	/**
@@ -448,7 +448,7 @@ final class YoastAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function siteRepresentationFields( array $options ): array {
+	private function site_representation_fields( array $options ): array {
 		return array(
 			'company_or_person' => (string) ( $options['company_or_person'] ?? '' ),
 			'company_name'      => (string) ( $options['company_name'] ?? '' ),

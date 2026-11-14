@@ -481,7 +481,7 @@ final class Runner {
 		}
 		if ( Policy::publicRepositoryContext() ) {
 			$this->assertPublicRollbackRecord( $record );
-			$fingerprint = $this->publicRollbackFingerprint( $rollback, $context );
+			$fingerprint = $this->public_rollback_fingerprint( $rollback, $context );
 			if ( ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 				throw new RuntimeException( 'Public rollback target cannot enforce stale-state protection.' );
 			}
@@ -623,10 +623,10 @@ final class Runner {
 	 */
 	private function publicDescriptor( string $action, array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
 		if ( 'elementor.header_links.inspect' === $action ) {
-			return $this->publicHeaderLinksInspectDescriptor( $payload, $descriptor, $dry_run );
+			return $this->public_header_links_inspect_descriptor( $payload, $descriptor, $dry_run );
 		}
 		if ( 'elementor.header_links.replace' === $action ) {
-			return $this->publicHeaderLinksReplaceDescriptor( $payload, $descriptor, $dry_run, $expected_fingerprint );
+			return $this->public_header_links_replace_descriptor( $payload, $descriptor, $dry_run, $expected_fingerprint );
 		}
 		if ( 'yoast.snippet.inspect' === $action || 'yoast.snippet.update' === $action ) {
 			$inspect = 'yoast.snippet.inspect' === $action;
@@ -710,7 +710,7 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'acf.portfolio_stats_update' === $action ) {
-			$this->assertPublicPortfolioStatsPayload( $payload );
+			$this->assert_public_portfolio_stats_payload( $payload );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio stats update requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -719,7 +719,7 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'portfolio.case_text_update' === $action ) {
-			$this->assertPublicPortfolioCaseTextPayload( $payload );
+			$this->assert_public_portfolio_case_text_payload( $payload );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public portfolio case text update requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -728,12 +728,12 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'custom_css.inspect' === $action ) {
-			$this->assertPublicCustomCssPayload( $payload, false );
+			$this->assert_public_custom_css_payload( $payload, false );
 			$descriptor['privileged'] = false;
 			return $descriptor;
 		}
 		if ( 'custom_css.patch' === $action ) {
-			$this->assertPublicCustomCssPayload( $payload, true );
+			$this->assert_public_custom_css_payload( $payload, true );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public custom_css.patch requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -742,7 +742,7 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'maintenance.cache_flush' === $action ) {
-			$this->assertPublicCacheFlushPayload( $payload );
+			$this->assert_public_cache_flush_payload( $payload );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public cache flush requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -751,7 +751,7 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'code_snippets.patch' === $action ) {
-			$this->assertPublicCodeSnippetsPatchPayload( $payload );
+			$this->assert_public_code_snippets_patch_payload( $payload );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public Code Snippets patch requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -815,7 +815,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicHeaderLinksInspectDescriptor( array $payload, array $descriptor, bool $dry_run ): array {
+	private function public_header_links_inspect_descriptor( array $payload, array $descriptor, bool $dry_run ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'checks' ) )
 		|| ! is_int( $payload['post_id'] ?? null ) || $payload['post_id'] < 1 ) {
 			throw new RuntimeException( 'Header diagnostics require only a positive post_id and checks.' );
@@ -861,7 +861,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicHeaderLinksReplaceDescriptor( array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
+	private function public_header_links_replace_descriptor( array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
 		if ( array_diff( array_keys( $payload ), array( 'post_id', 'changes' ) )
 		|| ! isset( $payload['post_id'] ) || ! is_int( $payload['post_id'] ) || $payload['post_id'] < 1 ) {
 			throw new RuntimeException( 'Header link repair requires only post_id and changes.' );
@@ -911,7 +911,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicCustomCssPayload( array $payload, bool $patch ): void {
+	private function assert_public_custom_css_payload( array $payload, bool $patch ): void {
 		$allowed = $patch
 			? array( 'stylesheet', 'patch_id', 'operation', 'css' )
 			: array( 'stylesheet' );
@@ -966,7 +966,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicCustomCssRollbackPayload( array $payload ): void {
+	private function assert_public_custom_css_rollback_payload( array $payload ): void {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'stylesheet', 'css' ), true ) ) {
 				throw new RuntimeException( 'Public Additional CSS rollback contains unsupported payload key: ' . (string) $key );
@@ -1044,7 +1044,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicCacheFlushPayload( array $payload ): string {
+	private function assert_public_cache_flush_payload( array $payload ): string {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'layer', 'regenerate' ), true ) ) {
 				throw new RuntimeException( 'Public cache flush contains unsupported payload key: ' . (string) $key );
@@ -1094,7 +1094,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicCodeSnippetsPatchPayload( array $payload ): int {
+	private function assert_public_code_snippets_patch_payload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'snippet_id', 'match_code_contains', 'replacements' ), true ) ) {
 				throw new RuntimeException( 'Public Code Snippets patch contains unsupported payload key: ' . (string) $key );
@@ -1166,7 +1166,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicPortfolioCaseTextPayload( array $payload ): int {
+	private function assert_public_portfolio_case_text_payload( array $payload ): int {
 		$preview     = $this->registry->execute(
 			'portfolio.case_text_update',
 			$payload,
@@ -1193,7 +1193,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicPortfolioStatsPayload( array $payload ): int {
+	private function assert_public_portfolio_stats_payload( array $payload ): int {
 		$preview     = $this->registry->execute(
 			'acf.portfolio_stats_update',
 			$payload,
@@ -1332,13 +1332,13 @@ final class Runner {
 			throw new RuntimeException( 'Rollback snapshot is not eligible for the guarded public rollback route.' );
 		}
 		if ( 'acf.portfolio_stats_update' === $source_action ) {
-			$this->assertPublicPortfolioStatsPayload( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_portfolio_stats_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'yoast.snippet.update' === $source_action ) {
 			$rollback_payload = (array) ( $rollback['payload'] ?? array() );
 			if ( array_diff( array_keys( $rollback_payload ), array( 'id', 'fields', 'expected_after_fingerprint' ) ) ) {
 				throw new RuntimeException( 'Public snippet rollback has unsupported keys.' );
 			}
-			$this->assertPublicRollbackPostId( $rollback_payload );
+			$this->assert_public_rollback_post_id( $rollback_payload );
 			\Webactueel\WordPressConnector\Adapters\YoastSnippetAdapter::validateFields( $rollback_payload['fields'] ?? null, true );
 			if ( ! is_string( $rollback_payload['expected_after_fingerprint'] ?? null ) ||
 				! preg_match( '/^[a-f0-9]{64}\z/', $rollback_payload['expected_after_fingerprint'] ) ) {
@@ -1353,17 +1353,17 @@ final class Runner {
 				throw new RuntimeException( 'Public Code Snippets rollback snapshot is invalid.' );
 			}
 		} elseif ( 'custom_css.patch' === $source_action ) {
-			$this->assertPublicCustomCssRollbackPayload( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_custom_css_rollback_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'portfolio.case_text_update' === $source_action ) {
-			$this->assertPublicPortfolioCaseTextPayload( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_portfolio_case_text_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'acf.update' === $rollback_action ) {
 			$this->assertPublicAcfUpdatePayload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'post.update' === $rollback_action ) {
-			$this->assertPublicRollbackPostPayload( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_rollback_post_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'elementor.replace_document' === $rollback_action ) {
-			$this->assertPublicRollbackPostId( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_rollback_post_id( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'acf.schema.remove_text_fields' === $rollback_action ) {
-			$this->assertPublicRollbackPostId( (array) ( $rollback['payload'] ?? array() ), 'post_id' );
+			$this->assert_public_rollback_post_id( (array) ( $rollback['payload'] ?? array() ), 'post_id' );
 		} elseif ( 'connector.batch' === $rollback_action ) {
 			$operations = isset( $rollback['payload']['operations'] ) && is_array( $rollback['payload']['operations'] ) ? array_values( $rollback['payload']['operations'] ) : array();
 			if ( ! $operations || count( $operations ) > 25 ) {
@@ -1376,9 +1376,9 @@ final class Runner {
 				if ( 'acf.update' === $operation['action'] ) {
 					$this->assertPublicAcfUpdatePayload( $operation['payload'] );
 				} elseif ( 'acf.portfolio_stats_update' === $operation['action'] ) {
-					$this->assertPublicPortfolioStatsPayload( $operation['payload'] );
+					$this->assert_public_portfolio_stats_payload( $operation['payload'] );
 				} elseif ( 'post.update' === $operation['action'] ) {
-					$this->assertPublicRollbackPostPayload( $operation['payload'] );
+					$this->assert_public_rollback_post_payload( $operation['payload'] );
 				} else {
 					throw new RuntimeException( 'Public batch rollback contains a non-public restore action.' );
 				}
@@ -1396,7 +1396,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicRollbackFingerprint( array $rollback, array $context ): string {
+	private function public_rollback_fingerprint( array $rollback, array $context ): string {
 		$action  = (string) $rollback['action'];
 		$payload = (array) $rollback['payload'];
 		if ( 'connector.batch' === $action ) {
@@ -1444,14 +1444,14 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicRollbackPostPayload( array $payload ): void {
+	private function assert_public_rollback_post_payload( array $payload ): void {
 		$allowed = array( 'id', 'title', 'content', 'excerpt', 'status', 'slug', 'type', 'author', 'parent', 'menu_order', 'comment_status', 'ping_status' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
 				throw new RuntimeException( 'Public post rollback contains unsupported field: ' . (string) $key );
 			}
 		}
-		$this->assertPublicRollbackPostId( $payload );
+		$this->assert_public_rollback_post_id( $payload );
 		if ( isset( $payload['status'] ) && 'publish' !== (string) $payload['status'] ) {
 			throw new RuntimeException( 'Public post rollback may only restore publish status.' );
 		}
@@ -1465,7 +1465,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicRollbackPostId( array $payload, string $key = 'id' ): void {
+	private function assert_public_rollback_post_id( array $payload, string $key = 'id' ): void {
 		$post_id = isset( $payload[ $key ] ) ? (int) $payload[ $key ] : 0;
 		if ( $post_id <= 0 ) {
 			throw new RuntimeException( 'Public rollback requires a positive post id.' );

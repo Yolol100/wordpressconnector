@@ -103,7 +103,7 @@ final class AutoImageAttributesAdapter {
 			if ( ! is_string( $key ) || ! in_array( $key, self::BOOLEAN_FIELDS, true ) ) {
 				throw new RuntimeException( 'Unsupported Auto Image Attributes setting: ' . (string) $key );
 			}
-			$clean[ $key ] = $this->booleanString( $value );
+			$clean[ $key ] = $this->boolean_string( $value );
 		}
 
 		$after = $before;
@@ -168,7 +168,7 @@ final class AutoImageAttributesAdapter {
 		$result = array();
 		foreach ( self::BOOLEAN_FIELDS as $key ) {
 			if ( array_key_exists( $key, $raw ) ) {
-				$result[ $key ] = $this->booleanString( $raw[ $key ] );
+				$result[ $key ] = $this->boolean_string( $raw[ $key ] );
 			}
 		}
 		return $result;
@@ -183,7 +183,7 @@ final class AutoImageAttributesAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function booleanString( $value ): string {
+	private function boolean_string( $value ): string {
 		if ( true === $value || 1 === $value || '1' === $value || 'true' === strtolower( (string) $value ) || 'yes' === strtolower( (string) $value ) || 'on' === strtolower( (string) $value ) ) {
 			return '1';
 		}
