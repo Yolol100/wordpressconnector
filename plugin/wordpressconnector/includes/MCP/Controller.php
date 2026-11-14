@@ -492,9 +492,9 @@ final class Controller {
 		return array(
 			'description' => self::PROMPT_AUDIT === $name ? 'Read-only WordPress audit' : 'Safe WordPress change plan',
 			'messages'    => array( array( 'role' => 'user',
-				'content' => array(
-				'type'    => 'text',
-				'text'    => $text,
+				'content'                         => array(
+				'type' => 'text',
+				'text' => $text,
 			), ), ),
 		);
 	}
@@ -759,7 +759,7 @@ final class Controller {
 	 */
 	private function toolResult( array $value, bool $isError ): array {
 		return array(
-			'content' => array( array(
+			'content'           => array( array(
 				'type' => 'text',
 				'text' => $this->encodeForText( $value ),
 			), ),
@@ -886,7 +886,7 @@ final class Controller {
 					'pattern' => '^[a-z0-9][a-z0-9._-]*$',
 				),
 				'payload' => array( 'type' => 'object' ),
-				'dry_run' => array(
+				'dry_run'              => array(
 					'type'    => 'boolean',
 					'default' => true,
 				),
@@ -907,10 +907,10 @@ final class Controller {
 					'pattern' => '^[a-f0-9]{64}$',
 				),
 			),
-			'required' => array( 'action', 'payload' ),
-			'allOf'    => array(
+			'required'             => array( 'action', 'payload' ),
+			'allOf'                => array(
 				array(
-					'if' => array(
+					'if'   => array(
 						'properties' => array( 'dry_run' => array( 'const' => false ) ),
 						'required'   => array( 'dry_run' ),
 					),

@@ -526,14 +526,14 @@ final class ElementorJsonImport {
 				$slug = $this->bulkFilenameSlug( $name );
 			}
 			$row = array(
-				'name'         => $name,
-				'post_type'    => $postType,
-				'slug'         => $slug,
-				'post_id'      => 0,
-				'target_label' => '-',
-				'status'       => 'conflict: unknown type or target',
-				'content'      => $payload['content'],
-				'settings'     => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
+				'name'          => $name,
+				'post_type'     => $postType,
+				'slug'          => $slug,
+				'post_id'       => 0,
+				'target_label'  => '-',
+				'status'        => 'conflict: unknown type or target',
+				'content'       => $payload['content'],
+				'settings'      => isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] )
 				? $payload['page_settings']
 				: ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() ),
 				'template_type' => $documentType,

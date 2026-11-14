@@ -155,7 +155,7 @@ final class OptimizerSettingsAdapter {
 		}
 		$out['after'] = $this->publicFields( $provider, $next );
 		$out['_rollback'] = array( 'action' => 'optimizer.settings.restore',
-			'payload'                    => array(
+			'payload'                       => array(
 			'provider'                   => $provider,
 			'field'                      => $key,
 			'exists'                     => $previousExists,

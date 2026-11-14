@@ -131,7 +131,7 @@ final class YoastTemplateSettingsAdapter {
 		}
 		$result['after'] = $verified;
 		$result['_rollback'] = array( 'action' => 'yoast.templates.restore',
-			'payload'                    => array(
+			'payload'                          => array(
 			'fields'                     => array_intersect_key( $before, $changes ),
 			'expected_after_fingerprint' => Fingerprint::make( $verified ), ), );
 		return $result;

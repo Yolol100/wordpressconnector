@@ -350,8 +350,8 @@ final class Runner {
 				foreach ( $rollbacks as $rollback ) {
 					try {
 						$compensation[] = array( 'ok' => true,
-							'action'        => $rollback['action'],
-							'result'        => $this->registry->execute( (string) $rollback['action'], (array) $rollback['payload'], array_merge( $context, array(
+							'action'                  => $rollback['action'],
+							'result'                  => $this->registry->execute( (string) $rollback['action'], (array) $rollback['payload'], array_merge( $context, array(
 							'rollback_mode' => true,
 							'dry_run'       => false,
 						) ) ), );

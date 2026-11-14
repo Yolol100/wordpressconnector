@@ -65,9 +65,9 @@ final class ElementorFormsAdapter {
 		$environment = $this->environment();
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return array(
-				'available'   => false,
-				'environment' => $environment,
-				'classic'     => array(
+				'available'          => false,
+				'environment'        => $environment,
+				'classic'            => array(
 					'available'                 => false,
 					'controls'                  => array(),
 					'submit_action_choice_keys' => array(),
@@ -1084,7 +1084,7 @@ final class ElementorFormsAdapter {
 		}
 		$result = $this->document( $postId )->save( array(
 			'elements' => $data,
-			'settings' => $pageSettings,
+			'settings' => $pageSettings
 		) );
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
 			throw new RuntimeException( $result->get_error_message() );

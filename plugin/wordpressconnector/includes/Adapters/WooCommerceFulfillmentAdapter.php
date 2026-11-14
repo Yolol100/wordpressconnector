@@ -52,8 +52,8 @@ final class WooCommerceFulfillmentAdapter {
 		$path      = $this->locationPath( $payload );
 		$locations = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		return array( 'zone_id' => $payload['zone_id'],
-			'locations'   => $locations,
-			'fingerprint' => Fingerprint::make( $locations ), );
+			'locations'         => $locations,
+			'fingerprint'       => Fingerprint::make( $locations ), );
 	}
 
 	/**
@@ -73,9 +73,9 @@ final class WooCommerceFulfillmentAdapter {
 		$before      = $this->locationSnapshot( $this->api( 'GET', $path ) );
 		$fingerprint = Fingerprint::make( $before );
 		$result      = array( 'zone_id' => $payload['zone_id'],
-			'before'               => $before,
-			'after'                => $new,
-			'_current_fingerprint' => $fingerprint, );
+			'before'                    => $before,
+			'after'                     => $new,
+			'_current_fingerprint'      => $fingerprint, );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
@@ -208,7 +208,7 @@ final class WooCommerceFulfillmentAdapter {
 		$snapshot = $this->resourceSnapshot( $type, $current );
 		$result['created'] = $snapshot;
 		$result['_rollback'] = array( 'action' => 'woocommerce.fulfillment.restore_created',
-			'payload'                    => array(
+			'payload'                          => array(
 			'type'                       => $type,
 			'zone_id'                    => $payload['zone_id'] ?? null,
 			'id'                         => $id,

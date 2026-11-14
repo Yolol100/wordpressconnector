@@ -98,7 +98,7 @@ final class GutenbergAdapter {
 		}
 
 		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
-			'payload' => array(
+			'payload'                          => array(
 			'id'      => (int) $post->ID,
 			'content' => $beforeContent,
 		), );
@@ -169,7 +169,7 @@ final class GutenbergAdapter {
 		}
 
 		$result['_rollback'] = array( 'action' => 'gutenberg.replace',
-			'payload' => array(
+			'payload'                          => array(
 			'id'      => (int) $post->ID,
 			'content' => $beforeContent,
 		), );

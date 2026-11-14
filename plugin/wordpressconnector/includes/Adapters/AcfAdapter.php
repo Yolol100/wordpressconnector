@@ -163,9 +163,9 @@ final class AcfAdapter {
 			$result['after'][(string) $field] = get_field( (string) $field, $target, false );
 		}
 		$result['_rollback'] = array( 'action' => 'acf.update',
-			'payload' => array(
-			'target'  => $target,
-			'fields'  => $before,
+			'payload'                          => array(
+			'target' => $target,
+			'fields' => $before,
 		), );
 		return $result;
 	}
@@ -205,9 +205,9 @@ final class AcfAdapter {
 			delete_field( (string) $field, $target );
 		}
 		$result['_rollback'] = array( 'action' => 'acf.update',
-			'payload' => array(
-			'target'  => $target,
-			'fields'  => $before,
+			'payload'                          => array(
+			'target' => $target,
+			'fields' => $before,
 		), );
 		return $result;
 	}
@@ -377,13 +377,13 @@ final class AcfAdapter {
 					'class' => '',
 					'id'    => '',
 				),
-				'default_value' => '',
-				'maxlength'     => '',
-				'placeholder'   => '',
-				'prepend'       => '',
-				'append'        => '',
-				'parent'        => $groupId,
-				'menu_order'    => $next_menu_order++,
+				'default_value'     => '',
+				'maxlength'         => '',
+				'placeholder'       => '',
+				'prepend'           => '',
+				'append'            => '',
+				'parent'            => $groupId,
+				'menu_order'        => $next_menu_order++,
 			);
 			if ( isset( $recoverable[$definition['key']] ) ) {
 				$field['ID'] = (int) $recoverable[$definition['key']];
@@ -1316,7 +1316,7 @@ final class AcfAdapter {
 			'conditional_logic' => array_key_exists( 'conditional_logic', $field )
 				? $this->normalizeConditionalLogic( $field['conditional_logic'] )
 				: false,
-			'wrapper' => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array(
+			'wrapper'           => isset( $field['wrapper'] ) ? $this->normalizeWrapper( $field['wrapper'] ) : array(
 				'width' => '',
 				'class' => '',
 				'id'    => '',

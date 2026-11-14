@@ -403,9 +403,9 @@ final class ConnectorUpdateAdapter {
 			}
 
 			return array(
-				'operation' => 'updated',
-				'before'    => $before,
-				'after'     => array(
+				'operation'          => 'updated',
+				'before'             => $before,
+				'after'              => array(
 					'plugin_file' => self::PLUGIN_FILE,
 					'version'     => $installed_version,
 				),

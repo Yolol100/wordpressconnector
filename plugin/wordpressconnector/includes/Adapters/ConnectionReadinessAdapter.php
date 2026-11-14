@@ -63,8 +63,8 @@ final class ConnectionReadinessAdapter {
 		$providers = $this->activeBackupProviders();
 
 		return array(
-			'read_only' => true,
-			'wordpress' => array(
+			'read_only'                 => true,
+			'wordpress'                 => array(
 				'https_ready'                    => $https,
 				'github_pairing_recorded'        => $paired,
 				'github_oidc_execution_verified' => false,
@@ -105,8 +105,8 @@ final class ConnectionReadinessAdapter {
 		}
 
 		return array(
-			'capabilities'        => $capabilities,
-			'server_policy_gates' => array(
+			'capabilities'                         => $capabilities,
+			'server_policy_gates'                  => array(
 				'writes'            => Policy::flag( 'WPCONNECTOR_ALLOW_WRITES' ),
 				'privileged'        => Policy::flag( 'WPCONNECTOR_ALLOW_PRIVILEGED' ),
 				'sensitive'         => Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ),
@@ -115,9 +115,9 @@ final class ConnectionReadinessAdapter {
 			),
 			'wordpress_file_modifications_allowed' => function_exists( 'wp_is_file_mod_allowed' )
 				? ( bool ) wp_is_file_mod_allowed( 'plugin_update' ) : null,
-			'wordpress_file_editor_disabled' => defined( 'DISALLOW_FILE_EDIT' ) && ( bool ) DISALLOW_FILE_EDIT,
-			'permission_check_only'          => true,
-			'site_write_verified'            => false,
+			'wordpress_file_editor_disabled'       => defined( 'DISALLOW_FILE_EDIT' ) && ( bool ) DISALLOW_FILE_EDIT,
+			'permission_check_only'                => true,
+			'site_write_verified'                  => false,
 		);
 	}
 

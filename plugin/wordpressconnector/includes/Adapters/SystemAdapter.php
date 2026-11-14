@@ -773,9 +773,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'plugins'                                         => $items,
-			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'plugins'             => $items,
+			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}
@@ -904,7 +904,7 @@ final class SystemAdapter {
 			'active'            => true,
 			'readback_verified' => true,
 			'_rollback'         => array( 'action' => 'plugin.deactivate',
-				'payload'      => array(
+				'payload'                          => array(
 				'file'         => $file,
 				'network_wide' => $networkWide,
 			), ),
@@ -953,7 +953,7 @@ final class SystemAdapter {
 			'active'            => false,
 			'readback_verified' => true,
 			'_rollback'         => $before ? array( 'action' => 'plugin.activate',
-				'payload'      => array(
+				'payload' => array(
 				'file'         => $file,
 				'network_wide' => $networkWide,
 			), ) : null,
@@ -1160,9 +1160,9 @@ final class SystemAdapter {
 			);
 		}
 		return array(
-			'themes'                                          => $items,
-			'updates_checked_gmt'                             => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
-			'update_state'                                    => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
+			'themes'              => $items,
+			'updates_checked_gmt' => $checkedAt > 0 ? gmdate( 'c', $checkedAt ) : null,
+			'update_state'        => $checkedAt > 0 ? 'cached_wordpress_update_snapshot' : 'not_checked',
 			'update_listing_is_not_an_install_or_health_test' => true,
 		);
 	}

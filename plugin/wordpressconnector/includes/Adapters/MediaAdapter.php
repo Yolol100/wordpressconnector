@@ -152,10 +152,10 @@ final class MediaAdapter {
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_import' => $planned,
-				'_current_fingerprint' => Fingerprint::make( array(
-				'source'               => $source,
-				'size'                 => $size,
-				'mtime'                => filemtime( $real ),
+				'_current_fingerprint'   => Fingerprint::make( array(
+				'source' => $source,
+				'size'   => $size,
+				'mtime'  => filemtime( $real ),
 			) ), );
 		}
 
@@ -226,7 +226,7 @@ final class MediaAdapter {
 		$this->applyUpdate( $payload );
 		$result['after']     = $this->snapshot( $id );
 		$result['_rollback'] = array( 'action' => 'media.update',
-			'payload'     => array(
+			'payload'                          => array(
 			'id'          => $id,
 			'title'       => $before['title'],
 			'alt'         => $before['alt'],
@@ -312,10 +312,10 @@ final class MediaAdapter {
 		}
 		$before = $this->snapshot( $id );
 		$plan   = array( 'attachment_id' => $id,
-			'old_filename'       => $old_name,
-			'new_filename'       => $requested,
-			'copies'             => count( $copies ),
-			'old_urls_preserved' => true, );
+			'old_filename'               => $old_name,
+			'new_filename'               => $requested,
+			'copies'                     => count( $copies ),
+			'old_urls_preserved'         => true, );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_rename'         => $plan,
@@ -459,7 +459,7 @@ final class MediaAdapter {
 				}
 				if ( empty( $context['rollback_mode'] ) ) {
 					$result['_rollback'] = array( 'action' => 'media.assign',
-						'payload'     => array(
+						'payload'                          => array(
 						'id'          => $before,
 						'target_type' => 'featured_image',
 						'target_id'   => $targetId,
@@ -498,7 +498,7 @@ final class MediaAdapter {
 					throw new RuntimeException( 'Product gallery assignment readback failed.' );
 				}
 				$result['_rollback'] = array( 'action' => 'woocommerce.product.update',
-					'payload'           => array(
+					'payload'                          => array(
 					'id'                => $targetId,
 					'gallery_image_ids' => $before,
 				), );
@@ -518,9 +518,9 @@ final class MediaAdapter {
 				}
 				set_theme_mod( 'custom_logo', $attachment_id );
 				return array( 'after' => $attachment_id,
-					'_rollback' => array(
-					'action'    => 'theme_mod.update',
-					'payload'   => array(
+					'_rollback'       => array(
+					'action'  => 'theme_mod.update',
+					'payload' => array(
 						'name'  => 'custom_logo',
 						'value' => $before,
 					),
@@ -540,9 +540,9 @@ final class MediaAdapter {
 				}
 				update_option( 'site_icon', $attachment_id, false );
 				return array( 'after' => $attachment_id,
-					'_rollback' => array(
-					'action'    => 'option.update',
-					'payload'   => array(
+					'_rollback'       => array(
+					'action'  => 'option.update',
+					'payload' => array(
 						'name'  => 'site_icon',
 						'value' => $before,
 					),

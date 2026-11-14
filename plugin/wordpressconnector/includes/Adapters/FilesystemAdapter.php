@@ -87,7 +87,7 @@ final class FilesystemAdapter {
 				'secret_files'       => 'blocked',
 				'managed_data_paths' => 'use dedicated WordPress/media/system actions',
 			),
-			'write' => array(
+			'write'             => array(
 				'scope'                 => array( 'replace existing wp-content/plugins/* and wp-content/themes/* text files', 'create/delete non-PHP text assets in existing plugin/theme directories' ),
 				'core'                  => false,
 				'uploads'               => false,
@@ -97,7 +97,7 @@ final class FilesystemAdapter {
 				'readback'              => 'sha256',
 				'rollback'              => true,
 			),
-			'wp_file_manager' => array(
+			'wp_file_manager'   => array(
 				'installed'            => ! empty( $fileManager ),
 				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $fileManagerFile ),
 				'version'              => isset( $fileManager['Version'] ) ? (string) $fileManager['Version'] : null,
@@ -344,8 +344,8 @@ final class FilesystemAdapter {
 			'exists' => false,
 		);
 		$result        = array(
-			'before' => $expectedState,
-			'after'  => array(
+			'before'                                  => $expectedState,
+			'after'                                   => array(
 				'path'   => $relative,
 				'bytes'  => strlen( $content ),
 				'sha256' => hash( 'sha256', $content ),
@@ -391,7 +391,7 @@ final class FilesystemAdapter {
 		}
 		$result['after'] = $this->state( $relative, $readback, $absolute );
 		$result['_rollback'] = array( 'action' => 'filesystem.delete_text',
-			'payload'                    => array(
+			'payload'                          => array(
 			'path'                       => $relative,
 			'expected_sha256'            => hash( 'sha256', $readback ),
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),
@@ -423,8 +423,8 @@ final class FilesystemAdapter {
 		$this->assertNoEmbeddedSecrets( $before );
 		$beforeState = $this->state( $relative, $before, $absolute );
 		$result      = array(
-			'before' => $beforeState,
-			'after'  => array(
+			'before'                                  => $beforeState,
+			'after'                                   => array(
 				'path'   => $relative,
 				'exists' => false,
 			),
@@ -453,7 +453,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'File still exists after attempted deletion.' );
 		}
 		$result['_rollback'] = array( 'action' => 'filesystem.create_text',
-			'payload'                    => array(
+			'payload'                          => array(
 			'path'                       => $relative,
 			'content'                    => $before,
 			'acknowledge_active_content' => FilesystemPolicy::affectsBrowserExecution( $relative ),

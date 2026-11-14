@@ -83,11 +83,11 @@ final class SiteEditorAdapter {
 			);
 		}
 		return array( 'kind' => $kind,
-			'theme'    => get_stylesheet(),
-			'page'     => $page,
-			'items'    => $rows,
-			'count'    => count( $rows ),
-			'per_page' => 20, );
+			'theme'          => get_stylesheet(),
+			'page'           => $page,
+			'items'          => $rows,
+			'count'          => count( $rows ),
+			'per_page'       => 20, );
 	}
 
 	/**
@@ -135,9 +135,9 @@ final class SiteEditorAdapter {
 			throw new RuntimeException( 'Global styles exceed the bounded response size.' );
 		}
 		return array( 'theme' => $theme,
-			'settings'    => $settings,
-			'styles'      => $styles,
-			'fingerprint' => Fingerprint::make( array( $settings, $styles ) ), );
+			'settings'        => $settings,
+			'styles'          => $styles,
+			'fingerprint'     => Fingerprint::make( array( $settings, $styles ) ), );
 	}
 
 	/**
@@ -160,15 +160,15 @@ final class SiteEditorAdapter {
 		$this->expected( $payload['expected_before_fingerprint'] ?? null, $before['fingerprint'] );
 
 		$result = array(
-			'kind'         => $kind,
-			'id'           => $id,
-			'theme'        => get_stylesheet(),
-			'would_change' => $before['content_sha256'] !== hash( 'sha256', $content ),
-			'before'       => array(
+			'kind'                 => $kind,
+			'id'                   => $id,
+			'theme'                => get_stylesheet(),
+			'would_change'         => $before['content_sha256'] !== hash( 'sha256', $content ),
+			'before'               => array(
 				'content_sha256' => $before['content_sha256'],
 				'modified'       => $before['modified'],
 			),
-			'_current_fingerprint'                => $before['fingerprint'],
+			'_current_fingerprint' => $before['fingerprint'],
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
@@ -284,13 +284,13 @@ final class SiteEditorAdapter {
 		}
 		$content              = $this->rawContent( $record );
 		$state   = array( 'kind' => $kind,
-			'id'             => $id,
-			'theme'          => get_stylesheet(),
-			'source'         => (string) ( $record['source'] ?? '' ),
-			'wp_id'          => (int) ( $record['wp_id'] ?? 0 ),
-			'modified'       => (string) ( $record['modified'] ?? '' ),
-			'content_sha256' => hash( 'sha256', $content ),
-			'customized'     => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0, );
+			'id'                 => $id,
+			'theme'              => get_stylesheet(),
+			'source'             => (string) ( $record['source'] ?? '' ),
+			'wp_id'              => (int) ( $record['wp_id'] ?? 0 ),
+			'modified'           => (string) ( $record['modified'] ?? '' ),
+			'content_sha256'     => hash( 'sha256', $content ),
+			'customized'         => 'custom' === ( $record['source'] ?? '' ) && (int) ( $record['wp_id'] ?? 0 ) > 0, );
 		$state['fingerprint'] = Fingerprint::make( $state );
 		return $state;
 	}

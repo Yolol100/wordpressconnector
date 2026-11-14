@@ -120,8 +120,8 @@ final class YoastNativeAbilitiesAdapter {
 			'available'     => $available,
 			'yoast_version' => defined( 'WPSEO_VERSION' ) ? (string) WPSEO_VERSION :
 				( defined( 'YOAST_SEO_VERSION' ) ? (string) YOAST_SEO_VERSION : null ),
-			'abilities' => $actions,
-			'requires'  => array(
+			'abilities'     => $actions,
+			'requires'      => array(
 				'wordpress' => '6.9',
 				'yoast'     => '28.6',
 			),
@@ -175,10 +175,10 @@ final class YoastNativeAbilitiesAdapter {
 		$id   = $this->assertPostAccess( $payload );
 		$data = $this->postData( $id );
 		return array(
-			'post_id'  => $id,
-			'fields'   => $this->snapshot( $data ),
-			'rendered' => $this->renderedFields( $data ),
-			'analysis' => array_intersect_key( $data, array_flip( array(
+			'post_id'     => $id,
+			'fields'      => $this->snapshot( $data ),
+			'rendered'    => $this->renderedFields( $data ),
+			'analysis'    => array_intersect_key( $data, array_flip( array(
 				'focus_keyphrase',
 				'seo_score',
 				'readability_score',

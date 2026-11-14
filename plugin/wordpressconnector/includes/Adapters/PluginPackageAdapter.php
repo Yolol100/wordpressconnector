@@ -134,16 +134,16 @@ final class PluginPackageAdapter {
 			'version'    => $installed ? (string) $current->get( 'Version' ) : null,
 		);
 		$plan   = array( 'stylesheet' => $expected,
-			'source_path'        => $source,
-			'sha256'             => $sha256,
-			'bytes'              => (int) $size,
-			'overwrite'          => $overwrite,
-			'archive_entries'    => $info['entries'],
-			'uncompressed_bytes' => $info['uncompressed_bytes'], );
+			'source_path'             => $source,
+			'sha256'                  => $sha256,
+			'bytes'                   => (int) $size,
+			'overwrite'               => $overwrite,
+			'archive_entries'         => $info['entries'],
+			'uncompressed_bytes'      => $info['uncompressed_bytes'], );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_install_theme_package' => $plan,
-				'before'               => $before,
-				'_current_fingerprint' => Fingerprint::make( $before ), );
+				'before'                                => $before,
+				'_current_fingerprint'                  => Fingerprint::make( $before ), );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -210,7 +210,7 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Theme installation readback failed.' );
 			}
 			$after = array( 'stylesheet' => $expected,
-				'version' => (string) $after_theme->get( 'Version' ), );
+				'version'                => (string) $after_theme->get( 'Version' ), );
 		} catch ( \Throwable $error ) {
 			if ( $overwrite ) {
 				$restored        = $upgrader->restore_temp_backup( array( $backup ) );
@@ -242,8 +242,8 @@ final class PluginPackageAdapter {
 			'manual_cleanup_required'           => $overwrite && ! $temporary_backup_cleanup_verified,
 			// WordPress temp backups may be cleaned up automatically; do not
 			// advertise a durable user-triggered rollback after success.
-			'rollback_supported' => false,
-			'readback_verified'  => true, );
+			'rollback_supported'                => false,
+			'readback_verified'                 => true, );
 	}
 
 	/**

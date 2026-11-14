@@ -851,7 +851,7 @@ final class CoreAdapter {
 		return array(
 			'term'      => $this->termSnapshot( get_term( $id, $taxonomy ) ),
 			'_rollback' => array( 'action' => 'term.delete',
-				'payload'  => array(
+				'payload'                  => array(
 				'taxonomy' => $taxonomy,
 				'id'       => $id,
 			), ),
@@ -1113,8 +1113,8 @@ final class CoreAdapter {
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'before' => $before,
-				'after'  => array(
+				'before'               => $before,
+				'after'                => array(
 					'id'   => $id,
 					'name' => $name,
 				),
@@ -1258,7 +1258,7 @@ final class CoreAdapter {
 			'location'  => $location,
 			'menu_id'   => $menu_id,
 			'_rollback' => array( 'action' => 'menu.location_set',
-				'payload'  => array(
+				'payload'                  => array(
 				'location' => $location,
 				'menu_id'  => $before,
 			), ),
@@ -1306,9 +1306,9 @@ final class CoreAdapter {
 			'name'      => $name,
 			'value'     => get_option( $name, null ),
 			'_rollback' => array( 'action' => 'option.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1335,9 +1335,9 @@ final class CoreAdapter {
 		return array(
 			'deleted'   => $name,
 			'_rollback' => array( 'action' => 'option.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1393,9 +1393,9 @@ final class CoreAdapter {
 			'name'      => $name,
 			'value'     => get_site_option( $name, null ),
 			'_rollback' => array( 'action' => 'network_option.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1427,9 +1427,9 @@ final class CoreAdapter {
 		return array(
 			'deleted'   => $name,
 			'_rollback' => array( 'action' => 'network_option.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1475,9 +1475,9 @@ final class CoreAdapter {
 			'name'      => $name,
 			'value'     => get_theme_mod( $name, null ),
 			'_rollback' => array( 'action' => 'theme_mod.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1504,9 +1504,9 @@ final class CoreAdapter {
 		return array(
 			'removed'   => $name,
 			'_rollback' => array( 'action' => 'theme_mod.update',
-				'payload' => array(
-				'name'    => $name,
-				'value'   => $before,
+				'payload'                  => array(
+				'name'  => $name,
+				'value' => $before,
 			), ),
 		);
 	}
@@ -1588,7 +1588,7 @@ final class CoreAdapter {
 		return array(
 			'comment'   => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ),
 			'_rollback' => array( 'action' => 'comment.update',
-				'payload'      => array(
+				'payload'                  => array(
 				'id'           => (int) $comment->comment_ID,
 				'content'      => $before['content'],
 				'author'       => $before['author'],

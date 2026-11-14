@@ -24,19 +24,19 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class WooCommerceSettingsAdapter {
 	private const EDITABLE = array(
-		'general' => array(
+		'general'  => array(
 			'woocommerce_currency_pos'       => true,
 			'woocommerce_price_thousand_sep' => true,
 			'woocommerce_price_decimal_sep'  => true,
 		),
 		'products' => array(
-			'woocommerce_weight_unit'                         => true,
-			'woocommerce_dimension_unit'                      => true,
-			'woocommerce_enable_reviews'                      => true,
-			'woocommerce_enable_review_rating'                => true,
-			'woocommerce_review_rating_required'              => true,
+			'woocommerce_weight_unit'                 => true,
+			'woocommerce_dimension_unit'              => true,
+			'woocommerce_enable_reviews'              => true,
+			'woocommerce_enable_review_rating'        => true,
+			'woocommerce_review_rating_required'      => true,
 			'woocommerce_review_rating_verification_required' => true,
-			'woocommerce_enable_verified_owner_label'         => true,
+			'woocommerce_enable_verified_owner_label' => true,
 		),
 	);
 

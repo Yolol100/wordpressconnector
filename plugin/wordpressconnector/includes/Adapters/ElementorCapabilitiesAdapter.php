@@ -107,9 +107,9 @@ final class ElementorCapabilitiesAdapter {
 		if ( empty( $post_types ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
 			return array(
-				'available'   => true,
-				'environment' => $environment,
-				'scan'        => array(
+				'available'       => true,
+				'environment'     => $environment,
+				'scan'            => array(
 					'post_types'    => array(),
 					'post_statuses' => $statuses,
 					'limit'         => $limit,
@@ -132,14 +132,14 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$ids = get_posts( array(
-			'post_type'      => $post_types,
-			'post_status'    => $statuses,
-			'fields'         => 'ids',
-			'posts_per_page' => $limit + 1,
-			'offset'         => $offset,
-			'orderby'        => 'ID',
-			'order'          => 'ASC',
-			'meta_query'     => array(
+			'post_type'        => $post_types,
+			'post_status'      => $statuses,
+			'fields'           => 'ids',
+			'posts_per_page'   => $limit + 1,
+			'offset'           => $offset,
+			'orderby'          => 'ID',
+			'order'            => 'ASC',
+			'meta_query'       => array(
 				array(
 					'key'     => '_elementor_data',
 					'compare' => 'EXISTS',
@@ -248,9 +248,9 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		return array(
-			'available'   => true,
-			'environment' => $environment,
-			'scan'        => array(
+			'available'       => true,
+			'environment'     => $environment,
+			'scan'            => array(
 				'post_types'    => $post_types,
 				'post_statuses' => $statuses,
 				'limit'         => $limit,
