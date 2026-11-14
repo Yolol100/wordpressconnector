@@ -1,5 +1,5 @@
-# ONE-TIME diagnostic workflow; remove before PR review and merge.
-name: Temporary WPCS automatic candidate
+# TEMPORARY scoped alignment runner. Must be deleted before PR.
+name: Temporary WPCS alignment diagnostic
 on:
   push:
     branches:
@@ -7,23 +7,23 @@ on:
 permissions:
   contents: write
 jobs:
-  guarded-wpcs-source:
+  alignment:
     if: github.repository == 'Yolol100/wordpressconnector'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - name: Checkout bounded branch
+      - name: Checkout temporary branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: fix/wpcs-remaining-20261115
           persist-credentials: true
-      - name: Prepare PHP
+      - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           extensions: mbstring, xmlreader, xml, dom
           coverage: none
-      - name: Apply vetted formatter, restore runtime contracts, lint, test, and push branch-only
+      - name: Fix only trailing variable alignment and verify every contract
         shell: bash
         run: |
           set -euo pipefail
@@ -33,7 +33,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/wpcs-tools"
           cat > "$RUNNER_TEMP/wpcs-tools/composer.json" <<'JSON'
           {
-            "name": "webactueel/wpcs-temporary-review",
+            "name": "webactueel/wpcs-temporary-alignment-review",
             "require-dev": {
               "squizlabs/php_codesniffer": "3.13.6",
               "wp-coding-standards/wpcs": "3.4.1"
@@ -42,69 +42,37 @@ jobs:
           }
           JSON
           composer install --working-dir="$RUNNER_TEMP/wpcs-tools" --prefer-dist --no-interaction --no-progress
-          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=phpcs.xml.dist plugin/wordpressconnector > "$RUNNER_TEMP/phpcbf.log" 2>&1 || true
-          python3 - <<'PY'
-          from pathlib import Path
-          root=Path('plugin/wordpressconnector')
-          for p in root.rglob('*.php'):
-              a=p.read_text()
-              b=a.replace('WordPress.abilities','wordpress.abilities').replace('WordPress.ability.','wordpress.ability.')
-              if b!=a: p.write_text(b)
-          p=root/'includes/Plugin.php'
-          a=p.read_text()
-          old='( new ElementorJsonImport() )->register();'
-          assert a.count(old)==1, 'Elementor boot contract moved'
-          p.write_text(a.replace(old,'(new ElementorJsonImport())->register();',1))
-          p=root/'includes/Adapters/ElementorFormsAdapter.php'
-          a=p.read_text()
-          old="\t\t$result = $this->document( $postId )->save(\n\t\t\tarray(\n\t\t\t\t'elements' => $data,\n\t\t\t\t'settings' => $pageSettings,\n\t\t\t)\n\t\t);"
-          new="\t\t$result = $this->document( $postId )->save( array(\n\t\t\t'elements' => $data,\n\t\t\t'settings' => $pageSettings\n\t\t) );"
-          assert a.count(old)==1, 'Elementor save contract moved'
-          p.write_text(a.replace(old,new,1))
-          p=root/'includes/REST/Controller.php'
-          a=p.read_text()
-          for route in ['presence','health','assets','execute']:
-              old="\t\tregister_rest_route(\n\t\t\tself::NAMESPACE,\n\t\t\t'/"+route+"',\n"
-              new="\t\tregister_rest_route( self::NAMESPACE, '/"+route+"',\n"
-              assert a.count(old)==1, 'REST contract moved: '+route
-              a=a.replace(old,new,1)
-          p.write_text(a)
-          PY
-          php scripts/wpcs-temp-rename-locals.php plugin/wordpressconnector > "$RUNNER_TEMP/rename-locals.log"
-          find plugin/wordpressconnector -name '*.php' -print0 | xargs -0 -n1 php -l > "$RUNNER_TEMP/php-lint.log"
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcbf" --standard=phpcs.xml.dist --sniffs=Generic.Formatting.MultipleStatementAlignment plugin/wordpressconnector > "$RUNNER_TEMP/phpcbf.log" 2>&1 || true
           git add plugin/wordpressconnector
           test -n "$(git diff --cached --name-only)"
-          while IFS= read -r f; do
-              case "$f" in plugin/wordpressconnector/*.php) ;; *) printf 'Unexpected changed file: %s\n' "$f"; exit 1 ;; esac
-          done < <(git diff --cached --name-only)
+          while IFS= read -r p; do case "$p" in plugin/wordpressconnector/*.php) ;; *) echo "unexpected path $p"; exit 1 ;; esac; done < <(git diff --cached --name-only)
           git diff --cached --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git commit -m "style(wpcs): apply token-reviewed PHPCBF and safe local variable names"
-          # Canonical preflight requires a clean tracked source tree; the commit is local until all tests succeed.
-          bash scripts/run-contracts.sh > "$RUNNER_TEMP/contracts.log" 2>&1 || { tail -n 50 "$RUNNER_TEMP/contracts.log"; exit 1; }
-          scan_status=0
-          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=phpcs.xml.dist --report=json > "$RUNNER_TEMP/wpcs-final.json" || scan_status=$?
+          git commit -m "style(wpcs): realign local variable assignments after snake_case fixes"
+          find plugin/wordpressconnector -name '*.php' -print0 | xargs -0 -n1 php -l > "$RUNNER_TEMP/php-lint.log"
+          bash scripts/run-contracts.sh > "$RUNNER_TEMP/contracts.log" 2>&1 || { tail -n 60 "$RUNNER_TEMP/contracts.log"; exit 1; }
+          status=0
+          "$RUNNER_TEMP/wpcs-tools/vendor/bin/phpcs" --standard=phpcs.xml.dist --report=json > "$RUNNER_TEMP/wpcs-final.json" || status=$?
           python3 - "$RUNNER_TEMP/wpcs-final.json" <<'PY'
           import sys,json
-          j=json.load(open(sys.argv[1]))
-          t=j['totals']
-          assert len(j['files'])==57, len(j['files'])
-          print("WPCS exact candidate:",t)
-          assert t['errors']<4767 and t['warnings']<506, 'Candidate must improve errors and warnings'
+          r=json.load(open(sys.argv[1]))
+          t=r['totals']
+          print("AFTER ALIGNMENT WPCS:",t,"files",len(r['files']))
+          assert len(r['files'])==57
+          assert t['errors'] <= 2249 and t['warnings'] < 245, 'Alignment must not make standards worse'
           PY
           git push origin "HEAD:refs/heads/fix/wpcs-remaining-20261115"
-          printf 'committed_sha=%s\n' "$(git rev-parse HEAD)"
+          echo "pushed=$(git rev-parse HEAD)"
           
-      - name: Upload verification evidence
+      - name: Upload temporary audit evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
         with:
-          name: temporary-wpcs-verified-evidence
+          name: temporary-wpcs-alignment-evidence
           path: |
             ${{ runner.temp }}/wpcs-final.json
             ${{ runner.temp }}/contracts.log
             ${{ runner.temp }}/phpcbf.log
-            ${{ runner.temp }}/rename-locals.log
             ${{ runner.temp }}/php-lint.log
           retention-days: 1
