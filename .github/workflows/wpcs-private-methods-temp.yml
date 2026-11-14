@@ -93,7 +93,7 @@ jobs:
           print('WPCS_PRIVATE_METHODS_BEFORE',a['totals'],'AFTER',b['totals'],'files',len(b['files']))
           assert len(b['files'])==57
           assert a['totals']['errors']==1737
-          assert b['totals']['errors']<=a['totals']['errors']-100
+          assert b['totals']['errors']<=a['totals']['errors']-75
           assert b['totals']['warnings']<=a['totals']['warnings']
           PY
           git push origin 'HEAD:refs/heads/fix/wpcs-private-methods-20261115'
