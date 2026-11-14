@@ -117,16 +117,16 @@ for relative, messages in issues.items():
                     throws.append("\t * @throws \\Throwable When a downloaded ZIP must be cleaned up after an error.")
                 counts["throws"] += len(throws)
         if params:
-            existing_types = re.findall(r"@param\\s+(\\S+)\\s+\\$\\w+", doc)
-            new_types = [re.search(r"@param\\s+(\\S+)", row).group(1) for row in params]
+            existing_types = re.findall(r"@param\s+(\S+)\s+\$\w+", doc)
+            new_types = [re.search(r"@param\s+(\S+)", row).group(1) for row in params]
             width = max(map(len, existing_types + new_types))
             params = [
-                re.sub(r"(@param\\s+)(\\S+)\\s+(\\$\\w+)",
+                re.sub(r"(@param\s+)(\S+)\s+(\$\w+)",
                        lambda m: m.group(1) + m.group(2) + " " * (width - len(m.group(2)) + 1) + m.group(3), row, count=1)
                 for row in params
             ]
             if relative == "includes/Adapters/ConnectorUpdateAdapter.php" and "verifiedNativeDownload" in signature:
-                prior = [row for row in params if re.search(r"\\$package\\b", row)]
+                prior = [row for row in params if re.search(r"\$package\b", row)]
                 if prior:
                     before_upgrader = next(i for i in range(start, close) if "@param" in lines[i] and "$upgrader" in lines[i])
                     inserts[before_upgrader].extend(prior)
