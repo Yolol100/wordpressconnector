@@ -16,6 +16,15 @@ use Webactueel\WordPressConnector\Security\Policy;
  */
 final class Result
 {
+	/**
+	 * Build a redacted successful connector response.
+	 *
+	 * @param Request $request Request metadata.
+	 * @param array   $data    Successful operation data.
+	 * @param array   $meta    Additional response metadata.
+	 *
+	 * @return array Redacted successful response.
+	 */
 	public static function success( Request $request, array $data, array $meta = array() ): array
 	{
 		return Policy::redact(
@@ -32,6 +41,15 @@ final class Result
 		);
 	}
 
+	/**
+	 * Build a redacted failed connector response.
+	 *
+	 * @param Request $request Request metadata.
+	 * @param string  $message Failure message.
+	 * @param array   $meta    Additional response metadata.
+	 *
+	 * @return array Redacted failure response.
+	 */
 	public static function failure( Request $request, string $message, array $meta = array() ): array
 	{
 		return Policy::redact(

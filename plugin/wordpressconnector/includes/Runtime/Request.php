@@ -25,6 +25,17 @@ final class Request {
 	private ?string $expectedFingerprint;
 	private ?string $expectedStateToken;
 
+	/**
+	 * Store an already validated, immutable connector request.
+	 *
+	 * @param string      $id                  Stable request identifier.
+	 * @param string      $action              Registered connector action name.
+	 * @param array       $payload             Validated action payload.
+	 * @param bool        $dryRun              Whether mutations are disabled.
+	 * @param bool        $confirm             Explicit mutation confirmation flag.
+	 * @param string|null $expectedFingerprint Expected object-state fingerprint.
+	 * @param string|null $expectedStateToken  Site-scoped stale-state token.
+	 */
 	private function __construct(
 		string $id,
 		string $action,
