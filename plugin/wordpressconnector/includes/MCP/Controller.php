@@ -33,16 +33,29 @@ final class Controller {
 	private Registry $registry;
 	private $authorizationCallback;
 
+	/**
+	 * Initialize the MCP controller dependencies.
+	 *
+	 * @param Runner $runner Value used by this operation.
+	 * @param Registry $registry Connector action registry.
+	 * @param callable $authorizationCallback Value used by this operation.
+	 */
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
 		$this->runner = $runner;
 		$this->registry = $registry;
 		$this->authorizationCallback = $authorizationCallback;
 	}
 
+	/**
+	 * Register the MCP controller actions and handlers.
+	 */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) );
 	}
 
+	/**
+	 * Register the supported REST and MCP routes.
+	 */
 	public function registerRoutes(): void {
 		register_rest_route( self::NAMESPACE, self::ROUTE, array(
 			'methods'             => \WP_REST_Server::CREATABLE,
@@ -51,10 +64,24 @@ final class Controller {
 		) );
 	}
 
+	/**
+	 * Authorize the incoming MCP request.
+	 *
+	 * @param \WP_REST_Request $request Incoming request object.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	public function authorize( \WP_REST_Request $request ) {
 		return call_user_func( $this->authorizationCallback, $request );
 	}
 
+	/**
+	 * Handle the incoming MCP request.
+	 *
+	 * @param \WP_REST_Request $request Incoming request object.
+	 *
+	 * @return \WP_REST_Response Result of the operation.
+	 */
 	public function handle( \WP_REST_Request $request ): \WP_REST_Response {
 		$body    = (string) $request->get_body();
 		$trimmed = ltrim( $body );
@@ -150,6 +177,15 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Check whether modern request in the MCP controller.
+	 *
+	 * @param \WP_REST_Request $request Incoming request object.
+	 * @param string $method Value used by this operation.
+	 * @param array $params Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isModernRequest( \WP_REST_Request $request, string $method, array $params ): bool {
 		if ( 'server/discover' === $method ) {
 			return true;
@@ -161,6 +197,13 @@ final class Controller {
 		return self::MODERN_VERSION === (string) ( $meta['io.modelcontextprotocol/protocolVersion'] ?? '' );
 	}
 
+	/**
+	 * Validate modern envelope in the MCP controller.
+	 *
+	 * @param \WP_REST_Request $request Incoming request object.
+	 * @param string $method Value used by this operation.
+	 * @param array $params Value used by this operation.
+	 */
 	private function validateModernEnvelope( \WP_REST_Request $request, string $method, array $params ): void {
 		if ( self::MODERN_VERSION !== (string) $request->get_header( 'mcp-protocol-version' ) ) {
 			throw new RuntimeException( 'MCP-Protocol-Version header is missing or does not match the request.' );
@@ -185,6 +228,11 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Process the discover result operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function discoverResult(): array {
 		return array(
 			'supportedVersions' => array( self::MODERN_VERSION ),
@@ -195,6 +243,13 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Process the initialize result operation in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function initializeResult( array $params ): array {
 		if ( isset( $params['protocolVersion'] ) && ! is_string( $params['protocolVersion'] ) ) {
 			throw new RuntimeException( 'initialize.protocolVersion must be a string.' );
@@ -221,6 +276,12 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Ensure allowed params in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 * @param array $allowed Value used by this operation.
+	 */
 	private function assertAllowedParams( array $params, array $allowed ): void {
 		$allowed[] = '_meta';
 		foreach ( array_keys( $params ) as $key ) {
@@ -230,6 +291,11 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Ensure unpaged list in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 */
 	private function assertUnpagedList( array $params ): void {
 		$this->assertAllowedParams( $params, array( 'cursor' ) );
 		if ( array_key_exists( 'cursor', $params ) && null !== $params['cursor'] ) {
@@ -237,6 +303,15 @@ final class Controller {
 		}
 	}
 
+	/**
+	 * Process the private cache operation in the MCP controller.
+	 *
+	 * @param array $result Value used by this operation.
+	 * @param bool $modern Value used by this operation.
+	 * @param int $ttlMs Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function privateCache( array $result, bool $modern, int $ttlMs ): array {
 		if ( $modern ) {
 			$result['ttlMs'] = $ttlMs;
@@ -245,6 +320,14 @@ final class Controller {
 		return $result;
 	}
 
+	/**
+	 * List resources in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 * @param bool $modern Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function listResources( array $params, bool $modern ): array {
 		$this->assertUnpagedList( $params );
 		return $this->privateCache( array( 'resources' => array(
@@ -265,6 +348,14 @@ final class Controller {
 		) ), $modern, 300000 );
 	}
 
+	/**
+	 * Read resource in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 * @param bool $modern Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function readResource( array $params, bool $modern ): array {
 		$this->assertAllowedParams( $params, array( 'uri' ) );
 		if ( ! isset( $params['uri'] ) || ! is_string( $params['uri'] ) ) {
@@ -296,6 +387,14 @@ final class Controller {
 		) ), $modern, 60000 );
 	}
 
+	/**
+	 * List prompts in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 * @param bool $modern Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function listPrompts( array $params, bool $modern ): array {
 		$this->assertUnpagedList( $params );
 		return $this->privateCache( array( 'prompts' => array(
@@ -315,6 +414,13 @@ final class Controller {
 		) ), $modern, 300000 );
 	}
 
+	/**
+	 * Retrieve prompt in the MCP controller.
+	 *
+	 * @param array $params Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function getPrompt( array $params ): array {
 		$this->assertAllowedParams( $params, array( 'name', 'arguments' ) );
 		$name = $params['name'] ?? null;
@@ -366,6 +472,13 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * List tools in the MCP controller.
+	 *
+	 * @param bool $modern Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function listTools( bool $modern ): array {
 		$result = array(
 			'tools' => array(
@@ -396,6 +509,14 @@ final class Controller {
 		return $result;
 	}
 
+	/**
+	 * Process the call tool operation in the MCP controller.
+	 *
+	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param array $params Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function callTool( $rpcId, array $params ): array {
 		$allowed = array( 'name', 'arguments', '_meta' );
 		foreach ( array_keys( $params ) as $key ) {
@@ -428,6 +549,15 @@ final class Controller {
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
 	}
 
+	/**
+	 * Process the execute tool operation in the MCP controller.
+	 *
+	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param string $toolName Value used by this operation.
+	 * @param array $arguments Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function executeTool( $rpcId, string $toolName, array $arguments ): array {
 		$allowed = array( 'action', 'payload', 'dry_run', 'confirm', 'request_id', 'expected_fingerprint', 'expected_state_token' );
 		foreach ( array_keys( $arguments ) as $key ) {
@@ -486,6 +616,21 @@ final class Controller {
 		return $this->toolResult( $result, empty( $result['ok'] ) );
 	}
 
+	/**
+	 * Process the run semantic operation in the MCP controller.
+	 *
+	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param string $toolName Value used by this operation.
+	 * @param string $action Value used by this operation.
+	 * @param array $payload Requested action payload.
+	 * @param bool $dryRun Value used by this operation.
+	 * @param bool $confirm Value used by this operation.
+	 * @param string|null $requestId Identifier of the requested object.
+	 * @param string|null $expectedFingerprint Value used by this operation.
+	 * @param string|null $expectedStateToken Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function runSemantic( $rpcId, string $toolName, string $action, array $payload, bool $dryRun, bool $confirm, ?string $requestId, ?string $expectedFingerprint, ?string $expectedStateToken ): array {
 		if ( null === $requestId ) {
 			$requestId = $this->generatedRequestId( $rpcId, $toolName, $action, $payload );
@@ -513,6 +658,15 @@ final class Controller {
 		) );
 	}
 
+	/**
+	 * Process the result response operation in the MCP controller.
+	 *
+	 * @param mixed $id Identifier of the requested object.
+	 * @param array $result Value used by this operation.
+	 * @param bool $modern Value used by this operation.
+	 *
+	 * @return \WP_REST_Response Result of the operation.
+	 */
 	private function resultResponse( $id, array $result, bool $modern ): \WP_REST_Response {
 		if ( $modern ) {
 			if ( ! isset( $result['resultType'] ) ) {
@@ -530,6 +684,16 @@ final class Controller {
 		), 200 );
 	}
 
+	/**
+	 * Process the error response operation in the MCP controller.
+	 *
+	 * @param mixed $id Identifier of the requested object.
+	 * @param int $code Value used by this operation.
+	 * @param string $message Value used by this operation.
+	 * @param int $status Value used by this operation.
+	 *
+	 * @return \WP_REST_Response Result of the operation.
+	 */
 	private function errorResponse( $id, int $code, string $message, int $status ): \WP_REST_Response {
 		return new \WP_REST_Response( array(
 			'jsonrpc' => '2.0',
@@ -538,6 +702,14 @@ final class Controller {
 		), $status );
 	}
 
+	/**
+	 * Process the tool result operation in the MCP controller.
+	 *
+	 * @param array $value Value used by this operation.
+	 * @param bool $isError Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function toolResult( array $value, bool $isError ): array {
 		return array(
 			'content' => array( array(
@@ -549,11 +721,25 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Process the tool error operation in the MCP controller.
+	 *
+	 * @param string $message Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function toolError( string $message ): array {
 		$value = array( 'ok' => false, 'error' => $this->boundedMessage( $message ) );
 		return $this->toolResult( $value, true );
 	}
 
+	/**
+	 * Process the encode for text operation in the MCP controller.
+	 *
+	 * @param array $value Value used by this operation.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function encodeForText( array $value ): string {
 		$json = json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $json ) ) {
@@ -562,6 +748,16 @@ final class Controller {
 		return $json;
 	}
 
+	/**
+	 * Process the generated request id operation in the MCP controller.
+	 *
+	 * @param mixed $rpcId Identifier of the requested object.
+	 * @param string $toolName Value used by this operation.
+	 * @param string $action Value used by this operation.
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function generatedRequestId( $rpcId, string $toolName, string $action, array $payload ): string {
 		$json = json_encode( array(
 			'rpc_id'  => $rpcId,
@@ -576,6 +772,14 @@ final class Controller {
 		return 'mcp-' . substr( hash( 'sha256', $json ), 0, 48 );
 	}
 
+	/**
+	 * Process the optional hash operation in the MCP controller.
+	 *
+	 * @param array $arguments Value used by this operation.
+	 * @param string $key Field or lookup key.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function optionalHash( array $arguments, string $key ) {
 		if ( ! array_key_exists( $key, $arguments ) || null === $arguments[ $key ] ) {
 			return null;
@@ -586,12 +790,23 @@ final class Controller {
 		return $arguments[ $key ];
 	}
 
+	/**
+	 * Ensure no arguments in the MCP controller.
+	 *
+	 * @param array $arguments Value used by this operation.
+	 * @param string $toolName Value used by this operation.
+	 */
 	private function assertNoArguments( array $arguments, string $toolName ): void {
 		if ( array() !== $arguments ) {
 			throw new RuntimeException( $toolName . ' does not accept arguments.' );
 		}
 	}
 
+	/**
+	 * Process the empty object schema operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function emptyObjectSchema(): array {
 		return array(
 			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
@@ -601,6 +816,11 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Process the execute schema operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function executeSchema(): array {
 		return array(
 			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
@@ -631,6 +851,11 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Process the server info operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function serverInfo(): array {
 		return array(
 			'name'        => 'webactueel-wordpress-connector',
@@ -640,12 +865,24 @@ final class Controller {
 		);
 	}
 
+	/**
+	 * Process the instructions operation in the MCP controller.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function instructions(): string {
 		return 'Use wordpress_connector_discover and wordpress_connector_actions before execution. '
 			. 'wordpress_connector_execute defaults to dry-run. Real mutations require confirm=true and a stable explicit request_id, '
 			. 'and remain subject to WordPress capabilities, connector policy, stale-state guards, readback, idempotency and rollback.';
 	}
 
+	/**
+	 * Process the bounded message operation in the MCP controller.
+	 *
+	 * @param string $message Value used by this operation.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function boundedMessage( string $message ): string {
 		$message = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $message );
 		$message = is_string( $message ) ? trim( $message ) : '';

@@ -16,6 +16,11 @@ use Webactueel\WordPressConnector\Security\Policy;
  * Registers and handles Abilities connector actions.
  */
 final class AbilitiesAdapter {
+	/**
+	 * Register the Abilities adapter actions and handlers.
+	 *
+	 * @param Registry $registry Connector action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'wordpress.abilities', array( $this, 'catalog' ), array(
 			'privileged'  => true,
@@ -42,6 +47,14 @@ final class AbilitiesAdapter {
 		) );
 	}
 
+	/**
+	 * List available abilities and their metadata.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function catalog( array $payload, array $context ): array {
 		if ( ! function_exists( 'wp_get_abilities' ) ) {
 			return array(
@@ -109,20 +122,53 @@ final class AbilitiesAdapter {
 		return $response;
 	}
 
+	/**
+	 * Read the requested WordPress ability without modifying state.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function readAbility( array $payload, array $context ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, false );
 		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
 		return $this->executeAndSanitize( $name, $ability, $input, $this->safeAnnotations( $ability ), false );
 	}
 
+	/**
+	 * Execute the authorized WordPress ability.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function executeAbility( array $payload, array $context ): array {
 		return $this->executeMutation( $payload, $context, false );
 	}
 
+	/**
+	 * Execute a provider-approved WordPress ability after authorization.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function executeApprovedAbility( array $payload, array $context ): array {
 		return $this->executeMutation( $payload, $context, true );
 	}
 
+	/**
+	 * Process the execute mutation operation in the Abilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @param bool $approvedProvider Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function executeMutation( array $payload, array $context, bool $approvedProvider ): array {
 		list( $name, $ability ) = $this->resolveAbility( $payload, true, $approvedProvider );
 		$input                  = array_key_exists( 'input', $payload ) ? $payload['input'] : null;
@@ -149,6 +195,15 @@ final class AbilitiesAdapter {
 		return $result;
 	}
 
+	/**
+	 * Resolve ability in the Abilities adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param bool $mutation Value used by this operation.
+	 * @param bool $approvedProvider Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function resolveAbility( array $payload, bool $mutation, bool $approvedProvider = false ): array {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
 			throw new \RuntimeException( 'WordPress Abilities API is not available on this site.' );
@@ -168,6 +223,17 @@ final class AbilitiesAdapter {
 		return array( $name, $ability );
 	}
 
+	/**
+	 * Process the execute and sanitize operation in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param object $ability Value used by this operation.
+	 * @param mixed $input Value used by this operation.
+	 * @param array $annotations Value used by this operation.
+	 * @param bool $mutation Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function executeAndSanitize( string $name, object $ability, $input, array $annotations, bool $mutation ): array {
 		$execution_started               = false;
 		$provider_pre_execution_rejected = false;
@@ -290,6 +356,15 @@ final class AbilitiesAdapter {
 		return $response;
 	}
 
+	/**
+	 * Process the terminal mutation failure operation in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param array $annotations Value used by this operation.
+	 * @param string|null $providerErrorCode Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function terminalMutationFailure( string $name, array $annotations, ?string $providerErrorCode ): array {
 		$safe_code = null;
 		if ( is_string( $providerErrorCode ) && 1 === preg_match( '/^[A-Za-z0-9._-]{1,120}$/D', $providerErrorCode ) ) {
@@ -307,6 +382,16 @@ final class AbilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the redact ability result operation in the Abilities adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $depth Value used by this operation.
+	 * @param \SplObjectStorage $seen Value used by this operation.
+	 * @param array $budget Value updated by reference.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function redactAbilityResult( $value, int $depth, \SplObjectStorage $seen, array &$budget ) {
 		if ( ++$budget['nodes'] > 10000 || $depth > 20 ) throw new \RuntimeException( 'WordPress Ability result exceeds the traversal limit.' );
 		$object = null;
@@ -336,10 +421,24 @@ final class AbilitiesAdapter {
 		return is_scalar( $value ) || null === $value ? $value : null;
 	}
 
+	/**
+	 * Check whether valid name in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isValidName( string $name ): bool {
 		return 1 === preg_match( '/^[a-z0-9][a-z0-9_-]*\/[a-z0-9][a-z0-9_-]*$/D', $name );
 	}
 
+	/**
+	 * Process the catalog namespace operation in the Abilities adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 *
+	 * @return string|null Result of the operation.
+	 */
 	private function catalogNamespace( $value ): ?string {
 		if ( null === $value || '' === $value ) {
 			return null;
@@ -350,6 +449,13 @@ final class AbilitiesAdapter {
 		return $value;
 	}
 
+	/**
+	 * Check whether read eligible in the Abilities adapter.
+	 *
+	 * @param mixed $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isReadEligible( $ability ): bool {
 		if ( ! is_object( $ability ) || ! $this->isExecutionExposed( $ability ) || ! method_exists( $ability, 'execute' ) ) {
 			return false;
@@ -358,6 +464,13 @@ final class AbilitiesAdapter {
 		return true === ( $annotations['readonly'] ?? null ) && false === ( $annotations['destructive'] ?? null );
 	}
 
+	/**
+	 * Check whether mutation eligible in the Abilities adapter.
+	 *
+	 * @param mixed $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isMutationEligible( $ability ): bool {
 		if ( ! is_object( $ability ) || ! $this->isExecutionExposed( $ability ) || ! method_exists( $ability, 'execute' ) ) {
 			return false;
@@ -366,6 +479,14 @@ final class AbilitiesAdapter {
 		return false === ( $annotations['readonly'] ?? null ) && is_bool( $annotations['destructive'] ?? null );
 	}
 
+	/**
+	 * Check whether elementor mutation eligible in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param mixed $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isElementorMutationEligible( string $name, $ability ): bool {
 		if ( ! is_object( $ability ) || ! $this->isElementorAbilityName( $name ) ) {
 			return false;
@@ -431,6 +552,11 @@ final class AbilitiesAdapter {
 			&& $this->pathWithinRoot( $canonical_callback, $canonical_plugin );
 	}
 
+	/**
+	 * Process the approved ability providers operation in the Abilities adapter.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function approvedAbilityProviders(): array {
 		$json = defined( 'WPCONNECTOR_APPROVED_ABILITY_PROVIDERS' )
 			? constant( 'WPCONNECTOR_APPROVED_ABILITY_PROVIDERS' ) : false;
@@ -453,6 +579,13 @@ final class AbilitiesAdapter {
 		return $approved;
 	}
 
+	/**
+	 * Process the callable source file operation in the Abilities adapter.
+	 *
+	 * @param mixed $callback Value used by this operation.
+	 *
+	 * @return string|null Result of the operation.
+	 */
 	private function callableSourceFile( $callback ): ?string {
 		try {
 			if ( $callback instanceof \Closure || is_string( $callback ) ) {
@@ -470,10 +603,24 @@ final class AbilitiesAdapter {
 		return is_string( $file ) && '' !== $file ? $file : null;
 	}
 
+	/**
+	 * Check whether elementor ability name in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isElementorAbilityName( string $name ): bool {
 		return 0 === strpos( $name, 'elementor/' ) || 0 === strpos( $name, 'elementor-pro/' );
 	}
 
+	/**
+	 * Check whether explicit mcp public in the Abilities adapter.
+	 *
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isExplicitMcpPublic( object $ability ): bool {
 		$meta = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
 		return is_array( $meta )
@@ -482,6 +629,14 @@ final class AbilitiesAdapter {
 			&& true === ( $meta['mcp']['public'] ?? false );
 	}
 
+	/**
+	 * Check whether native elementor ability provider in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isNativeElementorAbilityProvider( string $name, object $ability ): bool {
 		$callback = $this->abilityExecuteCallback( $ability );
 		if ( ! is_array( $callback )
@@ -519,6 +674,13 @@ final class AbilitiesAdapter {
 		return false;
 	}
 
+	/**
+	 * Process the ability execute callback operation in the Abilities adapter.
+	 *
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function abilityExecuteCallback( object $ability ) {
 		try {
 			$reflection = new \ReflectionObject( $ability );
@@ -535,6 +697,11 @@ final class AbilitiesAdapter {
 		}
 	}
 
+	/**
+	 * Process the trusted elementor plugin roots operation in the Abilities adapter.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function trustedElementorPluginRoots(): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_option' ) ) {
 			return array();
@@ -569,11 +736,26 @@ final class AbilitiesAdapter {
 		return $roots;
 	}
 
+	/**
+	 * Process the path within root operation in the Abilities adapter.
+	 *
+	 * @param string $file Value used by this operation.
+	 * @param string $root Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function pathWithinRoot( string $file, string $root ): bool {
 		$root = rtrim( $root, DIRECTORY_SEPARATOR );
 		return $file === $root || 0 === strpos( $file, $root . DIRECTORY_SEPARATOR );
 	}
 
+	/**
+	 * Check whether execution exposed in the Abilities adapter.
+	 *
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isExecutionExposed( object $ability ): bool {
 		$meta = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
 		if ( ! is_array( $meta ) ) {
@@ -587,6 +769,13 @@ final class AbilitiesAdapter {
 		return true === ( $meta['public'] ?? false ) || true === ( $meta['show_in_rest'] ?? false );
 	}
 
+	/**
+	 * Check whether exposed in the Abilities adapter.
+	 *
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function isExposed( object $ability ): bool {
 		$meta = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
 		if ( ! is_array( $meta ) ) {
@@ -600,6 +789,13 @@ final class AbilitiesAdapter {
 		return true === ( $meta['public'] ?? false ) || true === ( $meta['show_in_rest'] ?? false );
 	}
 
+	/**
+	 * Process the safe annotations operation in the Abilities adapter.
+	 *
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function safeAnnotations( object $ability ): array {
 		$meta             = method_exists( $ability, 'get_meta' ) ? $ability->get_meta() : array();
 		$annotations      = is_array( $meta ) && isset( $meta['annotations'] ) && is_array( $meta['annotations'] )
@@ -614,6 +810,14 @@ final class AbilitiesAdapter {
 		return $safe_annotations;
 	}
 
+	/**
+	 * Process the descriptor operation in the Abilities adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param object $ability Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function descriptor( string $name, object $ability ): array {
 		$safe_annotations           = $this->safeAnnotations( $ability );
 		$read_eligible              = $this->isReadEligible( $ability );
@@ -645,6 +849,15 @@ final class AbilitiesAdapter {
 		);
 	}
 
+	/**
+	 * Process the catalog positive integer operation in the Abilities adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $max Value used by this operation.
+	 * @param string $field Value used by this operation.
+	 *
+	 * @return int Result of the operation.
+	 */
 	private function catalogPositiveInteger( $value, int $max, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
 			throw new \RuntimeException( $field . ' must be a positive integer.' );
@@ -656,6 +869,14 @@ final class AbilitiesAdapter {
 		return min( $max, (int) $validated );
 	}
 
+	/**
+	 * Process the bounded catalog text operation in the Abilities adapter.
+	 *
+	 * @param string $value Value used by this operation.
+	 * @param int $maxBytes Value used by this operation.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function boundedCatalogText( string $value, int $maxBytes ): string {
 		if ( strlen( $value ) <= $maxBytes ) {
 			return $value;
@@ -670,6 +891,13 @@ final class AbilitiesAdapter {
 		return substr( $value, 0, $cut );
 	}
 
+	/**
+	 * Process the bounded catalog value operation in the Abilities adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function boundedCatalogValue( $value ): array {
 		$budget = array( 'nodes' => 0, 'bytes' => 0 );
 		try {
@@ -685,6 +913,16 @@ final class AbilitiesAdapter {
 		return array( $safe, false );
 	}
 
+	/**
+	 * Process the bounded catalog walk operation in the Abilities adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $depth Value used by this operation.
+	 * @param \SplObjectStorage $seen Value used by this operation.
+	 * @param array $budget Value updated by reference.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function boundedCatalogWalk( $value, int $depth, \SplObjectStorage $seen, array &$budget ) {
 		if ( ++$budget['nodes'] > 2000 || $depth > 12 ) {
 			throw new \RuntimeException( 'catalog value limit' );

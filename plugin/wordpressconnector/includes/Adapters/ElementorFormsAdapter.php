@@ -35,6 +35,11 @@ final class ElementorFormsAdapter {
 		'allowed_child_types',
 	);
 
+	/**
+	 * Register the Elementor forms adapter actions and handlers.
+	 *
+	 * @param Registry $registry Connector action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'elementor.form_capabilities', array( $this, 'capabilities' ), array(
 			'description' => 'Inspect target-runtime Elementor V3 Form and V4 Atomic Form schemas without exposing form defaults or site secrets.',
@@ -48,6 +53,14 @@ final class ElementorFormsAdapter {
 		) );
 	}
 
+	/**
+	 * Report supported Elementor form capabilities.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function capabilities( array $payload, array $context ): array {
 		$environment = $this->environment();
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
@@ -79,6 +92,14 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Inspect the requested state through the Elementor forms adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$post = $this->post( $payload );
 		Policy::assertPostReadable( $post );
@@ -94,6 +115,14 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Create or update the requested Elementor form.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function upsert( array $payload, array $context ): array {
 		$post   = $this->post( $payload );
 		$before = $this->snapshot( (int) $post->ID );
@@ -216,6 +245,11 @@ final class ElementorFormsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the environment operation in the Elementor forms adapter.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function environment(): array {
 		return array(
 			'elementor'     => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : null,
@@ -225,6 +259,14 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Process the classic capabilities operation in the Elementor forms adapter.
+	 *
+	 * @param object $elementor Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function classicCapabilities( object $elementor, array &$warnings ): array {
 		$widgets = $this->managerTypes( $elementor, 'widgets_manager', 'get_widget_types', $warnings, 'classic_widgets' );
 		if ( ! isset( $widgets['form'] ) || ! is_object( $widgets['form'] ) ) {
@@ -253,6 +295,14 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Process the atomic capabilities operation in the Elementor forms adapter.
+	 *
+	 * @param object $elementor Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function atomicCapabilities( object $elementor, array &$warnings ): array {
 		$components = $this->allRegisteredComponents( $elementor, $warnings );
 		$types      = array();
@@ -283,6 +333,14 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Collect control schema in the Elementor forms adapter.
+	 *
+	 * @param object $component Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function collectControlSchema( object $component, array &$warnings ): array {
 		if ( ! method_exists( $component, 'get_controls' ) ) {
 			return array();
@@ -304,6 +362,14 @@ final class ElementorFormsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the control record operation in the Elementor forms adapter.
+	 *
+	 * @param string $name Value used by this operation.
+	 * @param array $control Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function controlRecord( string $name, array $control ): array {
 		$record = array(
 			'name'           => $name,
@@ -331,6 +397,15 @@ final class ElementorFormsAdapter {
 		return $record;
 	}
 
+	/**
+	 * Collect atomic config in the Elementor forms adapter.
+	 *
+	 * @param object $component Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 * @param string $name Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function collectAtomicConfig( object $component, array &$warnings, string $name ): array {
 		if ( ! method_exists( $component, 'get_config' ) ) {
 			return array();
@@ -355,6 +430,17 @@ final class ElementorFormsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Process the manager types operation in the Elementor forms adapter.
+	 *
+	 * @param object $elementor Value used by this operation.
+	 * @param string $managerName Value used by this operation.
+	 * @param string $method Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 * @param string $warningPrefix Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function managerTypes( object $elementor, string $managerName, string $method, array &$warnings, string $warningPrefix ): array {
 		if ( ! isset( $elementor->{$managerName} ) || ! is_object( $elementor->{$managerName} ) || ! method_exists( $elementor->{$managerName}, $method ) ) {
 			return array();
@@ -367,6 +453,14 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Process the all registered components operation in the Elementor forms adapter.
+	 *
+	 * @param object $elementor Value used by this operation.
+	 * @param array $warnings Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function allRegisteredComponents( object $elementor, array &$warnings ): array {
 		$result = array();
 		foreach ( array(
@@ -384,6 +478,13 @@ final class ElementorFormsAdapter {
 		return $result;
 	}
 
+	/**
+	 * Validate form in the Elementor forms adapter.
+	 *
+	 * @param array $form Value used by this operation.
+	 * @param string $family Value used by this operation.
+	 * @param array $capabilities Value used by this operation.
+	 */
 	private function validateForm( array $form, string $family, array $capabilities ): void {
 		$this->assertElementId( $form, 'form' );
 		if ( ! array_key_exists( 'settings', $form ) || ! is_array( $form['settings'] ) ) {
@@ -409,6 +510,12 @@ final class ElementorFormsAdapter {
 		$this->collectElementIds( $form, $ids, 'form' );
 	}
 
+	/**
+	 * Validate classic form in the Elementor forms adapter.
+	 *
+	 * @param array $form Value used by this operation.
+	 * @param array $capabilities Value used by this operation.
+	 */
 	private function validateClassicForm( array $form, array $capabilities ): void {
 		if ( 'widget' !== (string) ( $form['elType'] ?? '' ) || 'form' !== (string) ( $form['widgetType'] ?? '' ) ) {
 			throw new RuntimeException( 'V3 forms must use elType=widget and widgetType=form.' );
@@ -463,6 +570,12 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Validate atomic form in the Elementor forms adapter.
+	 *
+	 * @param array $form Value used by this operation.
+	 * @param array $capabilities Value used by this operation.
+	 */
 	private function validateAtomicForm( array $form, array $capabilities ): void {
 		if ( 'e-form' !== (string) ( $form['elType'] ?? '' ) ) {
 			throw new RuntimeException( 'V4 Atomic forms must use elType=e-form.' );
@@ -488,6 +601,14 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Validate atomic node in the Elementor forms adapter.
+	 *
+	 * @param array $node Value used by this operation.
+	 * @param array $registered Value used by this operation.
+	 * @param array $counts Value updated by reference.
+	 * @param bool $root Value used by this operation.
+	 */
 	private function validateAtomicNode( array $node, array $registered, array &$counts, bool $root ): void {
 		$this->assertElementId( $node, $root ? 'atomic form' : 'atomic form child' );
 		$type = isset( $node['elType'] ) ? (string) $node['elType'] : '';
@@ -523,6 +644,12 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Validate atomic settings in the Elementor forms adapter.
+	 *
+	 * @param array $settings Value used by this operation.
+	 * @param string $type Requested type.
+	 */
 	private function validateAtomicSettings( array $settings, string $type ): void {
 		foreach ( $settings as $key => $value ) {
 			if ( ! is_array( $value ) ) {
@@ -536,6 +663,12 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Ensure message has paragraph in the Elementor forms adapter.
+	 *
+	 * @param array $form Value used by this operation.
+	 * @param string $messageType Requested type.
+	 */
 	private function assertMessageHasParagraph( array $form, string $messageType ): void {
 		$message = $this->findFirstByType( $form, $messageType );
 		if ( ! is_array( $message ) ) {
@@ -549,6 +682,11 @@ final class ElementorFormsAdapter {
 		throw new RuntimeException( $messageType . ' must contain an e-paragraph child.' );
 	}
 
+	/**
+	 * Process the registered type names operation in the Elementor forms adapter.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function registeredTypeNames(): array {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return array();
@@ -557,6 +695,13 @@ final class ElementorFormsAdapter {
 		return array_keys( $this->allRegisteredComponents( \Elementor\Plugin::$instance, $warnings ) );
 	}
 
+	/**
+	 * Process the form family operation in the Elementor forms adapter.
+	 *
+	 * @param array $element Value used by this operation.
+	 *
+	 * @return string|null Result of the operation.
+	 */
 	private function formFamily( array $element ): ?string {
 		$el_type     = isset( $element['elType'] ) ? (string) $element['elType'] : '';
 		$widget_type = isset( $element['widgetType'] ) ? (string) $element['widgetType'] : '';
@@ -569,6 +714,14 @@ final class ElementorFormsAdapter {
 		return null;
 	}
 
+	/**
+	 * Collect forms in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value used by this operation.
+	 * @param array $forms Value updated by reference.
+	 * @param array $path Value used by this operation.
+	 * @param string|null $parentId Identifier of the requested object.
+	 */
 	private function collectForms( array $elements, array &$forms, array $path, ?string $parentId ): void {
 		foreach ( $elements as $index => $element ) {
 			if ( ! is_array( $element ) ) {
@@ -596,6 +749,14 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Find element copy in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value used by this operation.
+	 * @param string $id Identifier of the requested object.
+	 *
+	 * @return array|null Result of the operation.
+	 */
 	private function findElementCopy( array $elements, string $id ): ?array {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
@@ -614,6 +775,15 @@ final class ElementorFormsAdapter {
 		return null;
 	}
 
+	/**
+	 * Process the replace element by id operation in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value updated by reference.
+	 * @param string $id Identifier of the requested object.
+	 * @param array $replacement Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function replaceElementById( array &$elements, string $id, array $replacement ): bool {
 		foreach ( $elements as $index => &$element ) {
 			if ( ! is_array( $element ) ) {
@@ -633,6 +803,16 @@ final class ElementorFormsAdapter {
 		return false;
 	}
 
+	/**
+	 * Process the insert into parent operation in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value updated by reference.
+	 * @param string $parentId Identifier of the requested object.
+	 * @param array $form Value used by this operation.
+	 * @param int|null $position Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function insertIntoParent( array &$elements, string $parentId, array $form, ?int $position ): bool {
 		foreach ( $elements as &$element ) {
 			if ( ! is_array( $element ) ) {
@@ -655,6 +835,13 @@ final class ElementorFormsAdapter {
 		return false;
 	}
 
+	/**
+	 * Process the insert at operation in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value updated by reference.
+	 * @param array $form Value used by this operation.
+	 * @param int|null $position Value used by this operation.
+	 */
 	private function insertAt( array &$elements, array $form, ?int $position ): void {
 		if ( null === $position ) {
 			$elements[] = $form;
@@ -666,6 +853,11 @@ final class ElementorFormsAdapter {
 		array_splice( $elements, $position, 0, array( $form ) );
 	}
 
+	/**
+	 * Ensure unique element ids in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value used by this operation.
+	 */
 	private function assertUniqueElementIds( array $elements ): void {
 		$ids = array();
 		foreach ( $elements as $element ) {
@@ -675,6 +867,13 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Collect element ids in the Elementor forms adapter.
+	 *
+	 * @param array $element Value used by this operation.
+	 * @param array $ids Value updated by reference.
+	 * @param string $context Authorized execution context.
+	 */
 	private function collectElementIds( array $element, array &$ids, string $context ): void {
 		$this->assertElementId( $element, $context );
 		$id = (string) $element['id'];
@@ -691,6 +890,12 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Ensure no nested forms in the Elementor forms adapter.
+	 *
+	 * @param array $elements Value used by this operation.
+	 * @param bool $insideForm Value used by this operation.
+	 */
 	private function assertNoNestedForms( array $elements, bool $insideForm = false ): void {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
@@ -706,6 +911,12 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Ensure element id in the Elementor forms adapter.
+	 *
+	 * @param array $element Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 */
 	private function assertElementId( array $element, string $context ): void {
 		$id = isset( $element['id'] ) ? (string) $element['id'] : '';
 		if ( '' === $id || ! preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $id ) ) {
@@ -713,6 +924,14 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Find first by type in the Elementor forms adapter.
+	 *
+	 * @param array $node Value used by this operation.
+	 * @param string $type Requested type.
+	 *
+	 * @return array|null Result of the operation.
+	 */
 	private function findFirstByType( array $node, string $type ): ?array {
 		if ( isset( $node['elType'] ) && $type === (string) $node['elType'] ) {
 			return $node;
@@ -730,6 +949,13 @@ final class ElementorFormsAdapter {
 		return null;
 	}
 
+	/**
+	 * Process the post operation in the Elementor forms adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return \WP_Post Result of the operation.
+	 */
 	private function post( array $payload ): \WP_Post {
 		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
 		if ( ! $post instanceof \WP_Post ) {
@@ -739,6 +965,13 @@ final class ElementorFormsAdapter {
 		return $post;
 	}
 
+	/**
+	 * Process the snapshot operation in the Elementor forms adapter.
+	 *
+	 * @param int $postId Identifier of the requested object.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function snapshot( int $postId ): array {
 		$document = $this->documentOrNull( $postId );
 		if ( $document ) {
@@ -759,6 +992,13 @@ final class ElementorFormsAdapter {
 		);
 	}
 
+	/**
+	 * Process the document or null operation in the Elementor forms adapter.
+	 *
+	 * @param int $postId Identifier of the requested object.
+	 *
+	 * @return object|null Result of the operation.
+	 */
 	private function documentOrNull( int $postId ): ?object {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return null;
@@ -776,6 +1016,13 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Process the document operation in the Elementor forms adapter.
+	 *
+	 * @param int $postId Identifier of the requested object.
+	 *
+	 * @return object Result of the operation.
+	 */
 	private function document( int $postId ): object {
 		$document = $this->documentOrNull( $postId );
 		if ( ! $document || ! method_exists( $document, 'save' ) ) {
@@ -784,6 +1031,13 @@ final class ElementorFormsAdapter {
 		return $document;
 	}
 
+	/**
+	 * Process the save document operation in the Elementor forms adapter.
+	 *
+	 * @param int $postId Identifier of the requested object.
+	 * @param array $data Value used by this operation.
+	 * @param array $pageSettings Value used by this operation.
+	 */
 	private function saveDocument( int $postId, array $data, array $pageSettings ): void {
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $postId ) ) {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
@@ -800,6 +1054,11 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Restore snapshot in the Elementor forms adapter.
+	 *
+	 * @param array $snapshot Value used by this operation.
+	 */
 	private function restoreSnapshot( array $snapshot ): void {
 		$this->saveDocument( (int) $snapshot['post_id'], $snapshot['data'], $snapshot['page_settings'] );
 		$this->clearCache();
@@ -810,6 +1069,9 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Process the clear cache operation in the Elementor forms adapter.
+	 */
 	private function clearCache(): void {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return;
@@ -820,6 +1082,13 @@ final class ElementorFormsAdapter {
 		}
 	}
 
+	/**
+	 * Normalize meta array in the Elementor forms adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeMetaArray( $value ): array {
 		if ( is_array( $value ) ) {
 			return $value;
@@ -831,6 +1100,13 @@ final class ElementorFormsAdapter {
 		return array();
 	}
 
+	/**
+	 * Normalize json value in the Elementor forms adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function normalizeJsonValue( $value ) {
 		$encoded = wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( false === $encoded ) {
@@ -840,6 +1116,13 @@ final class ElementorFormsAdapter {
 		return JSON_ERROR_NONE === json_last_error() ? $decoded : null;
 	}
 
+	/**
+	 * Process the redact secrets operation in the Elementor forms adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function redactSecrets( $value ) {
 		if ( ! is_array( $value ) ) {
 			return $value;

@@ -18,6 +18,11 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  * Registers and handles Acf connector actions.
  */
 final class AcfAdapter {
+	/**
+	 * Register the ACF adapter actions and handlers.
+	 *
+	 * @param Registry $registry Connector action registry.
+	 */
 	public function register( Registry $registry ): void {
 		$registry->register( 'acf.get', array( $this, 'get' ), array(
 			'privileged'  => true,
@@ -79,6 +84,13 @@ final class AcfAdapter {
 		) );
 	}
 
+	/**
+	 * Retrieve values for the requested target through the ACF adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function get( array $payload ): array {
 		$this->assertAcf();
 		$target = $this->target( $payload );
@@ -103,6 +115,14 @@ final class AcfAdapter {
 		);
 	}
 
+	/**
+	 * Update the requested values through the ACF adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function update( array $payload, array $context ): array {
 		$this->assertAcf();
 		$target = $this->target( $payload );
@@ -144,6 +164,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Delete the requested values through the ACF adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function delete( array $payload, array $context ): array {
 		$this->assertAcf();
 		$target = $this->target( $payload );
@@ -168,6 +196,13 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * List the available ACF field groups and their fields.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function fieldGroups( array $payload ): array {
 		$this->assertAcfSchema();
 		$args = array();
@@ -209,6 +244,14 @@ final class AcfAdapter {
 		return array( 'field_groups' => $result );
 	}
 
+	/**
+	 * Ensure the requested ACF text fields exist.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function ensureTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
 		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
@@ -344,6 +387,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Remove matching connector-managed ACF text fields.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function removeTextFields( array $payload, array $context ): array {
 		$this->assertAcfSchema();
 		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
@@ -396,6 +447,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Ensure the requested complex ACF fields exist.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function ensureFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
@@ -519,6 +578,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Remove matching connector-managed complex ACF fields.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function removeFields( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		$postId    = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
@@ -591,6 +658,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Create an ACF field group using the validated schema.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function createFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		foreach ( array_keys( $payload ) as $key ) {
@@ -657,6 +732,14 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Delete a matching connector-managed ACF field group.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	public function deleteFieldGroup( array $payload, array $context ): array {
 		$this->assertAcfComplexSchema();
 		foreach ( array_keys( $payload ) as $key ) {
@@ -708,12 +791,18 @@ final class AcfAdapter {
 		return $result;
 	}
 
+	/**
+	 * Ensure acf in the ACF adapter.
+	 */
 	private function assertAcf(): void {
 		if ( ! function_exists( 'get_fields' ) || ! function_exists( 'update_field' ) ) {
 			throw new RuntimeException( 'ACF is not active.' );
 		}
 	}
 
+	/**
+	 * Ensure acf schema in the ACF adapter.
+	 */
 	private function assertAcfSchema(): void {
 		$this->assertAcf();
 		foreach ( array( 'acf_get_field_groups', 'acf_get_fields', 'acf_get_field_group', 'acf_get_field', 'acf_update_field', 'acf_delete_field' ) as $function ) {
@@ -723,6 +812,12 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Ensure group applies to post in the ACF adapter.
+	 *
+	 * @param string $groupKey Field or lookup key.
+	 * @param int $postId Identifier of the requested object.
+	 */
 	private function assertGroupAppliesToPost( string $groupKey, int $postId ): void {
 		$post = get_post( $postId );
 		if ( ! $post instanceof \WP_Post ) {
@@ -747,6 +842,13 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Process the group id operation in the ACF adapter.
+	 *
+	 * @param string $groupKey Field or lookup key.
+	 *
+	 * @return int Result of the operation.
+	 */
 	private function groupId( string $groupKey ): int {
 		$group   = acf_get_field_group( $groupKey );
 		$groupId = is_array( $group ) && isset( $group['ID'] ) ? (int) $group['ID'] : 0;
@@ -756,6 +858,13 @@ final class AcfAdapter {
 		return $groupId;
 	}
 
+	/**
+	 * Process the group fields operation in the ACF adapter.
+	 *
+	 * @param string $groupKey Field or lookup key.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function groupFields( string $groupKey ): array {
 		$group = acf_get_field_group( $groupKey );
 		if ( ! is_array( $group ) ) {
@@ -765,6 +874,13 @@ final class AcfAdapter {
 		return is_array( $fields ) ? $fields : array();
 	}
 
+	/**
+	 * Normalize requested text fields in the ACF adapter.
+	 *
+	 * @param array $requested Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeRequestedTextFields( array $requested ): array {
 		$normalized = array();
 		$keys       = array();
@@ -802,6 +918,13 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Process the field summary operation in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function fieldSummary( array $field ): array {
 		return array(
 			'key'      => isset( $field['key'] ) ? (string) $field['key'] : '',
@@ -813,6 +936,15 @@ final class AcfAdapter {
 		);
 	}
 
+	/**
+	 * Process the field matches definition operation in the ACF adapter.
+	 *
+	 * @param array $summary Value used by this operation.
+	 * @param array $definition Value used by this operation.
+	 * @param int $groupId Identifier of the requested object.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function fieldMatchesDefinition( array $summary, array $definition, int $groupId ): bool {
 		return (string) ( $summary['key'] ?? '' ) === (string) $definition['key']
  && (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
@@ -822,6 +954,9 @@ final class AcfAdapter {
  && empty( $summary['required'] );
 	}
 
+	/**
+	 * Ensure acf complex schema in the ACF adapter.
+	 */
 	private function assertAcfComplexSchema(): void {
 		$this->assertAcfSchema();
 		foreach ( array(
@@ -837,6 +972,13 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Normalize field group in the ACF adapter.
+	 *
+	 * @param array $group Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeFieldGroup( array $group ): array {
 		$allowed = array(
 			'key', 'title', 'location', 'description', 'position', 'style',
@@ -914,6 +1056,13 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Normalize location rules in the ACF adapter.
+	 *
+	 * @param array $location Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeLocationRules( array $location ): array {
 		if ( ! $location || count( $location ) > 8 ) {
 			throw new RuntimeException( 'ACF field-group location requires 1-8 OR groups.' );
@@ -963,6 +1112,16 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Normalize schema fields in the ACF adapter.
+	 *
+	 * @param array $requested Value used by this operation.
+	 * @param int $depth Value used by this operation.
+	 * @param int $total Value updated by reference.
+	 * @param array $keys Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeSchemaFields( array $requested, int $depth, int &$total, array &$keys ): array {
 		if ( $depth > 3 ) {
 			throw new RuntimeException( 'ACF nested field depth exceeds the maximum of 3.' );
@@ -990,6 +1149,16 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Normalize schema field in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 * @param int $depth Value used by this operation.
+	 * @param int $total Value updated by reference.
+	 * @param array $keys Value updated by reference.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeSchemaField( array $field, int $depth, int &$total, array &$keys ): array {
 		$type            = isset( $field['type'] ) ? (string) $field['type'] : '';
 		$type_properties = array(
@@ -1058,6 +1227,14 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Normalize scalar schema properties in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 * @param string $type Requested type.
+	 * @param string $key Field or lookup key.
+	 * @param array $normalized Value updated by reference.
+	 */
 	private function normalizeScalarSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( in_array( $type, array( 'text', 'textarea', 'email', 'url', 'number' ), true ) ) {
 			foreach ( array( 'default_value', 'placeholder', 'prepend', 'append' ) as $property ) {
@@ -1095,6 +1272,14 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Normalize image schema properties in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 * @param string $type Requested type.
+	 * @param string $key Field or lookup key.
+	 * @param array $normalized Value updated by reference.
+	 */
 	private function normalizeImageSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( 'image' === $type ) {
 			if ( array_key_exists( 'return_format', $field ) ) {
@@ -1130,6 +1315,14 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Normalize relationship schema properties in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 * @param string $type Requested type.
+	 * @param string $key Field or lookup key.
+	 * @param array $normalized Value updated by reference.
+	 */
 	private function normalizeRelationshipSchemaProperties( array $field, string $type, string $key, array &$normalized ): void {
 		if ( 'relationship' === $type ) {
 			if ( array_key_exists( 'post_type', $field ) ) {
@@ -1164,6 +1357,17 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Normalize nested schema properties in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 * @param string $type Requested type.
+	 * @param string $key Field or lookup key.
+	 * @param int $depth Value used by this operation.
+	 * @param int $total Value updated by reference.
+	 * @param array $keys Value updated by reference.
+	 * @param array $normalized Value updated by reference.
+	 */
 	private function normalizeNestedSchemaProperties( array $field, string $type, string $key, int $depth, int &$total, array &$keys, array &$normalized ): void {
 		if ( in_array( $type, array( 'group', 'repeater' ), true ) ) {
 			$sub_fields = isset( $field['sub_fields'] ) && is_array( $field['sub_fields'] ) ? array_values( $field['sub_fields'] ) : array();
@@ -1204,6 +1408,13 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Normalize wrapper in the ACF adapter.
+	 *
+	 * @param mixed $wrapper Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeWrapper( $wrapper ): array {
 		if ( ! is_array( $wrapper ) ) {
 			throw new RuntimeException( 'ACF field wrapper must be an object.' );
@@ -1228,6 +1439,13 @@ final class AcfAdapter {
 		return array( 'width' => $width, 'class' => $class, 'id' => $id );
 	}
 
+	/**
+	 * Normalize conditional logic in the ACF adapter.
+	 *
+	 * @param mixed $logic Value used by this operation.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function normalizeConditionalLogic( $logic ) {
 		if ( false === $logic || 0 === $logic || '0' === $logic || null === $logic ) {
 			return false;
@@ -1266,6 +1484,14 @@ final class AcfAdapter {
 		return $normalized;
 	}
 
+	/**
+	 * Create field tree in the ACF adapter.
+	 *
+	 * @param array $definition Value used by this operation.
+	 * @param int $parentId Identifier of the requested object.
+	 * @param int $menuOrder Value used by this operation.
+	 * @param array $createdNodes Value updated by reference.
+	 */
 	private function createFieldTree( array $definition, int $parentId, int $menuOrder, array &$createdNodes ): void {
 		$children = isset( $definition['sub_fields'] ) && is_array( $definition['sub_fields'] ) ? $definition['sub_fields'] : array();
 		$field    = $definition;
@@ -1290,6 +1516,13 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Clean up created field nodes in the ACF adapter.
+	 *
+	 * @param array $createdNodes Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function cleanupCreatedFieldNodes( array $createdNodes ): array {
 		$failures = array();
 		foreach ( array_reverse( $createdNodes ) as $node ) {
@@ -1319,6 +1552,11 @@ final class AcfAdapter {
 		return array_values( array_unique( $failures ) );
 	}
 
+	/**
+	 * Delete field tree by key in the ACF adapter.
+	 *
+	 * @param string $key Field or lookup key.
+	 */
 	private function deleteFieldTreeByKey( string $key ): void {
 		$field = acf_get_field( $key );
 		if ( ! is_array( $field ) ) {
@@ -1338,6 +1576,13 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Process the hydrate field tree operation in the ACF adapter.
+	 *
+	 * @param array $field Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function hydrateFieldTree( array $field ): array {
 		$tree     = $field;
 		$children = acf_get_fields( $field );
@@ -1351,6 +1596,13 @@ final class AcfAdapter {
 		return $tree;
 	}
 
+	/**
+	 * Process the field group snapshot operation in the ACF adapter.
+	 *
+	 * @param string $groupKey Field or lookup key.
+	 *
+	 * @return array|null Result of the operation.
+	 */
 	private function fieldGroupSnapshot( string $groupKey ): ?array {
 		$group = acf_get_field_group( $groupKey );
 		if ( ! is_array( $group ) ) {
@@ -1366,6 +1618,11 @@ final class AcfAdapter {
 		return array( 'group' => $group, 'fields' => $trees );
 	}
 
+	/**
+	 * Ensure field tree keys available in the ACF adapter.
+	 *
+	 * @param array $definition Value used by this operation.
+	 */
 	private function assertFieldTreeKeysAvailable( array $definition ): void {
 		$key = (string) $definition['key'];
 		if ( is_array( acf_get_field( $key ) ) ) {
@@ -1376,6 +1633,14 @@ final class AcfAdapter {
 		}
 	}
 
+	/**
+	 * Process the schema contains operation in the ACF adapter.
+	 *
+	 * @param mixed $expected Value used by this operation.
+	 * @param mixed $actual Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function schemaContains( $expected, $actual ): bool {
 		if ( is_array( $expected ) ) {
 			if ( ! is_array( $actual ) ) {
@@ -1413,6 +1678,16 @@ final class AcfAdapter {
 		return $expected === $actual;
 	}
 
+	/**
+	 * Process the bounded text operation in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $maxLength Value used by this operation.
+	 * @param bool $allowNewlines Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function boundedText( $value, int $maxLength, bool $allowNewlines, string $context ): string {
 		if ( ! is_string( $value ) && ! is_int( $value ) && ! is_float( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be text.' );
@@ -1424,11 +1699,27 @@ final class AcfAdapter {
 		return $text;
 	}
 
+	/**
+	 * Check whether invalid control in the ACF adapter.
+	 *
+	 * @param string $value Value used by this operation.
+	 * @param bool $allowNewlines Value used by this operation.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function hasInvalidControl( string $value, bool $allowNewlines ): bool {
 		$pattern = $allowNewlines ? '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/' : '/[\x00-\x1F\x7F]/';
 		return (bool) preg_match( $pattern, $value );
 	}
 
+	/**
+	 * Process the require boolean operation in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return bool Result of the operation.
+	 */
 	private function requireBoolean( $value, string $context ): bool {
 		if ( ! is_bool( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be boolean.' );
@@ -1436,6 +1727,16 @@ final class AcfAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the bounded integer operation in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $min Value used by this operation.
+	 * @param int $max Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return int Result of the operation.
+	 */
 	private function boundedInteger( $value, int $min, int $max, string $context ): int {
 		if ( ! is_int( $value ) || $value < $min || $value > $max ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be an integer between ' . $min . ' and ' . $max . '.' );
@@ -1443,6 +1744,16 @@ final class AcfAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the bounded number operation in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param float $min Value used by this operation.
+	 * @param float $max Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function boundedNumber( $value, float $min, float $max, string $context ) {
 		if ( ! is_int( $value ) && ! is_float( $value ) ) {
 			throw new RuntimeException( 'ACF ' . $context . ' must be numeric.' );
@@ -1454,6 +1765,15 @@ final class AcfAdapter {
 		return $value;
 	}
 
+	/**
+	 * Process the enum value operation in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param array $allowed Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return string Result of the operation.
+	 */
 	private function enumValue( $value, array $allowed, string $context ): string {
 		$value = (string) $value;
 		if ( ! in_array( $value, $allowed, true ) ) {
@@ -1462,6 +1782,15 @@ final class AcfAdapter {
 		return $value;
 	}
 
+	/**
+	 * Normalize key list in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $maxItems Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeKeyList( $value, int $maxItems, string $context ): array {
 		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
 			throw new RuntimeException( 'Invalid ACF list for ' . $context . '.' );
@@ -1478,6 +1807,16 @@ final class AcfAdapter {
 		return array_values( array_unique( $result ) );
 	}
 
+	/**
+	 * Normalize bounded string list in the ACF adapter.
+	 *
+	 * @param mixed $value Value used by this operation.
+	 * @param int $maxItems Value used by this operation.
+	 * @param int $maxLength Value used by this operation.
+	 * @param string $context Authorized execution context.
+	 *
+	 * @return array Result of the operation.
+	 */
 	private function normalizeBoundedStringList( $value, int $maxItems, int $maxLength, string $context ): array {
 		if ( ! is_array( $value ) || count( $value ) > $maxItems ) {
 			throw new RuntimeException( 'Invalid ACF list for ' . $context . '.' );
@@ -1493,6 +1832,13 @@ final class AcfAdapter {
 		return array_values( array_unique( $result ) );
 	}
 
+	/**
+	 * Process the target operation in the ACF adapter.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return mixed Result of the operation.
+	 */
 	private function target( array $payload ) {
 		if ( array_key_exists( 'target', $payload ) ) {
 			$target = $payload['target'];
