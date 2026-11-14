@@ -23,11 +23,32 @@ final class Policy {
 	);
 
 	private const BLOCKED_OPTION_KEYS = array(
-		'active_plugins', 'active_sitewide_plugins', 'allowedthemes', 'cron', 'current_theme', 'default_role', 'home', 'recently_activated', 'rewrite_rules', 'site_admins', 'siteurl', 'stylesheet', 'template', 'uninstall_plugins', 'upload_path', 'upload_url_path', 'users_can_register', 'wp_user_roles',
+		'active_plugins',
+		'active_sitewide_plugins',
+		'allowedthemes',
+		'cron',
+		'current_theme',
+		'default_role',
+		'home',
+		'recently_activated',
+		'rewrite_rules',
+		'site_admins',
+		'siteurl',
+		'stylesheet',
+		'template',
+		'uninstall_plugins',
+		'upload_path',
+		'upload_url_path',
+		'users_can_register',
+		'wp_user_roles',
 	);
 
 	private const AUTO_ENABLED_FLAGS = array(
-		'WPCONNECTOR_ALLOW_WRITES', 'WPCONNECTOR_ALLOW_PRIVILEGED', 'WPCONNECTOR_ALLOW_SENSITIVE', 'WPCONNECTOR_ALLOW_SYSTEM_UPDATES', 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES',
+		'WPCONNECTOR_ALLOW_WRITES',
+		'WPCONNECTOR_ALLOW_PRIVILEGED',
+		'WPCONNECTOR_ALLOW_SENSITIVE',
+		'WPCONNECTOR_ALLOW_SYSTEM_UPDATES',
+		'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES',
 	);
 
 	private const PUBLIC_REPOSITORY_ACTIONS = array(

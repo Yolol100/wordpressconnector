@@ -16,7 +16,19 @@ use RuntimeException;
  */
 final class FilesystemPolicy {
 	private const TEXT_EXTENSIONS = array(
-		'css', 'htm', 'html', 'inc', 'js', 'json', 'md', 'mjs', 'php', 'txt', 'xml', 'yaml', 'yml',
+		'css',
+		'htm',
+		'html',
+		'inc',
+		'js',
+		'json',
+		'md',
+		'mjs',
+		'php',
+		'txt',
+		'xml',
+		'yaml',
+		'yml',
 	);
 
 	private const WRITE_PREFIXES = array(
@@ -133,9 +145,15 @@ final class FilesystemPolicy {
 		}
 		$base = strtolower( (string) basename( $path ) );
 		if ( in_array( $base, array(
-			'style.css', 'theme.json', 'block.json', 'package.json',
-			'package-lock.json', 'composer.json', 'composer.lock',
-			'readme.txt', 'license.txt',
+			'style.css',
+			'theme.json',
+			'block.json',
+			'package.json',
+			'package-lock.json',
+			'composer.json',
+			'composer.lock',
+			'readme.txt',
+			'license.txt',
 		), true ) ) {
 			throw new RuntimeException( 'Package and theme identity files require reviewed deployment rather than direct create/delete.' );
 		}
