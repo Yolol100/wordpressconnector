@@ -69,11 +69,11 @@ final class ElementorAdapter {
 
 		try {
 			$this->prepareDocumentMeta( (int) $id, $payload );
-			$saved_elements = $this->saveDocumentViaApi( (int) $id, $data, $pageSettings );
+			$savedElements = $this->saveDocumentViaApi( (int) $id, $data, $pageSettings );
 			$this->writeSupplementalMeta( (int) $id, $payload );
 			$this->clearCache();
 			$after = $this->snapshot( (int) $id );
-			$this->assertDocumentReadback( $after, $saved_elements, $pageSettings );
+			$this->assertDocumentReadback( $after, $savedElements, $pageSettings );
 		} catch ( Throwable $error ) {
 			wp_delete_post( (int) $id, true );
 			throw $error;
@@ -487,11 +487,11 @@ final class ElementorAdapter {
 
 	private function applyExistingDocumentMutation( int $postId, array $payload, array $data, array $pageSettings, array $before ): array {
 		try {
-			$saved_elements = $this->saveDocumentViaApi( $postId, $data, $pageSettings );
+			$savedElements = $this->saveDocumentViaApi( $postId, $data, $pageSettings );
 			$this->writeSupplementalMeta( $postId, $payload );
 			$this->clearCache();
 			$after = $this->snapshot( $postId );
-			$this->assertDocumentReadback( $after, $saved_elements, $pageSettings );
+			$this->assertDocumentReadback( $after, $savedElements, $pageSettings );
 			return $after;
 		} catch ( Throwable $error ) {
 			try {
