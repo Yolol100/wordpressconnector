@@ -462,8 +462,7 @@ final class CoreAdapter {
 	 * @param array $payload Validated action payload.
 	 * @param array $context Authorized execution context.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
-	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public function postLiteralReplace( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'find', 'replace', 'expected_matches' ) ) ) {

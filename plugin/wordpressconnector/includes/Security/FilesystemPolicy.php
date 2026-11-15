@@ -139,8 +139,7 @@ final class FilesystemPolicy {
 	 *
 	 * @param string $path Filesystem path to validate.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
-	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public static function assertLifecycleText( string $path ): string {
 		$path      = self::assertWritableText( $path );

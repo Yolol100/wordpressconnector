@@ -238,8 +238,7 @@ final class YoastFeatureSettingsAdapter {
 	 * @param string $group Provider settings group.
 	 * @param array  $fields Fields to validate.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
-	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	private function assertProviderSupportsFields( string $group, array $fields ): void {
 		if ( ! class_exists( 'WPSEO_Options' ) || ! method_exists( 'WPSEO_Options', 'get_option_instance' ) ) {
