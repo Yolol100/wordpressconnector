@@ -1401,7 +1401,7 @@ final class SystemAdapter {
 	 */
 	public function themeDelete( array $payload, array $context ): array {
 		$stylesheet = isset( $payload['stylesheet'] ) ? sanitize_text_field( (string) $payload['stylesheet'] ) : '';
-		if ( $stylesheet === get_stylesheet() || $stylesheet === get_template() ) {
+		if ( get_stylesheet() === $stylesheet || get_template() === $stylesheet ) {
 			throw new RuntimeException( 'Refusing to delete the active theme or its parent.' );
 		}
 		$theme = wp_get_theme( $stylesheet );
@@ -1835,7 +1835,7 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
 		$id = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		if ( $id === get_main_site_id() ) {
+		if ( get_main_site_id() === $id ) {
 			throw new RuntimeException( 'Refusing to delete the main site.' );
 		}
 		$site = get_site( $id );

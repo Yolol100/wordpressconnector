@@ -172,7 +172,7 @@ final class CodeSnippetsAdapter {
 			return;
 		}
 		$state = self::catalogState( $snippet );
-		if ( $state['id'] <= 0 || $state['name'] !== self::CATALOG_NAME ||
+		if ( $state['id'] <= 0 || self::CATALOG_NAME !== $state['name'] ||
 			'global' !== $state['scope'] || 'php' !== $state['type'] ||
 			$state['network'] || $state['trashed'] || $state['locked'] ||
 			! hash_equals( hash( 'sha256', $expected_code ), $state['code_sha256'] ) ) {

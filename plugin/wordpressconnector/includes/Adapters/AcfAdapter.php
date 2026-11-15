@@ -1110,7 +1110,7 @@ final class AcfAdapter {
 		&& (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
 		&& (string) ( $summary['label'] ?? '' ) === (string) $definition['label']
 		&& 'text' === (string) ( $summary['type'] ?? '' )
-		&& (string) $groupId === (string) ( $summary['parent'] ?? '' )
+		&& (string) ( $summary['parent'] ?? '' ) === (string) $groupId
 		&& empty( $summary['required'] );
 	}
 

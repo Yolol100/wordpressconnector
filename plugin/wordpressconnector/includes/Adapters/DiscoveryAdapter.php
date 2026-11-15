@@ -233,15 +233,15 @@ final class DiscoveryAdapter {
 			}
 			$route_namespace = null;
 			foreach ( $namespaces as $name ) {
-				if ( $route === '/' . $name || 0 === strpos( $route, '/' . $name . '/' ) ) {
+				if ( '/' . $name === $route || 0 === strpos( $route, '/' . $name . '/' ) ) {
 					$route_namespace = $name;
 					break;
 				}
 			}
 			if ( null === $route_namespace ||
 				( null !== $namespace_filter && $namespace_filter !== $route_namespace ) ||
-				$route === '/' . $route_namespace ||
-				$route === '/' . $route_namespace . '/' ) {
+				'/' . $route_namespace === $route ||
+				'/' . $route_namespace . '/' === $route ) {
 				// WordPress generates namespace index routes; they are not plugin actions.
 				continue;
 			}

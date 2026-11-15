@@ -236,7 +236,7 @@ final class YoastFeatureSettingsAdapter {
 	 * recognizes their exact option keys. Never create phantom settings.
 	 *
 	 * @param string $group Provider settings group.
-	 * @param array $fields Fields to validate.
+	 * @param array  $fields Fields to validate.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 */

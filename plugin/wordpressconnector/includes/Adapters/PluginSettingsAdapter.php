@@ -531,7 +531,7 @@ final class PluginSettingsAdapter {
 				'english_source'  => ! isset( $raw['default_language'] ) ? 'unknown'
 					: ( 'en' === $raw['default_language'] ? 'matches' : 'mismatch' ),
 				'nl_en_languages' => ! is_array( $languages ) || ! is_array( $fallback ) ? 'unknown'
-					: ( $languages === array( 'nl', 'en' ) && $fallback === array( 'nl', 'en' ) ? 'matches' : 'mismatch' ),
+					: ( array( 'nl', 'en' ) === $languages && array( 'nl', 'en' ) === $fallback ? 'matches' : 'mismatch' ),
 			);
 		}
 		if ( 'yoast' === $id || 'yoast_premium' === $id ) {

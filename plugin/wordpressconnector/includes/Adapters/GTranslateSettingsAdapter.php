@@ -117,6 +117,7 @@ final class GTranslateSettingsAdapter {
 			if ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $new ) {
 				try {
 					update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {
+						// A failed best-effort restore is reported by the guarded readback failure below.
 					}
 					throw new RuntimeException( 'GTranslate did not retain requested settings; previous state restoration attempted.' );
 			}
@@ -126,6 +127,7 @@ final class GTranslateSettingsAdapter {
 				&& ( ! array_key_exists( $key, $actual ) || $actual[ $key ] !== $value ) ) {
 				try {
 					update_option( 'GTranslate', $raw ); } catch ( Throwable $ignored ) {
+						// A failed best-effort restore is reported by the guarded readback failure below.
 					}
 					throw new RuntimeException( 'GTranslate modified unrelated settings; previous state restoration attempted.' );
 			}
