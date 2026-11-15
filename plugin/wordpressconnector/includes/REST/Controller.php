@@ -57,21 +57,27 @@ final class Controller {
 	 * Process the register routes operation in the Controller component.
 	 */
 	public function registerRoutes(): void {
-		register_rest_route( self::NAMESPACE, '/presence',
+		register_rest_route(
+			self::NAMESPACE,
+			'/presence',
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'presence' ),
 				'permission_callback' => array( $this, 'allowPresence' ),
 			)
 		);
-		register_rest_route( self::NAMESPACE, '/health',
+		register_rest_route(
+			self::NAMESPACE,
+			'/health',
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'health' ),
 				'permission_callback' => array( $this, 'authorize' ),
 			)
 		);
-		register_rest_route( self::NAMESPACE, '/assets',
+		register_rest_route(
+			self::NAMESPACE,
+			'/assets',
 			array(
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'uploadAsset' ),
@@ -90,7 +96,9 @@ final class Controller {
 				),
 			)
 		);
-		register_rest_route( self::NAMESPACE, '/execute',
+		register_rest_route(
+			self::NAMESPACE,
+			'/execute',
 			array(
 				'methods'             => \WP_REST_Server::CREATABLE,
 				'callback'            => array( $this, 'execute' ),

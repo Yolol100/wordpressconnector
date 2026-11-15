@@ -46,7 +46,7 @@ final class Controller {
 	 *
 	 * @var mixed
 	 */
-	private $authorizationCallback;
+	private $authorization_callback;
 
 	/**
 	 * Initialize the MCP controller dependencies.
@@ -58,7 +58,7 @@ final class Controller {
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
 		$this->runner                = $runner;
 		$this->registry              = $registry;
-		$this->authorizationCallback = $authorizationCallback;
+		$this->authorization_callback = $authorizationCallback;
 	}
 
 	/**
@@ -91,7 +91,7 @@ final class Controller {
 	 * @return mixed Result of the operation.
 	 */
 	public function authorize( \WP_REST_Request $request ) {
-		return call_user_func( $this->authorizationCallback, $request );
+		return call_user_func( $this->authorization_callback, $request );
 	}
 
 	/**

@@ -27,6 +27,7 @@ final class ProcessedStore {
 	 * @param string $action Registered connector action.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the request reservation cannot be created.
 	 */
 	public function begin( string $requestId, string $fingerprint, string $action ): void {
 		$key    = self::key( $requestId );
