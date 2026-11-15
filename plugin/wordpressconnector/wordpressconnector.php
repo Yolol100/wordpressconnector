@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
@@ -11,7 +10,10 @@
  * License: GPL-2.0-or-later
  * Text Domain: wordpressconnector
  * Update URI: https://github.com/Yolol100/wordpressconnector
+ *
+ * @package WordPressConnector
  */
+
 declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector;
@@ -85,7 +87,7 @@ foreach ( $wpconnector_files as $wpconnector_file ) {
 Plugin::boot();
 register_activation_hook(
 	WPCONNECTOR_FILE,
-	static function ( $networkWide = false ): void {
-		\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $networkWide );
+	static function ( $network_wide = false ): void {
+		\Webactueel\WordPressConnector\Security\SitePairing::approveOnActivation( (bool) $network_wide );
 	}
 );

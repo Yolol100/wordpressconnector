@@ -27,7 +27,11 @@ final class ConnectorUpdateAdapter {
 	private const MAX_UNCOMPRESSED_BYTES   = 104857600;
 	private const MAX_ENTRIES              = 2500;
 	private const NOTICE_REFRESH_TRANSIENT = 'wpconnector_github_update_notice_v1';
-	// Only the already verified local ZIP for the current guarded REST self-update.
+	/**
+	 * Verified local ZIP path for the currently guarded REST self-update.
+	 *
+	 * @var string|null
+	 */
 	private $verified_self_update_package_path = null;
 
 	/**
@@ -302,8 +306,8 @@ final class ConnectorUpdateAdapter {
 		// The guarded REST self-updater already validated this exact local ZIP.
 		// Let Core use it as a local path; do not force a second remote download.
 		// Every ordinary single/bulk dashboard update still verifies the release.
-		if ( null !== $this->verifiedSelfUpdatePackagePath
-			&& hash_equals( $this->verifiedSelfUpdatePackagePath, $package ) ) {
+		if ( null !== $this->verified_self_update_package_path
+			&& hash_equals( $this->verified_self_update_package_path, $package ) ) {
 			return false;
 		}
 
@@ -484,7 +488,7 @@ final class ConnectorUpdateAdapter {
 		// inactive after a successful file-version readback.
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'active_before' ), 10, 2 );
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
-		$this->verifiedSelfUpdatePackagePath = $package;
+		$this->verified_self_update_package_path = $package;
 		try {
 			$result = $upgrader->run(
 				array(
@@ -502,7 +506,7 @@ final class ConnectorUpdateAdapter {
 				)
 			);
 		} finally {
-			$this->verifiedSelfUpdatePackagePath = null;
+			$this->verified_self_update_package_path = null;
 			remove_filter( 'upgrader_source_selection', array( $upgrader, 'check_package' ) );
 			// No deactivation callback was installed by this self-update.
 			remove_filter( 'upgrader_pre_install', array( $upgrader, 'active_before' ), 10 );

@@ -83,8 +83,11 @@ $run=static function()use($method,$adapter) {
     return $method->invoke($adapter, '/tmp/test-safe-canonical-package.zip');
 };
 $wasActive=$run();
-$verifiedPath = new ReflectionProperty($adapter, 'verifiedSelfUpdatePackagePath');
+$verifiedPath = new ReflectionProperty($adapter, 'verified_self_update_package_path');
 $verifiedPath->setAccessible(true);
+if (property_exists($adapter, 'verifiedSelfUpdatePackagePath')) {
+    throw new RuntimeException('REST self-update created an undeclared dynamic verification property.');
+}
 if (null !== $verifiedPath->getValue($adapter)) {
     throw new RuntimeException('REST self-update verification state leaked after Core upgrade.');
 }
