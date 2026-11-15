@@ -283,6 +283,7 @@ final class ConnectorUpdateAdapter {
 	 * @return false|string|\WP_Error
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	public function verifiedNativeDownload( $reply, string $package, $upgrader, array $hookExtra ) {
 		// Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
@@ -456,6 +457,7 @@ final class ConnectorUpdateAdapter {
 	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	private function installWithCoreBackup( string $package ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()

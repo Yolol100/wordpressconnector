@@ -1229,10 +1229,10 @@ final class WooCommerceAdapter {
 		}
 
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
-			$product->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
+			$product->set_date_on_sale_from( $payload['date_on_sale_from'] ? $payload['date_on_sale_from'] : null );
 		}
 		if ( array_key_exists( 'date_on_sale_to', $payload ) ) {
-			$product->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
+			$product->set_date_on_sale_to( $payload['date_on_sale_to'] ? $payload['date_on_sale_to'] : null );
 		}
 		if ( isset( $payload['category_ids'] ) ) {
 			$product->set_category_ids( array_map( 'intval', (array) $payload['category_ids'] ) );
@@ -1313,10 +1313,10 @@ final class WooCommerceAdapter {
 			$variation->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
 		}
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
-			$variation->set_date_on_sale_from( $payload['date_on_sale_from'] ?: null );
+			$variation->set_date_on_sale_from( $payload['date_on_sale_from'] ? $payload['date_on_sale_from'] : null );
 		}
 		if ( array_key_exists( 'date_on_sale_to', $payload ) ) {
-			$variation->set_date_on_sale_to( $payload['date_on_sale_to'] ?: null );
+			$variation->set_date_on_sale_to( $payload['date_on_sale_to'] ? $payload['date_on_sale_to'] : null );
 		}
 	}
 
@@ -1993,7 +1993,7 @@ final class WooCommerceAdapter {
 			$coupon->set_email_restrictions( array_map( 'sanitize_email', (array) $payload['email_restrictions'] ) );
 		}
 		if ( array_key_exists( 'date_expires', $payload ) ) {
-			$coupon->set_date_expires( $payload['date_expires'] ?: null );
+			$coupon->set_date_expires( $payload['date_expires'] ? $payload['date_expires'] : null );
 		}
 	}
 

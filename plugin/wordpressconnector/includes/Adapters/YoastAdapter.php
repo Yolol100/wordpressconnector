@@ -383,6 +383,7 @@ final class YoastAdapter {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	public function restoreSiteRepresentation( array $payload, array $context ): array {
 		if ( empty( $context['rollback_mode'] ) ) {

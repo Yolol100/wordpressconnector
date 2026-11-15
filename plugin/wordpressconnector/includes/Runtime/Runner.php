@@ -264,6 +264,7 @@ final class Runner {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	public function readBatch( array $payload, array $context ): array {
 		$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
@@ -529,6 +530,7 @@ final class Runner {
 	 * @param array $context Authorized execution context.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	public function mutationStatus( array $payload, array $context ): array {
 		if ( array_keys( $payload ) !== array( 'request_id' )

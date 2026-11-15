@@ -197,6 +197,7 @@ final class GitHubOidc {
 	 * @param int $olderThanSeconds Minimum age in seconds.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation is rejected by validation or a safety guard.
 	 */
 	public static function cleanupReplayClaims( int $olderThanSeconds ): int {
 		global $wpdb;
