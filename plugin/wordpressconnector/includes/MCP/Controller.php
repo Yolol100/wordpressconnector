@@ -56,8 +56,8 @@ final class Controller {
 	 * @param callable $authorizationCallback Value used by this operation.
 	 */
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
-		$this->runner                = $runner;
-		$this->registry              = $registry;
+		$this->runner                 = $runner;
+		$this->registry               = $registry;
 		$this->authorization_callback = $authorizationCallback;
 	}
 
