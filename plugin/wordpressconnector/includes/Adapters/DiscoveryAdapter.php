@@ -161,7 +161,7 @@ final class DiscoveryAdapter {
 	 * @param array $payload Validated action payload.
 	 * @param array $context Authorized execution context.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public function restCatalog( array $payload, array $context = array() ): array {
 		foreach ( array_keys( $payload ) as $key ) {

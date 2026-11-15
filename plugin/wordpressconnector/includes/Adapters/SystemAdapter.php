@@ -1353,7 +1353,7 @@ final class SystemAdapter {
 	 *
 	 * @return string|null Result of this operation.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	private function expected_update_version( array $payload, array $allowed_fields ): ?string {
 		if ( array_diff( array_keys( $payload ), $allowed_fields ) ) {
@@ -1939,7 +1939,7 @@ final class SystemAdapter {
 	 * @param string $slug Validated slug value.
 	 * @param string $kind Validated kind value.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	private function officialDirectoryPackageUrl( string $url, string $slug, string $kind ): string {
 		if ( strlen( $url ) > 320 || ! in_array( $kind, array( 'plugin', 'theme' ), true ) ) {

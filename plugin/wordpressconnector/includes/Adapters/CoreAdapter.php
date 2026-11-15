@@ -462,7 +462,7 @@ final class CoreAdapter {
 	 * @param array $payload Validated action payload.
 	 * @param array $context Authorized execution context.
 	 *
-	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
 	public function postLiteralReplace( array $payload, array $context ): array {
 		if ( array_diff( array_keys( $payload ), array( 'id', 'find', 'replace', 'expected_matches' ) ) ) {
@@ -809,7 +809,7 @@ final class CoreAdapter {
 	public function termGet( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy ?: '' );
+		$term     = get_term( $id, $taxonomy ? $taxonomy : '' );
 		if ( ! $term instanceof \WP_Term ) {
 			throw new RuntimeException( 'Term not found.' );
 		}
