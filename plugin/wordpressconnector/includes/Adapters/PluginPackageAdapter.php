@@ -110,7 +110,7 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Theme package SHA-256 does not match.' );
 		}
 		$info = $this->inspectThemePackage( $package, $expected );
-		if ( $expected === get_stylesheet() || $expected === get_template() ) {
+		if ( get_stylesheet() === $expected || get_template() === $expected ) {
 			throw new RuntimeException( 'Refusing to replace or install over the active theme or its parent.' );
 		}
 		$current   = wp_get_theme( $expected );

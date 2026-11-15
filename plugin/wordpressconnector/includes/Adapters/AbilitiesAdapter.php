@@ -547,7 +547,7 @@ final class AbilitiesAdapter {
 	 * using a JSON mapping in wp-config.php.
 	 *
 	 * @param string $name Registered resource name.
-	 * @param mixed $ability Validated ability value.
+	 * @param mixed  $ability Validated ability value.
 	 */
 	private function isApprovedPluginMutationEligible( string $name, $ability ): bool {
 		if ( $this->isElementorAbilityName( $name ) || ! is_object( $ability )

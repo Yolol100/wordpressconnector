@@ -225,10 +225,10 @@ final class ConnectorUpdateAdapter {
 	 * Offer only this plugin's canonical release to WordPress's native updater.
 	 * Other plugins using GitHub's update hostname must remain untouched.
 	 *
-	 * @param array|false $update
-	 * @param array $pluginData Validated plugin metadata.
-	 * @param string $pluginFile Validated plugin file value.
-	 * @param array $locales Validated locales value.
+	 * @param array|false $update     Existing native offer or false.
+	 * @param array       $pluginData Validated plugin metadata.
+	 * @param string      $pluginFile Validated plugin file value.
+	 * @param array       $locales    Validated locales value.
 	 *
 	 * @return array|false
 	 */
@@ -248,14 +248,13 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
-	/** @return array<string, mixed>|false */
 	/**
 	 * Process the native offer from release operation in the ConnectorUpdate adapter.
 	 *
 	 * @param array  $release Input for the operation.
 	 * @param string $installed Input for the operation.
 	 *
-	 * @return mixed Operation result.
+	 * @return array<string, mixed>|false Canonical update offer or false.
 	 */
 	private function nativeOfferFromRelease( array $release, string $installed ) {
 		if ( '' === $installed || ! version_compare( $release['version'], $installed, '>' ) ) {
@@ -276,10 +275,10 @@ final class ConnectorUpdateAdapter {
 	 * WordPress checksums are not verified by Core for third-party packages.
 	 * Intercept only our own update and pass a verified temporary ZIP to Core.
 	 *
-	 * @param false|string|\WP_Error $reply
-	 * @param mixed                  $upgrader
-	 * @param string $package Validated package metadata.
-	 * @param array $hookExtra Validated hook extra value.
+	 * @param false|string|\WP_Error $reply     Existing pre-download result or false.
+	 * @param string                 $package   Canonical package URL or verified local path.
+	 * @param mixed                  $upgrader  WordPress upgrader instance.
+	 * @param array                  $hookExtra Upgrader hook metadata.
 	 *
 	 * @return false|string|\WP_Error
 	 *
@@ -654,6 +653,7 @@ final class ConnectorUpdateAdapter {
 	 * @param array $release Verified release metadata.
 	 *
 	 * @throws \Throwable When the requested operation cannot be completed safely.
+	 * @throws \RuntimeException When package integrity checks fail.
 	 */
 	private function downloadVerifiedPackage( array $release ): string {
 		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );

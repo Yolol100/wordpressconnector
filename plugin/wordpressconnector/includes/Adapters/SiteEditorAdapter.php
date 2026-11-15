@@ -186,7 +186,7 @@ final class SiteEditorAdapter {
 			'kind'                 => $kind,
 			'id'                   => $id,
 			'theme'                => get_stylesheet(),
-			'would_change'         => $before['content_sha256'] !== hash( 'sha256', $content ),
+			'would_change'         => hash( 'sha256', $content ) !== $before['content_sha256'],
 			'before'               => array(
 				'content_sha256' => $before['content_sha256'],
 				'modified'       => $before['modified'],
@@ -208,7 +208,7 @@ final class SiteEditorAdapter {
 		try {
 			$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $content ) );
 			$after = $this->state( $kind, $id, $this->record( $kind, $id ) );
-			if ( $after['content_sha256'] !== hash( 'sha256', $content ) ) {
+			if ( hash( 'sha256', $content ) !== $after['content_sha256'] ) {
 				throw new RuntimeException( 'WordPress did not retain the requested template content.' );
 			}
 		} catch ( \Throwable $failure ) {
@@ -262,7 +262,7 @@ final class SiteEditorAdapter {
 		$this->writeAllowed();
 		$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $content ) );
 		$after = $this->state( $kind, $id, $this->record( $kind, $id ) );
-		if ( $after['content_sha256'] !== hash( 'sha256', $content ) ) {
+		if ( hash( 'sha256', $content ) !== $after['content_sha256'] ) {
 			throw new RuntimeException( 'Site Editor rollback readback failed.' );
 		}
 		return array(

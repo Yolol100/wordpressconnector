@@ -233,7 +233,7 @@ final class GutenbergAdapter {
 				throw new RuntimeException( 'Block path does not exist at depth ' . $depth . '.' );
 			}
 			$block =& $current[ $index ];
-			if ( $depth === count( $path ) - 1 ) {
+			if ( count( $path ) - 1 === $depth ) {
 				return $block;
 			}
 			if ( ! isset( $block['innerBlocks'] ) || ! is_array( $block['innerBlocks'] ) ) {
