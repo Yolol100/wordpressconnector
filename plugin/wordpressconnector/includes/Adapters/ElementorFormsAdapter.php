@@ -1096,12 +1096,10 @@ final class ElementorFormsAdapter {
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $postId ) ) {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
 		}
-		$result = $this->document( $postId )->save(
-			array(
-				'elements' => $data,
-				'settings' => $pageSettings,
-			)
-		);
+		$result = $this->document( $postId )->save( array(
+			'elements' => $data,
+			'settings' => $pageSettings
+		) );
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
 			throw new RuntimeException( $result->get_error_message() );
 		}
