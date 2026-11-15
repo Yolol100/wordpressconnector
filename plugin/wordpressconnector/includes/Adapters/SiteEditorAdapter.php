@@ -124,7 +124,7 @@ final class SiteEditorAdapter {
 		$id     = $this->id( $payload );
 		$record = $this->record( $kind, $id );
 		$state  = $this->state( $kind, $id, $record );
-		return $state + array( 'content' => $this->rawContent( $record ) );
+		return $state + array( 'content' => $this->raw_content( $record ) );
 	}
 
 	/**
@@ -196,7 +196,7 @@ final class SiteEditorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->writeAllowed();
+		$this->write_allowed();
 		// Use Core's exact template route, validation, sanitization and
 		// permission callback. Do not update wp_template database rows directly.
 		$current = $this->record( $kind, $id );
@@ -204,7 +204,7 @@ final class SiteEditorAdapter {
 		if ( ! hash_equals( $before['fingerprint'], $fresh['fingerprint'] ) ) {
 			throw new RuntimeException( 'Site Editor template changed immediately before the write.' );
 		}
-		$previous = $this->content( array( 'content' => $this->rawContent( $current ) ) );
+		$previous = $this->content( array( 'content' => $this->raw_content( $current ) ) );
 		try {
 			$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $content ) );
 			$after = $this->state( $kind, $id, $this->record( $kind, $id ) );
@@ -212,7 +212,7 @@ final class SiteEditorAdapter {
 				throw new RuntimeException( 'WordPress did not retain the requested template content.' );
 			}
 		} catch ( \Throwable $failure ) {
-			$this->restoreAfterFailure( $kind, $id, $previous );
+			$this->restore_after_failure( $kind, $id, $previous );
 			throw new RuntimeException( 'Template update was not confirmed; original content restored and verified.' );
 		}
 		$result['updated']   = true;
@@ -259,7 +259,7 @@ final class SiteEditorAdapter {
 				'_current_fingerprint' => $before['fingerprint'],
 			);
 		}
-		$this->writeAllowed();
+		$this->write_allowed();
 		$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $content ) );
 		$after = $this->state( $kind, $id, $this->record( $kind, $id ) );
 		if ( hash( 'sha256', $content ) !== $after['content_sha256'] ) {
@@ -280,11 +280,11 @@ final class SiteEditorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function restoreAfterFailure( string $kind, string $id, string $previous ): void {
+	private function restore_after_failure( string $kind, string $id, string $previous ): void {
 		try {
 			$this->request( 'POST', $this->route( $kind ) . '/' . $id, array( 'content' => $previous ) );
 			$after = $this->record( $kind, $id );
-			if ( hash( 'sha256', $this->rawContent( $after ) ) !== hash( 'sha256', $previous ) ) {
+			if ( hash( 'sha256', $this->raw_content( $after ) ) !== hash( 'sha256', $previous ) ) {
 				throw new RuntimeException( 'Content mismatch after restoration.' );
 			}
 		} catch ( \Throwable $error ) {
@@ -307,7 +307,7 @@ final class SiteEditorAdapter {
 		if ( ( $record['id'] ?? null ) !== $id || ( $record['theme'] ?? null ) !== get_stylesheet() ) {
 			throw new RuntimeException( 'WordPress Site Editor returned an unexpected theme/template identity.' );
 		}
-		$content              = $this->rawContent( $record );
+		$content              = $this->raw_content( $record );
 		$state                = array(
 			'kind'           => $kind,
 			'id'             => $id,
@@ -341,7 +341,7 @@ final class SiteEditorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function writeAllowed(): void {
+	private function write_allowed(): void {
 		if ( Policy::publicRepositoryContext() || ! Policy::flag( 'WPCONNECTOR_ALLOW_SITE_EDITOR_WRITES' ) ) {
 			throw new RuntimeException( 'Site Editor writes require explicitly enabled private server policy.' );
 		}
@@ -433,7 +433,7 @@ final class SiteEditorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function rawContent( array $record ): string {
+	private function raw_content( array $record ): string {
 		$value = $record['content'] ?? null;
 		$raw   = is_array( $value ) ? ( $value['raw'] ?? null ) : $value;
 		if ( ! is_string( $raw ) || strlen( $raw ) > self::MAX_CONTENT_BYTES ) {
