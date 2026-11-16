@@ -140,7 +140,7 @@ final class GutenbergAdapter {
 		}
 
 		$patched      = $blocks;
-		$block        =& $this->blockByPath( $patched, $path );
+		$block        =& $this->block_by_path( $patched, $path );
 		$before_block = $block;
 
 		if ( isset( $payload['replace_block'] ) && is_array( $payload['replace_block'] ) ) {
@@ -226,7 +226,7 @@ final class GutenbergAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function &blockByPath( array &$blocks, array $path ): array {
+	private function &block_by_path( array &$blocks, array $path ): array {
 		$current =& $blocks;
 		foreach ( $path as $depth => $index ) {
 			if ( ! isset( $current[ $index ] ) || ! is_array( $current[ $index ] ) ) {

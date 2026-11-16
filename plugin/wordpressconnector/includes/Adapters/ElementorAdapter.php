@@ -226,7 +226,7 @@ final class ElementorAdapter {
 		}
 
 		$data           = $before['data'];
-		$element        =& $this->findElement( $data, $element_id );
+		$element        =& $this->find_element( $data, $element_id );
 		$before_element = $element;
 
 		if ( isset( $payload['replace'] ) && is_array( $payload['replace'] ) ) {
@@ -271,7 +271,7 @@ final class ElementorAdapter {
 			$before
 		);
 		$readback_data    = $readback['data'];
-		$readback_element =& $this->findElement( $readback_data, $element_id );
+		$readback_element =& $this->find_element( $readback_data, $element_id );
 		if ( ! $this->matches_requested_element_patch( $requested_element, $readback_element, $payload ) ) {
 			$this->restore_snapshot( $before );
 			throw new RuntimeException( 'Elementor element readback verification failed; previous snapshot restored.' );
@@ -365,7 +365,7 @@ final class ElementorAdapter {
 			$matches_count = 0;
 			$is_icon_list  = false;
 			try {
-				$element      =& $this->findElement( $snapshot['data'], $element_id );
+				$element      =& $this->find_element( $snapshot['data'], $element_id );
 				$is_icon_list = ( $element['widgetType'] ?? '' ) === 'icon-list'
 					&& isset( $element['settings']['icon_list'] ) && is_array( $element['settings']['icon_list'] );
 				if ( $is_icon_list ) {
@@ -442,7 +442,7 @@ final class ElementorAdapter {
 				throw new RuntimeException( 'Header link target, source or destination is not allowed.' );
 			}
 			$seen[ $element_id ] = true;
-			$element             =& $this->findElement( $data, $element_id );
+			$element             =& $this->find_element( $data, $element_id );
 			if ( ( $element['widgetType'] ?? '' ) !== 'icon-list'
 				|| ! isset( $element['settings']['icon_list'] )
 				|| ! is_array( $element['settings']['icon_list'] ) ) {
@@ -901,7 +901,7 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function &findElement( array &$elements, string $element_id ): array {
+	private function &find_element( array &$elements, string $element_id ): array {
 		foreach ( $elements as &$element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
@@ -911,7 +911,7 @@ final class ElementorAdapter {
 			}
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
 				try {
-					return $this->findElement( $element['elements'], $element_id );
+					return $this->find_element( $element['elements'], $element_id );
 				} catch ( RuntimeException $error ) {
 					continue; // Descendant not found; inspect the next sibling.
 				}
