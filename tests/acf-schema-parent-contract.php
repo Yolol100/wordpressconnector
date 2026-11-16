@@ -8,10 +8,10 @@ $sourceCompact = preg_replace('/\\s+/', '', $source);
 if (! is_string($sourceCompact)) { throw new RuntimeException('Could not normalize ACF schema source.'); }
 
 $required = array(
-    '$group_id = $this->groupId($group_key);',
+    '$group_id = $this->group_id($group_key);',
     "'parent' => \$group_id",
-    'private function groupId(string $group_key): int',
-    'private function fieldMatchesDefinition(array $summary, array $definition, int $group_id): bool',
+    'private function group_id(string $group_key): int',
+    'private function field_matches_definition(array $summary, array $definition, int $group_id): bool',
     "0 !== (int) (\$summary['parent'] ?? 0)",
     "\$recoverable[\$key] = \$global_id;",
     "\$field['ID'] = (int) \$recoverable[\$definition['key']];",
@@ -29,7 +29,7 @@ if (false !== strpos($sourceCompact, "'parent'=>\$group_key")) {
     exit(1);
 }
 
-if (false !== strpos($sourceCompact, 'privatefunctionfieldMatchesDefinition(array$summary,array$definition,string$group_key):bool')) {
+if (false !== strpos($sourceCompact, 'privatefunctionfield_matches_definition(array$summary,array$definition,string$group_key):bool')) {
     fwrite(STDERR, "ACF schema readback must compare the persistent numeric group parent.\n");
     exit(1);
 }
