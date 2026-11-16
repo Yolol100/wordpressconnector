@@ -659,7 +659,7 @@ final class Controller {
 			return $this->tool_error( 'payload must be an object.' );
 		}
 
-		$dry_run  = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
+		$dry_run = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
 		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
 		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
