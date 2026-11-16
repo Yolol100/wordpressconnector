@@ -272,11 +272,11 @@ final class AbilitiesAdapter {
 		}
 
 		if ( $mutation && function_exists( 'add_action' ) && function_exists( 'remove_action' ) ) {
-			$execution_tracker = static function ( $abilityName, $normalizedInput, $executingAbility = null ) use ( &$execution_started, &$provider_pre_execution_rejected, $name, $ability, $provider ): void {
-				if ( $abilityName !== $name ) {
+			$execution_tracker = static function ( $ability_name, $normalized_input, $executing_ability = null ) use ( &$execution_started, &$provider_pre_execution_rejected, $name, $ability, $provider ): void {
+				if ( $ability_name !== $name ) {
 					return;
 				}
-				if ( null !== $executingAbility && $executingAbility !== $ability ) {
+				if ( null !== $executing_ability && $executing_ability !== $ability ) {
 					return;
 				}
 

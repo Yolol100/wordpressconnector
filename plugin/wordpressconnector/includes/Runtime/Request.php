@@ -40,7 +40,7 @@ final class Request {
 	 *
 	 * @var bool
 	 */
-	private bool $dryRun;
+	private bool $dry_run;
 	/**
 	 * Confirm maintained by the connector.
 	 *
@@ -52,13 +52,13 @@ final class Request {
 	 *
 	 * @var ?string
 	 */
-	private ?string $expectedFingerprint;
+	private ?string $expected_fingerprint;
 	/**
 	 * Expected state token maintained by the connector.
 	 *
 	 * @var ?string
 	 */
-	private ?string $expectedStateToken;
+	private ?string $expected_state_token;
 
 	/**
 	 * Store an already validated, immutable connector request.
@@ -66,27 +66,27 @@ final class Request {
 	 * @param string      $id                  Stable request identifier.
 	 * @param string      $action              Registered connector action name.
 	 * @param array       $payload             Validated action payload.
-	 * @param bool        $dryRun              Whether mutations are disabled.
+	 * @param bool        $dry_run              Whether mutations are disabled.
 	 * @param bool        $confirm             Explicit mutation confirmation flag.
-	 * @param string|null $expectedFingerprint Expected object-state fingerprint.
-	 * @param string|null $expectedStateToken  Site-scoped stale-state token.
+	 * @param string|null $expected_fingerprint Expected object-state fingerprint.
+	 * @param string|null $expected_state_token  Site-scoped stale-state token.
 	 */
 	private function __construct(
 		string $id,
 		string $action,
 		array $payload,
-		bool $dryRun,
+		bool $dry_run,
 		bool $confirm,
-		?string $expectedFingerprint,
-		?string $expectedStateToken
+		?string $expected_fingerprint,
+		?string $expected_state_token
 	) {
 		$this->id                  = $id;
 		$this->action              = $action;
 		$this->payload             = $payload;
-		$this->dryRun              = $dryRun;
+		$this->dry_run              = $dry_run;
 		$this->confirm             = $confirm;
-		$this->expectedFingerprint = $expectedFingerprint;
-		$this->expectedStateToken  = $expectedStateToken;
+		$this->expected_fingerprint = $expected_fingerprint;
+		$this->expected_state_token  = $expected_state_token;
 	}
 
 	/**
@@ -151,12 +151,12 @@ final class Request {
 		}
 		$payload = $data['payload'];
 
-		$dryRun = true;
+		$dry_run = true;
 		if ( array_key_exists( 'dry_run', $data ) ) {
 			if ( ! is_bool( $data['dry_run'] ) ) {
 				throw new RuntimeException( 'dry_run must be boolean.' );
 			}
-			$dryRun = $data['dry_run'];
+			$dry_run = $data['dry_run'];
 		}
 
 		$confirm = false;
@@ -167,8 +167,8 @@ final class Request {
 			$confirm = $data['confirm'];
 		}
 
-		$expectedFingerprint = self::hexGuard( $data, 'expected_fingerprint' );
-		$expectedStateToken  = self::hexGuard( $data, 'expected_state_token' );
+		$expected_fingerprint = self::hexGuard( $data, 'expected_fingerprint' );
+		$expected_state_token  = self::hexGuard( $data, 'expected_state_token' );
 
 		if ( class_exists( Policy::class ) && Policy::publicRepositoryContext() ) {
 			if ( 'connector.read_batch' === $action ) {
@@ -202,7 +202,7 @@ final class Request {
 				'connector.update.apply',
 				'plugin.install_package',
 			);
-			if ( ! $dryRun && in_array( $action, $fingerprint_required, true ) && null === $expectedFingerprint ) {
+			if ( ! $dry_run && in_array( $action, $fingerprint_required, true ) && null === $expected_fingerprint ) {
 				throw new RuntimeException( 'Confirmed public ' . $action . ' requires expected_fingerprint from the preceding dry-run.' );
 			}
 		}
@@ -211,10 +211,10 @@ final class Request {
 			$id,
 			$action,
 			$payload,
-			$dryRun,
+			$dry_run,
 			$confirm,
-			$expectedFingerprint,
-			$expectedStateToken
+			$expected_fingerprint,
+			$expected_state_token
 		);
 	}
 
@@ -271,7 +271,7 @@ final class Request {
 	 * @return bool Operation result.
 	 */
 	public function dryRun(): bool {
-		return $this->dryRun;
+		return $this->dry_run;
 	}
 
 	/**
@@ -289,7 +289,7 @@ final class Request {
 	 * @return string|null Operation result.
 	 */
 	public function expectedFingerprint(): ?string {
-		return $this->expectedFingerprint;
+		return $this->expected_fingerprint;
 	}
 
 	/**
@@ -298,6 +298,6 @@ final class Request {
 	 * @return string|null Operation result.
 	 */
 	public function expectedStateToken(): ?string {
-		return $this->expectedStateToken;
+		return $this->expected_state_token;
 	}
 }

@@ -40,11 +40,11 @@ final class AssetStore {
 			throw new RuntimeException( 'Asset upload failed with PHP upload error ' . $error . '.' );
 		}
 
-		$tmpName = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
-		if ( '' === $tmpName || ! is_uploaded_file( $tmpName ) ) {
+		$tmp_name = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
+		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'Asset upload is not a valid HTTP upload.' );
 		}
-		$actual_size = filesize( $tmpName );
+		$actual_size = filesize( $tmp_name );
 		if ( false === $actual_size || $actual_size <= 0 || $actual_size > self::MAX_FILE_BYTES ) {
 			throw new RuntimeException( 'Asset exceeds the per-file size limit.' );
 		}
@@ -72,7 +72,7 @@ final class AssetStore {
 		if ( file_exists( $destination ) || is_link( $destination ) ) {
 			throw new RuntimeException( 'Duplicate request asset path: ' . $relativePath );
 		}
-		if ( ! move_uploaded_file( $tmpName, $destination ) ) {
+		if ( ! move_uploaded_file( $tmp_name, $destination ) ) {
 			throw new RuntimeException( 'Could not store uploaded request asset.' );
 		}
 		if ( ! @chmod( $destination, 0600 ) ) {
