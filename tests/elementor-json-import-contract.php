@@ -31,6 +31,13 @@ if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->r
 }
 
 // Malformed multipart arrays must fail closed without PHP array-to-string warnings.
+// The standalone contract runner has no WordPress bootstrap.
+if (! function_exists('sanitize_file_name')) {
+    function sanitize_file_name($name): string {
+        if (! is_string($name)) { throw new RuntimeException('Upload filename must be a string.'); }
+        return $name;
+    }
+}
 require_once $path;
 $import = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
 $single = new ReflectionMethod($import, 'uploaded_payload');
