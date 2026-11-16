@@ -535,7 +535,7 @@ final class ElementorJsonImport {
 			} elseif ( in_array( $document_type, $template_types, true ) ) {
 				$inferred_type = 'elementor_library';
 			}
-			$post_type        = '' !== $declared_type ? $declared_type : $inferred_type;
+			$post_type       = '' !== $declared_type ? $declared_type : $inferred_type;
 			$family_conflict = '' !== $declared_type && '' !== $inferred_type
 			&& $declared_type !== $inferred_type
 			&& ! ( 'elementor_library' === $declared_type && 'page' === $document_type );

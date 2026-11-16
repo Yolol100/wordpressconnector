@@ -60,7 +60,7 @@ final class ElementorJsonExport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function download(): void {
-		$post_id           = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
+		$post_id            = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
 		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
 		if ( $post_id < 1 ) {
 			wp_die( esc_html__( 'Invalid Elementor document.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
@@ -78,8 +78,8 @@ final class ElementorJsonExport {
 		}
 		try {
 			$document_payload = $this->exportPayload( $this->document( $post_id ), $post );
-			$payload         = $include_site_parts ? $this->bundleWithSiteParts( $post, $document_payload ) : $document_payload;
-			$json            = wp_json_encode( $payload );
+			$payload          = $include_site_parts ? $this->bundleWithSiteParts( $post, $document_payload ) : $document_payload;
+			$json             = wp_json_encode( $payload );
 			if ( ! is_string( $json ) || '' === $json ) {
 				throw new RuntimeException( 'WordPress could not encode the Elementor export as JSON.' );
 			}

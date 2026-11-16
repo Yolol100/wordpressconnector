@@ -224,8 +224,8 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context = array() ): array {
-		$id         = $this->assert_post_access( $payload );
-		$fields     = $this->validated_fields( $payload['fields'] ?? null );
+		$id          = $this->assert_post_access( $payload );
+		$fields      = $this->validated_fields( $payload['fields'] ?? null );
 		$high_impact = array_values( array_intersect( array_keys( $fields ), self::HIGH_IMPACT ) );
 		if ( $high_impact && true !== ( $payload['risk_acknowledged'] ?? false ) ) {
 			throw new RuntimeException( 'High-impact Yoast metadata requires risk_acknowledged=true.' );

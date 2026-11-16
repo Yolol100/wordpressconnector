@@ -128,10 +128,10 @@ final class YoastFeatureSettingsAdapter {
 		}
 		$group = $this->single_group( $fields );
 		$this->assert_provider_supports_fields( $group, $fields );
-		$before     = $this->snapshot();
-		$after      = array_replace( $before, $fields );
+		$before      = $this->snapshot();
+		$after       = array_replace( $before, $fields );
 		$high_impact = array_values( array_intersect( array_keys( $fields ), array_keys( self::HIGH_IMPACT ) ) );
-		$result     = array(
+		$result      = array(
 			'before'                        => $before,
 			'after'                         => $after,
 			'high_impact_fields'            => $high_impact,

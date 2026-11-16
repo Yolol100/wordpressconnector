@@ -267,7 +267,7 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'WooCommerce order not found.' );
 		}
 		$include_personal_data = Input::bool( $payload, 'include_personal_data', false );
-		$snapshot            = $this->orderSnapshot( $order, $include_personal_data );
+		$snapshot              = $this->orderSnapshot( $order, $include_personal_data );
 		return array(
 			'order'       => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
