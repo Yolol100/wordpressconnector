@@ -477,7 +477,7 @@ final class ElementorJsonImport {
 				|| ! is_int( $files['error'][ $i ] ) || ! is_int( $files['size'][ $i ] ) ) {
 				throw new RuntimeException( 'Invalid Elementor JSON bulk upload metadata.' );
 			}
-			if ( $files['error'][ $i ] !== UPLOAD_ERR_OK ) {
+			if ( UPLOAD_ERR_OK !== $files['error'][ $i ] ) {
 				throw new RuntimeException( 'One of the uploads failed.' );
 			}
 			$name   = sanitize_file_name( $files['name'][ $i ] );
