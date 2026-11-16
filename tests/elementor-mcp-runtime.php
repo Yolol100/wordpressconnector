@@ -240,7 +240,7 @@ try {
     // a copied filename resolves correctly, duplicate and mismatched targets fail closed.
     $method = new \ReflectionMethod(
         \Webactueel\WordPressConnector\Admin\ElementorJsonImport::class,
-        'buildBulkPlan'
+        'build_bulk_plan'
     );
     $method->setAccessible(true);
     $importer = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
