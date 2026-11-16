@@ -224,10 +224,10 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context = array() ): array {
-		$id         = $this->assert_post_access( $payload );
-		$fields     = $this->validated_fields( $payload['fields'] ?? null );
-		$highImpact = array_values( array_intersect( array_keys( $fields ), self::HIGH_IMPACT ) );
-		if ( $highImpact && true !== ( $payload['risk_acknowledged'] ?? false ) ) {
+		$id          = $this->assert_post_access( $payload );
+		$fields      = $this->validated_fields( $payload['fields'] ?? null );
+		$high_impact = array_values( array_intersect( array_keys( $fields ), self::HIGH_IMPACT ) );
+		if ( $high_impact && true !== ( $payload['risk_acknowledged'] ?? false ) ) {
 			throw new RuntimeException( 'High-impact Yoast metadata requires risk_acknowledged=true.' );
 		}
 
@@ -237,7 +237,7 @@ final class YoastNativeAbilitiesAdapter {
 			'post_id'              => $id,
 			'before'               => array_intersect_key( $before, $fields ),
 			'after'                => array_intersect_key( $proposed, $fields ),
-			'high_impact_fields'   => $highImpact,
+			'high_impact_fields'   => $high_impact,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {

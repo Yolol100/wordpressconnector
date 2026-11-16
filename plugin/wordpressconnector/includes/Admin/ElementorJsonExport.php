@@ -60,26 +60,26 @@ final class ElementorJsonExport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function download(): void {
-		$postId           = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$includeSiteParts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
-		if ( $postId < 1 ) {
+		$post_id            = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
+		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
+		if ( $post_id < 1 ) {
 			wp_die( esc_html__( 'Invalid Elementor document.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
-		check_admin_referer( self::ACTION . '_' . $postId );
-		$post = get_post( $postId );
+		check_admin_referer( self::ACTION . '_' . $post_id );
+		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post || ! $this->supportsPostType( (string) $post->post_type ) ) {
 			wp_die( esc_html__( 'This item cannot be exported as Elementor JSON.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
-		if ( ! current_user_can( 'edit_post', $postId ) ) {
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_die( esc_html__( 'You are not allowed to export this Elementor document.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
-		if ( $includeSiteParts && ! in_array( (string) $post->post_type, array( 'page', 'post' ), true ) ) {
+		if ( $include_site_parts && ! in_array( (string) $post->post_type, array( 'page', 'post' ), true ) ) {
 			wp_die( esc_html__( 'Site-parts export is available only for pages and posts.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
-			$documentPayload = $this->exportPayload( $this->document( $postId ), $post );
-			$payload         = $includeSiteParts ? $this->bundleWithSiteParts( $post, $documentPayload ) : $documentPayload;
-			$json            = wp_json_encode( $payload );
+			$document_payload = $this->exportPayload( $this->document( $post_id ), $post );
+			$payload          = $include_site_parts ? $this->bundleWithSiteParts( $post, $document_payload ) : $document_payload;
+			$json             = wp_json_encode( $payload );
 			if ( ! is_string( $json ) || '' === $json ) {
 				throw new RuntimeException( 'WordPress could not encode the Elementor export as JSON.' );
 			}
@@ -88,8 +88,8 @@ final class ElementorJsonExport {
 		} catch ( Throwable $error ) {
 			wp_die( esc_html__( 'The Elementor JSON export could not be completed.', 'wordpressconnector' ), '', array( 'response' => 500 ) );
 		}
-		$slug     = '' !== (string) $post->post_name ? (string) $post->post_name : (string) $post->post_type . '-' . $postId;
-		$filename = sanitize_file_name( $slug . ( $includeSiteParts ? '-elementor-with-site-parts.json' : '-elementor.json' ) );
+		$slug     = '' !== (string) $post->post_name ? (string) $post->post_name : (string) $post->post_type . '-' . $post_id;
+		$filename = sanitize_file_name( $slug . ( $include_site_parts ? '-elementor-with-site-parts.json' : '-elementor.json' ) );
 		nocache_headers();
 		header( 'Content-Type: application/json; charset=utf-8' );
 		header( 'Content-Disposition: attachment; filename=' . $filename );
@@ -208,11 +208,11 @@ final class ElementorJsonExport {
 	/**
 	 * Process the site parts for post operation in the ElementorJsonExport component.
 	 *
-	 * @param \WP_Post $sourcePost Input for the operation.
+	 * @param \WP_Post $source_post Input for the operation.
 	 *
 	 * @return array Operation result.
 	 */
-	private function sitePartsForPost( \WP_Post $sourcePost ): array {
+	private function sitePartsForPost( \WP_Post $source_post ): array {
 		if ( ! class_exists( 'ElementorPro\\Modules\\ThemeBuilder\\Module' ) ) {
 			return array(
 				'header'   => null,
@@ -230,7 +230,7 @@ final class ElementorJsonExport {
 				return $this->unsupportedSiteParts();
 			}
 			$matches  = $this->withSingularQuery(
-				$sourcePost,
+				$source_post,
 				static function () use ( $conditions ): array {
 					return array(
 						'header' => $conditions->get_documents_for_location( 'header' ),

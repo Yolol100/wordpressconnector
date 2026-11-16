@@ -17,7 +17,10 @@ foreach($required as $needle) {
         exit(1);
     }
 }
-if(false!==strpos($compactSource,'update_post_meta($postId,\'_elementor_data\'')) {
+if (
+    false !== strpos($compactSource, "update_post_meta(\$postId,'_elementor_data'")
+    || false !== strpos($compactSource, "update_post_meta(\$post_id,'_elementor_data'")
+) {
     fwrite(STDERR,"Elementor JSON import must not write _elementor_data directly.\n");
     exit(1);
 }

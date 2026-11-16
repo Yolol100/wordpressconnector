@@ -22,7 +22,7 @@ $required = array(
     "current_user_can('manage_options')",
     'is_ssl()',
     'new GitHubOidc()',
-    'wp_set_current_user($userId)',
+    'wp_set_current_user($user_id)',
     "get_header('x-wpconnector-public-repository')",
     'Policy::setPublicRepositoryContext(true)',
     "'public_repository_mode'=>Policy::publicRepositoryContext()",
