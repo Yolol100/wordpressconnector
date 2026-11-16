@@ -77,7 +77,7 @@ register_shutdown_function(static function() use($dir) {
 require_once dirname(__DIR__).'/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 $adapter = new Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
 add_filter('upgrader_pre_download', array($adapter, 'verifiedNativeDownload'), 10, 4);
-$method=new ReflectionMethod($adapter,'installWithCoreBackup');
+$method=new ReflectionMethod($adapter,'install_with_core_backup');
 $method->setAccessible(true);
 $run=static function()use($method,$adapter) {
     return $method->invoke($adapter, '/tmp/test-safe-canonical-package.zip');
