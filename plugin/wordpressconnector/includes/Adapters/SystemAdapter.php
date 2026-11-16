@@ -24,12 +24,12 @@ final class SystemAdapter {
 	 * @param Registry $registry Action registry to extend.
 	 */
 	public function register( Registry $registry ): void {
-		$privileged   = array( 'privileged' => true );
-		$sensitive    = array(
+		$privileged    = array( 'privileged' => true );
+		$sensitive     = array(
 			'privileged' => true,
 			'sensitive'  => true,
 		);
-		$systemUpdate = array(
+		$system_update = array(
 			'mutation'      => true,
 			'privileged'    => true,
 			'system_update' => true,
@@ -163,7 +163,7 @@ final class SystemAdapter {
 		$registry->register(
 			'plugin.install',
 			array( $this, 'pluginInstall' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'install_plugins',
 				'description' => 'Install a plugin from WordPress.org by slug.',
 			)
@@ -171,7 +171,7 @@ final class SystemAdapter {
 		$registry->register(
 			'plugin.update',
 			array( $this, 'pluginUpdate' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'update_plugins',
 				'description' => 'Update one installed plugin.',
 			)
@@ -179,7 +179,7 @@ final class SystemAdapter {
 		$registry->register(
 			'plugin.delete',
 			array( $this, 'pluginDelete' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'delete_plugins',
 				'description' => 'Delete an inactive installed plugin.',
 			)
@@ -205,7 +205,7 @@ final class SystemAdapter {
 		$registry->register(
 			'theme.install',
 			array( $this, 'themeInstall' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'install_themes',
 				'description' => 'Install a theme from WordPress.org by slug.',
 			)
@@ -213,7 +213,7 @@ final class SystemAdapter {
 		$registry->register(
 			'theme.update',
 			array( $this, 'themeUpdate' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'update_themes',
 				'description' => 'Update one installed theme.',
 			)
@@ -221,7 +221,7 @@ final class SystemAdapter {
 		$registry->register(
 			'theme.delete',
 			array( $this, 'themeDelete' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'delete_themes',
 				'description' => 'Delete an inactive theme.',
 			)
@@ -238,7 +238,7 @@ final class SystemAdapter {
 		$registry->register(
 			'core.update',
 			array( $this, 'coreUpdate' ),
-			$systemUpdate + array(
+			$system_update + array(
 				'capability'  => 'update_core',
 				'description' => 'Update WordPress core. Non-rollbackable.',
 			)
@@ -527,15 +527,15 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userForcePasswordReset( array $payload, array $context ): array {
-		$user   = $this->user( $payload );
-		$userId = (int) $user->ID;
-		if ( ! current_user_can( 'edit_user', $userId ) ) {
+		$user    = $this->user( $payload );
+		$user_id = (int) $user->ID;
+		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			throw new RuntimeException( 'Current user is not allowed to reset this user password.' );
 		}
 
 		$before = $this->userSnapshot( $user );
 		$result = array(
-			'user_id'                         => $userId,
+			'user_id'                         => $user_id,
 			'login'                           => (string) $user->user_login,
 			'would_rotate_password'           => true,
 			'would_revoke_sessions'           => true,
@@ -549,11 +549,11 @@ final class SystemAdapter {
 		}
 
 		$password = wp_generate_password( 64, true, true );
-		wp_set_password( $password, $userId );
+		wp_set_password( $password, $user_id );
 		unset( $password );
 
 		if ( class_exists( 'WP_Session_Tokens' ) ) {
-			\WP_Session_Tokens::get_instance( $userId )->destroy_all();
+			\WP_Session_Tokens::get_instance( $user_id )->destroy_all();
 		}
 
 		$key                        = get_password_reset_key( $user );
@@ -901,26 +901,26 @@ final class SystemAdapter {
 	public function pluginActivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$before      = is_plugin_active( $file );
-		$networkWide = Input::bool( $payload, 'network_wide' );
+		$before       = is_plugin_active( $file );
+		$network_wide = Input::bool( $payload, 'network_wide' );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before_active'        => $before,
 				'after_active'         => true,
-				'network_wide'         => $networkWide,
+				'network_wide'         => $network_wide,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
-		if ( $networkWide && ( ! is_multisite() || ! current_user_can( 'manage_network_plugins' ) ) ) {
+		if ( $network_wide && ( ! is_multisite() || ! current_user_can( 'manage_network_plugins' ) ) ) {
 			throw new RuntimeException( 'Network-wide plugin activation requires network plugin administrator permission.' );
 		}
 		// Normal activation must execute register_activation_hook callbacks.
 		// Silent activation is appropriate for Core upgrades, not user-requested activation.
-		$result = activate_plugin( $file, '', $networkWide, false );
+		$result = activate_plugin( $file, '', $network_wide, false );
 		if ( is_wp_error( $result ) ) {
 			throw new RuntimeException( $result->get_error_message() );
 		}
-		$active_now = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
+		$active_now = $network_wide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
 		if ( ! $active_now ) {
 			throw new RuntimeException( 'Plugin activation did not persist; check plugin requirements or security restrictions.' );
 		}
@@ -932,7 +932,7 @@ final class SystemAdapter {
 				'action'  => 'plugin.deactivate',
 				'payload' => array(
 					'file'         => $file,
-					'network_wide' => $networkWide,
+					'network_wide' => $network_wide,
 				),
 			),
 		);
@@ -954,24 +954,24 @@ final class SystemAdapter {
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'The Connector cannot deactivate its own management connection; use WordPress admin for intentional removal.' );
 		}
-		$networkWide = Input::bool( $payload, 'network_wide' );
-		if ( $networkWide && ( ! is_multisite() || ! current_user_can( 'manage_network_plugins' ) ) ) {
+		$network_wide = Input::bool( $payload, 'network_wide' );
+		if ( $network_wide && ( ! is_multisite() || ! current_user_can( 'manage_network_plugins' ) ) ) {
 			throw new RuntimeException( 'Network plugin deactivation requires network plugin administrator permission.' );
 		}
-		if ( ! $networkWide && is_multisite() && is_plugin_active_for_network( $file ) ) {
+		if ( ! $network_wide && is_multisite() && is_plugin_active_for_network( $file ) ) {
 			throw new RuntimeException( 'Network-activated plugins must be managed by the network administrator.' );
 		}
-		$before = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
+		$before = $network_wide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before_active'        => $before,
 				'after_active'         => false,
-				'network_wide'         => $networkWide,
+				'network_wide'         => $network_wide,
 				'_current_fingerprint' => Fingerprint::make( $before ),
 			);
 		}
-		deactivate_plugins( $file, false, $networkWide );
-		$still_active = $networkWide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
+		deactivate_plugins( $file, false, $network_wide );
+		$still_active = $network_wide && is_multisite() ? is_plugin_active_for_network( $file ) : is_plugin_active( $file );
 		if ( $still_active ) {
 			throw new RuntimeException( 'Plugin deactivation did not persist; check dependency or security policy.' );
 		}
@@ -983,7 +983,7 @@ final class SystemAdapter {
 				'action'  => 'plugin.activate',
 				'payload' => array(
 					'file'         => $file,
-					'network_wide' => $networkWide,
+					'network_wide' => $network_wide,
 				),
 			) : null,
 		);

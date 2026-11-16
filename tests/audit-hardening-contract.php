@@ -38,12 +38,12 @@ $require = static function (string $name, array $needles) use ($sources): void {
 $require('updater', array(
     "SBOM_ASSET = 'wordpressconnector.spdx.json'",
     "'capability' => 'update_plugins'",
-    "'package_digest' => \$packageDigest",
-    "'checksum_digest' => \$checksumDigest",
+    "'package_digest' => \$package_digest",
+    "'checksum_digest' => \$checksum_digest",
     "! empty(\$decoded['draft'])",
     "! empty(\$decoded['prerelease'])",
-    "hash_equals(\$expectedAssetDigest, \$actualAssetDigest)",
-    "hash_equals(\$release['package_digest'], 'sha256:' . strtolower(\$actualSha256))",
+    "hash_equals(\$expected_asset_digest, \$actual_asset_digest)",
+    "hash_equals(\$release['package_digest'], 'sha256:' . strtolower(\$actual_sha256))",
 ));
 if (2 !== substr_count(preg_replace('/\\s+/', '', $sources['updater']), "'capability'=>'update_plugins'")) {
     fwrite(STDERR, "Both canonical connector updater actions must declare update_plugins capability.\n");

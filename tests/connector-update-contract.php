@@ -33,7 +33,7 @@ $adapterRequired = array(
     'wp_safe_remote_get',
     'download_url(',
     "hash_file('sha256'",
-    'hash_equals($expectedSha256',
+    'hash_equals($expected_sha256',
     'ZipArchive',
     'getExternalAttributesIndex',
     '0xA000',
