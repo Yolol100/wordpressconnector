@@ -140,7 +140,7 @@ final class Settings {
 		}
 
 		$user_id = get_current_user_id();
-		$user   = wp_get_current_user();
+		$user    = wp_get_current_user();
 		if ( $user_id <= 0 || ! is_object( $user ) || (int) $user->ID !== $user_id ||
 			! current_user_can( 'create_app_password', $user_id ) ) {
 			wp_die(

@@ -351,7 +351,7 @@ final class Runner {
 			if ( in_array( $action, array( 'wordpress.ability.execute', 'wordpress.ability.execute_approved' ), true ) ) {
 				throw new RuntimeException( 'Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.' );
 			}
-			$expected           = $operation['expected_fingerprint'] ?? null;
+			$expected             = $operation['expected_fingerprint'] ?? null;
 			$expected_state_token = $operation['expected_state_token'] ?? null;
 			foreach ( array(
 				'expected_fingerprint' => $expected,
