@@ -377,7 +377,7 @@ final class ElementorAdapter {
 				}
 				unset( $element );
 			} catch ( RuntimeException $error ) {
-				// Missing Elementor ID is a bounded diagnostic, never a template export.
+				unset( $element ); // Avoid retaining a by-reference handle after an unsuccessful lookup.
 			}
 			$matches[] = array(
 				'element_id'        => $element_id,
@@ -913,7 +913,7 @@ final class ElementorAdapter {
 				try {
 					return $this->findElement( $element['elements'], $element_id );
 				} catch ( RuntimeException $error ) {
-					// This descendant has no match; continue with the next sibling.
+					continue; // Descendant not found; inspect the next sibling.
 				}
 			}
 		}

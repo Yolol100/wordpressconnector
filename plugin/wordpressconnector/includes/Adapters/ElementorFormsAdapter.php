@@ -1086,20 +1086,20 @@ final class ElementorFormsAdapter {
 	/**
 	 * Process the save document operation in the Elementor forms adapter.
 	 *
-	 * @param int   $postId Identifier of the requested object.
+	 * @param int   $post_id Identifier of the requested object.
 	 * @param array $data Value used by this operation.
-	 * @param array $pageSettings Value used by this operation.
+	 * @param array $page_settings Value used by this operation.
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function save_document( int $postId, array $data, array $pageSettings ): void {
-		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $postId ) ) {
+	private function save_document( int $post_id, array $data, array $page_settings ): void {
+		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
 		}
-		$result = $this->document( $postId )->save(
+		$result = $this->document( $post_id )->save(
 			array(
 				'elements' => $data,
-				'settings' => $pageSettings,
+				'settings' => $page_settings,
 			)
 		);
 		if ( function_exists( 'is_wp_error' ) && is_wp_error( $result ) ) {
@@ -1109,7 +1109,7 @@ final class ElementorFormsAdapter {
 			throw new RuntimeException( 'Elementor rejected the form document save.' );
 		}
 		if ( function_exists( 'clean_post_cache' ) ) {
-			clean_post_cache( $postId );
+			clean_post_cache( $post_id );
 		}
 	}
 
