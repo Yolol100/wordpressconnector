@@ -86,7 +86,7 @@ final class GitHubOidc {
 		$this->assert_not_replayed( $claims );
 
 		Policy::setPublicRepositoryContext( 'public' === (string) $claims['repository_visibility'] );
-		return $this->administrator_id( $claims );
+		return $this->administrator_id();
 	}
 
 	/**
@@ -240,13 +240,11 @@ final class GitHubOidc {
 	/**
 	 * Process the administrator id operation in the GitHubOidc component.
 	 *
-	 * @param array $claims Input for the operation.
-	 *
 	 * @return int Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function administrator_id( array $claims ): int {
+	private function administrator_id(): int {
 		// The WordPress administrator who approved this exact site is the
 		// executing actor; never impersonate an arbitrary first admin user.
 		$id = SitePairing::pairedAdministratorId();

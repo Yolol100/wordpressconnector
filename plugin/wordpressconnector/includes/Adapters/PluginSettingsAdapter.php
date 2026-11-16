@@ -633,17 +633,17 @@ final class PluginSettingsAdapter {
 	/**
 	 * Audit core plugin count in the plugin settings adapter.
 	 *
-	 * @param string $function Value used by this operation.
+	 * @param string $function_name Value used by this operation.
 	 *
 	 * @return int|null Result of the operation.
 	 */
-	private function audit_core_plugin_count( string $function ): ?int {
-		if ( ! in_array( $function, array( 'get_mu_plugins', 'get_dropins' ), true )
-			|| ! function_exists( $function ) ) {
+	private function audit_core_plugin_count( string $function_name ): ?int {
+		if ( ! in_array( $function_name, array( 'get_mu_plugins', 'get_dropins' ), true )
+			|| ! function_exists( $function_name ) ) {
 			return null;
 		}
 		try {
-			$plugins = $function();
+			$plugins = $function_name();
 		} catch ( \Throwable $error ) {
 			return null;
 		}
