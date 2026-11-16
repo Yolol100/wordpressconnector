@@ -625,8 +625,8 @@ final class ElementorFormsAdapter {
 		if ( 1 !== $submit_count ) {
 			throw new RuntimeException( 'V4 Atomic Form must contain exactly one e-form-submit-button.' );
 		}
-		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $messageType ) {
-			$this->assert_message_has_paragraph( $form, $messageType );
+		foreach ( array( 'e-form-success-message', 'e-form-error-message' ) as $message_type ) {
+			$this->assert_message_has_paragraph( $form, $message_type );
 		}
 		if ( ! isset( $capabilities['types']['e-form'] ) ) {
 			throw new RuntimeException( 'V4 Atomic Form root is not available in the target form capability inventory.' );
@@ -1026,11 +1026,11 @@ final class ElementorFormsAdapter {
 		$document = $this->document_or_null( $post_id );
 		if ( $document ) {
 			$data         = method_exists( $document, 'get_elements_data' ) ? $document->get_elements_data() : array();
-			$pageSettings = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
+			$page_settings = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
 			return array(
 				'post_id'       => $post_id,
 				'data'          => is_array( $data ) ? $data : array(),
-				'page_settings' => is_array( $pageSettings ) ? $pageSettings : array(),
+				'page_settings' => is_array( $page_settings ) ? $page_settings : array(),
 			);
 		}
 		$raw  = get_post_meta( $post_id, '_elementor_data', true );

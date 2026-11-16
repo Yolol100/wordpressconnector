@@ -659,26 +659,26 @@ final class Controller {
 			return $this->tool_error( 'payload must be an object.' );
 		}
 
-		$dryRun  = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
+		$dry_run  = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
 		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
-		if ( ! is_bool( $dryRun ) || ! is_bool( $confirm ) ) {
+		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
 		}
 
-		$requestId = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
-		if ( ! $dryRun && null === $requestId ) {
+		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
+		if ( ! $dry_run && null === $request_id ) {
 			return $this->tool_error( 'Confirmed execution requires an explicit stable request_id.' );
 		}
-		if ( ! $dryRun && ! $confirm ) {
+		if ( ! $dry_run && ! $confirm ) {
 			return $this->tool_error( 'Confirmed execution requires confirm=true.' );
 		}
 
-		$expectedFingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
-		if ( false === $expectedFingerprint ) {
+		$expected_fingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
+		if ( false === $expected_fingerprint ) {
 			return $this->tool_error( 'expected_fingerprint must be a lowercase SHA-256 hex string.' );
 		}
-		$expectedStateToken = $this->optional_hash( $arguments, 'expected_state_token' );
-		if ( false === $expectedStateToken ) {
+		$expected_state_token = $this->optional_hash( $arguments, 'expected_state_token' );
+		if ( false === $expected_state_token ) {
 			return $this->tool_error( 'expected_state_token must be a lowercase SHA-256 hex string.' );
 		}
 
@@ -688,11 +688,11 @@ final class Controller {
 				$tool_name,
 				$action,
 				$arguments['payload'],
-				$dryRun,
+				$dry_run,
 				$confirm,
-				$requestId,
-				$expectedFingerprint,
-				$expectedStateToken
+				$request_id,
+				$expected_fingerprint,
+				$expected_state_token
 			);
 		} catch ( RuntimeException $error ) {
 			return $this->tool_error( $this->bounded_message( $error->getMessage() ) );

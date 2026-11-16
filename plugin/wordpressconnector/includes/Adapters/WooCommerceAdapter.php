@@ -543,7 +543,7 @@ final class WooCommerceAdapter {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location count uses live rate IDs.
 			$count_rows = $wpdb->get_results(
 				$wpdb->prepare(
-					"SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN ({$placeholders}) GROUP BY `tax_rate_id`",
+					'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`',
 					$locations_table,
 					...array_map( 'intval', $rate_ids )
 				)

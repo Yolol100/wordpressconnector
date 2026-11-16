@@ -179,19 +179,19 @@ final class Policy {
 		}
 
 		if ( 'acf.update' === $action ) {
-			$postId = isset( $payload['post_id'] ) && is_int( $payload['post_id'] ) ? $payload['post_id'] : ( isset( $payload['target'] ) && is_int( $payload['target'] ) ? $payload['target'] : 0 );
+			$post_id = isset( $payload['post_id'] ) && is_int( $payload['post_id'] ) ? $payload['post_id'] : ( isset( $payload['target'] ) && is_int( $payload['target'] ) ? $payload['target'] : 0 );
 		} else {
-			$postId = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+			$post_id = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		}
-		if ( $postId <= 0 ) {
+		if ( $post_id <= 0 ) {
 			throw new RuntimeException( 'Public ' . $action . ' requires a positive post id.' );
 		}
-		$post = get_post( $postId );
+		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Public ' . $action . ' target post was not found.' );
 		}
-		$requiresEdit = in_array( $action, array( 'post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore' ), true );
-		self::assertPublicContentTarget( $post, $requiresEdit );
+		$requires_edit = in_array( $action, array( 'post.update', 'post.literal_replace', 'acf.update', 'elementor.patch_element', 'yoast.snippet.inspect', 'yoast.snippet.update', 'yoast.snippet.restore' ), true );
+		self::assertPublicContentTarget( $post, $requires_edit );
 	}
 
 	/**
@@ -204,8 +204,8 @@ final class Policy {
 	 */
 	public static function assertPublicContentTarget( \WP_Post $post, bool $requiresEdit = false ): void {
 		self::assertReadablePostType( (string) $post->post_type );
-		$postType = get_post_type_object( (string) $post->post_type );
-		if ( ! $postType || ! $postType->public ) {
+		$post_type = get_post_type_object( (string) $post->post_type );
+		if ( ! $post_type || ! $post_type->public ) {
 			throw new RuntimeException( 'Only public post types may be targeted in public-repository mode.' );
 		}
 		if ( 'publish' !== (string) $post->post_status || '' !== (string) $post->post_password ) {
@@ -236,8 +236,8 @@ final class Policy {
 			}
 			return;
 		}
-		$postType = get_post_type_object( (string) $post->post_type );
-		if ( ! $postType || ! $postType->public ) {
+		$post_type = get_post_type_object( (string) $post->post_type );
+		if ( ! $post_type || ! $post_type->public ) {
 			throw new RuntimeException( 'Non-public post types cannot be exported in public-repository mode.' );
 		}
 		if ( 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
