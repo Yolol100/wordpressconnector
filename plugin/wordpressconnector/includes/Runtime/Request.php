@@ -80,13 +80,13 @@ final class Request {
 		?string $expected_fingerprint,
 		?string $expected_state_token
 	) {
-		$this->id                  = $id;
-		$this->action              = $action;
-		$this->payload             = $payload;
+		$this->id                   = $id;
+		$this->action               = $action;
+		$this->payload              = $payload;
 		$this->dry_run              = $dry_run;
-		$this->confirm             = $confirm;
+		$this->confirm              = $confirm;
 		$this->expected_fingerprint = $expected_fingerprint;
-		$this->expected_state_token  = $expected_state_token;
+		$this->expected_state_token = $expected_state_token;
 	}
 
 	/**
@@ -168,7 +168,7 @@ final class Request {
 		}
 
 		$expected_fingerprint = self::hexGuard( $data, 'expected_fingerprint' );
-		$expected_state_token  = self::hexGuard( $data, 'expected_state_token' );
+		$expected_state_token = self::hexGuard( $data, 'expected_state_token' );
 
 		if ( class_exists( Policy::class ) && Policy::publicRepositoryContext() ) {
 			if ( 'connector.read_batch' === $action ) {
