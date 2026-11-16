@@ -162,7 +162,7 @@ Policy::setPublicRepositoryContext(false);
 
 foreach (array(
     "'plugin.install_package'",
-    'assertPublicPluginInstallPayload',
+    'assert_public_plugin_install_payload',
     "Public plugin package overwrite is restricted to the Webactueel Mailbox Bridge.",
     "network_wide=false",
     "expected_fingerprint from the preceding dry-run",
