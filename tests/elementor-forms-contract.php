@@ -130,75 +130,75 @@ namespace {
     if (! isset($caps['atomic']['types']['e-form']['config']['atomic_props_schema'])) { fwrite(STDERR, "V4 schema inventory failed.\n"); exit(1); }
     if (empty($caps['schema_fingerprint'])) { fwrite(STDERR, "Schema fingerprint missing.\n"); exit(1); }
 
-    if ($invoke('formFamily', array($v3)) !== 'v3' || $invoke('formFamily', array($v4)) !== 'v4') { fwrite(STDERR, "Family detection failed.\n"); exit(1); }
-    if (null !== $invoke('formFamily', array(array('id' => 'x', 'elType' => 'widget', 'widgetType' => 'heading')))) { fwrite(STDERR, "Non-form detection failed.\n"); exit(1); }
+    if ($invoke('form_family', array($v3)) !== 'v3' || $invoke('form_family', array($v4)) !== 'v4') { fwrite(STDERR, "Family detection failed.\n"); exit(1); }
+    if (null !== $invoke('form_family', array(array('id' => 'x', 'elType' => 'widget', 'widgetType' => 'heading')))) { fwrite(STDERR, "Non-form detection failed.\n"); exit(1); }
 
     $before = $v3;
-    $invoke('validateClassicForm', array($v3, $caps['classic']));
+    $invoke('validate_classic_form', array($v3, $caps['classic']));
     $scenarios++;
     if ($v3 !== $before || $v3['settings']['email_content'] !== '[all-fields]') { fwrite(STDERR, "V3 settings were altered.\n"); exit(1); }
 
     $bad = $v3; $bad['settings']['form_fields'][1]['_id'] = 'f1';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'Duplicate V3 form field _id');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'Duplicate V3 form field _id');
     $bad = $v3; $bad['settings']['form_fields'][1]['custom_id'] = 'name';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'Duplicate V3 form field custom_id');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'Duplicate V3 form field custom_id');
     $bad = $v3; $bad['settings']['submit_actions'][] = 'unknown';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'not registered');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'not registered');
     $bad = $v3; $bad['settings']['submit_actions'] = 'email';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'submit_actions must be an array');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'submit_actions must be an array');
     $bad = $v3; $bad['settings']['form_fields'] = 'bad';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'form_fields must be an array');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'form_fields must be an array');
     $bad = $v3; $bad['elements'] = array(array('id' => 'child'));
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateClassicForm', array($bad, $caps['classic'])); }, 'leaf widgets');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_classic_form', array($bad, $caps['classic'])); }, 'leaf widgets');
 
-    $invoke('validateAtomicForm', array($v4, $caps['atomic']));
+    $invoke('validate_atomic_form', array($v4, $caps['atomic']));
     $scenarios++;
     if ($v4['settings']['email']['value']['message'] !== '[all-fields]') { fwrite(STDERR, "V4 email settings were altered.\n"); exit(1); }
 
     $bad = $v4; $bad['elements'] = array_values(array_filter($bad['elements'], static function (array $item): bool { return 'e-form-success-message' !== $item['elType']; }));
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'e-form-success-message');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'e-form-success-message');
     $bad = $v4; $bad['elements'] = array_values(array_filter($bad['elements'], static function (array $item): bool { return 'e-form-error-message' !== $item['elType']; }));
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'e-form-error-message');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'e-form-error-message');
     $bad = $v4; $bad['elements'] = array_values(array_filter($bad['elements'], static function (array $item): bool { return 'e-form-submit-button' !== $item['elType']; }));
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'exactly one e-form-submit-button');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'exactly one e-form-submit-button');
     $bad = $v4; $bad['elements'][] = $node('submit2', 'e-form-submit-button');
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'exactly one e-form-submit-button');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'exactly one e-form-submit-button');
     $bad = $v4; $bad['elements'][2]['elements'] = array();
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'must contain an e-paragraph');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'must contain an e-paragraph');
     $bad = $v4; $bad['elements'][] = $node('nested', 'e-form');
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'cannot be nested');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'cannot be nested');
     $bad = $v4; $bad['elements'][] = $node('unknown', 'e-form-unknown');
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'not registered');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'not registered');
     $bad = $v4; unset($bad['version']);
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'missing its schema version');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'missing its schema version');
     $bad = $v4; $bad['settings']['email'] = array('value' => array());
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'missing $$type/value');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'missing $$type/value');
     $bad = $v4; $bad['interactions'] = 'bad';
-    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validateAtomicForm', array($bad, $caps['atomic'])); }, 'interactions must be an array');
+    $mustFail(static function () use ($invoke, $bad, $caps): void { $invoke('validate_atomic_form', array($bad, $caps['atomic'])); }, 'interactions must be an array');
     $withoutInteractions = $v4; unset($withoutInteractions['interactions']);
-    $invoke('validateAtomicForm', array($withoutInteractions, $caps['atomic']));
+    $invoke('validate_atomic_form', array($withoutInteractions, $caps['atomic']));
 
     $tree = array(array('id' => 'container', 'elType' => 'container', 'settings' => array(), 'elements' => array()));
-    $args = array(&$tree, 'container', $v3, 0); $invoke('insertIntoParent', $args);
+    $args = array(&$tree, 'container', $v3, 0); $invoke('insert_into_parent', $args);
     $scenarios++;
     if (($tree[0]['elements'][0]['id'] ?? '') !== 'formv3') { fwrite(STDERR, "Insert failed.\n"); exit(1); }
     $replacement = $v3; $replacement['settings']['email_subject'] = 'Changed';
-    $args = array(&$tree, 'formv3', $replacement); $invoke('replaceElementById', $args);
+    $args = array(&$tree, 'formv3', $replacement); $invoke('replace_element_by_id', $args);
     $scenarios++;
     if (($tree[0]['elements'][0]['settings']['email_subject'] ?? '') !== 'Changed') { fwrite(STDERR, "Replace failed.\n"); exit(1); }
 
-    $mustFail(static function () use ($invoke, $v4): void { $children = array(); $args = array(&$children, $v4, 2); $invoke('insertAt', $args); }, 'outside the valid child range');
+    $mustFail(static function () use ($invoke, $v4): void { $children = array(); $args = array(&$children, $v4, 2); $invoke('insert_at', $args); }, 'outside the valid child range');
     $nested = array($node('outer', 'e-form', array(), array($v3)));
-    $mustFail(static function () use ($invoke, $nested): void { $invoke('assertNoNestedForms', array($nested)); }, 'cannot be nested');
+    $mustFail(static function () use ($invoke, $nested): void { $invoke('assert_no_nested_forms', array($nested)); }, 'cannot be nested');
     $duplicate = array(array('id' => 'same', 'elType' => 'container', 'elements' => array()), array('id' => 'same', 'elType' => 'container', 'elements' => array()));
-    $mustFail(static function () use ($invoke, $duplicate): void { $invoke('assertUniqueElementIds', array($duplicate)); }, 'Duplicate Elementor element id');
+    $mustFail(static function () use ($invoke, $duplicate): void { $invoke('assert_unique_element_ids', array($duplicate)); }, 'Duplicate Elementor element id');
 
     $forms = array(); $document = array(array('id' => 'layout', 'elType' => 'container', 'elements' => array($v3, $v4)));
-    $args = array($document, &$forms, array(), null); $invoke('collectForms', $args);
+    $args = array($document, &$forms, array(), null); $invoke('collect_forms', $args);
     $scenarios++;
     if (count($forms) !== 2 || $forms[0]['family'] !== 'v3' || $forms[1]['family'] !== 'v4') { fwrite(STDERR, "Inspection traversal failed.\n"); exit(1); }
 
-    $redacted = $invoke('redactSecrets', array(array('token' => 'x', 'nested' => array('api_key' => 'y', 'label' => 'ok'))));
+    $redacted = $invoke('redact_secrets', array(array('token' => 'x', 'nested' => array('api_key' => 'y', 'label' => 'ok'))));
     $scenarios++;
     if ($redacted['token'] !== '[redacted]' || $redacted['nested']['api_key'] !== '[redacted]' || $redacted['nested']['label'] !== 'ok') { fwrite(STDERR, "Redaction failed.\n"); exit(1); }
 
@@ -208,7 +208,7 @@ namespace {
     if (! is_string($normalizedSource)) { throw new RuntimeException('Could not normalize Elementor Forms source.'); }
     foreach (array(
         'elementor.form_capabilities', 'elementor.form_inspect', 'elementor.form_upsert', 'expected_schema_fingerprint', 'allow_family_change',
-        "save(array('elements' => \$data, 'settings' => \$pageSettings))", 'restoreSnapshot($before)', 'Fingerprint::make($form)'
+        "save(array('elements' => \$data, 'settings' => \$pageSettings))", 'restore_snapshot($before)', 'Fingerprint::make($form)'
     ) as $needle) {
         $scenarios++;
         if (false === strpos($normalizedSource, preg_replace('/\\s+/', '', $needle))) { fwrite(STDERR, "Missing contract: {$needle}\n"); exit(1); }

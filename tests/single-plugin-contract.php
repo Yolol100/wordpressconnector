@@ -61,7 +61,7 @@ foreach(array("register('elementor.inventory'",'missing_widgets','widgetSource',
         exit(1);
     }
 }
-foreach(array("register('elementor.form_capabilities'","register('elementor.form_inspect'","register('elementor.form_upsert'",'schema_fingerprint','submit_action_choice_keys','atomic_props_schema','restoreSnapshot') as $needle) {
+foreach(array("register('elementor.form_capabilities'","register('elementor.form_inspect'","register('elementor.form_upsert'",'schema_fingerprint','submit_action_choice_keys','atomic_props_schema','restore_snapshot') as $needle) {
     if(strpos($normalizedForms,str_replace(' ','',$needle))===false) {
         fwrite(STDERR,"Elementor forms contract is missing: {$needle}.\n");
         exit(1);
