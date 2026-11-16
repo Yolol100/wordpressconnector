@@ -50,8 +50,8 @@ final class WooCommerceFulfillmentAdapter {
 	 */
 	public function inspectLocations( array $payload, array $context = array() ): array {
 		$this->keys( $payload, array( 'zone_id' ) );
-		$path      = $this->locationPath( $payload );
-		$locations = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$path      = $this->location_path( $payload );
+		$locations = $this->location_snapshot( $this->api( 'GET', $path ) );
 		return array(
 			'zone_id'     => $payload['zone_id'],
 			'locations'   => $locations,
@@ -71,9 +71,9 @@ final class WooCommerceFulfillmentAdapter {
 	 */
 	public function updateLocations( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'zone_id', 'locations', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
-		$path        = $this->locationPath( $payload );
-		$new         = $this->normalizeLocations( $payload['locations'] ?? null, false );
-		$before      = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$path        = $this->location_path( $payload );
+		$new         = $this->normalize_locations( $payload['locations'] ?? null, false );
+		$before      = $this->location_snapshot( $this->api( 'GET', $path ) );
 		$fingerprint = Fingerprint::make( $before );
 		$result      = array(
 			'zone_id'              => $payload['zone_id'],
@@ -86,10 +86,10 @@ final class WooCommerceFulfillmentAdapter {
 		}
 		$this->gate( $payload, $fingerprint );
 		$this->api( 'PUT', $path, $new, true );
-		$after = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$after = $this->location_snapshot( $this->api( 'GET', $path ) );
 		if ( $after !== $new ) {
 			$this->api( 'PUT', $path, $before, true );
-			if ( $this->locationSnapshot( $this->api( 'GET', $path ) ) !== $before ) {
+			if ( $this->location_snapshot( $this->api( 'GET', $path ) ) !== $before ) {
 				throw new RuntimeException( 'Shipping location readback failed and restore was not verified.' );
 			}
 			throw new RuntimeException( 'Shipping location update rejected; previous locations restored.' );
@@ -120,19 +120,19 @@ final class WooCommerceFulfillmentAdapter {
 			throw new RuntimeException( 'Location restoration is rollback-only.' );
 		}
 		$this->keys( $payload, array( 'zone_id', 'locations', 'expected_after_fingerprint' ) );
-		$path     = $this->locationPath( $payload );
-		$current  = $this->locationSnapshot( $this->api( 'GET', $path ) );
+		$path     = $this->location_path( $payload );
+		$current  = $this->location_snapshot( $this->api( 'GET', $path ) );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 		|| ! hash_equals( Fingerprint::make( $current ), $expected ) ) {
 			throw new RuntimeException( 'Shipping locations changed after the original write.' );
 		}
-		$previous = $this->normalizeLocations( $payload['locations'] ?? null, true );
+		$previous = $this->normalize_locations( $payload['locations'] ?? null, true );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => $previous );
 		}
 		$this->api( 'PUT', $path, $previous, true );
-		if ( $this->locationSnapshot( $this->api( 'GET', $path ) ) !== $previous ) {
+		if ( $this->location_snapshot( $this->api( 'GET', $path ) ) !== $previous ) {
 			throw new RuntimeException( 'Shipping location rollback readback failed.' );
 		}
 		return array(
@@ -154,8 +154,8 @@ final class WooCommerceFulfillmentAdapter {
 	public function create( array $payload, array $context ): array {
 		$this->keys( $payload, array( 'type', 'zone_id', 'fields', 'critical_confirm', 'restore_verified', 'expected_before_fingerprint' ) );
 		$type      = $this->type( $payload );
-		$path      = $this->collectionPath( $type, $payload );
-		$fields    = $this->creationFields( $type, $payload['fields'] ?? null );
+		$path      = $this->collection_path( $type, $payload );
+		$fields    = $this->creation_fields( $type, $payload['fields'] ?? null );
 		$inventory = $this->api( 'GET', $path, array( 'per_page' => 100 ) );
 		if ( count( $inventory ) >= 100 ) {
 			throw new RuntimeException( 'Provider inventory is incomplete; cannot safely prevent duplicate creation.' );
@@ -176,7 +176,7 @@ final class WooCommerceFulfillmentAdapter {
 				throw new RuntimeException( 'A matching tax rate already exists.' );
 			}
 		}
-		$fp     = Fingerprint::make( $this->inventorySnapshot( $type, $inventory ) );
+		$fp     = Fingerprint::make( $this->inventory_snapshot( $type, $inventory ) );
 		$result = array(
 			'type'                 => $type,
 			'fields'               => $fields,
@@ -223,7 +223,7 @@ final class WooCommerceFulfillmentAdapter {
 			}
 			throw new RuntimeException( 'WooCommerce provisioning readback failed; newly created resource removed.' );
 		}
-		$snapshot            = $this->resourceSnapshot( $type, $current );
+		$snapshot            = $this->resource_snapshot( $type, $current );
 		$result['created']   = $snapshot;
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.fulfillment.restore_created',
@@ -254,9 +254,9 @@ final class WooCommerceFulfillmentAdapter {
 		$this->keys( $payload, array( 'type', 'zone_id', 'id', 'expected_after_fingerprint' ) );
 		$type     = $this->type( $payload );
 		$id       = $this->positive( $payload['id'] ?? null, 'id' );
-		$path     = $this->collectionPath( $type, $payload ) . '/' . $id;
+		$path     = $this->collection_path( $type, $payload ) . '/' . $id;
 		$current  = $this->api( 'GET', $path );
-		$snapshot = $this->resourceSnapshot( $type, $current );
+		$snapshot = $this->resource_snapshot( $type, $current );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 		|| ! hash_equals( Fingerprint::make( $snapshot ), $expected ) ) {
@@ -290,7 +290,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function creationFields( string $type, $fields ): array {
+	private function creation_fields( string $type, $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 9 ) {
 			throw new RuntimeException( 'WooCommerce provisioning requires explicit bounded fields.' );
 		}
@@ -371,7 +371,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function locationSnapshot( array $response ): array {
+	private function location_snapshot( array $response ): array {
 		$result = array();
 		foreach ( $response as $value ) {
 			if ( ! is_array( $value ) || ! isset( $value['type'], $value['code'] ) ) {
@@ -382,7 +382,7 @@ final class WooCommerceFulfillmentAdapter {
 				'code' => (string) $value['code'],
 			);
 		}
-		return $this->normalizeLocations( $result, true );
+		return $this->normalize_locations( $result, true );
 	}
 
 	/**
@@ -395,7 +395,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function normalizeLocations( $locations, bool $allow_empty ): array {
+	private function normalize_locations( $locations, bool $allow_empty ): array {
 		if ( ! is_array( $locations ) || count( $locations ) > 100 || ( ! $allow_empty && ! $locations ) ) {
 			throw new RuntimeException( 'Locations require 1-100 allowed entries.' );
 		}
@@ -427,13 +427,13 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function inventorySnapshot( string $type, array $data ): array {
+	private function inventory_snapshot( string $type, array $data ): array {
 		$out = array();
 		foreach ( $data as $item ) {
 			if ( ! is_array( $item ) ) {
 				continue;
 			}
-			$out[] = $this->resourceSnapshot( $type, $item );
+			$out[] = $this->resource_snapshot( $type, $item );
 		}
 		return $out;
 	}
@@ -446,7 +446,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function resourceSnapshot( string $type, array $item ): array {
+	private function resource_snapshot( string $type, array $item ): array {
 		$keys = 'shipping_zone' === $type ? array( 'id', 'name', 'order' )
 			: ( 'shipping_method' === $type ? array( 'instance_id', 'method_id', 'order', 'enabled' )
 			: array( 'id', 'country', 'state', 'postcode', 'city', 'rate', 'name', 'priority', 'compound', 'shipping', 'order', 'class' ) );
@@ -510,7 +510,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function collectionPath( string $type, array $payload ): string {
+	private function collection_path( string $type, array $payload ): string {
 		$path = self::TYPES[ $type ];
 		if ( 'shipping_method' === $type ) {
 			$path .= '/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/methods';
@@ -526,7 +526,7 @@ final class WooCommerceFulfillmentAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function locationPath( array $payload ): string {
+	private function location_path( array $payload ): string {
 		return '/wc/v3/shipping/zones/' . $this->positive( $payload['zone_id'] ?? null, 'zone_id' ) . '/locations';
 	}
 	/**

@@ -95,7 +95,7 @@ final class WooCommerceOperationsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function lists( array $payload = array(), array $context = array() ): array {
-		$this->assertKeys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
+		$this->assert_keys( $payload, array( 'area', 'zone_id', 'page', 'per_page' ) );
 		$area = $payload['area'] ?? null;
 		if ( ! is_string( $area ) || ! in_array(
 			$area,
@@ -168,7 +168,7 @@ final class WooCommerceOperationsAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
-		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id' ) );
+		$this->assert_keys( $payload, array( 'area', 'id', 'zone_id' ) );
 		$area  = $this->area( $payload );
 		$path  = $this->path( $area, $payload );
 		$data  = $this->request( 'GET', $path );
@@ -191,7 +191,7 @@ final class WooCommerceOperationsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->assertKeys(
+		$this->assert_keys(
 			$payload,
 			array(
 				'area',
@@ -213,7 +213,7 @@ final class WooCommerceOperationsAdapter {
 		$raw         = $this->request( 'GET', $path );
 		$before      = $this->summarize( $raw, $area );
 		$fingerprint = Fingerprint::make( $before );
-		$updates     = $this->validateChanges( $area, $fields, $raw );
+		$updates     = $this->validate_changes( $area, $fields, $raw );
 		$result      = array(
 			'area'                 => $area,
 			'before'               => $before,
@@ -223,7 +223,7 @@ final class WooCommerceOperationsAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->criticalGate( $payload, $fingerprint );
+		$this->critical_gate( $payload, $fingerprint );
 		if ( 'payment_gateway' === $area && ! empty( $updates['enabled'] )
 		&& true === $updates['enabled']
 		&& ( ! defined( 'WPCONNECTOR_ALLOW_WOO_PAYMENT_ENABLE' )
@@ -290,7 +290,7 @@ final class WooCommerceOperationsAdapter {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'WooCommerce provider restoration is rollback-only.' );
 		}
-		$this->assertKeys( $payload, array( 'area', 'id', 'zone_id', 'fields', 'expected_after_fingerprint' ) );
+		$this->assert_keys( $payload, array( 'area', 'id', 'zone_id', 'fields', 'expected_after_fingerprint' ) );
 		$area       = $this->area( $payload );
 		$path       = $this->path( $area, $payload );
 		$before_raw = $this->request( 'GET', $path );
@@ -300,7 +300,7 @@ final class WooCommerceOperationsAdapter {
 		|| ! hash_equals( Fingerprint::make( $before ), $expected ) ) {
 			throw new RuntimeException( 'WooCommerce provider rollback blocked due to changed remote state.' );
 		}
-		$changes = $this->validateChanges( $area, $payload['fields'] ?? null, $before_raw );
+		$changes = $this->validate_changes( $area, $payload['fields'] ?? null, $before_raw );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => array_keys( $changes ) );
 		}
@@ -330,7 +330,7 @@ final class WooCommerceOperationsAdapter {
 			: array( 'id', 'title', 'description', 'order', 'enabled', 'method_title' ) ) );
 		foreach ( $keys as $key ) {
 			if ( array_key_exists( $key, $data ) ) {
-				$out[ $key ] = $this->safePublicValue( $data[ $key ] );
+				$out[ $key ] = $this->safe_public_value( $data[ $key ] );
 			}
 		}
 		if ( in_array( $area, array( 'shipping_method', 'payment_gateway' ), true )
@@ -343,7 +343,7 @@ final class WooCommerceOperationsAdapter {
 				}
 				$type    = isset( $setting['type'] ) && is_string( $setting['type'] ) ? $setting['type'] : '';
 				$secret  = $this->secret( $id, $type );
-				$visible = ! $secret && $this->exposableSetting( $area, $id );
+				$visible = ! $secret && $this->exposable_setting( $area, $id );
 				$option  = array(
 					'id'   => $id,
 					'type' => substr( $type, 0, 40 ),
@@ -351,7 +351,7 @@ final class WooCommerceOperationsAdapter {
 						: ( $visible ? 'critical_requires_site_gate' : 'provider_specific_read_only' ),
 				);
 				if ( $visible && array_key_exists( 'value', $setting ) ) {
-					$option['value'] = $this->safePublicValue( $setting['value'] );
+					$option['value'] = $this->safe_public_value( $setting['value'] );
 				}
 				$options[ $id ] = $option;
 			}
@@ -371,7 +371,7 @@ final class WooCommerceOperationsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateChanges( string $area, $fields, array $before ): array {
+	private function validate_changes( string $area, $fields, array $before ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 12 ) {
 			throw new RuntimeException( 'Invalid WooCommerce provider settings payload.' );
 		}
@@ -391,7 +391,7 @@ final class WooCommerceOperationsAdapter {
 					if ( ! is_string( $option_id ) || ! preg_match( '/^[a-z0-9_\-]{1,100}$/D', $option_id )
 					|| ! isset( $before['settings'][ $option_id ] )
 					|| $this->secret( $option_id, (string) ( $before['settings'][ $option_id ]['type'] ?? '' ) )
-					|| ! $this->exposableSetting( $area, $option_id )
+					|| ! $this->exposable_setting( $area, $option_id )
 					|| ( 'payment_gateway' === $area
 					&& preg_match( '/(live|test|mode|environment|capture|refund|webhook|checkout|subscription|settlement)/i', $option_id ) ) ) {
 						throw new RuntimeException( 'Protected WooCommerce provider credential or setting.' );
@@ -488,7 +488,7 @@ final class WooCommerceOperationsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function criticalGate( array $payload, string $fingerprint ): void {
+	private function critical_gate( array $payload, string $fingerprint ): void {
 		$expected = $payload['expected_before_fingerprint'] ?? null;
 		if ( ! defined( 'WPCONNECTOR_ALLOW_WOO_CRITICAL' ) || WPCONNECTOR_ALLOW_WOO_CRITICAL !== true
 		|| ( $payload['critical_confirm'] ?? null ) !== true
@@ -508,7 +508,7 @@ final class WooCommerceOperationsAdapter {
 	 *
 	 * @return mixed Operation result.
 	 */
-	private function safePublicValue( $value ) {
+	private function safe_public_value( $value ) {
 		if ( is_null( $value ) || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 			return $value;
 		}
@@ -537,7 +537,7 @@ final class WooCommerceOperationsAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function exposableSetting( string $area, string $id ): bool {
+	private function exposable_setting( string $area, string $id ): bool {
 		// Third-party plugins may store credentials under innocent-looking
 		// keys. Only provider-owned display fields are safe to echo to GitHub.
 		// Any additional field needs an explicit plugin/version contract.
@@ -636,7 +636,7 @@ final class WooCommerceOperationsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertKeys( array $payload, array $allowed ): void {
+	private function assert_keys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Unexpected WooCommerce provider settings arguments.' );
 		}

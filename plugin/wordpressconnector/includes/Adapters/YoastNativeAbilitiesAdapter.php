@@ -160,7 +160,7 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function scores( array $payload, array $context = array() ): array {
-		$this->assertPrivate();
+		$this->assert_private();
 		if ( ! function_exists( 'current_user_can' ) || ! current_user_can( 'wpseo_manage_options' ) ) {
 			throw new RuntimeException( 'Yoast analysis scores require wpseo_manage_options.' );
 		}
@@ -192,12 +192,12 @@ final class YoastNativeAbilitiesAdapter {
 	 * @return array Operation result.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
-		$id   = $this->assertPostAccess( $payload );
-		$data = $this->postData( $id );
+		$id   = $this->assert_post_access( $payload );
+		$data = $this->post_data( $id );
 		return array(
 			'post_id'     => $id,
 			'fields'      => $this->snapshot( $data ),
-			'rendered'    => $this->renderedFields( $data ),
+			'rendered'    => $this->rendered_fields( $data ),
 			'analysis'    => array_intersect_key(
 				$data,
 				array_flip(
@@ -224,14 +224,14 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context = array() ): array {
-		$id         = $this->assertPostAccess( $payload );
-		$fields     = $this->validatedFields( $payload['fields'] ?? null );
+		$id         = $this->assert_post_access( $payload );
+		$fields     = $this->validated_fields( $payload['fields'] ?? null );
 		$highImpact = array_values( array_intersect( array_keys( $fields ), self::HIGH_IMPACT ) );
 		if ( $highImpact && true !== ( $payload['risk_acknowledged'] ?? false ) ) {
 			throw new RuntimeException( 'High-impact Yoast metadata requires risk_acknowledged=true.' );
 		}
 
-		$before   = $this->snapshot( $this->postData( $id ) );
+		$before   = $this->snapshot( $this->post_data( $id ) );
 		$proposed = array_replace( $before, $fields );
 		$result   = array(
 			'post_id'              => $id,
@@ -251,12 +251,12 @@ final class YoastNativeAbilitiesAdapter {
 
 		$restore_fields = array_intersect_key( $before, $fields );
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $fields ) );
-		$after = $this->snapshot( $this->postData( $id ) );
+		$after = $this->snapshot( $this->post_data( $id ) );
 		foreach ( $fields as $field => $value ) {
 			if ( $after[ $field ] !== $value ) {
 				try {
 					$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $restore_fields ) );
-					$restored = $this->snapshot( $this->postData( $id ) );
+					$restored = $this->snapshot( $this->post_data( $id ) );
 					if ( $restored !== $before ) {
 						throw new RuntimeException( 'Automatic restoration mismatch.' );
 					}
@@ -294,13 +294,13 @@ final class YoastNativeAbilitiesAdapter {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Yoast native restore is rollback-only.' );
 		}
-		$id       = $this->assertPostAccess( $payload );
-		$previous = $this->validatedFields( $payload['fields'] ?? null );
+		$id       = $this->assert_post_access( $payload );
+		$previous = $this->validated_fields( $payload['fields'] ?? null );
 		$expected = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || 1 !== preg_match( '/^[a-f0-9]{64}$/D', $expected ) ) {
 			throw new RuntimeException( 'A valid rollback fingerprint is required.' );
 		}
-		$current = $this->snapshot( $this->postData( $id ) );
+		$current = $this->snapshot( $this->post_data( $id ) );
 		if ( ! hash_equals( Fingerprint::make( $current ), $expected ) ) {
 			throw new RuntimeException( 'Yoast metadata changed since the original write.' );
 		}
@@ -311,7 +311,7 @@ final class YoastNativeAbilitiesAdapter {
 			);
 		}
 		$this->invoke( self::ABILITIES['post_update'], array_merge( array( 'post_id' => $id ), $previous ) );
-		$after = $this->snapshot( $this->postData( $id ) );
+		$after = $this->snapshot( $this->post_data( $id ) );
 		foreach ( $previous as $field => $value ) {
 			if ( $after[ $field ] !== $value ) {
 				throw new RuntimeException( 'Yoast native rollback readback mismatch.' );
@@ -329,7 +329,7 @@ final class YoastNativeAbilitiesAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPrivate(): void {
+	private function assert_private(): void {
 		if ( Policy::publicRepositoryContext() ) {
 			throw new RuntimeException( 'Native Yoast Abilities require a private authenticated transport.' );
 		}
@@ -350,8 +350,8 @@ final class YoastNativeAbilitiesAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPostAccess( array $payload ): int {
-		$this->assertPrivate();
+	private function assert_post_access( array $payload ): int {
+		$this->assert_private();
 		$id = $payload['post_id'] ?? null;
 		if ( ! is_int( $id ) || $id < 1 ) {
 			throw new RuntimeException( 'An explicit positive post_id is required.' );
@@ -377,7 +377,7 @@ final class YoastNativeAbilitiesAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function postData( int $id ): array {
+	private function post_data( int $id ): array {
 		$result = $this->invoke( self::ABILITIES['post_read'], array( 'post_id' => $id ) );
 		if ( ! is_array( $result ) ) {
 			throw new RuntimeException( 'Yoast native post response was invalid.' );
@@ -401,7 +401,7 @@ final class YoastNativeAbilitiesAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function invoke( string $name, array $input ) {
-		$this->assertPrivate();
+		$this->assert_private();
 		if ( ! in_array( $name, array_values( self::ABILITIES ), true ) ) {
 			throw new RuntimeException( 'Unrecognized native Yoast Ability.' );
 		}
@@ -442,7 +442,7 @@ final class YoastNativeAbilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function renderedFields( array $data ): array {
+	private function rendered_fields( array $data ): array {
 		$fields = array();
 		foreach ( array(
 			'seo_title_rendered',
@@ -468,7 +468,7 @@ final class YoastNativeAbilitiesAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validatedFields( $fields ): array {
+	private function validated_fields( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::WRITABLE ) ) {
 			throw new RuntimeException( 'Expected 1-15 explicit Yoast metadata fields.' );
 		}
