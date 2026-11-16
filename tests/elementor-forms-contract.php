@@ -208,7 +208,7 @@ namespace {
     if (! is_string($normalizedSource)) { throw new RuntimeException('Could not normalize Elementor Forms source.'); }
     foreach (array(
         'elementor.form_capabilities', 'elementor.form_inspect', 'elementor.form_upsert', 'expected_schema_fingerprint', 'allow_family_change',
-        "save(array('elements' => \$data, 'settings' => \$pageSettings,))", 'restore_snapshot($before)', 'Fingerprint::make($form)'
+        "save(array('elements' => \$data, 'settings' => \$page_settings,))", 'restore_snapshot($before)', 'Fingerprint::make($form)'
     ) as $needle) {
         $scenarios++;
         if (false === strpos($normalizedSource, preg_replace('/\\s+/', '', $needle))) { fwrite(STDERR, "Missing contract: {$needle}\n"); exit(1); }
