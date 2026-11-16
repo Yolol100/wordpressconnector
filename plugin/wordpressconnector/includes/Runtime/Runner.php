@@ -109,7 +109,7 @@ final class Runner {
 		try {
 			$descriptor = $this->registry->descriptor( $request->action() );
 			if ( Policy::publicRepositoryContext() ) {
-				$descriptor = $this->publicDescriptor( $request->action(), $request->payload(), $descriptor, $request->dryRun(), $request->expectedFingerprint() );
+				$descriptor = $this->public_descriptor( $request->action(), $request->payload(), $descriptor, $request->dryRun(), $request->expectedFingerprint() );
 			}
 			Policy::assertActionAllowed( $descriptor, $request->dryRun(), $request->confirm() );
 			$request_fingerprint = Fingerprint::make(
@@ -169,7 +169,7 @@ final class Runner {
 			$context['confirm']    = $request->confirm();
 			$context['request_id'] = $request->id();
 			$context['registry']   = $this->registry;
-			$data                  = $this->executeWithStateGuards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			$data                  = $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
 			if ( isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['fingerprint'] ) ) {
 				$data['state_token'] = Fingerprint::siteTokenFromFingerprint( $data['fingerprint'] );
 			}
@@ -288,7 +288,7 @@ final class Runner {
 				throw new RuntimeException( 'Mutating, sensitive and system-update actions are not allowed in connector.read_batch.' );
 			}
 			if ( Policy::publicRepositoryContext() ) {
-				$descriptor = $this->publicDescriptor( $action, $operation['payload'], $descriptor, true, null );
+				$descriptor = $this->public_descriptor( $action, $operation['payload'], $descriptor, true, null );
 			}
 			Policy::assertActionAllowed( $descriptor, true, false );
 			$allowed[] = array(
@@ -366,7 +366,7 @@ final class Runner {
 			}
 			$descriptor = $this->registry->descriptor( $action );
 			if ( Policy::publicRepositoryContext() ) {
-				$descriptor = $this->publicDescriptor( $action, $operation['payload'], $descriptor, ! empty( $context['dry_run'] ), $expected );
+				$descriptor = $this->public_descriptor( $action, $operation['payload'], $descriptor, ! empty( $context['dry_run'] ), $expected );
 			}
 			Policy::assertActionAllowed( $descriptor, ! empty( $context['dry_run'] ), ! empty( $context['confirm'] ) );
 			$prepared[] = array(
@@ -386,10 +386,10 @@ final class Runner {
 				// may change the current user's capabilities or target visibility.
 				$descriptor = $this->registry->descriptor( $action );
 				if ( Policy::publicRepositoryContext() ) {
-					$descriptor = $this->publicDescriptor( $action, $operation['payload'], $descriptor, ! empty( $context['dry_run'] ), $operation['expected_fingerprint'] );
+					$descriptor = $this->public_descriptor( $action, $operation['payload'], $descriptor, ! empty( $context['dry_run'] ), $operation['expected_fingerprint'] );
 				}
 				Policy::assertActionAllowed( $descriptor, ! empty( $context['dry_run'] ), ! empty( $context['confirm'] ) );
-				$result = $this->executeWithStateGuards(
+				$result = $this->execute_with_state_guards(
 					$action,
 					$operation['payload'],
 					$context,
@@ -480,7 +480,7 @@ final class Runner {
 			throw new RuntimeException( 'Rollback snapshot was not found.' );
 		}
 		if ( Policy::publicRepositoryContext() ) {
-			$this->assertPublicRollbackRecord( $record );
+			$this->assert_public_rollback_record( $record );
 			$fingerprint = $this->public_rollback_fingerprint( $rollback, $context );
 			if ( ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
 				throw new RuntimeException( 'Public rollback target cannot enforce stale-state protection.' );
@@ -621,7 +621,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicDescriptor( string $action, array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
+	private function public_descriptor( string $action, array $payload, array $descriptor, bool $dry_run, ?string $expected_fingerprint ): array {
 		if ( 'elementor.header_links.inspect' === $action ) {
 			return $this->public_header_links_inspect_descriptor( $payload, $descriptor, $dry_run );
 		}
@@ -705,7 +705,7 @@ final class Runner {
 		}
 
 		if ( 'acf.update' === $action ) {
-			$this->assertPublicAcfUpdatePayload( $payload );
+			$this->assert_public_acf_update_payload( $payload );
 			$descriptor['privileged'] = false;
 			return $descriptor;
 		}
@@ -778,7 +778,7 @@ final class Runner {
 			return $descriptor;
 		}
 		if ( 'plugin.install_package' === $action ) {
-			$this->assertPublicPluginInstallPayload( $payload );
+			$this->assert_public_plugin_install_payload( $payload );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public plugin package install requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -794,7 +794,7 @@ final class Runner {
 			if ( ! $record ) {
 				throw new RuntimeException( 'Rollback snapshot was not found.' );
 			}
-			$this->assertPublicRollbackRecord( $record );
+			$this->assert_public_rollback_record( $record );
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {
 				throw new RuntimeException( 'Confirmed public rollback requires expected_fingerprint from the preceding dry-run.' );
 			}
@@ -991,7 +991,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicPluginInstallPayload( array $payload ): void {
+	private function assert_public_plugin_install_payload( array $payload ): void {
 		$allowed = array( 'source_path', 'sha256', 'expected_plugin', 'overwrite', 'activate', 'network_wide' );
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, $allowed, true ) ) {
@@ -1220,7 +1220,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicAcfUpdatePayload( array $payload ): int {
+	private function assert_public_acf_update_payload( array $payload ): int {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'target', 'fields' ), true ) ) {
 				throw new RuntimeException( 'Public ACF update contains unsupported payload key: ' . (string) $key );
@@ -1305,7 +1305,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPublicRollbackRecord( array $record ): void {
+	private function assert_public_rollback_record( array $record ): void {
 		if ( empty( $record['public_repository_mode'] ) ) {
 			throw new RuntimeException( 'Rollback snapshot was not created by the guarded public runtime.' );
 		}
@@ -1357,7 +1357,7 @@ final class Runner {
 		} elseif ( 'portfolio.case_text_update' === $source_action ) {
 			$this->assert_public_portfolio_case_text_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'acf.update' === $rollback_action ) {
-			$this->assertPublicAcfUpdatePayload( (array) ( $rollback['payload'] ?? array() ) );
+			$this->assert_public_acf_update_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'post.update' === $rollback_action ) {
 			$this->assert_public_rollback_post_payload( (array) ( $rollback['payload'] ?? array() ) );
 		} elseif ( 'elementor.replace_document' === $rollback_action ) {
@@ -1374,7 +1374,7 @@ final class Runner {
 					throw new RuntimeException( 'Public batch rollback operation is invalid.' );
 				}
 				if ( 'acf.update' === $operation['action'] ) {
-					$this->assertPublicAcfUpdatePayload( $operation['payload'] );
+					$this->assert_public_acf_update_payload( $operation['payload'] );
 				} elseif ( 'acf.portfolio_stats_update' === $operation['action'] ) {
 					$this->assert_public_portfolio_stats_payload( $operation['payload'] );
 				} elseif ( 'post.update' === $operation['action'] ) {
@@ -1493,7 +1493,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function executeWithStateGuards( string $action, array $payload, array $context, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+	private function execute_with_state_guards( string $action, array $payload, array $context, ?string $expected_fingerprint, ?string $expected_state_token ): array {
 		if ( ( null !== $expected_fingerprint || null !== $expected_state_token ) && empty( $context['dry_run'] ) ) {
 			$preview = $this->registry->execute( $action, $payload, array_merge( $context, array( 'dry_run' => true ) ) );
 			if ( ! isset( $preview['_current_fingerprint'] ) || ! is_string( $preview['_current_fingerprint'] ) ) {

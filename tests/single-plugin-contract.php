@@ -43,7 +43,7 @@ if(preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$elementor
     fwrite(STDERR,"Direct _elementor_data writes are forbidden.\n");
     exit(1);
 }
-foreach(array('->save(','get_elements_data','get_db_document_settings','assertDocumentReadback') as $needle) {
+foreach(array('->save(','get_elements_data','get_db_document_settings','assert_document_readback') as $needle) {
     if(strpos($elementor,$needle)===false) {
         fwrite(STDERR,"Elementor document API/readback contract is missing: {$needle}.\n");
         exit(1);

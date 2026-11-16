@@ -43,7 +43,7 @@ $adapterRequired = array(
     "get_filesystem_method()",
     "restore_verified must be boolean.",
     "'external_restore_required' => false",
-    'restoreAfterReadbackFailure',
+    'restore_after_readback_failure',
     'is_plugin_active(self::PLUGIN_FILE)',
     'activate_plugin(self::PLUGIN_FILE',
     'wp_clean_plugins_cache(true)',
