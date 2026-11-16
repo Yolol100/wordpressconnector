@@ -80,8 +80,8 @@ final class FilesystemPolicy {
 	public static function assertListable( string $path ): string {
 		$path = self::normalize( $path );
 		if ( '.' !== $path ) {
-			self::assertNoHiddenOrSecretPath( $path );
-			self::assertNoManagedDataPath( $path );
+			self::assert_no_hidden_or_secret_path( $path );
+			self::assert_no_managed_data_path( $path );
 		}
 		return $path;
 	}
@@ -100,9 +100,9 @@ final class FilesystemPolicy {
 		if ( '.' === $path ) {
 			throw new RuntimeException( 'A file path is required.' );
 		}
-		self::assertNoHiddenOrSecretPath( $path );
-		self::assertNoManagedDataPath( $path );
-		self::assertTextExtension( $path );
+		self::assert_no_hidden_or_secret_path( $path );
+		self::assert_no_managed_data_path( $path );
+		self::assert_text_extension( $path );
 		return $path;
 	}
 
@@ -208,7 +208,7 @@ final class FilesystemPolicy {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private static function assertTextExtension( string $path ): void {
+	private static function assert_text_extension( string $path ): void {
 		$extension = strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) );
 		if ( '' === $extension || ! in_array( $extension, self::TEXT_EXTENSIONS, true ) ) {
 			throw new RuntimeException( 'Unsupported text file extension for connector filesystem access.' );
@@ -222,7 +222,7 @@ final class FilesystemPolicy {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private static function assertNoManagedDataPath( string $path ): void {
+	private static function assert_no_managed_data_path( string $path ): void {
 		$normalized = strtolower( rtrim( $path, '/' ) );
 		foreach ( array(
 			'wp-content/uploads',
@@ -245,7 +245,7 @@ final class FilesystemPolicy {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private static function assertNoHiddenOrSecretPath( string $path ): void {
+	private static function assert_no_hidden_or_secret_path( string $path ): void {
 		$segments = explode( '/', $path );
 		foreach ( $segments as $segment ) {
 			if ( isset( $segment[0] ) && '.' === $segment[0] ) {

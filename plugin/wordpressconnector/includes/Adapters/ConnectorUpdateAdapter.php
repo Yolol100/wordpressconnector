@@ -121,7 +121,7 @@ final class ConnectorUpdateAdapter {
 				$updates->no_update = array();
 			}
 			if ( version_compare( $release['version'], $installed, '>' ) ) {
-				$offer = $this->nativeOfferFromRelease( $release, $installed );
+				$offer = $this->native_offer_from_release( $release, $installed );
 				if ( ! is_array( $offer ) ) {
 					return false;
 				}
@@ -238,7 +238,7 @@ final class ConnectorUpdateAdapter {
 		}
 
 		try {
-			return $this->nativeOfferFromRelease(
+			return $this->native_offer_from_release(
 				$this->release(),
 				isset( $pluginData['Version'] ) ? (string) $pluginData['Version'] : ''
 			);
@@ -256,7 +256,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @return array<string, mixed>|false Canonical update offer or false.
 	 */
-	private function nativeOfferFromRelease( array $release, string $installed ) {
+	private function native_offer_from_release( array $release, string $installed ) {
 		if ( '' === $installed || ! version_compare( $release['version'], $installed, '>' ) ) {
 			return false;
 		}
@@ -318,7 +318,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'The offered connector package is stale or not canonical.' );
 			}
 
-			return $this->downloadVerifiedPackage( $release );
+			return $this->download_verified_package( $release );
 		} catch ( \Throwable $error ) {
 			// Core aborts before replacing any plugin file when given WP_Error.
 			return new \WP_Error( 'wordpressconnector_update_integrity', 'WordPress Connector could not verify this update. No files were changed.' );
@@ -413,18 +413,18 @@ final class ConnectorUpdateAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-		$package = $this->downloadVerifiedPackage( $release );
+		$package = $this->download_verified_package( $release );
 		try {
 			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
 			// backup. A later fatal error still has no guaranteed automatic recovery.
-			$installation = $this->installWithCoreBackup( $package );
+			$installation = $this->install_with_core_backup( $package );
 			wp_clean_plugins_cache( true );
 			$plugins           = get_plugins();
 			$installed_version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
 			if ( ! hash_equals( $release['version'], $installed_version ) ) {
-				$this->restoreAfterReadbackFailure( $installation, $current );
+				$this->restore_after_readback_failure( $installation, $current );
 				throw new RuntimeException( 'Connector update readback failed: prior version restored; check the release package.' );
 			}
 
@@ -457,7 +457,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function installWithCoreBackup( string $package ): array {
+	private function install_with_core_backup( string $package ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
 			|| ! is_readable( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE )
 			|| ! method_exists( \Plugin_Upgrader::class, 'restore_temp_backup' ) ) {
@@ -540,7 +540,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function restoreAfterReadbackFailure( array $installation, string $expected_version ): void {
+	private function restore_after_readback_failure( array $installation, string $expected_version ): void {
 		$upgrader = $installation['upgrader'];
 		$backup   = $installation['backup'];
 		// A failed readback must never turn into an unconditional directory
@@ -655,7 +655,7 @@ final class ConnectorUpdateAdapter {
 	 * @throws \Throwable When the requested operation cannot be completed safely.
 	 * @throws \RuntimeException When package integrity checks fail.
 	 */
-	private function downloadVerifiedPackage( array $release ): string {
+	private function download_verified_package( array $release ): string {
 		$expected_sha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
 		if ( ! hash_equals( 'sha256:' . $expected_sha256, $release['package_digest'] ) ) {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
@@ -680,7 +680,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'Connector release package SHA-256 verification failed.' );
 			}
 
-			$package_info = $this->inspectPackage( $package );
+			$package_info = $this->inspect_package( $package );
 			if ( ! hash_equals( self::PLUGIN_FILE, $package_info['plugin_file'] )
 				|| ! hash_equals( $release['version'], $package_info['version'] ) ) {
 				throw new RuntimeException( 'Connector release ZIP identity or version does not match the published release.' );
@@ -743,7 +743,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function inspectPackage( string $package ): array {
+	private function inspect_package( string $package ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for connector release verification.' );
 		}

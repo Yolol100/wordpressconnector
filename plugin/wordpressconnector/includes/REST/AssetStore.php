@@ -32,8 +32,8 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function put( string $requestId, string $relativePath, array $file ): array {
-		$this->assertRequestId( $requestId );
-		$relativePath = $this->normalizeRelativePath( $relativePath );
+		$this->assert_request_id( $requestId );
+		$relativePath = $this->normalize_relative_path( $relativePath );
 
 		$error = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
 		if ( UPLOAD_ERR_OK !== $error ) {
@@ -50,7 +50,7 @@ final class AssetStore {
 		}
 		$size = (int) $actual_size;
 
-		$file_type = $this->allowedFileType( $relativePath );
+		$file_type = $this->allowed_file_type( $relativePath );
 
 		$root  = $this->rootForRequest( $requestId, true );
 		$usage = $this->usage( $root );
@@ -102,7 +102,7 @@ final class AssetStore {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function rootForRequest( string $requestId, bool $create = false ): string {
-		$this->assertRequestId( $requestId );
+		$this->assert_request_id( $requestId );
 		$base      = $this->base_root( $create );
 		$directory = $base . DIRECTORY_SEPARATOR . hash( 'sha256', home_url( '/' ) . '|' . $requestId );
 
@@ -127,7 +127,7 @@ final class AssetStore {
 	public function cleanup( string $requestId ): void {
 		$directory = $this->rootForRequest( $requestId, false );
 		if ( is_dir( $directory ) ) {
-			$this->removeTree( $directory );
+			$this->remove_tree( $directory );
 		}
 	}
 
@@ -151,7 +151,7 @@ final class AssetStore {
 			$path     = $base . DIRECTORY_SEPARATOR . $item;
 			$modified = @filemtime( $path );
 			if ( is_dir( $path ) && ! is_link( $path ) && false !== $modified && $modified < $cutoff ) {
-				$this->removeTree( $path );
+				$this->remove_tree( $path );
 			}
 		}
 	}
@@ -165,7 +165,7 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function allowedFileType( string $relative_path ): array {
+	private function allowed_file_type( string $relative_path ): array {
 		$basename  = basename( $relative_path );
 		$file_type = wp_check_filetype( $basename, get_allowed_mime_types() );
 		if ( ! empty( $file_type['ext'] ) && ! empty( $file_type['type'] ) ) {
@@ -210,7 +210,7 @@ final class AssetStore {
 		if ( is_link( $base ) ) {
 			throw new RuntimeException( 'Refusing symbolic link connector asset base directory.' );
 		}
-		$this->assertOutsideWebRoot( $base );
+		$this->assert_outside_web_root( $base );
 
 		if ( $create && ! is_dir( $base ) && ! wp_mkdir_p( $base ) ) {
 			throw new RuntimeException( 'Could not create connector asset base directory.' );
@@ -223,7 +223,7 @@ final class AssetStore {
 			if ( false === $resolved ) {
 				throw new RuntimeException( 'Could not resolve connector asset base directory.' );
 			}
-			$this->assertOutsideWebRoot( $resolved );
+			$this->assert_outside_web_root( $resolved );
 		}
 		return $base;
 	}
@@ -235,7 +235,7 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertOutsideWebRoot( string $path ): void {
+	private function assert_outside_web_root( string $path ): void {
 		$web_root = defined( 'ABSPATH' ) ? realpath( ABSPATH ) : false;
 		if ( false === $web_root ) {
 			return;
@@ -310,7 +310,7 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function normalizeRelativePath( string $path ): string {
+	private function normalize_relative_path( string $path ): string {
 		if ( '' === $path || strlen( $path ) > 240 || preg_match( '/[\x00-\x20\x7F]/', $path ) || '/' === $path[0] || false !== strpos( $path, '\\' ) ) {
 			throw new RuntimeException( 'asset_path must be a short relative path without whitespace or control characters.' );
 		}
@@ -335,7 +335,7 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertRequestId( string $request_id ): void {
+	private function assert_request_id( string $request_id ): void {
 		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $request_id ) ) {
 			throw new RuntimeException( 'request_id must be 8-100 safe characters.' );
 		}
@@ -348,7 +348,7 @@ final class AssetStore {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function removeTree( string $directory ): void {
+	private function remove_tree( string $directory ): void {
 		if ( is_link( $directory ) ) {
 			throw new RuntimeException( 'Refusing symbolic link request asset root.' );
 		}
