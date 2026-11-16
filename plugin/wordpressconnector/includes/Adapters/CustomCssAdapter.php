@@ -158,8 +158,8 @@ final class CustomCssAdapter {
 			}
 		}
 
-		$patchId = isset( $payload['patch_id'] ) && is_string( $payload['patch_id'] ) ? $payload['patch_id'] : '';
-		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}\z/', $patchId ) ) {
+		$patch_id = isset( $payload['patch_id'] ) && is_string( $payload['patch_id'] ) ? $payload['patch_id'] : '';
+		if ( ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}\z/', $patch_id ) ) {
 			throw new RuntimeException( 'custom_css.patch requires patch_id with 3-64 safe characters.' );
 		}
 
@@ -168,14 +168,14 @@ final class CustomCssAdapter {
 			throw new RuntimeException( 'custom_css.patch operation must be upsert or remove.' );
 		}
 
-		$patchCss = null;
+		$patch_css = null;
 		if ( 'upsert' === $operation ) {
 			if ( ! array_key_exists( 'css', $payload ) || ! is_string( $payload['css'] ) || '' === trim( $payload['css'] ) ) {
 				throw new RuntimeException( 'custom_css.patch upsert requires non-empty payload.css.' );
 			}
-			$patchCss = $payload['css'];
-			$this->assert_css( $patchCss, self::MAX_PATCH_BYTES, 'Managed CSS patch' );
-			if ( false !== stripos( $patchCss, self::PATCH_PREFIX ) ) {
+			$patch_css = $payload['css'];
+			$this->assert_css( $patch_css, self::MAX_PATCH_BYTES, 'Managed CSS patch' );
+			if ( false !== stripos( $patch_css, self::PATCH_PREFIX ) ) {
 				throw new RuntimeException( 'Managed CSS patch may not contain connector patch markers.' );
 			}
 		} elseif ( array_key_exists( 'css', $payload ) ) {
@@ -184,7 +184,7 @@ final class CustomCssAdapter {
 
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
-		$after_css  = $this->applyPatch( (string) $before['css'], $patchId, $operation, $patchCss );
+		$after_css  = $this->applyPatch( (string) $before['css'], $patch_id, $operation, $patch_css );
 		$this->assert_css( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
 
 		$after  = array(
@@ -193,7 +193,7 @@ final class CustomCssAdapter {
 			'post_id'    => $before['post_id'],
 		);
 		$result = array(
-			'patch_id'             => $patchId,
+			'patch_id'             => $patch_id,
 			'operation'            => $operation,
 			'changed'              => $after_css !== (string) $before['css'],
 			'before'               => $before,

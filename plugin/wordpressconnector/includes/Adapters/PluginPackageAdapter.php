@@ -161,8 +161,8 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Theme ZIP replacement requires explicit server-side authorization and staging restore proof.' );
 		}
 		$style_path      = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
-		$beforeStyleHash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
-		if ( $overwrite && ( ! is_string( $beforeStyleHash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $beforeStyleHash ) ) ) {
+		$before_style_hash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
+		if ( $overwrite && ( ! is_string( $before_style_hash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $before_style_hash ) ) ) {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
 		}
 		$upgrader         = new \Theme_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -231,7 +231,7 @@ final class PluginPackageAdapter {
 				wp_clean_themes_cache();
 				$restored_style_hash = is_file( $style_path ) ? hash_file( 'sha256', $style_path ) : false;
 				if ( true !== $restored || ! wp_get_theme( $expected )->exists()
-					|| ! is_string( $restored_style_hash ) || ! hash_equals( $beforeStyleHash, $restored_style_hash ) ) {
+					|| ! is_string( $restored_style_hash ) || ! hash_equals( $before_style_hash, $restored_style_hash ) ) {
 					throw new RuntimeException( 'Theme replacement failed and automatic recovery could not be verified. Manual recovery is required.' );
 				}
 				throw new RuntimeException( 'Theme replacement failed; original theme restored: ' . $error->getMessage() );
@@ -383,34 +383,34 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin package is empty or exceeds the configured size limit.' );
 		}
 
-		$expectedSha256 = isset( $payload['sha256'] ) ? strtolower( (string) $payload['sha256'] ) : '';
-		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expectedSha256 ) ) {
+		$expected_sha256 = isset( $payload['sha256'] ) ? strtolower( (string) $payload['sha256'] ) : '';
+		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expected_sha256 ) ) {
 			throw new RuntimeException( 'sha256 must be a 64-character lowercase hexadecimal checksum.' );
 		}
 		$actual_sha256 = hash_file( 'sha256', $package );
-		if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expectedSha256, strtolower( $actual_sha256 ) ) ) {
+		if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expected_sha256, strtolower( $actual_sha256 ) ) ) {
 			throw new RuntimeException( 'Plugin package SHA-256 checksum does not match.' );
 		}
 
-		$expectedPlugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', (string) $payload['expected_plugin'] ) : '';
-		if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expectedPlugin ) ) {
+		$expected_plugin = isset( $payload['expected_plugin'] ) ? str_replace( '\\', '/', (string) $payload['expected_plugin'] ) : '';
+		if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $expected_plugin ) ) {
 			throw new RuntimeException( 'expected_plugin must be an exact plugin file such as plugin-slug/plugin.php.' );
 		}
 
 		$package_info = $this->inspectPackage( $package );
-		if ( ! hash_equals( $expectedPlugin, $package_info['plugin_file'] ) ) {
+		if ( ! hash_equals( $expected_plugin, $package_info['plugin_file'] ) ) {
 			throw new RuntimeException( 'Plugin package identity does not match expected_plugin.' );
 		}
-		$this->assertNotSelf( $expectedPlugin );
+		$this->assertNotSelf( $expected_plugin );
 
 		$overwrite   = Input::bool( $payload, 'overwrite' );
 		$activate    = Input::bool( $payload, 'activate' );
-		$networkWide = Input::bool( $payload, 'network_wide' );
-		$this->assertCapabilities( $overwrite, $activate, $networkWide );
+		$network_wide = Input::bool( $payload, 'network_wide' );
+		$this->assertCapabilities( $overwrite, $activate, $network_wide );
 
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins   = get_plugins();
-		$installed = isset( $plugins[ $expectedPlugin ] );
+		$installed = isset( $plugins[ $expected_plugin ] );
 
 		if ( $overwrite && ! $installed ) {
 			throw new RuntimeException( 'overwrite=true requires expected_plugin to already be installed.' );
@@ -419,23 +419,23 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin is already installed. Use overwrite=true with the same expected_plugin to replace it.' );
 		}
 
-		$destination_root = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $expectedPlugin );
+		$destination_root = WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname( $expected_plugin );
 		if ( ! $overwrite && is_dir( $destination_root ) ) {
 			throw new RuntimeException( 'Plugin destination directory already exists. Refusing an ambiguous install.' );
 		}
 
-		$before = $this->snapshot( $expectedPlugin, $plugins );
+		$before = $this->snapshot( $expected_plugin, $plugins );
 		$plan   = array(
 			'source_path'        => $source_path,
 			'sha256'             => $actual_sha256,
 			'bytes'              => (int) $size,
-			'plugin_file'        => $expectedPlugin,
+			'plugin_file'        => $expected_plugin,
 			'plugin_name'        => $package_info['plugin_name'],
 			'archive_entries'    => $package_info['entries'],
 			'uncompressed_bytes' => $package_info['uncompressed_bytes'],
 			'overwrite'          => $overwrite,
 			'activate'           => $activate,
-			'network_wide'       => $networkWide,
+			'network_wide'       => $network_wide,
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -465,18 +465,18 @@ final class PluginPackageAdapter {
 
 		wp_clean_plugins_cache( true );
 		$installed_file = $upgrader->plugin_info();
-		if ( ! is_string( $installed_file ) || ! hash_equals( $expectedPlugin, str_replace( '\\', '/', $installed_file ) ) ) {
+		if ( ! is_string( $installed_file ) || ! hash_equals( $expected_plugin, str_replace( '\\', '/', $installed_file ) ) ) {
 			throw new RuntimeException( 'Installed plugin identity did not match the verified package identity.' );
 		}
 
 		if ( $activate ) {
-			$needsActivation = $networkWide
-				? ! is_plugin_active_for_network( $expectedPlugin )
-				: ! is_plugin_active( $expectedPlugin );
-			if ( $needsActivation ) {
+			$needs_activation = $network_wide
+				? ! is_plugin_active_for_network( $expected_plugin )
+				: ! is_plugin_active( $expected_plugin );
+			if ( $needs_activation ) {
 				// This is a user-requested fresh activation, not a silent Core upgrade.
 				// Third-party install hooks must run exactly as in wp-admin.
-				$activated = activate_plugin( $expectedPlugin, '', $networkWide, false );
+				$activated = activate_plugin( $expected_plugin, '', $network_wide, false );
 				if ( is_wp_error( $activated ) ) {
 					throw new RuntimeException( $activated->get_error_message() );
 				}
@@ -485,12 +485,12 @@ final class PluginPackageAdapter {
 
 		wp_clean_plugins_cache( true );
 		$after_plugins = get_plugins();
-		if ( ! isset( $after_plugins[ $expectedPlugin ] ) ) {
+		if ( ! isset( $after_plugins[ $expected_plugin ] ) ) {
 			throw new RuntimeException( 'Plugin package readback failed: expected plugin is not installed.' );
 		}
 
-		$after = $this->snapshot( $expectedPlugin, $after_plugins );
-		if ( $activate && ! ( $networkWide ? $after['network_active'] : $after['active'] ) ) {
+		$after = $this->snapshot( $expected_plugin, $after_plugins );
+		if ( $activate && ! ( $network_wide ? $after['network_active'] : $after['active'] ) ) {
 			throw new RuntimeException( 'Plugin was installed but activation did not persist; investigate the activation hook and server restrictions.' );
 		}
 		return array(
@@ -600,13 +600,13 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Plugin ZIP must contain exactly one detectable main plugin file directly inside that directory.' );
 			}
 
-			$pluginFile = (string) $headers[0]['path'];
-			if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $pluginFile ) ) {
+			$plugin_file = (string) $headers[0]['path'];
+			if ( ! preg_match( '/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\.php\z/', $plugin_file ) ) {
 				throw new RuntimeException( 'Main plugin file must use a safe plugin directory and PHP filename.' );
 			}
 
 			return array(
-				'plugin_file'        => $pluginFile,
+				'plugin_file'        => $plugin_file,
 				'plugin_name'        => sanitize_text_field( (string) $headers[0]['name'] ),
 				'entries'            => (int) $zip->numFiles,
 				'uncompressed_bytes' => $uncompressed_bytes,

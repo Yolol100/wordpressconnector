@@ -27,7 +27,7 @@ foreach (array(
     "wpacu_clear_cache_after",
     "_last_clear_cache",
     "timestampVerified",
-    'return $verifiedByHook || $timestampVerified;',
+    'return $verified_by_hook || $timestamp_verified;',
     "flushAssetCleanupViaLoopback",
     "handleAssetCleanupLoopback",
     "admin_post_nopriv_",

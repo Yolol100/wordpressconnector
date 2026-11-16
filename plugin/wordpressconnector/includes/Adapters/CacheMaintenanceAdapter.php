@@ -458,9 +458,9 @@ final class CacheMaintenanceAdapter {
 		$transient      = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
 		$before         = get_transient( $transient );
 		$started_at     = time();
-		$verifiedByHook = false;
-		$callback       = static function () use ( &$verifiedByHook ): void {
-			$verifiedByHook = true;
+		$verified_by_hook = false;
+		$callback       = static function () use ( &$verified_by_hook ): void {
+			$verified_by_hook = true;
 		};
 
 		add_action( 'wpacu_clear_cache_after', $callback, PHP_INT_MAX, 0 );
@@ -473,10 +473,10 @@ final class CacheMaintenanceAdapter {
 		$after             = get_transient( $transient );
 		$before_value      = is_numeric( $before ) ? (int) $before : 0;
 		$after_value       = is_numeric( $after ) ? (int) $after : 0;
-		$timestampVerified = $after_value >= ( $started_at - 1 )
+		$timestamp_verified = $after_value >= ( $started_at - 1 )
 			&& $after_value >= $before_value;
 
-		return $verifiedByHook || $timestampVerified;
+		return $verified_by_hook || $timestamp_verified;
 	}
 
 	/**
@@ -507,12 +507,12 @@ final class CacheMaintenanceAdapter {
 			$prefix = 'WpAssetCleanUp\\';
 
 			spl_autoload_register(
-				static function ( string $className ) use ( $base, $prefix ): void {
-					if ( 0 !== strncmp( $className, $prefix, strlen( $prefix ) ) ) {
+				static function ( string $class_name ) use ( $base, $prefix ): void {
+					if ( 0 !== strncmp( $class_name, $prefix, strlen( $prefix ) ) ) {
 						return;
 					}
 
-					$relative = substr( $className, strlen( $prefix ) );
+					$relative = substr( $class_name, strlen( $prefix ) );
 					if ( false === $relative || '' === $relative ) {
 						return;
 					}
