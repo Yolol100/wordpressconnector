@@ -97,16 +97,16 @@ final class ElementorJsonImport {
 	/**
 	 * Render import page for the ElementorJsonImport component.
 	 *
-	 * @param string $postType Input for the operation.
+	 * @param string $post_type Input for the operation.
 	 */
-	public function renderImportPage( string $postType ): void {
-		if ( ! $this->supports_post_type( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
+	public function renderImportPage( string $post_type ): void {
+		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
 		$posts       = get_posts(
 			array(
-				'post_type'      => $postType,
+				'post_type'      => $post_type,
 				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
 				'posts_per_page' => 200,
 				'orderby'        => 'modified',
@@ -115,7 +115,7 @@ final class ElementorJsonImport {
 		);
 		echo '<div class="wrap"><h1>' . esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) . '</h1><p>' . esc_html__( 'Upload an Elementor JSON document. Choose an existing item to replace only its Elementor structure/settings, or choose Create new to make a new draft. Existing-item writes use Elementor readback and automatic rollback.', 'wordpressconnector' ) . '</p><form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( self::ACTION );
-		echo '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '"><input type="hidden" name="post_type" value="' . esc_attr( $postType ) . '"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">' . esc_html__( 'Target', 'wordpressconnector' ) . '</label></th><td><select id="wpconnector-target-post" name="post_id">';
+		echo '<input type="hidden" name="action" value="' . esc_attr( self::ACTION ) . '"><input type="hidden" name="post_type" value="' . esc_attr( $post_type ) . '"><table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="wpconnector-target-post">' . esc_html__( 'Target', 'wordpressconnector' ) . '</label></th><td><select id="wpconnector-target-post" name="post_id">';
 		printf( '<option value="0"%1$s>%2$s</option>', selected( $selected_id, 0, false ), esc_html__( 'Create new draft from JSON', 'wordpressconnector' ) );
 		foreach ( $posts as $post ) {
 			if ( ! $post instanceof \WP_Post || ! current_user_can( 'edit_post', (int) $post->ID ) ) {

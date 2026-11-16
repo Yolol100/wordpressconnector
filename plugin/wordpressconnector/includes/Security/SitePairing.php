@@ -68,10 +68,10 @@ final class SitePairing {
 	 *
 	 * Existing installations are NOT silently re-paired during upgrades.
 	 *
-	 * @param bool $networkWide Whether the operation is network-wide.
+	 * @param bool $network_wide Whether the operation is network-wide.
 	 */
-	public static function approveOnActivation( bool $networkWide = false ): void {
-		if ( $networkWide || ! is_admin() ||
+	public static function approveOnActivation( bool $network_wide = false ): void {
+		if ( $network_wide || ! is_admin() ||
 			! current_user_can( 'activate_plugins' ) ||
 			! current_user_can( 'manage_options' ) ) {
 			return;
