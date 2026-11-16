@@ -541,13 +541,14 @@ final class ElementorAdapter {
 		if ( $document ) {
 			// Verify the committed document, not the editor document instance which may
 			// keep an earlier in-memory elements tree after save() in this request.
-			$data          = $this->normalize_data( get_post_meta( $post_id, '_elementor_data', true ) ?: array() );
+			$stored_data   = get_post_meta( $post_id, '_elementor_data', true );
+			$data          = $this->normalize_data( $stored_data ? $stored_data : array() );
 			$settings      = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
 			$settings      = is_array( $settings ) ? $settings : array();
 			$document_type = method_exists( $document, 'get_name' ) ? (string) $document->get_name() : '';
 		} else {
 			$raw           = get_post_meta( $post_id, '_elementor_data', true );
-			$data          = $this->normalize_data( $raw ?: array() );
+			$data          = $this->normalize_data( $raw ? $raw : array() );
 			$settings      = $this->normalize_meta_array( get_post_meta( $post_id, '_elementor_page_settings', true ) );
 			$document_type = '';
 		}

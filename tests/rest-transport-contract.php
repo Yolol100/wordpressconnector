@@ -33,7 +33,7 @@ $required = array(
     "'zero_config'=>true",
 );
 foreach ($required as $needle) {
-    if (strpos(str_replace(' ', '', $controller), str_replace(' ', '', $needle)) === false) {
+    if (strpos(preg_replace('/\\s+/', '', $controller), preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR,"Missing zero-config REST controller contract: {$needle}\n"); exit(1);
     }
 }

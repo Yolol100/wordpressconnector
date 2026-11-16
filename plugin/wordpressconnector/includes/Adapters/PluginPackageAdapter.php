@@ -376,9 +376,10 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Plugin package must be a ZIP file.' );
 		}
 
-		$max_bytes = (int) ( getenv( 'WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES' ) ?: self::MAX_PACKAGE_BYTES );
-		$max_bytes = max( 1048576, min( self::MAX_PACKAGE_BYTES, $max_bytes ) );
-		$size      = filesize( $package );
+		$configured_limit = getenv( 'WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES' );
+		$max_bytes        = (int) ( $configured_limit ? $configured_limit : self::MAX_PACKAGE_BYTES );
+		$max_bytes        = max( 1048576, min( self::MAX_PACKAGE_BYTES, $max_bytes ) );
+		$size             = filesize( $package );
 		if ( false === $size || $size <= 0 || $size > $max_bytes ) {
 			throw new RuntimeException( 'Plugin package is empty or exceeds the configured size limit.' );
 		}
