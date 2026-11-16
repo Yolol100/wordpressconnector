@@ -357,7 +357,8 @@ final class CacheMaintenanceAdapter {
 	 */
 	public function handleAssetCleanupLoopback(): void {
 		$method = $_SERVER['REQUEST_METHOD'] ?? null;
-		if ( ! is_string( $method ) || 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
+		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method )
+			|| 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
 			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
 			return;
 		}
