@@ -211,20 +211,26 @@ final class ElementorJsonImport {
 		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
-		$file  = $_FILES['elementor_json'];
-		$error = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		$file = $_FILES['elementor_json'];
+		// PHP upload metadata must be scalar; reject nested form fields before casting.
+		if ( ! isset( $file['error'], $file['size'], $file['name'], $file['tmp_name'] )
+			|| ! is_int( $file['error'] ) || ! is_int( $file['size'] )
+			|| ! is_string( $file['name'] ) || ! is_string( $file['tmp_name'] ) ) {
+			throw new RuntimeException( 'Invalid Elementor JSON upload metadata.' );
+		}
+		$error = $file['error'];
 		if ( UPLOAD_ERR_OK !== $error ) {
 			throw new RuntimeException( 'The Elementor JSON upload failed.' );
 		}
-		$size = isset( $file['size'] ) ? (int) $file['size'] : 0;
+		$size = $file['size'];
 		if ( $size < 1 || $size > self::MAX_BYTES ) {
 			throw new RuntimeException( 'The Elementor JSON file must be between 1 byte and 5 MB.' );
 		}
-		$name = isset( $file['name'] ) ? sanitize_file_name( (string) $file['name'] ) : '';
+		$name = sanitize_file_name( $file['name'] );
 		if ( 'json' !== strtolower( (string) pathinfo( $name, PATHINFO_EXTENSION ) ) ) {
 			throw new RuntimeException( 'Choose a .json Elementor export file.' );
 		}
-		$tmp_name = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
+		$tmp_name = $file['tmp_name'];
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'The Elementor JSON upload is invalid.' );
 		}
@@ -454,19 +460,33 @@ final class ElementorJsonImport {
 		if ( $count < 1 || $count > self::BULK_LIMIT ) {
 			throw new RuntimeException( 'Upload 1 to 20 JSON files.' );
 		}
+		// Reject sparse, mismatched or nested PHP upload arrays before reading files.
+		if ( array_keys( $files['name'] ) !== range( 0, $count - 1 ) ) {
+			throw new RuntimeException( 'Invalid Elementor JSON bulk upload indexes.' );
+		}
+		foreach ( array( 'error', 'size', 'tmp_name' ) as $field ) {
+			if ( ! isset( $files[ $field ] ) || ! is_array( $files[ $field ] )
+				|| array_keys( $files[ $field ] ) !== array_keys( $files['name'] ) ) {
+				throw new RuntimeException( 'Invalid Elementor JSON bulk upload metadata.' );
+			}
+		}
 		$total   = 0;
 		$entries = array();
 		for ( $i = 0;$i < $count;$i++ ) {
-			if ( (int) ( $files['error'][ $i ] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
+			if ( ! is_string( $files['name'][ $i ] ) || ! is_string( $files['tmp_name'][ $i ] )
+				|| ! is_int( $files['error'][ $i ] ) || ! is_int( $files['size'][ $i ] ) ) {
+				throw new RuntimeException( 'Invalid Elementor JSON bulk upload metadata.' );
+			}
+			if ( $files['error'][ $i ] !== UPLOAD_ERR_OK ) {
 				throw new RuntimeException( 'One of the uploads failed.' );
 			}
-			$name   = sanitize_file_name( (string) ( $files['name'][ $i ] ?? '' ) );
-			$size   = (int) ( $files['size'][ $i ] ?? 0 );
+			$name   = sanitize_file_name( $files['name'][ $i ] );
+			$size   = $files['size'][ $i ];
 			$total += $size;
 			if ( strtolower( (string) pathinfo( $name, PATHINFO_EXTENSION ) ) !== 'json' || $size < 1 || $size > self::MAX_BYTES || $total > self::BULK_BYTES ) {
 				throw new RuntimeException( 'Only JSON files up to 5 MB each and 8 MB in total are allowed.' );
 			}
-			$tmp = (string) ( $files['tmp_name'][ $i ] ?? '' );
+			$tmp = $files['tmp_name'][ $i ];
 			if ( ! is_uploaded_file( $tmp ) ) {
 				throw new RuntimeException( 'Invalid uploaded file.' );
 			}
