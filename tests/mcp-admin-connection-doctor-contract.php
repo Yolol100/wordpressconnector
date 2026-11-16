@@ -49,7 +49,7 @@ namespace {
 
     $ui = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php');
     foreach (array('wpconnector-copy-mcp', 'wpconnector-test-mcp', 'wpconnector-mcp-address',
-        'aria-live="polite"', 'does NOT connect ChatGPT', 'renderConnectionRecoveryGuide') as $needle) {
+        'aria-live="polite"', 'does NOT connect ChatGPT', 'render_connection_recovery_guide') as $needle) {
         $assert(strpos($ui, $needle) !== false, 'Admin UI missing connection control or evidence limit: ' . $needle);
     }
     $js = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/assets/connection-doctor.js');
