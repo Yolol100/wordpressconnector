@@ -99,7 +99,7 @@ final class FilesystemAdapter {
 		$file_manager_file = 'wp-file-manager/file_folder_manager.php';
 		$file_manager      = isset( $plugins[ $file_manager_file ] ) ? $plugins[ $file_manager_file ] : array();
 		$settings          = get_option( 'wp_file_manager_settings', array() );
-		$configuredPath    = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
+		$configured_path    = is_array( $settings ) && isset( $settings['public_path'] ) ? (string) $settings['public_path'] : '';
 
 		return array(
 			'root'              => 'wordpress_root',
@@ -125,7 +125,7 @@ final class FilesystemAdapter {
 				'installed'            => ! empty( $file_manager ),
 				'active'               => function_exists( 'is_plugin_active' ) && is_plugin_active( $file_manager_file ),
 				'version'              => isset( $file_manager['Version'] ) ? (string) $file_manager['Version'] : null,
-				'configured_root_mode' => $this->file_manager_root_mode( $configuredPath ),
+				'configured_root_mode' => $this->file_manager_root_mode( $configured_path ),
 				'connector_transport'  => 'WP_Filesystem',
 				'private_ajax_reused'  => false,
 			),

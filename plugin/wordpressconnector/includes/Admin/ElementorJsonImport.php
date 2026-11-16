@@ -135,9 +135,9 @@ final class ElementorJsonImport {
 	 */
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
-		$postId   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
-		$postType = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
-		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
+		$post_id   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
+		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
+		if ( ! $this->supportsPostType( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
@@ -145,35 +145,35 @@ final class ElementorJsonImport {
 			$data     = $payload['content'];
 			$settings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : ( isset( $payload['settings'] ) && is_array( $payload['settings'] ) ? $payload['settings'] : array() );
 			$adapter  = new ElementorAdapter();
-			if ( $postId > 0 ) {
-				$post = get_post( $postId );
-				if ( ! $post instanceof \WP_Post || (string) $post->post_type !== $postType ) {
+			if ( $post_id > 0 ) {
+				$post = get_post( $post_id );
+				if ( ! $post instanceof \WP_Post || (string) $post->post_type !== $post_type ) {
 					throw new RuntimeException( 'The selected import target no longer exists.' );
 				}
-				if ( ! current_user_can( 'edit_post', $postId ) ) {
+				if ( ! current_user_can( 'edit_post', $post_id ) ) {
 					wp_die( esc_html__( 'You are not allowed to edit this item.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 				}
 				$adapter_payload = array(
-					'id'            => $postId,
+					'id'            => $post_id,
 					'data'          => $data,
 					'page_settings' => $settings,
 					'edit_mode'     => 'builder',
 				);
-				if ( 'elementor_library' === $postType ) {
+				if ( 'elementor_library' === $post_type ) {
 					$adapter_payload['template_type'] = $this->templateType( $payload );
 				}
 				$adapter->replaceDocument( $adapter_payload, array( 'dry_run' => false ) );
-				$result_id = $postId;
+				$result_id = $post_id;
 			} else {
 				$adapter_payload = array(
-					'post_type'     => $postType,
+					'post_type'     => $post_type,
 					'status'        => 'draft',
-					'title'         => $this->import_title( $payload, $postType ),
+					'title'         => $this->import_title( $payload, $post_type ),
 					'data'          => $data,
 					'page_settings' => $settings,
 					'edit_mode'     => 'builder',
 				);
-				if ( 'elementor_library' === $postType ) {
+				if ( 'elementor_library' === $post_type ) {
 					$adapter_payload['template_type'] = $this->templateType( $payload );
 				}
 				$created   = $adapter->createDocument( $adapter_payload, array( 'dry_run' => false ) );
@@ -190,7 +190,7 @@ final class ElementorJsonImport {
 		wp_safe_redirect(
 			add_query_arg(
 				array(
-					'post_type'                      => $postType,
+					'post_type'                      => $post_type,
 					'wpconnector_elementor_imported' => 1,
 					'post'                           => $result_id,
 				),
@@ -224,11 +224,11 @@ final class ElementorJsonImport {
 		if ( 'json' !== strtolower( (string) pathinfo( $name, PATHINFO_EXTENSION ) ) ) {
 			throw new RuntimeException( 'Choose a .json Elementor export file.' );
 		}
-		$tmpName = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
-		if ( '' === $tmpName || ! is_uploaded_file( $tmpName ) ) {
+		$tmp_name = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
+		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'The Elementor JSON upload is invalid.' );
 		}
-		$raw = file_get_contents( $tmpName );
+		$raw = file_get_contents( $tmp_name );
 		if ( ! is_string( $raw ) || '' === trim( $raw ) || strlen( $raw ) > self::MAX_BYTES ) {
 			throw new RuntimeException( 'The Elementor JSON file is empty or too large.' );
 		}
@@ -535,13 +535,13 @@ final class ElementorJsonImport {
 			} elseif ( in_array( $document_type, $template_types, true ) ) {
 				$inferred_type = 'elementor_library';
 			}
-			$postType        = '' !== $declared_type ? $declared_type : $inferred_type;
+			$post_type        = '' !== $declared_type ? $declared_type : $inferred_type;
 			$family_conflict = '' !== $declared_type && '' !== $inferred_type
 			&& $declared_type !== $inferred_type
 			&& ! ( 'elementor_library' === $declared_type && 'page' === $document_type );
-			if ( '' === $postType || ! post_type_exists( $postType )
-			|| ( ! is_post_type_viewable( $postType ) && 'elementor_library' !== $postType ) ) {
-				$postType = '';
+			if ( '' === $post_type || ! post_type_exists( $post_type )
+			|| ( ! is_post_type_viewable( $post_type ) && 'elementor_library' !== $post_type ) ) {
+				$post_type = '';
 			}
 			$slug = isset( $source['slug'] ) ? sanitize_title( (string) $source['slug'] ) : '';
 			if ( '' === $slug ) {
@@ -549,7 +549,7 @@ final class ElementorJsonImport {
 			}
 			$row = array(
 				'name'          => $name,
-				'post_type'     => $postType,
+				'post_type'     => $post_type,
 				'slug'          => $slug,
 				'post_id'       => 0,
 				'target_label'  => '-',
@@ -563,10 +563,10 @@ final class ElementorJsonImport {
 			);
 			if ( $family_conflict ) {
 				$row['status'] = 'conflict: source post type does not match Elementor document type';
-			} elseif ( '' !== $postType && '' !== $slug ) {
+			} elseif ( '' !== $post_type && '' !== $slug ) {
 				$matches = get_posts(
 					array(
-						'post_type'        => $postType,
+						'post_type'        => $post_type,
 						'post_status'      => 'any',
 						'name'             => $slug,
 						'posts_per_page'   => 3,
@@ -584,7 +584,7 @@ final class ElementorJsonImport {
 						$stored_type         = (string) get_post_meta( $id, '_elementor_template_type', true );
 						if ( 'builder' !== (string) get_post_meta( $id, '_elementor_edit_mode', true ) ) {
 							$row['status'] = 'conflict: existing item is not an Elementor document';
-						} elseif ( 'elementor_library' === $postType
+						} elseif ( 'elementor_library' === $post_type
 						&& ( '' === $document_type || $stored_type !== $document_type ) ) {
 							$row['status'] = 'conflict: Elementor template type differs';
 						} else {

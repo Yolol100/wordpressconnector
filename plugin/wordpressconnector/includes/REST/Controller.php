@@ -124,9 +124,9 @@ final class Controller {
 			return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector REST transport requires HTTPS.', array( 'status' => 403 ) ); }
 		if ( ! is_user_logged_in() ) {
 			try {
-				$userId = ( new GitHubOidc() )->authenticate( $request );
-				if ( $userId > 0 ) {
-					wp_set_current_user( $userId ); }
+				$user_id = ( new GitHubOidc() )->authenticate( $request );
+				if ( $user_id > 0 ) {
+					wp_set_current_user( $user_id ); }
 			} catch ( RuntimeException $error ) {
 				return new \WP_Error( 'wpconnector_oidc_rejected', 'GitHub OIDC authentication was rejected.', array( 'status' => 401 ) );
 			}

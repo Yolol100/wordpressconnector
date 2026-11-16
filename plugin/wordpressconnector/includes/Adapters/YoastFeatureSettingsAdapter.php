@@ -130,19 +130,19 @@ final class YoastFeatureSettingsAdapter {
 		$this->assert_provider_supports_fields( $group, $fields );
 		$before     = $this->snapshot();
 		$after      = array_replace( $before, $fields );
-		$highImpact = array_values( array_intersect( array_keys( $fields ), array_keys( self::HIGH_IMPACT ) ) );
+		$high_impact = array_values( array_intersect( array_keys( $fields ), array_keys( self::HIGH_IMPACT ) ) );
 		$result     = array(
 			'before'                        => $before,
 			'after'                         => $after,
-			'high_impact_fields'            => $highImpact,
-			'requires_risk_acknowledgement' => ! empty( $highImpact ),
+			'high_impact_fields'            => $high_impact,
+			'requires_risk_acknowledgement' => ! empty( $high_impact ),
 			'_current_fingerprint'          => Fingerprint::make( $before ),
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		if ( $highImpact && ! $risk_acknowledged ) {
+		if ( $high_impact && ! $risk_acknowledged ) {
 			throw new RuntimeException( 'High-impact indexing, rendering and archive changes require risk_acknowledged=true.' );
 		}
 		if ( $before === $after ) {
