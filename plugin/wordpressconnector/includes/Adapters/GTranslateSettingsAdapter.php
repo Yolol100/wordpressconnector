@@ -68,7 +68,7 @@ final class GTranslateSettingsAdapter {
 		$raw = $this->settings();
 		return array(
 			'version'           => $this->version(),
-			'fields'            => $this->publicFields( $raw ),
+			'fields'            => $this->public_fields( $raw ),
 			'modifiable_fields' => self::KEYS,
 			'fingerprint'       => Fingerprint::make( $raw ),
 		);
@@ -85,23 +85,23 @@ final class GTranslateSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->assertKeys( $payload, array( 'fields', 'expected_before_fingerprint' ) );
+		$this->assert_keys( $payload, array( 'fields', 'expected_before_fingerprint' ) );
 		$raw         = $this->settings();
-		$before      = $this->publicFields( $raw );
+		$before      = $this->public_fields( $raw );
 		$fingerprint = Fingerprint::make( $raw );
 		$patch       = $this->validate_patch( $payload['fields'] ?? null );
 		$after_raw   = array_replace( $raw, $patch );
 		$this->ensure_languages( $after_raw );
 		$preview = array(
 			'before'               => $before,
-			'after'                => $this->publicFields( $after_raw ),
+			'after'                => $this->public_fields( $after_raw ),
 			'before_fingerprint'   => $fingerprint,
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $preview;
 		}
-		$this->expectedFingerprint( $payload['expected_before_fingerprint'] ?? null, $fingerprint );
+		$this->expected_fingerprint( $payload['expected_before_fingerprint'] ?? null, $fingerprint );
 
 		$old = array();
 		foreach ( $patch as $key => $new ) {
@@ -132,7 +132,7 @@ final class GTranslateSettingsAdapter {
 					throw new RuntimeException( 'GTranslate modified unrelated settings; previous state restoration attempted.' );
 			}
 		}
-		$preview['after']     = $this->publicFields( $actual );
+		$preview['after']     = $this->public_fields( $actual );
 		$preview['_rollback'] = array(
 			'action'  => 'gtranslate.settings.restore',
 			'payload' => array(
@@ -160,9 +160,9 @@ final class GTranslateSettingsAdapter {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			throw new RuntimeException( 'GTranslate restoration requires manage_options.' );
 		}
-		$this->assertKeys( $payload, array( 'previous_fields', 'expected_after_fingerprint' ) );
+		$this->assert_keys( $payload, array( 'previous_fields', 'expected_after_fingerprint' ) );
 		$raw = $this->settings();
-		$this->expectedFingerprint( $payload['expected_after_fingerprint'] ?? null, Fingerprint::make( $raw ) );
+		$this->expected_fingerprint( $payload['expected_after_fingerprint'] ?? null, Fingerprint::make( $raw ) );
 		$entries = $payload['previous_fields'] ?? null;
 		if ( ! is_array( $entries ) || ! $entries || count( $entries ) > count( self::KEYS ) ) {
 			throw new RuntimeException( 'Invalid GTranslate rollback fields.' );
@@ -245,7 +245,7 @@ final class GTranslateSettingsAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function publicFields( array $raw ): array {
+	private function public_fields( array $raw ): array {
 		$out = array();
 		foreach ( array_merge( self::KEYS, self::READ_ONLY ) as $key ) {
 			$value = $raw[ $key ] ?? null;
@@ -321,7 +321,7 @@ final class GTranslateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function expectedFingerprint( $expected, string $actual ): void {
+	private function expected_fingerprint( $expected, string $actual ): void {
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 			|| ! hash_equals( $actual, $expected ) ) {
 			throw new RuntimeException( 'GTranslate options have changed since the preflight read.' );
@@ -336,7 +336,7 @@ final class GTranslateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertKeys( array $payload, array $allowed ): void {
+	private function assert_keys( array $payload, array $allowed ): void {
 		if ( array_diff( array_keys( $payload ), $allowed ) ) {
 			throw new RuntimeException( 'Unexpected GTranslate settings request field.' );
 		}

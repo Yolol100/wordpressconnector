@@ -104,13 +104,13 @@ final class ElementorCapabilitiesAdapter {
 			);
 		}
 
-		$warnings          = array();
-		$elementor         = \Elementor\Plugin::$instance;
-		$registeredWidgets = $this->widgets( $elementor, $warnings );
-		$post_types        = $this->inventoryPostTypes( $payload, $warnings );
-		$statuses          = $this->inventoryStatuses( $payload );
-		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
-		$offset            = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
+		$warnings           = array();
+		$elementor          = \Elementor\Plugin::$instance;
+		$registered_widgets = $this->widgets( $elementor, $warnings );
+		$post_types         = $this->inventoryPostTypes( $payload, $warnings );
+		$statuses           = $this->inventoryStatuses( $payload );
+		$limit              = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
+		$offset             = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
 
 		if ( empty( $post_types ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
@@ -130,7 +130,7 @@ final class ElementorCapabilitiesAdapter {
 					'unique_widget_types_used' => 0,
 					'missing_widget_types'     => 0,
 				),
-				'widgets'         => $this->mergeUsageIntoWidgets( $registeredWidgets, array() ),
+				'widgets'         => $this->mergeUsageIntoWidgets( $registered_widgets, array() ),
 				'used_widgets'    => array(),
 				'missing_widgets' => array(),
 				'element_types'   => array(),
@@ -164,8 +164,8 @@ final class ElementorCapabilitiesAdapter {
 			$ids = array_slice( $ids, 0, $limit );
 		}
 
-		$usedWidgets         = array();
-		$elementTypes        = array();
+		$used_widgets        = array();
+		$element_types       = array();
 		$documents           = array();
 		$architecture_totals = array(
 			'legacy'      => 0,
@@ -176,8 +176,8 @@ final class ElementorCapabilitiesAdapter {
 		);
 		$widget_instances    = 0;
 
-		foreach ( $ids as $postId ) {
-			$post = get_post( (int) $postId );
+		foreach ( $ids as $post_id ) {
+			$post = get_post( (int) $post_id );
 			if ( ! $post instanceof \WP_Post ) {
 				continue;
 			}
@@ -185,11 +185,11 @@ final class ElementorCapabilitiesAdapter {
 			try {
 				Policy::assertPostReadable( $post );
 			} catch ( Throwable $error ) {
-				$warnings[] = 'document_skipped_by_policy:' . (int) $postId;
+				$warnings[] = 'document_skipped_by_policy:' . (int) $post_id;
 				continue;
 			}
 
-			$data = $this->elementorData( (int) $postId, $warnings );
+			$data = $this->elementorData( (int) $post_id, $warnings );
 			if ( null === $data ) {
 				continue;
 			}
@@ -206,27 +206,27 @@ final class ElementorCapabilitiesAdapter {
 			$document_widget_instances = array_sum( $document_widgets );
 			$widget_instances         += $document_widget_instances;
 			foreach ( $document_widgets as $widget_name => $count ) {
-				if ( ! isset( $usedWidgets[ $widget_name ] ) ) {
-					$usedWidgets[ $widget_name ] = array(
+				if ( ! isset( $used_widgets[ $widget_name ] ) ) {
+					$used_widgets[ $widget_name ] = array(
 						'instances'    => 0,
 						'documents'    => 0,
 						'document_ids' => array(),
 					);
 				}
-				$usedWidgets[ $widget_name ]['instances'] += $count;
-				++$usedWidgets[ $widget_name ]['documents'];
-				$usedWidgets[ $widget_name ]['document_ids'][] = (int) $postId;
+				$used_widgets[ $widget_name ]['instances'] += $count;
+				++$used_widgets[ $widget_name ]['documents'];
+				$used_widgets[ $widget_name ]['document_ids'][] = (int) $post_id;
 			}
 
 			foreach ( $document_element_types as $element_type => $count ) {
-				if ( ! isset( $elementTypes[ $element_type ] ) ) {
-					$elementTypes[ $element_type ] = array(
+				if ( ! isset( $element_types[ $element_type ] ) ) {
+					$element_types[ $element_type ] = array(
 						'instances' => 0,
 						'documents' => 0,
 					);
 				}
-				$elementTypes[ $element_type ]['instances'] += $count;
-				++$elementTypes[ $element_type ]['documents'];
+				$element_types[ $element_type ]['instances'] += $count;
+				++$element_types[ $element_type ]['documents'];
 			}
 
 			$architecture = $this->architectureLabel( $families );
@@ -235,7 +235,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			$documents[] = array(
-				'id'               => (int) $postId,
+				'id'               => (int) $post_id,
 				'post_type'        => (string) $post->post_type,
 				'status'           => (string) $post->post_status,
 				'title'            => wp_strip_all_tags( (string) get_the_title( $post ) ),
@@ -248,11 +248,11 @@ final class ElementorCapabilitiesAdapter {
 			);
 		}
 
-		ksort( $usedWidgets, SORT_STRING );
-		ksort( $elementTypes, SORT_STRING );
+		ksort( $used_widgets, SORT_STRING );
+		ksort( $element_types, SORT_STRING );
 		$missing_widgets = array();
-		foreach ( $usedWidgets as $widget_name => $usage ) {
-			if ( ! isset( $registeredWidgets[ $widget_name ] ) ) {
+		foreach ( $used_widgets as $widget_name => $usage ) {
+			if ( ! isset( $registered_widgets[ $widget_name ] ) ) {
 				$missing_widgets[ $widget_name ] = $usage;
 			}
 		}
@@ -271,14 +271,14 @@ final class ElementorCapabilitiesAdapter {
 			'summary'         => array(
 				'documents_scanned'        => count( $documents ),
 				'widget_instances'         => $widget_instances,
-				'unique_widget_types_used' => count( $usedWidgets ),
+				'unique_widget_types_used' => count( $used_widgets ),
 				'missing_widget_types'     => count( $missing_widgets ),
 				'architecture_documents'   => $architecture_totals,
 			),
-			'widgets'         => $this->mergeUsageIntoWidgets( $registeredWidgets, $usedWidgets ),
-			'used_widgets'    => $usedWidgets,
+			'widgets'         => $this->mergeUsageIntoWidgets( $registered_widgets, $used_widgets ),
+			'used_widgets'    => $used_widgets,
 			'missing_widgets' => $missing_widgets,
-			'element_types'   => $elementTypes,
+			'element_types'   => $element_types,
 			'documents'       => $documents,
 			'warnings'        => array_values( array_unique( $warnings ) ),
 		);
@@ -320,15 +320,15 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		$result = array();
-		foreach ( (array) $types as $type => $className ) {
-			if ( ! is_string( $className ) || ! class_exists( $className ) ) {
+		foreach ( (array) $types as $type => $class_name ) {
+			if ( ! is_string( $class_name ) || ! class_exists( $class_name ) ) {
 				continue;
 			}
 
 			try {
-				$properties               = method_exists( $className, 'get_properties' ) ? (array) $className::get_properties() : array();
+				$properties               = method_exists( $class_name, 'get_properties' ) ? (array) $class_name::get_properties() : array();
 				$result[ (string) $type ] = array(
-					'title'           => method_exists( $className, 'get_title' ) ? wp_strip_all_tags( (string) $className::get_title() ) : (string) $type,
+					'title'           => method_exists( $class_name, 'get_title' ) ? wp_strip_all_tags( (string) $class_name::get_title() ) : (string) $type,
 					'cpt'             => isset( $properties['cpt'] ) ? array_values( array_map( 'strval', (array) $properties['cpt'] ) ) : array(),
 					'show_in_library' => isset( $properties['show_in_library'] ) ? (bool) $properties['show_in_library'] : null,
 					'is_editable'     => isset( $properties['is_editable'] ) ? (bool) $properties['is_editable'] : null,
@@ -514,8 +514,8 @@ final class ElementorCapabilitiesAdapter {
 	 * @return array Operation result.
 	 */
 	private function widgetSource( object $widget ): array {
-		$className = get_class( $widget );
-		$file      = '';
+		$class_name = get_class( $widget );
+		$file       = '';
 		try {
 			$reflection = new ReflectionClass( $widget );
 			$file_name  = $reflection->getFileName();
@@ -525,30 +525,30 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PRO_PATH' ) ) {
-			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'runtime_file', $className );
+			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'runtime_file', $class_name );
 		}
 		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PATH' ) ) {
-			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'runtime_file', $className );
+			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'runtime_file', $class_name );
 		}
 
 		$plugin = $this->pluginForFile( $file );
 		if ( null !== $plugin ) {
-			return $this->source( 'addon', $plugin['slug'], $plugin['name'], $plugin['version'], 'runtime_file', $className );
+			return $this->source( 'addon', $plugin['slug'], $plugin['name'], $plugin['version'], 'runtime_file', $class_name );
 		}
 
 		$theme = $this->themeForFile( $file );
 		if ( null !== $theme ) {
-			return $this->source( 'theme', $theme['slug'], $theme['name'], $theme['version'], 'runtime_file', $className );
+			return $this->source( 'theme', $theme['slug'], $theme['name'], $theme['version'], 'runtime_file', $class_name );
 		}
 
-		if ( 0 === strpos( $className, 'ElementorPro\\' ) ) {
-			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'namespace', $className );
+		if ( 0 === strpos( $class_name, 'ElementorPro\\' ) ) {
+			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'namespace', $class_name );
 		}
-		if ( 0 === strpos( $className, 'Elementor\\' ) ) {
-			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'namespace', $className );
+		if ( 0 === strpos( $class_name, 'Elementor\\' ) ) {
+			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'namespace', $class_name );
 		}
 
-		return $this->source( 'unknown', null, null, null, 'unknown', $className );
+		return $this->source( 'unknown', null, null, null, 'unknown', $class_name );
 	}
 
 	/**

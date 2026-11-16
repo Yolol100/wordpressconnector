@@ -104,8 +104,8 @@ final class YoastTemplateSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$changes = $this->validateFields( $payload['fields'] ?? null, false );
-		$this->assertProviderSupportsFields( $changes );
+		$changes = $this->validate_fields( $payload['fields'] ?? null, false );
+		$this->assert_provider_supports_fields( $changes );
 		$before = $this->snapshot();
 		$after  = array_replace( $before, $changes );
 		$result = array(
@@ -162,7 +162,7 @@ final class YoastTemplateSettingsAdapter {
 		if ( ! is_string( $expected ) || ! hash_equals( Fingerprint::make( $current ), $expected ) ) {
 			throw new RuntimeException( 'Yoast templates changed since write.' );
 		}
-		$previous = $this->validateFields( $payload['fields'] ?? null, true );
+		$previous = $this->validate_fields( $payload['fields'] ?? null, true );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array( 'would_restore' => array_keys( $previous ) );
 		}
@@ -190,7 +190,7 @@ final class YoastTemplateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateFields( $fields, bool $restore ): array {
+	private function validate_fields( $fields, bool $restore ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS ) ) {
 			throw new RuntimeException( 'Expected bounded template fields.' );
 		}
@@ -227,7 +227,7 @@ final class YoastTemplateSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertProviderSupportsFields( array $changes ): void {
+	private function assert_provider_supports_fields( array $changes ): void {
 		if ( Policy::publicRepositoryContext() ) {
 			// Public GitHub requests are deliberately narrower than the private
 			// Yoast template manager. Recheck on the WordPress server as well
