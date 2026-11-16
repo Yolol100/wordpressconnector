@@ -768,7 +768,7 @@ final class Runner {
 			|| ! preg_match( '/^[a-f0-9]{64}\z/', $payload['sha256'] )
 			|| ! isset( $payload['expected_stylesheet'] ) || ! is_string( $payload['expected_stylesheet'] )
 			|| ! preg_match( '/^[a-z0-9][a-z0-9._-]{0,79}\z/', $payload['expected_stylesheet'] )
-			|| $payload['overwrite'] !== false ) {
+			|| false !== $payload['overwrite'] ) {
 				throw new RuntimeException( 'Public theme packages require a new theme, exact ZIP checksum and overwrite=false.' );
 			}
 			if ( ! $dry_run && ( null === $expected_fingerprint || ! preg_match( '/^[a-f0-9]{64}\z/', $expected_fingerprint ) ) ) {

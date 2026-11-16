@@ -154,7 +154,8 @@ final class MediaAdapter {
 		$candidate = $asset_root . DIRECTORY_SEPARATOR . ltrim( str_replace( array( '/', '\\' ), DIRECTORY_SEPARATOR, $source ), DIRECTORY_SEPARATOR );
 		$real      = Policy::assertLocalAssetPath( $candidate, $asset_root );
 
-		$max_bytes = (int) ( getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' ) ?: 20971520 );
+		$configured_limit = getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' );
+		$max_bytes        = (int) ( $configured_limit ? $configured_limit : 20971520 );
 		$size      = filesize( $real );
 		if ( false === $size || $size <= 0 || $size > $max_bytes ) {
 			throw new RuntimeException( 'Media file size is invalid or exceeds the configured limit.' );

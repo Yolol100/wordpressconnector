@@ -143,7 +143,8 @@ final class AssetStore {
 		}
 
 		$cutoff = time() - max( 3600, $olderThanSeconds );
-		foreach ( scandir( $base ) ?: array() as $item ) {
+		$entries = scandir( $base );
+		foreach ( false === $entries ? array() : $entries as $item ) {
 			// Only Connector's own SHA-256 request roots may be expired.
 			if ( ! preg_match( '/^[a-f0-9]{64}\z/', $item ) ) {
 				continue;
