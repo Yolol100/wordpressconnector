@@ -104,13 +104,13 @@ final class ElementorCapabilitiesAdapter {
 			);
 		}
 
-		$warnings          = array();
-		$elementor         = \Elementor\Plugin::$instance;
+		$warnings           = array();
+		$elementor          = \Elementor\Plugin::$instance;
 		$registered_widgets = $this->widgets( $elementor, $warnings );
-		$post_types        = $this->inventoryPostTypes( $payload, $warnings );
-		$statuses          = $this->inventoryStatuses( $payload );
-		$limit             = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
-		$offset            = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
+		$post_types         = $this->inventoryPostTypes( $payload, $warnings );
+		$statuses           = $this->inventoryStatuses( $payload );
+		$limit              = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
+		$offset             = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
 
 		if ( empty( $post_types ) ) {
 			$warnings[] = 'no_readable_elementor_post_types';
@@ -164,8 +164,8 @@ final class ElementorCapabilitiesAdapter {
 			$ids = array_slice( $ids, 0, $limit );
 		}
 
-		$used_widgets         = array();
-		$element_types        = array();
+		$used_widgets        = array();
+		$element_types       = array();
 		$documents           = array();
 		$architecture_totals = array(
 			'legacy'      => 0,
@@ -515,7 +515,7 @@ final class ElementorCapabilitiesAdapter {
 	 */
 	private function widgetSource( object $widget ): array {
 		$class_name = get_class( $widget );
-		$file      = '';
+		$file       = '';
 		try {
 			$reflection = new ReflectionClass( $widget );
 			$file_name  = $reflection->getFileName();
