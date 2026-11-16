@@ -598,9 +598,9 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Canonical release tag must use vMAJOR.MINOR.PATCH.' );
 		}
 
-		$package_url    = '';
-		$checksum_url   = '';
-		$sbom_url       = '';
+		$package_url     = '';
+		$checksum_url    = '';
+		$sbom_url        = '';
 		$package_digest  = '';
 		$checksum_digest = '';
 		foreach ( $decoded['assets'] as $asset ) {
@@ -610,10 +610,10 @@ final class ConnectorUpdateAdapter {
 			$name = (string) $asset['name'];
 			$url  = (string) $asset['browser_download_url'];
 			if ( self::PACKAGE_ASSET === $name ) {
-				$package_url   = $url;
+				$package_url    = $url;
 				$package_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::CHECKSUM_ASSET === $name ) {
-				$checksum_url   = $url;
+				$checksum_url    = $url;
 				$checksum_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::SBOM_ASSET === $name ) {
 				$sbom_url = $url;
@@ -722,7 +722,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Connector checksum asset could not be downloaded.' );
 		}
 
-		$raw_body          = (string) wp_remote_retrieve_body( $response );
+		$raw_body            = (string) wp_remote_retrieve_body( $response );
 		$actual_asset_digest = 'sha256:' . hash( 'sha256', $raw_body );
 		if ( ! hash_equals( $expected_asset_digest, $actual_asset_digest ) ) {
 			throw new RuntimeException( 'Connector checksum asset GitHub digest verification failed.' );

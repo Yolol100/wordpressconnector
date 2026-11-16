@@ -24,8 +24,8 @@ final class SystemAdapter {
 	 * @param Registry $registry Action registry to extend.
 	 */
 	public function register( Registry $registry ): void {
-		$privileged   = array( 'privileged' => true );
-		$sensitive    = array(
+		$privileged    = array( 'privileged' => true );
+		$sensitive     = array(
 			'privileged' => true,
 			'sensitive'  => true,
 		);
@@ -527,7 +527,7 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function userForcePasswordReset( array $payload, array $context ): array {
-		$user   = $this->user( $payload );
+		$user    = $this->user( $payload );
 		$user_id = (int) $user->ID;
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			throw new RuntimeException( 'Current user is not allowed to reset this user password.' );
@@ -901,7 +901,7 @@ final class SystemAdapter {
 	public function pluginActivate( array $payload, array $context ): array {
 		$file = $this->pluginFile( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		$before      = is_plugin_active( $file );
+		$before       = is_plugin_active( $file );
 		$network_wide = Input::bool( $payload, 'network_wide' );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(

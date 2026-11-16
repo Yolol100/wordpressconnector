@@ -190,7 +190,7 @@ foreach ($registrationMatches as $registration) {
 }
 
 foreach (array('plugin.install', 'plugin.update', 'plugin.delete', 'theme.install', 'theme.update', 'theme.delete', 'core.update') as $action) {
-    if (! isset($registrationLines[$action]) || strpos($registrationLines[$action], '$systemUpdate') === false) {
+    if (! isset($registrationLines[$action]) || strpos($registrationLines[$action], '$system_update') === false) {
         fwrite(STDERR, "System-update registration contract missing for {$action}.\n");
         exit(1);
     }
