@@ -794,7 +794,7 @@ final class CoreAdapter {
 		if ( is_wp_error( $terms ) ) {
 			throw new RuntimeException( $terms->get_error_message() );
 		}
-		return array( 'terms' => array_map( array( $this, 'termSnapshot' ), $terms ) );
+		return array( 'terms' => array_map( array( $this, 'term_snapshot' ), $terms ) );
 	}
 
 	/**
@@ -817,7 +817,7 @@ final class CoreAdapter {
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
 		}
-		$snapshot = $this->termSnapshot( $term );
+		$snapshot = $this->term_snapshot( $term );
 		return array(
 			'term'        => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -870,7 +870,7 @@ final class CoreAdapter {
 		}
 		$id = (int) $created['term_id'];
 		return array(
-			'term'      => $this->termSnapshot( get_term( $id, $taxonomy ) ),
+			'term'      => $this->term_snapshot( get_term( $id, $taxonomy ) ),
 			'_rollback' => array(
 				'action'  => 'term.delete',
 				'payload' => array(
@@ -898,7 +898,7 @@ final class CoreAdapter {
 		if ( ! $term instanceof \WP_Term ) {
 			throw new RuntimeException( 'Term not found.' );
 		}
-		$before = $this->termSnapshot( $term );
+		$before = $this->term_snapshot( $term );
 		$args   = array();
 		if ( isset( $payload['name'] ) ) {
 			$args['name'] = sanitize_text_field( (string) $payload['name'] );
@@ -924,7 +924,7 @@ final class CoreAdapter {
 		if ( is_wp_error( $updated ) ) {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
-		$result['after']     = $this->termSnapshot( get_term( $id, $taxonomy ) );
+		$result['after']     = $this->term_snapshot( get_term( $id, $taxonomy ) );
 		$result['_rollback'] = array(
 			'action'  => 'term.update',
 			'payload' => array_merge(
@@ -955,7 +955,7 @@ final class CoreAdapter {
 		if ( ! $term instanceof \WP_Term ) {
 			throw new RuntimeException( 'Term not found.' );
 		}
-		$before = $this->termSnapshot( $term );
+		$before = $this->term_snapshot( $term );
 		$result = array(
 			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -1567,7 +1567,7 @@ final class CoreAdapter {
 				'offset'  => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
 			)
 		);
-		return array( 'comments' => array_map( array( $this, 'commentSnapshot' ), $comments ) );
+		return array( 'comments' => array_map( array( $this, 'comment_snapshot' ), $comments ) );
 	}
 
 	/**
@@ -1584,7 +1584,7 @@ final class CoreAdapter {
 		if ( ! $comment instanceof \WP_Comment ) {
 			throw new RuntimeException( 'Comment not found.' );
 		}
-		return array( 'comment' => $this->commentSnapshot( $comment ) );
+		return array( 'comment' => $this->comment_snapshot( $comment ) );
 	}
 
 	/**
@@ -1602,7 +1602,7 @@ final class CoreAdapter {
 		if ( ! $comment instanceof \WP_Comment ) {
 			throw new RuntimeException( 'Comment not found.' );
 		}
-		$before = $this->commentSnapshot( $comment );
+		$before = $this->comment_snapshot( $comment );
 		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
 		$map    = array(
 			'content'      => 'comment_content',
@@ -1628,7 +1628,7 @@ final class CoreAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		return array(
-			'comment'   => $this->commentSnapshot( get_comment( (int) $comment->comment_ID ) ),
+			'comment'   => $this->comment_snapshot( get_comment( (int) $comment->comment_ID ) ),
 			'_rollback' => array(
 				'action'  => 'comment.update',
 				'payload' => array(
@@ -1659,7 +1659,7 @@ final class CoreAdapter {
 		if ( ! $comment instanceof \WP_Comment ) {
 			throw new RuntimeException( 'Comment not found.' );
 		}
-		$before = $this->commentSnapshot( $comment );
+		$before = $this->comment_snapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1848,7 +1848,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function termSnapshot( \WP_Term $term ): array {
+	private function term_snapshot( \WP_Term $term ): array {
 		return array(
 			'id'          => (int) $term->term_id,
 			'taxonomy'    => (string) $term->taxonomy,
@@ -1867,7 +1867,7 @@ final class CoreAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function commentSnapshot( \WP_Comment $comment ): array {
+	private function comment_snapshot( \WP_Comment $comment ): array {
 		return array(
 			'id'           => (int) $comment->comment_ID,
 			'post_id'      => (int) $comment->comment_post_ID,

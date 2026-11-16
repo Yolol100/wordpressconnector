@@ -77,7 +77,7 @@ final class OptimizerSettingsAdapter {
 		$state    = $this->state( $provider );
 		return array(
 			'provider'                 => $provider,
-			'fields'                   => $this->publicFields( $provider, $state ),
+			'fields'                   => $this->public_fields( $provider, $state ),
 			'write_scope'              => 'asset_cleanup' === $provider ? 'read_only_provider_api_required' : 'image_display_options_only',
 			'fingerprint'              => Fingerprint::make( $state ),
 			'wp_rocket'                => $this->rocket_summary(),
@@ -115,7 +115,7 @@ final class OptimizerSettingsAdapter {
 		$value         = $this->validate( $provider, $key, $fields[ $key ] );
 		$old           = $this->state( $provider );
 		$fingerprint   = Fingerprint::make( $old );
-		$before        = $this->publicFields( $provider, $old );
+		$before        = $this->public_fields( $provider, $old );
 		$after         = $before;
 		$after[ $key ] = $value;
 		$this->conflicts( $provider, $key, $value );
@@ -168,7 +168,7 @@ final class OptimizerSettingsAdapter {
 			}
 			throw new RuntimeException( 'Optimizer did not retain requested setting; previous state restored.' );
 		}
-		$out['after']     = $this->publicFields( $provider, $next );
+		$out['after']     = $this->public_fields( $provider, $next );
 		$out['_rollback'] = array(
 			'action'  => 'optimizer.settings.restore',
 			'payload' => array(
@@ -309,7 +309,7 @@ final class OptimizerSettingsAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function publicFields( string $provider, array $state ): array {
+	private function public_fields( string $provider, array $state ): array {
 		$keys = 'asset_cleanup' === $provider ? self::ASSET_FIELDS : self::EWWW_FIELDS;
 		$out  = array();
 		foreach ( $keys as $key ) {

@@ -184,7 +184,7 @@ final class CustomCssAdapter {
 
 		$stylesheet = $this->stylesheet( $payload );
 		$before     = $this->snapshot( $stylesheet );
-		$after_css  = $this->applyPatch( (string) $before['css'], $patch_id, $operation, $patch_css );
+		$after_css  = $this->apply_patch( (string) $before['css'], $patch_id, $operation, $patch_css );
 		$this->assert_css( $after_css, self::MAX_CSS_BYTES, 'Additional CSS after managed patch' );
 
 		$after  = array(
@@ -255,7 +255,7 @@ final class CustomCssAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function applyPatch( string $current_css, string $patch_id, string $operation, ?string $patch_css ): string {
+	private function apply_patch( string $current_css, string $patch_id, string $operation, ?string $patch_css ): string {
 		$start       = '/* ' . self::PATCH_PREFIX . $patch_id . ' */';
 		$end         = '/* /' . self::PATCH_PREFIX . $patch_id . ' */';
 		$start_count = substr_count( $current_css, $start );

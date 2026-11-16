@@ -280,7 +280,7 @@ final class Controller {
 		return array(
 			'protocolVersion' => self::LEGACY_VERSION,
 			'capabilities'    => $this->capabilities(),
-			'serverInfo'      => $this->serverInfo(),
+			'serverInfo'      => $this->server_info(),
 			'instructions'    => $this->instructions(),
 		);
 	}
@@ -761,7 +761,7 @@ final class Controller {
 				$result = array_merge( array( 'resultType' => 'complete' ), $result );
 			}
 			$meta                                       = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
-			$meta['io.modelcontextprotocol/serverInfo'] = $this->serverInfo();
+			$meta['io.modelcontextprotocol/serverInfo'] = $this->server_info();
 			$result['_meta']                            = $meta;
 		}
 
@@ -983,7 +983,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function serverInfo(): array {
+	private function server_info(): array {
 		return array(
 			'name'        => 'webactueel-wordpress-connector',
 			'title'       => 'WordPress Connector',

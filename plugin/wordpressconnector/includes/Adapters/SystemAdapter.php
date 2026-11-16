@@ -383,7 +383,7 @@ final class SystemAdapter {
 				'role'   => isset( $payload['role'] ) ? sanitize_key( (string) $payload['role'] ) : '',
 			)
 		);
-		return array( 'users' => array_map( array( $this, 'userSnapshot' ), $users ) );
+		return array( 'users' => array_map( array( $this, 'user_snapshot' ), $users ) );
 	}
 
 	/**
@@ -395,7 +395,7 @@ final class SystemAdapter {
 	 */
 	public function userGet( array $payload ): array {
 		$user     = $this->user( $payload );
-		$snapshot = $this->userSnapshot( $user );
+		$snapshot = $this->user_snapshot( $user );
 		return array(
 			'user'        => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -443,7 +443,7 @@ final class SystemAdapter {
 		}
 		$this->apply_user_fields( $id, $payload );
 		return array(
-			'user'                           => $this->userSnapshot( get_user_by( 'id', $id ) ),
+			'user'                           => $this->user_snapshot( get_user_by( 'id', $id ) ),
 			'password_generated_server_side' => true,
 			'_rollback'                      => array(
 				'action'  => 'user.delete',
@@ -464,7 +464,7 @@ final class SystemAdapter {
 	 */
 	public function userUpdate( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
-		$before = $this->userSnapshot( $user );
+		$before = $this->user_snapshot( $user );
 		if ( ( isset( $payload['role'] ) || isset( $payload['add_roles'] ) || isset( $payload['remove_roles'] ) ) && ! current_user_can( 'promote_users' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to change user roles.' );
 		}
@@ -499,7 +499,7 @@ final class SystemAdapter {
 				$user->remove_role( sanitize_key( (string) $role ) );
 			}
 		}
-		$result['after']     = $this->userSnapshot( get_user_by( 'id', $user->ID ) );
+		$result['after']     = $this->user_snapshot( get_user_by( 'id', $user->ID ) );
 		$result['_rollback'] = array(
 			'action'  => 'user.update',
 			'payload' => array(
@@ -533,7 +533,7 @@ final class SystemAdapter {
 			throw new RuntimeException( 'Current user is not allowed to reset this user password.' );
 		}
 
-		$before = $this->userSnapshot( $user );
+		$before = $this->user_snapshot( $user );
 		$result = array(
 			'user_id'                         => $user_id,
 			'login'                           => (string) $user->user_login,
@@ -597,7 +597,7 @@ final class SystemAdapter {
 	 */
 	public function userDelete( array $payload, array $context ): array {
 		$user   = $this->user( $payload );
-		$before = $this->userSnapshot( $user );
+		$before = $this->user_snapshot( $user );
 		if ( 1 === (int) $user->ID ) {
 			throw new RuntimeException( 'Refusing to delete user ID 1.' );
 		}
@@ -1720,7 +1720,7 @@ final class SystemAdapter {
 				'offset' => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
 			)
 		);
-		return array( 'sites' => array_map( array( $this, 'siteSnapshot' ), $sites ) );
+		return array( 'sites' => array_map( array( $this, 'site_snapshot' ), $sites ) );
 	}
 
 	/**
@@ -1761,7 +1761,7 @@ final class SystemAdapter {
 			throw new RuntimeException( $site_id->get_error_message() );
 		}
 		return array(
-			'site'      => $this->siteSnapshot( get_site( $site_id ) ),
+			'site'      => $this->site_snapshot( get_site( $site_id ) ),
 			'_rollback' => array(
 				'action'  => 'multisite.site.delete',
 				'payload' => array( 'id' => (int) $site_id ),
@@ -1788,7 +1788,7 @@ final class SystemAdapter {
 		if ( ! $site ) {
 			throw new RuntimeException( 'Site not found.' );
 		}
-		$before = $this->siteSnapshot( $site );
+		$before = $this->site_snapshot( $site );
 		$data   = array();
 		foreach ( array( 'domain', 'path', 'registered', 'last_updated' ) as $field ) {
 			if ( array_key_exists( $field, $payload ) ) {
@@ -1812,7 +1812,7 @@ final class SystemAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		return array(
-			'site'      => $this->siteSnapshot( get_site( $id ) ),
+			'site'      => $this->site_snapshot( get_site( $id ) ),
 			'_rollback' => array(
 				'action'  => 'multisite.site.update',
 				'payload' => $before,
@@ -1842,7 +1842,7 @@ final class SystemAdapter {
 		if ( ! $site ) {
 			throw new RuntimeException( 'Site not found.' );
 		}
-		$before = $this->siteSnapshot( $site );
+		$before = $this->site_snapshot( $site );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1884,7 +1884,7 @@ final class SystemAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function userSnapshot( \WP_User $user ): array {
+	private function user_snapshot( \WP_User $user ): array {
 		return array(
 			'id'           => (int) $user->ID,
 			'login'        => (string) $user->user_login,
@@ -2001,7 +2001,7 @@ final class SystemAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function siteSnapshot( \WP_Site $site ): array {
+	private function site_snapshot( \WP_Site $site ): array {
 		return array(
 			'id'           => (int) $site->blog_id,
 			'network_id'   => (int) $site->site_id,

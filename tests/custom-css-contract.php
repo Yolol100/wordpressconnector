@@ -40,7 +40,7 @@ $required = array(
     'MAX_CSS_BYTES',
     'MAX_PATCH_BYTES',
     'PATCH_PREFIX',
-    'applyPatch(',
+    'apply_patch(',
 );
 
 foreach ($required as $needle) {

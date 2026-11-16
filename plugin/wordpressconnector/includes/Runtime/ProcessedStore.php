@@ -174,7 +174,7 @@ final class ProcessedStore {
 			return '';
 		}
 
-		return $this->compareAndSwapLock( $existing, $value ) ? $token : '';
+		return $this->compare_and_swap_lock( $existing, $value ) ? $token : '';
 	}
 
 	/**
@@ -189,7 +189,7 @@ final class ProcessedStore {
 			return;
 		}
 
-		$this->deleteLockIfValue( $existing );
+		$this->delete_lock_if_value( $existing );
 	}
 
 	/**
@@ -245,7 +245,7 @@ final class ProcessedStore {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function compareAndSwapLock( string $expected, string $replacement ): bool {
+	private function compare_and_swap_lock( string $expected, string $replacement ): bool {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Atomic compare-and-swap on the options row is necessary for the mutation lock; cache invalidated below.
 		$updated = $wpdb->update(
@@ -273,7 +273,7 @@ final class ProcessedStore {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function deleteLockIfValue( string $expected ): bool {
+	private function delete_lock_if_value( string $expected ): bool {
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Conditional lock deletion must be atomic; the options cache is invalidated on success.
 		$deleted = $wpdb->delete(

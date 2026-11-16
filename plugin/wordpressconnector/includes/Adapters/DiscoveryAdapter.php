@@ -170,8 +170,8 @@ final class DiscoveryAdapter {
 			}
 		}
 
-		$page             = $this->restCatalogPositiveInteger( $payload['page'] ?? 1, 10000, 'page' );
-		$per_page         = $this->restCatalogPositiveInteger( $payload['per_page'] ?? 20, 25, 'per_page' );
+		$page             = $this->rest_catalog_positive_integer( $payload['page'] ?? 1, 10000, 'page' );
+		$per_page         = $this->rest_catalog_positive_integer( $payload['per_page'] ?? 20, 25, 'per_page' );
 		$namespace_filter = $payload['namespace'] ?? null;
 		if ( null !== $namespace_filter &&
 			( ! is_string( $namespace_filter ) || strlen( $namespace_filter ) > 120 ||
@@ -322,7 +322,7 @@ final class DiscoveryAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function restCatalogPositiveInteger( $value, int $maximum, string $field ): int {
+	private function rest_catalog_positive_integer( $value, int $maximum, string $field ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) ||
 			1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
 			throw new \RuntimeException( $field . ' must be a positive integer.' );
