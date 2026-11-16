@@ -61,6 +61,22 @@ try {
             }
         }
     }
+    // Well-formed metadata must pass the shape gate and reach the upload-file check.
+    $wellFormed = array(
+        array('single well-formed', $single, array('elementor_json' => array('error' => 0, 'size' => 10, 'name' => 'ok.json', 'tmp_name' => '/tmp/not-uploaded')), 'The Elementor JSON upload is invalid.'),
+        array('bulk well-formed', $bulk, array('elementor_jsons' => array('name' => array('ok.json'), 'error' => array(0), 'size' => array(10), 'tmp_name' => array('/tmp/not-uploaded'))), 'Invalid uploaded file.'),
+    );
+    foreach ($wellFormed as $case) {
+        $_FILES = $case[2];
+        try {
+            $case[1]->invoke($import);
+            throw new RuntimeException('Unexpectedly accepted fake upload: ' . $case[0]);
+        } catch (RuntimeException $error) {
+            if ($case[3] !== $error->getMessage()) {
+                throw new RuntimeException('Well-formed metadata was rejected too early: ' . $case[0] . ': ' . $error->getMessage());
+            }
+        }
+    }
 } finally {
     $_FILES = $originalFiles;
     restore_error_handler();
