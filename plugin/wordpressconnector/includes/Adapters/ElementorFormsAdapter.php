@@ -1025,7 +1025,7 @@ final class ElementorFormsAdapter {
 	private function snapshot( int $post_id ): array {
 		$document = $this->document_or_null( $post_id );
 		if ( $document ) {
-			$data         = method_exists( $document, 'get_elements_data' ) ? $document->get_elements_data() : array();
+			$data          = method_exists( $document, 'get_elements_data' ) ? $document->get_elements_data() : array();
 			$page_settings = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
 			return array(
 				'post_id'       => $post_id,
