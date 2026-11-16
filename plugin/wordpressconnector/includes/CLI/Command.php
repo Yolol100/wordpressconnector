@@ -55,9 +55,9 @@ final class Command {
 	 * @subcommand run
 	 *
 	 * @param array $args Command-line arguments.
-	 * @param array $assocArgs Associative command-line arguments.
+	 * @param array $assoc_args Associative command-line arguments.
 	 */
-	public function run( array $args, array $assocArgs ): void {
+	public function run( array $args, array $assoc_args ): void {
 		$request_path = isset( $args[0] ) ? (string) $args[0] : '';
 		if ( '' === $request_path ) {
 			\WP_CLI::error( 'Request file is required.' );
@@ -66,13 +66,13 @@ final class Command {
 		try {
 			$request = Request::fromFile( $request_path );
 			$context = array(
-				'asset_root' => isset( $assocArgs['asset-root'] ) ? (string) $assocArgs['asset-root'] : '',
+				'asset_root' => isset( $assoc_args['asset-root'] ) ? (string) $assoc_args['asset-root'] : '',
 			);
 			$result  = $this->runner->run( $request, $context );
 
-			if ( ! empty( $assocArgs['output'] ) ) {
-				Json::writeFileAtomic( (string) $assocArgs['output'], $result );
-				\WP_CLI::log( (string) $assocArgs['output'] );
+			if ( ! empty( $assoc_args['output'] ) ) {
+				Json::writeFileAtomic( (string) $assoc_args['output'], $result );
+				\WP_CLI::log( (string) $assoc_args['output'] );
 			} else {
 				\WP_CLI::line( Json::encode( $result ) );
 			}
@@ -91,9 +91,9 @@ final class Command {
 	 * @subcommand actions
 	 *
 	 * @param array $args Command-line arguments.
-	 * @param array $assocArgs Associative command-line arguments.
+	 * @param array $assoc_args Associative command-line arguments.
 	 */
-	public function actions( array $args, array $assocArgs ): void {
+	public function actions( array $args, array $assoc_args ): void {
 		$request = Request::fromArray(
 			array(
 				'version'    => 1,
@@ -113,9 +113,9 @@ final class Command {
 	 * @subcommand doctor
 	 *
 	 * @param array $args Command-line arguments.
-	 * @param array $assocArgs Associative command-line arguments.
+	 * @param array $assoc_args Associative command-line arguments.
 	 */
-	public function doctor( array $args, array $assocArgs ): void {
+	public function doctor( array $args, array $assoc_args ): void {
 		$request = Request::fromArray(
 			array(
 				'version'    => 1,

@@ -226,21 +226,21 @@ final class ConnectorUpdateAdapter {
 	 * Other plugins using GitHub's update hostname must remain untouched.
 	 *
 	 * @param array|false $update     Existing native offer or false.
-	 * @param array       $pluginData Validated plugin metadata.
-	 * @param string      $pluginFile Validated plugin file value.
+	 * @param array       $plugin_data Validated plugin metadata.
+	 * @param string      $plugin_file Validated plugin file value.
 	 * @param array       $locales    Validated locales value.
 	 *
 	 * @return array|false
 	 */
-	public function nativeUpdateOffer( $update, array $pluginData, string $pluginFile, array $locales ) {
-		if ( self::PLUGIN_FILE !== $pluginFile || self::UPDATE_URI !== ( $pluginData['UpdateURI'] ?? '' ) ) {
+	public function nativeUpdateOffer( $update, array $plugin_data, string $plugin_file, array $locales ) {
+		if ( self::PLUGIN_FILE !== $plugin_file || self::UPDATE_URI !== ( $plugin_data['UpdateURI'] ?? '' ) ) {
 			return $update;
 		}
 
 		try {
 			return $this->native_offer_from_release(
 				$this->release(),
-				isset( $pluginData['Version'] ) ? (string) $pluginData['Version'] : ''
+				isset( $plugin_data['Version'] ) ? (string) $plugin_data['Version'] : ''
 			);
 		} catch ( \Throwable $error ) {
 			// A missing or invalid canonical release must never create an update offer.
@@ -278,20 +278,20 @@ final class ConnectorUpdateAdapter {
 	 * @param false|string|\WP_Error $reply     Existing pre-download result or false.
 	 * @param string                 $package   Canonical package URL or verified local path.
 	 * @param mixed                  $upgrader  WordPress upgrader instance.
-	 * @param array                  $hookExtra Upgrader hook metadata.
+	 * @param array                  $hook_extra Upgrader hook metadata.
 	 *
 	 * @return false|string|\WP_Error
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	public function verifiedNativeDownload( $reply, string $package, $upgrader, array $hookExtra ) {
+	public function verifiedNativeDownload( $reply, string $package, $upgrader, array $hook_extra ) {
 		// Core passes only "plugin" (and temp_backup) to bulk_upgrade(),
 		// while a single-plugin upgrade also provides "type" and "action".
 		// Accept both documented shapes, but never an explicitly conflicting
 		// type or action: every connector ZIP must pass integrity verification.
-		if ( self::PLUGIN_FILE !== ( $hookExtra['plugin'] ?? '' )
-			|| ( isset( $hookExtra['type'] ) && 'plugin' !== $hookExtra['type'] )
-			|| ( isset( $hookExtra['action'] ) && 'update' !== $hookExtra['action'] ) ) {
+		if ( self::PLUGIN_FILE !== ( $hook_extra['plugin'] ?? '' )
+			|| ( isset( $hook_extra['type'] ) && 'plugin' !== $hook_extra['type'] )
+			|| ( isset( $hook_extra['action'] ) && 'update' !== $hook_extra['action'] ) ) {
 			return $reply;
 		}
 
