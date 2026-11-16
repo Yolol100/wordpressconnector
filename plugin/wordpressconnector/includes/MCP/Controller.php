@@ -105,29 +105,29 @@ final class Controller {
 		$body    = (string) $request->get_body();
 		$trimmed = ltrim( $body );
 		if ( '' === $trimmed || strlen( $body ) > self::MAX_REQUEST_BYTES || '{' !== $trimmed[0] ) {
-			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
+			return $this->error_response( null, -32600, 'Invalid Request', 400 );
 		}
 
 		$message = $request->get_json_params();
 		if ( ! is_array( $message ) || ! isset( $message['jsonrpc'] ) || '2.0' !== $message['jsonrpc'] ) {
-			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
+			return $this->error_response( null, -32600, 'Invalid Request', 400 );
 		}
 
 		$id_present = array_key_exists( 'id', $message );
 		$id         = $id_present ? $message['id'] : null;
 		if ( $id_present && ! is_int( $id ) && ! is_string( $id ) ) {
-			return $this->errorResponse( null, -32600, 'Invalid Request', 400 );
+			return $this->error_response( null, -32600, 'Invalid Request', 400 );
 		}
 
 		if ( ! isset( $message['method'] ) || ! is_string( $message['method'] ) || '' === $message['method'] ) {
-			return $this->errorResponse( $id, -32600, 'Invalid Request', 400 );
+			return $this->error_response( $id, -32600, 'Invalid Request', 400 );
 		}
 		$method = $message['method'];
 
 		$params = array();
 		if ( array_key_exists( 'params', $message ) ) {
 			if ( ! is_array( $message['params'] ) ) {
-				return $this->errorResponse( $id, -32602, 'Invalid params', 400 );
+				return $this->error_response( $id, -32602, 'Invalid params', 400 );
 			}
 			$params = $message['params'];
 		}
@@ -140,17 +140,17 @@ final class Controller {
 			return new \WP_REST_Response( null, 202 );
 		}
 
-		$modern = $this->isModernRequest( $request, $method, $params );
+		$modern = $this->is_modern_request( $request, $method, $params );
 		if ( $modern ) {
 			try {
-				$this->validateModernEnvelope( $request, $method, $params );
+				$this->validate_modern_envelope( $request, $method, $params );
 			} catch ( RuntimeException $error ) {
-				return $this->errorResponse( $id, -32020, $error->getMessage(), 400 );
+				return $this->error_response( $id, -32020, $error->getMessage(), 400 );
 			}
 		} else {
 			$header_version = (string) $request->get_header( 'mcp-protocol-version' );
 			if ( '' !== $header_version && self::LEGACY_VERSION !== $header_version ) {
-				return $this->errorResponse( $id, -32600, 'Unsupported MCP protocol version.', 400 );
+				return $this->error_response( $id, -32600, 'Unsupported MCP protocol version.', 400 );
 			}
 		}
 
@@ -158,41 +158,41 @@ final class Controller {
 			switch ( $method ) {
 				case 'server/discover':
 					if ( ! $modern ) {
-						return $this->errorResponse( $id, -32601, 'Method not found', 200 );
+						return $this->error_response( $id, -32601, 'Method not found', 200 );
 					}
-					return $this->resultResponse( $id, $this->discoverResult(), true );
+					return $this->result_response( $id, $this->discover_result(), true );
 
 				case 'initialize':
 					if ( $modern ) {
-						return $this->errorResponse( $id, -32601, 'Method not found', 200 );
+						return $this->error_response( $id, -32601, 'Method not found', 200 );
 					}
-					return $this->resultResponse( $id, $this->initializeResult( $params ), false );
+					return $this->result_response( $id, $this->initialize_result( $params ), false );
 
 				case 'tools/list':
-					return $this->resultResponse( $id, $this->listTools( $modern ), $modern );
+					return $this->result_response( $id, $this->list_tools( $modern ), $modern );
 
 				case 'tools/call':
-					return $this->resultResponse( $id, $this->callTool( $id, $params ), $modern );
+					return $this->result_response( $id, $this->call_tool( $id, $params ), $modern );
 
 				case 'resources/list':
-					return $this->resultResponse( $id, $this->listResources( $params, $modern ), $modern );
+					return $this->result_response( $id, $this->list_resources( $params, $modern ), $modern );
 
 				case 'resources/read':
-					return $this->resultResponse( $id, $this->readResource( $params, $modern ), $modern );
+					return $this->result_response( $id, $this->read_resource( $params, $modern ), $modern );
 
 				case 'prompts/list':
-					return $this->resultResponse( $id, $this->listPrompts( $params, $modern ), $modern );
+					return $this->result_response( $id, $this->list_prompts( $params, $modern ), $modern );
 
 				case 'prompts/get':
-					return $this->resultResponse( $id, $this->getPrompt( $params ), $modern );
+					return $this->result_response( $id, $this->get_prompt( $params ), $modern );
 
 				default:
-					return $this->errorResponse( $id, -32601, 'Method not found', 200 );
+					return $this->error_response( $id, -32601, 'Method not found', 200 );
 			}
 		} catch ( RuntimeException $error ) {
-			return $this->errorResponse( $id, -32602, $this->boundedMessage( $error->getMessage() ), 200 );
+			return $this->error_response( $id, -32602, $this->bounded_message( $error->getMessage() ), 200 );
 		} catch ( Throwable $error ) {
-			return $this->errorResponse( $id, -32603, 'Internal error', 500 );
+			return $this->error_response( $id, -32603, 'Internal error', 500 );
 		}
 	}
 
@@ -205,7 +205,7 @@ final class Controller {
 	 *
 	 * @return bool Result of the operation.
 	 */
-	private function isModernRequest( \WP_REST_Request $request, string $method, array $params ): bool {
+	private function is_modern_request( \WP_REST_Request $request, string $method, array $params ): bool {
 		if ( 'server/discover' === $method ) {
 			return true;
 		}
@@ -225,7 +225,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function validateModernEnvelope( \WP_REST_Request $request, string $method, array $params ): void {
+	private function validate_modern_envelope( \WP_REST_Request $request, string $method, array $params ): void {
 		if ( self::MODERN_VERSION !== (string) $request->get_header( 'mcp-protocol-version' ) ) {
 			throw new RuntimeException( 'MCP-Protocol-Version header is missing or does not match the request.' );
 		}
@@ -254,7 +254,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function discoverResult(): array {
+	private function discover_result(): array {
 		return array(
 			'supportedVersions' => array( self::MODERN_VERSION ),
 			'capabilities'      => $this->capabilities(),
@@ -273,7 +273,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function initializeResult( array $params ): array {
+	private function initialize_result( array $params ): array {
 		if ( isset( $params['protocolVersion'] ) && ! is_string( $params['protocolVersion'] ) ) {
 			throw new RuntimeException( 'initialize.protocolVersion must be a string.' );
 		}
@@ -310,7 +310,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertAllowedParams( array $params, array $allowed ): void {
+	private function assert_allowed_params( array $params, array $allowed ): void {
 		$allowed[] = '_meta';
 		foreach ( array_keys( $params ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
@@ -326,8 +326,8 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertUnpagedList( array $params ): void {
-		$this->assertAllowedParams( $params, array( 'cursor' ) );
+	private function assert_unpaged_list( array $params ): void {
+		$this->assert_allowed_params( $params, array( 'cursor' ) );
 		if ( array_key_exists( 'cursor', $params ) && null !== $params['cursor'] ) {
 			throw new RuntimeException( 'Pagination cursor is not supported for this bounded list.' );
 		}
@@ -342,7 +342,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function privateCache( array $result, bool $modern, int $ttl_ms ): array {
+	private function private_cache( array $result, bool $modern, int $ttl_ms ): array {
 		if ( $modern ) {
 			$result['ttlMs']      = $ttl_ms;
 			$result['cacheScope'] = 'private';
@@ -358,9 +358,9 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function listResources( array $params, bool $modern ): array {
-		$this->assertUnpagedList( $params );
-		return $this->privateCache(
+	private function list_resources( array $params, bool $modern ): array {
+		$this->assert_unpaged_list( $params );
+		return $this->private_cache(
 			array(
 				'resources' => array(
 					array(
@@ -394,8 +394,8 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function readResource( array $params, bool $modern ): array {
-		$this->assertAllowedParams( $params, array( 'uri' ) );
+	private function read_resource( array $params, bool $modern ): array {
+		$this->assert_allowed_params( $params, array( 'uri' ) );
 		if ( ! isset( $params['uri'] ) || ! is_string( $params['uri'] ) ) {
 			throw new RuntimeException( 'Resource URI must be a string.' );
 		}
@@ -420,7 +420,7 @@ final class Controller {
 			throw new RuntimeException( 'Resource not found.' );
 		}
 
-		return $this->privateCache(
+		return $this->private_cache(
 			array(
 				'contents' => array(
 					array(
@@ -443,9 +443,9 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function listPrompts( array $params, bool $modern ): array {
-		$this->assertUnpagedList( $params );
-		return $this->privateCache(
+	private function list_prompts( array $params, bool $modern ): array {
+		$this->assert_unpaged_list( $params );
+		return $this->private_cache(
 			array(
 				'prompts' => array(
 					array(
@@ -481,8 +481,8 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function getPrompt( array $params ): array {
-		$this->assertAllowedParams( $params, array( 'name', 'arguments' ) );
+	private function get_prompt( array $params ): array {
+		$this->assert_allowed_params( $params, array( 'name', 'arguments' ) );
 		$name = $params['name'] ?? null;
 		if ( ! is_string( $name ) || ! in_array( $name, array( self::PROMPT_AUDIT, self::PROMPT_CHANGE ), true ) ) {
 			throw new RuntimeException( 'Unknown MCP prompt.' );
@@ -547,13 +547,13 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function listTools( bool $modern ): array {
+	private function list_tools( bool $modern ): array {
 		$result = array(
 			'tools' => array(
 				array(
 					'name'        => 'wordpress_connector_actions',
 					'description' => 'List the WordPress Connector semantic actions and their security metadata. Use this before selecting an action.',
-					'inputSchema' => $this->emptyObjectSchema(),
+					'inputSchema' => $this->empty_object_schema(),
 					'annotations' => array(
 						'readOnlyHint'    => true,
 						'destructiveHint' => false,
@@ -564,7 +564,7 @@ final class Controller {
 				array(
 					'name'        => 'wordpress_connector_discover',
 					'description' => 'Discover the authenticated WordPress runtime, builders, plugins, post types, taxonomies, media sizes and connector capabilities.',
-					'inputSchema' => $this->emptyObjectSchema(),
+					'inputSchema' => $this->empty_object_schema(),
 					'annotations' => array(
 						'readOnlyHint'    => true,
 						'destructiveHint' => false,
@@ -575,7 +575,7 @@ final class Controller {
 				array(
 					'name'        => 'wordpress_connector_execute',
 					'description' => 'Execute one existing semantic connector action through the normal Runner. Dry-run is the default. Confirmed writes require confirm=true and an explicit stable request_id so retries remain idempotent.',
-					'inputSchema' => $this->executeSchema(),
+					'inputSchema' => $this->execute_schema(),
 					'annotations' => array(
 						'readOnlyHint'    => false,
 						'destructiveHint' => true,
@@ -602,7 +602,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function callTool( $rpc_id, array $params ): array {
+	private function call_tool( $rpc_id, array $params ): array {
 		$allowed = array( 'name', 'arguments', '_meta' );
 		foreach ( array_keys( $params ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
@@ -617,18 +617,18 @@ final class Controller {
 		}
 
 		if ( 'wordpress_connector_actions' === $name ) {
-			$this->assertNoArguments( $arguments, $name );
-			return $this->toolResult( array( 'actions' => $this->registry->catalog() ), false );
+			$this->assert_no_arguments( $arguments, $name );
+			return $this->tool_result( array( 'actions' => $this->registry->catalog() ), false );
 		}
 
 		if ( 'wordpress_connector_discover' === $name ) {
-			$this->assertNoArguments( $arguments, $name );
-			$result = $this->runSemantic( $rpc_id, $name, 'connector.discover', array(), true, false, null, null, null );
-			return $this->toolResult( $result, empty( $result['ok'] ) );
+			$this->assert_no_arguments( $arguments, $name );
+			$result = $this->run_semantic( $rpc_id, $name, 'connector.discover', array(), true, false, null, null, null );
+			return $this->tool_result( $result, empty( $result['ok'] ) );
 		}
 
 		if ( 'wordpress_connector_execute' === $name ) {
-			return $this->executeTool( $rpc_id, $name, $arguments );
+			return $this->execute_tool( $rpc_id, $name, $arguments );
 		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
@@ -643,47 +643,47 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function executeTool( $rpc_id, string $tool_name, array $arguments ): array {
+	private function execute_tool( $rpc_id, string $tool_name, array $arguments ): array {
 		$allowed = array( 'action', 'payload', 'dry_run', 'confirm', 'request_id', 'expected_fingerprint', 'expected_state_token' );
 		foreach ( array_keys( $arguments ) as $key ) {
 			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
-				return $this->toolError( 'wordpress_connector_execute contains an unsupported argument.' );
+				return $this->tool_error( 'wordpress_connector_execute contains an unsupported argument.' );
 			}
 		}
 
 		$action = isset( $arguments['action'] ) && is_string( $arguments['action'] ) ? $arguments['action'] : '';
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9._-]*\z/', $action ) ) {
-			return $this->toolError( 'action is invalid.' );
+			return $this->tool_error( 'action is invalid.' );
 		}
 		if ( ! array_key_exists( 'payload', $arguments ) || ! is_array( $arguments['payload'] ) ) {
-			return $this->toolError( 'payload must be an object.' );
+			return $this->tool_error( 'payload must be an object.' );
 		}
 
 		$dryRun  = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
 		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
 		if ( ! is_bool( $dryRun ) || ! is_bool( $confirm ) ) {
-			return $this->toolError( 'dry_run and confirm must be booleans.' );
+			return $this->tool_error( 'dry_run and confirm must be booleans.' );
 		}
 
 		$requestId = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
 		if ( ! $dryRun && null === $requestId ) {
-			return $this->toolError( 'Confirmed execution requires an explicit stable request_id.' );
+			return $this->tool_error( 'Confirmed execution requires an explicit stable request_id.' );
 		}
 		if ( ! $dryRun && ! $confirm ) {
-			return $this->toolError( 'Confirmed execution requires confirm=true.' );
+			return $this->tool_error( 'Confirmed execution requires confirm=true.' );
 		}
 
-		$expectedFingerprint = $this->optionalHash( $arguments, 'expected_fingerprint' );
+		$expectedFingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
 		if ( false === $expectedFingerprint ) {
-			return $this->toolError( 'expected_fingerprint must be a lowercase SHA-256 hex string.' );
+			return $this->tool_error( 'expected_fingerprint must be a lowercase SHA-256 hex string.' );
 		}
-		$expectedStateToken = $this->optionalHash( $arguments, 'expected_state_token' );
+		$expectedStateToken = $this->optional_hash( $arguments, 'expected_state_token' );
 		if ( false === $expectedStateToken ) {
-			return $this->toolError( 'expected_state_token must be a lowercase SHA-256 hex string.' );
+			return $this->tool_error( 'expected_state_token must be a lowercase SHA-256 hex string.' );
 		}
 
 		try {
-			$result = $this->runSemantic(
+			$result = $this->run_semantic(
 				$rpc_id,
 				$tool_name,
 				$action,
@@ -695,10 +695,10 @@ final class Controller {
 				$expectedStateToken
 			);
 		} catch ( RuntimeException $error ) {
-			return $this->toolError( $this->boundedMessage( $error->getMessage() ) );
+			return $this->tool_error( $this->bounded_message( $error->getMessage() ) );
 		}
 
-		return $this->toolResult( $result, empty( $result['ok'] ) );
+		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
 
 	/**
@@ -716,9 +716,9 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function runSemantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
 		if ( null === $request_id ) {
-			$request_id = $this->generatedRequestId( $rpc_id, $tool_name, $action, $payload );
+			$request_id = $this->generated_request_id( $rpc_id, $tool_name, $action, $payload );
 		}
 
 		$data = array(
@@ -755,7 +755,7 @@ final class Controller {
 	 *
 	 * @return \WP_REST_Response Result of the operation.
 	 */
-	private function resultResponse( $id, array $result, bool $modern ): \WP_REST_Response {
+	private function result_response( $id, array $result, bool $modern ): \WP_REST_Response {
 		if ( $modern ) {
 			if ( ! isset( $result['resultType'] ) ) {
 				$result = array_merge( array( 'resultType' => 'complete' ), $result );
@@ -785,14 +785,14 @@ final class Controller {
 	 *
 	 * @return \WP_REST_Response Result of the operation.
 	 */
-	private function errorResponse( $id, int $code, string $message, int $status ): \WP_REST_Response {
+	private function error_response( $id, int $code, string $message, int $status ): \WP_REST_Response {
 		return new \WP_REST_Response(
 			array(
 				'jsonrpc' => '2.0',
 				'id'      => $id,
 				'error'   => array(
 					'code'    => $code,
-					'message' => $this->boundedMessage( $message ),
+					'message' => $this->bounded_message( $message ),
 				),
 			),
 			$status
@@ -807,12 +807,12 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function toolResult( array $value, bool $is_error ): array {
+	private function tool_result( array $value, bool $is_error ): array {
 		return array(
 			'content'           => array(
 				array(
 					'type' => 'text',
-					'text' => $this->encodeForText( $value ),
+					'text' => $this->encode_for_text( $value ),
 				),
 			),
 			'structuredContent' => array( 'result' => $value ),
@@ -827,12 +827,12 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function toolError( string $message ): array {
+	private function tool_error( string $message ): array {
 		$value = array(
 			'ok'    => false,
-			'error' => $this->boundedMessage( $message ),
+			'error' => $this->bounded_message( $message ),
 		);
-		return $this->toolResult( $value, true );
+		return $this->tool_result( $value, true );
 	}
 
 	/**
@@ -842,7 +842,7 @@ final class Controller {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function encodeForText( array $value ): string {
+	private function encode_for_text( array $value ): string {
 		$json = json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 		if ( ! is_string( $json ) ) {
 			return '{"ok":false,"error":"Result could not be encoded."}';
@@ -862,7 +862,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function generatedRequestId( $rpc_id, string $tool_name, string $action, array $payload ): string {
+	private function generated_request_id( $rpc_id, string $tool_name, string $action, array $payload ): string {
 		$json = json_encode(
 			array(
 				'rpc_id'  => $rpc_id,
@@ -887,7 +887,7 @@ final class Controller {
 	 *
 	 * @return mixed Result of the operation.
 	 */
-	private function optionalHash( array $arguments, string $key ) {
+	private function optional_hash( array $arguments, string $key ) {
 		if ( ! array_key_exists( $key, $arguments ) || null === $arguments[ $key ] ) {
 			return null;
 		}
@@ -905,7 +905,7 @@ final class Controller {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertNoArguments( array $arguments, string $tool_name ): void {
+	private function assert_no_arguments( array $arguments, string $tool_name ): void {
 		if ( array() !== $arguments ) {
 			throw new RuntimeException( $tool_name . ' does not accept arguments.' );
 		}
@@ -916,7 +916,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function emptyObjectSchema(): array {
+	private function empty_object_schema(): array {
 		return array(
 			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
 			'type'                 => 'object',
@@ -930,7 +930,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function executeSchema(): array {
+	private function execute_schema(): array {
 		return array(
 			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
 			'type'                 => 'object',
@@ -1010,7 +1010,7 @@ final class Controller {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function boundedMessage( string $message ): string {
+	private function bounded_message( string $message ): string {
 		$message = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $message );
 		$message = is_string( $message ) ? trim( $message ) : '';
 		if ( '' === $message ) {

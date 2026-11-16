@@ -55,7 +55,7 @@ foreach(array('maintenance.cache_capabilities','maintenance.cache_flush','code_s
         exit(1);
     }
 }
-foreach(array("register('elementor.inventory'",'missing_widgets','widgetSource','next_offset') as $needle) {
+foreach(array("register('elementor.inventory'",'missing_widgets','widget_source','next_offset') as $needle) {
     if(strpos($normalizedCapabilities,str_replace(' ','',$needle))===false) {
         fwrite(STDERR,"Elementor inventory contract is missing: {$needle}.\n");
         exit(1);

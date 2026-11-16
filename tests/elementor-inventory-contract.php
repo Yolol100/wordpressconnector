@@ -34,7 +34,7 @@ require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/Element
 $adapter = new Webactueel\WordPressConnector\Adapters\ElementorCapabilitiesAdapter();
 $reflection = new ReflectionClass($adapter);
 
-$collect = $reflection->getMethod('collectElementUsage');
+$collect = $reflection->getMethod('collect_element_usage');
 $collect->setAccessible(true);
 $widgets = array();
 $elements = array();
@@ -75,14 +75,14 @@ if (($elements['section'] ?? 0) !== 1 || ($elements['column'] ?? 0) !== 1 || ($e
     exit(1);
 }
 
-$architecture = $reflection->getMethod('architectureLabel');
+$architecture = $reflection->getMethod('architecture_label');
 $architecture->setAccessible(true);
 if ($architecture->invoke($adapter, $families) !== 'mixed') {
     fwrite(STDERR, "Mixed architecture contract failed.\n");
     exit(1);
 }
 
-$sourceMethod = $reflection->getMethod('widgetSource');
+$sourceMethod = $reflection->getMethod('widget_source');
 $sourceMethod->setAccessible(true);
 $core = $sourceMethod->invoke($adapter, new Elementor\InventoryCoreWidget());
 $pro = $sourceMethod->invoke($adapter, new ElementorPro\InventoryProWidget());

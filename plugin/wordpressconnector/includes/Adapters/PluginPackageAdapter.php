@@ -109,7 +109,7 @@ final class PluginPackageAdapter {
 			|| ! hash_equals( $sha256, (string) hash_file( 'sha256', $package ) ) ) {
 			throw new RuntimeException( 'Theme package SHA-256 does not match.' );
 		}
-		$info = $this->inspectThemePackage( $package, $expected );
+		$info = $this->inspect_theme_package( $package, $expected );
 		if ( get_stylesheet() === $expected || get_template() === $expected ) {
 			throw new RuntimeException( 'Refusing to replace or install over the active theme or its parent.' );
 		}
@@ -270,7 +270,7 @@ final class PluginPackageAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function inspectThemePackage( string $package, string $expected ): array {
+	private function inspect_theme_package( string $package, string $expected ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for theme package inspection.' );
 		}
@@ -397,16 +397,16 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'expected_plugin must be an exact plugin file such as plugin-slug/plugin.php.' );
 		}
 
-		$package_info = $this->inspectPackage( $package );
+		$package_info = $this->inspect_package( $package );
 		if ( ! hash_equals( $expected_plugin, $package_info['plugin_file'] ) ) {
 			throw new RuntimeException( 'Plugin package identity does not match expected_plugin.' );
 		}
-		$this->assertNotSelf( $expected_plugin );
+		$this->assert_not_self( $expected_plugin );
 
 		$overwrite    = Input::bool( $payload, 'overwrite' );
 		$activate     = Input::bool( $payload, 'activate' );
 		$network_wide = Input::bool( $payload, 'network_wide' );
-		$this->assertCapabilities( $overwrite, $activate, $network_wide );
+		$this->assert_capabilities( $overwrite, $activate, $network_wide );
 
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$plugins   = get_plugins();
@@ -511,7 +511,7 @@ final class PluginPackageAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function inspectPackage( string $package ): array {
+	private function inspect_package( string $package ): array {
 		if ( ! class_exists( 'ZipArchive' ) ) {
 			throw new RuntimeException( 'PHP ZipArchive is required for safe plugin package inspection.' );
 		}
@@ -625,7 +625,7 @@ final class PluginPackageAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertCapabilities( bool $overwrite, bool $activate, bool $network_wide ): void {
+	private function assert_capabilities( bool $overwrite, bool $activate, bool $network_wide ): void {
 		if ( ! current_user_can( 'install_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to install plugins.' );
 		}
@@ -652,7 +652,7 @@ final class PluginPackageAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertNotSelf( string $plugin_file ): void {
+	private function assert_not_self( string $plugin_file ): void {
 		if ( defined( 'WPCONNECTOR_FILE' ) && function_exists( 'plugin_basename' ) && hash_equals( str_replace( '\\', '/', plugin_basename( WPCONNECTOR_FILE ) ), $plugin_file ) ) {
 			throw new RuntimeException( 'WordPress Connector cannot replace its own active runtime through plugin.install_package. Use the repository release/deployment path.' );
 		}

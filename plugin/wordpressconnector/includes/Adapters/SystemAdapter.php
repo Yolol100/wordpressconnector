@@ -899,7 +899,7 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginActivate( array $payload, array $context ): array {
-		$file = $this->pluginFile( $payload );
+		$file = $this->plugin_file( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		$before       = is_plugin_active( $file );
 		$network_wide = Input::bool( $payload, 'network_wide' );
@@ -949,7 +949,7 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDeactivate( array $payload, array $context ): array {
-		$file = $this->pluginFile( $payload );
+		$file = $this->plugin_file( $payload );
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'The Connector cannot deactivate its own management connection; use WordPress admin for intentional removal.' );
@@ -1019,7 +1019,7 @@ final class SystemAdapter {
 		if ( isset( $api->slug ) && (string) $api->slug !== $slug ) {
 			throw new RuntimeException( 'Plugin directory response identity does not match requested slug.' );
 		}
-		$url = $this->officialDirectoryPackageUrl( $api->download_link, $slug, 'plugin' );
+		$url = $this->official_directory_package_url( $api->download_link, $slug, 'plugin' );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_install'           => $slug,
@@ -1066,7 +1066,7 @@ final class SystemAdapter {
 	 */
 	public function pluginUpdate( array $payload, array $context ): array {
 		$expected_target = $this->expected_update_version( $payload, array( 'file', 'expected_target_version' ) );
-		$file            = $this->pluginFile( $payload );
+		$file            = $this->plugin_file( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'Update WordPress Connector through connector.update.apply or the verified native Plugins updater.' );
 		}
@@ -1125,7 +1125,7 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function pluginDelete( array $payload, array $context ): array {
-		$file = $this->pluginFile( $payload );
+		$file = $this->plugin_file( $payload );
 		if ( 'wordpressconnector/wordpressconnector.php' === $file ) {
 			throw new RuntimeException( 'The Connector cannot delete its own management connection.' );
 		}
@@ -1261,7 +1261,7 @@ final class SystemAdapter {
 		if ( isset( $api->slug ) && (string) $api->slug !== $slug ) {
 			throw new RuntimeException( 'Theme directory response identity does not match requested slug.' );
 		}
-		$url = $this->officialDirectoryPackageUrl( $api->download_link, $slug, 'theme' );
+		$url = $this->official_directory_package_url( $api->download_link, $slug, 'theme' );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_install'           => $slug,
@@ -1941,7 +1941,7 @@ final class SystemAdapter {
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function officialDirectoryPackageUrl( string $url, string $slug, string $kind ): string {
+	private function official_directory_package_url( string $url, string $slug, string $kind ): string {
 		if ( strlen( $url ) > 320 || ! in_array( $kind, array( 'plugin', 'theme' ), true ) ) {
 			throw new RuntimeException( 'Invalid official directory package reference.' );
 		}
@@ -1969,7 +1969,7 @@ final class SystemAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function pluginFile( array $payload ): string {
+	private function plugin_file( array $payload ): string {
 		$file = isset( $payload['file'] ) ? str_replace( '\\', '/', (string) $payload['file'] ) : '';
 		if ( '' === $file || false !== strpos( $file, '..' ) || 0 === strpos( $file, '/' ) ) {
 			throw new RuntimeException( 'A safe relative plugin file is required.' );

@@ -193,7 +193,7 @@ foreach (array(
 $GLOBALS['wpconn_plugin_download_link'] = 'https://downloads.wordpress.org/plugin/new-plugin.2.4.zip';
 // Both plugin and theme directory packages must match the requested slug,
  // not merely share a plausible domain.
-$origin = new ReflectionMethod(SystemAdapter::class, 'officialDirectoryPackageUrl');
+$origin = new ReflectionMethod(SystemAdapter::class, 'official_directory_package_url');
 $origin->setAccessible(true);
 $officialTheme = 'https://downloads.wordpress.org/theme/qa-theme.1.2.3.zip';
 if ($origin->invoke($system, $officialTheme, 'qa-theme', 'theme') !== $officialTheme) {

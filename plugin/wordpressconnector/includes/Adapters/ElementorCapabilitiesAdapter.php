@@ -70,10 +70,10 @@ final class ElementorCapabilitiesAdapter {
 		return array(
 			'available'      => true,
 			'environment'    => $environment,
-			'document_types' => $this->documentTypes( $elementor, $warnings ),
+			'document_types' => $this->document_types( $elementor, $warnings ),
 			'widgets'        => $this->widgets( $elementor, $warnings ),
 			'elements'       => $this->elements( $elementor, $warnings ),
-			'dynamic_tags'   => $this->dynamicTags( $elementor, $warnings ),
+			'dynamic_tags'   => $this->dynamic_tags( $elementor, $warnings ),
 			'breakpoints'    => $this->breakpoints( $elementor, $warnings ),
 			'warnings'       => array_values( array_unique( $warnings ) ),
 		);
@@ -107,8 +107,8 @@ final class ElementorCapabilitiesAdapter {
 		$warnings           = array();
 		$elementor          = \Elementor\Plugin::$instance;
 		$registered_widgets = $this->widgets( $elementor, $warnings );
-		$post_types         = $this->inventoryPostTypes( $payload, $warnings );
-		$statuses           = $this->inventoryStatuses( $payload );
+		$post_types         = $this->inventory_post_types( $payload, $warnings );
+		$statuses           = $this->inventory_statuses( $payload );
 		$limit              = isset( $payload['limit'] ) ? max( 1, min( 5000, (int) $payload['limit'] ) ) : 1000;
 		$offset             = isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0;
 
@@ -130,7 +130,7 @@ final class ElementorCapabilitiesAdapter {
 					'unique_widget_types_used' => 0,
 					'missing_widget_types'     => 0,
 				),
-				'widgets'         => $this->mergeUsageIntoWidgets( $registered_widgets, array() ),
+				'widgets'         => $this->merge_usage_into_widgets( $registered_widgets, array() ),
 				'used_widgets'    => array(),
 				'missing_widgets' => array(),
 				'element_types'   => array(),
@@ -189,7 +189,7 @@ final class ElementorCapabilitiesAdapter {
 				continue;
 			}
 
-			$data = $this->elementorData( (int) $post_id, $warnings );
+			$data = $this->elementor_data( (int) $post_id, $warnings );
 			if ( null === $data ) {
 				continue;
 			}
@@ -201,7 +201,7 @@ final class ElementorCapabilitiesAdapter {
 				'container' => false,
 				'atomic'    => false,
 			);
-			$this->collectElementUsage( $data, $document_widgets, $document_element_types, $families );
+			$this->collect_element_usage( $data, $document_widgets, $document_element_types, $families );
 
 			$document_widget_instances = array_sum( $document_widgets );
 			$widget_instances         += $document_widget_instances;
@@ -229,7 +229,7 @@ final class ElementorCapabilitiesAdapter {
 				++$element_types[ $element_type ]['documents'];
 			}
 
-			$architecture = $this->architectureLabel( $families );
+			$architecture = $this->architecture_label( $families );
 			if ( isset( $architecture_totals[ $architecture ] ) ) {
 				++$architecture_totals[ $architecture ];
 			}
@@ -275,7 +275,7 @@ final class ElementorCapabilitiesAdapter {
 				'missing_widget_types'     => count( $missing_widgets ),
 				'architecture_documents'   => $architecture_totals,
 			),
-			'widgets'         => $this->mergeUsageIntoWidgets( $registered_widgets, $used_widgets ),
+			'widgets'         => $this->merge_usage_into_widgets( $registered_widgets, $used_widgets ),
 			'used_widgets'    => $used_widgets,
 			'missing_widgets' => $missing_widgets,
 			'element_types'   => $element_types,
@@ -306,7 +306,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function documentTypes( object $elementor, array &$warnings ): array {
+	private function document_types( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->documents ) || ! is_object( $elementor->documents ) || ! method_exists( $elementor->documents, 'get_document_types' ) ) {
 			$warnings[] = 'documents_manager_unavailable';
 			return array();
@@ -376,7 +376,7 @@ final class ElementorCapabilitiesAdapter {
 					'title'         => method_exists( $widget, 'get_title' ) ? wp_strip_all_tags( (string) $widget->get_title() ) : (string) $name,
 					'categories'    => $categories,
 					'control_count' => count( $controls ),
-					'source'        => $this->widgetSource( $widget ),
+					'source'        => $this->widget_source( $widget ),
 				);
 			} catch ( Throwable $error ) {
 				$warnings[] = 'widget_skipped:' . sanitize_key( (string) $name );
@@ -436,7 +436,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function dynamicTags( object $elementor, array &$warnings ): array {
+	private function dynamic_tags( object $elementor, array &$warnings ): array {
 		if ( ! isset( $elementor->dynamic_tags ) || ! is_object( $elementor->dynamic_tags ) || ! method_exists( $elementor->dynamic_tags, 'get_tags' ) ) {
 			return array();
 		}
@@ -513,7 +513,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function widgetSource( object $widget ): array {
+	private function widget_source( object $widget ): array {
 		$class_name = get_class( $widget );
 		$file       = '';
 		try {
@@ -524,19 +524,19 @@ final class ElementorCapabilitiesAdapter {
 			$file = '';
 		}
 
-		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PRO_PATH' ) ) {
+		if ( $this->path_within_defined_root( $file, 'ELEMENTOR_PRO_PATH' ) ) {
 			return $this->source( 'elementor-pro', 'elementor-pro', 'Elementor Pro', defined( 'ELEMENTOR_PRO_VERSION' ) ? (string) ELEMENTOR_PRO_VERSION : null, 'runtime_file', $class_name );
 		}
-		if ( $this->pathWithinDefinedRoot( $file, 'ELEMENTOR_PATH' ) ) {
+		if ( $this->path_within_defined_root( $file, 'ELEMENTOR_PATH' ) ) {
 			return $this->source( 'elementor-core', 'elementor', 'Elementor', defined( 'ELEMENTOR_VERSION' ) ? (string) ELEMENTOR_VERSION : null, 'runtime_file', $class_name );
 		}
 
-		$plugin = $this->pluginForFile( $file );
+		$plugin = $this->plugin_for_file( $file );
 		if ( null !== $plugin ) {
 			return $this->source( 'addon', $plugin['slug'], $plugin['name'], $plugin['version'], 'runtime_file', $class_name );
 		}
 
-		$theme = $this->themeForFile( $file );
+		$theme = $this->theme_for_file( $file );
 		if ( null !== $theme ) {
 			return $this->source( 'theme', $theme['slug'], $theme['name'], $theme['version'], 'runtime_file', $class_name );
 		}
@@ -582,8 +582,8 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function pathWithinDefinedRoot( string $file, string $constant ): bool {
-		return '' !== $file && defined( $constant ) && $this->pathWithin( $file, (string) constant( $constant ) );
+	private function path_within_defined_root( string $file, string $constant ): bool {
+		return '' !== $file && defined( $constant ) && $this->path_within( $file, (string) constant( $constant ) );
 	}
 
 	/**
@@ -594,7 +594,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function pathWithin( string $file, string $root ): bool {
+	private function path_within( string $file, string $root ): bool {
 		if ( '' === $file || '' === $root ) {
 			return false;
 		}
@@ -610,7 +610,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array|null Operation result.
 	 */
-	private function pluginForFile( string $file ): ?array {
+	private function plugin_for_file( string $file ): ?array {
 		if ( '' === $file ) {
 			return null;
 		}
@@ -630,13 +630,13 @@ final class ElementorCapabilitiesAdapter {
 		}
 
 		foreach ( $roots as $root ) {
-			if ( ! $this->pathWithin( $file, $root['path'] ) ) {
+			if ( ! $this->path_within( $file, $root['path'] ) ) {
 				continue;
 			}
 			$relative = ltrim( substr( str_replace( '\\', '/', $file ), strlen( rtrim( str_replace( '\\', '/', $root['path'] ), '/' ) ) ), '/' );
 			$parts    = explode( '/', $relative );
 			$slug     = count( $parts ) > 1 ? $parts[0] : preg_replace( '/\.php$/', '', $parts[0] );
-			$plugins  = $this->installedPlugins( (bool) $root['mu'] );
+			$plugins  = $this->installed_plugins( (bool) $root['mu'] );
 			foreach ( $plugins as $plugin_file => $data ) {
 				$plugin_file = str_replace( '\\', '/', (string) $plugin_file );
 				if ( $plugin_file !== $slug . '.php' && 0 !== strpos( $plugin_file, $slug . '/' ) ) {
@@ -665,7 +665,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function installedPlugins( bool $mu ): array {
+	private function installed_plugins( bool $mu ): array {
 		static $regular  = null;
 		static $must_use = null;
 
@@ -697,12 +697,12 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array|null Operation result.
 	 */
-	private function themeForFile( string $file ): ?array {
+	private function theme_for_file( string $file ): ?array {
 		if ( '' === $file || ! function_exists( 'get_theme_root' ) ) {
 			return null;
 		}
 		$root = (string) get_theme_root();
-		if ( ! $this->pathWithin( $file, $root ) ) {
+		if ( ! $this->path_within( $file, $root ) ) {
 			return null;
 		}
 		$relative = ltrim( substr( str_replace( '\\', '/', $file ), strlen( rtrim( str_replace( '\\', '/', $root ), '/' ) ) ), '/' );
@@ -724,7 +724,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function inventoryPostTypes( array $payload, array &$warnings ): array {
+	private function inventory_post_types( array $payload, array &$warnings ): array {
 		$requested = isset( $payload['post_types'] ) ? (array) $payload['post_types'] : array();
 		if ( empty( $requested ) ) {
 			$requested = array_values( (array) get_post_types( array( 'show_ui' => true ), 'names' ) );
@@ -757,7 +757,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function inventoryStatuses( array $payload ): array {
+	private function inventory_statuses( array $payload ): array {
 		$requested = isset( $payload['post_statuses'] ) ? (array) $payload['post_statuses'] : array( 'publish', 'draft', 'pending', 'private', 'future' );
 		$result    = array();
 		foreach ( $requested as $status ) {
@@ -777,7 +777,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array|null Operation result.
 	 */
-	private function elementorData( int $post_id, array &$warnings ): ?array {
+	private function elementor_data( int $post_id, array &$warnings ): ?array {
 		$raw = get_post_meta( $post_id, '_elementor_data', true );
 		if ( is_array( $raw ) ) {
 			return $raw;
@@ -801,7 +801,7 @@ final class ElementorCapabilitiesAdapter {
 	 * @param array $element_types Value updated by reference.
 	 * @param array $families Value updated by reference.
 	 */
-	private function collectElementUsage( array $elements, array &$widgets, array &$element_types, array &$families ): void {
+	private function collect_element_usage( array $elements, array &$widgets, array &$element_types, array &$families ): void {
 		foreach ( $elements as $element ) {
 			if ( ! is_array( $element ) ) {
 				continue;
@@ -823,7 +823,7 @@ final class ElementorCapabilitiesAdapter {
 			}
 
 			if ( isset( $element['elements'] ) && is_array( $element['elements'] ) ) {
-				$this->collectElementUsage( $element['elements'], $widgets, $element_types, $families );
+				$this->collect_element_usage( $element['elements'], $widgets, $element_types, $families );
 			}
 		}
 
@@ -838,7 +838,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function architectureLabel( array $families ): string {
+	private function architecture_label( array $families ): string {
 		$active = array_keys( array_filter( $families ) );
 		if ( count( $active ) > 1 ) {
 			return 'mixed';
@@ -854,7 +854,7 @@ final class ElementorCapabilitiesAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function mergeUsageIntoWidgets( array $registered_widgets, array $used_widgets ): array {
+	private function merge_usage_into_widgets( array $registered_widgets, array $used_widgets ): array {
 		foreach ( $registered_widgets as $name => &$widget ) {
 			$widget['usage'] = isset( $used_widgets[ $name ] )
 				? $used_widgets[ $name ]
