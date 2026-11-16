@@ -58,13 +58,13 @@ final class Command {
 	 * @param array $assocArgs Associative command-line arguments.
 	 */
 	public function run( array $args, array $assocArgs ): void {
-		$requestPath = isset( $args[0] ) ? (string) $args[0] : '';
-		if ( '' === $requestPath ) {
+		$request_path = isset( $args[0] ) ? (string) $args[0] : '';
+		if ( '' === $request_path ) {
 			\WP_CLI::error( 'Request file is required.' );
 		}
 
 		try {
-			$request = Request::fromFile( $requestPath );
+			$request = Request::fromFile( $request_path );
 			$context = array(
 				'asset_root' => isset( $assocArgs['asset-root'] ) ? (string) $assocArgs['asset-root'] : '',
 			);

@@ -139,10 +139,10 @@ final class Settings {
 			);
 		}
 
-		$userId = get_current_user_id();
+		$user_id = get_current_user_id();
 		$user   = wp_get_current_user();
-		if ( $userId <= 0 || ! is_object( $user ) || (int) $user->ID !== $userId ||
-			! current_user_can( 'create_app_password', $userId ) ) {
+		if ( $user_id <= 0 || ! is_object( $user ) || (int) $user->ID !== $user_id ||
+			! current_user_can( 'create_app_password', $user_id ) ) {
 			wp_die(
 				esc_html__( 'Application Password permission is not available for the signed-in account.', 'wordpressconnector' ),
 				esc_html__( 'Permission denied', 'wordpressconnector' ),
@@ -153,7 +153,7 @@ final class Settings {
 		$mcp_url = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
 		if ( ! is_ssl() || 'https' !== strtolower( (string) wp_parse_url( $mcp_url, PHP_URL_SCHEME ) ) ||
 			! function_exists( 'wp_is_application_passwords_available_for_user' ) ||
-			! wp_is_application_passwords_available_for_user( $userId ) ) {
+			! wp_is_application_passwords_available_for_user( $user_id ) ) {
 			wp_die(
 				esc_html__( 'Application Passwords require HTTPS and must be enabled for this WordPress account.', 'wordpressconnector' ),
 				esc_html__( 'Secure connection unavailable', 'wordpressconnector' ),
@@ -161,7 +161,7 @@ final class Settings {
 			);
 		}
 
-		if ( \WP_Application_Passwords::application_name_exists_for_user( $userId, self::DIRECT_MCP_PASSWORD_LABEL ) ) {
+		if ( \WP_Application_Passwords::application_name_exists_for_user( $user_id, self::DIRECT_MCP_PASSWORD_LABEL ) ) {
 			wp_die(
 				esc_html__( 'A direct MCP credential already exists for this account. Revoke it under Users > Profile before generating a replacement.', 'wordpressconnector' ),
 				esc_html__( 'Credential already exists', 'wordpressconnector' ),
@@ -170,7 +170,7 @@ final class Settings {
 		}
 
 		$created = \WP_Application_Passwords::create_new_application_password(
-			$userId,
+			$user_id,
 			array( 'name' => self::DIRECT_MCP_PASSWORD_LABEL )
 		);
 		if ( is_wp_error( $created ) || ! is_array( $created ) || ! isset( $created[0] ) || ! is_string( $created[0] ) ) {
