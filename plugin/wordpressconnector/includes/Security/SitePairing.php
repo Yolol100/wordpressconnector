@@ -76,11 +76,11 @@ final class SitePairing {
 			! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$userId = get_current_user_id();
-		if ( ! is_int( $userId ) || $userId <= 0 ) {
+		$user_id = get_current_user_id();
+		if ( ! is_int( $user_id ) || $user_id <= 0 ) {
 			return;
 		}
-		self::enableForAdministrator( $userId );
+		self::enableForAdministrator( $user_id );
 	}
 
 	/**

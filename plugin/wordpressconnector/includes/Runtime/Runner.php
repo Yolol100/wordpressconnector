@@ -105,14 +105,14 @@ final class Runner {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function run( Request $request, array $context = array() ): array {
-		$lockToken = '';
+		$lock_token = '';
 		try {
 			$descriptor = $this->registry->descriptor( $request->action() );
 			if ( Policy::publicRepositoryContext() ) {
 				$descriptor = $this->publicDescriptor( $request->action(), $request->payload(), $descriptor, $request->dryRun(), $request->expectedFingerprint() );
 			}
 			Policy::assertActionAllowed( $descriptor, $request->dryRun(), $request->confirm() );
-			$requestFingerprint = Fingerprint::make(
+			$request_fingerprint = Fingerprint::make(
 				array(
 					'action'               => $request->action(),
 					'payload'              => $request->payload(),
@@ -121,13 +121,13 @@ final class Runner {
 				)
 			);
 			if ( ! empty( $descriptor['mutation'] ) && ! $request->dryRun() ) {
-				$lockToken = $this->processed->acquireMutationLock( $request->id() );
-				if ( '' === $lockToken ) {
+				$lock_token = $this->processed->acquireMutationLock( $request->id() );
+				if ( '' === $lock_token ) {
 					throw new RuntimeException( 'Another connector mutation is already in progress. Retry this request.' );
 				}
 				$existing = $this->processed->get( $request->id() );
 				if ( $existing ) {
-					if ( ! isset( $existing['fingerprint'] ) || ! hash_equals( (string) $existing['fingerprint'], $requestFingerprint ) ) {
+					if ( ! isset( $existing['fingerprint'] ) || ! hash_equals( (string) $existing['fingerprint'], $request_fingerprint ) ) {
 						throw new RuntimeException( 'request_id was already used for a different mutation.' );
 					}
 					if ( ( $existing['state'] ?? null ) === 'pending' ) {
@@ -143,7 +143,7 @@ final class Runner {
 								? $existing['terminal_error']
 								: 'Completed mutation ended with a terminal execution failure.',
 							array(
-								'request_fingerprint'  => $requestFingerprint,
+								'request_fingerprint'  => $request_fingerprint,
 								'idempotent_replay'    => true,
 								'original_result_hash' => $existing['result_hash'] ?? null,
 								'terminal_mutation'    => true,
@@ -157,13 +157,13 @@ final class Runner {
 							'idempotent_replay'    => true,
 							'original_result_hash' => $existing['result_hash'] ?? null,
 						),
-						array( 'request_fingerprint' => $requestFingerprint )
+						array( 'request_fingerprint' => $request_fingerprint )
 					);
 				}
 				// Durable reservation precedes every provider write. If PHP
 				// terminates or the result cannot be stored, future retries
 				// must reconcile the original request instead of repeating it.
-				$this->processed->begin( $request->id(), $requestFingerprint, $request->action() );
+				$this->processed->begin( $request->id(), $request_fingerprint, $request->action() );
 			}
 			$context['dry_run']    = $request->dryRun();
 			$context['confirm']    = $request->confirm();
@@ -203,7 +203,7 @@ final class Runner {
 					$request,
 					$terminal_error,
 					array(
-						'request_fingerprint' => $requestFingerprint,
+						'request_fingerprint' => $request_fingerprint,
 						'terminal_mutation'   => true,
 						'terminal_context'    => $terminal_context,
 						'diagnostic'          => Diagnostics::classify( $terminal_error, true ),
@@ -212,7 +212,7 @@ final class Runner {
 				if ( ! $request->dryRun() && ! empty( $descriptor['mutation'] ) ) {
 					$this->processed->put(
 						$request->id(),
-						$requestFingerprint,
+						$request_fingerprint,
 						$request->action(),
 						Fingerprint::make( $result ),
 						false,
@@ -222,9 +222,9 @@ final class Runner {
 				return $result;
 			}
 
-			$result = Result::success( $request, $data, array( 'request_fingerprint' => $requestFingerprint ) );
+			$result = Result::success( $request, $data, array( 'request_fingerprint' => $request_fingerprint ) );
 			if ( ! $request->dryRun() && ! empty( $descriptor['mutation'] ) ) {
-				$this->processed->put( $request->id(), $requestFingerprint, $request->action(), Fingerprint::make( $result ), true );
+				$this->processed->put( $request->id(), $request_fingerprint, $request->action(), Fingerprint::make( $result ), true );
 			}
 			return $result;
 		} catch ( Throwable $error ) {
@@ -237,8 +237,8 @@ final class Runner {
 				)
 			);
 		} finally {
-			if ( '' !== $lockToken ) {
-				$this->processed->releaseMutationLock( $lockToken );
+			if ( '' !== $lock_token ) {
+				$this->processed->releaseMutationLock( $lock_token );
 			}
 		}
 	}
@@ -351,11 +351,11 @@ final class Runner {
 			if ( in_array( $action, array( 'wordpress.ability.execute', 'wordpress.ability.execute_approved' ), true ) ) {
 				throw new RuntimeException( 'Delegated Ability mutations are not allowed inside connector.batch because they do not provide connector rollback guarantees.' );
 			}
-			$expected           = $operation['expected_fingerprint'] ?? null;
-			$expectedStateToken = $operation['expected_state_token'] ?? null;
+			$expected             = $operation['expected_fingerprint'] ?? null;
+			$expected_state_token = $operation['expected_state_token'] ?? null;
 			foreach ( array(
 				'expected_fingerprint' => $expected,
-				'expected_state_token' => $expectedStateToken,
+				'expected_state_token' => $expected_state_token,
 			) as $guard => $value ) {
 				if ( null !== $value && ( ! is_string( $value ) || ! preg_match( '/^[a-f0-9]{64}\\z/', $value ) ) ) {
 					throw new RuntimeException( 'Invalid ' . $guard . ' at batch index ' . $index . '.' );
@@ -373,7 +373,7 @@ final class Runner {
 				'action'               => $action,
 				'payload'              => $operation['payload'],
 				'expected_fingerprint' => $expected,
-				'expected_state_token' => $expectedStateToken,
+				'expected_state_token' => $expected_state_token,
 			);
 		}
 
