@@ -156,7 +156,7 @@ final class MediaAdapter {
 
 		$configured_limit = getenv( 'WPCONNECTOR_MAX_MEDIA_BYTES' );
 		$max_bytes        = (int) ( $configured_limit ? $configured_limit : 20971520 );
-		$size      = filesize( $real );
+		$size             = filesize( $real );
 		if ( false === $size || $size <= 0 || $size > $max_bytes ) {
 			throw new RuntimeException( 'Media file size is invalid or exceeds the configured limit.' );
 		}
