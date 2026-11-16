@@ -95,7 +95,7 @@ final class YoastFeatureSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload = array(), array $context = array() ): array {
-		$this->assertPrivateProvider();
+		$this->assert_private_provider();
 		if ( $payload ) {
 			throw new RuntimeException( 'Yoast feature inspection does not accept arbitrary option keys.' );
 		}
@@ -117,8 +117,8 @@ final class YoastFeatureSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->assertPrivateProvider();
-		$fields = $this->validateFields( $payload['fields'] ?? null, false );
+		$this->assert_private_provider();
+		$fields = $this->validate_fields( $payload['fields'] ?? null, false );
 		if ( array_diff( array_keys( $payload ), array( 'fields', 'risk_acknowledged' ) ) ) {
 			throw new RuntimeException( 'Yoast feature update accepts only fields and risk_acknowledged.' );
 		}
@@ -126,8 +126,8 @@ final class YoastFeatureSettingsAdapter {
 		if ( ! is_bool( $risk_acknowledged ) ) {
 			throw new RuntimeException( 'risk_acknowledged must be boolean.' );
 		}
-		$group = $this->singleGroup( $fields );
-		$this->assertProviderSupportsFields( $group, $fields );
+		$group = $this->single_group( $fields );
+		$this->assert_provider_supports_fields( $group, $fields );
 		$before     = $this->snapshot();
 		$after      = array_replace( $before, $fields );
 		$highImpact = array_values( array_intersect( array_keys( $fields ), array_keys( self::HIGH_IMPACT ) ) );
@@ -187,7 +187,7 @@ final class YoastFeatureSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function restore( array $payload, array $context ): array {
-		$this->assertPrivateProvider();
+		$this->assert_private_provider();
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'Yoast feature restore is rollback-only.' );
 		}
@@ -199,8 +199,8 @@ final class YoastFeatureSettingsAdapter {
 		if ( ! is_string( $fingerprint ) || ! hash_equals( Fingerprint::make( $before ), $fingerprint ) ) {
 			throw new RuntimeException( 'Yoast features changed since the original write.' );
 		}
-		$previous = $this->validateFields( $payload['fields'] ?? null, true );
-		$group    = $this->singleGroup( $previous );
+		$previous = $this->validate_fields( $payload['fields'] ?? null, true );
+		$group    = $this->single_group( $previous );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => array_keys( $previous ),
@@ -240,7 +240,7 @@ final class YoastFeatureSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function assertProviderSupportsFields( string $group, array $fields ): void {
+	private function assert_provider_supports_fields( string $group, array $fields ): void {
 		if ( ! class_exists( 'WPSEO_Options' ) || ! method_exists( 'WPSEO_Options', 'get_option_instance' ) ) {
 			throw new RuntimeException( 'Yoast option schema API is unavailable.' );
 		}
@@ -268,7 +268,7 @@ final class YoastFeatureSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function singleGroup( array $fields ): string {
+	private function single_group( array $fields ): string {
 		$groups = array();
 		foreach ( $fields as $name => $value ) {
 			$groups[ self::FIELDS[ $name ][0] ] = true;
@@ -289,7 +289,7 @@ final class YoastFeatureSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateFields( $fields, bool $restore ): array {
+	private function validate_fields( $fields, bool $restore ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > 8 ) {
 			throw new RuntimeException( 'Yoast feature update requires 1-8 allowlisted booleans.' );
 		}
@@ -352,7 +352,7 @@ final class YoastFeatureSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertPrivateProvider(): void {
+	private function assert_private_provider(): void {
 		if ( Policy::publicRepositoryContext() ) {
 			throw new RuntimeException( 'Yoast feature settings are not exposed in the public GitHub runtime.' );
 		}
