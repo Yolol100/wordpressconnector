@@ -167,8 +167,8 @@ final class Request {
 			$confirm = $data['confirm'];
 		}
 
-		$expected_fingerprint = self::hexGuard( $data, 'expected_fingerprint' );
-		$expected_state_token = self::hexGuard( $data, 'expected_state_token' );
+		$expected_fingerprint = self::hex_guard( $data, 'expected_fingerprint' );
+		$expected_state_token = self::hex_guard( $data, 'expected_state_token' );
 
 		if ( class_exists( Policy::class ) && Policy::publicRepositoryContext() ) {
 			if ( 'connector.read_batch' === $action ) {
@@ -228,7 +228,7 @@ final class Request {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private static function hexGuard( array $data, string $key ): ?string {
+	private static function hex_guard( array $data, string $key ): ?string {
 		if ( ! array_key_exists( $key, $data ) || null === $data[ $key ] ) {
 			return null;
 		}

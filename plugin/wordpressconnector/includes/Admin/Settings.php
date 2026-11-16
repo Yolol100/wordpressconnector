@@ -301,7 +301,7 @@ final class Settings {
 		echo '</tbody></table>';
 		echo '<p>' . esc_html__( 'Hosting/WAF blocks (401/403/429), outbound GitHub JWKS access, permalinks and third-party plugin compatibility still require a real end-to-end test. An installed plugin alone cannot fix a firewall, missing user permissions or absent dependencies.', 'wordpressconnector' ) . '</p>';
 
-		$this->renderConnectionRecoveryGuide();
+		$this->render_connection_recovery_guide();
 
 		echo '<h2>' . esc_html__( 'GitHub plugin updates', 'wordpressconnector' ) . '</h2>';
 		echo '<p>' . esc_html__( 'The Plugins screen checks the canonical GitHub release at most once every two minutes while a plugin administrator views it. If a verified newer release exists, WordPress shows its standard Update Now action. Use the Check GitHub update now link beside this plugin for an immediate manual refresh. A commit on GitHub main is not an installable update until CI passes and the versioned release ZIP is published.', 'wordpressconnector' ) . '</p>';
@@ -329,7 +329,7 @@ final class Settings {
 	 * connect hosting accounts, or claim that a staging restore was tested.
 	 * It reuses the private read-only connector readiness facts.
 	 */
-	private function renderConnectionRecoveryGuide(): void {
+	private function render_connection_recovery_guide(): void {
 		$status   = ( new ConnectionReadinessAdapter() )->inspect();
 		$site     = $status['wordpress'];
 		$oauth    = $status['chatgpt'];

@@ -99,7 +99,7 @@ final class SiteIdentityAdapter {
 		if ( function_exists( 'is_multisite' ) && is_multisite() ) {
 			throw new RuntimeException( 'Site identity update is not supported on multisite.' );
 		}
-		$values      = $this->validateFields( $payload['fields'] ?? null );
+		$values      = $this->validate_fields( $payload['fields'] ?? null );
 		$before      = $this->snapshot();
 		$next        = array_replace( $before, $values );
 		$fingerprint = Fingerprint::make( $before );
@@ -221,7 +221,7 @@ final class SiteIdentityAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateFields( $fields ): array {
+	private function validate_fields( $fields ): array {
 		if ( ! is_array( $fields ) || ! $fields || count( $fields ) > count( self::KEYS )
 		|| array_keys( $fields ) === range( 0, count( $fields ) - 1 ) ) {
 			throw new RuntimeException( 'Site identity update requires 1–4 named fields.' );

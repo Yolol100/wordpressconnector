@@ -253,10 +253,10 @@ final class Policy {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public static function assertReadablePostType( string $postType ): void {
-		if ( in_array( $postType, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitiveExportAllowed() ) {
+		if ( in_array( $postType, self::SENSITIVE_POST_TYPES, true ) && ! self::sensitive_export_allowed() ) {
 			throw new RuntimeException( 'Sensitive post type export requires confirm=true on a non-public transport.' );
 		}
-		if ( (bool) preg_match( '/(medical|patient|intake|consult|questionnaire|prescription|submission|order_request)/i', $postType ) && ! self::sensitiveExportAllowed() ) {
+		if ( (bool) preg_match( '/(medical|patient|intake|consult|questionnaire|prescription|submission|order_request)/i', $postType ) && ! self::sensitive_export_allowed() ) {
 			throw new RuntimeException( 'Potentially sensitive post type export requires confirm=true on a non-public transport.' );
 		}
 	}
@@ -421,7 +421,7 @@ final class Policy {
 	 *
 	 * @return bool Operation result.
 	 */
-	private static function sensitiveExportAllowed(): bool {
+	private static function sensitive_export_allowed(): bool {
 		return self::$request_confirmed && ! self::publicRepositoryContext() && self::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' );
 	}
 }
