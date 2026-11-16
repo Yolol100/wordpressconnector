@@ -75,6 +75,17 @@ namespace {
     {
     }
 
+    function wp_unslash($value)
+    {
+        return is_string($value) ? stripslashes($value) : $value;
+    }
+
+    function sanitize_text_field($value): string
+    {
+        if (! is_string($value)) { throw new \RuntimeException('Invalid scalar text input.'); }
+        return $value;
+    }
+
     function wp_send_json_error(array $payload, int $status = 200): void
     {
         throw new LoopbackTestResponse(false, $status, $payload);
@@ -116,6 +127,7 @@ namespace {
 
     $GLOBALS['wpc_loopback_transients'][$transient] = $digest;
     $reject(array_merge($validHeaders, array('REQUEST_METHOD' => 'GET')), 405);
+    $reject(array_merge($validHeaders, array('REQUEST_METHOD' => 'P\\OST')), 405);
     $reject(array_merge($validHeaders, array('REQUEST_METHOD' => array('POST'))), 405);
     $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_KEY' => array($key))), 403);
     $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_TOKEN' => array($token))), 403);

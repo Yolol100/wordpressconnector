@@ -357,7 +357,7 @@ final class CacheMaintenanceAdapter {
 	 */
 	public function handleAssetCleanupLoopback(): void {
 		$method = $_SERVER['REQUEST_METHOD'] ?? null;
-		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method ) ) {
+		if ( ! is_string( $method ) || 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
 			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
 			return;
 		}
@@ -417,7 +417,7 @@ final class CacheMaintenanceAdapter {
 			return '';
 		}
 
-		return strtolower( $raw );
+		return strtolower( sanitize_text_field( wp_unslash( $raw ) ) );
 	}
 
 	/**
