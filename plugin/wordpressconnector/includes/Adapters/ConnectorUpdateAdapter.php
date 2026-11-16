@@ -415,7 +415,7 @@ final class ConnectorUpdateAdapter {
 
 		$package = $this->downloadVerifiedPackage( $release );
 		try {
-			$actualSha256 = substr( $release['package_digest'], 7 );
+			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
 			// backup. A later fatal error still has no guaranteed automatic recovery.
@@ -435,7 +435,7 @@ final class ConnectorUpdateAdapter {
 					'plugin_file' => self::PLUGIN_FILE,
 					'version'     => $installed_version,
 				),
-				'package_sha256'     => $actualSha256,
+				'package_sha256'     => $actual_sha256,
 				'release_tag'        => $release['tag'],
 				'rollback_supported' => false,
 			);
@@ -601,8 +601,8 @@ final class ConnectorUpdateAdapter {
 		$package_url    = '';
 		$checksum_url   = '';
 		$sbom_url       = '';
-		$packageDigest  = '';
-		$checksumDigest = '';
+		$package_digest  = '';
+		$checksum_digest = '';
 		foreach ( $decoded['assets'] as $asset ) {
 			if ( ! is_array( $asset ) || empty( $asset['name'] ) || empty( $asset['browser_download_url'] ) ) {
 				continue;
@@ -611,10 +611,10 @@ final class ConnectorUpdateAdapter {
 			$url  = (string) $asset['browser_download_url'];
 			if ( self::PACKAGE_ASSET === $name ) {
 				$package_url   = $url;
-				$packageDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
+				$package_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::CHECKSUM_ASSET === $name ) {
 				$checksum_url   = $url;
-				$checksumDigest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
+				$checksum_digest = isset( $asset['digest'] ) ? strtolower( (string) $asset['digest'] ) : '';
 			} elseif ( self::SBOM_ASSET === $name ) {
 				$sbom_url = $url;
 			}
@@ -630,7 +630,7 @@ final class ConnectorUpdateAdapter {
 		if ( ! preg_match( '#^https://github\.com/Yolol100/wordpressconnector/releases/download/' . $quoted_tag . '/wordpressconnector\.spdx\.json\z#', $sbom_url ) ) {
 			throw new RuntimeException( 'Canonical release is missing the expected SPDX SBOM asset.' );
 		}
-		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $packageDigest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksumDigest ) ) {
+		if ( ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $package_digest ) || ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $checksum_digest ) ) {
 			throw new RuntimeException( 'Canonical release assets are missing GitHub SHA-256 digests.' );
 		}
 
@@ -640,8 +640,8 @@ final class ConnectorUpdateAdapter {
 			'package_url'     => $package_url,
 			'checksum_url'    => $checksum_url,
 			'sbom_url'        => $sbom_url,
-			'package_digest'  => $packageDigest,
-			'checksum_digest' => $checksumDigest,
+			'package_digest'  => $package_digest,
+			'checksum_digest' => $checksum_digest,
 		);
 	}
 
@@ -656,8 +656,8 @@ final class ConnectorUpdateAdapter {
 	 * @throws \RuntimeException When package integrity checks fail.
 	 */
 	private function downloadVerifiedPackage( array $release ): string {
-		$expectedSha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
-		if ( ! hash_equals( 'sha256:' . $expectedSha256, $release['package_digest'] ) ) {
+		$expected_sha256 = $this->checksum( $release['checksum_url'], $release['checksum_digest'] );
+		if ( ! hash_equals( 'sha256:' . $expected_sha256, $release['package_digest'] ) ) {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
 		}
 
@@ -674,9 +674,9 @@ final class ConnectorUpdateAdapter {
 			if ( false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES ) {
 				throw new RuntimeException( 'Connector release package is empty or exceeds the 20 MiB limit.' );
 			}
-			$actualSha256 = hash_file( 'sha256', $package );
-			if ( ! is_string( $actualSha256 ) || ! hash_equals( $expectedSha256, strtolower( $actualSha256 ) )
-				|| ! hash_equals( $release['package_digest'], 'sha256:' . strtolower( $actualSha256 ) ) ) {
+			$actual_sha256 = hash_file( 'sha256', $package );
+			if ( ! is_string( $actual_sha256 ) || ! hash_equals( $expected_sha256, strtolower( $actual_sha256 ) )
+				|| ! hash_equals( $release['package_digest'], 'sha256:' . strtolower( $actual_sha256 ) ) ) {
 				throw new RuntimeException( 'Connector release package SHA-256 verification failed.' );
 			}
 
@@ -699,13 +699,13 @@ final class ConnectorUpdateAdapter {
 	 * Process the checksum operation in the ConnectorUpdate adapter.
 	 *
 	 * @param string $url Input for the operation.
-	 * @param string $expectedAssetDigest Input for the operation.
+	 * @param string $expected_asset_digest Input for the operation.
 	 *
 	 * @return string Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function checksum( string $url, string $expectedAssetDigest ): string {
+	private function checksum( string $url, string $expected_asset_digest ): string {
 		$response = wp_safe_remote_get(
 			$url,
 			array(
@@ -723,8 +723,8 @@ final class ConnectorUpdateAdapter {
 		}
 
 		$raw_body          = (string) wp_remote_retrieve_body( $response );
-		$actualAssetDigest = 'sha256:' . hash( 'sha256', $raw_body );
-		if ( ! hash_equals( $expectedAssetDigest, $actualAssetDigest ) ) {
+		$actual_asset_digest = 'sha256:' . hash( 'sha256', $raw_body );
+		if ( ! hash_equals( $expected_asset_digest, $actual_asset_digest ) ) {
 			throw new RuntimeException( 'Connector checksum asset GitHub digest verification failed.' );
 		}
 		$body = trim( $raw_body );
