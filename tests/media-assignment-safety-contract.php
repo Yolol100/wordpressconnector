@@ -13,19 +13,19 @@ if (! is_string($compactSource)) { throw new RuntimeException('Could not normali
 foreach (array(
     "current_user_can('upload_files')",
     "current_user_can('edit_post', \$id)",
-    "current_user_can('edit_post', \$targetId)",
+    "current_user_can('edit_post', \$target_id)",
     "current_user_can('edit_theme_options')",
     "current_user_can('manage_options')",
-    "current_user_can('edit_post', \$parentId)",
+    "current_user_can('edit_post', \$parent_id)",
     "isset(\$payload['id']) && 0 === (int) \$payload['id']",
     "empty(\$context['rollback_mode'])",
-    'delete_post_thumbnail($targetId)',
-    'get_post_thumbnail_id($targetId)',
+    'delete_post_thumbnail($target_id)',
+    'get_post_thumbnail_id($target_id)',
     'Featured-image assignment readback failed.',
     'Image rename aborted and original WordPress attachment state could not be verified.',
     'New image copies have been retained to prevent broken references',
     'wp_get_attachment_metadata($id, true)',
-    "fopen(\$newPath, 'xb')",
+    "fopen(\$new_path, 'xb')",
 ) as $needle) {
     if (false === strpos($compactSource, preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Media assignment/rename safety guard missing: ' . $needle);

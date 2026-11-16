@@ -450,18 +450,18 @@ final class CodeSnippetsAdapter {
 	public function restoreCode( array $payload, array $context ): array {
 		$this->assertAvailable();
 
-		$snippetId = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$code      = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
-		$expected  = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
+		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
+		$code       = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
+		$expected   = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
 
-		if ( $snippetId <= 0 || null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
+		if ( $snippet_id <= 0 || null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets rollback payload is invalid.' );
 		}
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $expected ) ) {
 			throw new RuntimeException( 'Code Snippets rollback requires a valid expected_code_fingerprint.' );
 		}
 
-		$before = $this->snapshot( $this->getSnippet( $snippetId ) );
+		$before = $this->snapshot( $this->getSnippet( $snippet_id ) );
 		if ( ! empty( $before['locked'] ) ) {
 			throw new RuntimeException( 'Code Snippets rollback target is locked.' );
 		}
@@ -481,8 +481,8 @@ final class CodeSnippetsAdapter {
 			return $result;
 		}
 
-		$this->writeCode( $snippetId, $code );
-		$after = $this->snapshot( $this->getSnippet( $snippetId ) );
+		$this->writeCode( $snippet_id, $code );
+		$after = $this->snapshot( $this->getSnippet( $snippet_id ) );
 
 		if ( ! $this->sameMetadata( $before, $after ) || $code !== (string) $after['code'] ) {
 			throw new RuntimeException( 'Code Snippets rollback readback verification failed.' );
@@ -524,17 +524,17 @@ final class CodeSnippetsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function findTarget( array $payload ) {
-		$snippetId = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$marker    = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
+		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
+		$marker     = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
 			? $payload['match_code_contains']
 			: '';
 
-		if ( ( $snippetId > 0 && '' !== $marker ) || ( $snippetId <= 0 && '' === $marker ) ) {
+		if ( ( $snippet_id > 0 && '' !== $marker ) || ( $snippet_id <= 0 && '' === $marker ) ) {
 			throw new RuntimeException( 'Code Snippets patch requires exactly one of snippet_id or match_code_contains.' );
 		}
 
-		if ( $snippetId > 0 ) {
-			return $this->getSnippet( $snippetId );
+		if ( $snippet_id > 0 ) {
+			return $this->getSnippet( $snippet_id );
 		}
 
 		if ( strlen( $marker ) > 240 || preg_match( '/[\x00-\x1F\x7F]/', $marker ) ) {

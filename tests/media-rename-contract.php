@@ -27,7 +27,7 @@ foreach (array(
         throw new RuntimeException('Missing safe image rename marker: '.$marker);
     }
 }
-if (false !== strpos($compactSource, 'rename($sourceReal')) {
+if (false !== strpos($compactSource, 'rename($source_real')) {
     throw new RuntimeException('Old image paths must not be moved or deleted.');
 }
 echo "Media rename contract OK\n";

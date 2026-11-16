@@ -293,20 +293,20 @@ final class MediaAdapter {
 			throw new RuntimeException( 'Use a lowercase descriptive hyphen-separated image filename with the original extension.' );
 		}
 
-		$source     = get_attached_file( $id );
-		$uploads    = wp_get_upload_dir();
-		$root       = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
-		$sourceReal = is_string( $source ) ? realpath( $source ) : false;
-		if ( ! is_string( $root ) || ! is_string( $sourceReal ) || ! is_file( $sourceReal ) ||
-			0 !== strpos( $sourceReal, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
+		$source      = get_attached_file( $id );
+		$uploads     = wp_get_upload_dir();
+		$root        = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
+		$source_real = is_string( $source ) ? realpath( $source ) : false;
+		if ( ! is_string( $root ) || ! is_string( $source_real ) || ! is_file( $source_real ) ||
+			0 !== strpos( $source_real, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
 			throw new RuntimeException( 'Image must be a regular file inside WordPress uploads.' );
 		}
-		$directory = dirname( $sourceReal );
-		$extension = strtolower( (string) pathinfo( $sourceReal, PATHINFO_EXTENSION ) );
+		$directory = dirname( $source_real );
+		$extension = strtolower( (string) pathinfo( $source_real, PATHINFO_EXTENSION ) );
 		if ( strtolower( (string) pathinfo( $requested, PATHINFO_EXTENSION ) ) !== $extension ) {
 			throw new RuntimeException( 'Image format changes require a separate conversion.' );
 		}
-		$old_name = basename( $sourceReal );
+		$old_name = basename( $source_real );
 		if ( $requested === $old_name ) {
 			return array(
 				'unchanged'            => true,
@@ -360,7 +360,7 @@ final class MediaAdapter {
 		try {
 			foreach ( $copies as $from => $to ) {
 				$old_path = $directory . DIRECTORY_SEPARATOR . $from;
-				$newPath  = $directory . DIRECTORY_SEPARATOR . $to;
+				$new_path = $directory . DIRECTORY_SEPARATOR . $to;
 				$input    = @fopen( $old_path, 'rb' );
 				if ( ! is_resource( $input ) ) {
 					throw new RuntimeException( 'Image copy source is unavailable.' );
@@ -368,12 +368,12 @@ final class MediaAdapter {
 				// Open the destination only after the source; otherwise a failed
 				// source read could leave an untracked empty compatibility file.
 				// 'xb' prevents clobbering a concurrent upload or other rename.
-				$output = @fopen( $newPath, 'xb' );
+				$output = @fopen( $new_path, 'xb' );
 				if ( ! is_resource( $output ) ) {
 					fclose( $input );
 					throw new RuntimeException( 'New filename already exists or cannot be created.' );
 				}
-				$created[] = $newPath;
+				$created[] = $new_path;
 				try {
 					$expected_size = filesize( $old_path );
 					$copied        = stream_copy_to_stream( $input, $output );
@@ -400,7 +400,7 @@ final class MediaAdapter {
 			$readback = $this->snapshot( $id );
 			if ( realpath( (string) $readback['file'] ) !== realpath( $directory . DIRECTORY_SEPARATOR . $requested ) ||
 				Fingerprint::make( $readback['metadata'] ) !== Fingerprint::make( $after_metadata ) ||
-				! is_file( $sourceReal ) ) {
+				! is_file( $source_real ) ) {
 				throw new RuntimeException( 'Image rename readback verification failed.' );
 			}
 			return array(
@@ -413,13 +413,13 @@ final class MediaAdapter {
 			// A metadata write can fail after another part already committed.
 			// Never delete new files unless BOTH original WordPress pointers
 			// were independently read back as restored.
-			update_attached_file( $id, $sourceReal );
+			update_attached_file( $id, $source_real );
 			wp_update_attachment_metadata( $id, $metadata );
 			clean_post_cache( $id );
 			$restored_path     = get_attached_file( $id, true );
 			$restored_metadata = wp_get_attachment_metadata( $id, true );
 			$restored          = is_string( $restored_path )
-				&& realpath( $restored_path ) === $sourceReal
+				&& realpath( $restored_path ) === $source_real
 				&& is_array( $restored_metadata )
 				&& hash_equals( Fingerprint::make( $metadata ), Fingerprint::make( $restored_metadata ) );
 			if ( ! $restored ) {
@@ -452,7 +452,7 @@ final class MediaAdapter {
 	 */
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$targetId    = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$target_id   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type
@@ -467,10 +467,10 @@ final class MediaAdapter {
 
 		switch ( $target_type ) {
 			case 'featured_image':
-				if ( $targetId <= 0 || ! get_post( $targetId ) || ! current_user_can( 'edit_post', $targetId ) ) {
+				if ( $target_id <= 0 || ! get_post( $target_id ) || ! current_user_can( 'edit_post', $target_id ) ) {
 					throw new RuntimeException( 'You cannot edit the featured-image target.' );
 				}
-				$before = (int) get_post_thumbnail_id( $targetId );
+				$before = (int) get_post_thumbnail_id( $target_id );
 				$result = array(
 					'before'               => $before,
 					'after'                => $attachment_id,
@@ -484,13 +484,13 @@ final class MediaAdapter {
 					return $result;
 				}
 				if ( $clear_featured ) {
-					if ( ! delete_post_thumbnail( $targetId ) ) {
+					if ( ! delete_post_thumbnail( $target_id ) ) {
 						throw new RuntimeException( 'Could not clear featured image during rollback.' );
 					}
-				} elseif ( ! set_post_thumbnail( $targetId, $attachment_id ) ) {
+				} elseif ( ! set_post_thumbnail( $target_id, $attachment_id ) ) {
 					throw new RuntimeException( 'Could not assign featured image.' );
 				}
-				if ( (int) get_post_thumbnail_id( $targetId ) !== $attachment_id ) {
+				if ( (int) get_post_thumbnail_id( $target_id ) !== $attachment_id ) {
 					throw new RuntimeException( 'Featured-image assignment readback failed.' );
 				}
 				if ( empty( $context['rollback_mode'] ) ) {
@@ -499,20 +499,20 @@ final class MediaAdapter {
 						'payload' => array(
 							'id'          => $before,
 							'target_type' => 'featured_image',
-							'target_id'   => $targetId,
+							'target_id'   => $target_id,
 						),
 					);
 				}
 				return $result;
 
 			case 'product_gallery':
-				if ( $targetId <= 0 || ! get_post( $targetId ) || ! current_user_can( 'edit_post', $targetId ) ) {
+				if ( $target_id <= 0 || ! get_post( $target_id ) || ! current_user_can( 'edit_post', $target_id ) ) {
 					throw new RuntimeException( 'You cannot edit the product gallery target.' );
 				}
 				if ( ! function_exists( 'wc_get_product' ) ) {
 					throw new RuntimeException( 'WooCommerce is not active.' );
 				}
-				$product = wc_get_product( $targetId );
+				$product = wc_get_product( $target_id );
 				if ( ! $product instanceof \WC_Product ) {
 					throw new RuntimeException( 'Product not found.' );
 				}
@@ -538,7 +538,7 @@ final class MediaAdapter {
 				$result['_rollback'] = array(
 					'action'  => 'woocommerce.product.update',
 					'payload' => array(
-						'id'                => $targetId,
+						'id'                => $target_id,
 						'gallery_image_ids' => $before,
 					),
 				);
@@ -705,12 +705,12 @@ final class MediaAdapter {
 			$post_fields['post_content'] = (string) $payload['description'];
 		}
 		if ( array_key_exists( 'parent', $payload ) ) {
-			$parentId = (int) $payload['parent'];
-			if ( $parentId < 0 || ( $parentId > 0
-				&& ( ! get_post( $parentId ) || ! current_user_can( 'edit_post', $parentId ) ) ) ) {
+			$parent_id = (int) $payload['parent'];
+			if ( $parent_id < 0 || ( $parent_id > 0
+				&& ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) ) {
 				throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
 			}
-			$post_fields['post_parent'] = $parentId;
+			$post_fields['post_parent'] = $parent_id;
 		}
 		if ( count( $post_fields ) > 1 ) {
 			$updated = wp_update_post( wp_slash( $post_fields ), true );
