@@ -107,7 +107,7 @@ final class ElementorAdapter {
 		}
 		Policy::assertReadablePostType( $post_type );
 
-		$data          = $this->normalizeData( $payload['data'] ?? array() );
+		$data          = $this->normalize_data( $payload['data'] ?? array() );
 		$page_settings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array();
 		$post_fields   = array(
 			'post_type'    => $post_type,
@@ -121,7 +121,7 @@ final class ElementorAdapter {
 			return array(
 				'would_create'         => array(
 					'post'      => $post_fields,
-					'elementor' => $this->requestedMeta( $payload, $data ),
+					'elementor' => $this->requested_meta( $payload, $data ),
 				),
 				'_current_fingerprint' => Fingerprint::make(
 					array(
@@ -138,12 +138,12 @@ final class ElementorAdapter {
 		}
 
 		try {
-			$this->prepareDocumentMeta( (int) $id, $payload );
-			$saved_elements = $this->saveDocumentViaApi( (int) $id, $data, $page_settings );
-			$this->writeSupplementalMeta( (int) $id, $payload );
-			$this->clearCache();
+			$this->prepare_document_meta( (int) $id, $payload );
+			$saved_elements = $this->save_document_via_api( (int) $id, $data, $page_settings );
+			$this->write_supplemental_meta( (int) $id, $payload );
+			$this->clear_cache();
 			$after = $this->snapshot( (int) $id );
-			$this->assertDocumentReadback( $after, $saved_elements, $page_settings );
+			$this->assert_document_readback( $after, $saved_elements, $page_settings );
 		} catch ( Throwable $error ) {
 			wp_delete_post( (int) $id, true );
 			throw $error;
@@ -169,7 +169,7 @@ final class ElementorAdapter {
 	public function replaceDocument( array $payload, array $context ): array {
 		$post          = $this->post( $payload );
 		$before        = $this->snapshot( (int) $post->ID );
-		$data          = array_key_exists( 'data', $payload ) ? $this->normalizeData( $payload['data'] ) : $before['data'];
+		$data          = array_key_exists( 'data', $payload ) ? $this->normalize_data( $payload['data'] ) : $before['data'];
 		$page_settings = array_key_exists( 'page_settings', $payload )
 			? ( is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array() )
 			: $before['page_settings'];
@@ -193,7 +193,7 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$result['after']     = $this->applyExistingDocumentMutation(
+		$result['after']     = $this->apply_existing_document_mutation(
 			(int) $post->ID,
 			$payload,
 			$data,
@@ -202,7 +202,7 @@ final class ElementorAdapter {
 		);
 		$result['_rollback'] = array(
 			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before ),
+			'payload' => $this->rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -263,7 +263,7 @@ final class ElementorAdapter {
 			return $result;
 		}
 
-		$readback         = $this->applyExistingDocumentMutation(
+		$readback         = $this->apply_existing_document_mutation(
 			(int) $post->ID,
 			array(),
 			$data,
@@ -272,15 +272,15 @@ final class ElementorAdapter {
 		);
 		$readback_data    = $readback['data'];
 		$readback_element =& $this->findElement( $readback_data, $element_id );
-		if ( ! $this->matchesRequestedElementPatch( $requested_element, $readback_element, $payload ) ) {
-			$this->restoreSnapshot( $before );
+		if ( ! $this->matches_requested_element_patch( $requested_element, $readback_element, $payload ) ) {
+			$this->restore_snapshot( $before );
 			throw new RuntimeException( 'Elementor element readback verification failed; previous snapshot restored.' );
 		}
 
 		$result['after_element'] = $readback_element;
 		$result['_rollback']     = array(
 			'action'  => 'elementor.replace_document',
-			'payload' => $this->rollbackPayload( $before ),
+			'payload' => $this->rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -305,7 +305,7 @@ final class ElementorAdapter {
 				'_current_fingerprint'        => Fingerprint::make( array( 'elementor' => defined( 'ELEMENTOR_VERSION' ) ? ELEMENTOR_VERSION : 'active' ) ),
 			);
 		}
-		$this->clearCache();
+		$this->clear_cache();
 		return array(
 			'cleared'            => true,
 			'rollback_supported' => false,
@@ -334,7 +334,7 @@ final class ElementorAdapter {
 			if ( ! is_array( $check ) || array_diff( array_keys( $check ), array( 'element_id', 'from' ) )
 				|| ! is_string( $element_id ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $element_id )
 				|| isset( $seen[ $element_id ] ) || ! is_string( $url )
-				|| ! $this->sameSiteHeaderUrl( $url, false ) ) {
+				|| ! $this->same_site_header_url( $url, false ) ) {
 				throw new RuntimeException( 'Header diagnostic widget or URL is not allowed.' );
 			}
 			$seen[ $element_id ] = true;
@@ -437,8 +437,8 @@ final class ElementorAdapter {
 			$to         = $change['to'] ?? null;
 			if ( ! is_string( $element_id ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $element_id )
 				|| isset( $seen[ $element_id ] ) || ! is_string( $from ) || ! is_string( $to )
-				|| $from === $to || ! $this->sameSiteHeaderUrl( $from, false )
-				|| ! $this->sameSiteHeaderUrl( $to, true ) ) {
+				|| $from === $to || ! $this->same_site_header_url( $from, false )
+				|| ! $this->same_site_header_url( $to, true ) ) {
 				throw new RuntimeException( 'Header link target, source or destination is not allowed.' );
 			}
 			$seen[ $element_id ] = true;
@@ -475,7 +475,7 @@ final class ElementorAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$after                       = $this->applyExistingDocumentMutation(
+		$after                       = $this->apply_existing_document_mutation(
 			$id,
 			array(),
 			$data,
@@ -495,7 +495,7 @@ final class ElementorAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function sameSiteHeaderUrl( string $url, bool $destination ): bool {
+	private function same_site_header_url( string $url, bool $destination ): bool {
 		if ( strlen( $url ) > 500 || ! filter_var( $url, FILTER_VALIDATE_URL ) ) {
 			return false;
 		}
@@ -537,18 +537,18 @@ final class ElementorAdapter {
 	 * @return array Operation result.
 	 */
 	private function snapshot( int $post_id ): array {
-		$document = $this->documentOrNull( $post_id );
+		$document = $this->document_or_null( $post_id );
 		if ( $document ) {
 			// Verify the committed document, not the editor document instance which may
 			// keep an earlier in-memory elements tree after save() in this request.
-			$data          = $this->normalizeData( get_post_meta( $post_id, '_elementor_data', true ) ?: array() );
+			$data          = $this->normalize_data( get_post_meta( $post_id, '_elementor_data', true ) ?: array() );
 			$settings      = method_exists( $document, 'get_db_document_settings' ) ? $document->get_db_document_settings() : array();
 			$settings      = is_array( $settings ) ? $settings : array();
 			$document_type = method_exists( $document, 'get_name' ) ? (string) $document->get_name() : '';
 		} else {
 			$raw           = get_post_meta( $post_id, '_elementor_data', true );
-			$data          = $this->normalizeData( $raw ?: array() );
-			$settings      = $this->normalizeMetaArray( get_post_meta( $post_id, '_elementor_page_settings', true ) );
+			$data          = $this->normalize_data( $raw ?: array() );
+			$settings      = $this->normalize_meta_array( get_post_meta( $post_id, '_elementor_page_settings', true ) );
 			$document_type = '';
 		}
 
@@ -566,7 +566,7 @@ final class ElementorAdapter {
 			'edit_mode'         => (string) get_post_meta( $post_id, '_elementor_edit_mode', true ),
 			'template_type'     => (string) get_post_meta( $post_id, '_elementor_template_type', true ),
 			'page_settings'     => $settings,
-			'conditions'        => $this->normalizeMetaArray( get_post_meta( $post_id, '_elementor_conditions', true ) ),
+			'conditions'        => $this->normalize_meta_array( get_post_meta( $post_id, '_elementor_conditions', true ) ),
 			'elementor_version' => (string) get_post_meta( $post_id, '_elementor_version', true ),
 		);
 	}
@@ -579,7 +579,7 @@ final class ElementorAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function requestedMeta( array $payload, array $data ): array {
+	private function requested_meta( array $payload, array $data ): array {
 		return array(
 			'data'          => $data,
 			'document_type' => isset( $payload['document_type'] ) ? (string) $payload['document_type'] : '',
@@ -596,7 +596,7 @@ final class ElementorAdapter {
 	 * @param int   $post_id Input for the operation.
 	 * @param array $payload Requested action payload.
 	 */
-	private function prepareDocumentMeta( int $post_id, array $payload ): void {
+	private function prepare_document_meta( int $post_id, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
 			update_post_meta( $post_id, '_elementor_template_type', (string) $payload['template_type'] );
 		}
@@ -609,7 +609,7 @@ final class ElementorAdapter {
 	 * @param int   $post_id Input for the operation.
 	 * @param array $payload Requested action payload.
 	 */
-	private function writeSupplementalMeta( int $post_id, array $payload ): void {
+	private function write_supplemental_meta( int $post_id, array $payload ): void {
 		if ( array_key_exists( 'template_type', $payload ) ) {
 			update_post_meta( $post_id, '_elementor_template_type', (string) $payload['template_type'] );
 		}
@@ -635,7 +635,7 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function saveDocumentViaApi( int $post_id, array $data, array $page_settings ): array {
+	private function save_document_via_api( int $post_id, array $data, array $page_settings ): array {
 		if ( function_exists( 'is_user_logged_in' ) && is_user_logged_in() && ! current_user_can( 'edit_post', $post_id ) ) {
 			throw new RuntimeException( 'You are not allowed to edit this Elementor document.' );
 		}
@@ -685,7 +685,7 @@ final class ElementorAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function matchesRequestedElementPatch( array $requested, array $actual, array $payload ): bool {
+	private function matches_requested_element_patch( array $requested, array $actual, array $payload ): bool {
 		foreach ( array( 'id', 'elType', 'widgetType' ) as $field ) {
 			if ( isset( $requested[ $field ] ) && ( ! isset( $actual[ $field ] ) || (string) $requested[ $field ] !== (string) $actual[ $field ] ) ) {
 				return false;
@@ -720,17 +720,17 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function applyExistingDocumentMutation( int $post_id, array $payload, array $data, array $page_settings, array $before ): array {
+	private function apply_existing_document_mutation( int $post_id, array $payload, array $data, array $page_settings, array $before ): array {
 		try {
-			$saved_elements = $this->saveDocumentViaApi( $post_id, $data, $page_settings );
-			$this->writeSupplementalMeta( $post_id, $payload );
-			$this->clearCache();
+			$saved_elements = $this->save_document_via_api( $post_id, $data, $page_settings );
+			$this->write_supplemental_meta( $post_id, $payload );
+			$this->clear_cache();
 			$after = $this->snapshot( $post_id );
-			$this->assertDocumentReadback( $after, $saved_elements, $page_settings );
+			$this->assert_document_readback( $after, $saved_elements, $page_settings );
 			return $after;
 		} catch ( Throwable $error ) {
 			try {
-				$this->restoreSnapshot( $before );
+				$this->restore_snapshot( $before );
 			} catch ( Throwable $rollback_error ) {
 				throw new RuntimeException(
 					'Elementor mutation failed and automatic rollback also failed: ' . $error->getMessage() . ' | rollback: ' . $rollback_error->getMessage(),
@@ -749,20 +749,20 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function restoreSnapshot( array $snapshot ): void {
+	private function restore_snapshot( array $snapshot ): void {
 		$post_id = isset( $snapshot['post_id'] ) ? (int) $snapshot['post_id'] : 0;
 		if ( $post_id < 1 ) {
 			throw new RuntimeException( 'Rollback snapshot is missing post_id.' );
 		}
 
-		$payload = $this->rollbackPayload( $snapshot );
-		$this->prepareDocumentMeta( $post_id, $payload );
-		$restored_elements = $this->saveDocumentViaApi( $post_id, $snapshot['data'], $snapshot['page_settings'] );
-		$this->writeSupplementalMeta( $post_id, $payload );
-		$this->clearCache();
+		$payload = $this->rollback_payload( $snapshot );
+		$this->prepare_document_meta( $post_id, $payload );
+		$restored_elements = $this->save_document_via_api( $post_id, $snapshot['data'], $snapshot['page_settings'] );
+		$this->write_supplemental_meta( $post_id, $payload );
+		$this->clear_cache();
 
 		$restored = $this->snapshot( $post_id );
-		$this->assertDocumentReadback( $restored, $restored_elements, $snapshot['page_settings'] );
+		$this->assert_document_readback( $restored, $restored_elements, $snapshot['page_settings'] );
 		foreach ( array( 'edit_mode', 'template_type', 'conditions' ) as $field ) {
 			if ( ! hash_equals( Fingerprint::make( $snapshot[ $field ] ), Fingerprint::make( $restored[ $field ] ) ) ) {
 				throw new RuntimeException( 'Elementor rollback readback failed for: ' . $field );
@@ -805,7 +805,7 @@ final class ElementorAdapter {
 	 *
 	 * @return object|null Operation result.
 	 */
-	private function documentOrNull( int $post_id ): ?object {
+	private function document_or_null( int $post_id ): ?object {
 		try {
 			return $this->document( $post_id );
 		} catch ( Throwable $error ) {
@@ -822,7 +822,7 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertDocumentReadback( array $actual, array $expected_data, array $expected_settings ): void {
+	private function assert_document_readback( array $actual, array $expected_data, array $expected_settings ): void {
 		if ( ! hash_equals( Fingerprint::make( $expected_data ), Fingerprint::make( $actual['data'] ) ) ) {
 			throw new RuntimeException( 'Elementor document readback verification failed for elements.' );
 		}
@@ -856,7 +856,7 @@ final class ElementorAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function normalizeData( $data ): array {
+	private function normalize_data( $data ): array {
 		if ( is_string( $data ) ) {
 			$trimmed = trim( $data );
 			if ( '' === $trimmed ) {
@@ -877,7 +877,7 @@ final class ElementorAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function normalizeMetaArray( $value ): array {
+	private function normalize_meta_array( $value ): array {
 		if ( is_array( $value ) ) {
 			return $value;
 		}
@@ -927,7 +927,7 @@ final class ElementorAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function rollbackPayload( array $snapshot ): array {
+	private function rollback_payload( array $snapshot ): array {
 		return array(
 			'id'            => $snapshot['post_id'],
 			'data'          => $snapshot['data'],
@@ -941,7 +941,7 @@ final class ElementorAdapter {
 	/**
 	 * Process the clear cache operation in the Elementor adapter.
 	 */
-	private function clearCache(): void {
+	private function clear_cache(): void {
 		if ( ! class_exists( 'Elementor\\Plugin' ) ) {
 			return;
 		}

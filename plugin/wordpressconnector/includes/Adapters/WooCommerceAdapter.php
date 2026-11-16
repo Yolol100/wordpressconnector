@@ -199,7 +199,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function orderList( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		if ( ! function_exists( 'wc_get_orders' ) ) {
 			throw new RuntimeException( 'WooCommerce order query API is unavailable.' );
 		}
@@ -224,14 +224,14 @@ final class WooCommerceAdapter {
 			$args['status'] = array( $status );
 		}
 		if ( isset( $payload['customer_id'] ) ) {
-			$args['customer'] = $this->positiveIntegerId( $payload['customer_id'], 'customer_id must be a positive integer.' );
+			$args['customer'] = $this->positive_integer_id( $payload['customer_id'], 'customer_id must be a positive integer.' );
 		}
 		$query  = wc_get_orders( $args );
 		$orders = is_object( $query ) && isset( $query->orders ) ? $query->orders : (array) $query;
 		$items  = array();
 		foreach ( $orders as $order ) {
 			if ( $order instanceof \WC_Order ) {
-				$items[] = $this->orderSnapshot( $order, false, false );
+				$items[] = $this->order_snapshot( $order, false, false );
 			}
 		}
 		return array(
@@ -253,12 +253,12 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function orderGet( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		if ( ! function_exists( 'wc_get_order' ) ) {
 			throw new RuntimeException( 'WooCommerce order API is unavailable.' );
 		}
 		Policy::assertReadablePostType( 'shop_order' );
-		$id = array_key_exists( 'id', $payload ) ? $this->positiveIntegerId( $payload['id'], 'A positive order id is required.' ) : 0;
+		$id = array_key_exists( 'id', $payload ) ? $this->positive_integer_id( $payload['id'], 'A positive order id is required.' ) : 0;
 		if ( $id < 1 ) {
 			throw new RuntimeException( 'A positive order id is required.' );
 		}
@@ -267,7 +267,7 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'WooCommerce order not found.' );
 		}
 		$include_personal_data = Input::bool( $payload, 'include_personal_data', false );
-		$snapshot              = $this->orderSnapshot( $order, $include_personal_data );
+		$snapshot              = $this->order_snapshot( $order, $include_personal_data );
 		return array(
 			'order'       => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -284,11 +284,11 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function customerGet( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		if ( ! class_exists( 'WC_Customer' ) ) {
 			throw new RuntimeException( 'WooCommerce customer API is unavailable.' );
 		}
-		$id   = array_key_exists( 'id', $payload ) ? $this->positiveIntegerId( $payload['id'], 'A WooCommerce customer account id is required.' ) : 0;
+		$id   = array_key_exists( 'id', $payload ) ? $this->positive_integer_id( $payload['id'], 'A WooCommerce customer account id is required.' ) : 0;
 		$user = $id > 0 ? get_user_by( 'id', $id ) : false;
 		if ( ! $user ) {
 			throw new RuntimeException( 'A WooCommerce customer account id is required.' );
@@ -317,8 +317,8 @@ final class WooCommerceAdapter {
 			$snapshot['email']      = (string) $customer->get_email();
 			$snapshot['first_name'] = (string) $customer->get_first_name();
 			$snapshot['last_name']  = (string) $customer->get_last_name();
-			$snapshot['billing']    = $this->customerAddressSnapshot( $customer->get_billing() );
-			$snapshot['shipping']   = $this->customerAddressSnapshot( $customer->get_shipping() );
+			$snapshot['billing']    = $this->customer_address_snapshot( $customer->get_billing() );
+			$snapshot['shipping']   = $this->customer_address_snapshot( $customer->get_shipping() );
 		}
 		return array(
 			'customer'    => $snapshot,
@@ -337,7 +337,7 @@ final class WooCommerceAdapter {
 	 */
 	public function shippingZoneList( array $payload = array() ): array {
 		global $wpdb;
-		$this->assertWoo();
+		$this->assert_woo();
 		if (
 			! class_exists( 'WC_Shipping_Zones' ) ||
 			! method_exists( 'WC_Shipping_Zones', 'get_zone' ) ||
@@ -374,13 +374,13 @@ final class WooCommerceAdapter {
 		$zones = array();
 		foreach ( $rows as $row ) {
 			if ( is_object( $row ) && isset( $row->zone_id, $row->zone_name, $row->zone_order ) ) {
-				$zones[] = $this->shippingZoneSnapshot( (int) $row->zone_id, (string) $row->zone_name, (int) $row->zone_order );
+				$zones[] = $this->shipping_zone_snapshot( (int) $row->zone_id, (string) $row->zone_name, (int) $row->zone_order );
 			}
 		}
 		if ( $page === $pages && method_exists( 'WC_Shipping_Zones', 'get_zone' ) ) {
 			$default_zone = \WC_Shipping_Zones::get_zone( 0 );
 			if ( $default_zone instanceof \WC_Shipping_Zone ) {
-				$zones[] = $this->shippingZoneSnapshot( 0, (string) $default_zone->get_zone_name(), (int) $default_zone->get_zone_order() );
+				$zones[] = $this->shipping_zone_snapshot( 0, (string) $default_zone->get_zone_name(), (int) $default_zone->get_zone_order() );
 			}
 		}
 		return array(
@@ -402,7 +402,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function shippingZoneGet( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$id_value = $payload['id'] ?? null;
 		if ( ! is_int( $id_value ) && ( ! is_string( $id_value ) || 1 !== preg_match( '/^(0|[1-9][0-9]*)$/D', $id_value ) ) ) {
 			throw new RuntimeException( 'A valid shipping zone id is required.' );
@@ -427,7 +427,7 @@ final class WooCommerceAdapter {
 			if ( ! $zone instanceof \WC_Shipping_Zone ) {
 				throw new RuntimeException( 'WooCommerce shipping zone not found.' );
 			}
-			$snapshot = $this->shippingZoneSnapshot( 0, (string) $zone->get_zone_name(), (int) $zone->get_zone_order() );
+			$snapshot = $this->shipping_zone_snapshot( 0, (string) $zone->get_zone_name(), (int) $zone->get_zone_order() );
 		} else {
 			$table = $wpdb->prefix . 'woocommerce_shipping_zones';
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared exact-ID WooCommerce zone lookup must return current data.
@@ -440,7 +440,7 @@ final class WooCommerceAdapter {
 			) {
 				throw new RuntimeException( 'WooCommerce shipping zone not found.' );
 			}
-			$snapshot = $this->shippingZoneSnapshot( (int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order );
+			$snapshot = $this->shipping_zone_snapshot( (int) $rows[0]->zone_id, (string) $rows[0]->zone_name, (int) $rows[0]->zone_order );
 		}
 		return array(
 			'zone'        => $snapshot,
@@ -456,7 +456,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function taxClassList(): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		if ( ! class_exists( 'WC_Tax' ) || ! method_exists( 'WC_Tax', 'get_tax_rate_classes' ) ) {
 			throw new RuntimeException( 'WooCommerce tax class API is unavailable.' );
 		}
@@ -487,7 +487,7 @@ final class WooCommerceAdapter {
 	 */
 	public function taxRateList( array $payload ): array {
 		global $wpdb;
-		$this->assertWoo();
+		$this->assert_woo();
 		if (
 			! class_exists( 'WC_Tax' ) ||
 			! method_exists( 'WC_Tax', 'get_tax_class_slugs' ) ||
@@ -559,7 +559,7 @@ final class WooCommerceAdapter {
 		}
 		$items = array();
 		foreach ( $rate_rows as $rate ) {
-			$snapshot       = $this->taxRateSnapshot( $rate );
+			$snapshot       = $this->tax_rate_snapshot( $rate );
 			$rate_id        = isset( $rate->tax_rate_id ) ? (int) $rate->tax_rate_id : 0;
 			$location_count = $location_counts[ $rate_id ] ?? 0;
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location list must reflect latest tax settings.
@@ -605,7 +605,7 @@ final class WooCommerceAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function productList( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$limit = isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50;
 		$page  = isset( $payload['page'] ) ? max( 1, (int) $payload['page'] ) : 1;
 		$args  = array(
@@ -632,7 +632,7 @@ final class WooCommerceAdapter {
 		$items    = array();
 		foreach ( $products as $product ) {
 			if ( $product instanceof \WC_Product ) {
-				$items[] = $this->productSnapshot( $product );
+				$items[] = $this->product_snapshot( $product );
 			}
 		}
 		return array(
@@ -657,7 +657,7 @@ final class WooCommerceAdapter {
 		if ( $post instanceof \WP_Post ) {
 			Policy::assertPostReadable( $post );
 		}
-		$snapshot = $this->productSnapshot( $product );
+		$snapshot = $this->product_snapshot( $product );
 		return array(
 			'product'     => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -675,14 +675,14 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function productCreate( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$type    = isset( $payload['type'] ) ? sanitize_key( (string) $payload['type'] ) : 'simple';
-		$product = $this->newProduct( $type );
-		$this->applyProduct( $product, $payload );
+		$product = $this->new_product( $type );
+		$this->apply_product( $product, $payload );
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => $this->productSnapshot( $product ),
+				'would_create'         => $this->product_snapshot( $product ),
 				'_current_fingerprint' => Fingerprint::make(
 					array(
 						'new'  => true,
@@ -698,7 +698,7 @@ final class WooCommerceAdapter {
 		}
 		$saved = wc_get_product( $id );
 		return array(
-			'product'   => $this->productSnapshot( $saved ),
+			'product'   => $this->product_snapshot( $saved ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
 				'payload' => array( 'id' => (int) $id ),
@@ -716,10 +716,10 @@ final class WooCommerceAdapter {
 	 */
 	public function productUpdate( array $payload, array $context ): array {
 		$product = $this->product( $payload );
-		$before  = $this->productSnapshot( $product );
+		$before  = $this->product_snapshot( $product );
 		$working = clone $product;
-		$this->applyProduct( $working, $payload );
-		$after  = $this->productSnapshot( $working );
+		$this->apply_product( $working, $payload );
+		$after  = $this->product_snapshot( $working );
 		$result = array(
 			'before'               => $before,
 			'after'                => $after,
@@ -729,12 +729,12 @@ final class WooCommerceAdapter {
 			return $result;
 		}
 
-		$this->applyProduct( $product, $payload );
+		$this->apply_product( $product, $payload );
 		$product->save();
-		$result['after']     = $this->productSnapshot( wc_get_product( $product->get_id() ) );
+		$result['after']     = $this->product_snapshot( wc_get_product( $product->get_id() ) );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.product.update',
-			'payload' => $this->productRollbackPayload( $before ),
+			'payload' => $this->product_rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -749,7 +749,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function variationList( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent    = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
@@ -759,7 +759,7 @@ final class WooCommerceAdapter {
 		foreach ( $parent->get_children() as $id ) {
 			$variation = wc_get_product( (int) $id );
 			if ( $variation instanceof \WC_Product_Variation ) {
-				$items[] = $this->variationSnapshot( $variation );
+				$items[] = $this->variation_snapshot( $variation );
 			}
 		}
 		return array( 'variations' => $items );
@@ -774,7 +774,7 @@ final class WooCommerceAdapter {
 	 */
 	public function variationGet( array $payload ): array {
 		$variation = $this->variation( $payload );
-		$snapshot  = $this->variationSnapshot( $variation );
+		$snapshot  = $this->variation_snapshot( $variation );
 		return array(
 			'variation'   => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -792,7 +792,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function variationCreate( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
 		$parent    = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
@@ -800,10 +800,10 @@ final class WooCommerceAdapter {
 		}
 		$variation = new \WC_Product_Variation();
 		$variation->set_parent_id( $parent_id );
-		$this->applyVariation( $variation, $payload );
+		$this->apply_variation( $variation, $payload );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => $this->variationSnapshot( $variation ),
+				'would_create'         => $this->variation_snapshot( $variation ),
 				'_current_fingerprint' => Fingerprint::make(
 					array(
 						'new'       => true,
@@ -821,7 +821,7 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( 'Saved WooCommerce variation could not be read back.' );
 		}
 		return array(
-			'variation' => $this->variationSnapshot( $saved_variation ),
+			'variation' => $this->variation_snapshot( $saved_variation ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
 				'payload' => array( 'id' => (int) $id ),
@@ -841,27 +841,27 @@ final class WooCommerceAdapter {
 	 */
 	public function variationUpdate( array $payload, array $context ): array {
 		$variation = $this->variation( $payload );
-		$before    = $this->variationSnapshot( $variation );
+		$before    = $this->variation_snapshot( $variation );
 		$working   = clone $variation;
-		$this->applyVariation( $working, $payload );
+		$this->apply_variation( $working, $payload );
 		$result = array(
 			'before'               => $before,
-			'after'                => $this->variationSnapshot( $working ),
+			'after'                => $this->variation_snapshot( $working ),
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->applyVariation( $variation, $payload );
+		$this->apply_variation( $variation, $payload );
 		$variation->save();
 		$updated_variation = wc_get_product( $variation->get_id() );
 		if ( ! $updated_variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Updated WooCommerce variation could not be read back.' );
 		}
-		$result['after']     = $this->variationSnapshot( $updated_variation );
+		$result['after']     = $this->variation_snapshot( $updated_variation );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.variation.update',
-			'payload' => $this->variationRollbackPayload( $before ),
+			'payload' => $this->variation_rollback_payload( $before ),
 		);
 		return $result;
 	}
@@ -872,10 +872,10 @@ final class WooCommerceAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function attributeList(): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$items = array();
 		foreach ( wc_get_attribute_taxonomies() as $attribute ) {
-			$items[] = $this->attributeSnapshot( $attribute );
+			$items[] = $this->attribute_snapshot( $attribute );
 		}
 		return array( 'attributes' => $items );
 	}
@@ -891,8 +891,8 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeCreate( array $payload, array $context ): array {
-		$this->assertWoo();
-		$args = $this->attributeArgs( $payload, false );
+		$this->assert_woo();
+		$args = $this->attribute_args( $payload, false );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_create'         => $args,
@@ -929,11 +929,11 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeUpdate( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$id         = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$before_obj = $this->findAttribute( $id );
-		$before     = $this->attributeSnapshot( $before_obj );
-		$args       = $this->attributeArgs( $payload, true );
+		$before_obj = $this->find_attribute( $id );
+		$before     = $this->attribute_snapshot( $before_obj );
+		$args       = $this->attribute_args( $payload, true );
 		$result     = array(
 			'before'               => $before,
 			'changes'              => $args,
@@ -947,7 +947,7 @@ final class WooCommerceAdapter {
 			throw new RuntimeException( $updated->get_error_message() );
 		}
 		delete_transient( 'wc_attribute_taxonomies' );
-		$result['after']     = $this->attributeSnapshot( $this->findAttribute( $id ) );
+		$result['after']     = $this->attribute_snapshot( $this->find_attribute( $id ) );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.attribute.update',
 			'payload' => array_merge( array( 'id' => $id ), $before ),
@@ -966,9 +966,9 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function attributeDelete( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$id     = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$before = $this->attributeSnapshot( $this->findAttribute( $id ) );
+		$before = $this->attribute_snapshot( $this->find_attribute( $id ) );
 		$result = array(
 			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -996,7 +996,7 @@ final class WooCommerceAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function couponList( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$query = new \WP_Query(
 			array(
 				'post_type'      => 'shop_coupon',
@@ -1009,7 +1009,7 @@ final class WooCommerceAdapter {
 		$items = array();
 		foreach ( $query->posts as $post ) {
 			$coupon  = new \WC_Coupon( (int) $post->ID );
-			$items[] = $this->couponSnapshot( $coupon );
+			$items[] = $this->coupon_snapshot( $coupon );
 		}
 		return array(
 			'coupons' => $items,
@@ -1028,12 +1028,12 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function couponGet( array $payload ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$coupon = new \WC_Coupon( $payload['id'] ?? ( $payload['code'] ?? 0 ) );
 		if ( ! $coupon->get_id() ) {
 			throw new RuntimeException( 'Coupon not found.' );
 		}
-		$snapshot = $this->couponSnapshot( $coupon );
+		$snapshot = $this->coupon_snapshot( $coupon );
 		return array(
 			'coupon'      => $snapshot,
 			'fingerprint' => Fingerprint::make( $snapshot ),
@@ -1049,18 +1049,18 @@ final class WooCommerceAdapter {
 	 * @return array Result of this operation.
 	 */
 	public function couponCreate( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$coupon = new \WC_Coupon();
-		$this->applyCoupon( $coupon, $payload );
+		$this->apply_coupon( $coupon, $payload );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
-				'would_create'         => $this->couponSnapshot( $coupon ),
+				'would_create'         => $this->coupon_snapshot( $coupon ),
 				'_current_fingerprint' => Fingerprint::make( array( 'new' => true ) ),
 			);
 		}
 		$id = $coupon->save();
 		return array(
-			'coupon'    => $this->couponSnapshot( new \WC_Coupon( $id ) ),
+			'coupon'    => $this->coupon_snapshot( new \WC_Coupon( $id ) ),
 			'_rollback' => array(
 				'action'  => 'post.trash',
 				'payload' => array( 'id' => (int) $id ),
@@ -1079,25 +1079,25 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function couponUpdate( array $payload, array $context ): array {
-		$this->assertWoo();
+		$this->assert_woo();
 		$coupon = new \WC_Coupon( $payload['id'] ?? ( $payload['code'] ?? 0 ) );
 		if ( ! $coupon->get_id() ) {
 			throw new RuntimeException( 'Coupon not found.' );
 		}
-		$before  = $this->couponSnapshot( $coupon );
+		$before  = $this->coupon_snapshot( $coupon );
 		$working = clone $coupon;
-		$this->applyCoupon( $working, $payload );
+		$this->apply_coupon( $working, $payload );
 		$result = array(
 			'before'               => $before,
-			'after'                => $this->couponSnapshot( $working ),
+			'after'                => $this->coupon_snapshot( $working ),
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
-		$this->applyCoupon( $coupon, $payload );
+		$this->apply_coupon( $coupon, $payload );
 		$coupon->save();
-		$result['after']     = $this->couponSnapshot( new \WC_Coupon( $coupon->get_id() ) );
+		$result['after']     = $this->coupon_snapshot( new \WC_Coupon( $coupon->get_id() ) );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.coupon.update',
 			'payload' => array_merge( array( 'id' => $coupon->get_id() ), $before ),
@@ -1110,7 +1110,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function assertWoo(): void {
+	private function assert_woo(): void {
 		if ( ! class_exists( 'WooCommerce' ) || ! function_exists( 'wc_get_product' ) ) {
 			throw new RuntimeException( 'WooCommerce is not active.' );
 		}
@@ -1126,7 +1126,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function product( array $payload ): \WC_Product {
-		$this->assertWoo();
+		$this->assert_woo();
 		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$product = wc_get_product( $id );
 		if ( ! $product instanceof \WC_Product ) {
@@ -1145,7 +1145,7 @@ final class WooCommerceAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function variation( array $payload ): \WC_Product_Variation {
-		$this->assertWoo();
+		$this->assert_woo();
 		$id        = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$variation = wc_get_product( $id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
@@ -1163,7 +1163,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function newProduct( string $type ): \WC_Product {
+	private function new_product( string $type ): \WC_Product {
 		switch ( $type ) {
 			case 'variable':
 				return new \WC_Product_Variable();
@@ -1188,7 +1188,7 @@ final class WooCommerceAdapter {
 	 * @param \WC_Product $product Value used by this operation.
 	 * @param array       $payload Request parameters.
 	 */
-	private function applyProduct( \WC_Product $product, array $payload ): void {
+	private function apply_product( \WC_Product $product, array $payload ): void {
 		$setters = array(
 			'name'               => 'set_name',
 			'slug'               => 'set_slug',
@@ -1253,10 +1253,10 @@ final class WooCommerceAdapter {
 			$product->set_default_attributes( (array) $payload['default_attributes'] );
 		}
 		if ( isset( $payload['attributes'] ) && is_array( $payload['attributes'] ) ) {
-			$product->set_attributes( $this->buildAttributes( $payload['attributes'] ) );
+			$product->set_attributes( $this->build_attributes( $payload['attributes'] ) );
 		}
 		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) {
-			$product->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
+			$product->set_downloads( $this->build_downloads( $payload['downloads'] ) );
 		}
 
 		if ( $product instanceof \WC_Product_External ) {
@@ -1278,7 +1278,7 @@ final class WooCommerceAdapter {
 	 * @param \WC_Product_Variation $variation Value used by this operation.
 	 * @param array                 $payload Request parameters.
 	 */
-	private function applyVariation( \WC_Product_Variation $variation, array $payload ): void {
+	private function apply_variation( \WC_Product_Variation $variation, array $payload ): void {
 		$setters = array(
 			'status'          => 'set_status',
 			'sku'             => 'set_sku',
@@ -1310,7 +1310,7 @@ final class WooCommerceAdapter {
 			$variation->set_attributes( (array) $payload['attributes'] );
 		}
 		if ( isset( $payload['downloads'] ) && is_array( $payload['downloads'] ) ) {
-			$variation->set_downloads( $this->buildDownloads( $payload['downloads'] ) );
+			$variation->set_downloads( $this->build_downloads( $payload['downloads'] ) );
 		}
 		if ( array_key_exists( 'date_on_sale_from', $payload ) ) {
 			$variation->set_date_on_sale_from( $payload['date_on_sale_from'] ? $payload['date_on_sale_from'] : null );
@@ -1329,9 +1329,9 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function orderSnapshot( \WC_Order $order, bool $include_personal_data, bool $include_items = true ): array {
+	private function order_snapshot( \WC_Order $order, bool $include_personal_data, bool $include_items = true ): array {
 		$item_details = $include_items
-			? $this->orderItemsSnapshot( $order )
+			? $this->order_items_snapshot( $order )
 			: array(
 				'items'           => array(),
 				'item_count'      => 0,
@@ -1345,8 +1345,8 @@ final class WooCommerceAdapter {
 			'total_tax'       => (string) $order->get_total_tax(),
 			'shipping_total'  => (string) $order->get_shipping_total(),
 			'discount_total'  => (string) $order->get_discount_total(),
-			'date_created'    => $this->dateValue( $order->get_date_created() ),
-			'date_modified'   => $this->dateValue( $order->get_date_modified() ),
+			'date_created'    => $this->date_value( $order->get_date_created() ),
+			'date_modified'   => $this->date_value( $order->get_date_modified() ),
 			'payment_method'  => (string) $order->get_payment_method(),
 			'shipping_method' => (string) $order->get_shipping_method(),
 		);
@@ -1394,8 +1394,8 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function orderItemsSnapshot( \WC_Order $order ): array {
-		$selection    = $this->boundedCoreOrderItemIds( $order );
+	private function order_items_snapshot( \WC_Order $order ): array {
+		$selection    = $this->bounded_core_order_item_ids( $order );
 		$selected_ids = $selection['ids'];
 
 		if ( $selected_ids && ! class_exists( 'WC_Order_Factory' ) ) {
@@ -1439,7 +1439,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function boundedCoreOrderItemIds( \WC_Order $order ): array {
+	private function bounded_core_order_item_ids( \WC_Order $order ): array {
 		if ( ! method_exists( $order, 'get_data_store' ) ) {
 			throw new RuntimeException( 'WooCommerce bounded order item data store API is unavailable.' );
 		}
@@ -1552,7 +1552,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function positiveIntegerId( $value, string $message ): int {
+	private function positive_integer_id( $value, string $message ): int {
 		if ( ! is_int( $value ) && ( ! is_string( $value ) || 1 !== preg_match( '/^[1-9][0-9]*$/D', $value ) ) ) {
 			throw new RuntimeException( $message );
 		}
@@ -1570,7 +1570,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function customerAddressSnapshot( array $address ): array {
+	private function customer_address_snapshot( array $address ): array {
 		$safe = array();
 		foreach ( array( 'first_name', 'last_name', 'company', 'address_1', 'address_2', 'city', 'state', 'postcode', 'country', 'email', 'phone' ) as $key ) {
 			if ( isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) ) {
@@ -1591,7 +1591,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function shippingZoneSnapshot( int $zone_id, string $zone_name, int $zone_order ): array {
+	private function shipping_zone_snapshot( int $zone_id, string $zone_name, int $zone_order ): array {
 		global $wpdb;
 		$locations      = array();
 		$location_count = 0;
@@ -1643,7 +1643,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function taxRateSnapshot( $rate ): array {
+	private function tax_rate_snapshot( $rate ): array {
 		$values   = is_object( $rate ) ? get_object_vars( $rate ) : ( is_array( $rate ) ? $rate : array() );
 		$fields   = array(
 			'tax_rate_id'       => 'id',
@@ -1672,7 +1672,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function productSnapshot( \WC_Product $product ): array {
+	private function product_snapshot( \WC_Product $product ): array {
 		$data = array(
 			'id'                 => (int) $product->get_id(),
 			'type'               => (string) $product->get_type(),
@@ -1686,8 +1686,8 @@ final class WooCommerceAdapter {
 			'sku'                => (string) $product->get_sku(),
 			'regular_price'      => (string) $product->get_regular_price( 'edit' ),
 			'sale_price'         => (string) $product->get_sale_price( 'edit' ),
-			'date_on_sale_from'  => $this->dateValue( $product->get_date_on_sale_from( 'edit' ) ),
-			'date_on_sale_to'    => $this->dateValue( $product->get_date_on_sale_to( 'edit' ) ),
+			'date_on_sale_from'  => $this->date_value( $product->get_date_on_sale_from( 'edit' ) ),
+			'date_on_sale_to'    => $this->date_value( $product->get_date_on_sale_to( 'edit' ) ),
 			'tax_status'         => (string) $product->get_tax_status(),
 			'tax_class'          => (string) $product->get_tax_class(),
 			'manage_stock'       => (bool) $product->get_manage_stock(),
@@ -1710,11 +1710,11 @@ final class WooCommerceAdapter {
 			'gallery_image_ids'  => array_map( 'intval', $product->get_gallery_image_ids() ),
 			'upsell_ids'         => array_map( 'intval', $product->get_upsell_ids() ),
 			'cross_sell_ids'     => array_map( 'intval', $product->get_cross_sell_ids() ),
-			'attributes'         => $this->attributesSnapshot( $product->get_attributes() ),
+			'attributes'         => $this->attributes_snapshot( $product->get_attributes() ),
 			'default_attributes' => method_exists( $product, 'get_default_attributes' ) ? $product->get_default_attributes() : array(),
 			'virtual'            => (bool) $product->get_virtual(),
 			'downloadable'       => (bool) $product->get_downloadable(),
-			'downloads'          => $this->downloadsSnapshot( $product->get_downloads() ),
+			'downloads'          => $this->downloads_snapshot( $product->get_downloads() ),
 			'download_limit'     => (int) $product->get_download_limit(),
 			'download_expiry'    => (int) $product->get_download_expiry(),
 		);
@@ -1735,7 +1735,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function productRollbackPayload( array $snapshot ): array {
+	private function product_rollback_payload( array $snapshot ): array {
 		return $snapshot;
 	}
 
@@ -1746,7 +1746,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function variationSnapshot( \WC_Product_Variation $variation ): array {
+	private function variation_snapshot( \WC_Product_Variation $variation ): array {
 		return array(
 			'id'                => (int) $variation->get_id(),
 			'product_id'        => (int) $variation->get_parent_id(),
@@ -1754,8 +1754,8 @@ final class WooCommerceAdapter {
 			'sku'               => (string) $variation->get_sku(),
 			'regular_price'     => (string) $variation->get_regular_price( 'edit' ),
 			'sale_price'        => (string) $variation->get_sale_price( 'edit' ),
-			'date_on_sale_from' => $this->dateValue( $variation->get_date_on_sale_from( 'edit' ) ),
-			'date_on_sale_to'   => $this->dateValue( $variation->get_date_on_sale_to( 'edit' ) ),
+			'date_on_sale_from' => $this->date_value( $variation->get_date_on_sale_from( 'edit' ) ),
+			'date_on_sale_to'   => $this->date_value( $variation->get_date_on_sale_to( 'edit' ) ),
 			'tax_status'        => (string) $variation->get_tax_status(),
 			'tax_class'         => (string) $variation->get_tax_class(),
 			'manage_stock'      => (bool) $variation->get_manage_stock(),
@@ -1770,7 +1770,7 @@ final class WooCommerceAdapter {
 			'attributes'        => $variation->get_attributes(),
 			'virtual'           => (bool) $variation->get_virtual(),
 			'downloadable'      => (bool) $variation->get_downloadable(),
-			'downloads'         => $this->downloadsSnapshot( $variation->get_downloads() ),
+			'downloads'         => $this->downloads_snapshot( $variation->get_downloads() ),
 			'download_limit'    => (int) $variation->get_download_limit(),
 			'download_expiry'   => (int) $variation->get_download_expiry(),
 			'description'       => (string) $variation->get_description(),
@@ -1784,7 +1784,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function variationRollbackPayload( array $snapshot ): array {
+	private function variation_rollback_payload( array $snapshot ): array {
 		return $snapshot; }
 
 	/**
@@ -1794,7 +1794,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function buildAttributes( array $input ): array {
+	private function build_attributes( array $input ): array {
 		$attributes = array();
 		foreach ( $input as $item ) {
 			if ( ! is_array( $item ) ) {
@@ -1819,7 +1819,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function attributesSnapshot( array $attributes ): array {
+	private function attributes_snapshot( array $attributes ): array {
 		$items = array();
 		foreach ( $attributes as $attribute ) {
 			if ( $attribute instanceof \WC_Product_Attribute ) {
@@ -1843,7 +1843,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function buildDownloads( array $input ): array {
+	private function build_downloads( array $input ): array {
 		$downloads = array();
 		foreach ( $input as $item ) {
 			if ( ! is_array( $item ) || empty( $item['file'] ) ) {
@@ -1867,7 +1867,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function downloadsSnapshot( array $downloads ): array {
+	private function downloads_snapshot( array $downloads ): array {
 		$items = array();
 		foreach ( $downloads as $download ) {
 			if ( $download instanceof \WC_Product_Download ) {
@@ -1891,7 +1891,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	private function attributeArgs( array $payload, bool $partial ): array {
+	private function attribute_args( array $payload, bool $partial ): array {
 		$args = array();
 		if ( isset( $payload['name'] ) ) {
 			$args['name'] = sanitize_text_field( (string) $payload['name'] );
@@ -1923,7 +1923,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function findAttribute( int $id ) {
+	private function find_attribute( int $id ) {
 		foreach ( wc_get_attribute_taxonomies() as $attribute ) {
 			if ( (int) $attribute->attribute_id === $id ) {
 				return $attribute;
@@ -1939,7 +1939,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function attributeSnapshot( $attribute ): array {
+	private function attribute_snapshot( $attribute ): array {
 		return array(
 			'id'           => (int) $attribute->attribute_id,
 			'name'         => (string) $attribute->attribute_label,
@@ -1957,7 +1957,7 @@ final class WooCommerceAdapter {
 	 * @param \WC_Coupon $coupon Value used by this operation.
 	 * @param array      $payload Request parameters.
 	 */
-	private function applyCoupon( \WC_Coupon $coupon, array $payload ): void {
+	private function apply_coupon( \WC_Coupon $coupon, array $payload ): void {
 		$setters = array(
 			'code'                   => 'set_code',
 			'description'            => 'set_description',
@@ -2004,14 +2004,14 @@ final class WooCommerceAdapter {
 	 *
 	 * @return array Result of this operation.
 	 */
-	private function couponSnapshot( \WC_Coupon $coupon ): array {
+	private function coupon_snapshot( \WC_Coupon $coupon ): array {
 		return array(
 			'id'                          => (int) $coupon->get_id(),
 			'code'                        => (string) $coupon->get_code(),
 			'description'                 => (string) $coupon->get_description(),
 			'discount_type'               => (string) $coupon->get_discount_type(),
 			'amount'                      => (string) $coupon->get_amount(),
-			'date_expires'                => $this->dateValue( $coupon->get_date_expires() ),
+			'date_expires'                => $this->date_value( $coupon->get_date_expires() ),
 			'individual_use'              => (bool) $coupon->get_individual_use(),
 			'product_ids'                 => array_map( 'intval', $coupon->get_product_ids() ),
 			'excluded_product_ids'        => array_map( 'intval', $coupon->get_excluded_product_ids() ),
@@ -2035,7 +2035,7 @@ final class WooCommerceAdapter {
 	 *
 	 * @return string|null Result of this operation.
 	 */
-	private function dateValue( $date ): ?string {
+	private function date_value( $date ): ?string {
 		return $date instanceof \WC_DateTime ? $date->date( 'c' ) : null;
 	}
 }

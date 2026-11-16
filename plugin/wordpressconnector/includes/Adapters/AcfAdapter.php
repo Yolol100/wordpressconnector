@@ -331,7 +331,7 @@ final class AcfAdapter {
 			throw new RuntimeException( 'acf.schema.ensure_text_fields requires 1-12 text field definitions.' );
 		}
 		$this->assert_group_applies_to_post( $group_key, $post_id );
-		$group_id = $this->groupId( $group_key );
+		$group_id = $this->group_id( $group_key );
 
 		$normalized       = $this->normalize_requested_text_fields( $requested );
 		$existing_fields  = $this->group_fields( $group_key );
@@ -358,7 +358,7 @@ final class AcfAdapter {
 			$by_name = $existing_by_name[ $name ] ?? null;
 			if ( is_array( $by_key ) ) {
 				$summary = $this->field_summary( $by_key );
-				if ( ! $this->fieldMatchesDefinition( $summary, $definition, $group_id ) ) {
+				if ( ! $this->field_matches_definition( $summary, $definition, $group_id ) ) {
 					throw new RuntimeException( 'Existing ACF field key conflicts with requested text field: ' . $key );
 				}
 				if ( is_array( $by_name ) && (string) ( $by_name['key'] ?? '' ) !== $key ) {
@@ -446,7 +446,7 @@ final class AcfAdapter {
 				throw new RuntimeException( 'ACF field creation failed for: ' . $definition['key'] );
 			}
 			$readback = acf_get_field( $definition['key'] );
-			if ( ! is_array( $readback ) || ! $this->fieldMatchesDefinition( $this->field_summary( $readback ), $definition, $group_id ) ) {
+			if ( ! is_array( $readback ) || ! $this->field_matches_definition( $this->field_summary( $readback ), $definition, $group_id ) ) {
 				throw new RuntimeException( 'ACF field creation readback failed for: ' . $definition['key'] );
 			}
 			$created[] = $definition;
@@ -498,7 +498,7 @@ final class AcfAdapter {
 			throw new RuntimeException( 'acf.schema.remove_text_fields requires a valid post_id, group_key and 1-12 field definitions.' );
 		}
 		$this->assert_group_applies_to_post( $group_key, $post_id );
-		$group_id   = $this->groupId( $group_key );
+		$group_id   = $this->group_id( $group_key );
 		$normalized = $this->normalize_requested_text_fields( $requested );
 
 		$before = array();
@@ -509,7 +509,7 @@ final class AcfAdapter {
 				continue;
 			}
 			$summary = $this->field_summary( $existing );
-			if ( ! $this->fieldMatchesDefinition( $summary, $definition, $group_id ) ) {
+			if ( ! $this->field_matches_definition( $summary, $definition, $group_id ) ) {
 				throw new RuntimeException( 'Refusing to remove an ACF field that no longer matches the rollback definition: ' . $definition['key'] );
 			}
 			$before[ $definition['key'] ] = $summary;
@@ -573,10 +573,10 @@ final class AcfAdapter {
 			throw new RuntimeException( 'acf.schema.ensure_fields requires 1-12 top-level field definitions.' );
 		}
 		$this->assert_group_applies_to_post( $group_key, $post_id );
-		$group_id         = $this->groupId( $group_key );
+		$group_id         = $this->group_id( $group_key );
 		$total            = 0;
 		$keys             = array();
-		$normalized       = $this->normalizeSchemaFields( $requested, 0, $total, $keys );
+		$normalized       = $this->normalize_schema_fields( $requested, 0, $total, $keys );
 		$existing_fields  = $this->group_fields( $group_key );
 		$existing_by_key  = array();
 		$existing_by_name = array();
@@ -615,7 +615,7 @@ final class AcfAdapter {
 			if ( is_array( $by_name ) ) {
 				throw new RuntimeException( 'Existing ACF field name conflicts with requested complex field: ' . $name );
 			}
-			$this->assertFieldTreeKeysAvailable( $definition );
+			$this->assert_field_tree_keys_available( $definition );
 			$before[ $key ] = null;
 			$would_create[] = $definition;
 		}
@@ -720,10 +720,10 @@ final class AcfAdapter {
 			throw new RuntimeException( 'acf.schema.remove_fields requires a valid post_id, group_key and 1-12 field definitions.' );
 		}
 		$this->assert_group_applies_to_post( $group_key, $post_id );
-		$group_id   = $this->groupId( $group_key );
+		$group_id   = $this->group_id( $group_key );
 		$total      = 0;
 		$keys       = array();
-		$normalized = $this->normalizeSchemaFields( $requested, 0, $total, $keys );
+		$normalized = $this->normalize_schema_fields( $requested, 0, $total, $keys );
 
 		$before = array();
 		foreach ( $normalized as $definition ) {
@@ -762,7 +762,7 @@ final class AcfAdapter {
 			if ( ! is_array( acf_get_field( $definition['key'] ) ) ) {
 				continue;
 			}
-			$this->deleteFieldTreeByKey( $definition['key'] );
+			$this->delete_field_tree_by_key( $definition['key'] );
 			if ( is_array( acf_get_field( $definition['key'] ) ) ) {
 				throw new RuntimeException( 'ACF complex field removal readback failed for: ' . $definition['key'] );
 			}
@@ -808,13 +808,13 @@ final class AcfAdapter {
 		}
 		$total     = 0;
 		$keys      = array();
-		$fields    = $this->normalizeSchemaFields( $fields_input, 0, $total, $keys );
+		$fields    = $this->normalize_schema_fields( $fields_input, 0, $total, $keys );
 		$group_key = $group['key'];
 		if ( is_array( acf_get_field_group( $group_key ) ) ) {
 			throw new RuntimeException( 'Refusing to overwrite an existing ACF field group: ' . $group_key );
 		}
 		foreach ( $fields as $definition ) {
-			$this->assertFieldTreeKeysAvailable( $definition );
+			$this->assert_field_tree_keys_available( $definition );
 		}
 
 		$state  = array(
@@ -896,7 +896,7 @@ final class AcfAdapter {
 		}
 		$total               = 0;
 		$keys                = array();
-		$fields              = $this->normalizeSchemaFields( array_values( $expected['fields'] ), 0, $total, $keys );
+		$fields              = $this->normalize_schema_fields( array_values( $expected['fields'] ), 0, $total, $keys );
 		$normalized_expected = array(
 			'group'  => $group,
 			'fields' => $fields,
@@ -1000,7 +1000,7 @@ final class AcfAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function groupId( string $group_key ): int {
+	private function group_id( string $group_key ): int {
 		$group    = acf_get_field_group( $group_key );
 		$group_id = is_array( $group ) && isset( $group['ID'] ) ? (int) $group['ID'] : 0;
 		if ( $group_id <= 0 ) {
@@ -1105,7 +1105,7 @@ final class AcfAdapter {
 	 *
 	 * @return bool Result of the operation.
 	 */
-	private function fieldMatchesDefinition( array $summary, array $definition, int $group_id ): bool {
+	private function field_matches_definition( array $summary, array $definition, int $group_id ): bool {
 		return (string) ( $summary['key'] ?? '' ) === (string) $definition['key']
 		&& (string) ( $summary['name'] ?? '' ) === (string) $definition['name']
 		&& (string) ( $summary['label'] ?? '' ) === (string) $definition['label']
@@ -1172,7 +1172,7 @@ final class AcfAdapter {
 			throw new RuntimeException( 'Invalid ACF field-group title.' );
 		}
 		$location = isset( $group['location'] ) && is_array( $group['location'] )
-			? $this->normalizeLocationRules( $group['location'] )
+			? $this->normalize_location_rules( $group['location'] )
 			: array();
 		if ( ! $location ) {
 			throw new RuntimeException( 'ACF field-group location requires at least one rule group.' );
@@ -1249,7 +1249,7 @@ final class AcfAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function normalizeLocationRules( array $location ): array {
+	private function normalize_location_rules( array $location ): array {
 		if ( ! $location || count( $location ) > 8 ) {
 			throw new RuntimeException( 'ACF field-group location requires 1-8 OR groups.' );
 		}
@@ -1314,7 +1314,7 @@ final class AcfAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function normalizeSchemaFields( array $requested, int $depth, int &$total, array &$keys ): array {
+	private function normalize_schema_fields( array $requested, int $depth, int &$total, array &$keys ): array {
 		if ( $depth > 3 ) {
 			throw new RuntimeException( 'ACF nested field depth exceeds the maximum of 3.' );
 		}
@@ -1580,7 +1580,7 @@ final class AcfAdapter {
 			if ( ! $sub_fields ) {
 				throw new RuntimeException( 'ACF ' . $type . ' field requires sub_fields: ' . $key );
 			}
-			$normalized['sub_fields'] = $this->normalizeSchemaFields( $sub_fields, $depth + 1, $total, $keys );
+			$normalized['sub_fields'] = $this->normalize_schema_fields( $sub_fields, $depth + 1, $total, $keys );
 			$layouts                  = 'group' === $type ? array( 'block', 'table', 'row' ) : array( 'table', 'block', 'row' );
 			if ( array_key_exists( 'layout', $field ) ) {
 				$normalized['layout'] = $this->enum_value( $field['layout'], $layouts, $key . '.layout' );
@@ -1787,7 +1787,7 @@ final class AcfAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function deleteFieldTreeByKey( string $key ): void {
+	private function delete_field_tree_by_key( string $key ): void {
 		$field = acf_get_field( $key );
 		if ( ! is_array( $field ) ) {
 			return;
@@ -1796,7 +1796,7 @@ final class AcfAdapter {
 		if ( is_array( $children ) ) {
 			foreach ( array_reverse( $children ) as $child ) {
 				if ( is_array( $child ) && ! empty( $child['key'] ) ) {
-					$this->deleteFieldTreeByKey( (string) $child['key'] );
+					$this->delete_field_tree_by_key( (string) $child['key'] );
 				}
 			}
 		}
@@ -1863,13 +1863,13 @@ final class AcfAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function assertFieldTreeKeysAvailable( array $definition ): void {
+	private function assert_field_tree_keys_available( array $definition ): void {
 		$key = (string) $definition['key'];
 		if ( is_array( acf_get_field( $key ) ) ) {
 			throw new RuntimeException( 'Existing global ACF field conflicts with requested schema field: ' . $key );
 		}
 		foreach ( isset( $definition['sub_fields'] ) && is_array( $definition['sub_fields'] ) ? $definition['sub_fields'] : array() as $child ) {
-			$this->assertFieldTreeKeysAvailable( $child );
+			$this->assert_field_tree_keys_available( $child );
 		}
 	}
 

@@ -88,7 +88,7 @@ if ($registry->execute('yoast.snippet.inspect',array('id'=>13))['fields'] !== $r
 // Exercise real runtime public descriptor, not just adapter validation.
 $reflection = new ReflectionClass(Runner::class);
 $runner = $reflection->newInstanceWithoutConstructor();
-$method = $reflection->getMethod('publicDescriptor');
+$method = $reflection->getMethod('public_descriptor');
 $method->setAccessible(true);
 $desc = $registry->descriptor('yoast.snippet.update');
 $method->invoke($runner,'yoast.snippet.update',$patch,$desc,true,null);

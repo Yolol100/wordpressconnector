@@ -64,9 +64,9 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC token is malformed.' );
 		}
 
-		$header    = $this->decodeJsonSegment( $parts[0], 'header' );
-		$claims    = $this->decodeJsonSegment( $parts[1], 'claims' );
-		$signature = $this->decodeBase64Url( $parts[2], 'signature' );
+		$header    = $this->decode_json_segment( $parts[0], 'header' );
+		$claims    = $this->decode_json_segment( $parts[1], 'claims' );
+		$signature = $this->decode_base64_url( $parts[2], 'signature' );
 
 		if ( 'RS256' !== ( $header['alg'] ?? null ) ) {
 			throw new RuntimeException( 'GitHub OIDC token must use RS256.' );
@@ -76,17 +76,17 @@ final class GitHubOidc {
 			throw new RuntimeException( 'GitHub OIDC token has an invalid key id.' );
 		}
 
-		$public_key = $this->publicKey( $kid );
+		$public_key = $this->public_key( $kid );
 		$verified   = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $public_key, OPENSSL_ALGO_SHA256 );
 		if ( 1 !== $verified ) {
 			throw new RuntimeException( 'GitHub OIDC signature verification failed.' );
 		}
 
-		$this->assertClaims( $claims );
-		$this->assertNotReplayed( $claims );
+		$this->assert_claims( $claims );
+		$this->assert_not_replayed( $claims );
 
 		Policy::setPublicRepositoryContext( 'public' === (string) $claims['repository_visibility'] );
-		return $this->administratorId( $claims );
+		return $this->administrator_id( $claims );
 	}
 
 	/**
@@ -105,18 +105,18 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertClaims( array $claims ): void {
+	private function assert_claims( array $claims ): void {
 		$now = time();
 		if ( self::ISSUER !== ( $claims['iss'] ?? null ) ) {
 			throw new RuntimeException( 'GitHub OIDC issuer is invalid.' );
 		}
-		if ( ! $this->audienceMatches( $claims['aud'] ?? null, self::expectedAudience() ) ) {
+		if ( ! $this->audience_matches( $claims['aud'] ?? null, self::expectedAudience() ) ) {
 			throw new RuntimeException( 'GitHub OIDC audience is invalid for this WordPress site.' );
 		}
 
-		$exp = $this->integerClaim( $claims, 'exp' );
-		$iat = $this->integerClaim( $claims, 'iat' );
-		$nbf = array_key_exists( 'nbf', $claims ) ? $this->integerClaim( $claims, 'nbf' ) : $iat;
+		$exp = $this->integer_claim( $claims, 'exp' );
+		$iat = $this->integer_claim( $claims, 'iat' );
+		$nbf = array_key_exists( 'nbf', $claims ) ? $this->integer_claim( $claims, 'nbf' ) : $iat;
 		if ( $exp < $now - self::CLOCK_SKEW || $nbf > $now + self::CLOCK_SKEW || $iat > $now + self::CLOCK_SKEW ) {
 			throw new RuntimeException( 'GitHub OIDC token is outside its valid time window.' );
 		}
@@ -164,7 +164,7 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertNotReplayed( array $claims ): void {
+	private function assert_not_replayed( array $claims ): void {
 		$hash = hash( 'sha256', (string) $claims['jti'] );
 		// Respect tokens consumed before upgrading from transient-based replay
 		// protection. The new claim itself must not depend on cache semantics.
@@ -246,7 +246,7 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function administratorId( array $claims ): int {
+	private function administrator_id( array $claims ): int {
 		// The WordPress administrator who approved this exact site is the
 		// executing actor; never impersonate an arbitrary first admin user.
 		$id = SitePairing::pairedAdministratorId();
@@ -265,18 +265,18 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function publicKey( string $kid ) {
+	private function public_key( string $kid ) {
 		$keys = $this->jwks( false );
-		$key  = $this->findKey( $keys, $kid );
+		$key  = $this->find_key( $keys, $kid );
 		if ( null === $key ) {
 			$keys = $this->jwks( true );
-			$key  = $this->findKey( $keys, $kid );
+			$key  = $this->find_key( $keys, $kid );
 		}
 		if ( null === $key || 'RSA' !== ( $key['kty'] ?? null ) || 'RS256' !== ( $key['alg'] ?? null ) ) {
 			throw new RuntimeException( 'GitHub OIDC signing key is unavailable.' );
 		}
 
-		$pem        = $this->keyPem( $key );
+		$pem        = $this->key_pem( $key );
 		$public_key = openssl_pkey_get_public( $pem );
 		if ( false === $public_key ) {
 			throw new RuntimeException( 'GitHub OIDC public key could not be loaded.' );
@@ -337,7 +337,7 @@ final class GitHubOidc {
 	 *
 	 * @return array|null Operation result.
 	 */
-	private function findKey( array $keys, string $kid ): ?array {
+	private function find_key( array $keys, string $kid ): ?array {
 		foreach ( $keys as $key ) {
 			if ( ! is_array( $key ) || ! isset( $key['kid'] ) || ! is_string( $key['kid'] ) ) {
 				continue;
@@ -358,22 +358,22 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function keyPem( array $key ): string {
+	private function key_pem( array $key ): string {
 		if ( isset( $key['x5c'][0] ) && is_string( $key['x5c'][0] ) && '' !== $key['x5c'][0] ) {
 			return "-----BEGIN CERTIFICATE-----\n" . chunk_split( $key['x5c'][0], 64, "\n" ) . "-----END CERTIFICATE-----\n";
 		}
 		if ( ! isset( $key['n'], $key['e'] ) || ! is_string( $key['n'] ) || ! is_string( $key['e'] ) ) {
 			throw new RuntimeException( 'GitHub OIDC RSA signing key is incomplete.' );
 		}
-		$modulus   = $this->decodeBase64Url( $key['n'], 'RSA modulus' );
-		$exponent  = $this->decodeBase64Url( $key['e'], 'RSA exponent' );
-		$rsa       = $this->asn1Sequence( $this->asn1Integer( $modulus ) . $this->asn1Integer( $exponent ) );
+		$modulus   = $this->decode_base64_url( $key['n'], 'RSA modulus' );
+		$exponent  = $this->decode_base64_url( $key['e'], 'RSA exponent' );
+		$rsa       = $this->asn1_sequence( $this->asn1_integer( $modulus ) . $this->asn1_integer( $exponent ) );
 		$algorithm = hex2bin( '300d06092a864886f70d0101010500' );
 		if ( false === $algorithm ) {
 			throw new RuntimeException( 'Could not construct RSA algorithm identifier.' );
 		}
-		$bit_string = "\x03" . $this->asn1Length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
-		$spki       = $this->asn1Sequence( $algorithm . $bit_string );
+		$bit_string = "\x03" . $this->asn1_length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
+		$spki       = $this->asn1_sequence( $algorithm . $bit_string );
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 
@@ -384,7 +384,7 @@ final class GitHubOidc {
 	 *
 	 * @return string Operation result.
 	 */
-	private function asn1Integer( string $bytes ): string {
+	private function asn1_integer( string $bytes ): string {
 		$bytes = ltrim( $bytes, "\x00" );
 		if ( '' === $bytes ) {
 			$bytes = "\x00";
@@ -392,7 +392,7 @@ final class GitHubOidc {
 		if ( ( ord( $bytes[0] ) & 0x80 ) !== 0 ) {
 			$bytes = "\x00" . $bytes;
 		}
-		return "\x02" . $this->asn1Length( strlen( $bytes ) ) . $bytes;
+		return "\x02" . $this->asn1_length( strlen( $bytes ) ) . $bytes;
 	}
 
 	/**
@@ -402,8 +402,8 @@ final class GitHubOidc {
 	 *
 	 * @return string Operation result.
 	 */
-	private function asn1Sequence( string $bytes ): string {
-		return "\x30" . $this->asn1Length( strlen( $bytes ) ) . $bytes;
+	private function asn1_sequence( string $bytes ): string {
+		return "\x30" . $this->asn1_length( strlen( $bytes ) ) . $bytes;
 	}
 
 	/**
@@ -413,7 +413,7 @@ final class GitHubOidc {
 	 *
 	 * @return string Operation result.
 	 */
-	private function asn1Length( int $length ): string {
+	private function asn1_length( int $length ): string {
 		if ( $length < 0x80 ) {
 			return chr( $length );
 		}
@@ -435,8 +435,8 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function decodeJsonSegment( string $segment, string $label ): array {
-		$json = $this->decodeBase64Url( $segment, $label );
+	private function decode_json_segment( string $segment, string $label ): array {
+		$json = $this->decode_base64_url( $segment, $label );
 		try {
 			$decoded = json_decode( $json, true, 32, JSON_THROW_ON_ERROR );
 		} catch ( \JsonException $error ) {
@@ -458,7 +458,7 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function decodeBase64Url( string $value, string $label ): string {
+	private function decode_base64_url( string $value, string $label ): string {
 		if ( '' === $value || false !== strpos( $value, '=' ) || ! preg_match( '/^[A-Za-z0-9_-]+\z/', $value ) ) {
 			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is not valid base64url.' );
 		}
@@ -485,7 +485,7 @@ final class GitHubOidc {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function audienceMatches( $audience, string $expected ): bool {
+	private function audience_matches( $audience, string $expected ): bool {
 		if ( is_string( $audience ) ) {
 			return hash_equals( $expected, $audience );
 		}
@@ -510,7 +510,7 @@ final class GitHubOidc {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function integerClaim( array $claims, string $name ): int {
+	private function integer_claim( array $claims, string $name ): int {
 		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[ $name ] ) && ! ctype_digit( (string) $claims[ $name ] ) ) ) {
 			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . $name . '.' );
 		}
