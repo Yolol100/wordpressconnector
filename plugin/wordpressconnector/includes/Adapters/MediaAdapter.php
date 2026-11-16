@@ -293,9 +293,9 @@ final class MediaAdapter {
 			throw new RuntimeException( 'Use a lowercase descriptive hyphen-separated image filename with the original extension.' );
 		}
 
-		$source     = get_attached_file( $id );
-		$uploads    = wp_get_upload_dir();
-		$root       = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
+		$source      = get_attached_file( $id );
+		$uploads     = wp_get_upload_dir();
+		$root        = isset( $uploads['basedir'] ) ? realpath( (string) $uploads['basedir'] ) : false;
 		$source_real = is_string( $source ) ? realpath( $source ) : false;
 		if ( ! is_string( $root ) || ! is_string( $source_real ) || ! is_file( $source_real ) ||
 			0 !== strpos( $source_real, $root . DIRECTORY_SEPARATOR ) || is_link( $source ) ) {
@@ -360,7 +360,7 @@ final class MediaAdapter {
 		try {
 			foreach ( $copies as $from => $to ) {
 				$old_path = $directory . DIRECTORY_SEPARATOR . $from;
-				$new_path  = $directory . DIRECTORY_SEPARATOR . $to;
+				$new_path = $directory . DIRECTORY_SEPARATOR . $to;
 				$input    = @fopen( $old_path, 'rb' );
 				if ( ! is_resource( $input ) ) {
 					throw new RuntimeException( 'Image copy source is unavailable.' );
@@ -452,7 +452,7 @@ final class MediaAdapter {
 	 */
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$target_id    = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$target_id   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type

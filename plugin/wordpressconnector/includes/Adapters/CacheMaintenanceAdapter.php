@@ -455,11 +455,11 @@ final class CacheMaintenanceAdapter {
 		 * not required to purge arbitrary transient names, which caused false
 		 * negatives even when the provider flush completed successfully.
 		 */
-		$transient      = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
-		$before         = get_transient( $transient );
-		$started_at     = time();
+		$transient        = (string) WPACU_PLUGIN_ID . '_last_clear_cache';
+		$before           = get_transient( $transient );
+		$started_at       = time();
 		$verified_by_hook = false;
-		$callback       = static function () use ( &$verified_by_hook ): void {
+		$callback         = static function () use ( &$verified_by_hook ): void {
 			$verified_by_hook = true;
 		};
 
@@ -470,9 +470,9 @@ final class CacheMaintenanceAdapter {
 			remove_action( 'wpacu_clear_cache_after', $callback, PHP_INT_MAX );
 		}
 
-		$after             = get_transient( $transient );
-		$before_value      = is_numeric( $before ) ? (int) $before : 0;
-		$after_value       = is_numeric( $after ) ? (int) $after : 0;
+		$after              = get_transient( $transient );
+		$before_value       = is_numeric( $before ) ? (int) $before : 0;
+		$after_value        = is_numeric( $after ) ? (int) $after : 0;
 		$timestamp_verified = $after_value >= ( $started_at - 1 )
 			&& $after_value >= $before_value;
 

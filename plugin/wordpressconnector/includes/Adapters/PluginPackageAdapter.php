@@ -160,7 +160,7 @@ final class PluginPackageAdapter {
 		if ( $overwrite && ! Policy::flag( 'WPCONNECTOR_ALLOW_THEME_PACKAGE_REPLACE' ) ) {
 			throw new RuntimeException( 'Theme ZIP replacement requires explicit server-side authorization and staging restore proof.' );
 		}
-		$style_path      = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
+		$style_path        = trailingslashit( get_theme_root( $expected ) ) . $expected . DIRECTORY_SEPARATOR . 'style.css';
 		$before_style_hash = $overwrite ? hash_file( 'sha256', $style_path ) : '';
 		if ( $overwrite && ( ! is_string( $before_style_hash ) || ! preg_match( '/^[a-f0-9]{64}\z/', $before_style_hash ) ) ) {
 			throw new RuntimeException( 'Could not verify original theme files before replacement.' );
@@ -403,8 +403,8 @@ final class PluginPackageAdapter {
 		}
 		$this->assertNotSelf( $expected_plugin );
 
-		$overwrite   = Input::bool( $payload, 'overwrite' );
-		$activate    = Input::bool( $payload, 'activate' );
+		$overwrite    = Input::bool( $payload, 'overwrite' );
+		$activate     = Input::bool( $payload, 'activate' );
 		$network_wide = Input::bool( $payload, 'network_wide' );
 		$this->assertCapabilities( $overwrite, $activate, $network_wide );
 

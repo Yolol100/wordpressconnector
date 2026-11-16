@@ -26,7 +26,7 @@ foreach (array(
     "clearAllCache",
     "wpacu_clear_cache_after",
     "_last_clear_cache",
-    "timestampVerified",
+    "timestamp_verified",
     'return $verified_by_hook || $timestamp_verified;',
     "flushAssetCleanupViaLoopback",
     "handleAssetCleanupLoopback",

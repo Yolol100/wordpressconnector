@@ -451,8 +451,8 @@ final class CodeSnippetsAdapter {
 		$this->assertAvailable();
 
 		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$code      = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
-		$expected  = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
+		$code       = isset( $payload['code'] ) && is_string( $payload['code'] ) ? $payload['code'] : null;
+		$expected   = isset( $payload['expected_code_fingerprint'] ) ? strtolower( (string) $payload['expected_code_fingerprint'] ) : '';
 
 		if ( $snippet_id <= 0 || null === $code || strlen( $code ) > self::MAX_CODE_BYTES ) {
 			throw new RuntimeException( 'Code Snippets rollback payload is invalid.' );
@@ -525,7 +525,7 @@ final class CodeSnippetsAdapter {
 	 */
 	private function findTarget( array $payload ) {
 		$snippet_id = isset( $payload['snippet_id'] ) ? (int) $payload['snippet_id'] : 0;
-		$marker    = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
+		$marker     = isset( $payload['match_code_contains'] ) && is_string( $payload['match_code_contains'] )
 			? $payload['match_code_contains']
 			: '';
 
