@@ -117,7 +117,7 @@ final class Plugin {
 		$runner = new Runner( $registry, new SnapshotStore(), new ProcessedStore() );
 		( new Settings() )->register();
 		( new ElementorJsonExport() )->register();
-		(new ElementorJsonImport())->register();
+		( new ElementorJsonImport() )->register();
 		$rest_controller = new Controller( $runner, new AssetStore() );
 		$rest_controller->register();
 		( new McpController( $runner, $registry, array( $rest_controller, 'authorize' ) ) )->register();

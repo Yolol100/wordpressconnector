@@ -48,7 +48,7 @@ final class ElementorJsonImport {
 	 * @return array Operation result.
 	 */
 	public function rowActions( array $actions, \WP_Post $post ): array {
-		if ( ! $this->supportsPostType( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) ) {
+		if ( ! $this->supports_post_type( (string) $post->post_type ) || ! current_user_can( 'edit_post', (int) $post->ID ) ) {
 			return $actions;
 		}
 		$actions['wpconnector_import_elementor_json'] = sprintf( '<a href="%1$s">%2$s</a>', esc_url( $this->import_url( (string) $post->post_type, (int) $post->ID ) ), esc_html__( 'Import Elementor JSON', 'wordpressconnector' ) );
@@ -100,7 +100,7 @@ final class ElementorJsonImport {
 	 * @param string $postType Input for the operation.
 	 */
 	public function renderImportPage( string $postType ): void {
-		if ( ! $this->supportsPostType( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
+		if ( ! $this->supports_post_type( $postType ) || ! current_user_can( $this->capability_for_post_type( $postType ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
@@ -137,7 +137,7 @@ final class ElementorJsonImport {
 		check_admin_referer( self::ACTION );
 		$post_id   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
 		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
-		if ( ! $this->supportsPostType( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
+		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 		}
 		try {
@@ -160,7 +160,7 @@ final class ElementorJsonImport {
 					'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $post_type ) {
-					$adapter_payload['template_type'] = $this->templateType( $payload );
+					$adapter_payload['template_type'] = $this->template_type( $payload );
 				}
 				$adapter->replaceDocument( $adapter_payload, array( 'dry_run' => false ) );
 				$result_id = $post_id;
@@ -174,7 +174,7 @@ final class ElementorJsonImport {
 					'edit_mode'     => 'builder',
 				);
 				if ( 'elementor_library' === $post_type ) {
-					$adapter_payload['template_type'] = $this->templateType( $payload );
+					$adapter_payload['template_type'] = $this->template_type( $payload );
 				}
 				$created   = $adapter->createDocument( $adapter_payload, array( 'dry_run' => false ) );
 				$result_id = isset( $created['document']['post_id'] ) ? (int) $created['document']['post_id'] : 0;
@@ -276,7 +276,7 @@ final class ElementorJsonImport {
 		}
 		try {
 			$entries = $this->bulk_uploads();
-			$plan    = $this->buildBulkPlan( $entries );
+			$plan    = $this->build_bulk_plan( $entries );
 			$all_ok  = true;
 			foreach ( $plan as $row ) {
 				if ( 'ready' !== $row['status'] ) {
@@ -503,7 +503,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return array Operation result.
 	 */
-	private function buildBulkPlan( array $entries ): array {
+	private function build_bulk_plan( array $entries ): array {
 		$plan           = array();
 		$seen_targets   = array();
 		$template_types = array(
@@ -657,7 +657,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return string Operation result.
 	 */
-	private function templateType( array $payload ): string {
+	private function template_type( array $payload ): string {
 		$type = isset( $payload['type'] ) && is_string( $payload['type'] ) ? sanitize_key( $payload['type'] ) : '';
 		return '' !== $type ? $type : 'page';
 	}
@@ -700,7 +700,7 @@ final class ElementorJsonImport {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function supportsPostType( string $post_type ): bool {
+	private function supports_post_type( string $post_type ): bool {
 		return in_array( $post_type, self::POST_TYPES, true );
 	}
 }

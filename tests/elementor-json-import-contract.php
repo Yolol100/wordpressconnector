@@ -25,7 +25,7 @@ if (
     exit(1);
 }
 $plugin=file_get_contents(__DIR__.'/../plugin/wordpressconnector/includes/Plugin.php');
-if(!is_string($plugin)||false===strpos($plugin,'(new ElementorJsonImport())->register();')) {
+if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->register();')) {
     fwrite(STDERR,"ElementorJsonImport is not registered by Plugin::boot().\n");
     exit(1);
 }

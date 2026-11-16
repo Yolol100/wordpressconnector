@@ -216,7 +216,7 @@ namespace {
     $fallbackActions = $export->rowActions(array(), $fallbackTemplate);
     $assert(isset($fallbackActions['wpconnector_export_elementor_json']), 'Template fallback export action is missing.');
 
-    $reflection = new \ReflectionMethod($export, 'exportPayload');
+    $reflection = new \ReflectionMethod($export, 'export_payload');
     $reflection->setAccessible(true);
     $payload = $reflection->invoke($export, $GLOBALS['wpconnector_test_documents'][10], $page);
 
