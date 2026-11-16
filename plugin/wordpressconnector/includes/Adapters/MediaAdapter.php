@@ -115,7 +115,7 @@ final class MediaAdapter {
 	 * @return array Operation result.
 	 */
 	public function mediaGet( array $payload ): array {
-		$id   = $this->attachmentId( $payload );
+		$id   = $this->attachment_id( $payload );
 		$post = get_post( $id );
 		Policy::assertPostReadable( $post );
 		$snapshot = $this->snapshot( $id );
@@ -234,7 +234,7 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function mediaUpdate( array $payload, array $context ): array {
-		$id = $this->attachmentId( $payload );
+		$id = $this->attachment_id( $payload );
 		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_post', $id ) ) {
 			throw new RuntimeException( 'You cannot edit this media attachment.' );
 		}
@@ -281,7 +281,7 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function mediaRename( array $payload, array $context ): array {
-		$id = $this->attachmentId( $payload );
+		$id = $this->attachment_id( $payload );
 		if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Administrator media permissions are required.' );
 		}
@@ -458,7 +458,7 @@ final class MediaAdapter {
 		$clear_featured = 'featured_image' === $target_type
 			&& ! empty( $context['rollback_mode'] )
 			&& isset( $payload['id'] ) && 0 === (int) $payload['id'];
-		$attachment_id  = $clear_featured ? 0 : $this->attachmentId( $payload );
+		$attachment_id  = $clear_featured ? 0 : $this->attachment_id( $payload );
 
 		if ( ! current_user_can( 'upload_files' )
 			|| ( $attachment_id > 0 && ! current_user_can( 'edit_post', $attachment_id ) ) ) {
@@ -608,7 +608,7 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function mediaRegenerate( array $payload, array $context ): array {
-		$id = $this->attachmentId( $payload );
+		$id = $this->attachment_id( $payload );
 		if ( ! current_user_can( 'upload_files' ) || ! current_user_can( 'edit_post', $id ) ) {
 			throw new RuntimeException( 'You cannot regenerate this media attachment.' );
 		}
@@ -648,7 +648,7 @@ final class MediaAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function attachmentId( array $payload ): int {
+	private function attachment_id( array $payload ): int {
 		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type ) {
@@ -693,7 +693,7 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function apply_update( array $payload ): void {
-		$id          = $this->attachmentId( $payload );
+		$id          = $this->attachment_id( $payload );
 		$post_fields = array( 'ID' => $id );
 		if ( array_key_exists( 'title', $payload ) ) {
 			$post_fields['post_title'] = sanitize_text_field( (string) $payload['title'] );

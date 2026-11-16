@@ -176,7 +176,7 @@ final class FilesystemAdapter {
 				'path'                => $child,
 				'type'                => is_dir( $child_absolute ) ? 'directory' : 'file',
 				'bytes'               => is_file( $child_absolute ) ? (int) filesize( $child_absolute ) : null,
-				'modified_gmt'        => $this->modifiedGmt( $child_absolute ),
+				'modified_gmt'        => $this->modified_gmt( $child_absolute ),
 				'writable_text_scope' => is_file( $child_absolute ) && FilesystemPolicy::isWritableText( $child ),
 			);
 		}
@@ -213,7 +213,7 @@ final class FilesystemAdapter {
 		if ( false === $content || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'Filesystem file is not readable UTF-8 text.' );
 		}
-		$this->assertNoEmbeddedSecrets( $content );
+		$this->assert_no_embedded_secrets( $content );
 		$state = $this->state( $relative, $content, $absolute );
 
 		return array(
@@ -255,7 +255,7 @@ final class FilesystemAdapter {
 		if ( strlen( $before ) > self::MAX_TEXT_BYTES ) {
 			throw new RuntimeException( 'Existing file exceeds the connector write limit.' );
 		}
-		$this->assertNoEmbeddedSecrets( $before );
+		$this->assert_no_embedded_secrets( $before );
 		if ( ! array_key_exists( 'content', $payload ) || ! is_string( $payload['content'] ) ) {
 			throw new RuntimeException( 'filesystem.write_text requires payload.content as UTF-8 text.' );
 		}
@@ -265,7 +265,7 @@ final class FilesystemAdapter {
 		}
 
 		$this->validate_text( $relative, $content );
-		$this->assertNoEmbeddedSecrets( $content );
+		$this->assert_no_embedded_secrets( $content );
 		$before_state = $this->state( $relative, $before, $absolute );
 		$after_state  = array(
 			'path'   => $relative,
@@ -360,7 +360,7 @@ final class FilesystemAdapter {
 		if ( strlen( $content ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'New text asset exceeds the UTF-8 text limit.' );
 		}
-		$this->assertNoEmbeddedSecrets( $content );
+		$this->assert_no_embedded_secrets( $content );
 		$this->validate_text( $relative, $content );
 		$absolute       = $this->resolve_new_text_path( $relative );
 		$expected_state = array(
@@ -446,7 +446,7 @@ final class FilesystemAdapter {
 		if ( ! is_string( $before ) || strlen( $before ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is unreadable or exceeds safe text limit.' );
 		}
-		$this->assertNoEmbeddedSecrets( $before );
+		$this->assert_no_embedded_secrets( $before );
 		$before_state = $this->state( $relative, $before, $absolute );
 		$result       = array(
 			'before'                                  => $before_state,
@@ -630,7 +630,7 @@ final class FilesystemAdapter {
 			'path'                => $relative,
 			'bytes'               => strlen( $content ),
 			'sha256'              => hash( 'sha256', $content ),
-			'modified_gmt'        => $this->modifiedGmt( $absolute ),
+			'modified_gmt'        => $this->modified_gmt( $absolute ),
 			'writable_text_scope' => FilesystemPolicy::isWritableText( $relative ),
 		);
 	}
@@ -642,7 +642,7 @@ final class FilesystemAdapter {
 	 *
 	 * @return string|null Operation result.
 	 */
-	private function modifiedGmt( string $absolute ): ?string {
+	private function modified_gmt( string $absolute ): ?string {
 		$modified = @filemtime( $absolute );
 		return false === $modified ? null : gmdate( 'c', (int) $modified );
 	}
@@ -680,7 +680,7 @@ final class FilesystemAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertNoEmbeddedSecrets( string $content ): void {
+	private function assert_no_embedded_secrets( string $content ): void {
 		$patterns = array(
 			'/[\"\'](?:password|passwd|secret|token|api[_-]?key|client[_-]?secret|private[_-]?key|authorization)[\"\']\s*(?:=>|:)\s*[\"\']([^\"\']{8,})[\"\']/i',
 			'/\$(?:password|passwd|secret|token|api[_-]?key|client[_-]?secret|private[_-]?key)\s*=\s*[\"\']([^\"\']{8,})[\"\']/i',

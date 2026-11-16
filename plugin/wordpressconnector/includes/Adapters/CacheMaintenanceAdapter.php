@@ -65,7 +65,7 @@ final class CacheMaintenanceAdapter {
 	public function capabilities( array $payload = array(), array $context = array() ): array {
 		$layers = array();
 		foreach ( self::LAYERS as $layer ) {
-			$layers[ $layer ] = $this->layerState( $layer );
+			$layers[ $layer ] = $this->layer_state( $layer );
 		}
 
 		return array(
@@ -97,7 +97,7 @@ final class CacheMaintenanceAdapter {
 			throw new RuntimeException( 'Cache regeneration must be a boolean and is supported only for Elementor.' );
 		}
 
-		$before = $this->layerState( $layer );
+		$before = $this->layer_state( $layer );
 		if ( empty( $before['available'] ) ) {
 			throw new RuntimeException( 'Requested cache layer is not available: ' . $layer . '.' );
 		}
@@ -116,7 +116,7 @@ final class CacheMaintenanceAdapter {
 			'version'               => $before['version'],
 			'available'             => true,
 			'rollback_supported'    => false,
-			'rebuild_mode'          => $regenerate ? 'generate_css_after_clear' : $this->rebuildMode( $layer ),
+			'rebuild_mode'          => $regenerate ? 'generate_css_after_clear' : $this->rebuild_mode( $layer ),
 			'verification_scope'    => 'provider_completion_only',
 			'regenerate_requested'  => $regenerate,
 			'regenerate_invoked'    => false,
@@ -125,7 +125,7 @@ final class CacheMaintenanceAdapter {
 		);
 
 		if ( 'asset_cleanup' === $layer ) {
-			$result['json_cache_files_before'] = $this->countAssetCleanupJsonFiles();
+			$result['json_cache_files_before'] = $this->count_asset_cleanup_json_files();
 		}
 
 		if ( ! empty( $context['dry_run'] ) ) {
@@ -135,7 +135,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		if ( 'elementor' === $layer ) {
-			$result['readback_verified'] = $this->flushElementor();
+			$result['readback_verified'] = $this->flush_elementor();
 			if ( $regenerate && true === $result['readback_verified'] ) {
 				// Elementor's own API regenerates files. Its return value is not
 				// proof that a particular public CSS URL is now reachable.
@@ -158,10 +158,10 @@ final class CacheMaintenanceAdapter {
 				}
 			}
 		} elseif ( 'wp_rocket' === $layer ) {
-			$result['readback_verified'] = $this->flushWpRocket();
+			$result['readback_verified'] = $this->flush_wp_rocket();
 		} else {
-			$result['readback_verified']      = $this->flushAssetCleanup();
-			$result['json_cache_files_after'] = $this->countAssetCleanupJsonFiles();
+			$result['readback_verified']      = $this->flush_asset_cleanup();
+			$result['json_cache_files_after'] = $this->count_asset_cleanup_json_files();
 		}
 
 		if ( true !== $result['readback_verified'] ) {
@@ -178,7 +178,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function layerState( string $layer ): array {
+	private function layer_state( string $layer ): array {
 		if ( 'elementor' === $layer ) {
 			$plugin        = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 			$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
@@ -197,7 +197,7 @@ final class CacheMaintenanceAdapter {
 			);
 		}
 
-		$class = $this->ensureAssetCleanupClass();
+		$class = $this->ensure_asset_cleanup_class();
 		return array(
 			'provider'  => 'Asset CleanUp',
 			'available' => '' !== $class && (
@@ -215,7 +215,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function flushElementor(): bool {
+	private function flush_elementor(): bool {
 		$plugin        = class_exists( 'Elementor\\Plugin' ) ? \Elementor\Plugin::$instance : null;
 		$files_manager = is_object( $plugin ) && isset( $plugin->files_manager ) ? $plugin->files_manager : null;
 		if ( ! is_object( $files_manager ) || ! method_exists( $files_manager, 'clear_cache' ) ) {
@@ -244,7 +244,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function flushWpRocket(): bool {
+	private function flush_wp_rocket(): bool {
 		if ( ! function_exists( 'rocket_clean_domain' ) ) {
 			throw new RuntimeException( 'WP Rocket cache API is unavailable.' );
 		}
@@ -289,12 +289,12 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function flushAssetCleanup(): bool {
+	private function flush_asset_cleanup(): bool {
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-			return $this->flushAssetCleanupViaLoopback();
+			return $this->flush_asset_cleanup_via_loopback();
 		}
 
-		return $this->flushAssetCleanupDirect();
+		return $this->flush_asset_cleanup_direct();
 	}
 
 	/**
@@ -304,7 +304,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function flushAssetCleanupViaLoopback(): bool {
+	private function flush_asset_cleanup_via_loopback(): bool {
 		$token     = bin2hex( random_bytes( 32 ) );
 		$key       = substr( hash( 'sha256', $token ), 0, 32 );
 		$transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
@@ -362,8 +362,8 @@ final class CacheMaintenanceAdapter {
 			return;
 		}
 
-		$key   = $this->loopbackHexHeader( 'HTTP_X_WPCONNECTOR_CACHE_KEY', 32 );
-		$token = $this->loopbackHexHeader( 'HTTP_X_WPCONNECTOR_CACHE_TOKEN', 64 );
+		$key   = $this->loopback_hex_header( 'HTTP_X_WPCONNECTOR_CACHE_KEY', 32 );
+		$token = $this->loopback_hex_header( 'HTTP_X_WPCONNECTOR_CACHE_TOKEN', 64 );
 
 		if ( '' === $key || '' === $token ) {
 			wp_send_json_error( array( 'code' => 'invalid_authorization' ), 403 );
@@ -380,7 +380,7 @@ final class CacheMaintenanceAdapter {
 		}
 
 		try {
-			$verified = $this->flushAssetCleanupDirect();
+			$verified = $this->flush_asset_cleanup_direct();
 		} catch ( \Throwable $error ) {
 			wp_send_json_error( array( 'code' => 'asset_cleanup_flush_failed' ), 500 );
 			return;
@@ -409,7 +409,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function loopbackHexHeader( string $header_name, int $length ): string {
+	private function loopback_hex_header( string $header_name, int $length ): string {
 		$raw = $_SERVER[ $header_name ] ?? null;
 
 		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
@@ -427,8 +427,8 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function flushAssetCleanupDirect(): bool {
-		$class  = $this->ensureAssetCleanupClass();
+	private function flush_asset_cleanup_direct(): bool {
+		$class  = $this->ensure_asset_cleanup_class();
 		$method = '';
 
 		if ( '' !== $class && is_callable( array( $class, 'clearCache' ) ) ) {
@@ -484,7 +484,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function ensureAssetCleanupClass(): string {
+	private function ensure_asset_cleanup_class(): string {
 		$class = 'WpAssetCleanUp\\OptimiseAssets\\OptimizeCommon';
 		if ( class_exists( $class ) ) {
 			return $class;
@@ -544,7 +544,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return int Operation result.
 	 */
-	private function countAssetCleanupJsonFiles(): int {
+	private function count_asset_cleanup_json_files(): int {
 		$directory = defined( 'WP_CONTENT_DIR' )
 			? rtrim( (string) WP_CONTENT_DIR, '/\\' ) . '/cache/asset-cleanup'
 			: '';
@@ -581,7 +581,7 @@ final class CacheMaintenanceAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function rebuildMode( string $layer ): string {
+	private function rebuild_mode( string $layer ): string {
 		if ( 'elementor' === $layer ) {
 			return 'regenerate_on_next_page_request';
 		}
