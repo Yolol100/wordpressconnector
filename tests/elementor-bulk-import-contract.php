@@ -40,8 +40,8 @@ foreach ($requiredImport as $needle) {
     }
 }
 foreach (array(
-    "get_post_meta(\$postId, '_elementor_data', true)",
-    'assertDocumentReadback($after, $savedElements, $pageSettings)',
+    "get_post_meta(\$post_id, '_elementor_data', true)",
+    'assertDocumentReadback($after, $saved_elements, $page_settings)',
     'assertDocumentReadback($restored,',
     "add_action('elementor/editor/after_save'",
     "remove_action('elementor/editor/after_save'",

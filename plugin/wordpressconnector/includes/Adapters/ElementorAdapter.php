@@ -107,9 +107,9 @@ final class ElementorAdapter {
 		}
 		Policy::assertReadablePostType( $post_type );
 
-		$data         = $this->normalizeData( $payload['data'] ?? array() );
+		$data          = $this->normalizeData( $payload['data'] ?? array() );
 		$page_settings = isset( $payload['page_settings'] ) && is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array();
-		$post_fields  = array(
+		$post_fields   = array(
 			'post_type'    => $post_type,
 			'post_status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'draft',
 			'post_title'   => isset( $payload['title'] ) ? (string) $payload['title'] : 'Elementor document',
@@ -167,9 +167,9 @@ final class ElementorAdapter {
 	 * @return array Operation result.
 	 */
 	public function replaceDocument( array $payload, array $context ): array {
-		$post         = $this->post( $payload );
-		$before       = $this->snapshot( (int) $post->ID );
-		$data         = array_key_exists( 'data', $payload ) ? $this->normalizeData( $payload['data'] ) : $before['data'];
+		$post          = $this->post( $payload );
+		$before        = $this->snapshot( (int) $post->ID );
+		$data          = array_key_exists( 'data', $payload ) ? $this->normalizeData( $payload['data'] ) : $before['data'];
 		$page_settings = array_key_exists( 'page_settings', $payload )
 			? ( is_array( $payload['page_settings'] ) ? $payload['page_settings'] : array() )
 			: $before['page_settings'];
@@ -218,8 +218,8 @@ final class ElementorAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function patchElement( array $payload, array $context ): array {
-		$post      = $this->post( $payload );
-		$before    = $this->snapshot( (int) $post->ID );
+		$post       = $this->post( $payload );
+		$before     = $this->snapshot( (int) $post->ID );
 		$element_id = isset( $payload['element_id'] ) ? (string) $payload['element_id'] : '';
 		if ( '' === $element_id ) {
 			throw new RuntimeException( 'element_id is required.' );
@@ -330,7 +330,7 @@ final class ElementorAdapter {
 		$seen = array();
 		foreach ( $checks as $check ) {
 			$element_id = is_array( $check ) ? ( $check['element_id'] ?? null ) : null;
-			$url       = is_array( $check ) ? ( $check['from'] ?? null ) : null;
+			$url        = is_array( $check ) ? ( $check['from'] ?? null ) : null;
 			if ( ! is_array( $check ) || array_diff( array_keys( $check ), array( 'element_id', 'from' ) )
 				|| ! is_string( $element_id ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $element_id )
 				|| isset( $seen[ $element_id ] ) || ! is_string( $url )
@@ -361,7 +361,7 @@ final class ElementorAdapter {
 		}
 		$matches = array();
 		foreach ( $checks as $check ) {
-			$element_id     = $check['element_id'];
+			$element_id    = $check['element_id'];
 			$matches_count = 0;
 			$is_icon_list  = false;
 			try {
@@ -433,8 +433,8 @@ final class ElementorAdapter {
 				throw new RuntimeException( 'Invalid Elementor header link replacement keys.' );
 			}
 			$element_id = $change['element_id'] ?? '';
-			$from      = $change['from'] ?? null;
-			$to        = $change['to'] ?? null;
+			$from       = $change['from'] ?? null;
+			$to         = $change['to'] ?? null;
 			if ( ! is_string( $element_id ) || ! preg_match( '/^[A-Za-z0-9_-]{5,64}\\z/', $element_id )
 				|| isset( $seen[ $element_id ] ) || ! is_string( $from ) || ! is_string( $to )
 				|| $from === $to || ! $this->sameSiteHeaderUrl( $from, false )
@@ -442,7 +442,7 @@ final class ElementorAdapter {
 				throw new RuntimeException( 'Header link target, source or destination is not allowed.' );
 			}
 			$seen[ $element_id ] = true;
-			$element            =& $this->findElement( $data, $element_id );
+			$element             =& $this->findElement( $data, $element_id );
 			if ( ( $element['widgetType'] ?? '' ) !== 'icon-list'
 				|| ! isset( $element['settings']['icon_list'] )
 				|| ! is_array( $element['settings']['icon_list'] ) ) {
