@@ -447,7 +447,7 @@ final class PluginSettingsAdapter {
 			$checks = array();
 			if ( $active ) {
 				try {
-					$checks = $this->auditNonsecretChecks( $id, (string) ( $plugin['mode'] ?? '' ) );
+					$checks = $this->audit_nonsecret_checks( $id, (string) ( $plugin['mode'] ?? '' ) );
 				} catch ( \Throwable $error ) {
 					// One provider failure must not erase the rest of the audit.
 					// Do not serialize the exception: provider errors may include secrets.
@@ -482,8 +482,8 @@ final class PluginSettingsAdapter {
 
 		return array(
 			'installed_count'           => count( $items ),
-			'must_use_count'            => $this->auditCorePluginCount( 'get_mu_plugins' ),
-			'dropin_count'              => $this->auditCorePluginCount( 'get_dropins' ),
+			'must_use_count'            => $this->audit_core_plugin_count( 'get_mu_plugins' ),
+			'dropin_count'              => $this->audit_core_plugin_count( 'get_dropins' ),
 			'active_count'              => $active_count,
 			'inactive_count'            => count( $items ) - $active_count,
 			'unmodeled_count'           => $unknown_count,
@@ -505,16 +505,16 @@ final class PluginSettingsAdapter {
 	 * @param string $id Target identifier.
 	 * @param string $mode Validated mode value.
 	 */
-	private function auditNonsecretChecks( string $id, string $mode ): array {
+	private function audit_nonsecret_checks( string $id, string $mode ): array {
 		if ( ! function_exists( 'get_option' ) ) {
 			return array();
 		}
 		if ( 'woocommerce' === $id ) {
 			return array(
-				'guest_checkout'   => $this->auditToggle( get_option( 'woocommerce_enable_guest_checkout', null ) ),
-				'stock_management' => $this->auditToggle( get_option( 'woocommerce_manage_stock', null ) ),
-				'cart_page'        => $this->auditPageAssignment( get_option( 'woocommerce_cart_page_id', null ) ),
-				'checkout_page'    => $this->auditPageAssignment( get_option( 'woocommerce_checkout_page_id', null ) ),
+				'guest_checkout'   => $this->audit_toggle( get_option( 'woocommerce_enable_guest_checkout', null ) ),
+				'stock_management' => $this->audit_toggle( get_option( 'woocommerce_manage_stock', null ) ),
+				'cart_page'        => $this->audit_page_assignment( get_option( 'woocommerce_cart_page_id', null ) ),
+				'checkout_page'    => $this->audit_page_assignment( get_option( 'woocommerce_checkout_page_id', null ) ),
 			);
 		}
 		if ( 'gtranslate' === $id ) {
@@ -548,8 +548,8 @@ final class PluginSettingsAdapter {
 			return array(
 				'organization_name'        => ! is_string( $title ) || '' === trim( $title ) || ! is_string( $company ) || '' === trim( $company )
 					? 'unknown' : ( 0 === strcasecmp( trim( $title ), trim( $company ) ) ? 'matches' : 'mismatch' ),
-				'organization_description' => $this->auditTextPresence( $raw['org-description'] ?? null ),
-				'organization_logo'        => $this->auditPageAssignment( $raw['company_logo_id'] ?? null ),
+				'organization_description' => $this->audit_text_presence( $raw['org-description'] ?? null ),
+				'organization_logo'        => $this->audit_page_assignment( $raw['company_logo_id'] ?? null ),
 			);
 		}
 		if ( 'joinchat' === $id ) {
@@ -562,22 +562,22 @@ final class PluginSettingsAdapter {
 			}
 			// Saved values are not necessarily the effective default/translations.
 			return array(
-				'button_tip_saved' => $this->auditTextPresence( $raw['button_tip'] ?? null ),
-				'message_saved'    => $this->auditTextPresence( $raw['message_text'] ?? null ),
-				'whatsapp_number'  => $this->auditPhonePresence( $raw['telephone'] ?? null ),
+				'button_tip_saved' => $this->audit_text_presence( $raw['button_tip'] ?? null ),
+				'message_saved'    => $this->audit_text_presence( $raw['message_text'] ?? null ),
+				'whatsapp_number'  => $this->audit_phone_presence( $raw['telephone'] ?? null ),
 			);
 		}
 		if ( 'wp_rocket' === $id && function_exists( 'get_rocket_option' ) ) {
 			return array(
-				'image_lazyload'    => $this->auditToggle( get_rocket_option( 'lazyload', null ) ),
-				'remove_unused_css' => $this->auditToggle( get_rocket_option( 'remove_unused_css', null ) ),
+				'image_lazyload'    => $this->audit_toggle( get_rocket_option( 'lazyload', null ) ),
+				'remove_unused_css' => $this->audit_toggle( get_rocket_option( 'remove_unused_css', null ) ),
 			);
 		}
 		if ( 'ewww_image_optimizer' === $id && 'guarded_settings' === $mode
 			&& function_exists( 'ewww_image_optimizer_get_option' ) ) {
 			return array(
-				'image_lazyload'     => $this->auditToggle( ewww_image_optimizer_get_option( 'ewww_image_optimizer_lazy_load', null ) ),
-				'missing_dimensions' => $this->auditToggle( ewww_image_optimizer_get_option( 'ewww_image_optimizer_add_missing_dims', null ) ),
+				'image_lazyload'     => $this->audit_toggle( ewww_image_optimizer_get_option( 'ewww_image_optimizer_lazy_load', null ) ),
+				'missing_dimensions' => $this->audit_toggle( ewww_image_optimizer_get_option( 'ewww_image_optimizer_add_missing_dims', null ) ),
 			);
 		}
 		if ( 'asset_cleanup' === $id && 'inspect_only_provider_api_required' === $mode ) {
@@ -606,7 +606,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function auditToggle( $value ): string {
+	private function audit_toggle( $value ): string {
 		if ( in_array( $value, array( true, 1, '1', 'yes', 'on' ), true ) ) {
 			return 'enabled';
 		}
@@ -623,7 +623,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function auditPageAssignment( $value ): string {
+	private function audit_page_assignment( $value ): string {
 		if ( is_int( $value ) || ( is_string( $value ) && preg_match( '/^[0-9]{1,10}\\z/', $value ) ) ) {
 			return (int) $value > 0 ? 'present' : 'missing';
 		}
@@ -637,7 +637,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return int|null Result of the operation.
 	 */
-	private function auditCorePluginCount( string $function ): ?int {
+	private function audit_core_plugin_count( string $function ): ?int {
 		if ( ! in_array( $function, array( 'get_mu_plugins', 'get_dropins' ), true )
 			|| ! function_exists( $function ) ) {
 			return null;
@@ -660,7 +660,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function auditPhonePresence( $value ): string {
+	private function audit_phone_presence( $value ): string {
 		if ( ! is_string( $value ) ) {
 			return null === $value ? 'missing' : 'unknown';
 		}
@@ -682,7 +682,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function auditTextPresence( $value ): string {
+	private function audit_text_presence( $value ): string {
 		return is_string( $value ) ? ( '' === trim( $value ) ? 'missing' : 'present' ) : 'unknown';
 	}
 
@@ -781,7 +781,7 @@ final class PluginSettingsAdapter {
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
 		$plugin   = $this->profile( $payload );
-		$settings = Policy::redact( $this->readProfile( $plugin ) );
+		$settings = Policy::redact( $this->read_profile( $plugin ) );
 		return array(
 			'plugin'      => $plugin,
 			'settings'    => $settings,
@@ -806,8 +806,8 @@ final class PluginSettingsAdapter {
 			throw new RuntimeException( 'plugin.settings.update requires payload.fields.' );
 		}
 
-		$before = $this->readProfile( $plugin );
-		$clean  = $this->validateUpdates( $plugin, $updates, $before );
+		$before = $this->read_profile( $plugin );
+		$clean  = $this->validate_updates( $plugin, $updates, $before );
 		$after  = $before;
 		foreach ( $clean as $key => $value ) {
 			$after[ $key ] = $value;
@@ -823,10 +823,10 @@ final class PluginSettingsAdapter {
 			return $result;
 		}
 
-		$this->writeProfile( $plugin, $clean );
-		$readback = $this->readProfile( $plugin );
+		$this->write_profile( $plugin, $clean );
+		$readback = $this->read_profile( $plugin );
 		foreach ( $clean as $key => $value ) {
-			if ( ! array_key_exists( $key, $readback ) || $this->normalizeForCompare( $readback[ $key ] ) !== $this->normalizeForCompare( $value ) ) {
+			if ( ! array_key_exists( $key, $readback ) || $this->normalize_for_compare( $readback[ $key ] ) !== $this->normalize_for_compare( $value ) ) {
 				throw new RuntimeException( 'Plugin settings readback verification failed for ' . $plugin . ':' . $key . '.' );
 			}
 		}
@@ -874,14 +874,14 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function readProfile( string $plugin ): array {
+	private function read_profile( string $plugin ): array {
 		if ( 'wp_rocket' === $plugin ) {
-			return $this->readWpRocket();
+			return $this->read_wp_rocket();
 		}
 		if ( 'imagify' === $plugin ) {
-			return $this->readImagify();
+			return $this->read_imagify();
 		}
-		return 'joinchat' === $plugin ? $this->readJoinchat() : $this->readReallySimpleSecurity();
+		return 'joinchat' === $plugin ? $this->read_joinchat() : $this->read_really_simple_security();
 	}
 
 	/**
@@ -890,20 +890,20 @@ final class PluginSettingsAdapter {
 	 * @param string $plugin Value used by this operation.
 	 * @param array  $updates Value used by this operation.
 	 */
-	private function writeProfile( string $plugin, array $updates ): void {
+	private function write_profile( string $plugin, array $updates ): void {
 		if ( 'wp_rocket' === $plugin ) {
-			$this->writeWpRocket( $updates );
+			$this->write_wp_rocket( $updates );
 			return;
 		}
 		if ( 'imagify' === $plugin ) {
-			$this->writeImagify( $updates );
+			$this->write_imagify( $updates );
 			return;
 		}
 		if ( 'joinchat' === $plugin ) {
-			$this->writeJoinchat( $updates );
+			$this->write_joinchat( $updates );
 			return;
 		}
-		$this->writeReallySimpleSecurity( $updates );
+		$this->write_really_simple_security( $updates );
 	}
 
 	/**
@@ -917,7 +917,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function validateUpdates( string $plugin, array $updates, array $before ): array {
+	private function validate_updates( string $plugin, array $updates, array $before ): array {
 		$clean = array();
 		foreach ( $updates as $key => $value ) {
 			if ( ! is_string( $key ) || '' === $key ) {
@@ -932,7 +932,7 @@ final class PluginSettingsAdapter {
 				if ( ! isset( self::WP_ROCKET_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported WP Rocket setting: ' . $key . '.' );
 				}
-				$clean[ $key ] = $this->sanitizeWpRocketValue( self::WP_ROCKET_FIELDS[ $key ], $value );
+				$clean[ $key ] = $this->sanitize_wp_rocket_value( self::WP_ROCKET_FIELDS[ $key ], $value );
 				continue;
 			}
 
@@ -940,14 +940,14 @@ final class PluginSettingsAdapter {
 				if ( ! isset( self::JOINCHAT_FIELDS[ $key ] ) ) {
 					throw new RuntimeException( 'Unsupported Joinchat setting: ' . $key . '.' );
 				}
-				$clean[ $key ] = $this->sanitizeJoinchatValue( self::JOINCHAT_FIELDS[ $key ], $value );
+				$clean[ $key ] = $this->sanitize_joinchat_value( self::JOINCHAT_FIELDS[ $key ], $value );
 				continue;
 			}
 
-			if ( 'really_simple_security' === $plugin && $this->isHighRiskSecuritySetting( $key ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ) ) {
+			if ( 'really_simple_security' === $plugin && $this->is_high_risk_security_setting( $key ) && ! Policy::flag( 'WPCONNECTOR_ALLOW_SENSITIVE' ) ) {
 				throw new RuntimeException( 'This Really Simple Security setting requires the connector sensitive-action gate: ' . $key . '.' );
 			}
-			$clean[ $key ] = $this->sanitizeLike( $before[ $key ], $value );
+			$clean[ $key ] = $this->sanitize_like( $before[ $key ], $value );
 		}
 		return $clean;
 	}
@@ -959,7 +959,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function readWpRocket(): array {
+	private function read_wp_rocket(): array {
 		if ( ! function_exists( 'get_rocket_option' ) || ! function_exists( 'update_rocket_option' ) ) {
 			throw new RuntimeException( 'WP Rocket settings API is not available.' );
 		}
@@ -977,7 +977,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function writeWpRocket( array $updates ): void {
+	private function write_wp_rocket( array $updates ): void {
 		if ( ! function_exists( 'update_rocket_option' ) ) {
 			throw new RuntimeException( 'WP Rocket settings API is not available.' );
 		}
@@ -991,8 +991,8 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function readImagify(): array {
-		$settings = $this->executeAbility( 'imagify/get-settings', array() );
+	private function read_imagify(): array {
+		$settings = $this->execute_ability( 'imagify/get-settings', array() );
 		unset( $settings['api_key'], $settings['version'] );
 		return $settings;
 	}
@@ -1004,9 +1004,9 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function writeImagify( array $updates ): void {
+	private function write_imagify( array $updates ): void {
 		unset( $updates['api_key'], $updates['version'] );
-		$result = $this->executeAbility( 'imagify/update-settings', $updates );
+		$result = $this->execute_ability( 'imagify/update-settings', $updates );
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
 			throw new RuntimeException( isset( $result['error_message'] ) ? (string) $result['error_message'] : 'Imagify settings update failed.' );
 		}
@@ -1022,7 +1022,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function executeAbility( string $name, array $input ): array {
+	private function execute_ability( string $name, array $input ): array {
 		if ( ! function_exists( 'wp_get_ability' ) ) {
 			throw new RuntimeException( 'WordPress Abilities API is not available.' );
 		}
@@ -1048,7 +1048,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function readJoinchat(): array {
+	private function read_joinchat(): array {
 		if ( ! defined( 'JOINCHAT_VERSION' ) || ! preg_match( '/^6\.4\.[0-9]+\z/', (string) JOINCHAT_VERSION ) || ! function_exists( 'jc_common' ) ) {
 			throw new RuntimeException( 'Joinchat settings require an active supported 6.4.x installation.' );
 		}
@@ -1078,7 +1078,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function writeJoinchat( array $updates ): void {
+	private function write_joinchat( array $updates ): void {
 		$stored = get_option( 'joinchat', array() );
 		if ( ! is_array( $stored ) ) {
 			throw new RuntimeException( 'Joinchat settings are not an array.' );
@@ -1097,7 +1097,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function sanitizeJoinchatValue( string $type, $value ) {
+	private function sanitize_joinchat_value( string $type, $value ) {
 		if ( 'yes_no' === $type ) {
 			if ( ! is_string( $value ) || ! in_array( $value, array( 'yes', 'no' ), true ) ) {
 				throw new RuntimeException( 'Joinchat toggle must be yes or no.' );
@@ -1153,7 +1153,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function readReallySimpleSecurity(): array {
+	private function read_really_simple_security(): array {
 		if ( ! function_exists( 'rsssl_fields' ) || ! function_exists( 'rsssl_get_option' ) || ! function_exists( 'rsssl_update_option' ) ) {
 			throw new RuntimeException( 'Really Simple Security settings API is not available.' );
 		}
@@ -1163,7 +1163,7 @@ final class PluginSettingsAdapter {
 				continue;
 			}
 			$id = sanitize_key( $field['id'] );
-			if ( '' === $id || $this->isSecretSetting( $id ) ) {
+			if ( '' === $id || $this->is_secret_setting( $id ) ) {
 				continue;
 			}
 			try {
@@ -1188,7 +1188,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function writeReallySimpleSecurity( array $updates ): void {
+	private function write_really_simple_security( array $updates ): void {
 		if ( ! function_exists( 'rsssl_update_option' ) ) {
 			throw new RuntimeException( 'Really Simple Security settings API is not available.' );
 		}
@@ -1207,9 +1207,9 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function sanitizeWpRocketValue( string $type, $value ) {
+	private function sanitize_wp_rocket_value( string $type, $value ) {
 		if ( 'bool' === $type ) {
-			return $this->toBoolInt( $value );
+			return $this->to_bool_int( $value );
 		}
 		if ( 'positive_int' === $type ) {
 			$value = (int) $value;
@@ -1253,9 +1253,9 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function sanitizeLike( $current, $value ) {
+	private function sanitize_like( $current, $value ) {
 		if ( is_bool( $current ) ) {
-			return (bool) $this->toBoolInt( $value );
+			return (bool) $this->to_bool_int( $value );
 		}
 		if ( is_int( $current ) ) {
 			return (int) $value;
@@ -1267,11 +1267,11 @@ final class PluginSettingsAdapter {
 			if ( ! is_array( $value ) ) {
 				throw new RuntimeException( 'Array setting requires an array value.' );
 			}
-			return $this->sanitizeArray( $value );
+			return $this->sanitize_array( $value );
 		}
 		if ( null === $current ) {
 			if ( is_array( $value ) ) {
-				return $this->sanitizeArray( $value );
+				return $this->sanitize_array( $value );
 			}
 			if ( is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 				return $value;
@@ -1292,11 +1292,11 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function sanitizeArray( array $value ): array {
+	private function sanitize_array( array $value ): array {
 		$clean = array();
 		foreach ( $value as $key => $item ) {
 			if ( is_array( $item ) ) {
-				$clean[ $key ] = $this->sanitizeArray( $item );
+				$clean[ $key ] = $this->sanitize_array( $item );
 			} elseif ( is_scalar( $item ) || null === $item ) {
 				$clean[ $key ] = is_string( $item ) ? sanitize_text_field( $item ) : $item;
 			} else {
@@ -1315,7 +1315,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
-	private function toBoolInt( $value ): int {
+	private function to_bool_int( $value ): int {
 		$normalized = strtolower( (string) $value );
 		if ( true === $value || 1 === $value || '1' === $normalized || 'true' === $normalized || 'yes' === $normalized || 'on' === $normalized ) {
 			return 1;
@@ -1333,7 +1333,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return string Result of the operation.
 	 */
-	private function normalizeForCompare( $value ): string {
+	private function normalize_for_compare( $value ): string {
 		return (string) wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	}
 
@@ -1344,7 +1344,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return bool Result of the operation.
 	 */
-	private function isSecretSetting( string $key ): bool {
+	private function is_secret_setting( string $key ): bool {
 		return 1 === preg_match( '/(password|passwd|secret|token|api[_-]?key|private[_-]?key|license|oauth|authorization|certificate|nonce|salt)/i', $key );
 	}
 
@@ -1355,7 +1355,7 @@ final class PluginSettingsAdapter {
 	 *
 	 * @return bool Result of the operation.
 	 */
-	private function isHighRiskSecuritySetting( string $key ): bool {
+	private function is_high_risk_security_setting( string $key ): bool {
 		return 1 === preg_match( '/(firewall|two[_-]?fa|2fa|login|lockout|xmlrpc|user|role|admin|lets?encrypt|encrypt|hardening|vulnerab|file[_-]?edit|rest[_-]?api|hsts|csp|security[_-]?header)/i', $key );
 	}
 }

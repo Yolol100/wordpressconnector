@@ -136,7 +136,7 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function catalog( array $payload = array(), array $context = array() ): array {
-		$this->rejectExtra( $payload, array() );
+		$this->reject_extra( $payload, array() );
 		$groups = $this->api( 'GET', '/wc/v3/settings' );
 		if ( count( $groups ) > 80 ) {
 			throw new RuntimeException( 'WooCommerce settings group inventory exceeds safe limit.' );
@@ -152,16 +152,16 @@ final class WooCommerceSettingsAdapter {
 			}
 			$result[] = array(
 				'id'                          => $id,
-				'label'                       => $this->shortText( $group['label'] ?? $id ),
-				'parent_id'                   => $this->shortText( $group['parent_id'] ?? '' ),
-				'sub_groups'                  => $this->stringIds( $group['sub_groups'] ?? array(), 40 ),
+				'label'                       => $this->short_text( $group['label'] ?? $id ),
+				'parent_id'                   => $this->short_text( $group['parent_id'] ?? '' ),
+				'sub_groups'                  => $this->string_ids( $group['sub_groups'] ?? array(), 40 ),
 				'source'                      => 'woocommerce_rest_v3',
 				'settings_endpoint_available' => true,
 			);
 		}
 		return array(
 			'groups'               => $result,
-			'admin_navigation'     => $this->adminNavigation(),
+			'admin_navigation'     => $this->admin_navigation(),
 			'coverage'             => 'all_exposed_groups_readable; only_explicit_allowlist_mutable',
 			'outside_settings_api' => array(
 				'shipping_zones_and_methods',
@@ -187,11 +187,11 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspect( array $payload, array $context = array() ): array {
-		$this->rejectExtra( $payload, array( 'group', 'offset', 'limit' ) );
-		$group  = $this->groupId( $payload );
-		$offset = $this->boundedInt( $payload['offset'] ?? 0, 0, 2000, 'offset' );
-		$limit  = $this->boundedInt( $payload['limit'] ?? 25, 1, 50, 'limit' );
-		$this->assertGroupExists( $group );
+		$this->reject_extra( $payload, array( 'group', 'offset', 'limit' ) );
+		$group  = $this->group_id( $payload );
+		$offset = $this->bounded_int( $payload['offset'] ?? 0, 0, 2000, 'offset' );
+		$limit  = $this->bounded_int( $payload['limit'] ?? 25, 1, 50, 'limit' );
+		$this->assert_group_exists( $group );
 
 		$items = $this->api( 'GET', '/wc/v3/settings/' . $group );
 		if ( count( $items ) > 2000 ) {
@@ -207,21 +207,21 @@ final class WooCommerceSettingsAdapter {
 			if ( ! preg_match( '/^[a-z][a-z0-9_]{0,119}$/D', $id ) ) {
 				continue;
 			}
-			$private = $this->isPrivate( $id, $type );
+			$private = $this->is_private( $id, $type );
 			$mode    = $private ? 'secret_blocked'
 				: ( $this->editable( $group, $id ) ? 'editable'
-				: ( $this->criticalEditable( $group, $id ) ? 'editable_requires_critical_gate' : 'read_only_review_required' ) );
+				: ( $this->critical_editable( $group, $id ) ? 'editable_requires_critical_gate' : 'read_only_review_required' ) );
 
 			$field = array(
 				'id'          => $id,
-				'label'       => $this->shortText( $option['label'] ?? $id ),
-				'type'        => $this->shortText( $type ),
+				'label'       => $this->short_text( $option['label'] ?? $id ),
+				'type'        => $this->short_text( $type ),
 				'mode'        => $mode,
 				'value_state' => $private ? 'withheld' : 'visible',
 				'group'       => $group,
 			);
 			if ( ! $private ) {
-				$field['value'] = $this->safeValue( $option['value'] ?? null );
+				$field['value'] = $this->safe_value( $option['value'] ?? null );
 				if ( isset( $option['options'] ) && is_array( $option['options'] ) ) {
 					$field['option_count'] = count( $option['options'] );
 				}
@@ -249,7 +249,7 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function update( array $payload, array $context ): array {
-		$this->rejectExtra(
+		$this->reject_extra(
 			$payload,
 			array(
 				'group',
@@ -260,45 +260,45 @@ final class WooCommerceSettingsAdapter {
 				'expected_before_fingerprint',
 			)
 		);
-		$group    = $this->groupId( $payload );
-		$id       = $this->settingId( $payload );
+		$group    = $this->group_id( $payload );
+		$id       = $this->setting_id( $payload );
 		$low_risk = $this->editable( $group, $id );
-		$critical = ! $low_risk && $this->criticalEditable( $group, $id );
-		if ( ( ! $low_risk && ! $critical ) || $this->isPrivate( $id, '' ) ) {
+		$critical = ! $low_risk && $this->critical_editable( $group, $id );
+		if ( ( ! $low_risk && ! $critical ) || $this->is_private( $id, '' ) ) {
 			throw new RuntimeException( 'WooCommerce setting requires a separate guarded provider workflow.' );
 		}
 		if ( ! array_key_exists( 'value', $payload ) ) {
 			throw new RuntimeException( 'Missing WooCommerce setting value.' );
 		}
-		$this->assertGroupExists( $group );
+		$this->assert_group_exists( $group );
 		$before = $this->item( $group, $id );
-		if ( $this->isPrivate( $id, (string) ( $before['type'] ?? '' ) ) ) {
+		if ( $this->is_private( $id, (string) ( $before['type'] ?? '' ) ) ) {
 			throw new RuntimeException( 'Private WooCommerce setting cannot be read or written through GitHub.' );
 		}
-		$desired     = $this->validateValue( $payload['value'], $before );
+		$desired     = $this->validate_value( $payload['value'], $before );
 		$previous    = $before['value'] ?? null;
-		$fingerprint = $this->valueFingerprint( $group, $id, $previous );
+		$fingerprint = $this->value_fingerprint( $group, $id, $previous );
 		if ( $critical && empty( $context['dry_run'] ) ) {
-			$this->assertCriticalConfirmed( $payload, $fingerprint );
+			$this->assert_critical_confirmed( $payload, $fingerprint );
 		}
 		$result = array(
 			'group'                => $group,
 			'id'                   => $id,
-			'before'               => $this->safeValue( $previous ),
-			'after'                => $this->safeValue( $desired ),
+			'before'               => $this->safe_value( $previous ),
+			'after'                => $this->safe_value( $desired ),
 			'_current_fingerprint' => $fingerprint,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return $result;
 		}
 
-		$this->api( 'PUT', $this->itemPath( $group, $id ), array( 'value' => $desired ) );
+		$this->api( 'PUT', $this->item_path( $group, $id ), array( 'value' => $desired ) );
 		$readback = $this->item( $group, $id );
 		if ( ( $readback['value'] ?? null ) !== $desired ) {
 			// Best-effort compensation for a provider that rewrites/rejects the
 			// value after an apparent success. Never report a verified write.
 			try {
-				$this->api( 'PUT', $this->itemPath( $group, $id ), array( 'value' => $previous ) );
+				$this->api( 'PUT', $this->item_path( $group, $id ), array( 'value' => $previous ) );
 			} catch ( Throwable $error ) {
 				throw new RuntimeException( 'WooCommerce setting readback failed; automatic restore was not verified.' );
 			}
@@ -309,14 +309,14 @@ final class WooCommerceSettingsAdapter {
 			throw new RuntimeException( 'WooCommerce setting was not accepted; previous state restored.' );
 		}
 
-		$result['after']     = $this->safeValue( $readback['value'] );
+		$result['after']     = $this->safe_value( $readback['value'] );
 		$result['_rollback'] = array(
 			'action'  => 'woocommerce.settings.restore',
 			'payload' => array(
 				'group'                      => $group,
 				'id'                         => $id,
 				'value'                      => $previous,
-				'expected_after_fingerprint' => $this->valueFingerprint( $group, $id, $desired ),
+				'expected_after_fingerprint' => $this->value_fingerprint( $group, $id, $desired ),
 			),
 		);
 		return $result;
@@ -336,28 +336,28 @@ final class WooCommerceSettingsAdapter {
 		if ( empty( $context['rollback_mode'] ) ) {
 			throw new RuntimeException( 'WooCommerce setting restore is rollback-only.' );
 		}
-		$this->rejectExtra( $payload, array( 'group', 'id', 'value', 'expected_after_fingerprint' ) );
-		$group = $this->groupId( $payload );
-		$id    = $this->settingId( $payload );
-		if ( ( ! $this->editable( $group, $id ) && ! $this->criticalEditable( $group, $id ) )
-			|| $this->isPrivate( $id, '' ) || ! array_key_exists( 'value', $payload ) ) {
+		$this->reject_extra( $payload, array( 'group', 'id', 'value', 'expected_after_fingerprint' ) );
+		$group = $this->group_id( $payload );
+		$id    = $this->setting_id( $payload );
+		if ( ( ! $this->editable( $group, $id ) && ! $this->critical_editable( $group, $id ) )
+			|| $this->is_private( $id, '' ) || ! array_key_exists( 'value', $payload ) ) {
 			throw new RuntimeException( 'Unsafe WooCommerce setting rollback payload.' );
 		}
 		$before      = $this->item( $group, $id );
-		$fingerprint = $this->valueFingerprint( $group, $id, $before['value'] ?? null );
+		$fingerprint = $this->value_fingerprint( $group, $id, $before['value'] ?? null );
 		$expected    = $payload['expected_after_fingerprint'] ?? null;
 		if ( ! is_string( $expected ) || ! preg_match( '/^[a-f0-9]{64}$/D', $expected )
 			|| ! hash_equals( $fingerprint, $expected ) ) {
 			throw new RuntimeException( 'WooCommerce setting rollback is unsafe: value changed since write.' );
 		}
-		$previous = $this->validateValue( $payload['value'], $before );
+		$previous = $this->validate_value( $payload['value'], $before );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_restore'        => $id,
 				'_current_fingerprint' => $fingerprint,
 			);
 		}
-		$this->api( 'PUT', $this->itemPath( $group, $id ), array( 'value' => $previous ) );
+		$this->api( 'PUT', $this->item_path( $group, $id ), array( 'value' => $previous ) );
 		$readback = $this->item( $group, $id );
 		if ( ( $readback['value'] ?? null ) !== $previous ) {
 			throw new RuntimeException( 'WooCommerce setting rollback readback failed.' );
@@ -380,17 +380,17 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function inspectSection( array $payload, array $context = array() ): array {
-		$this->rejectExtra( $payload, array( 'tab', 'section', 'offset', 'limit' ) );
+		$this->reject_extra( $payload, array( 'tab', 'section', 'offset', 'limit' ) );
 		$tab     = $payload['tab'] ?? null;
 		$section = $payload['section'] ?? '';
 		if ( ! is_string( $tab ) || ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $tab )
 			|| ! is_string( $section ) || ! preg_match( '/^[a-z0-9_-]{0,63}$/D', $section ) ) {
 			throw new RuntimeException( 'WooCommerce Settings tab/section requires canonical IDs.' );
 		}
-		$offset = $this->boundedInt( $payload['offset'] ?? 0, 0, 2000, 'offset' );
-		$limit  = $this->boundedInt( $payload['limit'] ?? 25, 1, 50, 'limit' );
+		$offset = $this->bounded_int( $payload['offset'] ?? 0, 0, 2000, 'offset' );
+		$limit  = $this->bounded_int( $payload['limit'] ?? 25, 1, 50, 'limit' );
 		$page   = null;
-		foreach ( $this->settingsPages() as $candidate ) {
+		foreach ( $this->settings_pages() as $candidate ) {
 			if ( is_object( $candidate ) && method_exists( $candidate, 'get_id' )
 				&& $candidate->get_id() === $tab ) {
 				$page = $candidate;
@@ -422,18 +422,18 @@ final class WooCommerceSettingsAdapter {
 			$type = isset( $definition['type'] ) && is_string( $definition['type'] ) ? $definition['type'] : '';
 			// Structural headings are not editable controls.
 			$provider_field = (bool) preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id );
-			$private        = $this->isPrivate( $id, $type );
+			$private        = $this->is_private( $id, $type );
 			$editable       = $provider_field && ! $private && $this->editable( $tab, $id );
 			$entry          = array(
-				'id'          => $this->shortText( $id ),
-				'label'       => $this->shortText( $definition['title'] ?? $definition['label'] ?? '' ),
-				'type'        => $this->shortText( $type ),
+				'id'          => $this->short_text( $id ),
+				'label'       => $this->short_text( $definition['title'] ?? $definition['label'] ?? '' ),
+				'type'        => $this->short_text( $type ),
 				'mode'        => $private ? 'secret_blocked' : ( $editable ? 'editable_via_rest' : 'read_only_provider_specific' ),
 				'value_state' => $private ? 'withheld' : ( $provider_field ? 'visible_if_simple' : 'provider_value_withheld' ),
 			);
 			if ( $provider_field && ! $private && ! in_array( $type, array( 'title', 'sectionend', 'info', 'html' ), true ) ) {
 				$stored         = get_option( $id, $definition['default'] ?? null );
-				$entry['value'] = $this->safeValue( $stored );
+				$entry['value'] = $this->safe_value( $stored );
 			}
 			$fields[] = $entry;
 		}
@@ -456,7 +456,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function settingsPages(): array {
+	private function settings_pages(): array {
 		if ( ! class_exists( 'WC_Admin_Settings' ) ) {
 			if ( ! function_exists( 'WC' ) || ! is_object( WC() ) || ! method_exists( WC(), 'plugin_path' ) ) {
 				throw new RuntimeException( 'WooCommerce admin Settings API is not loaded.' );
@@ -482,9 +482,9 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function adminNavigation(): array {
+	private function admin_navigation(): array {
 		try {
-			$pages = $this->settingsPages();
+			$pages = $this->settings_pages();
 			$tabs  = array();
 			foreach ( $pages as $page ) {
 				if ( ! is_object( $page ) || ! method_exists( $page, 'get_id' )
@@ -500,14 +500,14 @@ final class WooCommerceSettingsAdapter {
 				if ( is_array( $sections ) ) {
 					foreach ( array_slice( $sections, 0, 60, true ) as $id => $label ) {
 						$subtabs[] = array(
-							'id'    => $this->shortText( (string) $id ),
-							'label' => $this->shortText( $label ),
+							'id'    => $this->short_text( (string) $id ),
+							'label' => $this->short_text( $label ),
 						);
 					}
 				}
 				$tabs[] = array(
 					'id'       => $tab_id,
-					'label'    => $this->shortText( $page->get_label() ),
+					'label'    => $this->short_text( $page->get_label() ),
 					'subtabs'  => $subtabs,
 					'provider' => in_array(
 						$tab_id,
@@ -547,7 +547,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertGroupExists( string $group ): void {
+	private function assert_group_exists( string $group ): void {
 		$groups = $this->api( 'GET', '/wc/v3/settings' );
 		foreach ( $groups as $entry ) {
 			if ( is_array( $entry ) && ( $entry['id'] ?? '' ) === $group ) {
@@ -568,7 +568,7 @@ final class WooCommerceSettingsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function item( string $group, string $id ): array {
-		$item = $this->api( 'GET', $this->itemPath( $group, $id ) );
+		$item = $this->api( 'GET', $this->item_path( $group, $id ) );
 		if ( ! isset( $item['id'] ) || $item['id'] !== $id ) {
 			throw new RuntimeException( 'WooCommerce setting identity readback mismatch.' );
 		}
@@ -583,7 +583,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function itemPath( string $group, string $id ): string {
+	private function item_path( string $group, string $id ): string {
 		return '/wc/v3/settings/' . $group . '/' . $id;
 	}
 
@@ -630,7 +630,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function validateValue( $value, array $option ) {
+	private function validate_value( $value, array $option ) {
 		$type = (string) ( $option['type'] ?? '' );
 		if ( 'multiselect' === $type ) {
 			if ( ! is_array( $value ) || count( $value ) > 24 || ! isset( $option['options'] )
@@ -684,12 +684,12 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function criticalEditable( string $group, string $id ): bool {
+	private function critical_editable( string $group, string $id ): bool {
 		$core = in_array( $group, self::CORE_GROUPS, true )
 			|| preg_match( '/^email_[a-z0-9_-]{1,54}$/D', $group );
 		return $core && preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id )
 			&& ! preg_match( self::IRREVERSIBLE_PATTERN, $id )
-			&& ! $this->isPrivate( $id, '' );
+			&& ! $this->is_private( $id, '' );
 	}
 
 	/**
@@ -700,7 +700,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function assertCriticalConfirmed( array $payload, string $fingerprint ): void {
+	private function assert_critical_confirmed( array $payload, string $fingerprint ): void {
 		if ( ( $payload['critical_confirm'] ?? null ) === true
 			&& ( $payload['restore_verified'] ?? null ) === true
 			&& defined( 'WPCONNECTOR_ALLOW_WOO_CRITICAL' )
@@ -724,7 +724,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function valueFingerprint( string $group, string $id, $value ): string {
+	private function value_fingerprint( string $group, string $id, $value ): string {
 		return Fingerprint::make(
 			array(
 				'group' => $group,
@@ -743,7 +743,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function groupId( array $payload ): string {
+	private function group_id( array $payload ): string {
 		$id = $payload['group'] ?? null;
 		if ( ! is_string( $id ) || ! preg_match( '/^[a-z0-9][a-z0-9_-]{0,63}$/D', $id ) ) {
 			throw new RuntimeException( 'WooCommerce Settings group must be a canonical ID.' );
@@ -760,7 +760,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function settingId( array $payload ): string {
+	private function setting_id( array $payload ): string {
 		$id = $payload['id'] ?? null;
 		if ( ! is_string( $id ) || ! preg_match( '/^woocommerce_[a-z0-9_]{1,100}$/D', $id ) ) {
 			throw new RuntimeException( 'WooCommerce setting requires a canonical option ID.' );
@@ -788,7 +788,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return bool Operation result.
 	 */
-	private function isPrivate( string $id, string $type ): bool {
+	private function is_private( string $id, string $type ): bool {
 		return 'password' === $type || (bool) preg_match( self::PRIVATE_PATTERN, $id );
 	}
 
@@ -799,7 +799,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return mixed Operation result.
 	 */
-	private function safeValue( $value ) {
+	private function safe_value( $value ) {
 		if ( null === $value || is_bool( $value ) || is_int( $value ) || is_float( $value ) ) {
 			return $value;
 		}
@@ -816,7 +816,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return string Operation result.
 	 */
-	private function shortText( $value ): string {
+	private function short_text( $value ): string {
 		return is_scalar( $value ) ? substr( sanitize_text_field( (string) $value ), 0, 160 ) : '';
 	}
 
@@ -828,7 +828,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @return array Operation result.
 	 */
-	private function stringIds( $value, int $limit ): array {
+	private function string_ids( $value, int $limit ): array {
 		if ( ! is_array( $value ) ) {
 			return array();
 		}
@@ -853,7 +853,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function boundedInt( $value, int $min, int $max, string $field ): int {
+	private function bounded_int( $value, int $min, int $max, string $field ): int {
 		if ( ! is_int( $value ) || $value < $min || $value > $max ) {
 			throw new RuntimeException( 'WooCommerce settings ' . $field . ' is outside its bounds.' );
 		}
@@ -868,7 +868,7 @@ final class WooCommerceSettingsAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	private function rejectExtra( array $payload, array $keys ): void {
+	private function reject_extra( array $payload, array $keys ): void {
 		if ( array_diff( array_keys( $payload ), $keys ) ) {
 			throw new RuntimeException( 'Unexpected WooCommerce settings request parameters.' );
 		}
