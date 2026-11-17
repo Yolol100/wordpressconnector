@@ -395,6 +395,7 @@ namespace {
         'New MCP methods must enforce modern standard headers.');
     // Preserve deterministic request-id bytes and reject invalid UTF-8 without substitution.
     $id_method = new ReflectionMethod(Controller::class, 'generated_request_id');
+    $id_method->setAccessible(true);
     $id_payload = array('value' => 'valid');
     $id_expected = 'mcp-' . substr(hash('sha256', json_encode(array(
         'rpc_id' => 99, 'tool' => 'wordpress_connector_actions',
