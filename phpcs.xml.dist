@@ -4,4 +4,13 @@
     <file>plugin/wordpressconnector</file>
     <arg name="extensions" value="php"/>
     <rule ref="WordPress"/>
+    <!-- Yoast SEO registers these capabilities; preserve the full sniff without exclusions. -->
+    <rule ref="WordPress.WP.Capabilities">
+        <properties>
+            <property name="custom_capabilities" type="array">
+                <element value="wpseo_manage_options"/>
+                <element value="wpseo_edit_advanced_metadata"/>
+            </property>
+        </properties>
+    </rule>
 </ruleset>
