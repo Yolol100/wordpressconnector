@@ -335,16 +335,21 @@ final class ElementorJsonExport {
 		}
 		$wp_query     = $query;
 		$wp_the_query = $query;
-		$query->the_post();
 		try {
+			$query->the_post();
 			return $callback();
 		} finally {
-			$query->reset_postdata();
-			$wp_query     = $previous_query;
-			$wp_the_query = $previous_the_query;
-			$post         = $previous_post;
-			if ( $previous_post instanceof \WP_Post ) {
-				setup_postdata( $previous_post );
+			// A WordPress hook can throw during either query setup or reset.
+			// Restore the caller's globals even when reset_postdata() fails.
+			try {
+				$query->reset_postdata();
+			} finally {
+				$wp_query     = $previous_query;
+				$wp_the_query = $previous_the_query;
+				$post         = $previous_post;
+				if ( $previous_post instanceof \WP_Post ) {
+					setup_postdata( $previous_post );
+				}
 			}
 		}
 	}
