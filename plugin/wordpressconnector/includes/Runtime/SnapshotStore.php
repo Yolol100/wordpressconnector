@@ -18,14 +18,14 @@ final class SnapshotStore {
 	/**
 	 * Process the put operation in the SnapshotStore component.
 	 *
-	 * @param string $request_id Input for the operation.
+	 * @param string $requestId Input for the operation.
 	 * @param array  $rollback Input for the operation.
 	 * @param array  $metadata Input for the operation.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function put( string $request_id, array $rollback, array $metadata = array() ): void {
-		$key    = self::key( $request_id );
+	public function put( string $requestId, array $rollback, array $metadata = array() ): void {
+		$key    = self::key( $requestId );
 		$record = array(
 			'created_at'             => time(),
 			'rollback'               => $rollback,
@@ -41,24 +41,24 @@ final class SnapshotStore {
 	/**
 	 * Process the get operation in the SnapshotStore component.
 	 *
-	 * @param string $request_id Input for the operation.
+	 * @param string $requestId Input for the operation.
 	 *
 	 * @return array|null Operation result.
 	 */
-	public function get( string $request_id ): ?array {
-		$record = $this->getRecord( $request_id );
+	public function get( string $requestId ): ?array {
+		$record = $this->getRecord( $requestId );
 		return is_array( $record ) && isset( $record['rollback'] ) && is_array( $record['rollback'] ) ? $record['rollback'] : null;
 	}
 
 	/**
 	 * Retrieve record for the SnapshotStore component.
 	 *
-	 * @param string $request_id Input for the operation.
+	 * @param string $requestId Input for the operation.
 	 *
 	 * @return array|null Operation result.
 	 */
-	public function getRecord( string $request_id ): ?array {
-		$value = get_option( self::key( $request_id ), null );
+	public function getRecord( string $requestId ): ?array {
+		$value = get_option( self::key( $requestId ), null );
 		if ( ! is_array( $value ) || ! isset( $value['rollback'] ) || ! is_array( $value['rollback'] ) ) {
 			return null;
 		}
@@ -73,22 +73,22 @@ final class SnapshotStore {
 	/**
 	 * Process the delete operation in the SnapshotStore component.
 	 *
-	 * @param string $request_id Input for the operation.
+	 * @param string $requestId Input for the operation.
 	 */
-	public function delete( string $request_id ): void {
-		delete_option( self::key( $request_id ) );
+	public function delete( string $requestId ): void {
+		delete_option( self::key( $requestId ) );
 	}
 
 	/**
 	 * Process the cleanup operation in the SnapshotStore component.
 	 *
-	 * @param int $older_than_seconds Input for the operation.
+	 * @param int $olderThanSeconds Input for the operation.
 	 *
 	 * @return int Operation result.
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function cleanup( int $older_than_seconds ): int {
+	public function cleanup( int $olderThanSeconds ): int {
 		global $wpdb;
 		$like = $wpdb->esc_like( self::PREFIX ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared compensation cleanup must observe fresh durable rollback snapshots.
@@ -104,7 +104,7 @@ final class SnapshotStore {
 			}
 			$value = maybe_unserialize( $row->option_value );
 			if ( ! is_array( $value ) || ! is_int( $value['created_at'] ?? null )
-				|| $value['created_at'] >= time() - $older_than_seconds ) {
+				|| $value['created_at'] >= time() - $olderThanSeconds ) {
 				continue;
 			}
 
