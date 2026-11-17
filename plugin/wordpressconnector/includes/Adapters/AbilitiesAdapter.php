@@ -132,7 +132,7 @@ final class AbilitiesAdapter {
 		if ( null !== $namespace ) {
 			$response['namespace'] = $namespace;
 		}
-		$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $response ) : json_encode( $response );
+		$encoded = wp_json_encode( $response );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 262144 ) {
 			throw new \RuntimeException( 'WordPress Ability catalog page exceeds the output limit.' );
 		}
@@ -348,7 +348,7 @@ final class AbilitiesAdapter {
 				'bytes' => 0,
 			);
 			$safe    = $this->redact_ability_result( $result, 0, new \SplObjectStorage(), $budget );
-			$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $safe ) : json_encode( $safe );
+			$encoded = wp_json_encode( $safe );
 			if ( ! is_string( $encoded ) || strlen( $encoded ) > 262144 ) {
 				throw new \RuntimeException( 'WordPress Ability result exceeds the output limit.' );
 			}
@@ -954,7 +954,7 @@ final class AbilitiesAdapter {
 			return array( null, true );
 		}
 
-		$encoded = function_exists( 'wp_json_encode' ) ? wp_json_encode( $safe ) : json_encode( $safe );
+		$encoded = wp_json_encode( $safe );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 8192 ) {
 			return array( null, true );
 		}

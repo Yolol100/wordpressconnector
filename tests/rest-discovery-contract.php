@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// WordPress is not bootstrapped in this standalone contract; fixtures contain valid UTF-8.
+function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
+
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/DiscoveryAdapter.php';
