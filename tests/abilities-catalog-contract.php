@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// WordPress is not bootstrapped in this standalone contract; fixtures contain valid UTF-8.
+function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
+
 require_once __DIR__ . '/fixtures/elementor/modules/mcp/abilities/native-ability-fixture.php';
 require_once __DIR__ . '/fixtures/elementor-pro/modules/mcp/abilities/native-pro-ability-fixture.php';
 require_once __DIR__ . '/fixtures/untrusted/elementor-spoof-ability-fixture.php';

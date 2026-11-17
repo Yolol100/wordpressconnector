@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+// WordPress is not bootstrapped in this standalone contract; fixtures contain valid UTF-8.
+function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
+
 if (! defined('ABSPATH')) define('ABSPATH', __DIR__ . '/');
 if (! defined('WP_PLUGIN_DIR')) define('WP_PLUGIN_DIR', __DIR__ . '/fixtures');
 

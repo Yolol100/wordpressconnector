@@ -304,7 +304,7 @@ final class DiscoveryAdapter {
 		$result['total']      = count( $safe_routes );
 		$result['pages']      = max( 1, (int) ceil( $result['total'] / $per_page ) );
 		$result['routes']     = array_slice( $safe_routes, ( $page - 1 ) * $per_page, $per_page );
-		$encoded              = function_exists( 'wp_json_encode' ) ? wp_json_encode( $result ) : json_encode( $result );
+		$encoded              = wp_json_encode( $result );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 131072 ) {
 			throw new \RuntimeException( 'REST discovery output exceeds its transport budget.' );
 		}
