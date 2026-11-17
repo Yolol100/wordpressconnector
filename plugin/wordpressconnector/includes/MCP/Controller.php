@@ -519,7 +519,11 @@ final class Controller {
 					|| preg_match( '/[\x00-\x1f\x7f]/', $goal ) ) {
 					throw new RuntimeException( 'Goal must be a single-line string of at most 240 bytes.' );
 				}
-				$encoded = json_encode( $goal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+				try {
+					$encoded = wp_json_encode( $goal, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
+				} catch ( \JsonException $error ) {
+					throw new RuntimeException( 'Goal cannot be encoded safely.' );
+				}
 				if ( ! is_string( $encoded ) ) {
 					throw new RuntimeException( 'Goal cannot be encoded safely.' );
 				}
@@ -843,7 +847,11 @@ final class Controller {
 	 * @return string Result of the operation.
 	 */
 	private function encode_for_text( array $value ): string {
-		$json = json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
+		try {
+			$json = wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
+		} catch ( \JsonException $error ) {
+			return '{"ok":false,"error":"Result could not be encoded."}';
+		}
 		if ( ! is_string( $json ) ) {
 			return '{"ok":false,"error":"Result could not be encoded."}';
 		}
@@ -863,16 +871,20 @@ final class Controller {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 */
 	private function generated_request_id( $rpc_id, string $tool_name, string $action, array $payload ): string {
-		$json = json_encode(
-			array(
-				'rpc_id'  => $rpc_id,
-				'tool'    => $tool_name,
-				'action'  => $action,
-				'payload' => $payload,
-				'user_id' => get_current_user_id(),
-			),
-			JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-		);
+		try {
+			$json = wp_json_encode(
+				array(
+					'rpc_id'  => $rpc_id,
+					'tool'    => $tool_name,
+					'action'  => $action,
+					'payload' => $payload,
+					'user_id' => get_current_user_id(),
+				),
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+			);
+		} catch ( \JsonException $error ) {
+			throw new RuntimeException( 'Unable to generate a connector request id.' );
+		}
 		if ( ! is_string( $json ) ) {
 			throw new RuntimeException( 'Unable to generate a connector request id.' );
 		}

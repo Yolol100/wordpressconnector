@@ -42,6 +42,9 @@ namespace Webactueel\WordPressConnector\Runtime {
 }
 
 namespace {
+    // Standalone test has no WordPress bootstrap; forward JSON options including fail-closed flags.
+    function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
+
     final class WP_REST_Server { public const CREATABLE = 'POST'; }
 
     final class WP_REST_Request
@@ -390,6 +393,24 @@ namespace {
     $assert(400 === $badPromptHeader->get_status()
         && -32020 === $badPromptHeader->get_data()['error']['code'],
         'New MCP methods must enforce modern standard headers.');
+    // Preserve deterministic request-id bytes and reject invalid UTF-8 without substitution.
+    $id_method = new ReflectionMethod(Controller::class, 'generated_request_id');
+    $id_method->setAccessible(true);
+    $id_payload = array('value' => 'valid');
+    $id_expected = 'mcp-' . substr(hash('sha256', json_encode(array(
+        'rpc_id' => 99, 'tool' => 'wordpress_connector_actions',
+        'action' => 'post.get', 'payload' => $id_payload, 'user_id' => 7,
+    ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)), 0, 48);
+    $assert($id_expected === $id_method->invoke($controller, 99, 'wordpress_connector_actions', 'post.get', $id_payload),
+        'MCP generated request IDs must retain canonical JSON fingerprints.');
+    try {
+        $id_method->invoke($controller, 99, 'wordpress_connector_actions', 'post.get', array('value' => "\xB1"));
+        $assert(false, 'Invalid UTF-8 should be rejected.');
+    } catch (RuntimeException $error) {
+        $assert('Unable to generate a connector request id.' === $error->getMessage(),
+            'Malformed JSON must remain a fail-closed request-id error.');
+    }
+
     $assert($initialRuns === count($runner->calls),
         'Prompts/resources must never invoke WordPress action execution.');
 
