@@ -306,7 +306,7 @@ final class FilesystemAdapter {
 			}
 
 			clearstatcache( true, $absolute );
-			$readback = file_get_contents( $absolute );
+			$readback = $filesystem->get_contents( $absolute );
 			if ( false === $readback || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ) {
 				throw new RuntimeException( 'Filesystem write readback verification failed.' );
 			}
@@ -320,7 +320,7 @@ final class FilesystemAdapter {
 				// after writing all original bytes.
 			}
 			clearstatcache( true, $absolute );
-			$restored = @file_get_contents( $absolute );
+			$restored = $filesystem->get_contents( $absolute );
 			if ( ! is_string( $restored ) || ! hash_equals( $before_state['sha256'], hash( 'sha256', $restored ) ) ) {
 				throw new RuntimeException( $error->getMessage() . ' Recovery failed; original file could not be restored; manual recovery required.', 0, $error );
 			}
