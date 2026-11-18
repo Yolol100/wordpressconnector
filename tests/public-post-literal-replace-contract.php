@@ -29,7 +29,7 @@ function wp_update_post($fields, $wp_error = false)
 
 $root = dirname(__DIR__);
 foreach (array(
-    'Support/Json.php','Support/Fingerprint.php','Security/Policy.php',
+    'Support/Json.php','Support/Fingerprint.php','Support/Input.php','Security/Policy.php',
     'Runtime/Registry.php','Adapters/CoreAdapter.php',
 ) as $path) require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -38,6 +38,34 @@ use Webactueel\WordPressConnector\Security\Policy;
 Policy::setPublicRepositoryContext(true);
 $registry = new Registry();
 (new Webactueel\WordPressConnector\Adapters\CoreAdapter())->register($registry);
+// Guard the real CoreAdapter owner, not only the public transport's
+// separate target check, so malformed IDs cannot select another post.
+$core_adapter = new Webactueel\WordPressConnector\Adapters\CoreAdapter();
+foreach ( array( true, 101.5, -101, 0, '101junk', '1.01e2', ' 101', '9999999999999999999999', array( 101 ), null ) as $invalid_id ) {
+	$before_content = $GLOBALS['posts'][101]->post_content;
+	try {
+		$core_adapter->postLiteralReplace(
+			array( 'id' => $invalid_id, 'find' => 'Tape Solutions', 'replace' => 'ISOHULK' ),
+			array( 'dry_run' => true )
+		);
+		throw new RuntimeException( 'Coerced CoreAdapter post ID was accepted.' );
+	} catch ( RuntimeException $error ) {
+		if ( 'Post not found.' !== $error->getMessage() ) {
+			throw $error;
+		}
+	}
+	if ( $GLOBALS['posts'][101]->post_content !== $before_content ) {
+		throw new RuntimeException( 'Malformed ID unexpectedly modified a WordPress post.' );
+	}
+}
+$string_id_preview = $core_adapter->postLiteralReplace(
+	array( 'id' => '000101', 'find' => 'Tape Solutions', 'replace' => 'ISOHULK' ),
+	array( 'dry_run' => true )
+);
+if ( 101 !== ( $string_id_preview['post_id'] ?? 0 ) || 2 !== ( $string_id_preview['match_count'] ?? 0 ) ) {
+	throw new RuntimeException( 'Canonical numeric post ID strings stopped resolving.' );
+}
+
 $payload = array('id'=>101,'find'=>'Tape Solutions','replace'=>'ISOHULK');
 $dry = $registry->execute('post.literal_replace', $payload, array('dry_run'=>true,'confirm'=>false));
 if (($dry['match_count'] ?? null) !== 2
