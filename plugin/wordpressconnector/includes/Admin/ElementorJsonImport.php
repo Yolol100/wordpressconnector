@@ -135,7 +135,14 @@ final class ElementorJsonImport {
 	 */
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
-		$post_id   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
+		// A malformed or oversized post ID must never be coerced into another target.
+		$raw_post_id = isset( $_POST['post_id'] ) ? wp_unslash( $_POST['post_id'] ) : '0';
+		if ( ! is_string( $raw_post_id ) || ! preg_match( '/\A(?:0|[1-9][0-9]*)\z/', $raw_post_id )
+			|| false === filter_var( $raw_post_id, FILTER_VALIDATE_INT ) ) {
+			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
+		}
+		$post_id   = (int) $raw_post_id;
 		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
