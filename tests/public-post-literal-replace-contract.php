@@ -14,6 +14,7 @@ class WP_Post
 }
 $GLOBALS['posts'] = array(101 => new WP_Post(101, '<p>Tape Solutions</p><p>Tape Solutions</p>'));
 $GLOBALS['can_edit'] = true;
+function sanitize_key($value): string { return strtolower((string) $value); }
 function get_post($id) { return $GLOBALS['posts'][(int) $id] ?? null; }
 function get_post_type_object($type) { return (object) array('public' => in_array($type, array('page','post','product'), true)); }
 function current_user_can($capability, ...$args) { return ! empty($GLOBALS['can_edit']); }
