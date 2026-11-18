@@ -73,7 +73,7 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function replace( array $payload, array $context ): array {
-		$post           = $this->post( $payload );
+		$post           = $this->editable_post( $payload );
 		$before_content = (string) $post->post_content;
 		$before_blocks  = parse_blocks( $before_content );
 
@@ -131,7 +131,7 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function patch( array $payload, array $context ): array {
-		$post           = $this->post( $payload );
+		$post           = $this->editable_post( $payload );
 		$before_content = (string) $post->post_content;
 		$blocks         = parse_blocks( $before_content );
 		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
@@ -196,6 +196,24 @@ final class GutenbergAdapter {
 			),
 		);
 		return $result;
+	}
+
+	/**
+	 * Require per-document editing permission before computing a Gutenberg
+	 * mutation preview or performing a write. Read-only inspect remains separate.
+	 *
+	 * @param array $payload Requested action payload.
+	 *
+	 * @return \WP_Post Editable document.
+	 *
+	 * @throws \RuntimeException When the current user cannot edit the post.
+	 */
+	private function editable_post( array $payload ): \WP_Post {
+		$post = $this->post( $payload );
+		if ( ! current_user_can( 'edit_post', (int) $post->ID ) ) {
+			throw new RuntimeException( 'Current user cannot edit this Gutenberg document.' );
+		}
+		return $post;
 	}
 
 	/**
