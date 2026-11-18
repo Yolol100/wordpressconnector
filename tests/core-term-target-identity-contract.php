@@ -21,6 +21,7 @@ $GLOBALS['term_creates'] = 0;
 $GLOBALS['term_insert_args'] = null;
 $GLOBALS['term_update_args'] = null;
 function sanitize_key($v): string { return strtolower((string) $v); }
+function taxonomy_exists($taxonomy): bool { return 'category' === $taxonomy; }
 function sanitize_text_field($v): string { return (string) $v; }
 function sanitize_title($v): string { return (string) $v; }
 function sanitize_textarea_field($v): string { return (string) $v; }
@@ -123,7 +124,7 @@ if ($GLOBALS['term_deletes'] !== 1
 // Taxonomy parent IDs must be validated before any mutation, including on
 // an actual write. Absent/null parent remains omitted by the existing API.
 $invalid_parents = array(true, false, 101.5, -101, '-1', '', '101wrong',
-    '1.01e2', ' 101', "101\\n", '999999999999999999999999999999', array(101));
+    '1.01e2', ' 101', "101\n", '999999999999999999999999999999', array(101));
 foreach ($invalid_parents as $invalid_parent) {
     foreach (array(true, false) as $dry_run) {
         $updates = $GLOBALS['term_updates'];
