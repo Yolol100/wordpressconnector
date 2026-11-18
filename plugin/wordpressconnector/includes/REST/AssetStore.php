@@ -35,12 +35,16 @@ final class AssetStore {
 		$this->assert_request_id( $requestId );
 		$relativePath = $this->normalize_relative_path( $relativePath );
 
-		$error = isset( $file['error'] ) ? (int) $file['error'] : UPLOAD_ERR_NO_FILE;
+		// PHP upload fields must remain scalar. Never cast nested input into a valid status.
+		if ( ! isset( $file['error'], $file['tmp_name'] ) || ! is_int( $file['error'] ) || ! is_string( $file['tmp_name'] ) ) {
+			throw new RuntimeException( 'Invalid asset upload metadata.' );
+		}
+		$error = $file['error'];
 		if ( UPLOAD_ERR_OK !== $error ) {
 			throw new RuntimeException( 'Asset upload failed with PHP upload error ' . $error . '.' );
 		}
 
-		$tmp_name = isset( $file['tmp_name'] ) ? (string) $file['tmp_name'] : '';
+		$tmp_name = $file['tmp_name'];
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'Asset upload is not a valid HTTP upload.' );
 		}
