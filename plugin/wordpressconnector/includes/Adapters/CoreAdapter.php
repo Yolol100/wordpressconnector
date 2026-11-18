@@ -1898,10 +1898,10 @@ final class CoreAdapter {
 	 *
 	 * @return int Valid parent term ID.
 	 *
-	 * @throws \\RuntimeException When the parent ID is malformed.
+	 * @throws \RuntimeException When the parent ID is malformed.
 	 */
 	private function term_parent_id( $parent ): int {
-		if ( 0 === $parent || ( is_string( $parent ) && 1 === preg_match( '/\\A0+\\z/', $parent ) ) ) {
+		if ( 0 === $parent || ( is_string( $parent ) && 1 === preg_match( '/\A0+\z/', $parent ) ) ) {
 			return 0;
 		}
 		try {
