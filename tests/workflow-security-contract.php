@@ -82,7 +82,7 @@ foreach (array(
     'request_actor="${PR_REQUEST_ACTOR}"',
 ) as $safeRequestMarker) {
     if (false === strpos($request, $safeRequestMarker)) {
-        fwrite(STDERR, "Request workflow lost its safe untrusted-event boundary: {$safeRequestMarker}.\\n");
+        fwrite(STDERR, "Request workflow lost its safe untrusted-event boundary: {$safeRequestMarker}.\n");
         exit(1);
     }
 }
@@ -91,7 +91,7 @@ foreach (array(
     'request_actor="${{ github.event.pull_request.user.login }}"',
 ) as $injectedSource) {
     if (false !== strpos($request, $injectedSource)) {
-        fwrite(STDERR, "PR event metadata is interpolated into Bash source.\\n");
+        fwrite(STDERR, "PR event metadata is interpolated into Bash source.\n");
         exit(1);
     }
 }
