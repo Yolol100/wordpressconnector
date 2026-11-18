@@ -807,8 +807,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termGet( array $payload ): array {
-		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$term     = $this->require_term( $payload, $taxonomy );
+		$taxonomy        = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
+		$term            = $this->require_term( $payload, $taxonomy );
 		$taxonomy_object = get_taxonomy( (string) $term->taxonomy );
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
@@ -891,8 +891,8 @@ final class CoreAdapter {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$term     = $this->require_term( $payload, $taxonomy );
 		$id       = (int) $term->term_id;
-		$before = $this->term_snapshot( $term );
-		$args   = array();
+		$before   = $this->term_snapshot( $term );
+		$args     = array();
 		if ( isset( $payload['name'] ) ) {
 			$args['name'] = sanitize_text_field( (string) $payload['name'] );
 		}
@@ -945,8 +945,8 @@ final class CoreAdapter {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
 		$term     = $this->require_term( $payload, $taxonomy );
 		$id       = (int) $term->term_id;
-		$before = $this->term_snapshot( $term );
-		$result = array(
+		$before   = $this->term_snapshot( $term );
+		$result   = array(
 			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
