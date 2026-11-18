@@ -38,6 +38,33 @@ if (! function_exists('sanitize_file_name')) {
         return $name;
     }
 }
+// Standalone admin-post stubs: tests may invoke the handler, but never write posts.
+if (! function_exists('check_admin_referer')) {
+    function check_admin_referer(string $action): void {
+        if ('wpconnector_import_elementor_json' !== $action) { throw new LogicException('Unexpected admin action.'); }
+    }
+}
+if (! function_exists('wp_unslash')) {
+    function wp_unslash($value) { return $value; }
+}
+if (! function_exists('sanitize_key')) {
+    function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
+}
+if (! function_exists('current_user_can')) {
+    function current_user_can(string $capability): bool { return true; }
+}
+if (! function_exists('esc_html__')) {
+    function esc_html__(string $text, string $domain): string { return $text; }
+}
+if (! function_exists('esc_html')) {
+    function esc_html(string $text): string { return $text; }
+}
+if (! function_exists('wp_die')) {
+    function wp_die($message, $title = '', $args = array()): void {
+        throw new DomainException((string) $message, (int) ($args['response'] ?? 0));
+    }
+}
+
 require_once $path;
 $import = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
 $single = new ReflectionMethod($import, 'uploaded_payload');
@@ -87,5 +114,42 @@ try {
 } finally {
     $_FILES = $originalFiles;
     restore_error_handler();
+}
+// Exact post identity is required before reading uploads or writing Elementor content.
+$oldPost = $_POST ?? array();
+$oldFiles = $_FILES ?? array();
+try {
+    $_FILES = array();
+    $invalidIds = array(
+        array(1), '-1', '1.5', '1e0', '+1', '01', ' 1',
+        "1\n", str_repeat('9', 40),
+    );
+    foreach ($invalidIds as $invalidId) {
+        $_POST = array('post_id' => $invalidId, 'post_type' => 'page');
+        try {
+            $import->handleImport();
+            throw new LogicException('Malformed import target unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'Invalid Elementor JSON import target.' !== $error->getMessage()) {
+                throw new RuntimeException('Malformed target was not rejected before writes: ' . $error->getMessage());
+            }
+        }
+    }
+    // Canonical zero/create and positive/post targets must pass the ID gate,
+    // then stop at the missing upload check (no Elementor write is possible).
+    foreach (array('0', '23') as $validId) {
+        $_POST = array('post_id' => $validId, 'post_type' => 'page');
+        try {
+            $import->handleImport();
+            throw new LogicException('Missing upload unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'No Elementor JSON file was uploaded.' !== $error->getMessage()) {
+                throw new RuntimeException('Valid canonical target rejected too early: ' . $error->getMessage());
+            }
+        }
+    }
+} finally {
+    $_POST = $oldPost;
+    $_FILES = $oldFiles;
 }
 echo "Elementor JSON import contract OK\n";
