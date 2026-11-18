@@ -1,0 +1,149 @@
+<?php
+/**
+ * Permission boundary for Gutenberg block mutations, without WordPress bootstrap.
+ */
+declare(strict_types=1);
+
+class WP_Post {
+	public int $ID;
+	public string $post_type = 'post';
+	public string $post_content;
+
+	public function __construct( int $id, string $content ) {
+		$this->ID = $id;
+		$this->post_content = $content;
+	}
+}
+
+$GLOBALS['gutenberg_contract_posts'] = array(
+	71 => new WP_Post( 71, 'Original A' ),
+	72 => new WP_Post( 72, 'Original B' ),
+);
+$GLOBALS['gutenberg_contract_editable_ids'] = array();
+$GLOBALS['gutenberg_contract_write_calls'] = 0;
+$GLOBALS['gutenberg_contract_checked_ids'] = array();
+
+function get_post( $id ) {
+	return $GLOBALS['gutenberg_contract_posts'][ (int) $id ] ?? null;
+}
+
+function current_user_can( $capability, ...$args ): bool {
+	if ( 'edit_post' !== $capability || count( $args ) !== 1 ) {
+		return false;
+	}
+	$id = (int) $args[0];
+	$GLOBALS['gutenberg_contract_checked_ids'][] = $id;
+	return in_array( $id, $GLOBALS['gutenberg_contract_editable_ids'], true );
+}
+
+function parse_blocks( $content ): array {
+	return array(
+		array(
+			'blockName'    => 'core/paragraph',
+			'attrs'        => array(),
+			'innerHTML'    => (string) $content,
+			'innerContent' => array( (string) $content ),
+			'innerBlocks'  => array(),
+		),
+	);
+}
+
+function serialize_blocks( $blocks ): string {
+	$content = '';
+	foreach ( $blocks as $block ) {
+		$content .= (string) ( $block['innerHTML'] ?? '' );
+	}
+	return $content;
+}
+
+function wp_slash( $value ) {
+	return $value;
+}
+
+function wp_update_post( $fields, $return_error = false ) {
+	++$GLOBALS['gutenberg_contract_write_calls'];
+	$id = (int) $fields['ID'];
+	$GLOBALS['gutenberg_contract_posts'][ $id ]->post_content = (string) $fields['post_content'];
+	return $id;
+}
+
+function is_wp_error( $value ): bool {
+	return false;
+}
+
+$root = dirname( __DIR__ );
+foreach ( array(
+	'Support/Json.php',
+	'Support/Fingerprint.php',
+	'Support/Input.php',
+	'Security/Policy.php',
+	'Adapters/GutenbergAdapter.php',
+) as $source ) {
+	require_once $root . '/plugin/wordpressconnector/includes/' . $source;
+}
+
+$adapter = new \Webactueel\WordPressConnector\Adapters\GutenbergAdapter();
+$replace = array( 'id' => 71, 'content' => 'New A' );
+$patch   = array(
+	'id'            => 71,
+	'path'          => array( 0 ),
+	'replace_block' => array(
+		'blockName'    => 'core/paragraph',
+		'attrs'        => array(),
+		'innerHTML'    => 'New B',
+		'innerContent' => array( 'New B' ),
+		'innerBlocks'  => array(),
+	),
+);
+
+$expect_denied = static function (string $method, array $payload, bool $dry_run) use ( $adapter ): void {
+	$before_calls   = $GLOBALS['gutenberg_contract_write_calls'];
+	$before_content = $GLOBALS['gutenberg_contract_posts'][ (int) $payload['id'] ]->post_content;
+	try {
+		$adapter->$method( $payload, array( 'dry_run' => $dry_run ) );
+	} catch ( RuntimeException $error ) {
+		if ( false === strpos( $error->getMessage(), 'cannot edit' ) ) {
+			throw $error;
+		}
+		if ( $GLOBALS['gutenberg_contract_write_calls'] !== $before_calls
+			|| $GLOBALS['gutenberg_contract_posts'][ (int) $payload['id'] ]->post_content !== $before_content ) {
+			throw new RuntimeException( 'Denied Gutenberg action changed content or called a writer.' );
+		}
+		return;
+	}
+	throw new RuntimeException( 'Gutenberg ' . $method . ' accepted a post without edit_post permission.' );
+};
+
+foreach ( array( true, false ) as $dry_run ) {
+	$expect_denied( 'replace', $replace, $dry_run );
+	$expect_denied( 'patch', $patch, $dry_run );
+}
+
+// Editing a different post never grants permission for this target.
+$GLOBALS['gutenberg_contract_editable_ids'] = array( 72 );
+$expect_denied( 'replace', $replace, false );
+$expect_denied( 'patch', $patch, false );
+$GLOBALS['gutenberg_contract_editable_ids'] = array( 71 );
+
+$dry = $adapter->replace( $replace, array( 'dry_run' => true ) );
+if ( $GLOBALS['gutenberg_contract_write_calls'] !== 0
+	|| $GLOBALS['gutenberg_contract_posts'][71]->post_content !== 'Original A'
+	|| ! isset( $dry['_current_fingerprint'] ) ) {
+	throw new RuntimeException( 'Authorized Gutenberg dry run changed content.' );
+}
+$written = $adapter->replace( $replace, array( 'dry_run' => false ) );
+if ( $GLOBALS['gutenberg_contract_posts'][71]->post_content !== 'New A'
+	|| $GLOBALS['gutenberg_contract_write_calls'] !== 1
+	|| ( $written['_rollback']['payload']['content'] ?? '' ) !== 'Original A' ) {
+	throw new RuntimeException( 'Authorized Gutenberg replace or rollback contract regressed.' );
+}
+$patched = $adapter->patch( $patch, array( 'dry_run' => false ) );
+if ( $GLOBALS['gutenberg_contract_posts'][71]->post_content !== 'New B'
+	|| $GLOBALS['gutenberg_contract_write_calls'] !== 2
+	|| ( $patched['_rollback']['payload']['content'] ?? '' ) !== 'New A' ) {
+	throw new RuntimeException( 'Authorized Gutenberg patch or rollback contract regressed.' );
+}
+if ( ! in_array( 71, $GLOBALS['gutenberg_contract_checked_ids'], true ) ) {
+	throw new RuntimeException( 'Gutenberg permission check did not bind to the target post ID.' );
+}
+echo "Gutenberg post editing permission contract OK\n";
