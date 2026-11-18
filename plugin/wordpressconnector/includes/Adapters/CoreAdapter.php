@@ -1685,7 +1685,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function require_post( array $payload ): \WP_Post {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			// Keep the historical public error contract for missing/invalid IDs.
+			throw new RuntimeException( 'Post not found.' );
+		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Post not found.' );
