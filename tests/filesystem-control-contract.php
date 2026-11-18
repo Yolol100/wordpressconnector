@@ -29,6 +29,21 @@ if (FilesystemPolicy::assertReadableText('wp-admin/includes/file.php') !== 'wp-a
 $adapter = file_get_contents($root . '/plugin/wordpressconnector/includes/Adapters/FilesystemAdapter.php');
 if ($adapter === false) { exit(1); }
 foreach (array('mk_file_folder_manager_action_callback','elFinderConnector','shell_exec(','exec(','passthru(','proc_open(','popen(') as $forbidden) { if (strpos($adapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden filesystem adapter primitive/protocol found: {$forbidden}\n"); exit(1); } }
+// The same WordPress Filesystem backend must read back both successful
+// writes and attempted recovery; raw PHP reads can bypass the write API.
+$writeStart = strpos($adapter, 'public function writeText(');
+$writeEnd = false !== $writeStart ? strpos($adapter, 'public function createText(', $writeStart) : false;
+if (false === $writeStart || false === $writeEnd) {
+    fwrite(STDERR, "Filesystem write method boundaries are missing.\n");
+    exit(1);
+}
+$writeMethod = substr($adapter, $writeStart, $writeEnd - $writeStart);
+if (2 !== substr_count($writeMethod, '$filesystem->get_contents( $absolute )')
+    || false !== strpos($writeMethod, '$readback = file_get_contents( $absolute )')
+    || false !== strpos($writeMethod, '$restored = @file_get_contents( $absolute )')) {
+    fwrite(STDERR, "Filesystem write or rollback bypasses WP_Filesystem readback.\n");
+    exit(1);
+}
 $docs = file_get_contents($root . '/docs/PLUGIN-CONTROL.md'); if ($docs === false) { exit(1); }
 foreach (array('AndrewBaeten.nl','Observed version','observed on 2026-') as $residue) { if (stripos($docs, $residue) !== false) { fwrite(STDERR, "Client/runtime residue remains in generic plugin-control docs: {$residue}\n"); exit(1); } }
 echo "filesystem zero-config control contract OK\n";
