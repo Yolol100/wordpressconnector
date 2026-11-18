@@ -80,4 +80,47 @@ try {
     }
 }
 
+// The real media.assign handler must reject malformed featured-image and
+// product-gallery target IDs before fetching or changing another post.
+function current_user_can($capability, ...$args): bool { return true; }
+function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
+function get_post_thumbnail_id($id): int { return 0; }
+require_once $root . '/plugin/wordpressconnector/includes/Support/Json.php';
+require_once $root . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
+$badTargets = array(true, 102.5, '102junk', '1.02e2', ' 102', -102,
+    0, '0', array(102), '9999999999999999999999999', null);
+foreach (array('featured_image', 'product_gallery') as $targetType) {
+    $expectedError = 'featured_image' === $targetType
+        ? 'You cannot edit the featured-image target.'
+        : 'You cannot edit the product gallery target.';
+    foreach ($badTargets as $badTarget) {
+        $before = count($GLOBALS['media_test_lookups']);
+        try {
+            $adapter->mediaAssign(array(
+                'id' => 101, 'target_type' => $targetType, 'target_id' => $badTarget,
+            ), array('dry_run' => true));
+            throw new RuntimeException('Malformed media assignment target was accepted.');
+        } catch (RuntimeException $error) {
+            if ($expectedError !== $error->getMessage()) { throw $error; }
+        }
+        if (count($GLOBALS['media_test_lookups']) !== $before + 1) {
+            throw new RuntimeException('Malformed media target ID reached get_post().');
+        }
+    }
+}
+// Preserve canonical numeric strings and the connector-owned rollback-only
+// ID=0 for clearing an existing featured image, without any write.
+$preview = $adapter->mediaAssign(array(
+    'id' => 101, 'target_type' => 'featured_image', 'target_id' => '000102',
+), array('dry_run' => true));
+if (($preview['before'] ?? null) !== 0 || ($preview['after'] ?? null) !== 101) {
+    throw new RuntimeException('Valid media target ID compatibility regressed.');
+}
+$rollbackPreview = $adapter->mediaAssign(array(
+    'id' => 0, 'target_type' => 'featured_image', 'target_id' => 102,
+), array('dry_run' => true, 'rollback_mode' => true));
+if (($rollbackPreview['before'] ?? null) !== 0 || ($rollbackPreview['after'] ?? null) !== 0) {
+    throw new RuntimeException('Featured-image rollback zero-ID contract regressed.');
+}
+
 echo "Media assignment, guarded rollback and rename safety contract OK\n";
