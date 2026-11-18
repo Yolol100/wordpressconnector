@@ -843,7 +843,7 @@ final class CoreAdapter {
 			}
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$args['parent'] = (int) $payload['parent'];
+			$args['parent'] = $this->term_parent_id( $payload['parent'] );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -903,7 +903,7 @@ final class CoreAdapter {
 			$args['description'] = sanitize_textarea_field( (string) $payload['description'] );
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$args['parent'] = (int) $payload['parent'];
+			$args['parent'] = $this->term_parent_id( $payload['parent'] );
 		}
 		$result = array(
 			'before'               => $before,
@@ -1887,6 +1887,28 @@ final class CoreAdapter {
 			throw new RuntimeException( 'Term not found.' );
 		}
 		return $term;
+	}
+
+	/**
+	 * Validate an explicit taxonomy parent without converting malformed IDs.
+	 *
+	 * Parent zero selects the taxonomy root; other IDs must be exact integers.
+	 *
+	 * @param mixed $parent Untrusted parent term ID.
+	 *
+	 * @return int Valid parent term ID.
+	 *
+	 * @throws \\RuntimeException When the parent ID is malformed.
+	 */
+	private function term_parent_id( $parent ): int {
+		if ( 0 === $parent || ( is_string( $parent ) && 1 === preg_match( '/\\A0+\\z/', $parent ) ) ) {
+			return 0;
+		}
+		try {
+			return Input::positive_id( $parent );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'parent must be a non-negative term ID.' );
+		}
 	}
 
 	/**
