@@ -1894,18 +1894,18 @@ final class CoreAdapter {
 	 *
 	 * Parent zero selects the taxonomy root; other IDs must be exact integers.
 	 *
-	 * @param mixed $parent Untrusted parent term ID.
+	 * @param mixed $parent_id Untrusted parent term ID.
 	 *
 	 * @return int Valid parent term ID.
 	 *
 	 * @throws \RuntimeException When the parent ID is malformed.
 	 */
-	private function term_parent_id( $parent ): int {
-		if ( 0 === $parent || ( is_string( $parent ) && 1 === preg_match( '/\A0+\z/', $parent ) ) ) {
+	private function term_parent_id( $parent_id ): int {
+		if ( 0 === $parent_id || ( is_string( $parent_id ) && 1 === preg_match( '/\A0+\z/', $parent_id ) ) ) {
 			return 0;
 		}
 		try {
-			return Input::positive_id( $parent );
+			return Input::positive_id( $parent_id );
 		} catch ( RuntimeException $error ) {
 			throw new RuntimeException( 'parent must be a non-negative term ID.' );
 		}
