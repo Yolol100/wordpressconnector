@@ -248,7 +248,7 @@ final class GutenbergAdapter {
 		try {
 			$id = Input::positive_id( $payload['id'] ?? null );
 		} catch ( RuntimeException $error ) {
-			throw new RuntimeException( 'Gutenberg post id must be a positive integer.', 0, $error );
+			throw new RuntimeException( 'Gutenberg post id must be a positive integer.' );
 		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
