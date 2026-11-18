@@ -1595,9 +1595,6 @@ final class CoreAdapter {
 	 */
 	public function commentGet( array $payload ): array {
 		$comment = $this->require_comment( $payload );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
 		return array( 'comment' => $this->comment_snapshot( $comment ) );
 	}
 
@@ -1613,9 +1610,6 @@ final class CoreAdapter {
 	 */
 	public function commentUpdate( array $payload, array $context ): array {
 		$comment = $this->require_comment( $payload );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
 		$before = $this->comment_snapshot( $comment );
 		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
 		$map    = array(
@@ -1670,9 +1664,6 @@ final class CoreAdapter {
 	public function commentTrash( array $payload, array $context ): array {
 		$comment = $this->require_comment( $payload );
 		$id      = (int) $comment->comment_ID;
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
 		$before = $this->comment_snapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
