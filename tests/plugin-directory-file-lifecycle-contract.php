@@ -19,6 +19,11 @@ class WP_Filesystem_Base
     public function delete($path, $recursive = false, $type = false): bool {
         return $recursive ? false : unlink($path);
     }
+    // Mirror WordPress's direct filesystem reader. The adapter must verify
+    // successful writes and recovery using the same backend that wrote them.
+    public function get_contents($path) {
+        return @file_get_contents($path);
+    }
     public function put_contents($path, $content, $mode = false): bool {
         ++$this->writeCalls;
         $behavior = array_shift($this->writeBehaviors);
