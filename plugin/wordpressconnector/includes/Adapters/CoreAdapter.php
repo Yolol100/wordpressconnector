@@ -1594,10 +1594,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentGet( array $payload ): array {
-		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
+		$comment = $this->require_comment( $payload );
 		return array( 'comment' => $this->comment_snapshot( $comment ) );
 	}
 
@@ -1612,13 +1609,10 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentUpdate( array $payload, array $context ): array {
-		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
-		$before = $this->comment_snapshot( $comment );
-		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
-		$map    = array(
+		$comment = $this->require_comment( $payload );
+		$before  = $this->comment_snapshot( $comment );
+		$fields  = array( 'comment_ID' => (int) $comment->comment_ID );
+		$map     = array(
 			'content'      => 'comment_content',
 			'author'       => 'comment_author',
 			'author_email' => 'comment_author_email',
@@ -1668,12 +1662,9 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentTrash( array $payload, array $context ): array {
-		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$comment = get_comment( $id );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
-		$before = $this->comment_snapshot( $comment );
+		$comment = $this->require_comment( $payload );
+		$id      = (int) $comment->comment_ID;
+		$before  = $this->comment_snapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1687,6 +1678,29 @@ final class CoreAdapter {
 			'trashed'            => $id,
 			'rollback_supported' => false,
 		);
+	}
+
+	/**
+	 * Resolve a comment using its exact positive ID; never cast untrusted
+	 * content into the ID of a different comment.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return \WP_Comment Validated comment.
+	 *
+	 * @throws \RuntimeException When the ID is invalid or absent.
+	 */
+	private function require_comment( array $payload ): \WP_Comment {
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
+		$comment = get_comment( $id );
+		if ( ! $comment instanceof \WP_Comment ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
+		return $comment;
 	}
 
 	/**
