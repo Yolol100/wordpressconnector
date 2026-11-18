@@ -134,9 +134,22 @@ final class GutenbergAdapter {
 		$post           = $this->editable_post( $payload );
 		$before_content = (string) $post->post_content;
 		$blocks         = parse_blocks( $before_content );
-		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
-		if ( ! $path ) {
+		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? $payload['path'] : array();
+		if ( ! $path || array_keys( $path ) !== range( 0, count( $path ) - 1 ) ) {
 			throw new RuntimeException( 'gutenberg.patch requires a non-empty numeric payload.path.' );
+		}
+		// Do not silently coerce a malformed index (for example "abc" or
+		// false) into block zero. Canonical digit strings remain supported.
+		foreach ( $path as $depth => $index ) {
+			if ( is_int( $index ) && $index >= 0 ) {
+				continue;
+			}
+			if ( ! is_string( $index ) ||
+				! preg_match( '/\A(?:0|[1-9][0-9]*)\z/D', $index ) ||
+				(string) (int) $index !== $index ) {
+				throw new RuntimeException( 'gutenberg.patch path indexes must be non-negative integers.' );
+			}
+			$path[ $depth ] = (int) $index;
 		}
 
 		$patched      = $blocks;
