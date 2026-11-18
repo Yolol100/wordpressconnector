@@ -1610,9 +1610,9 @@ final class CoreAdapter {
 	 */
 	public function commentUpdate( array $payload, array $context ): array {
 		$comment = $this->require_comment( $payload );
-		$before = $this->comment_snapshot( $comment );
-		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
-		$map    = array(
+		$before  = $this->comment_snapshot( $comment );
+		$fields  = array( 'comment_ID' => (int) $comment->comment_ID );
+		$map     = array(
 			'content'      => 'comment_content',
 			'author'       => 'comment_author',
 			'author_email' => 'comment_author_email',
@@ -1664,7 +1664,7 @@ final class CoreAdapter {
 	public function commentTrash( array $payload, array $context ): array {
 		$comment = $this->require_comment( $payload );
 		$id      = (int) $comment->comment_ID;
-		$before = $this->comment_snapshot( $comment );
+		$before  = $this->comment_snapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
