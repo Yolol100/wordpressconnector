@@ -1689,7 +1689,7 @@ final class CoreAdapter {
 			$id = Input::positive_id( $payload['id'] ?? null );
 		} catch ( RuntimeException $error ) {
 			// Keep the historical public error contract for missing/invalid IDs.
-			throw new RuntimeException( 'Post not found.', 0, $error );
+			throw new RuntimeException( 'Post not found.' );
 		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
