@@ -66,6 +66,37 @@ if ( 101 !== ( $string_id_preview['post_id'] ?? 0 ) || 2 !== ( $string_id_previe
 	throw new RuntimeException( 'Canonical numeric post ID strings stopped resolving.' );
 }
 
+// Metadata IDs must be validated in CoreAdapter itself before any read,
+// update or delete can resolve a different WordPress object by lossy cast.
+$meta_target = new ReflectionMethod($core_adapter, 'meta_target');
+$meta_target->setAccessible(true);
+foreach (array(101, '101', '000101') as $valid_meta_id) {
+    $meta = $meta_target->invoke($core_adapter, array(
+        'object_type' => 'post', 'object_id' => $valid_meta_id, 'key' => 'sample_key',
+    ));
+    if ($meta !== array('post', 101, 'sample_key')) {
+        throw new RuntimeException('Canonical metadata object IDs changed.');
+    }
+}
+foreach (array(true, false, 101.5, -101, 0, '0', '101junk', '1.01e2', ' 101',
+    "101\n", '9999999999999999999999999999', array(101), null) as $invalid_meta_id) {
+    $unsafe = array('object_type' => 'post', 'object_id' => $invalid_meta_id, 'key' => 'sample_key', 'value' => 'unsafe');
+    foreach (array('metaGet', 'metaUpdate', 'metaDelete') as $method) {
+        try {
+            if ('metaGet' === $method) {
+                $core_adapter->$method($unsafe);
+            } else {
+                $core_adapter->$method($unsafe, array('dry_run' => false));
+            }
+            throw new RuntimeException('Malformed metadata object ID unexpectedly passed validation.');
+        } catch (RuntimeException $error) {
+            if ('object_id is required.' !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+    }
+}
+
 $payload = array('id'=>101,'find'=>'Tape Solutions','replace'=>'ISOHULK');
 $dry = $registry->execute('post.literal_replace', $payload, array('dry_run'=>true,'confirm'=>false));
 if (($dry['match_count'] ?? null) !== 2
