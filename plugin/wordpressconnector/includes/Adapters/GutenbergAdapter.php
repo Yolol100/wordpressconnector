@@ -245,7 +245,19 @@ final class GutenbergAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function post( array $payload ): \WP_Post {
-		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
+		$id = $payload['id'] ?? null;
+		// Numeric request fields may arrive as strings. Accept decimal digits
+		// (including harmless leading zeroes), never truncated or coerced IDs.
+		if ( is_string( $id ) && preg_match( '/\A[0-9]+\z/', $id ) ) {
+			$digits = ltrim( $id, '0' );
+			if ( '' !== $digits && (string) (int) $digits === $digits ) {
+				$id = (int) $digits;
+			}
+		}
+		if ( ! is_int( $id ) || $id < 1 ) {
+			throw new RuntimeException( 'Gutenberg post id must be a positive integer.' );
+		}
+		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Post not found.' );
 		}
