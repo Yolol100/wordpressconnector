@@ -985,19 +985,33 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termAssign( array $payload, array $context ): array {
-		$object_id = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$taxonomy  = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$terms     = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
-		$append    = Input::bool( $payload, 'append' );
-		if ( ! $object_id || ! taxonomy_exists( $taxonomy ) ) {
+		try {
+			$object_id = Input::positive_id( $payload['object_id'] ?? null );
+		} catch ( RuntimeException $error ) {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		}
+		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
+		if ( array_key_exists( 'terms', $payload ) && ! is_array( $payload['terms'] ) ) {
+			throw new RuntimeException( 'terms must be an array of positive term IDs.' );
+		}
+		$terms  = isset( $payload['terms'] ) ? $payload['terms'] : array();
+		$append = Input::bool( $payload, 'append' );
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		}
+		$term_ids = array();
+		foreach ( $terms as $key => $term_id ) {
+			try {
+				$term_ids[ $key ] = Input::positive_id( $term_id );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'terms must contain positive term IDs.' );
+			}
 		}
 		$before = wp_get_object_terms( $object_id, $taxonomy, array( 'fields' => 'ids' ) );
 		if ( is_wp_error( $before ) ) {
 			throw new RuntimeException( $before->get_error_message() );
 		}
-		$term_ids = array_map( 'intval', $terms );
-		$result   = array(
+		$result = array(
 			'before'               => $before,
 			'after'                => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $term_ids,
 			'_current_fingerprint' => Fingerprint::make( $before ),
