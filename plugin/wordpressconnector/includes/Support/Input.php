@@ -49,4 +49,27 @@ final class Input {
 
 		return $value;
 	}
+
+	/**
+	 * Resolve a positive numeric identifier without PHP's lossy casts.
+	 * Clients may pass decimal digit strings with harmless leading zeroes.
+	 *
+	 * @param mixed $value Untrusted identifier.
+	 *
+	 * @return int Validated positive ID.
+	 *
+	 * @throws \RuntimeException When the ID is not an exact decimal integer.
+	 */
+	public static function positive_id( $value ): int {
+		if ( is_int( $value ) && $value > 0 ) {
+			return $value;
+		}
+		if ( is_string( $value ) && preg_match( '/\A[0-9]+\z/', $value ) ) {
+			$digits = ltrim( $value, '0' );
+			if ( '' !== $digits && (string) (int) $digits === $digits ) {
+				return (int) $digits;
+			}
+		}
+		throw new RuntimeException( 'Identifier must be a positive integer.' );
+	}
 }
