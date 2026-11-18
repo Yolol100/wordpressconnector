@@ -1838,11 +1838,13 @@ final class CoreAdapter {
 		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) {
 			throw new RuntimeException( 'object_type must be post, term, user or comment.' );
 		}
-		$id  = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$key = $this->require_key( $payload, 'key' );
-		if ( ! $id ) {
+		try {
+			$id = Input::positive_id( $payload['object_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			// Keep the established error wording for invalid or missing targets.
 			throw new RuntimeException( 'object_id is required.' );
 		}
+		$key = $this->require_key( $payload, 'key' );
 		return array( $type, $id, $key );
 	}
 
