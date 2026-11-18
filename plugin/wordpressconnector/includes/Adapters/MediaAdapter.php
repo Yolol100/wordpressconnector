@@ -13,6 +13,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 /**
  * Registers and handles Media connector actions.
@@ -650,7 +651,11 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function attachment_id( array $payload ): int {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Attachment not found.' );
+		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type ) {
 			throw new RuntimeException( 'Attachment not found.' );
