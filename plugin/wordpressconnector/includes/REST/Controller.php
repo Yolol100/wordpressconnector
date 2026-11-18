@@ -238,6 +238,7 @@ final class Controller {
 				in_array(
 					$reason,
 					array(
+						'Invalid asset upload metadata.',
 						'Asset upload is not a valid HTTP upload.',
 						'Asset exceeds the per-file size limit.',
 						'Request asset limit exceeded (max 10 files / 25 MiB total).',
