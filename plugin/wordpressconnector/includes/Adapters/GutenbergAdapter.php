@@ -80,7 +80,10 @@ final class GutenbergAdapter {
 		if ( isset( $payload['blocks'] ) && is_array( $payload['blocks'] ) ) {
 			$after_content = serialize_blocks( $payload['blocks'] );
 		} elseif ( isset( $payload['content'] ) ) {
-			$after_content = (string) $payload['content'];
+			if ( ! is_string( $payload['content'] ) ) {
+				throw new RuntimeException( 'gutenberg.replace requires payload.content to be a string.' );
+			}
+			$after_content = $payload['content'];
 			parse_blocks( $after_content );
 		} else {
 			throw new RuntimeException( 'gutenberg.replace requires payload.blocks or payload.content.' );
@@ -164,11 +167,14 @@ final class GutenbergAdapter {
 				$block['attrs'] = $replace_attrs ? $payload['attrs'] : array_merge( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array(), $payload['attrs'] );
 			}
 			if ( array_key_exists( 'innerHTML', $payload ) ) {
-				$block['innerHTML'] = (string) $payload['innerHTML'];
+				if ( ! is_string( $payload['innerHTML'] ) ) {
+					throw new RuntimeException( 'gutenberg.patch requires payload.innerHTML to be a string.' );
+				}
+				$block['innerHTML'] = $payload['innerHTML'];
 				if ( empty( $block['innerContent'] ) || ! is_array( $block['innerContent'] ) ) {
-					$block['innerContent'] = array( (string) $payload['innerHTML'] );
+					$block['innerContent'] = array( $payload['innerHTML'] );
 				} elseif ( 1 === count( $block['innerContent'] ) && is_string( $block['innerContent'][0] ) ) {
-					$block['innerContent'][0] = (string) $payload['innerHTML'];
+					$block['innerContent'][0] = $payload['innerHTML'];
 				} else {
 					throw new RuntimeException( 'innerHTML patch is ambiguous for blocks with nested innerContent. Use replace_block.' );
 				}
