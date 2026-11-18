@@ -80,7 +80,10 @@ final class GutenbergAdapter {
 		if ( isset( $payload['blocks'] ) && is_array( $payload['blocks'] ) ) {
 			$after_content = serialize_blocks( $payload['blocks'] );
 		} elseif ( isset( $payload['content'] ) ) {
-			$after_content = (string) $payload['content'];
+			if ( ! is_string( $payload['content'] ) ) {
+				throw new RuntimeException( 'gutenberg.replace requires payload.content to be a string.' );
+			}
+			$after_content = $payload['content'];
 			parse_blocks( $after_content );
 		} else {
 			throw new RuntimeException( 'gutenberg.replace requires payload.blocks or payload.content.' );
@@ -134,9 +137,22 @@ final class GutenbergAdapter {
 		$post           = $this->editable_post( $payload );
 		$before_content = (string) $post->post_content;
 		$blocks         = parse_blocks( $before_content );
-		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? array_map( 'intval', $payload['path'] ) : array();
-		if ( ! $path ) {
+		$path           = isset( $payload['path'] ) && is_array( $payload['path'] ) ? $payload['path'] : array();
+		if ( ! $path || array_keys( $path ) !== range( 0, count( $path ) - 1 ) ) {
 			throw new RuntimeException( 'gutenberg.patch requires a non-empty numeric payload.path.' );
+		}
+		// Do not silently coerce a malformed index (for example "abc" or
+		// false) into block zero. Canonical digit strings remain supported.
+		foreach ( $path as $depth => $index ) {
+			if ( is_int( $index ) && $index >= 0 ) {
+				continue;
+			}
+			if ( ! is_string( $index ) ||
+				! preg_match( '/\A(?:0|[1-9][0-9]*)\z/D', $index ) ||
+				(string) (int) $index !== $index ) {
+				throw new RuntimeException( 'gutenberg.patch path indexes must be non-negative integers.' );
+			}
+			$path[ $depth ] = (int) $index;
 		}
 
 		$patched      = $blocks;
@@ -151,11 +167,14 @@ final class GutenbergAdapter {
 				$block['attrs'] = $replace_attrs ? $payload['attrs'] : array_merge( isset( $block['attrs'] ) && is_array( $block['attrs'] ) ? $block['attrs'] : array(), $payload['attrs'] );
 			}
 			if ( array_key_exists( 'innerHTML', $payload ) ) {
-				$block['innerHTML'] = (string) $payload['innerHTML'];
+				if ( ! is_string( $payload['innerHTML'] ) ) {
+					throw new RuntimeException( 'gutenberg.patch requires payload.innerHTML to be a string.' );
+				}
+				$block['innerHTML'] = $payload['innerHTML'];
 				if ( empty( $block['innerContent'] ) || ! is_array( $block['innerContent'] ) ) {
-					$block['innerContent'] = array( (string) $payload['innerHTML'] );
+					$block['innerContent'] = array( $payload['innerHTML'] );
 				} elseif ( 1 === count( $block['innerContent'] ) && is_string( $block['innerContent'][0] ) ) {
-					$block['innerContent'][0] = (string) $payload['innerHTML'];
+					$block['innerContent'][0] = $payload['innerHTML'];
 				} else {
 					throw new RuntimeException( 'innerHTML patch is ambiguous for blocks with nested innerContent. Use replace_block.' );
 				}
