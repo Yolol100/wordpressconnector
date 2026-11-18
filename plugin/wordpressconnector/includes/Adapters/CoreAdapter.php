@@ -808,11 +808,7 @@ final class CoreAdapter {
 	 */
 	public function termGet( array $payload ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy ? $taxonomy : '' );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
+		$term     = $this->require_term( $payload, $taxonomy );
 		$taxonomy_object = get_taxonomy( (string) $term->taxonomy );
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
@@ -893,11 +889,8 @@ final class CoreAdapter {
 	 */
 	public function termUpdate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
+		$term     = $this->require_term( $payload, $taxonomy );
+		$id       = (int) $term->term_id;
 		$before = $this->term_snapshot( $term );
 		$args   = array();
 		if ( isset( $payload['name'] ) ) {
@@ -950,11 +943,8 @@ final class CoreAdapter {
 	 */
 	public function termDelete( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
+		$term     = $this->require_term( $payload, $taxonomy );
+		$id       = (int) $term->term_id;
 		$before = $this->term_snapshot( $term );
 		$result = array(
 			'before'               => $before,
@@ -1874,6 +1864,29 @@ final class CoreAdapter {
 		}
 		$key = $this->require_key( $payload, 'key' );
 		return array( $type, $id, $key );
+	}
+
+	/**
+	 * Resolve an existing taxonomy term without coercing an untrusted ID.
+	 *
+	 * @param array  $payload  Requested term identifier.
+	 * @param string $taxonomy Optional taxonomy constraint.
+	 *
+	 * @return \WP_Term Exact target term.
+	 *
+	 * @throws \RuntimeException When the requested term is invalid or absent.
+	 */
+	private function require_term( array $payload, string $taxonomy ): \WP_Term {
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Term not found.' );
+		}
+		$term = get_term( $id, $taxonomy );
+		if ( ! $term instanceof \WP_Term ) {
+			throw new RuntimeException( 'Term not found.' );
+		}
+		return $term;
 	}
 
 	/**

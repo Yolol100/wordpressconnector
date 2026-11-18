@@ -101,6 +101,7 @@ run_php tests/public-request-server-boundary-contract.php
 run_php tests/public-post-read-contract.php
 run_php tests/public-post-update-target-contract.php
 run_php tests/core-term-assignment-contract.php
+run_php tests/core-term-target-identity-contract.php
 run_php tests/core-comment-identity-contract.php
 run_php tests/public-post-literal-replace-contract.php
 run_php tests/public-site-identity-contract.php
