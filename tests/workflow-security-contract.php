@@ -86,12 +86,42 @@ foreach (array(
         exit(1);
     }
 }
+// Reject attacker-controlled PR expressions anywhere inside a Bash run block,
+// including nested expressions, not just known unsafe assignment templates.
+$hasUntrustedPullRequestInline = static function (string $workflow): bool {
+    $runIndent = null;
+    foreach (preg_split('/\R/', $workflow) as $line) {
+        $indent = strlen($line) - strlen(ltrim($line, " \t"));
+        if (null !== $runIndent && '' !== trim($line) && $indent <= $runIndent) {
+            $runIndent = null;
+        }
+        if (preg_match('/^(\s*)run:\s*[|>][+-]?\s*$/', $line, $matches)) {
+            $runIndent = strlen($matches[1]);
+            continue;
+        }
+        if (null === $runIndent) { continue; }
+        if (! preg_match_all('/\$\{\{\s*([^}]+)\s*\}\}/', $line, $expressions)) { continue; }
+        foreach ($expressions[1] as $expression) {
+            if (false !== stripos($expression, 'github.event.pull_request.')
+                && ! preg_match('/^\s*github\.event\.pull_request\.(?:base|head)\.sha\s*$/i', $expression)) {
+                return true;
+            }
+        }
+    }
+    return false;
+};
+if ($hasUntrustedPullRequestInline($request)) {
+    fwrite(STDERR, "PR event metadata was interpolated into Bash source.\n");
+    exit(1);
+}
 foreach (array(
-    'if [[ "${{ github.event.pull_request.head.repo.full_name }}"',
     'request_actor="${{ github.event.pull_request.user.login }}"',
-) as $injectedSource) {
-    if (false !== strpos($request, $injectedSource)) {
-        fwrite(STDERR, "PR event metadata is interpolated into Bash source.\n");
+    'request_actor="${{ github.event.pull_request.title }}"',
+    'request_actor="${{ fromJSON(toJSON(github.event.pull_request.head.ref)) }}"',
+) as $unsafeInlineExpression) {
+    $tampered = str_replace('request_actor="${PR_REQUEST_ACTOR}"', $unsafeInlineExpression, $request);
+    if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract failed to detect an injected PR expression.\n");
         exit(1);
     }
 }
