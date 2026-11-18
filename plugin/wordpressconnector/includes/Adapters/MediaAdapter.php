@@ -454,7 +454,7 @@ final class MediaAdapter {
 	 */
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$target_id   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$target_id   = 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type
@@ -465,6 +465,20 @@ final class MediaAdapter {
 		if ( ! current_user_can( 'upload_files' )
 			|| ( $attachment_id > 0 && ! current_user_can( 'edit_post', $attachment_id ) ) ) {
 			throw new RuntimeException( 'You cannot assign this media attachment.' );
+		}
+
+		// Only featured images and galleries use a post/product target ID.
+		// Validate it without coercion after the existing media permission check.
+		if ( in_array( $target_type, array( 'featured_image', 'product_gallery' ), true ) ) {
+			try {
+				$target_id = Input::positive_id( $payload['target_id'] ?? null );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException(
+					'featured_image' === $target_type
+						? 'You cannot edit the featured-image target.'
+						: 'You cannot edit the product gallery target.'
+				);
+			}
 		}
 
 		switch ( $target_type ) {
