@@ -77,14 +77,17 @@ register_shutdown_function(static function() use($dir) {
 require_once dirname(__DIR__).'/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 $adapter = new Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
 add_filter('upgrader_pre_download', array($adapter, 'verifiedNativeDownload'), 10, 4);
-$method=new ReflectionMethod($adapter,'installWithCoreBackup');
+$method=new ReflectionMethod($adapter,'install_with_core_backup');
 $method->setAccessible(true);
 $run=static function()use($method,$adapter) {
     return $method->invoke($adapter, '/tmp/test-safe-canonical-package.zip');
 };
 $wasActive=$run();
-$verifiedPath = new ReflectionProperty($adapter, 'verifiedSelfUpdatePackagePath');
+$verifiedPath = new ReflectionProperty($adapter, 'verified_self_update_package_path');
 $verifiedPath->setAccessible(true);
+if (property_exists($adapter, 'verifiedSelfUpdatePackagePath')) {
+    throw new RuntimeException('REST self-update created an undeclared dynamic verification property.');
+}
 if (null !== $verifiedPath->getValue($adapter)) {
     throw new RuntimeException('REST self-update verification state leaked after Core upgrade.');
 }

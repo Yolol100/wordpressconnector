@@ -17,6 +17,29 @@ namespace {
         }
     }
 
+    // Minimal isolated WP_Query fixture: no WordPress installation is loaded.
+    final class WP_Query
+    {
+        public function __construct(array $args) {}
+        public function have_posts(): bool { return true; }
+        public function the_post(): void {
+            if ('the_post' === ($GLOBALS['wpconnector_query_fail_at'] ?? '')) {
+                throw new RuntimeException('Injected query setup error.');
+            }
+            $GLOBALS['post'] = new WP_Post(999, 'page', 'Export subject');
+        }
+        public function reset_postdata(): void {
+            ++$GLOBALS['wpconnector_query_reset_calls'];
+            if ('reset_postdata' === ($GLOBALS['wpconnector_query_fail_at'] ?? '')) {
+                throw new RuntimeException('Injected query reset error.');
+            }
+        }
+    }
+    function setup_postdata(WP_Post $post): void
+    {
+        $GLOBALS['post'] = $post;
+    }
+
     $GLOBALS['wpconnector_test_hooks'] = array();
     $GLOBALS['wpconnector_test_can_edit'] = true;
     $GLOBALS['wpconnector_test_meta'] = array();
@@ -216,7 +239,7 @@ namespace {
     $fallbackActions = $export->rowActions(array(), $fallbackTemplate);
     $assert(isset($fallbackActions['wpconnector_export_elementor_json']), 'Template fallback export action is missing.');
 
-    $reflection = new \ReflectionMethod($export, 'exportPayload');
+    $reflection = new \ReflectionMethod($export, 'export_payload');
     $reflection->setAccessible(true);
     $payload = $reflection->invoke($export, $GLOBALS['wpconnector_test_documents'][10], $page);
 
@@ -239,6 +262,49 @@ namespace {
     } catch (\RuntimeException $error) {
         $assert(false !== strpos($error->getMessage(), 'invalid document content'), 'Unexpected invalid-filter error message.');
     }
+
+    // Regression: the original query and post must survive success and failures
+    // in a WordPress hook, the export callback, or query teardown.
+    $context = new \ReflectionMethod($export, 'with_singular_query');
+    $context->setAccessible(true);
+    $originalPost = $GLOBALS['post'] = new WP_Post(77, 'page', 'Original context');
+    $originalQuery = $GLOBALS['wp_query'] = (object) array('previous' => true);
+    $originalMainQuery = $GLOBALS['wp_the_query'] = (object) array('previous_main' => true);
+    $GLOBALS['wpconnector_query_fail_at'] = '';
+    $GLOBALS['wpconnector_query_reset_calls'] = 0;
+    $value = $context->invoke($export, $page, static function (): string {
+        if (! $GLOBALS['wp_query'] instanceof WP_Query || ! $GLOBALS['post'] instanceof WP_Post
+            || 999 !== $GLOBALS['post']->ID) {
+            throw new RuntimeException('Singular export query context not installed.');
+        }
+        return 'export-readback-ok';
+    });
+    $assert('export-readback-ok' === $value, 'Successful export query lost its callback result.');
+    $assert($GLOBALS['post'] === $originalPost && $GLOBALS['wp_query'] === $originalQuery
+        && $GLOBALS['wp_the_query'] === $originalMainQuery,
+        'Successful export query did not restore the calling WordPress globals.');
+
+    foreach (array('the_post', 'callback', 'reset_postdata') as $failure) {
+        $GLOBALS['wpconnector_query_fail_at'] = $failure;
+        $previousResets = $GLOBALS['wpconnector_query_reset_calls'];
+        try {
+            $context->invoke($export, $page, static function () use ($failure): void {
+                if ('callback' === $failure) {
+                    throw new RuntimeException('Injected export callback error.');
+                }
+            });
+            $assert(false, 'Injected ' . $failure . ' error was ignored.');
+        } catch (RuntimeException $error) {
+            $assert(false !== strpos($error->getMessage(), 'Injected '),
+                'Unexpected singular export failure message for ' . $failure);
+        }
+        $assert($GLOBALS['wpconnector_query_reset_calls'] === $previousResets + 1,
+            'Failed singular export query skipped teardown after ' . $failure);
+        $assert($GLOBALS['post'] === $originalPost && $GLOBALS['wp_query'] === $originalQuery
+            && $GLOBALS['wp_the_query'] === $originalMainQuery,
+            'Failed singular export query leaked WordPress globals after ' . $failure);
+    }
+    $GLOBALS['wpconnector_query_fail_at'] = '';
 
     echo "elementor JSON export runtime contract OK\n";
 }

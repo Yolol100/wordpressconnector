@@ -18,14 +18,14 @@ foreach (array('adapter' => $adapter, 'asset store' => $assetStore, 'bootstrap' 
 
 $adapterRequired = array(
     "'plugin.install_package'",
-    "activate_plugin(\$expectedPlugin, '', \$networkWide, false)",
+    "activate_plugin(\$expected_plugin, '', \$network_wide, false)",
     "Plugin was installed but activation did not persist",
     "'system_update' => true",
     "Policy::assertLocalAssetPath",
     "plugin-packages/",
     "WPCONNECTOR_MAX_PLUGIN_PACKAGE_BYTES",
     "hash_file('sha256'",
-    "hash_equals(\$expectedSha256",
+    "hash_equals(\$expected_sha256",
     "expected_plugin",
     "ZipArchive",
     "MAX_UNCOMPRESSED_BYTES",
@@ -40,12 +40,16 @@ $adapterRequired = array(
     "current_user_can('update_plugins')",
     "current_user_can('activate_plugins')",
     "manage_network_plugins",
-    "\$needsActivation = \$networkWide",
+    "\$needs_activation = \$network_wide",
     "WordPress Connector cannot replace its own active runtime",
     "rollback_supported' => false",
 );
+$compactAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($compactAdapter)) {
+    throw new RuntimeException('Could not normalize plugin-package source.');
+}
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing plugin package contract fragment: {$needle}\n");
         exit(1);
     }
@@ -56,8 +60,10 @@ $assetRequired = array(
     "array('zip' => 'application/zip')",
     "connector plugin/theme package",
 );
+$compactAssetStore = preg_replace('/\\s+/', '', $assetStore);
+if (! is_string($compactAssetStore)) { throw new RuntimeException('Unable to normalize plugin-package asset store.'); }
 foreach ($assetRequired as $needle) {
-    if (strpos($assetStore, $needle) === false) {
+    if (strpos($compactAssetStore, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing plugin-package upload contract: {$needle}\n");
         exit(1);
     }
@@ -73,13 +79,13 @@ if (strpos($plugin, 'new PluginPackageAdapter()') === false) {
 }
 
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_remote_get(', 'wp_remote_request(') as $primitive) {
-    if (strpos($adapter, $primitive) !== false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $primitive)) !== false) {
         fwrite(STDERR, "Forbidden execution/fetch primitive in plugin package adapter: {$primitive}\n");
         exit(1);
     }
 }
 
-if (strpos($adapter, "false !== strpos(\$name, \"\\0\")") === false || strpos($adapter, "preg_match('/[\\x01-\\x1F\\x7F]/', \$name)") === false || strpos($adapter, "'.' === \$segment || '..' === \$segment") === false) {
+if (strpos($compactAdapter, preg_replace('/\\s+/', '', "false !== strpos(\$name, \"\\0\")")) === false || strpos($compactAdapter, preg_replace('/\\s+/', '', "preg_match('/[\\x01-\\x1F\\x7F]/', \$name)")) === false || strpos($compactAdapter, preg_replace('/\\s+/', '', "'.' === \$segment || '..' === \$segment")) === false) {
     fwrite(STDERR, "ZIP path traversal/control-character contract is incomplete.\n");
     exit(1);
 }
@@ -111,13 +117,13 @@ $themeRequired = array(
     "restore_temp_backup",
     "delete_temp_backup",
     "temporary_backup_cleanup_verified",
-    "hash_equals(\$beforeStyleHash",
+    "hash_equals(\$before_style_hash",
     "new \Theme_Upgrader(",
     "wp_clean_themes_cache()",
     "readback_verified' => true",
 );
 foreach ($themeRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($compactAdapter, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing guarded theme package contract: {$needle}\n");
         exit(1);
     }
@@ -139,7 +145,7 @@ foreach (array($publicPolicy, $publicRunner, $publicValidator) as $boundary) {
         exit(1);
     }
 }
-if (strpos($publicRunner, "\$payload['overwrite'] !== false") === false ||
+if (strpos($publicRunner, "false !== \$payload['overwrite']") === false ||
     strpos($publicValidator, "overwrite=false") === false) {
     fwrite(STDERR, "Public theme ZIP overwrite must remain denied.\n");
     exit(1);

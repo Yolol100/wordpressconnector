@@ -100,8 +100,8 @@ foreach (array("plugin-packages/acme.zip\n", "plugin-packages/acme.zip\r", "plug
 }
 
 $assetStore = new AssetStore();
-$normalize = new ReflectionMethod(AssetStore::class, 'normalizeRelativePath');
-$assertRequestId = new ReflectionMethod(AssetStore::class, 'assertRequestId');
+$normalize = new ReflectionMethod(AssetStore::class, 'normalize_relative_path');
+$assertRequestId = new ReflectionMethod(AssetStore::class, 'assert_request_id');
 // PHP < 8.1 requires explicit accessibility for invoking non-public methods in tests.
 $normalize->setAccessible(true);
 $assertRequestId->setAccessible(true);

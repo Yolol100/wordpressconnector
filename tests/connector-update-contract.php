@@ -10,6 +10,9 @@ $readme = file_get_contents($root . '/plugin/wordpressconnector/readme.txt');
 $workflow = file_get_contents($root . '/.github/workflows/release.yml');
 $builder = file_get_contents($root . '/scripts/build-release-package.py');
 $catalog = file_get_contents($root . '/docs/ACTION-CATALOG.md');
+$adapterCompact = is_string($adapter) ? preg_replace('/\\s+/', '', $adapter) : false;
+$bootstrapCompact = is_string($bootstrap) ? preg_replace('/\\s+/', '', $bootstrap) : false;
+if (! is_string($adapterCompact)) { throw new RuntimeException('Could not normalize connector update source.'); }
 
 foreach (array('adapter' => $adapter, 'bootstrap' => $bootstrap, 'plugin' => $plugin, 'readme' => $readme, 'release workflow' => $workflow, 'release builder' => $builder, 'catalog' => $catalog) as $name => $source) {
     if (false === $source) {
@@ -30,7 +33,7 @@ $adapterRequired = array(
     'wp_safe_remote_get',
     'download_url(',
     "hash_file('sha256'",
-    'hash_equals($expectedSha256',
+    'hash_equals($expected_sha256',
     'ZipArchive',
     'getExternalAttributesIndex',
     '0xA000',
@@ -40,14 +43,14 @@ $adapterRequired = array(
     "get_filesystem_method()",
     "restore_verified must be boolean.",
     "'external_restore_required' => false",
-    'restoreAfterReadbackFailure',
+    'restore_after_readback_failure',
     'is_plugin_active(self::PLUGIN_FILE)',
     'activate_plugin(self::PLUGIN_FILE',
     'wp_clean_plugins_cache(true)',
     "rollback_supported' => false",
 );
 foreach ($adapterRequired as $needle) {
-    if (strpos($adapter, $needle) === false) {
+    if (strpos($adapterCompact, preg_replace('/\\s+/', '', $needle)) === false) {
         fwrite(STDERR, "Missing connector update contract fragment: {$needle}\n");
         exit(1);
     }
@@ -58,23 +61,23 @@ if (preg_match('/add_filter\\(\\s*[\\x27\\x22]upgrader_pre_install[\\x27\\x22]\\
 }
 
 foreach (array('eval(', 'shell_exec(', 'passthru(', 'proc_open(', 'popen(', 'wp_remote_get(', 'wp_remote_request(') as $forbidden) {
-    if (strpos($adapter, $forbidden) !== false) {
+    if (strpos($adapterCompact, preg_replace('/\\s+/', '', $forbidden)) !== false) {
         fwrite(STDERR, "Forbidden connector update primitive: {$forbidden}\n");
         exit(1);
     }
 }
 
-if (strpos($adapter, 'Confirmed Connector self-update requires a tested external site restore') !== false ||
-    strpos($adapter, "'external_restore_required' => true") !== false) {
+if (strpos($adapterCompact, 'ConfirmedConnectorself-updaterequiresatestedexternalsiterestore') !== false ||
+    strpos($adapterCompact, "'external_restore_required'=>true") !== false) {
     fwrite(STDERR, "Connector updater still requires externally tested restore confirmation.\n");
     exit(1);
 }
 
-if (substr_count($adapter, "'public_repository_safe' => true") !== 2) {
+if (substr_count($adapterCompact, "'public_repository_safe'=>true") !== 2) {
     fwrite(STDERR, "Only the two canonical connector self-update actions may carry the public_repository_safe marker in ConnectorUpdateAdapter.\n");
     exit(1);
 }
-if (strpos($adapter, "Yolol100/wordpressconnector/releases/download/") === false) {
+if (strpos($adapterCompact, "Yolol100/wordpressconnector/releases/download/") === false) {
     fwrite(STDERR, "Connector updater is not pinned to the canonical GitHub release path.\n");
     exit(1);
 }
@@ -85,7 +88,7 @@ if (strpos($bootstrap, "includes/Adapters/ConnectorUpdateAdapter.php") === false
 if (! preg_match('/^[ \t*#\/]*Version:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $bootstrap, $version) ||
     ! preg_match('/^Stable tag:[ \t]*([0-9]+\.[0-9]+\.[0-9]+)/mi', $readme, $stable) ||
     $version[1] !== $stable[1] ||
-    strpos($bootstrap, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
+    strpos($bootstrapCompact, "WPCONNECTOR_VERSION','" . $version[1] . "'") === false) {
     fwrite(STDERR, "Connector release metadata is not aligned.\n");
     exit(1);
 }

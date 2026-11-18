@@ -28,6 +28,8 @@ function get_post($id) { return isset($GLOBALS['yoast_org_media'][$id]) ? new WP
 function wp_attachment_is_image($id): bool { return isset($GLOBALS['yoast_org_media'][$id]) && 0 === strpos($GLOBALS['yoast_org_media'][$id]['mime'], 'image/'); }
 function wp_get_attachment_metadata($id) { return isset($GLOBALS['yoast_org_media'][$id]) ? $GLOBALS['yoast_org_media'][$id] : false; }
 function wp_get_attachment_url($id) { return $GLOBALS['yoast_org_media'][$id]['url'] ?? false; }
+// The standalone contract does not load WordPress; these ASCII URL fixtures use the same parser semantics.
+function wp_parse_url($url, $component = -1) { return parse_url($url, $component); }
 function esc_url_raw($url): string { return $url; }
 function sanitize_text_field($value): string { return trim(strip_tags((string) $value)); }
 

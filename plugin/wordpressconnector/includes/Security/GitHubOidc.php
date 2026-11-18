@@ -1,386 +1,517 @@
 <?php
+/**
+ * Applies Git Hub Oidc safeguards to connector operations.
+ *
+ * @package WordPressConnector
+ */
 
-declare(strict_types=1);
+declare( strict_types = 1 );
 
 namespace Webactueel\WordPressConnector\Security;
 
 use RuntimeException;
 
-final class GitHubOidc
-{
-    private const HEADER = 'x-webactueel-github-oidc';
-    private const ISSUER = 'https://token.actions.githubusercontent.com';
-    private const JWKS_URL = 'https://token.actions.githubusercontent.com/.well-known/jwks';
-    private const REPOSITORY_OWNER_ID = '22932777';
-    private const TRUSTED_RUNTIMES = array(
-        'Yolol100/wordpressconnector' => array(
-            'repository_id' => '1341990468',
-            'workflow_ref' => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
-            'visibility' => array('public', 'private'),
-        ),
-        'Yolol100/Wordpress' => array(
-            'repository_id' => '933904076',
-            'workflow_ref' => 'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
-            'visibility' => array('private'),
-        ),
-    );
-    private const CLOCK_SKEW = 60;
-    private const MAX_TOKEN_AGE = 600;
-    private const JWKS_TRANSIENT = 'wpconnector_github_oidc_jwks_v1';
-    private const REPLAY_OPTION_PREFIX = 'wpconnector_oidc_replay_';
+/**
+ * Applies Git Hub Oidc safeguards to connector operations.
+ */
+final class GitHubOidc {
+	private const HEADER               = 'x-webactueel-github-oidc';
+	private const ISSUER               = 'https://token.actions.githubusercontent.com';
+	private const JWKS_URL             = 'https://token.actions.githubusercontent.com/.well-known/jwks';
+	private const REPOSITORY_OWNER_ID  = '22932777';
+	private const TRUSTED_RUNTIMES     = array(
+		'Yolol100/wordpressconnector' => array(
+			'repository_id' => '1341990468',
+			'workflow_ref'  => 'Yolol100/wordpressconnector/.github/workflows/wordpress-zero-config-execute.yml@refs/heads/main',
+			'visibility'    => array( 'public', 'private' ),
+		),
+		'Yolol100/Wordpress'          => array(
+			'repository_id' => '933904076',
+			'workflow_ref'  => 'Yolol100/Wordpress/.github/workflows/wordpressconnector-zero-config-execute.yml@refs/heads/main',
+			'visibility'    => array( 'private' ),
+		),
+	);
+	private const CLOCK_SKEW           = 60;
+	private const MAX_TOKEN_AGE        = 600;
+	private const JWKS_TRANSIENT       = 'wpconnector_github_oidc_jwks_v1';
+	private const REPLAY_OPTION_PREFIX = 'wpconnector_oidc_replay_';
 
-    public function authenticate(\WP_REST_Request $request): int
-    {
-        $token = (string) $request->get_header(self::HEADER);
-        if ('' === $token) {
-            return 0;
-        }
-        // Site owners must opt in locally; a third-party plugin installation
-        // never grants this repository WordPress administrator access by itself.
-        if (SitePairing::pairedAdministratorId() <= 0) {
-            throw new RuntimeException('GitHub OIDC is not approved for this WordPress site.');
-        }
-        if (! function_exists('openssl_verify')) {
-            throw new RuntimeException('GitHub OIDC authentication requires the PHP OpenSSL extension.');
-        }
+	/**
+	 * Process the authenticate operation in the GitHubOidc component.
+	 *
+	 * @param \WP_REST_Request $request Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	public function authenticate( \WP_REST_Request $request ): int {
+		$token = (string) $request->get_header( self::HEADER );
+		if ( '' === $token ) {
+			return 0;
+		}
+		// Site owners must opt in locally; a third-party plugin installation
+		// never grants this repository WordPress administrator access by itself.
+		if ( SitePairing::pairedAdministratorId() <= 0 ) {
+			throw new RuntimeException( 'GitHub OIDC is not approved for this WordPress site.' );
+		}
+		if ( ! function_exists( 'openssl_verify' ) ) {
+			throw new RuntimeException( 'GitHub OIDC authentication requires the PHP OpenSSL extension.' );
+		}
 
-        $parts = explode('.', $token);
-        if (3 !== count($parts)) {
-            throw new RuntimeException('GitHub OIDC token is malformed.');
-        }
+		$parts = explode( '.', $token );
+		if ( 3 !== count( $parts ) ) {
+			throw new RuntimeException( 'GitHub OIDC token is malformed.' );
+		}
 
-        $header = $this->decodeJsonSegment($parts[0], 'header');
-        $claims = $this->decodeJsonSegment($parts[1], 'claims');
-        $signature = $this->decodeBase64Url($parts[2], 'signature');
+		$header    = $this->decode_json_segment( $parts[0], 'header' );
+		$claims    = $this->decode_json_segment( $parts[1], 'claims' );
+		$signature = $this->decode_base64_url( $parts[2], 'signature' );
 
-        if ('RS256' !== ($header['alg'] ?? null)) {
-            throw new RuntimeException('GitHub OIDC token must use RS256.');
-        }
-        $kid = isset($header['kid']) && is_string($header['kid']) ? $header['kid'] : '';
-        if ('' === $kid || strlen($kid) > 200) {
-            throw new RuntimeException('GitHub OIDC token has an invalid key id.');
-        }
+		if ( 'RS256' !== ( $header['alg'] ?? null ) ) {
+			throw new RuntimeException( 'GitHub OIDC token must use RS256.' );
+		}
+		$kid = isset( $header['kid'] ) && is_string( $header['kid'] ) ? $header['kid'] : '';
+		if ( '' === $kid || strlen( $kid ) > 200 ) {
+			throw new RuntimeException( 'GitHub OIDC token has an invalid key id.' );
+		}
 
-        $publicKey = $this->publicKey($kid);
-        $verified = openssl_verify($parts[0] . '.' . $parts[1], $signature, $publicKey, OPENSSL_ALGO_SHA256);
-        if (1 !== $verified) {
-            throw new RuntimeException('GitHub OIDC signature verification failed.');
-        }
+		$public_key = $this->public_key( $kid );
+		$verified   = openssl_verify( $parts[0] . '.' . $parts[1], $signature, $public_key, OPENSSL_ALGO_SHA256 );
+		if ( 1 !== $verified ) {
+			throw new RuntimeException( 'GitHub OIDC signature verification failed.' );
+		}
 
-        $this->assertClaims($claims);
-        $this->assertNotReplayed($claims);
+		$this->assert_claims( $claims );
+		$this->assert_not_replayed( $claims );
 
-        Policy::setPublicRepositoryContext('public' === (string) $claims['repository_visibility']);
-        return $this->administratorId($claims);
-    }
+		Policy::setPublicRepositoryContext( 'public' === (string) $claims['repository_visibility'] );
+		return $this->administrator_id();
+	}
 
-    public static function expectedAudience(): string
-    {
-        return rtrim((string) rest_url('webactueel-wordpress-connector/v1'), '/');
-    }
+	/**
+	 * Process the expected audience operation in the GitHubOidc component.
+	 *
+	 * @return string Operation result.
+	 */
+	public static function expectedAudience(): string {
+		return rtrim( (string) rest_url( 'webactueel-wordpress-connector/v1' ), '/' );
+	}
 
-    private function assertClaims(array $claims): void
-    {
-        $now = time();
-        if (self::ISSUER !== ($claims['iss'] ?? null)) {
-            throw new RuntimeException('GitHub OIDC issuer is invalid.');
-        }
-        if (! $this->audienceMatches($claims['aud'] ?? null, self::expectedAudience())) {
-            throw new RuntimeException('GitHub OIDC audience is invalid for this WordPress site.');
-        }
+	/**
+	 * Ensure claims for the GitHubOidc component.
+	 *
+	 * @param array $claims Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function assert_claims( array $claims ): void {
+		$now = time();
+		if ( self::ISSUER !== ( $claims['iss'] ?? null ) ) {
+			throw new RuntimeException( 'GitHub OIDC issuer is invalid.' );
+		}
+		if ( ! $this->audience_matches( $claims['aud'] ?? null, self::expectedAudience() ) ) {
+			throw new RuntimeException( 'GitHub OIDC audience is invalid for this WordPress site.' );
+		}
 
-        $exp = $this->integerClaim($claims, 'exp');
-        $iat = $this->integerClaim($claims, 'iat');
-        $nbf = array_key_exists('nbf', $claims) ? $this->integerClaim($claims, 'nbf') : $iat;
-        if ($exp < $now - self::CLOCK_SKEW || $nbf > $now + self::CLOCK_SKEW || $iat > $now + self::CLOCK_SKEW) {
-            throw new RuntimeException('GitHub OIDC token is outside its valid time window.');
-        }
-        if ($iat < $now - self::MAX_TOKEN_AGE || $exp <= $iat || $exp - $iat > self::MAX_TOKEN_AGE + self::CLOCK_SKEW) {
-            throw new RuntimeException('GitHub OIDC token is stale or has an invalid lifetime.');
-        }
+		$exp = $this->integer_claim( $claims, 'exp' );
+		$iat = $this->integer_claim( $claims, 'iat' );
+		$nbf = array_key_exists( 'nbf', $claims ) ? $this->integer_claim( $claims, 'nbf' ) : $iat;
+		if ( $exp < $now - self::CLOCK_SKEW || $nbf > $now + self::CLOCK_SKEW || $iat > $now + self::CLOCK_SKEW ) {
+			throw new RuntimeException( 'GitHub OIDC token is outside its valid time window.' );
+		}
+		if ( $iat < $now - self::MAX_TOKEN_AGE || $exp <= $iat || $exp - $iat > self::MAX_TOKEN_AGE + self::CLOCK_SKEW ) {
+			throw new RuntimeException( 'GitHub OIDC token is stale or has an invalid lifetime.' );
+		}
 
-        $repository = isset($claims['repository']) && is_string($claims['repository'])
-            ? $claims['repository']
-            : '';
-        if (! isset(self::TRUSTED_RUNTIMES[$repository])) {
-            throw new RuntimeException('GitHub OIDC repository is not trusted.');
-        }
-        $runtime = self::TRUSTED_RUNTIMES[$repository];
+		$repository = isset( $claims['repository'] ) && is_string( $claims['repository'] )
+			? $claims['repository']
+			: '';
+		if ( ! isset( self::TRUSTED_RUNTIMES[ $repository ] ) ) {
+			throw new RuntimeException( 'GitHub OIDC repository is not trusted.' );
+		}
+		$runtime = self::TRUSTED_RUNTIMES[ $repository ];
 
-        $expected = array(
-            'repository_id' => (string) $runtime['repository_id'],
-            'repository_owner_id' => self::REPOSITORY_OWNER_ID,
-            'ref' => 'refs/heads/main',
-            'workflow_ref' => (string) $runtime['workflow_ref'],
-            'event_name' => 'workflow_dispatch',
-            'runner_environment' => 'github-hosted',
-        );
-        foreach ($expected as $name => $value) {
-            if (! isset($claims[$name]) || ! is_scalar($claims[$name]) || ! hash_equals($value, (string) $claims[$name])) {
-                throw new RuntimeException('GitHub OIDC claim is not trusted: ' . $name . '.');
-            }
-        }
+		$expected = array(
+			'repository_id'       => (string) $runtime['repository_id'],
+			'repository_owner_id' => self::REPOSITORY_OWNER_ID,
+			'ref'                 => 'refs/heads/main',
+			'workflow_ref'        => (string) $runtime['workflow_ref'],
+			'event_name'          => 'workflow_dispatch',
+			'runner_environment'  => 'github-hosted',
+		);
+		foreach ( $expected as $name => $value ) {
+			if ( ! isset( $claims[ $name ] ) || ! is_scalar( $claims[ $name ] ) || ! hash_equals( $value, (string) $claims[ $name ] ) ) {
+				throw new RuntimeException( 'GitHub OIDC claim is not trusted: ' . $name . '.' );
+			}
+		}
 
-        $visibility = isset($claims['repository_visibility']) && is_string($claims['repository_visibility'])
-            ? $claims['repository_visibility']
-            : '';
-        if (! in_array($visibility, (array) $runtime['visibility'], true)) {
-            throw new RuntimeException('GitHub OIDC repository visibility is not trusted for this runtime.');
-        }
-        if (! isset($claims['jti']) || ! is_string($claims['jti']) || '' === $claims['jti'] || strlen($claims['jti']) > 200) {
-            throw new RuntimeException('GitHub OIDC token identifier is invalid.');
-        }
-    }
+		$visibility = isset( $claims['repository_visibility'] ) && is_string( $claims['repository_visibility'] )
+			? $claims['repository_visibility']
+			: '';
+		if ( ! in_array( $visibility, (array) $runtime['visibility'], true ) ) {
+			throw new RuntimeException( 'GitHub OIDC repository visibility is not trusted for this runtime.' );
+		}
+		if ( ! isset( $claims['jti'] ) || ! is_string( $claims['jti'] ) || '' === $claims['jti'] || strlen( $claims['jti'] ) > 200 ) {
+			throw new RuntimeException( 'GitHub OIDC token identifier is invalid.' );
+		}
+	}
 
-    private function assertNotReplayed(array $claims): void
-    {
-        $hash = hash('sha256', (string) $claims['jti']);
-        // Respect tokens consumed before upgrading from transient-based replay
-        // protection. The new claim itself must not depend on cache semantics.
-        if (false !== get_transient('wpconnector_oidc_jti_' . $hash)) {
-            throw new RuntimeException('GitHub OIDC token was already used.');
-        }
-        $key = self::REPLAY_OPTION_PREFIX . $hash;
-        $record = array('created_at' => time(), 'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW);
-        // add_option() uses the uniquely indexed option_name in WordPress's
-        // database: simultaneous requests cannot consume the same signed JWT.
-        if (! add_option($key, $record, '', false)) {
-            if (false !== get_option($key, false)) {
-                throw new RuntimeException('GitHub OIDC token was already used.');
-            }
-            throw new RuntimeException('GitHub OIDC replay protection storage unavailable.');
-        }
-        if (get_option($key, null) !== $record) {
-            throw new RuntimeException('GitHub OIDC replay protection readback failed.');
-        }
-    }
+	/**
+	 * Ensure not replayed for the GitHubOidc component.
+	 *
+	 * @param array $claims Input for the operation.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function assert_not_replayed( array $claims ): void {
+		$hash = hash( 'sha256', (string) $claims['jti'] );
+		// Respect tokens consumed before upgrading from transient-based replay
+		// protection. The new claim itself must not depend on cache semantics.
+		if ( false !== get_transient( 'wpconnector_oidc_jti_' . $hash ) ) {
+			throw new RuntimeException( 'GitHub OIDC token was already used.' );
+		}
+		$key    = self::REPLAY_OPTION_PREFIX . $hash;
+		$record = array(
+			'created_at' => time(),
+			'expires_at' => (int) $claims['exp'] + self::CLOCK_SKEW,
+		);
+		// add_option() uses the uniquely indexed option_name in WordPress's
+		// database: simultaneous requests cannot consume the same signed JWT.
+		if ( ! add_option( $key, $record, '', false ) ) {
+			if ( false !== get_option( $key, false ) ) {
+				throw new RuntimeException( 'GitHub OIDC token was already used.' );
+			}
+			throw new RuntimeException( 'GitHub OIDC replay protection storage unavailable.' );
+		}
+		if ( get_option( $key, null ) !== $record ) {
+			throw new RuntimeException( 'GitHub OIDC replay protection readback failed.' );
+		}
+	}
 
-    /**
-     * Bounded cleanup for the privileged connector.cleanup action.
-     * Only claims older than both the retention window and their expiry
-     * are removed. Never delete a recently issued or malformed claim.
-     */
-    public static function cleanupReplayClaims(int $olderThanSeconds): int
-    {
-        global $wpdb;
-        if (! is_object($wpdb) || ! method_exists($wpdb, 'prepare') || ! method_exists($wpdb, 'get_results')
-            || ! method_exists($wpdb, 'esc_like')) {
-            throw new RuntimeException('OIDC replay cleanup requires WordPress options storage.');
-        }
-        $cutoff = time() - max(self::MAX_TOKEN_AGE + 2 * self::CLOCK_SKEW, $olderThanSeconds);
-        $like = $wpdb->esc_like(self::REPLAY_OPTION_PREFIX) . '%';
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded replay-claim cleanup needs a fresh prepared options read; do not cache security state.
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
-            $like,
-            500
-        ));
-        if (! is_array($rows)) {
-            throw new RuntimeException('OIDC replay cleanup could not inspect WordPress options storage.');
-        }
-        $deleted = 0;
-        foreach ($rows as $row) {
-            if (! is_object($row) || ! is_string($row->option_name ?? null)
-                || 0 !== strpos($row->option_name, self::REPLAY_OPTION_PREFIX)) {
-                continue;
-            }
-            $record = maybe_unserialize($row->option_value ?? null);
-            if (! is_array($record) || ! is_int($record['created_at'] ?? null)
-                || ! is_int($record['expires_at'] ?? null)
-                || $record['created_at'] >= $cutoff || $record['expires_at'] >= $cutoff) {
-                continue;
-            }
-            delete_option($row->option_name);
-            if (null === get_option($row->option_name, null)) {
-                ++$deleted;
-            }
-        }
-        return $deleted;
-    }
+	/**
+	 * Bounded cleanup for the privileged connector.cleanup action.
+	 * Only claims older than both the retention window and their expiry
+	 * are removed. Never delete a recently issued or malformed claim.
+	 *
+	 * @param int $olderThanSeconds Minimum age in seconds.
+	 *
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
+	 */
+	public static function cleanupReplayClaims( int $olderThanSeconds ): int {
+		global $wpdb;
+		if ( ! is_object( $wpdb ) || ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_results' )
+		|| ! method_exists( $wpdb, 'esc_like' ) ) {
+			throw new RuntimeException( 'OIDC replay cleanup requires WordPress options storage.' );
+		}
+		$cutoff = time() - max( self::MAX_TOKEN_AGE + 2 * self::CLOCK_SKEW, $olderThanSeconds );
+		$like   = $wpdb->esc_like( self::REPLAY_OPTION_PREFIX ) . '%';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded replay-claim cleanup needs a fresh prepared options read; do not cache security state.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT %d",
+				$like,
+				500
+			)
+		);
+		if ( ! is_array( $rows ) ) {
+			throw new RuntimeException( 'OIDC replay cleanup could not inspect WordPress options storage.' );
+		}
+		$deleted = 0;
+		foreach ( $rows as $row ) {
+			if ( ! is_object( $row ) || ! is_string( $row->option_name ?? null )
+			|| 0 !== strpos( $row->option_name, self::REPLAY_OPTION_PREFIX ) ) {
+				continue;
+			}
+			$record = maybe_unserialize( $row->option_value ?? null );
+			if ( ! is_array( $record ) || ! is_int( $record['created_at'] ?? null )
+			|| ! is_int( $record['expires_at'] ?? null )
+			|| $record['created_at'] >= $cutoff || $record['expires_at'] >= $cutoff ) {
+				continue;
+			}
+			delete_option( $row->option_name );
+			if ( null === get_option( $row->option_name, null ) ) {
+				++$deleted;
+			}
+		}
+		return $deleted;
+	}
 
-    private function administratorId(array $claims): int
-    {
-        // The WordPress administrator who approved this exact site is the
-        // executing actor; never impersonate an arbitrary first admin user.
-        $id = SitePairing::pairedAdministratorId();
-        if ($id <= 0) {
-            throw new RuntimeException('GitHub OIDC site approval is unavailable or was revoked.');
-        }
-        return $id;
-    }
+	/**
+	 * Process the administrator id operation in the GitHubOidc component.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function administrator_id(): int {
+		// The WordPress administrator who approved this exact site is the
+		// executing actor; never impersonate an arbitrary first admin user.
+		$id = SitePairing::pairedAdministratorId();
+		if ( $id <= 0 ) {
+			throw new RuntimeException( 'GitHub OIDC site approval is unavailable or was revoked.' );
+		}
+		return $id;
+	}
 
-    private function publicKey(string $kid)
-    {
-        $keys = $this->jwks(false);
-        $key = $this->findKey($keys, $kid);
-        if (null === $key) {
-            $keys = $this->jwks(true);
-            $key = $this->findKey($keys, $kid);
-        }
-        if (null === $key || 'RSA' !== ($key['kty'] ?? null) || 'RS256' !== ($key['alg'] ?? null)) {
-            throw new RuntimeException('GitHub OIDC signing key is unavailable.');
-        }
+	/**
+	 * Process the public key operation in the GitHubOidc component.
+	 *
+	 * @param string $kid Input for the operation.
+	 *
+	 * @return mixed Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function public_key( string $kid ) {
+		$keys = $this->jwks( false );
+		$key  = $this->find_key( $keys, $kid );
+		if ( null === $key ) {
+			$keys = $this->jwks( true );
+			$key  = $this->find_key( $keys, $kid );
+		}
+		if ( null === $key || 'RSA' !== ( $key['kty'] ?? null ) || 'RS256' !== ( $key['alg'] ?? null ) ) {
+			throw new RuntimeException( 'GitHub OIDC signing key is unavailable.' );
+		}
 
-        $pem = $this->keyPem($key);
-        $publicKey = openssl_pkey_get_public($pem);
-        if (false === $publicKey) {
-            throw new RuntimeException('GitHub OIDC public key could not be loaded.');
-        }
-        return $publicKey;
-    }
+		$pem        = $this->key_pem( $key );
+		$public_key = openssl_pkey_get_public( $pem );
+		if ( false === $public_key ) {
+			throw new RuntimeException( 'GitHub OIDC public key could not be loaded.' );
+		}
+		return $public_key;
+	}
 
-    private function jwks(bool $forceRefresh): array
-    {
-        if (! $forceRefresh) {
-            $cached = get_transient(self::JWKS_TRANSIENT);
-            if (is_array($cached) && isset($cached['keys']) && is_array($cached['keys'])) {
-                return $cached['keys'];
-            }
-        }
+	/**
+	 * Process the jwks operation in the GitHubOidc component.
+	 *
+	 * @param bool $force_refresh Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function jwks( bool $force_refresh ): array {
+		if ( ! $force_refresh ) {
+			$cached = get_transient( self::JWKS_TRANSIENT );
+			if ( is_array( $cached ) && isset( $cached['keys'] ) && is_array( $cached['keys'] ) ) {
+				return $cached['keys'];
+			}
+		}
 
-        $response = wp_safe_remote_get(self::JWKS_URL, array(
-            'timeout' => 5,
-            'redirection' => 0,
-            'sslverify' => true,
-            'headers' => array('Accept' => 'application/json'),
-        ));
-        if (is_wp_error($response) || 200 !== (int) wp_remote_retrieve_response_code($response)) {
-            throw new RuntimeException('GitHub OIDC signing keys could not be fetched.');
-        }
-        $body = (string) wp_remote_retrieve_body($response);
-        if ('' === $body || strlen($body) > 262144) {
-            throw new RuntimeException('GitHub OIDC signing-key response is empty or too large.');
-        }
-        try {
-            $decoded = json_decode($body, true, 32, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $error) {
-            throw new RuntimeException('GitHub OIDC signing-key response is invalid JSON.');
-        }
-        if (! is_array($decoded) || ! isset($decoded['keys']) || ! is_array($decoded['keys']) || count($decoded['keys']) > 20) {
-            throw new RuntimeException('GitHub OIDC signing-key response has an invalid shape.');
-        }
-        set_transient(self::JWKS_TRANSIENT, $decoded, 6 * HOUR_IN_SECONDS);
-        return $decoded['keys'];
-    }
+		$response = wp_safe_remote_get(
+			self::JWKS_URL,
+			array(
+				'timeout'     => 5,
+				'redirection' => 0,
+				'sslverify'   => true,
+				'headers'     => array( 'Accept' => 'application/json' ),
+			)
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			throw new RuntimeException( 'GitHub OIDC signing keys could not be fetched.' );
+		}
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( '' === $body || strlen( $body ) > 262144 ) {
+			throw new RuntimeException( 'GitHub OIDC signing-key response is empty or too large.' );
+		}
+		try {
+			$decoded = json_decode( $body, true, 32, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException $error ) {
+			throw new RuntimeException( 'GitHub OIDC signing-key response is invalid JSON.' );
+		}
+		if ( ! is_array( $decoded ) || ! isset( $decoded['keys'] ) || ! is_array( $decoded['keys'] ) || count( $decoded['keys'] ) > 20 ) {
+			throw new RuntimeException( 'GitHub OIDC signing-key response has an invalid shape.' );
+		}
+		set_transient( self::JWKS_TRANSIENT, $decoded, 6 * HOUR_IN_SECONDS );
+		return $decoded['keys'];
+	}
 
-    private function findKey(array $keys, string $kid): ?array
-    {
-        foreach ($keys as $key) {
-            if (! is_array($key) || ! isset($key['kid']) || ! is_string($key['kid'])) {
-                continue;
-            }
-            if (hash_equals($kid, $key['kid'])) {
-                return $key;
-            }
-        }
-        return null;
-    }
+	/**
+	 * Find key for the GitHubOidc component.
+	 *
+	 * @param array  $keys Input for the operation.
+	 * @param string $kid Input for the operation.
+	 *
+	 * @return array|null Operation result.
+	 */
+	private function find_key( array $keys, string $kid ): ?array {
+		foreach ( $keys as $key ) {
+			if ( ! is_array( $key ) || ! isset( $key['kid'] ) || ! is_string( $key['kid'] ) ) {
+				continue;
+			}
+			if ( hash_equals( $kid, $key['kid'] ) ) {
+				return $key;
+			}
+		}
+		return null;
+	}
 
-    private function keyPem(array $key): string
-    {
-        if (isset($key['x5c'][0]) && is_string($key['x5c'][0]) && '' !== $key['x5c'][0]) {
-            return "-----BEGIN CERTIFICATE-----\n" . chunk_split($key['x5c'][0], 64, "\n") . "-----END CERTIFICATE-----\n";
-        }
-        if (! isset($key['n'], $key['e']) || ! is_string($key['n']) || ! is_string($key['e'])) {
-            throw new RuntimeException('GitHub OIDC RSA signing key is incomplete.');
-        }
-        $modulus = $this->decodeBase64Url($key['n'], 'RSA modulus');
-        $exponent = $this->decodeBase64Url($key['e'], 'RSA exponent');
-        $rsa = $this->asn1Sequence($this->asn1Integer($modulus) . $this->asn1Integer($exponent));
-        $algorithm = hex2bin('300d06092a864886f70d0101010500');
-        if (false === $algorithm) {
-            throw new RuntimeException('Could not construct RSA algorithm identifier.');
-        }
-        $bitString = "\x03" . $this->asn1Length(strlen($rsa) + 1) . "\x00" . $rsa;
-        $spki = $this->asn1Sequence($algorithm . $bitString);
-        return "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($spki), 64, "\n") . "-----END PUBLIC KEY-----\n";
-    }
+	/**
+	 * Process the key pem operation in the GitHubOidc component.
+	 *
+	 * @param array $key Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function key_pem( array $key ): string {
+		if ( isset( $key['x5c'][0] ) && is_string( $key['x5c'][0] ) && '' !== $key['x5c'][0] ) {
+			return "-----BEGIN CERTIFICATE-----\n" . chunk_split( $key['x5c'][0], 64, "\n" ) . "-----END CERTIFICATE-----\n";
+		}
+		if ( ! isset( $key['n'], $key['e'] ) || ! is_string( $key['n'] ) || ! is_string( $key['e'] ) ) {
+			throw new RuntimeException( 'GitHub OIDC RSA signing key is incomplete.' );
+		}
+		$modulus   = $this->decode_base64_url( $key['n'], 'RSA modulus' );
+		$exponent  = $this->decode_base64_url( $key['e'], 'RSA exponent' );
+		$rsa       = $this->asn1_sequence( $this->asn1_integer( $modulus ) . $this->asn1_integer( $exponent ) );
+		$algorithm = hex2bin( '300d06092a864886f70d0101010500' );
+		if ( false === $algorithm ) {
+			throw new RuntimeException( 'Could not construct RSA algorithm identifier.' );
+		}
+		$bit_string = "\x03" . $this->asn1_length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
+		$spki       = $this->asn1_sequence( $algorithm . $bit_string );
+		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
+	}
 
-    private function asn1Integer(string $bytes): string
-    {
-        $bytes = ltrim($bytes, "\x00");
-        if ('' === $bytes) {
-            $bytes = "\x00";
-        }
-        if ((ord($bytes[0]) & 0x80) !== 0) {
-            $bytes = "\x00" . $bytes;
-        }
-        return "\x02" . $this->asn1Length(strlen($bytes)) . $bytes;
-    }
+	/**
+	 * Process the asn1 integer operation in the GitHubOidc component.
+	 *
+	 * @param string $bytes Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
+	private function asn1_integer( string $bytes ): string {
+		$bytes = ltrim( $bytes, "\x00" );
+		if ( '' === $bytes ) {
+			$bytes = "\x00";
+		}
+		if ( ( ord( $bytes[0] ) & 0x80 ) !== 0 ) {
+			$bytes = "\x00" . $bytes;
+		}
+		return "\x02" . $this->asn1_length( strlen( $bytes ) ) . $bytes;
+	}
 
-    private function asn1Sequence(string $bytes): string
-    {
-        return "\x30" . $this->asn1Length(strlen($bytes)) . $bytes;
-    }
+	/**
+	 * Process the asn1 sequence operation in the GitHubOidc component.
+	 *
+	 * @param string $bytes Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
+	private function asn1_sequence( string $bytes ): string {
+		return "\x30" . $this->asn1_length( strlen( $bytes ) ) . $bytes;
+	}
 
-    private function asn1Length(int $length): string
-    {
-        if ($length < 0x80) {
-            return chr($length);
-        }
-        $encoded = '';
-        while ($length > 0) {
-            $encoded = chr($length & 0xff) . $encoded;
-            $length >>= 8;
-        }
-        return chr(0x80 | strlen($encoded)) . $encoded;
-    }
+	/**
+	 * Process the asn1 length operation in the GitHubOidc component.
+	 *
+	 * @param int $length Input for the operation.
+	 *
+	 * @return string Operation result.
+	 */
+	private function asn1_length( int $length ): string {
+		if ( $length < 0x80 ) {
+			return chr( $length );
+		}
+		$encoded = '';
+		while ( $length > 0 ) {
+			$encoded  = chr( $length & 0xff ) . $encoded;
+			$length >>= 8;
+		}
+		return chr( 0x80 | strlen( $encoded ) ) . $encoded;
+	}
 
-    private function decodeJsonSegment(string $segment, string $label): array
-    {
-        $json = $this->decodeBase64Url($segment, $label);
-        try {
-            $decoded = json_decode($json, true, 32, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $error) {
-            throw new RuntimeException('GitHub OIDC ' . $label . ' is invalid JSON.');
-        }
-        if (! is_array($decoded)) {
-            throw new RuntimeException('GitHub OIDC ' . $label . ' must be an object.');
-        }
-        return $decoded;
-    }
+	/**
+	 * Process the decode json segment operation in the GitHubOidc component.
+	 *
+	 * @param string $segment Input for the operation.
+	 * @param string $label Input for the operation.
+	 *
+	 * @return array Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function decode_json_segment( string $segment, string $label ): array {
+		$json = $this->decode_base64_url( $segment, $label );
+		try {
+			$decoded = json_decode( $json, true, 32, JSON_THROW_ON_ERROR );
+		} catch ( \JsonException $error ) {
+			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is invalid JSON.' );
+		}
+		if ( ! is_array( $decoded ) ) {
+			throw new RuntimeException( 'GitHub OIDC ' . $label . ' must be an object.' );
+		}
+		return $decoded;
+	}
 
-    private function decodeBase64Url(string $value, string $label): string
-    {
-        if ('' === $value || false !== strpos($value, '=') || ! preg_match('/^[A-Za-z0-9_-]+\z/', $value)) {
-            throw new RuntimeException('GitHub OIDC ' . $label . ' is not valid base64url.');
-        }
-        $remainder = strlen($value) % 4;
-        if (1 === $remainder) {
-            throw new RuntimeException('GitHub OIDC ' . $label . ' has invalid base64url length.');
-        }
-        $padded = strtr($value, '-_', '+/');
-        if ($remainder > 0) {
-            $padded .= str_repeat('=', 4 - $remainder);
-        }
-        $decoded = base64_decode($padded, true);
-        if (false === $decoded) {
-            throw new RuntimeException('GitHub OIDC ' . $label . ' could not be decoded.');
-        }
-        return $decoded;
-    }
+	/**
+	 * Process the decode base64 url operation in the GitHubOidc component.
+	 *
+	 * @param string $value Input for the operation.
+	 * @param string $label Input for the operation.
+	 *
+	 * @return string Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function decode_base64_url( string $value, string $label ): string {
+		if ( '' === $value || false !== strpos( $value, '=' ) || ! preg_match( '/^[A-Za-z0-9_-]+\z/', $value ) ) {
+			throw new RuntimeException( 'GitHub OIDC ' . $label . ' is not valid base64url.' );
+		}
+		$remainder = strlen( $value ) % 4;
+		if ( 1 === $remainder ) {
+			throw new RuntimeException( 'GitHub OIDC ' . $label . ' has invalid base64url length.' );
+		}
+		$padded = strtr( $value, '-_', '+/' );
+		if ( $remainder > 0 ) {
+			$padded .= str_repeat( '=', 4 - $remainder );
+		}
+		$decoded = base64_decode( $padded, true );
+		if ( false === $decoded ) {
+			throw new RuntimeException( 'GitHub OIDC ' . $label . ' could not be decoded.' );
+		}
+		return $decoded;
+	}
 
-    private function audienceMatches($audience, string $expected): bool
-    {
-        if (is_string($audience)) {
-            return hash_equals($expected, $audience);
-        }
-        if (! is_array($audience)) {
-            return false;
-        }
-        foreach ($audience as $candidate) {
-            if (is_string($candidate) && hash_equals($expected, $candidate)) {
-                return true;
-            }
-        }
-        return false;
-    }
+	/**
+	 * Process the audience matches operation in the GitHubOidc component.
+	 *
+	 * @param mixed  $audience Input for the operation.
+	 * @param string $expected Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
+	private function audience_matches( $audience, string $expected ): bool {
+		if ( is_string( $audience ) ) {
+			return hash_equals( $expected, $audience );
+		}
+		if ( ! is_array( $audience ) ) {
+			return false;
+		}
+		foreach ( $audience as $candidate ) {
+			if ( is_string( $candidate ) && hash_equals( $expected, $candidate ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 
-    private function integerClaim(array $claims, string $name): int
-    {
-        if (! array_key_exists($name, $claims) || (! is_int($claims[$name]) && ! ctype_digit((string) $claims[$name]))) {
-            throw new RuntimeException('GitHub OIDC time claim is invalid: ' . $name . '.');
-        }
-        return (int) $claims[$name];
-    }
+	/**
+	 * Process the integer claim operation in the GitHubOidc component.
+	 *
+	 * @param array  $claims Input for the operation.
+	 * @param string $name Input for the operation.
+	 *
+	 * @return int Operation result.
+	 *
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function integer_claim( array $claims, string $name ): int {
+		if ( ! array_key_exists( $name, $claims ) || ( ! is_int( $claims[ $name ] ) && ! ctype_digit( (string) $claims[ $name ] ) ) ) {
+			throw new RuntimeException( 'GitHub OIDC time claim is invalid: ' . $name . '.' );
+		}
+		return (int) $claims[ $name ];
+	}
 }

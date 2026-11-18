@@ -22,7 +22,9 @@ $settings=$read('plugin/wordpressconnector/includes/Admin/Settings.php');
 $catalog=$read('docs/ACTION-CATALOG.md');
 $normalizedExport=preg_replace('/\s+/','',$export);
 $normalizedImport=preg_replace('/\s+/','',$import);
-if(!is_string($normalizedExport)||!is_string($normalizedImport)) {
+$normalizedCapabilities=preg_replace('/\s+/','',$capabilities);
+$normalizedForms=preg_replace('/\s+/','',$forms);
+if(!is_string($normalizedExport)||!is_string($normalizedImport)||!is_string($normalizedCapabilities)||!is_string($normalizedForms)) {
     exit(1);
 }
 foreach(array('includes/Security/GitHubOidc.php','includes/Adapters/AbilitiesAdapter.php','includes/Adapters/CacheMaintenanceAdapter.php','includes/Adapters/CodeSnippetsAdapter.php','includes/Adapters/ElementorCapabilitiesAdapter.php','includes/Adapters/ElementorFormsAdapter.php','includes/Admin/ElementorJsonExport.php','includes/Admin/ElementorJsonImport.php','includes/Adapters/YoastAdapter.php') as $relative) {
@@ -37,11 +39,11 @@ foreach(array('AbilitiesAdapter','CacheMaintenanceAdapter','CodeSnippetsAdapter'
         exit(1);
     }
 }
-if(preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$elementor)||preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$forms)||strpos($import,"update_post_meta(\$postId, '_elementor_data'")!==false) {
+if(preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$elementor)||preg_match("/update_post_meta\\([^;]*['_\"]_elementor_data['\"]/s",$forms)||preg_match("/update_post_meta\\s*\\([^;]*['_\"]_elementor_data['\"]/s",$import)) {
     fwrite(STDERR,"Direct _elementor_data writes are forbidden.\n");
     exit(1);
 }
-foreach(array('->save(','get_elements_data','get_db_document_settings','assertDocumentReadback') as $needle) {
+foreach(array('->save(','get_elements_data','get_db_document_settings','assert_document_readback') as $needle) {
     if(strpos($elementor,$needle)===false) {
         fwrite(STDERR,"Elementor document API/readback contract is missing: {$needle}.\n");
         exit(1);
@@ -53,14 +55,14 @@ foreach(array('maintenance.cache_capabilities','maintenance.cache_flush','code_s
         exit(1);
     }
 }
-foreach(array("register('elementor.inventory'",'missing_widgets','widgetSource','next_offset') as $needle) {
-    if(strpos($capabilities,$needle)===false) {
+foreach(array("register('elementor.inventory'",'missing_widgets','widget_source','next_offset') as $needle) {
+    if(strpos($normalizedCapabilities,str_replace(' ','',$needle))===false) {
         fwrite(STDERR,"Elementor inventory contract is missing: {$needle}.\n");
         exit(1);
     }
 }
-foreach(array("register('elementor.form_capabilities'","register('elementor.form_inspect'","register('elementor.form_upsert'",'schema_fingerprint','submit_action_choice_keys','atomic_props_schema','restoreSnapshot') as $needle) {
-    if(strpos($forms,$needle)===false) {
+foreach(array("register('elementor.form_capabilities'","register('elementor.form_inspect'","register('elementor.form_upsert'",'schema_fingerprint','submit_action_choice_keys','atomic_props_schema','restore_snapshot') as $needle) {
+    if(strpos($normalizedForms,str_replace(' ','',$needle))===false) {
         fwrite(STDERR,"Elementor forms contract is missing: {$needle}.\n");
         exit(1);
     }

@@ -10,17 +10,21 @@ if (false === $system || false === $runner) {
     fwrite(STDERR, "Unable to read runtime preflight sources.\n");
     exit(1);
 }
+$compactSystem = preg_replace('/\\s+/', '', $system);
+if (! is_string($compactSystem)) {
+    throw new RuntimeException('Could not normalize runtime preflight source.');
+}
 
 $doctorOk = "\$checks['ok'] = \$checks['wordpress_bootstrap'] && \$checks['database'];";
-if (strpos($system, $doctorOk) === false) {
+if (strpos($compactSystem, preg_replace('/\\s+/', '', $doctorOk)) === false) {
     fwrite(STDERR, "system.doctor must base universal runtime health on WordPress bootstrap and database access.\n");
     exit(1);
 }
-if (strpos($system, "\$checks['ok'] = \$checks['wordpress_bootstrap'] && \$checks['database'] && \$checks['wp_cli'];") !== false) {
+if (strpos($compactSystem, "\$checks['ok']=\$checks['wordpress_bootstrap']&&\$checks['database']&&\$checks['wp_cli'];") !== false) {
     fwrite(STDERR, "system.doctor must not require optional WP-CLI for REST runtime health.\n");
     exit(1);
 }
-if (strpos($system, "'wp_cli' => defined('WP_CLI') && WP_CLI") === false) {
+if (strpos($compactSystem, "'wp_cli'=>defined('WP_CLI')&&WP_CLI") === false) {
     fwrite(STDERR, "system.doctor must retain WP-CLI as an informational capability.\n");
     exit(1);
 }

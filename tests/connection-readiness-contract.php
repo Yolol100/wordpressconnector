@@ -130,7 +130,7 @@ namespace {
     $adminSource = (string) file_get_contents(dirname(__DIR__) .
         '/plugin/wordpressconnector/includes/Admin/Settings.php');
     foreach (array(
-        'renderConnectionRecoveryGuide()',
+        'render_connection_recovery_guide()',
         'new ConnectionReadinessAdapter()',
         'Not independently verified',
         'trusted OAuth 2.1 provider',

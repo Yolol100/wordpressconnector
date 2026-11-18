@@ -30,23 +30,27 @@ $requiredImport = array(
     'replaceDocument($payload',
 );
 $compactImport = preg_replace('/\\s+/', '', $import);
+$compactAdapter = preg_replace('/\\s+/', '', $adapter);
+if (! is_string($compactImport) || ! is_string($compactAdapter)) {
+    throw new RuntimeException('Elementor contract source normalization failed.');
+}
 foreach ($requiredImport as $needle) {
     if (false === strpos((string) $compactImport, (string) preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Elementor bulk import safety contract missing: ' . $needle);
     }
 }
 foreach (array(
-    "get_post_meta(\$postId, '_elementor_data', true)",
-    'assertDocumentReadback($after, $savedElements, $pageSettings)',
-    'assertDocumentReadback($restored,',
+    "get_post_meta(\$post_id, '_elementor_data', true)",
+    'assert_document_readback($after, $saved_elements, $page_settings)',
+    'assert_document_readback($restored,',
     "add_action('elementor/editor/after_save'",
     "remove_action('elementor/editor/after_save'",
 ) as $needle) {
-    if (false === strpos($adapter, $needle)) {
+    if (false === strpos($compactAdapter, preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Elementor persisted readback contract missing: ' . $needle);
     }
 }
-if (false !== strpos($adapter, "get_elements_data() : array()")) {
+if (false !== strpos($compactAdapter, "get_elements_data():array()")) {
     throw new RuntimeException('Elementor persisted readback must not use an in-memory editor tree.');
 }
 echo "Elementor bulk import/readback contract OK\n";

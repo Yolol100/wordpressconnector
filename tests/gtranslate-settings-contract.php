@@ -17,7 +17,16 @@ $GLOBALS['fake_gtranslate_caps']=array();
 function get_plugins():array{return array('gtranslate/gtranslate.php'=>array('Version'=>$GLOBALS['fake_gtranslate_version']));}
 function is_plugin_active($path):bool{return $path==='gtranslate/gtranslate.php' && $GLOBALS['fake_gtranslate_active'];}
 function get_option($name,$default=null){return $GLOBALS['fake_gtranslate_options'][$name]??$default;}
-function update_option($name,$value){$GLOBALS['fake_gtranslate_options'][$name]=$value;return true;}
+function update_option($name,$value){
+    if (! empty($GLOBALS['fake_gtranslate_corrupt_next_write'])) {
+        $GLOBALS['fake_gtranslate_corrupt_next_write'] = false;
+        $value['widget_look'] = 'unexpected-provider-change';
+    } elseif (! empty($GLOBALS['fake_gtranslate_fail_recovery'])) {
+        throw new RuntimeException('SECRET_INTERNAL_ROLLBACK_FAILURE');
+    }
+    $GLOBALS['fake_gtranslate_options'][$name] = $value;
+    return true;
+}
 function current_user_can($cap):bool{return in_array($cap,$GLOBALS['fake_gtranslate_caps'],true);}
 function sanitize_text_field($value):string{return trim(strip_tags((string)$value));}
 $root=dirname(__DIR__).'/plugin/wordpressconnector/includes/';
@@ -89,6 +98,25 @@ if (! preg_match('/^[a-f0-9]{64}$/D', (string) ($preview['_current_fingerprint']
 $restored=$reg->execute('gtranslate.settings.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true));
 if(!$restored['restored']||get_option('GTranslate')!==$original)
     throw new RuntimeException('GTranslate rollback did not recover all original options.');
+// If the provider changes unrelated settings and the restoration itself throws,
+// the public failure must require manual recovery without leaking low-level details.
+$GLOBALS['fake_gtranslate_corrupt_next_write'] = true;
+$GLOBALS['fake_gtranslate_fail_recovery'] = true;
+$recovery_failed = false;
+try {
+    $reg->execute('gtranslate.settings.update', $patch, array('dry_run' => false));
+} catch (RuntimeException $failure) {
+    $recovery_failed = true;
+    if (false === strpos($failure->getMessage(), 'manual review is required')
+        || false !== strpos($failure->getMessage(), 'SECRET_INTERNAL_ROLLBACK_FAILURE')) {
+        throw new RuntimeException('Failed GTranslate restore did not emit the bounded manual-recovery message.');
+    }
+} finally {
+    $GLOBALS['fake_gtranslate_corrupt_next_write'] = false;
+    $GLOBALS['fake_gtranslate_fail_recovery'] = false;
+    $GLOBALS['fake_gtranslate_options']['GTranslate'] = $original;
+}
+if (! $recovery_failed) throw new RuntimeException('GTranslate restore failure did not fail closed.');
 $throws(static function()use($reg,$apply){
     $reg->execute('gtranslate.settings.restore',$apply['_rollback']['payload'],array('rollback_mode'=>true));
 },'changed since the preflight read');

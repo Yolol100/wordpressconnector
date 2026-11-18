@@ -73,6 +73,28 @@ foreach (array(
 
 $request = (string) file_get_contents($workflowDir . '/wordpress-request.yml');
 $execute = (string) file_get_contents($workflowDir . '/wordpress-zero-config-execute.yml');
+
+// PR-controlled event fields must be passed via step env, never interpolated into shell source.
+foreach (array(
+    'PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}',
+    'PR_REQUEST_ACTOR: ${{ github.event.pull_request.user.login }}',
+    'if [[ "${PR_HEAD_REPO}" != "${GITHUB_REPOSITORY}" ]]; then',
+    'request_actor="${PR_REQUEST_ACTOR}"',
+) as $safeRequestMarker) {
+    if (false === strpos($request, $safeRequestMarker)) {
+        fwrite(STDERR, "Request workflow lost its safe untrusted-event boundary: {$safeRequestMarker}.\\n");
+        exit(1);
+    }
+}
+foreach (array(
+    'if [[ "${{ github.event.pull_request.head.repo.full_name }}"',
+    'request_actor="${{ github.event.pull_request.user.login }}"',
+) as $injectedSource) {
+    if (false !== strpos($request, $injectedSource)) {
+        fwrite(STDERR, "PR event metadata is interpolated into Bash source.\\n");
+        exit(1);
+    }
+}
 if (strpos($request, "if: github.actor != 'github-actions[bot]'") === false) { fwrite(STDERR, "Request workflow lacks bot-feedback-loop suppression.\n"); exit(1); }
 if (strpos($request, '100755') !== false || strpos($request, "!= '100644'") === false) { fwrite(STDERR, "Credential-free request guard must accept only regular non-executable 100644 request files.\n"); exit(1); }
 foreach (array('id-token: write','ACTIONS_ID_TOKEN_REQUEST_URL','X-Webactueel-GitHub-OIDC') as $needle) {

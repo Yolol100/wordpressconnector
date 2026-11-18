@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+// WordPress is not bootstrapped in this standalone contract; fixtures contain valid UTF-8.
+function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
+
 $fixtureRoot = __DIR__ . '/fixtures';
 $tempRoot = rtrim(sys_get_temp_dir(), '/\\') . DIRECTORY_SEPARATOR . 'wpconnector-elementor-provenance-' . getmypid();
 

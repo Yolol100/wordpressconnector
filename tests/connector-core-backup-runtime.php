@@ -72,9 +72,9 @@ $GLOBALS['wp_filesystem'] = new FakeFilesystem();
 
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
 $updater = new \Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter();
-$install = new ReflectionMethod($updater, 'installWithCoreBackup');
+$install = new ReflectionMethod($updater, 'install_with_core_backup');
 $install->setAccessible(true);
-$restore = new ReflectionMethod($updater, 'restoreAfterReadbackFailure');
+$restore = new ReflectionMethod($updater, 'restore_after_readback_failure');
 $restore->setAccessible(true);
 
 $instance = $install->invoke($updater, '/tmp/already-verified-package.zip');
