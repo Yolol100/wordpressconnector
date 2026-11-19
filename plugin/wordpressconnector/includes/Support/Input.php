@@ -51,6 +51,23 @@ final class Input {
 	}
 
 	/**
+	 * Read a non-negative ID without converting malformed values.
+	 * Literal zero (including zero-padded strings) is valid for create/root slots.
+	 *
+	 * @param mixed $value Untrusted identifier.
+	 *
+	 * @return int Validated non-negative ID.
+	 *
+	 * @throws \RuntimeException When the ID is not an exact non-negative integer.
+	 */
+	public static function non_negative_id( $value ): int {
+		if ( 0 === $value || ( is_string( $value ) && 1 === preg_match( '/\A0+\z/', $value ) ) ) {
+			return 0;
+		}
+		return self::positive_id( $value );
+	}
+
+	/**
 	 * Resolve a positive numeric identifier without PHP's lossy casts.
 	 * Clients may pass decimal digit strings with harmless leading zeroes.
 	 *
