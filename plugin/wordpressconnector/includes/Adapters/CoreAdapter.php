@@ -1057,7 +1057,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuGet( array $payload ): array {
-		$menu = wp_get_nav_menu_object( $payload['id'] ?? ( $payload['name'] ?? 0 ) );
+		$selector = isset( $payload['id'] ) ? $this->require_menu_id( $payload ) : ( $payload['name'] ?? 0 );
+		$menu     = wp_get_nav_menu_object( $selector );
 		if ( ! $menu ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
@@ -1131,7 +1132,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuUpdate( array $payload, array $context ): array {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id   = $this->require_menu_id( $payload );
 		$menu = wp_get_nav_menu_object( $id );
 		if ( ! $menu ) {
 			throw new RuntimeException( 'Menu not found.' );
@@ -1175,7 +1176,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuDelete( array $payload, array $context ): array {
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id       = $this->require_menu_id( $payload );
 		$snapshot = $this->menuGet( array( 'id' => $id ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -1668,6 +1669,23 @@ final class CoreAdapter {
 			'trashed'            => $id,
 			'rollback_supported' => false,
 		);
+	}
+
+	/**
+	 * Validate an exact classic menu ID before a lookup or mutation.
+	 *
+	 * @param array $payload Requested menu identifier.
+	 *
+	 * @return int Exact positive menu ID.
+	 *
+	 * @throws \RuntimeException If the menu identifier is invalid.
+	 */
+	private function require_menu_id( array $payload ): int {
+		try {
+			return Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Menu not found.' );
+		}
 	}
 
 	/**
