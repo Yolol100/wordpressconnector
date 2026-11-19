@@ -750,8 +750,12 @@ final class WooCommerceAdapter {
 	 */
 	public function variationList( array $payload ): array {
 		$this->assert_woo();
-		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent    = wc_get_product( $parent_id );
+		try {
+			$parent_id = Input::positive_id( $payload['product_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variable product not found.' );
+		}
+		$parent = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable product not found.' );
 		}
@@ -793,8 +797,12 @@ final class WooCommerceAdapter {
 	 */
 	public function variationCreate( array $payload, array $context ): array {
 		$this->assert_woo();
-		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent    = wc_get_product( $parent_id );
+		try {
+			$parent_id = Input::positive_id( $payload['product_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variable parent product not found.' );
+		}
+		$parent = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable parent product not found.' );
 		}
@@ -1127,7 +1135,11 @@ final class WooCommerceAdapter {
 	 */
 	private function product( array $payload ): \WC_Product {
 		$this->assert_woo();
-		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Product not found.' );
+		}
 		$product = wc_get_product( $id );
 		if ( ! $product instanceof \WC_Product ) {
 			throw new RuntimeException( 'Product not found.' );
@@ -1146,7 +1158,11 @@ final class WooCommerceAdapter {
 	 */
 	private function variation( array $payload ): \WC_Product_Variation {
 		$this->assert_woo();
-		$id        = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variation not found.' );
+		}
 		$variation = wc_get_product( $id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Variation not found.' );
