@@ -649,8 +649,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
-		$revision_id = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
-		$revision    = wp_get_post_revision( $revision_id );
+		try {
+			$revision_id = Input::positive_id( $payload['revision_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Revision not found.' );
+		}
+		$revision = wp_get_post_revision( $revision_id );
 		if ( ! $revision ) {
 			throw new RuntimeException( 'Revision not found.' );
 		}
