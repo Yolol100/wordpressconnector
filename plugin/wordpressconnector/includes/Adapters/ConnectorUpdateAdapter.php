@@ -754,13 +754,14 @@ final class ConnectorUpdateAdapter {
 		}
 
 		try {
-			if ( $zip->count() < 1 || $zip->count() > self::MAX_ENTRIES ) {
+			$entry_count = $zip->count();
+			if ( $entry_count < 1 || $entry_count > self::MAX_ENTRIES ) {
 				throw new RuntimeException( 'Connector release ZIP has an invalid number of entries.' );
 			}
 
 			$paths              = array();
 			$uncompressed_bytes = 0;
-			for ( $index = 0; $index < $zip->count(); ++$index ) {
+			for ( $index = 0; $index < $entry_count; ++$index ) {
 				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
 					throw new RuntimeException( 'Connector release ZIP contains an unreadable entry.' );
