@@ -39,6 +39,7 @@ function get_user_by($field, $id) {
     return 99 === $id ? $GLOBALS['user_fixture'] : false;
 }
 function current_user_can($capability, $id = null): bool { return true; }
+function sanitize_key($value): string { return strtolower((string) $value); }
 function wp_update_user($fields) {
     ++$GLOBALS['user_updates'];
     if (99 !== ($fields['ID'] ?? null)) {
