@@ -101,8 +101,10 @@ foreach (array('create', 'update') as $action) {
 // is queried. Coerced IDs could otherwise select the wrong product/variation.
 $productResolver = new ReflectionMethod($adapter, 'product');
 $variationResolver = new ReflectionMethod($adapter, 'variation');
-$productResolver->setAccessible(true);
-$variationResolver->setAccessible(true);
+if (PHP_VERSION_ID < 80100) {
+    $productResolver->setAccessible(true);
+    $variationResolver->setAccessible(true);
+}
 $invalidIds = array(true, false, 11.5, -11, 0, '0', '11junk',
     '1.1e1', ' 11', "11\\n", '999999999999999999999999', array(11), null);
 foreach ($invalidIds as $invalidId) {
