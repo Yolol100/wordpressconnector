@@ -209,7 +209,7 @@ final class FilesystemAdapter {
 		if ( false === $size || $size < 0 || $size > self::MAX_TEXT_BYTES ) {
 			throw new RuntimeException( 'Text file exceeds the connector read limit.' );
 		}
-		$content = file_get_contents( $absolute );
+		$content = file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Local symlink-safe resolved file with path, size and secret checks, not an HTTP URL.
 		if ( false === $content || ! $this->is_utf8( $content ) ) {
 			throw new RuntimeException( 'Filesystem file is not readable UTF-8 text.' );
 		}
@@ -248,7 +248,7 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) ) {
 			throw new RuntimeException( 'filesystem.write_text only replaces existing regular files.' );
 		}
-		$before = file_get_contents( $absolute );
+		$before = file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read a prevalidated local file before write/rollback; HTTP retrieval would change trust and content.
 		if ( false === $before || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is not readable UTF-8 text.' );
 		}
@@ -408,7 +408,7 @@ final class FilesystemAdapter {
 			throw new RuntimeException( 'New file write failed; partial content was removed.' );
 		}
 		clearstatcache( true, $absolute );
-		$readback = @file_get_contents( $absolute );
+		$readback = @file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read back the exact local file for SHA-256 verification after atomic create; not a remote resource.
 		if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ) {
 			@unlink( $absolute );
 			throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
@@ -442,7 +442,7 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Text deletion requires a regular non-symlink file.' );
 		}
-		$before = @file_get_contents( $absolute );
+		$before = @file_get_contents( $absolute ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read the existing local file before rollback-aware deletion; WP HTTP is not applicable.
 		if ( ! is_string( $before ) || strlen( $before ) > self::MAX_TEXT_BYTES || ! $this->is_utf8( $before ) ) {
 			throw new RuntimeException( 'Existing file is unreadable or exceeds safe text limit.' );
 		}
