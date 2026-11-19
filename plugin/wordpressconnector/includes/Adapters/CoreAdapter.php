@@ -1205,8 +1205,27 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
-		$menu_id = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
-		$item_id = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
+		$menu_id = $this->require_menu_id( array( 'id' => $payload['menu_id'] ?? null ) );
+		try {
+			$item_id = isset( $payload['item_id'] ) ? Input::non_negative_id( $payload['item_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'item_id must be a non-negative integer.' );
+		}
+		$numeric_fields = array(
+			'object_id' => 'menu-item-object-id',
+			'parent'    => 'menu-item-parent-id',
+			'position'  => 'menu-item-position',
+		);
+		$numeric_args   = array();
+		foreach ( $numeric_fields as $source => $target ) {
+			if ( isset( $payload[ $source ] ) ) {
+				try {
+					$numeric_args[ $target ] = Input::non_negative_id( $payload[ $source ] );
+				} catch ( RuntimeException $error ) {
+					throw new RuntimeException( 'object_id, parent and position must be non-negative integers.' );
+				}
+			}
+		}
 		if ( ! wp_get_nav_menu_object( $menu_id ) ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
@@ -1228,14 +1247,8 @@ final class CoreAdapter {
 				$args[ $target ] = sanitize_text_field( (string) $payload[ $source ] );
 			}
 		}
-		if ( isset( $payload['object_id'] ) ) {
-			$args['menu-item-object-id'] = (int) $payload['object_id'];
-		}
-		if ( isset( $payload['parent'] ) ) {
-			$args['menu-item-parent-id'] = (int) $payload['parent'];
-		}
-		if ( isset( $payload['position'] ) ) {
-			$args['menu-item-position'] = (int) $payload['position'];
+		foreach ( $numeric_args as $field => $id ) {
+			$args[ $field ] = $id;
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -1919,11 +1932,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When the parent ID is malformed.
 	 */
 	private function term_parent_id( $parent_id ): int {
-		if ( 0 === $parent_id || ( is_string( $parent_id ) && 1 === preg_match( '/\A0+\z/', $parent_id ) ) ) {
-			return 0;
-		}
 		try {
-			return Input::positive_id( $parent_id );
+			return Input::non_negative_id( $parent_id );
 		} catch ( RuntimeException $error ) {
 			throw new RuntimeException( 'parent must be a non-negative term ID.' );
 		}
