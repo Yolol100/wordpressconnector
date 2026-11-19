@@ -315,7 +315,7 @@ final class FilesystemAdapter {
 			// Runner loses this local before-image when the action fails.
 			try {
 				$filesystem->put_contents( $absolute, $before, $mode );
-			} catch ( Throwable $recovery_error ) {
+			} catch ( Throwable $recovery_error ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Backend may throw after fully restoring bytes; independent SHA-256 readback below determines recovery success.
 				// Readback below is authoritative even if the backend throws
 				// after writing all original bytes.
 			}

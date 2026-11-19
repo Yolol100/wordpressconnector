@@ -55,7 +55,7 @@ final class Json {
 		}
 
 		try {
-			return json_encode( $value, $flags | JSON_THROW_ON_ERROR );
+			return json_encode( $value, $flags | JSON_THROW_ON_ERROR ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Native JSON_THROW_ON_ERROR guarantees failure before any atomic file write; the WordPress wrapper changes that behavior.
 		} catch ( \JsonException $error ) {
 			throw new RuntimeException( 'Could not encode JSON: ' . $error->getMessage(), 0, $error );
 		}
