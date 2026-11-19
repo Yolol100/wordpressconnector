@@ -22,10 +22,21 @@ $GLOBALS['comment_fixture'] = new WP_Comment();
 $GLOBALS['comment_lookups'] = 0;
 $GLOBALS['comment_writes'] = 0;
 $GLOBALS['comment_trashes'] = 0;
+$GLOBALS['comment_list_calls'] = 0;
+$GLOBALS['comment_list_args'] = null;
 function get_comment($id) {
     ++$GLOBALS['comment_lookups'];
     if (! is_int($id)) { throw new RuntimeException('Comment lookup received a coerced ID.'); }
     return 101 === $id ? $GLOBALS['comment_fixture'] : null;
+}
+function sanitize_key($value): string { return strtolower((string) $value); }
+function get_comments($args): array {
+    ++$GLOBALS['comment_list_calls'];
+    if (! is_int($args['post_id']) || ! in_array($args['post_id'], array(0, 202), true)) {
+        throw new RuntimeException('Comment list used a coerced post ID.');
+    }
+    $GLOBALS['comment_list_args'] = $args;
+    return array($GLOBALS['comment_fixture']);
 }
 function wp_slash($fields) { return $fields; }
 function is_wp_error($value): bool { return false; }
@@ -99,5 +110,48 @@ if ($GLOBALS['comment_trashes'] !== 1
     || 101 !== ($trashed['trashed'] ?? null)
     || false !== ($trashed['rollback_supported'] ?? null)) {
     throw new RuntimeException('Valid comment trash contract changed.');
+}
+// Invalid optional post filters must be rejected before querying private comments.
+$invalidPostFilters = array(true, false, 202.5, -202, '-1', '',
+    '202junk', '2.02e2', ' 202', "202\n",
+    '99999999999999999999999999', array(202));
+foreach ($invalidPostFilters as $postID) {
+    $before = $GLOBALS['comment_list_calls'];
+    try {
+        $adapter->commentList(array('post_id' => $postID));
+        throw new RuntimeException('Invalid comment post filter accepted.');
+    } catch (RuntimeException $error) {
+        if ('post_id must be a non-negative integer.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if ($GLOBALS['comment_list_calls'] !== $before) {
+        throw new RuntimeException('Invalid comment post filter reached WordPress.');
+    }
+}
+foreach (array(202, '202', '000202') as $postID) {
+    $listed = $adapter->commentList(array(
+        'post_id' => $postID, 'status' => 'APPROVE', 'per_page' => 3, 'offset' => 4,
+    ));
+    if (($GLOBALS['comment_list_args']['post_id'] ?? null) !== 202
+        || ($GLOBALS['comment_list_args']['status'] ?? null) !== 'approve'
+        || ($GLOBALS['comment_list_args']['number'] ?? null) !== 3
+        || ($GLOBALS['comment_list_args']['offset'] ?? null) !== 4
+        || ($listed['comments'][0]['id'] ?? null) !== 101
+        || ($listed['comments'][0]['post_id'] ?? null) !== 202) {
+        throw new RuntimeException('Valid filtered comment list contract changed.');
+    }
+}
+// Omitting the post filter or providing zero still queries all comments.
+foreach (array(array(), array('post_id' => null), array('post_id' => 0),
+    array('post_id' => '0'), array('post_id' => '000')) as $payload) {
+    $listed = $adapter->commentList($payload);
+    if (($GLOBALS['comment_list_args']['post_id'] ?? null) !== 0
+        || ($GLOBALS['comment_list_args']['number'] ?? null) !== 50
+        || ($GLOBALS['comment_list_args']['offset'] ?? null) !== 0
+        || ($GLOBALS['comment_list_args']['status'] ?? null) !== 'all'
+        || ($listed['comments'][0]['id'] ?? null) !== 101) {
+        throw new RuntimeException('Comment list default/all-post behavior changed.');
+    }
 }
 echo "Core comment exact-ID read, update and trash contract OK\n";
