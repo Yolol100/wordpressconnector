@@ -25,7 +25,7 @@ final class Input {
 	 *
 	 * @return bool Validated boolean value.
 	 */
-	public static function bool( array $input, string $key, bool $default = false ): bool {
+	public static function bool( array $input, string $key, bool $default = false ): bool { // phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.defaultFound -- Preserve publicly callable PHP 8 named argument `default`.
 		if ( ! array_key_exists( $key, $input ) ) {
 			return $default;
 		}
