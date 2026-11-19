@@ -151,4 +151,51 @@ if (strpos($publicRunner, "false !== \$payload['overwrite']") === false ||
     exit(1);
 }
 
+// ZIP entry checks must use the supported PHP Countable API. Both guarded
+// package adapters must retain the same archive size limits and read-only ZIP.
+$updater = file_get_contents( $root . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php' );
+if ( ! is_string( $updater ) || false !== strpos( $adapter, '->numFiles' )
+    || false !== strpos( $updater, '->numFiles' )
+    || false === strpos( $adapter, '$zip->count()' )
+    || false === strpos( $updater, '$zip->count()' ) ) {
+    throw new RuntimeException( 'ZIP member-count safety checks must use the stable ZipArchive count method.' );
+}
+
+// PHP 7.2+ defines count() with the same value as numFiles. Prove the
+// compatibility on the actual extension when available in this test runtime.
+if ( class_exists( 'ZipArchive' ) ) {
+    $path = tempnam( sys_get_temp_dir(), 'wpc-zip-count-' );
+    if ( false === $path ) {
+        throw new RuntimeException( 'Cannot create the ZIP compatibility fixture.' );
+    }
+    $zip = new ZipArchive();
+    $opened = false;
+    try {
+        if ( true !== $zip->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE ) ) {
+            throw new RuntimeException( 'Cannot open the ZIP compatibility fixture.' );
+        }
+        $opened = true;
+        if ( ! $zip->addFromString( 'plugin/main.php', '<?php // test' )
+            || ! $zip->addFromString( 'plugin/readme.txt', 'readme' ) ) {
+            throw new RuntimeException( 'Cannot populate the ZIP compatibility fixture.' );
+        }
+        if ( ! $zip->close() ) {
+            throw new RuntimeException( 'Cannot finish the ZIP compatibility fixture.' );
+        }
+        $opened = false;
+        if ( true !== $zip->open( $path, ZipArchive::RDONLY ) ) {
+            throw new RuntimeException( 'Cannot read the ZIP compatibility fixture.' );
+        }
+        $opened = true;
+        if ( 2 !== $zip->count() || $zip->count() !== $zip->numFiles ) {
+            throw new RuntimeException( 'ZipArchive count changed the archive-size contract.' );
+        }
+    } finally {
+        if ( $opened ) {
+            $zip->close();
+        }
+        unlink( $path );
+    }
+}
+
 echo "plugin package contract OK\n";

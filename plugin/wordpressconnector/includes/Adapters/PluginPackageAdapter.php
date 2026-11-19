@@ -279,13 +279,14 @@ final class PluginPackageAdapter {
 			throw new RuntimeException( 'Invalid theme ZIP archive.' );
 		}
 		try {
-			if ( $zip->numFiles < 2 || $zip->numFiles > self::MAX_ENTRIES ) {
+			$entry_count = $zip->count();
+			if ( $entry_count < 2 || $entry_count > self::MAX_ENTRIES ) {
 				throw new RuntimeException( 'Theme ZIP has an invalid number of files.' );
 			}
 			$seen  = array();
 			$total = 0;
 			$style = '';
-			for ( $i = 0; $i < $zip->numFiles; ++$i ) {
+			for ( $i = 0; $i < $entry_count; ++$i ) {
 				$stat = $zip->statIndex( $i, \ZipArchive::FL_UNCHANGED );
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
 					throw new RuntimeException( 'Unreadable theme ZIP member.' );
@@ -330,7 +331,7 @@ final class PluginPackageAdapter {
 				throw new RuntimeException( 'Theme ZIP lacks a valid root style.css theme header.' );
 			}
 			return array(
-				'entries'            => $zip->numFiles,
+				'entries'            => $entry_count,
 				'uncompressed_bytes' => $total,
 			);
 		} finally {
@@ -524,7 +525,8 @@ final class PluginPackageAdapter {
 		}
 
 		try {
-			if ( $zip->numFiles < 1 || $zip->numFiles > self::MAX_ENTRIES ) {
+			$entry_count = $zip->count();
+			if ( $entry_count < 1 || $entry_count > self::MAX_ENTRIES ) {
 				throw new RuntimeException( 'Plugin ZIP has an invalid number of entries.' );
 			}
 
@@ -533,7 +535,7 @@ final class PluginPackageAdapter {
 			$headers            = array();
 			$uncompressed_bytes = 0;
 
-			for ( $index = 0; $index < $zip->numFiles; ++$index ) {
+			for ( $index = 0; $index < $entry_count; ++$index ) {
 				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
 					throw new RuntimeException( 'Plugin ZIP contains an unreadable entry.' );
@@ -609,7 +611,7 @@ final class PluginPackageAdapter {
 			return array(
 				'plugin_file'        => $plugin_file,
 				'plugin_name'        => sanitize_text_field( (string) $headers[0]['name'] ),
-				'entries'            => (int) $zip->numFiles,
+				'entries'            => (int) $entry_count,
 				'uncompressed_bytes' => $uncompressed_bytes,
 			);
 		} finally {
