@@ -23,6 +23,7 @@ final class AbilitiesAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register(
+			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
 			'wordpress.abilities',
 			array( $this, 'catalog' ),
 			array(
@@ -31,6 +32,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
+			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
 			'wordpress.ability.read',
 			array( $this, 'readAbility' ),
 			array(
@@ -41,6 +43,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
+			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
 			'wordpress.ability.execute',
 			array( $this, 'executeAbility' ),
 			array(
@@ -51,6 +54,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
+			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
 			'wordpress.ability.execute_approved',
 			array( $this, 'executeApprovedAbility' ),
 			array(
