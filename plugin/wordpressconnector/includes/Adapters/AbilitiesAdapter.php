@@ -23,8 +23,7 @@ final class AbilitiesAdapter {
 	 */
 	public function register( Registry $registry ): void {
 		$registry->register(
-			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
-			'wordpress.abilities',
+			'wordpress.abilities', // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public action identifier; preserve spelling.
 			array( $this, 'catalog' ),
 			array(
 				'privileged'  => true,
@@ -32,8 +31,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
-			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
-			'wordpress.ability.read',
+			'wordpress.ability.read', // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public action identifier; preserve spelling.
 			array( $this, 'readAbility' ),
 			array(
 				'privileged'  => true,
@@ -43,8 +41,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
-			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
-			'wordpress.ability.execute',
+			'wordpress.ability.execute', // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public action identifier; preserve spelling.
 			array( $this, 'executeAbility' ),
 			array(
 				'mutation'    => true,
@@ -54,8 +51,7 @@ final class AbilitiesAdapter {
 			)
 		);
 		$registry->register(
-			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public connector action ID; never change its bytes.
-			'wordpress.ability.execute_approved',
+			'wordpress.ability.execute_approved', // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Public action identifier; preserve spelling.
 			array( $this, 'executeApprovedAbility' ),
 			array(
 				'mutation'    => true,
