@@ -152,4 +152,75 @@ try {
     $_POST = $oldPost;
     $_FILES = $oldFiles;
 }
+
+// The import form must not preselect a different document when an incoming
+// GET target is malformed. No file upload or post write occurs in this fixture.
+if (! class_exists('WP_Post')) {
+    class WP_Post {
+        public $ID;
+        public $post_title;
+        public $post_type;
+        public function __construct(int $id) {
+            $this->ID = $id;
+            $this->post_title = 'Existing page';
+            $this->post_type = 'page';
+        }
+    }
+}
+$GLOBALS['wpconnector_import_form_reads'] = 0;
+function get_posts(array $args): array {
+    ++$GLOBALS['wpconnector_import_form_reads'];
+    return array(new WP_Post(23));
+}
+function esc_url(string $value): string { return $value; }
+function esc_attr(string $value): string { return htmlspecialchars($value, ENT_QUOTES); }
+function admin_url(string $path): string { return 'https://example.invalid/wp-admin/' . $path; }
+function wp_nonce_field(string $action): void {}
+function selected($value, $current, bool $echo = true): string {
+    return $value === $current ? ' selected="selected"' : '';
+}
+function submit_button(string $label): void { echo '<button>' . $label . '</button>'; }
+function __(string $value, string $domain): string { return $value; }
+
+$oldGet = $_GET ?? array();
+try {
+    foreach (array('23junk', '23.5', '2.3e1', ' 23', "23\n", '023', '00',
+        true, false, 23.5, -23, array(23), str_repeat('9', 40)) as $invalidId) {
+        $_GET = array('post_id' => $invalidId);
+        $reads = $GLOBALS['wpconnector_import_form_reads'];
+        try {
+            $import->renderImportPage('page');
+            throw new LogicException('Malformed import form target unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'Invalid Elementor JSON import target.' !== $error->getMessage()) {
+                throw new RuntimeException('Malformed form target received wrong rejection: ' . $error->getMessage());
+            }
+        }
+        if ($reads !== $GLOBALS['wpconnector_import_form_reads']) {
+            throw new RuntimeException('Malformed import form target reached the posts provider.');
+        }
+    }
+    foreach (array(
+        array(array(), 0),
+        array(array('post_id' => '0'), 0),
+        array(array('post_id' => '23'), 23),
+    ) as $validCase) {
+        $_GET = $validCase[0];
+        ob_start();
+        try {
+            $import->renderImportPage('page');
+            $html = ob_get_clean();
+        } catch (Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+        $selectedOption = '<option value="' . $validCase[1] . '" selected="selected">';
+        if (! is_string($html) || false === strpos($html, $selectedOption)) {
+            throw new RuntimeException('Canonical import form target did not select the intended item.');
+        }
+    }
+} finally {
+    $_GET = $oldGet;
+}
+
 echo "Elementor JSON import contract OK\n";
