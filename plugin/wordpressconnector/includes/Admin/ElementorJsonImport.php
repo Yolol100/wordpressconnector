@@ -110,7 +110,7 @@ final class ElementorJsonImport {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 			return;
 		}
-		$posts       = get_posts(
+		$posts = get_posts(
 			array(
 				'post_type'      => $post_type,
 				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
