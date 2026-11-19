@@ -103,7 +103,13 @@ final class ElementorJsonImport {
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
-		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
+		try {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is a read-only selector; the shared parser rejects noncanonical IDs and writes use a checked nonce.
+			$selected_id = $this->exact_import_target_id( isset( $_GET['post_id'] ) ? wp_unslash( $_GET['post_id'] ) : '0' );
+		} catch ( RuntimeException $error ) {
+			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
+		}
 		$posts       = get_posts(
 			array(
 				'post_type'      => $post_type,
@@ -136,13 +142,13 @@ final class ElementorJsonImport {
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
 		// A malformed or oversized post ID must never be coerced into another target.
-		$raw_post_id = isset( $_POST['post_id'] ) ? wp_unslash( $_POST['post_id'] ) : '0';
-		if ( ! is_string( $raw_post_id ) || ! preg_match( '/\A(?:0|[1-9][0-9]*)\z/', $raw_post_id )
-			|| false === filter_var( $raw_post_id, FILTER_VALIDATE_INT ) ) {
+		try {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Shared strict parser rejects malformed ID bytes before any import; nonce checked above.
+			$post_id = $this->exact_import_target_id( isset( $_POST['post_id'] ) ? wp_unslash( $_POST['post_id'] ) : '0' );
+		} catch ( RuntimeException $error ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
 			return;
 		}
-		$post_id   = (int) $raw_post_id;
 		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
@@ -718,6 +724,22 @@ final class ElementorJsonImport {
 	 */
 	private function capability_for_post_type( string $post_type ): string {
 		return 'page' === $post_type ? 'edit_pages' : 'edit_posts';
+	}
+
+	/**
+	 * Resolve the same canonical target ID for import form selection and submission.
+	 *
+	 * @param mixed $raw Unsanitized, unslashed request value.
+	 *
+	 * @return int Validated target (zero means create a new draft).
+	 * @throws \RuntimeException When the target is malformed or out of integer range.
+	 */
+	private function exact_import_target_id( $raw ): int {
+		if ( ! is_string( $raw ) || ! preg_match( '/\A(?:0|[1-9][0-9]*)\z/', $raw )
+			|| false === filter_var( $raw, FILTER_VALIDATE_INT ) ) {
+			throw new RuntimeException( 'Invalid Elementor JSON import target.' );
+		}
+		return (int) $raw;
 	}
 
 	/**
