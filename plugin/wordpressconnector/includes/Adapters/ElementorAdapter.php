@@ -521,7 +521,12 @@ final class ElementorAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function post( array $payload ): \WP_Post {
-		$post = get_post( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Post not found.' );
+		}
+		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Post not found.' );
 		}
