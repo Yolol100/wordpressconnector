@@ -542,8 +542,8 @@ final class WooCommerceAdapter {
 			$placeholders = implode( ',', array_fill( 0, count( $rate_ids ), '%d' ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location count uses live rate IDs.
 			$count_rows = $wpdb->get_results(
-				$wpdb->prepare(
-					'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`',
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- %i plus count($rate_ids) trusted %d placeholders; exact arguments supplied by spread.
+					'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $placeholders contains only internally generated %d markers; all IDs are separately bound by prepare().
 					$locations_table,
 					...array_map( 'intval', $rate_ids )
 				)
