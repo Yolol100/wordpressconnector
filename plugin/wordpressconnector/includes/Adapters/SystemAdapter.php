@@ -601,7 +601,14 @@ final class SystemAdapter {
 		if ( 1 === (int) $user->ID ) {
 			throw new RuntimeException( 'Refusing to delete user ID 1.' );
 		}
-		$reassign = isset( $payload['reassign'] ) ? (int) $payload['reassign'] : null;
+		$reassign = null;
+		if ( isset( $payload['reassign'] ) ) {
+			try {
+				$reassign = Input::non_negative_id( $payload['reassign'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'reassign must be a non-negative user ID.' );
+			}
+		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1869,7 +1876,11 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function user( array $payload ): \WP_User {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'User not found.' );
+		}
 		$user = get_user_by( 'id', $id );
 		if ( ! $user instanceof \WP_User ) {
 			throw new RuntimeException( 'User not found.' );
