@@ -356,7 +356,7 @@ final class CacheMaintenanceAdapter {
 	 * Process the handle asset cleanup loopback operation in the CacheMaintenance adapter.
 	 */
 	public function handleAssetCleanupLoopback(): void {
-		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw method is rejected unless exact POST before subsequent sanitization; no malformed value becomes trusted.
+		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP method is checked case-insensitively against POST and revalidated after sanitization; token authorization is separate.
 		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method )
 			|| 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
 			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
