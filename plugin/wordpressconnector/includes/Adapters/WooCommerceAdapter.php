@@ -938,7 +938,7 @@ final class WooCommerceAdapter {
 	 */
 	public function attributeUpdate( array $payload, array $context ): array {
 		$this->assert_woo();
-		$id         = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id         = Input::positive_id( $payload['id'] ?? null );
 		$before_obj = $this->find_attribute( $id );
 		$before     = $this->attribute_snapshot( $before_obj );
 		$args       = $this->attribute_args( $payload, true );
@@ -975,7 +975,7 @@ final class WooCommerceAdapter {
 	 */
 	public function attributeDelete( array $payload, array $context ): array {
 		$this->assert_woo();
-		$id     = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id     = Input::positive_id( $payload['id'] ?? null );
 		$before = $this->attribute_snapshot( $this->find_attribute( $id ) );
 		$result = array(
 			'before'               => $before,
