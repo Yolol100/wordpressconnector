@@ -30,6 +30,28 @@ if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->r
     exit(1);
 }
 
+// The private upload parsers are intentionally not standalone HTTP entrypoints.
+// Keep their only public call paths behind the action-specific nonce checks.
+$singleStart = strpos($source, 'public function handleImport(): void {');
+$singleNonce = false !== $singleStart ? strpos($source, 'check_admin_referer( self::ACTION );', $singleStart) : false;
+$singleParser = false !== $singleNonce ? strpos($source, '$this->uploaded_payload()', $singleNonce) : false;
+$bulkStart = strpos($source, 'public function previewBulk(): void {');
+$bulkNonce = false !== $bulkStart ? strpos($source, 'check_admin_referer( self::BULK_PREVIEW );', $bulkStart) : false;
+$bulkCapability = false !== $bulkNonce ? strpos($source, "current_user_can( 'manage_options' )", $bulkNonce) : false;
+$bulkParser = false !== $bulkCapability ? strpos($source, '$this->bulk_uploads()', $bulkCapability) : false;
+if (false === $singleNonce || false === $singleParser || $singleNonce >= $singleParser
+    || false === $bulkNonce || false === $bulkCapability || false === $bulkParser
+    || ! ($bulkNonce < $bulkCapability && $bulkCapability < $bulkParser)) {
+    throw new RuntimeException('Upload parser can be reached before nonce or capability checks.');
+}
+// The raw upload metadata is parsed by type before using PHP temporary paths.
+// Never run sanitize_text_field() on $_FILES tmp_name: that can alter file identity.
+if (false === strpos($source, 'is_uploaded_file( $tmp_name )')
+    || false === strpos($source, 'sanitize_file_name( $file[\'name\'] )')
+    || false === strpos($source, 'array_keys( $files[ $field ] ) !== array_keys( $files[\'name\'] )')) {
+    throw new RuntimeException('Raw upload shape or identity validation is missing.');
+}
+
 // Malformed multipart arrays must fail closed without PHP array-to-string warnings.
 // The standalone contract runner has no WordPress bootstrap.
 if (! function_exists('sanitize_file_name')) {
