@@ -1758,6 +1758,8 @@ final class CoreAdapter {
 	 * @param bool  $partial Whether partial updates are allowed.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When author or parent identifiers are invalid.
 	 */
 	private function sanitize_post_fields( array $payload, bool $partial ): array {
 		$fields     = array();
@@ -1780,10 +1782,18 @@ final class CoreAdapter {
 			}
 		}
 		if ( isset( $payload['author'] ) ) {
-			$fields['post_author'] = (int) $payload['author'];
+			try {
+				$fields['post_author'] = Input::non_negative_id( $payload['author'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'author must be a non-negative integer.' );
+			}
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$fields['post_parent'] = (int) $payload['parent'];
+			try {
+				$fields['post_parent'] = Input::non_negative_id( $payload['parent'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'parent must be a non-negative integer.' );
+			}
 		}
 		if ( isset( $payload['menu_order'] ) ) {
 			$fields['menu_order'] = (int) $payload['menu_order'];
