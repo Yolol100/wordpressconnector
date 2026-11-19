@@ -1758,6 +1758,8 @@ final class CoreAdapter {
 	 * @param bool  $partial Whether partial updates are allowed.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When author or parent identifiers are invalid.
 	 */
 	private function sanitize_post_fields( array $payload, bool $partial ): array {
 		$fields     = array();
