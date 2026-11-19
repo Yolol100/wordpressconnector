@@ -63,6 +63,7 @@ final class ElementorJsonExport {
 	public function download(): void {
 		// An export nonce must never authorize a different document via lossy ID coercion.
 		try {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Strict positive_id validation rejects malformed IDs without normalizing them into another target.
 			$post_id = Input::positive_id( isset( $_GET['post_id'] ) ? wp_unslash( $_GET['post_id'] ) : null );
 		} catch ( RuntimeException $error ) {
 			wp_die( esc_html__( 'Invalid Elementor document.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
