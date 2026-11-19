@@ -1281,8 +1281,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuLocationSet( array $payload, array $context ): array {
-		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
-		$menu_id    = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
+		$location = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
+		try {
+			$menu_id = isset( $payload['menu_id'] ) ? Input::non_negative_id( $payload['menu_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'menu_id must be a non-negative integer.' );
+		}
 		$registered = get_registered_nav_menus();
 		if ( ! isset( $registered[ $location ] ) ) {
 			throw new RuntimeException( 'Unknown menu location.' );
