@@ -140,10 +140,9 @@ final class MediaAdapter {
 		if ( ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Uploading media requires upload_files permission.' );
 		}
-		$parent = isset( $payload['parent'] ) ? (int) $payload['parent'] : 0;
-		if ( $parent > 0 && ( ! get_post( $parent ) || ! current_user_can( 'edit_post', $parent ) ) ) {
-			throw new RuntimeException( 'You cannot attach media to this parent item.' );
-		}
+		$parent = isset( $payload['parent'] )
+			? $this->validated_parent_id( $payload['parent'], 'You cannot attach media to this parent item.' )
+			: 0;
 		$asset_root = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $asset_root ) {
 			throw new RuntimeException( 'media.import requires --asset-root in the CLI context.' );
@@ -172,7 +171,7 @@ final class MediaAdapter {
 			'filename'    => basename( $real ),
 			'mime_type'   => $checked['type'],
 			'bytes'       => (int) $size,
-			'parent'      => isset( $payload['parent'] ) ? (int) $payload['parent'] : 0,
+			'parent'      => $parent,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -242,10 +241,13 @@ final class MediaAdapter {
 		}
 		$before = $this->snapshot( $id );
 		$after  = $before;
-		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) {
+		foreach ( array( 'title', 'alt', 'caption', 'description' ) as $field ) {
 			if ( array_key_exists( $field, $payload ) ) {
 				$after[ $field ] = $payload[ $field ];
 			}
+		}
+		if ( array_key_exists( 'parent', $payload ) ) {
+			$after['parent'] = $this->validated_parent_id( $payload['parent'], 'You cannot assign this media attachment to the requested parent.' );
 		}
 		$result = array(
 			'before'               => $before,
@@ -677,6 +679,29 @@ final class MediaAdapter {
 		return $id;
 	}
 
+
+	/**
+	 * Validate a media parent before previewing or changing its attachment.
+	 *
+	 * @param mixed  $value   Untrusted parent identifier.
+	 * @param string $message Existing action-specific error message.
+	 *
+	 * @return int Validated parent ID, or zero for a detached attachment.
+	 *
+	 * @throws \RuntimeException When the parent is invalid or not editable.
+	 */
+	private function validated_parent_id( $value, string $message ): int {
+		try {
+			$parent_id = Input::non_negative_id( $value );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( $message );
+		}
+		if ( $parent_id > 0 && ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) {
+			throw new RuntimeException( $message );
+		}
+		return $parent_id;
+	}
+
 	/**
 	 * Process the snapshot operation in the Media adapter.
 	 *
@@ -725,12 +750,7 @@ final class MediaAdapter {
 			$post_fields['post_content'] = (string) $payload['description'];
 		}
 		if ( array_key_exists( 'parent', $payload ) ) {
-			$parent_id = (int) $payload['parent'];
-			if ( $parent_id < 0 || ( $parent_id > 0
-				&& ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) ) {
-				throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
-			}
-			$post_fields['post_parent'] = $parent_id;
+			$post_fields['post_parent'] = $this->validated_parent_id( $payload['parent'], 'You cannot assign this media attachment to the requested parent.' );
 		}
 		if ( count( $post_fields ) > 1 ) {
 			$updated = wp_update_post( wp_slash( $post_fields ), true );
