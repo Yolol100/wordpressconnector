@@ -280,7 +280,7 @@ final class Runner {
 			}
 			$action = $operation['action'];
 			if ( in_array( $action, array( 'connector.read_batch', 'connector.batch', 'connector.rollback', 'connector.cleanup' ), true )
-			|| 'wordpress.ability.execute' === $action ) {
+			|| 'wordpress.ability.execute' === $action ) { // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Protected public action identifier.
 				throw new RuntimeException( 'Nested and delegated actions are not allowed in connector.read_batch.' );
 			}
 			$descriptor = $this->registry->descriptor( $action );

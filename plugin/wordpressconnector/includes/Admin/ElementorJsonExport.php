@@ -150,7 +150,7 @@ final class ElementorJsonExport {
 		if ( empty( $content ) ) {
 			throw new RuntimeException( 'The Elementor document is empty.' );
 		}
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing export-elements filter must retain its hook name.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound, WordPress.NamingConventions.ValidHookName.UseUnderscores -- Native Elementor filter names are fixed compatibility identifiers.
 		$content = apply_filters( 'elementor/template_library/sources/local/export/elements', $content );
 		if ( ! is_array( $content ) ) {
 			throw new RuntimeException( 'Elementor export filters returned invalid document content.' );
@@ -169,7 +169,7 @@ final class ElementorJsonExport {
 			'title'         => (string) $post->post_title,
 			'type'          => $type,
 		);
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing snapshot filter must retain its hook name.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound, WordPress.NamingConventions.ValidHookName.UseUnderscores -- Native Elementor filter names are fixed compatibility identifiers.
 		$snapshots = apply_filters( 'elementor/template_library/export/build_snapshots', array(), $content, (int) $post->ID, $payload );
 		if ( is_array( $snapshots ) ) {
 			if ( ! empty( $snapshots['global_classes'] ) ) {

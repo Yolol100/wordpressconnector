@@ -409,8 +409,9 @@ final class Controller {
 				. 'GitHub OIDC and WordPress Application Passwords are separate credentials. '
 				. 'Server-side theme replacement and third-party Ability writes are disabled by default.';
 		} elseif ( self::RESOURCE_INTEGRATIONS === $params['uri'] ) {
+			// phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Client tool names must remain exact protocol identifiers.
 			$text = 'Use wordpress_connector_discover for the current environment and wordpress_connector_actions '
-				. 'for permitted semantic actions. Use wordpress.abilities to discover installed provider '
+				. 'for permitted semantic actions. Use wordpress.abilities to discover installed provider ' // phpcs:ignore WordPress.WP.CapitalPDangit.MisspelledInText -- Canonical public action name, not prose.
 				. 'Abilities: only entries with an exposed connector_action can be executed through the '
 				. 'normal WordPress permissions and Connector policy. Elementor and WooCommerce manage their '
 				. 'own provider-side requirements; never assume a plugin feature is installed, enabled or '

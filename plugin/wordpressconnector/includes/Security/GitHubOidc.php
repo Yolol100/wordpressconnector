@@ -372,6 +372,7 @@ final class GitHubOidc {
 		}
 		$bit_string = "\x03" . $this->asn1_length( strlen( $rsa ) + 1 ) . "\x00" . $rsa;
 		$spki       = $this->asn1_sequence( $algorithm . $bit_string );
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- PEM requires standard base64 encoding; this is not code obfuscation.
 		return "-----BEGIN PUBLIC KEY-----\n" . chunk_split( base64_encode( $spki ), 64, "\n" ) . "-----END PUBLIC KEY-----\n";
 	}
 
@@ -468,6 +469,7 @@ final class GitHubOidc {
 		if ( $remainder > 0 ) {
 			$padded .= str_repeat( '=', 4 - $remainder );
 		}
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Signed GitHub JWT/JWK uses strictly validated base64url; not obfuscated code.
 		$decoded = base64_decode( $padded, true );
 		if ( false === $decoded ) {
 			throw new RuntimeException( 'GitHub OIDC ' . $label . ' could not be decoded.' );
