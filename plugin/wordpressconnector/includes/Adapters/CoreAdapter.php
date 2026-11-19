@@ -1579,11 +1579,18 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When the optional post ID is invalid.
 	 */
 	public function commentList( array $payload ): array {
+		try {
+			$post_id = isset( $payload['post_id'] ) ? Input::non_negative_id( $payload['post_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'post_id must be a non-negative integer.' );
+		}
 		$comments = get_comments(
 			array(
-				'post_id' => isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0,
+				'post_id' => $post_id,
 				'status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'all',
 				'number'  => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
 				'offset'  => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
