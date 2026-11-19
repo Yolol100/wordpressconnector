@@ -100,6 +100,7 @@ run_php tests/public-broad-actions-contract.php
 run_php tests/public-request-server-boundary-contract.php
 run_php tests/public-post-read-contract.php
 run_php tests/public-post-update-target-contract.php
+run_php tests/core-post-field-id-contract.php
 run_php tests/core-term-assignment-contract.php
 run_php tests/core-term-target-identity-contract.php
 run_php tests/core-menu-identity-contract.php
