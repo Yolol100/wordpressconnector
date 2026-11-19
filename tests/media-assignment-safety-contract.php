@@ -36,6 +36,11 @@ foreach (array(
 class WP_Post {
     public int $ID;
     public string $post_type;
+    public string $post_title = 'Original title';
+    public string $post_excerpt = '';
+    public string $post_content = '';
+    public int $post_parent = 0;
+    public string $post_mime_type = 'image/jpeg';
     public function __construct(int $id, string $postType = 'attachment') {
         $this->ID = $id;
         $this->post_type = $postType;
@@ -121,6 +126,85 @@ $rollbackPreview = $adapter->mediaAssign(array(
 ), array('dry_run' => true, 'rollback_mode' => true));
 if (($rollbackPreview['before'] ?? null) !== 0 || ($rollbackPreview['after'] ?? null) !== 0) {
     throw new RuntimeException('Featured-image rollback zero-ID contract regressed.');
+}
+
+
+// Exact media parent IDs must be checked before a dry-run or real write.
+// Use the production validator rather than duplicating its parsing rules.
+$parentValidator = new ReflectionMethod($adapter, 'validated_parent_id');
+if (PHP_VERSION_ID < 80100) {
+    $parentValidator->setAccessible(true);
+}
+$invalidParents = array(true, false, 102.5, -102, '-1', '102junk',
+    '1.02e2', ' 102', "102\\n", '9999999999999999999999999', array(102));
+foreach ($invalidParents as $candidate) {
+    $lookups = count($GLOBALS['media_test_lookups']);
+    foreach (array('You cannot attach media to this parent item.',
+        'You cannot assign this media attachment to the requested parent.') as $message) {
+        try {
+            $parentValidator->invoke($adapter, $candidate, $message);
+            throw new RuntimeException('Invalid media parent ID was accepted.');
+        } catch (RuntimeException $error) {
+            if ($message !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+    }
+    if ($lookups !== count($GLOBALS['media_test_lookups'])) {
+        throw new RuntimeException('Malformed media parent reached get_post().');
+    }
+    try {
+        $adapter->mediaImport(array('parent' => $candidate), array('dry_run' => true));
+        throw new RuntimeException('Media import accepted an invalid parent.');
+    } catch (RuntimeException $error) {
+        if ('You cannot attach media to this parent item.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+}
+foreach (array(0 => 0, 'root' => '0000', 'positive' => 102,
+    'padded' => '000102') as $parent) {
+    $expected = ('0000' === $parent || 0 === $parent) ? 0 : 102;
+    if ($parentValidator->invoke($adapter, $parent,
+        'You cannot assign this media attachment to the requested parent.') !== $expected) {
+        throw new RuntimeException('Valid media parent ID compatibility regressed.');
+    }
+}
+$lookups = count($GLOBALS['media_test_lookups']);
+try {
+    $parentValidator->invoke($adapter, '000999',
+        'You cannot assign this media attachment to the requested parent.');
+    throw new RuntimeException('Unknown media parent was accepted.');
+} catch (RuntimeException $error) {
+    if ('You cannot assign this media attachment to the requested parent.' !== $error->getMessage()) {
+        throw $error;
+    }
+}
+if (count($GLOBALS['media_test_lookups']) !== $lookups + 1) {
+    throw new RuntimeException('Unknown media parent was not checked.');
+}
+// Existing snapshot fields are still returned, but malformed parents are
+// rejected before preview can promise an unsafe future media write.
+function get_post_meta($id, $key, $single): string { return ''; }
+function wp_get_attachment_url($id): string { return 'https://example.test/image.jpg'; }
+function get_attached_file($id): string { return '/tmp/image.jpg'; }
+function wp_get_attachment_metadata($id): array { return array(); }
+$badParentPreview = array('id' => 101, 'parent' => '102junk');
+try {
+    $adapter->mediaUpdate($badParentPreview, array('dry_run' => true));
+    throw new RuntimeException('Media update preview accepted a coerced parent.');
+} catch (RuntimeException $error) {
+    if ('You cannot assign this media attachment to the requested parent.' !== $error->getMessage()) {
+        throw $error;
+    }
+}
+$goodParentPreview = $adapter->mediaUpdate(array(
+    'id' => 101, 'parent' => '000102',
+), array('dry_run' => true));
+if (102 !== ($goodParentPreview['after']['parent'] ?? null)
+    || 0 !== ($goodParentPreview['before']['parent'] ?? null)
+    || empty($goodParentPreview['_current_fingerprint'])) {
+    throw new RuntimeException('Media parent dry-run normalization or fingerprint changed.');
 }
 
 echo "Media assignment, guarded rollback and rename safety contract OK\n";
