@@ -11,7 +11,9 @@ set_error_handler(static function ($severity, $message): void {
 // The repository's separate MySQL/WordPress matrix provides full runtime proof.
 class WooCommerce {}
 class WC_Product {}
-class WC_Product_Variable extends WC_Product {}
+class WC_Product_Variable extends WC_Product {
+    public function get_children(): array { return array(); }
+}
 class WC_Product_Variation extends WC_Product
 {
     private $id = 55;
@@ -135,6 +137,8 @@ foreach ($invalidIds as $invalidId) {
         }
     }
 }
+$GLOBALS['variation_saved'] = false;
+$GLOBALS['readback_mode'] = 'success';
 foreach (array(11, '11', '000011') as $id) {
     $resolved = $productResolver->invoke($adapter, array('id' => $id));
     if (! $resolved instanceof WC_Product_Variable) {
