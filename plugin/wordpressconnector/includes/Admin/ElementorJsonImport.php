@@ -247,7 +247,7 @@ final class ElementorJsonImport {
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'The Elementor JSON upload is invalid.' );
 		}
-		$raw = file_get_contents( $tmp_name );
+		$raw = file_get_contents( $tmp_name ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- PHP upload temp path verified by is_uploaded_file() and size limits; HTTP requests cannot read local upload bytes.
 		if ( ! is_string( $raw ) || '' === trim( $raw ) || strlen( $raw ) > self::MAX_BYTES ) {
 			throw new RuntimeException( 'The Elementor JSON file is empty or too large.' );
 		}
@@ -503,7 +503,7 @@ final class ElementorJsonImport {
 			if ( ! is_uploaded_file( $tmp ) ) {
 				throw new RuntimeException( 'Invalid uploaded file.' );
 			}
-			$raw = file_get_contents( $tmp );
+			$raw = file_get_contents( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- PHP-uploaded local JSON file verified by is_uploaded_file() and bounded before decoding; not a URL.
 			if ( ! is_string( $raw ) || strlen( $raw ) > self::MAX_BYTES ) {
 				throw new RuntimeException( 'Could not read upload.' );
 			}
