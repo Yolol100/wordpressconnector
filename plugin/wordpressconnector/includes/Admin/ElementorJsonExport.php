@@ -339,8 +339,8 @@ final class ElementorJsonExport {
 		if ( ! $query->have_posts() ) {
 			throw new RuntimeException( 'The document context could not be prepared for Theme Builder conditions.' );
 		}
-		$wp_query     = $query;
-		$wp_the_query = $query;
+		$wp_query     = $query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Scoped Elementor Theme Builder query context; restored in finally.
+		$wp_the_query = $query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Scoped Elementor Theme Builder query context; restored in finally.
 		try {
 			$query->the_post();
 			return $callback();
@@ -350,9 +350,9 @@ final class ElementorJsonExport {
 			try {
 				$query->reset_postdata();
 			} finally {
-				$wp_query     = $previous_query;
-				$wp_the_query = $previous_the_query;
-				$post         = $previous_post;
+				$wp_query     = $previous_query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of the caller's query, independently tested.
+				$wp_the_query = $previous_the_query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of the caller's main query, independently tested.
+				$post         = $previous_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of caller post after Elementor export, independently tested.
 				if ( $previous_post instanceof \WP_Post ) {
 					setup_postdata( $previous_post );
 				}
