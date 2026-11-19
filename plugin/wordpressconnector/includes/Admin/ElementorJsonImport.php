@@ -221,10 +221,10 @@ final class ElementorJsonImport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function uploaded_payload(): array {
-		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
+		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Private upload parser is reached only after handleImport() verifies its action nonce.
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
-		$file = $_FILES['elementor_json'];
+		$file = $_FILES['elementor_json']; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce-checked private parser validates scalar metadata, sanitizes filename and verifies is_uploaded_file() before reading bytes.
 		// PHP upload metadata must be scalar; reject nested form fields before casting.
 		if ( ! isset( $file['error'], $file['size'], $file['name'], $file['tmp_name'] )
 			|| ! is_int( $file['error'] ) || ! is_int( $file['size'] )
@@ -465,7 +465,7 @@ final class ElementorJsonImport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function bulk_uploads(): array {
-		$files = $_FILES['elementor_jsons'] ?? null;
+		$files = $_FILES['elementor_jsons'] ?? null; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- previewBulk() checks action nonce and capability; private parser validates all upload array shapes and paths before reading.
 		if ( ! is_array( $files ) || ! isset( $files['name'] ) || ! is_array( $files['name'] ) ) {
 			throw new RuntimeException( 'No files uploaded.' );
 		}
