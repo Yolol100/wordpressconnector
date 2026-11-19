@@ -11,6 +11,9 @@ $GLOBALS['menu_item_reads'] = 0;
 $GLOBALS['menu_item_meta_reads'] = 0;
 $GLOBALS['menu_item_writes'] = 0;
 $GLOBALS['menu_item_last_write'] = null;
+$GLOBALS['menu_location_reads'] = 0;
+$GLOBALS['menu_location_writes'] = 0;
+$GLOBALS['menu_location_data'] = array('primary' => 101);
 $GLOBALS['menu_fixture'] = (object) array('term_id' => 101, 'name' => 'Primary', 'slug' => 'primary');
 function wp_get_nav_menu_object($id) {
     $GLOBALS['menu_lookups'][] = $id;
@@ -26,6 +29,23 @@ function wp_get_nav_menu_items($id): array {
     return array();
 }
 function sanitize_text_field($value): string { return (string) $value; }
+function sanitize_key($value): string { return strtolower((string) $value); }
+function get_registered_nav_menus(): array {
+    ++$GLOBALS['menu_location_reads'];
+    return array('primary' => 'Primary navigation');
+}
+function get_nav_menu_locations(): array {
+    ++$GLOBALS['menu_location_reads'];
+    return $GLOBALS['menu_location_data'];
+}
+function set_theme_mod($name, $value): bool {
+    if ('nav_menu_locations' !== $name) {
+        throw new RuntimeException('Unexpected theme mod target.');
+    }
+    ++$GLOBALS['menu_location_writes'];
+    $GLOBALS['menu_location_data'] = $value;
+    return true;
+}
 function is_wp_error($value): bool { return false; }
 function wp_update_nav_menu_object($id, $args) {
     ++$GLOBALS['menu_updates'];
@@ -226,5 +246,88 @@ if (($updatedItem['item_id'] ?? null) !== 202
     || ($GLOBALS['menu_item_last_write'][2]['menu-item-object-id'] ?? null) !== 55
     || $GLOBALS['menu_item_writes'] !== 2) {
     throw new RuntimeException('Existing menu item update or rollback changed.');
+}
+// menu.location_set must fail closed for malformed menu IDs, including on a write.
+$badLocationIds = array(true, false, 101.5, -101, '-1', '101junk',
+    '1.01e2', ' 101', "101\n", '99999999999999999999999999', array(101));
+foreach ($badLocationIds as $badLocationId) {
+    foreach (array(true, false) as $dryRun) {
+        $reads = $GLOBALS['menu_location_reads'];
+        $writes = $GLOBALS['menu_location_writes'];
+        try {
+            $adapter->menuLocationSet(
+                array('location' => 'primary', 'menu_id' => $badLocationId),
+                array('dry_run' => $dryRun)
+            );
+            throw new RuntimeException('Invalid menu location ID was accepted.');
+        } catch (RuntimeException $error) {
+            if ('menu_id must be a non-negative integer.' !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+        if ($reads !== $GLOBALS['menu_location_reads']
+            || $writes !== $GLOBALS['menu_location_writes']) {
+            throw new RuntimeException('Invalid menu location ID accessed a WordPress API.');
+        }
+    }
+}
+$locationPreview = $adapter->menuLocationSet(
+    array('location' => 'primary', 'menu_id' => '000101'),
+    array('dry_run' => true)
+);
+if (($locationPreview['before'] ?? null) !== 101
+    || ($locationPreview['after'] ?? null) !== 101
+    || ! isset($locationPreview['_current_fingerprint'])
+    || $GLOBALS['menu_location_writes'] !== 0) {
+    throw new RuntimeException('Valid menu location preview changed.');
+}
+$locationWrite = $adapter->menuLocationSet(
+    array('location' => 'primary', 'menu_id' => 101),
+    array('dry_run' => false)
+);
+if (($locationWrite['menu_id'] ?? null) !== 101
+    || ($locationWrite['_rollback']['payload']['menu_id'] ?? null) !== 101
+    || $GLOBALS['menu_location_writes'] !== 1) {
+    throw new RuntimeException('Valid menu location assignment or rollback changed.');
+}
+$clearPreview = $adapter->menuLocationSet(
+    array('location' => 'primary', 'menu_id' => '000'),
+    array('dry_run' => true)
+);
+if (($clearPreview['after'] ?? null) !== 0
+    || $GLOBALS['menu_location_writes'] !== 1) {
+    throw new RuntimeException('Empty menu location preview changed.');
+}
+$cleared = $adapter->menuLocationSet(
+    array('location' => 'primary', 'menu_id' => 0),
+    array('dry_run' => false)
+);
+if (($cleared['menu_id'] ?? null) !== 0
+    || ($cleared['_rollback']['payload']['menu_id'] ?? null) !== 101
+    || ($GLOBALS['menu_location_data']['primary'] ?? null) !== 0
+    || $GLOBALS['menu_location_writes'] !== 2) {
+    throw new RuntimeException('Clearing a menu location or rollback changed.');
+}
+$omitted = $adapter->menuLocationSet(
+    array('location' => 'primary', 'menu_id' => null),
+    array('dry_run' => true)
+);
+if (($omitted['after'] ?? null) !== 0
+    || $GLOBALS['menu_location_writes'] !== 2) {
+    throw new RuntimeException('Optional menu ID default changed.');
+}
+try {
+    $adapter->menuLocationSet(
+        array('location' => 'unknown', 'menu_id' => 101),
+        array('dry_run' => false)
+    );
+    throw new RuntimeException('Unknown location accepted.');
+} catch (RuntimeException $error) {
+    if ('Unknown menu location.' !== $error->getMessage()) {
+        throw $error;
+    }
+}
+if ($GLOBALS['menu_location_writes'] !== 2) {
+    throw new RuntimeException('Unknown menu location changed theme state.');
 }
 echo "Classic-menu exact ID and rollback contract OK\n";
