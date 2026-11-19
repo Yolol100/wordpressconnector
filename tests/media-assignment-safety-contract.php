@@ -139,10 +139,12 @@ $invalidParents = array(true, false, 102.5, -102, '-1', '102junk',
     '1.02e2', ' 102', "102\\n", '9999999999999999999999999', array(102));
 foreach ($invalidParents as $candidate) {
     $lookups = count($GLOBALS['media_test_lookups']);
-    foreach (array('You cannot attach media to this parent item.',
-        'You cannot assign this media attachment to the requested parent.') as $message) {
+    foreach (array(true, false) as $forImport) {
+        $message = $forImport
+            ? 'You cannot attach media to this parent item.'
+            : 'You cannot assign this media attachment to the requested parent.';
         try {
-            $parentValidator->invoke($adapter, $candidate, $message);
+            $parentValidator->invoke($adapter, $candidate, $forImport);
             throw new RuntimeException('Invalid media parent ID was accepted.');
         } catch (RuntimeException $error) {
             if ($message !== $error->getMessage()) {
@@ -166,14 +168,14 @@ foreach (array(0 => 0, 'root' => '0000', 'positive' => 102,
     'padded' => '000102') as $parent) {
     $expected = ('0000' === $parent || 0 === $parent) ? 0 : 102;
     if ($parentValidator->invoke($adapter, $parent,
-        'You cannot assign this media attachment to the requested parent.') !== $expected) {
+        false) !== $expected) {
         throw new RuntimeException('Valid media parent ID compatibility regressed.');
     }
 }
 $lookups = count($GLOBALS['media_test_lookups']);
 try {
     $parentValidator->invoke($adapter, '000999',
-        'You cannot assign this media attachment to the requested parent.');
+        false);
     throw new RuntimeException('Unknown media parent was accepted.');
 } catch (RuntimeException $error) {
     if ('You cannot assign this media attachment to the requested parent.' !== $error->getMessage()) {
