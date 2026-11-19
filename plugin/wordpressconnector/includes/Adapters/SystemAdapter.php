@@ -1777,6 +1777,23 @@ final class SystemAdapter {
 	}
 
 	/**
+	 * Reject ambiguous multisite IDs before reading or mutating a site.
+	 *
+	 * @param array $payload Requested site identifier.
+	 *
+	 * @return int Exact positive site ID.
+	 *
+	 * @throws \RuntimeException If the site ID is malformed.
+	 */
+	private function require_site_id( array $payload ): int {
+		try {
+			return Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Site not found.' );
+		}
+	}
+
+	/**
 	 * Handle the site update connector action.
 	 *
 	 * @param array $payload Request parameters.
@@ -1790,7 +1807,7 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id   = $this->require_site_id( $payload );
 		$site = get_site( $id );
 		if ( ! $site ) {
 			throw new RuntimeException( 'Site not found.' );
@@ -1841,7 +1858,7 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$id = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id = $this->require_site_id( $payload );
 		if ( get_main_site_id() === $id ) {
 			throw new RuntimeException( 'Refusing to delete the main site.' );
 		}
