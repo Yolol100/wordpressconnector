@@ -683,8 +683,8 @@ final class MediaAdapter {
 	/**
 	 * Validate a media parent before previewing or changing its attachment.
 	 *
-	 * @param mixed  $value   Untrusted parent identifier.
-	 * @param bool $for_import Whether validating the media import action.
+	 * @param mixed $value   Untrusted parent identifier.
+	 * @param bool  $for_import Whether validating the media import action.
 	 *
 	 * @return int Validated parent ID, or zero for a detached attachment.
 	 *
