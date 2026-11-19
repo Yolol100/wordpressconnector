@@ -178,6 +178,7 @@ namespace {
         }
     }
 
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Input.php';
     require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/ElementorJsonExport.php';
 
     \Elementor\Plugin::$instance = (object) array(
@@ -305,6 +306,49 @@ namespace {
             'Failed singular export query leaked WordPress globals after ' . $failure);
     }
     $GLOBALS['wpconnector_query_fail_at'] = '';
+
+
+    // The export GET target uses the same strict positive-ID contract as
+    // document mutations. A malformed target must fail before nonce validation.
+    function wp_unslash($value) { return $value; }
+    function wp_die($message, $title = '', $args = array()): void {
+        throw new \DomainException((string) $message);
+    }
+    function check_admin_referer(string $action): void {
+        $GLOBALS['wpconnector_export_nonce_actions'][] = $action;
+        throw new \LogicException('Export nonce boundary reached.');
+    }
+
+    $previousGet = $_GET ?? array();
+    $GLOBALS['wpconnector_export_nonce_actions'] = array();
+    $invalidExportIds = array(null, true, false, 10.5, 0, '0', '0000', -10,
+        '10junk', '10.5', '1e1', ' 10', "10\n", '999999999999999999999999', array(10));
+    foreach ($invalidExportIds as $invalidId) {
+        $_GET = array('post_id' => $invalidId);
+        $beforeNonces = count($GLOBALS['wpconnector_export_nonce_actions']);
+        try {
+            $export->download();
+            $assert(false, 'Malformed Elementor export ID was accepted.');
+        } catch (\DomainException $error) {
+            $assert('Invalid Elementor document.' === $error->getMessage(),
+                'Malformed Elementor export ID returned an unexpected error.');
+        }
+        $assert(count($GLOBALS['wpconnector_export_nonce_actions']) === $beforeNonces,
+            'Malformed Elementor export ID reached nonce validation.');
+    }
+    foreach (array(10, '10', '00010') as $validId) {
+        $_GET = array('post_id' => $validId);
+        try {
+            $export->download();
+            $assert(false, 'Valid Elementor export target skipped nonce validation.');
+        } catch (\LogicException $error) {
+            $assert('Export nonce boundary reached.' === $error->getMessage(),
+                'Valid Elementor export ID returned an unexpected error.');
+        }
+        $assert('wpconnector_export_elementor_json_10' === end($GLOBALS['wpconnector_export_nonce_actions']),
+            'Valid Elementor export target changed its nonce action or resolved ID.');
+    }
+    $_GET = $previousGet;
 
     echo "elementor JSON export runtime contract OK\n";
 }

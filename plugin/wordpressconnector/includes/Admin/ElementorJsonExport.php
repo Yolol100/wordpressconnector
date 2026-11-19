@@ -11,6 +11,7 @@ namespace Webactueel\WordPressConnector\Admin;
 
 use RuntimeException;
 use Throwable;
+use Webactueel\WordPressConnector\Support\Input;
 /**
  * Supports Elementor Json Export workflows in WordPress administration.
  */
@@ -60,11 +61,15 @@ final class ElementorJsonExport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function download(): void {
-		$post_id            = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
-		if ( $post_id < 1 ) {
+		// An export nonce must never authorize a different document via lossy ID coercion.
+		try {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Strict positive_id validation rejects malformed IDs without normalizing them into another target.
+			$post_id = Input::positive_id( isset( $_GET['post_id'] ) ? wp_unslash( $_GET['post_id'] ) : null );
+		} catch ( RuntimeException $error ) {
 			wp_die( esc_html__( 'Invalid Elementor document.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
 		}
+		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
 		check_admin_referer( self::ACTION . '_' . $post_id );
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post || ! $this->supports_post_type( (string) $post->post_type ) ) {
@@ -95,6 +100,7 @@ final class ElementorJsonExport {
 		header( 'Content-Disposition: attachment; filename=' . $filename );
 		header( 'Content-Length: ' . strlen( $json ) );
 		header( 'X-Content-Type-Options: nosniff' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This is an application/json download, not HTML; escaping would corrupt the serialized JSON bytes.
 		echo $json;
 		exit;
 	}
