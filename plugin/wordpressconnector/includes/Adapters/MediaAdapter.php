@@ -693,7 +693,7 @@ final class MediaAdapter {
 	private function validated_parent_id( $value, bool $for_import ): int {
 		try {
 			$parent_id = Input::non_negative_id( $value );
-			if ( $parent_id > 0 && ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) ) {
+			if ( $parent_id > 0 && ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) {
 				throw new RuntimeException( 'Invalid media parent.' );
 			}
 			return $parent_id;
