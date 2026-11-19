@@ -77,4 +77,20 @@ foreach (WP_CLI::$lines as $index => $line) {
         throw new RuntimeException('CLI doctor did not execute its registered read-only action.');
     }
 }
+
+// WP-CLI supplies both argument arrays even for read-only commands that
+// currently ignore them. Preserve the exact public signature, including names
+// for PHP 8 callers that might use named arguments.
+foreach ( array( 'actions', 'doctor' ) as $command_name ) {
+    $method = new ReflectionMethod( $cli, $command_name );
+    $parameters = $method->getParameters();
+    if ( ! $method->isPublic() || 2 !== count( $parameters )
+        || 'args' !== $parameters[0]->getName()
+        || 'assoc_args' !== $parameters[1]->getName()
+        || 'array' !== (string) $parameters[0]->getType()
+        || 'array' !== (string) $parameters[1]->getType() ) {
+        throw new RuntimeException( 'WP-CLI callback ABI drifted: ' . $command_name );
+    }
+}
+
 echo "WP-CLI actions and doctor versioned read-only request contracts OK\n";
