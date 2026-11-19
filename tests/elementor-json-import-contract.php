@@ -39,10 +39,15 @@ $bulkStart = strpos($source, 'public function previewBulk(): void {');
 $bulkNonce = false !== $bulkStart ? strpos($source, 'check_admin_referer( self::BULK_PREVIEW );', $bulkStart) : false;
 $bulkCapability = false !== $bulkNonce ? strpos($source, "current_user_can( 'manage_options' )", $bulkNonce) : false;
 $bulkParser = false !== $bulkCapability ? strpos($source, '$this->bulk_uploads()', $bulkCapability) : false;
-if (false === $singleNonce || false === $singleParser || $singleNonce >= $singleParser
-    || false === $bulkNonce || false === $bulkCapability || false === $bulkParser
-    || ! ($bulkNonce < $bulkCapability && $bulkCapability < $bulkParser)) {
-    throw new RuntimeException('Upload parser can be reached before nonce or capability checks.');
+$singleEnd = false !== $singleStart ? strpos($source, 'private function uploaded_payload(): array {', $singleStart) : false;
+$bulkEnd = false !== $bulkStart ? strpos($source, 'public function confirmBulk(): void {', $bulkStart) : false;
+if (false === $singleNonce || false === $singleParser || false === $singleEnd
+    || ! ($singleStart < $singleNonce && $singleNonce < $singleParser && $singleParser < $singleEnd)
+    || false === $bulkNonce || false === $bulkCapability || false === $bulkParser || false === $bulkEnd
+    || ! ($bulkStart < $bulkNonce && $bulkNonce < $bulkCapability && $bulkCapability < $bulkParser && $bulkParser < $bulkEnd)
+    || 1 !== substr_count($source, '$this->uploaded_payload()')
+    || 1 !== substr_count($source, '$this->bulk_uploads()')) {
+    throw new RuntimeException('Upload parser has an unguarded, duplicate or relocated call site.');
 }
 // The raw upload metadata is parsed by type before using PHP temporary paths.
 // Never run sanitize_text_field() on $_FILES tmp_name: that can alter file identity.
