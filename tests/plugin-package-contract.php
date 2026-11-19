@@ -169,24 +169,29 @@ if ( class_exists( 'ZipArchive' ) ) {
         throw new RuntimeException( 'Cannot create the ZIP compatibility fixture.' );
     }
     $zip = new ZipArchive();
+    $opened = false;
     try {
         if ( true !== $zip->open( $path, ZipArchive::CREATE | ZipArchive::OVERWRITE ) ) {
             throw new RuntimeException( 'Cannot open the ZIP compatibility fixture.' );
         }
+        $opened = true;
         if ( ! $zip->addFromString( 'plugin/main.php', '<?php // test' )
             || ! $zip->addFromString( 'plugin/readme.txt', 'readme' ) ) {
             throw new RuntimeException( 'Cannot populate the ZIP compatibility fixture.' );
         }
-        $zip->close();
+        if ( ! $zip->close() ) {
+            throw new RuntimeException( 'Cannot finish the ZIP compatibility fixture.' );
+        }
+        $opened = false;
         if ( true !== $zip->open( $path, ZipArchive::RDONLY ) ) {
             throw new RuntimeException( 'Cannot read the ZIP compatibility fixture.' );
         }
+        $opened = true;
         if ( 2 !== $zip->count() || $zip->count() !== $zip->numFiles ) {
             throw new RuntimeException( 'ZipArchive count changed the archive-size contract.' );
         }
-        $zip->close();
     } finally {
-        if ( $zip->status === ZipArchive::ER_OK ) {
+        if ( $opened ) {
             $zip->close();
         }
         unlink( $path );
