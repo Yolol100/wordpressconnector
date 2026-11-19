@@ -75,7 +75,7 @@ final class Json {
 			throw new RuntimeException( 'JSON file is not readable: ' . $path );
 		}
 
-		$contents = file_get_contents( $path );
+		$contents = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Validated local readable JSON file; wp_remote_get() only accepts a URL and changes failure semantics.
 		if ( false === $contents ) {
 			throw new RuntimeException( 'Could not read JSON file: ' . $path );
 		}

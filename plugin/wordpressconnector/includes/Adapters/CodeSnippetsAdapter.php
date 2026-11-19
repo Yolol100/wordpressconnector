@@ -89,7 +89,7 @@ final class CodeSnippetsAdapter {
 	 */
 	private function catalog_code(): string {
 		$path = __DIR__ . '/../Presets/woocommerce-catalog-no-orders.txt';
-		$code = is_file( $path ) ? file_get_contents( $path ) : false;
+		$code = is_file( $path ) ? file_get_contents( $path ) : false; // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Read only bundled static preset at __DIR__; wp_remote_get() performs HTTP, not package I/O.
 		if ( ! is_string( $code ) || '' === trim( $code ) ||
 			strlen( $code ) > self::MAX_CODE_BYTES ||
 			false === strpos( $code, self::CATALOG_MARKER ) ) {

@@ -310,7 +310,7 @@ final class Controller {
 				$this->assets->cleanup( $connector_request->id() );
 			} catch ( Throwable $cleanup_error ) {
 				// Log a constant, never an upload path, request ID or credential.
-				error_log( 'WordPress Connector could not clear private request assets.' );
+				error_log( 'WordPress Connector could not clear private request assets.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Constant operational security failure signal with no path, token, or credential; not temporary debugging.
 			}
 		}
 	}
