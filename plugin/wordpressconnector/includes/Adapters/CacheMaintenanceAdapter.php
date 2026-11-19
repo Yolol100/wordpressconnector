@@ -356,7 +356,7 @@ final class CacheMaintenanceAdapter {
 	 * Process the handle asset cleanup loopback operation in the CacheMaintenance adapter.
 	 */
 	public function handleAssetCleanupLoopback(): void {
-		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Raw HTTP method is checked for exact POST before normalization; never accept a repaired method.
+		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw method is rejected unless exact POST before subsequent sanitization; no malformed value becomes trusted.
 		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method )
 			|| 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
 			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
@@ -411,7 +411,7 @@ final class CacheMaintenanceAdapter {
 	 * @return string Operation result.
 	 */
 	private function loopback_hex_header( string $header_name, int $length ): string {
-		$raw = $_SERVER[ $header_name ] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash -- Validate exact raw hex token before wp_unslash; changing the validation order risks authenticating altered bytes.
+		$raw = $_SERVER[ $header_name ] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reject invalid raw header bytes with exact-size hex regex before sanitization; verified by negative loopback auth tests.
 
 		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
 		if ( ! is_string( $raw ) || ! preg_match( '/\A[a-f0-9]{' . $length . '}\z/i', $raw ) ) {
