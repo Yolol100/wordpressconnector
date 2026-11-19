@@ -1216,13 +1216,13 @@ final class CoreAdapter {
 			'parent'    => 'menu-item-parent-id',
 			'position'  => 'menu-item-position',
 		);
-		$numeric_args = array();
+		$numeric_args   = array();
 		foreach ( $numeric_fields as $source => $target ) {
 			if ( isset( $payload[ $source ] ) ) {
 				try {
 					$numeric_args[ $target ] = Input::non_negative_id( $payload[ $source ] );
 				} catch ( RuntimeException $error ) {
-					throw new RuntimeException( $source . ' must be a non-negative integer.' );
+					throw new RuntimeException( 'object_id, parent and position must be non-negative integers.' );
 				}
 			}
 		}
