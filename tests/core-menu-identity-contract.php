@@ -171,7 +171,7 @@ foreach ($bad_ids as $badId) {
     foreach (array('object_id', 'parent', 'position') as $field) {
         $expectInvalidItem(
             array('menu_id' => 101, 'item_id' => 0, $field => $badId),
-            $field . ' must be a non-negative integer.'
+            'object_id, parent and position must be non-negative integers.'
         );
     }
 }
