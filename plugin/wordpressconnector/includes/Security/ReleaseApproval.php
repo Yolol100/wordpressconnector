@@ -153,10 +153,6 @@ final class ReleaseApproval {
 	}
 
 	/**
-	 * Atomically claim an unexpired, exact owner approval. A second MCP
-	 * request cannot reuse it even with a different idempotency request_id.
-	 */
-	/**
 	 * Read-only availability preflight, called under Runner's mutation lock
 	 * before it writes a pending idempotency record. Approval is NOT consumed.
 	 */
