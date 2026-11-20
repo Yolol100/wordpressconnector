@@ -396,6 +396,7 @@ final class ConnectorUpdateAdapter {
 			'release_tag'   => $release['tag'],
 			'package_digest' => $release['package_digest'],
 		);
+		$release_fingerprint = Fingerprint::make( $release_state );
 		$plan   = array(
 			'from_version'                    => $current,
 			'to_version'                      => $release['version'],
@@ -413,12 +414,15 @@ final class ConnectorUpdateAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_update_connector' => $plan,
-				'_current_fingerprint'   => Fingerprint::make( $release_state ),
+				// Public release metadata and installed version only; safe for
+				// the MCP preview to return through its normal redaction layer.
+				'release_fingerprint'    => $release_fingerprint,
+				'_current_fingerprint'   => $release_fingerprint,
 			);
 		}
 		if ( isset( $context['expected_prewrite_fingerprint'] )
 			&& ( ! is_string( $context['expected_prewrite_fingerprint'] )
-				|| ! hash_equals( Fingerprint::make( $release_state ), $context['expected_prewrite_fingerprint'] ) ) ) {
+				|| ! hash_equals( $release_fingerprint, $context['expected_prewrite_fingerprint'] ) ) ) {
 			throw new RuntimeException( 'Connector release changed after approval; preview the update again.' );
 		}
 
