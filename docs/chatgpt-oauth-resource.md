@@ -49,9 +49,13 @@ by removing the approval constant (or setting it to `false`).
    `https://wordpress.example.invalid/wp-json/webactueel-wordpress-connector/v1/mcp`.
 2. Install the **reviewed and signed** future Connector release. Do not install
    an unreviewed branch/ZIP on live sites.
-3. Check HTTPS presence and `/wp-json/webactueel-wordpress-connector/v1/oauth-resource`.
-   The resource metadata advertises the issuer. Unauthorized MCP requests advertise
-   this protected-resource metadata through `WWW-Authenticate`.
+3. Check HTTPS presence and the canonical RFC 9728 metadata URL:
+   `https://wordpress.example.invalid/.well-known/oauth-protected-resource/wp-json/webactueel-wordpress-connector/v1/mcp`.
+   The existing `/wp-json/webactueel-wordpress-connector/v1/oauth-resource` remains
+   an optional REST alias. The hosting web server **must forward the .well-known
+   path to WordPress** (some Nginx/Apache/CDN rules intercept it); a PHP route alone
+   is not proof that the public URI works. HTTP 401 from the MCP resource advertises
+   this canonical metadata location in `WWW-Authenticate`.
 4. In ChatGPT Plugins, add a custom MCP server using this exact MCP URL, select
    OAuth, complete the authorization-provider login and consent as the linked
    account. This requires a workspace supporting custom authenticated MCP.
@@ -67,9 +71,24 @@ by removing the approval constant (or setting it to `false`).
 - GitHub OIDC and existing WordPress session/Application Password permissions are
   unchanged. OAuth bearer tokens do not grant `/execute` or `/assets` REST access.
 - Introspection is a separate server-to-provider call for every bearer request.
+  It sends only RFC 7662's `token` and `token_type_hint` fields, verifies the
+  returned `aud` against the exact MCP URL, bounds provider responses to 16 KiB
+  during download, disables redirects, verifies TLS and times out after five seconds.
   A network timeout, 4xx/5xx, malformed JSON, missing audience/scope, wrong issuer,
   wrong subject, expired token or reduced WordPress capability **fails closed**.
+- A WordPress transient-based guard permits at most 12 introspections per verified
+  web-server remote IP and 60 per site per minute. The guard is best-effort under
+  concurrency; also configure a trusted CDN/WAF rate limit at the edge, especially
+  behind proxies that reuse a server IP. Never trust an unvalidated X-Forwarded-For
+  value as proof of a distinct client.
+- The `WWW-Authenticate` bearer challenge reports `invalid_token` on invalid
+  401 responses and `insufficient_scope` on missing OAuth scope, with no error
+  code for the initial unauthenticated discovery challenge.
 - No access token or secret is persisted or logged by the Connector.
+- The introspection client secret is **server-to-provider** and is not the
+  OAuth client credential used by ChatGPT for the authorization-code/PKCE flow.
+  The external authorization server must support CIMD or approved DCR/client
+  registration, explicit user consent and the matching ChatGPT redirect URL.
 - An `isConfigured` indicator proves only local configuration. It does **not**
   mean the provider supports ChatGPT, the OAuth grant succeeded, or the linked
   WordPress user explicitly consented. Real OAuth, multisite and provider tests
