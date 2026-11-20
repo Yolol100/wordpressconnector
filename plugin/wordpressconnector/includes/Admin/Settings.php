@@ -356,7 +356,7 @@ final class Settings {
 			__( 'GitHub site pairing', 'wordpressconnector' ) =>
 				$site['github_pairing_recorded'] ? __( 'Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector' ) : __( 'Not recorded', 'wordpressconnector' ),
 			__( 'Direct ChatGPT OAuth', 'wordpressconnector' ) =>
-				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : __( 'Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector' ),
+				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : ( ! empty( $oauth['oauth_provider_configured'] ) ? __( 'OAuth resource configured; external login and consent have not been verified', 'wordpressconnector' ) : __( 'Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector' ) ),
 			__( 'Full database and files backup', 'wordpressconnector' ) =>
 				__( 'Not independently verified', 'wordpressconnector' ),
 			__( 'Copy stored outside this hosting account', 'wordpressconnector' ) =>

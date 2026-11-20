@@ -13,6 +13,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\SitePairing;
 use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
 /**
  * Read-only administrative setup evidence.
@@ -65,6 +66,7 @@ final class ConnectionReadinessAdapter {
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
 		$paired    = SitePairing::pairedAdministratorId() > 0;
 		$providers = $this->active_backup_providers();
+		$oauth_configured = class_exists( OAuthResourceServer::class, false ) && OAuthResourceServer::isConfigured();
 
 		return array(
 			'read_only'                 => true,
@@ -77,7 +79,8 @@ final class ConnectionReadinessAdapter {
 				'mcp_endpoint_https'           => $https,
 				'oauth_21_ready'               => false,
 				'oauth_authorization_verified' => false,
-				'state'                        => 'requires_trusted_oauth_provider_and_explicit_account_consent',
+				'oauth_provider_configured'    => $oauth_configured,
+				'state'                        => $oauth_configured ? 'provider_configured_requires_independent_oauth_handshake' : 'requires_trusted_oauth_provider_and_explicit_account_consent',
 			),
 			'recovery'                  => array(
 				'active_backup_plugins_detected' => $providers,

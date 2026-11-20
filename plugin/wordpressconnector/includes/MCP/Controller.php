@@ -14,6 +14,7 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
+use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
 /**
  * Implements Controller handling for the connector MCP endpoint.
@@ -47,6 +48,8 @@ final class Controller {
 	 * @var mixed
 	 */
 	private $authorization_callback;
+	/** @var OAuthResourceServer|null */
+	private ?OAuthResourceServer $oauth_resource;
 
 	/**
 	 * Initialize the MCP controller dependencies.
@@ -55,10 +58,11 @@ final class Controller {
 	 * @param Registry $registry Connector action registry.
 	 * @param callable $authorizationCallback Value used by this operation.
 	 */
-	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
+	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback, ?OAuthResourceServer $oauth_resource = null ) {
 		$this->runner                 = $runner;
 		$this->registry               = $registry;
 		$this->authorization_callback = $authorizationCallback;
+		$this->oauth_resource        = $oauth_resource;
 	}
 
 	/**
@@ -91,7 +95,17 @@ final class Controller {
 	 * @return mixed Result of the operation.
 	 */
 	public function authorize( \WP_REST_Request $request ) {
-		return call_user_func( $this->authorization_callback, $request );
+		if ( null !== $this->oauth_resource ) {
+			$oauth_result = $this->oauth_resource->authenticate( $request );
+			if ( null !== $oauth_result ) {
+				return $oauth_result;
+			}
+		}
+		$result = call_user_func( $this->authorization_callback, $request );
+		if ( null !== $this->oauth_resource && $result instanceof \WP_Error ) {
+			OAuthResourceServer::challenge();
+		}
+		return $result;
 	}
 
 	/**
@@ -668,6 +682,13 @@ final class Controller {
 		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
 		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
+		}
+		// OAuth bearer access starts read-only; a browser login or GitHub OIDC
+		// keeps its existing permissions and approval/rollback gates.
+		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated()
+			&& ( ! in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
+				|| true !== $dry_run || false !== $confirm || array() !== $arguments['payload'] ) ) {
+			return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection.' );
 		}
 
 		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
