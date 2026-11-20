@@ -11,6 +11,7 @@ namespace Webactueel\WordPressConnector\MCP;
 
 use RuntimeException;
 use Throwable;
+use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
@@ -745,6 +746,12 @@ final class Controller {
 		$fingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
 		if ( false === $fingerprint || null === $fingerprint ) {
 			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
+		}
+		// A compromised OAuth client cannot approve its own update.
+		// The exact release must first be approved once in the linked owner's
+		// logged-in WordPress Plugins screen (nonce-guarded, ten-minute TTL).
+		if ( ! ConnectorUpdateAdapter::consumeOwnerApproval( $fingerprint ) ) {
+			return $this->tool_error( 'The linked WordPress owner must approve this exact release in wp-admin before ChatGPT can install it.' );
 		}
 		$result = $this->run_semantic(
 			$rpc_id, $name, 'connector.update.apply', array(), false, true,
