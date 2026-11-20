@@ -54,6 +54,9 @@ namespace {
 
     $first = $adapter->apply(array(), array('dry_run' => true));
     $fingerprint = $first['_current_fingerprint'] ?? '';
+    if (($first['release_fingerprint'] ?? null) !== $fingerprint) {
+        throw new \RuntimeException('Preview must disclose the same canonical fingerprint consumed by the guarded update.');
+    }
     if (! is_string($fingerprint) || ! preg_match('/^[a-f0-9]{64}$/D', $fingerprint)
         || ($first['would_update_connector']['github_asset_digest'] ?? '') !== 'sha256:' . str_repeat('a', 64)) {
         throw new \RuntimeException('Self-update preview is missing the verified release digest identity.');
