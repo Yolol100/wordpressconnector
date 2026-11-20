@@ -69,22 +69,28 @@ namespace {
             'expires' => $expires,
         );
     };
+    // Every claimed consent must use the ID bound to the earlier preflight.
+    $consume = static function (string $fp) use ($key): bool {
+        $record = $GLOBALS['owner_options'][$key] ?? null;
+        $id = is_array($record) && is_string($record['id'] ?? null) ? $record['id'] : str_repeat('f', 32);
+        return ReleaseApproval::consume($fp, $id);
+    };
     $now = time();
     $record = $make(str_repeat('a', 32), 7, $now-30, $now+570);
     ensure(! ReleaseApproval::available($fingerprint), 'No wp-admin approval may pass preflight initially.');
-    ensure(! ReleaseApproval::consume($fingerprint), 'No wp-admin approval exists initially.');
+    ensure(! $consume($fingerprint), 'No wp-admin approval exists initially.');
     $GLOBALS['owner_options'][$key] = $record;
     ensure(ReleaseApproval::available($fingerprint), 'A valid approval passes preflight without consuming it.');
     ensure(ReleaseApproval::available($fingerprint), 'Repeating read-only preflight must not claim consent.');
-    ensure(! ReleaseApproval::consume(str_repeat('b', 64)), 'Another fingerprint cannot borrow approval.');
-    ensure(ReleaseApproval::consume($fingerprint), 'One exact, current owner approval may be claimed.');
+    ensure(! $consume(str_repeat('b', 64)), 'Another fingerprint cannot borrow approval.');
+    ensure($consume($fingerprint), 'One exact, current owner approval may be claimed.');
     ensure(! ReleaseApproval::available($fingerprint), 'Used approval is absent after the claim.');
-    ensure(! ReleaseApproval::consume($fingerprint), 'Used approval must be denied even when replayed.');
+    ensure(! $consume($fingerprint), 'Used approval must be denied even when replayed.');
     ensure(isset($GLOBALS['owner_options']['wpconnector_oauth_release_claim_' . str_repeat('a', 32)]),
         'Atomic single-use claim must be durably recorded.');
 
     $GLOBALS['owner_options'][$key] = $record;
-    ensure(! ReleaseApproval::consume($fingerprint), 'Replaying a previously claimed approval id must be denied.');
+    ensure(! $consume($fingerprint), 'Replaying a previously claimed approval id must be denied.');
     // Simulate a second owner browser approval replacing the shared slot while
     // the first request atomically claims its own immutable ID.
     $old = $make(str_repeat('9', 32), 7, $now-30, $now+570);
@@ -92,38 +98,50 @@ namespace {
     $GLOBALS['owner_options'][$key] = $old;
     $GLOBALS['replacement_approval'] = $replacement;
     $GLOBALS['wpdb']->replaceApprovalOnClaim = true;
-    ensure(ReleaseApproval::consume($fingerprint), 'Old approval may be claimed once.');
+    ensure($consume($fingerprint), 'Old approval may be claimed once.');
     ensure(($GLOBALS['owner_options'][$key]['id'] ?? null) === $replacement['id'],
         'An atomic claim must not delete a newer replacement owner approval.');
     ensure(ReleaseApproval::available($fingerprint), 'New replacement approval remains available.');
-    ensure(ReleaseApproval::consume($fingerprint), 'The replacement approval is independently claimable.');
+    ensure($consume($fingerprint), 'The replacement approval is independently claimable.');
     ensure(! ReleaseApproval::available($fingerprint), 'Claimed replacement consent cannot be reused.');
+    // Replacement B after locked preflight must not be consumed by attempt A.
+    $preflightRecord = $make(str_repeat('1', 32), 7, $now-30, $now+570);
+    $replacementRecord = $make(str_repeat('2', 32), 7, $now-30, $now+570);
+    $GLOBALS['owner_options'][$key] = $preflightRecord;
+    $preflightId = ReleaseApproval::idForFingerprint($fingerprint);
+    ensure($preflightId === $preflightRecord['id'], 'Preflight must expose the exact owner consent ID.');
+    $GLOBALS['owner_options'][$key] = $replacementRecord;
+    ensure(! ReleaseApproval::consume($fingerprint, $preflightId),
+        'An in-flight update may not claim replacement approval B using preflighted A.');
+    ensure(ReleaseApproval::idForFingerprint($fingerprint) === $replacementRecord['id'],
+        'New owner approval B must remain available after stale A is refused.');
+    ensure($consume($fingerprint), 'Replacement B remains independently claimable.');
     // A database write error must not burn consent or accept an unrecorded claim.
     $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-30, $now+570);
     $GLOBALS['wpdb']->failInsert = true;
-    ensure(! ReleaseApproval::consume($fingerprint), 'Database claim failure must fail closed.');
+    ensure(! $consume($fingerprint), 'Database claim failure must fail closed.');
     ensure(isset($GLOBALS['owner_options'][$key]), 'Failed database claim must preserve owner consent.');
     $GLOBALS['wpdb']->failInsert = false;
     $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-601, $now-1);
-    ensure(! ReleaseApproval::consume($fingerprint), 'Expired approval must be denied.');
+    ensure(! $consume($fingerprint), 'Expired approval must be denied.');
     $wrongDigest = $make(str_repeat('c', 32), 7, $now-30, $now+570);
     $wrongDigest['digest'] = 'sha256:' . str_repeat('f', 64);
     $GLOBALS['owner_options'][$key] = $wrongDigest;
-    ensure(! ReleaseApproval::consume($fingerprint), 'Attestation pin must reject a different package digest.');
+    ensure(! $consume($fingerprint), 'Attestation pin must reject a different package digest.');
     $GLOBALS['owner_options'][$key] = $make(str_repeat('c', 32), 999, $now-30, $now+570);
-    ensure(! ReleaseApproval::consume($fingerprint), 'Another WordPress owner cannot authorize this account.');
+    ensure(! $consume($fingerprint), 'Another WordPress owner cannot authorize this account.');
     $GLOBALS['owner_options'][$key] = $make(str_repeat('d', 32), 7, $now-30, $now+570);
     $GLOBALS['owner_can_update'] = false;
-    ensure(! ReleaseApproval::consume($fingerprint), 'WordPress update_plugins revocation must invalidate approval.');
+    ensure(! $consume($fingerprint), 'WordPress update_plugins revocation must invalidate approval.');
     $GLOBALS['owner_can_update'] = true;
     OAuthResourceServer::$enabled = false;
-    ensure(! ReleaseApproval::consume($fingerprint), 'Removing the owner opt-in must revoke approval.');
+    ensure(! $consume($fingerprint), 'Removing the owner opt-in must revoke approval.');
     OAuthResourceServer::$enabled = true;
     $GLOBALS['owner_session'] = false;
-    ensure(! ReleaseApproval::consume($fingerprint), 'An unauthenticated request must never consume approval.');
+    ensure(! $consume($fingerprint), 'An unauthenticated request must never consume approval.');
     $GLOBALS['owner_session'] = true;
     $GLOBALS['owner_options'][$key] = $make(str_repeat('e', 32), 7, $now+10, $now+610);
-    ensure(! ReleaseApproval::consume($fingerprint), 'Future-issued approval must be denied.');
+    ensure(! $consume($fingerprint), 'Future-issued approval must be denied.');
 
     $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/ReleaseApproval.php');
     ensure(strpos($source, 'wpconnector_review_release') !== false
@@ -149,8 +167,8 @@ namespace {
     $runner = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
     $adapter = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
     $controller = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/MCP/Controller.php');
-    ensure(is_string($runner) && strpos($runner, 'ReleaseApproval::available(') !== false
-        && strpos($runner, 'ReleaseApproval::available(') < strpos($runner, '$this->processed->begin('),
+    ensure(is_string($runner) && strpos($runner, 'ReleaseApproval::idForFingerprint(') !== false
+        && strpos($runner, 'ReleaseApproval::idForFingerprint(') < strpos($runner, '$this->processed->begin('),
         'Owner preflight must run before reserving a mutation request ID.');
     ensure(is_string($adapter) && strpos($adapter, 'ReleaseApproval::consume(') !== false
         && strpos($adapter, 'ReleaseApproval::consume(') > strpos($adapter, 'verifyProtectedSource( $release, $package )'),
