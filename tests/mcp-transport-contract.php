@@ -30,12 +30,16 @@ namespace Webactueel\WordPressConnector\Runtime {
         public function run(Request $request, array $context = array()): array
         {
             $this->calls[] = array('request' => $request->data(), 'context' => $context);
+            $data = array('echo' => $request->payload());
+            if ($request->action() === 'connector.update.apply' && $request->dryRun()) {
+                $data['release_fingerprint'] = str_repeat('a', 64);
+            }
             return array(
                 'ok' => true,
                 'request_id' => $request->id(),
                 'action' => $request->action(),
                 'dry_run' => $request->dryRun(),
-                'data' => array('echo' => $request->payload()),
+                'data' => $data,
             );
         }
     }
@@ -525,6 +529,9 @@ namespace {
         'An explicitly authorized OAuth update token must become release-scoped.');
 
     $preview = $releaseCall('wordpress_connector_release_preview', array());
+    $previewFingerprint = $preview->get_data()['result']['structuredContent']['result']['data']['release_fingerprint'] ?? null;
+    $assert($previewFingerprint === str_repeat('a', 64),
+        'The MCP preview must expose the actual approval fingerprint through its normal result envelope.');
     $assert($preview->get_data()['result']['isError'] === false
         && count($oauthRunner->calls) === $beforeUpdate + 1
         && $oauthRunner->calls[$beforeUpdate]['request']['action'] === 'connector.update.apply'
@@ -549,7 +556,7 @@ namespace {
         && count($oauthRunner->calls) === $beforeUpdate + 1,
         'Even OAuth release scope must never unlock the generic WordPress write tool.');
 
-    $approval = array('request_id' => 'chatgpt-release-20261120', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true);
+    $approval = array('request_id' => 'chatgpt-release-20261120', 'expected_fingerprint' => $previewFingerprint, 'confirm' => true);
     $applied = $releaseCall('wordpress_connector_release_apply', $approval);
     $write = $oauthRunner->calls[$beforeUpdate + 1]['request'] ?? array();
     $assert($applied->get_data()['result']['isError'] === false
