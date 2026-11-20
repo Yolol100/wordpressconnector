@@ -148,7 +148,7 @@ def verify(client, number, head, deadline_seconds=1560, sleep_seconds=15):
     validate_identity(client.repo, number, head)
     verify_head(client, number, head)
     needs_docker = classify_paths(changed_paths(client, number))
-    names = ["ci.yml"] + (["docker-runtime-smoke.yml"] if needs_docker else [])
+    names = ["ci.yml", "wpcs-audit.yml"] + (["docker-runtime-smoke.yml"] if needs_docker else [])
     started = time.monotonic()
     while True:
         unfinished = []
@@ -163,7 +163,7 @@ def verify(client, number, head, deadline_seconds=1560, sleep_seconds=15):
                 raise GateError("%s completed without success (%s)." % (workflow, run.get("conclusion")))
         if not unfinished:
             verify_head(client, number, head)
-            return {"sha": head, "pr": number, "ci": "success", "docker_required": needs_docker}
+            return {"sha": head, "pr": number, "ci": "success", "wpcs": "success", "docker_required": needs_docker}
         if time.monotonic() - started >= deadline_seconds:
             raise GateError("Required workflow verification timed out: " + ", ".join(unfinished))
         time.sleep(sleep_seconds)

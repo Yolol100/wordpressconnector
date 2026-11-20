@@ -22,10 +22,11 @@ def action_run(conclusion="success", name="Connector CI", pr=1024, head=SHA):
 class FakeClient:
     repo = "Yolol100/wordpressconnector"
 
-    def __init__(self, filenames=None, ci=None, docker=None, head=SHA, base="main"):
+    def __init__(self, filenames=None, ci=None, docker=None, wpcs=None, head=SHA, base="main"):
         self.filenames = filenames or ["plugin/wordpressconnector/includes/Adapters/Foo.php"]
         self.ci = ci if ci is not None else [action_run()]
         self.docker = docker if docker is not None else [action_run(name="Docker")]
+        self.wpcs = wpcs if wpcs is not None else [action_run(name="WPCS")]
         self.head, self.base = head, base
 
     def get(self, suffix):
@@ -37,6 +38,8 @@ class FakeClient:
             return {"workflow_runs": self.ci}
         if suffix.startswith("actions/workflows/docker-runtime-smoke.yml/"):
             return {"workflow_runs": self.docker}
+        if suffix.startswith("actions/workflows/wpcs-audit.yml/"):
+            return {"workflow_runs": self.wpcs}
         raise AssertionError("Unexpected API call: " + suffix)
 
 
@@ -95,6 +98,7 @@ class RequiredPrGateTests(unittest.TestCase):
     def test_positive_code_and_docs_gates(self):
         result = gate.verify(FakeClient(), 1024, SHA, deadline_seconds=0)
         self.assertEqual(result["ci"], "success")
+        self.assertEqual(result["wpcs"], "success")
         self.assertTrue(result["docker_required"])
         docs = gate.verify(FakeClient(filenames=["README.md"], docker=[]), 1024, SHA, deadline_seconds=0)
         self.assertFalse(docs["docker_required"])
@@ -102,6 +106,8 @@ class RequiredPrGateTests(unittest.TestCase):
     def test_fail_closed_on_checks_or_stale_head(self):
         bad_cases = (
             FakeClient(ci=[action_run(conclusion="failure")]),
+            FakeClient(wpcs=[action_run(conclusion="failure", name="WPCS")]),
+            FakeClient(wpcs=[]),
             FakeClient(docker=[action_run(conclusion="failure")]),
             FakeClient(ci=[]),
             FakeClient(docker=[]),
