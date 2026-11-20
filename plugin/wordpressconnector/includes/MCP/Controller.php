@@ -15,7 +15,6 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
-use Webactueel\WordPressConnector\Security\ReleaseApproval;
 
 /**
  * Implements Controller handling for the connector MCP endpoint.
@@ -747,12 +746,9 @@ final class Controller {
 		if ( false === $fingerprint || null === $fingerprint ) {
 			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
 		}
-		if ( ! ReleaseApproval::consume( $fingerprint ) ) {
-			return $this->tool_error( 'The linked owner must approve this exact release through the authenticated WordPress Plugins screen. Approval expires after 10 minutes and can be used once.' );
-		}
 		$result = $this->run_semantic(
 			$rpc_id, $name, 'connector.update.apply', array(), false, true,
-			$arguments['request_id'], $fingerprint, null, true
+			$arguments['request_id'], $fingerprint, null, true, true
 		);
 		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
@@ -846,7 +842,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token, bool $require_release_provenance = false ): array {
+	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token, bool $require_release_provenance = false, bool $require_owner_approval = false ): array {
 		if ( null === $request_id ) {
 			$request_id = $this->generated_request_id( $rpc_id, $tool_name, $action, $payload );
 		}
@@ -873,6 +869,7 @@ final class Controller {
 				'transport'             => 'mcp',
 				'authenticated_user_id' => get_current_user_id(),
 				'require_release_provenance' => $require_release_provenance,
+				'require_owner_approval' => $require_owner_approval,
 			)
 		);
 	}
