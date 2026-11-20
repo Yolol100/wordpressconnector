@@ -24,6 +24,7 @@ $GLOBALS['oauth_case'] = array(
 	'current_user' => 0,
 	'transients' => array(),
 	'reset_rate_limit' => true,
+	'stringify_transients' => false,
 	'body_override' => null,
 );
 
@@ -76,7 +77,8 @@ function add_action( string $name, $callback, int $priority = 10 ): void {
 	$GLOBALS['oauth_case']['hooks'][ $name ] = $callback;
 }
 function get_transient( string $name ) {
-	return $GLOBALS['oauth_case']['transients'][ $name ] ?? false;
+	$value = $GLOBALS['oauth_case']['transients'][ $name ] ?? false;
+	return false !== $value && $GLOBALS['oauth_case']['stringify_transients'] ? (string) $value : $value;
 }
 function set_transient( string $name, $value, int $duration ): bool {
 	$GLOBALS['oauth_case']['transients'][ $name ] = $value;
@@ -261,6 +263,9 @@ assert_oauth( $resource->resourceMetadata() instanceof WP_Error, 'Resource disco
 
 $GLOBALS['oauth_case']['ssl'] = true;
 $GLOBALS['oauth_case']['reset_rate_limit'] = false;
+// Emulate WordPress database-backed transients (no persistent object cache):
+// get_option() returns stored integer counters as decimal strings on reload.
+$GLOBALS['oauth_case']['stringify_transients'] = true;
 $GLOBALS['oauth_case']['transients'] = array();
 $GLOBALS['oauth_case']['claims'] = oauth_base_claims();
 $_SERVER['REMOTE_ADDR'] = '192.0.2.12';
@@ -275,4 +280,20 @@ assert_oauth( $blocked instanceof WP_Error
 	&& ! $authed
 	&& $before === count( $GLOBALS['oauth_case']['calls'] ),
 	'Thirteenth call from the same verified remote address must be denied before provider introspection.' );
+// Reject malformed, negative, noncanonical or oversized stored transient counts.
+foreach ( array( '01', '-1', '+1', '1e3', '99999', 'not-a-number' ) as $invalid_count ) {
+	$GLOBALS['oauth_case']['transients'] = array( 'wpconnector_oauth_all_' . (string) floor( time() / 60 ) => $invalid_count );
+	$before = count( $GLOBALS['oauth_case']['calls'] );
+	list( $blocked, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+	assert_oauth( $blocked instanceof WP_Error && 429 === $blocked->get_error_data()['status']
+		&& ! $authed && $before === count( $GLOBALS['oauth_case']['calls'] ),
+		'Stored transient count must reject malformed canonical-decimal values before contacting provider.' );
+}
+$GLOBALS['oauth_case']['transients'] = array();
+$GLOBALS['oauth_case']['transients']['wpconnector_oauth_all_' . (string) floor( time() / 60 )] = '59';
+list( $last, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $last && $authed, 'Canonical decimal count 59 must permit final site-wide request.' );
+list( $full, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( $full instanceof WP_Error && 429 === $full->get_error_data()['status'] && ! $authed,
+	'Canonical decimal count 60 must enforce site-wide limit.' );
 echo "oauth protected resource fail-closed contract OK\n";
