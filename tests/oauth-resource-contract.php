@@ -12,11 +12,13 @@ define( 'WPCONNECTOR_OAUTH_CLIENT_SECRET', 'synthetic-secret-never-use-on-a-real
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT', 'synthetic-subject' );
 define( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID', 123 );
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_LINK_APPROVED', true );
+define( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE', true );
 
 $GLOBALS['oauth_case'] = array(
 	'ssl' => true,
 	'user_exists' => true,
 	'admin' => true,
+	'can_update' => true,
 	'calls' => array(),
 	'http' => 200,
 	'error' => false,
@@ -108,7 +110,13 @@ function get_userdata( int $user_id ) {
 	return $user_id === 123 && $GLOBALS['oauth_case']['user_exists'] ? (object) array( 'ID' => $user_id ) : false;
 }
 function user_can( int $user_id, string $capability ): bool {
-	return 123 === $user_id && 'manage_options' === $capability && $GLOBALS['oauth_case']['admin'];
+	if ( 123 !== $user_id ) {
+		return false;
+	}
+	if ( 'manage_options' === $capability ) {
+		return $GLOBALS['oauth_case']['admin'];
+	}
+	return 'update_plugins' === $capability && $GLOBALS['oauth_case']['can_update'];
 }
 function wp_set_current_user( int $user_id ): void {
 	$GLOBALS['oauth_case']['current_user'] = $user_id;
@@ -144,7 +152,7 @@ function oauth_probe( $headers ) {
 	}
 	$client = new OAuthResourceServer();
 	$result = $client->authenticate( new WP_REST_Request( $headers ) );
-	return array( $result, $client->isAuthenticated() );
+	return array( $result, $client->isAuthenticated(), $client->canSelfUpdate() );
 }
 
 $assertion_count = 0;
@@ -152,7 +160,9 @@ assert_oauth( OAuthResourceServer::isConfigured(), 'Owner approval and all provi
 $metadata = OAuthResourceServer::metadata();
 assert_oauth( OAuthResourceServer::resource() === $metadata['resource'], 'OAuth resource metadata needs exact MCP audience.' );
 assert_oauth( array( WPCONNECTOR_OAUTH_ISSUER ) === $metadata['authorization_servers'], 'MCP discovers the issuer, not an assumed OAuth provider.' );
-assert_oauth( array( 'wpconnector:read' ) === $metadata['scopes_supported'], 'OAuth must expose read scope only.' );
+assert_oauth( array( 'wpconnector:read', 'wpconnector:update' ) === $metadata['scopes_supported'], 'Owner-approved OAuth must advertise read and release-update scopes.' );
+assert_oauth( OAuthResourceServer::selfUpdateConfigured(), 'Owner-signed update opt-in should be visible only when explicitly enabled.' );
+assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader( true ), 'scope="wpconnector:read wpconnector:update"' ), 'Update challenge must specify both scopes.' );
 assert_oauth( false === strpos( json_encode( $metadata ), WPCONNECTOR_OAUTH_CLIENT_SECRET ), 'Never expose the introspection secret through metadata.' );
 assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader(), 'resource_metadata="https://example.invalid/.well-known/oauth-protected-resource/wp-json/webactueel-wordpress-connector/v1/mcp"' ), 'Bearer challenge must advertise the canonical RFC 9728 protected-resource URL.' );
 // WordPress plain permalinks use ?rest_route= instead of /wp-json/... .
@@ -200,6 +210,25 @@ assert_oauth( $token === $last['args']['body']['token']
 assert_oauth( 16385 === $last['args']['limit_response_size'],
 	'WordPress must enforce a response byte cap during HTTP transport, not only after download.' );
 assert_oauth( false === strpos( json_encode( $metadata ), $token ), 'Tokens must not leak into public metadata.' );
+// The opt-in update scope is not inherited by normal read tokens.
+$GLOBALS['oauth_case']['claims'] = oauth_base_claims();
+list( $readonly, $authed, $mayUpdate ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $readonly && $authed && ! $mayUpdate, 'A read-only token never grants self-update.' );
+$GLOBALS['oauth_case']['claims']['scope'] = 'openid wpconnector:read wpconnector:update';
+list( $privileged, $authed, $mayUpdate ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $privileged && $authed && $mayUpdate, 'Exactly scoped update token with the linked update_plugins capability is eligible.' );
+$GLOBALS['oauth_case']['can_update'] = false;
+list( $demotedUpdate, $authed, $mayUpdate ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $demotedUpdate && $authed && ! $mayUpdate, 'Losing update_plugins must revoke only elevated release access.' );
+$GLOBALS['oauth_case']['can_update'] = true;
+$GLOBALS['oauth_case']['claims']['scope'] = 'openid wpconnector:read wpconnector:update_extra';
+list( $wrongScope, $authed, $mayUpdate ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $wrongScope && $authed && ! $mayUpdate, 'Update permission must compare the complete scope, not a prefix.' );
+$GLOBALS['oauth_case']['claims']['scope'] = 'wpconnector:update';
+list( $missingRead, $authed, $mayUpdate ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( $missingRead instanceof WP_Error && ! $authed && ! $mayUpdate, 'Update scope alone cannot bypass mandatory read identity checks.' );
+$GLOBALS['oauth_case']['claims'] = oauth_base_claims();
+
 list( $short, $authed ) = oauth_probe( array( 'authorization' => 'Bearer abc' ) );
 assert_oauth( true === $short && $authed, 'RFC 6750 permits opaque bearer tokens shorter than 32 characters.' );
 list( $spaced, $authed ) = oauth_probe( array( 'authorization' => 'Bearer  abc' ) );
