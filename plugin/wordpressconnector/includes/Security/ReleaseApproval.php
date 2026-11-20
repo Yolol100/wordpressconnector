@@ -28,6 +28,8 @@ final class ReleaseApproval {
 	 * A host administrator must pin the exact ZIP digest after independently
 	 * verifying the trusted build attestation against protected main.
 	 * A GitHub release checksum alone is not provenance proof. No pin: deny.
+	 *
+	 * @param string $digest Candidate release SHA-256 digest.
 	 */
 	private static function pinnedDigest( string $digest ): bool {
 		$pin = defined( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256' )
@@ -136,10 +138,12 @@ final class ReleaseApproval {
 
 	/** Create short-lived, single-use consent through the real wp-admin session. */
 	public function approve(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Exact POST literal check with capability and session validation.
 		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! self::ownerBrowser() ) {
 			wp_die( esc_html__( 'A logged-in owner session is required.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
 		check_admin_referer( self::NONCE_ACTION );
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Type checked, wp_unslash+sanitize_text_field and strict hex regex before use.
 		$raw = $_POST['expected_fingerprint'] ?? null;
 		$requested = is_string( $raw ) ? sanitize_text_field( wp_unslash( $raw ) ) : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $requested ) ) {
@@ -172,18 +176,28 @@ final class ReleaseApproval {
 	/**
 	 * Read-only availability preflight, called under Runner's mutation lock
 	 * before it writes a pending idempotency record. Approval is NOT consumed.
+	 *
+	 * @param string $fingerprint Exact release fingerprint.
 	 */
 	public static function available( string $fingerprint ): bool {
 		return null !== self::idForFingerprint( $fingerprint );
 	}
 
-	/** Bind the locked preflight to the exact one-time approval record. */
+	/**
+	 * Bind the locked preflight to the exact one-time approval record.
+	 *
+	 * @param string $fingerprint Exact release fingerprint.
+	 */
 	public static function idForFingerprint( string $fingerprint ): ?string {
 		$record = self::currentApproval( $fingerprint );
 		return null === $record ? null : $record['id'];
 	}
 
-	/** Check the exact owner, release pin and expiry without claiming consent. */
+	/**
+	 * Check the exact owner, release pin and expiry without claiming consent.
+	 *
+	 * @param string $fingerprint Exact release fingerprint.
+	 */
 	private static function currentApproval( string $fingerprint ): ?array {
 		if ( ! OAuthResourceServer::selfUpdateConfigured() || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint )
 			|| ! is_user_logged_in() || ! current_user_can( 'update_plugins' ) ) {
@@ -212,6 +226,9 @@ final class ReleaseApproval {
 	/**
 	 * Atomically consume the consent after package verification, update
 	 * preconditions and Runner's lock/replay handling have all succeeded.
+	 *
+	 * @param string $fingerprint          Exact release fingerprint.
+	 * @param string $expected_approval_id Single-use owner approval identifier.
 	 */
 	public static function consume( string $fingerprint, string $expected_approval_id ): bool {
 		if ( 1 !== preg_match( '/^[a-f0-9]{32}\\z/', $expected_approval_id ) ) {
