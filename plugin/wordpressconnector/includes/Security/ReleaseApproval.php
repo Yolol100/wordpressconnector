@@ -9,7 +9,6 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Security;
 
-use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
 
@@ -24,6 +23,19 @@ final class ReleaseApproval {
 	private const CLAIM_PREFIX = 'wpconnector_oauth_release_claim_';
 	private const TTL_SECONDS = 600;
 	private const NONCE_ACTION = 'wpconnector_oauth_approve_release';
+
+	/**
+	 * A host administrator must pin the exact ZIP digest after independently
+	 * verifying the trusted build attestation against protected main.
+	 * A GitHub release checksum alone is not provenance proof. No pin: deny.
+	 */
+	private static function pinnedDigest( string $digest ): bool {
+		$pin = defined( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256' )
+			? constant( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256' )
+			: null;
+		return is_string( $pin ) && preg_match( '/^sha256:[a-f0-9]{64}\z/', $pin )
+			&& hash_equals( $pin, $digest );
+	}
 
 	/** Register the dashboard and POST-only owner consent flow. */
 	public function register(): void {
@@ -65,6 +77,9 @@ final class ReleaseApproval {
 			|| ! is_string( $plan['tag'] ) || ! preg_match( '/^v[0-9]+\.[0-9]+\.[0-9]+\z/', $plan['tag'] )
 			|| ! is_string( $plan['github_asset_digest'] )
 			|| ! preg_match( '/^sha256:[a-f0-9]{64}\z/', $plan['github_asset_digest'] ) ) {
+			return null;
+		}
+		if ( ! self::pinnedDigest( $plan['github_asset_digest'] ) ) {
 			return null;
 		}
 		return array(
@@ -125,6 +140,7 @@ final class ReleaseApproval {
 		$approval = array(
 			'id'          => $approval_id,
 			'fingerprint' => $release['fingerprint'],
+			'digest'      => $release['digest'],
 			'owner'       => get_current_user_id(),
 			'issued'      => $now,
 			'expires'     => $now + self::TTL_SECONDS,
@@ -148,10 +164,11 @@ final class ReleaseApproval {
 		$record = get_option( self::OPTION, false );
 		$now = time();
 		if ( ! is_array( $record )
-			|| ! isset( $record['id'], $record['fingerprint'], $record['owner'], $record['issued'], $record['expires'] )
+			|| ! isset( $record['id'], $record['fingerprint'], $record['digest'], $record['owner'], $record['issued'], $record['expires'] )
 			|| ! is_string( $record['id'] ) || ! preg_match( '/^[a-f0-9]{32}\z/', $record['id'] )
 			|| ! is_string( $record['fingerprint'] )
 			|| ! hash_equals( $record['fingerprint'], $fingerprint )
+			|| ! is_string( $record['digest'] ) || ! self::pinnedDigest( $record['digest'] )
 			|| ! is_int( $record['owner'] ) || get_current_user_id() !== $record['owner']
 			|| ! is_int( $record['issued'] ) || $record['issued'] > $now
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= $now
