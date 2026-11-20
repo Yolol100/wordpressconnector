@@ -257,10 +257,11 @@ final class OAuthResourceServer {
 		$counts = array();
 		foreach ( $limits as $key => $limit ) {
 			$value = get_transient( $key );
-			if ( false !== $value && ( ! is_int( $value ) || $value < 0 ) ) {
+			if ( false !== $value && ! is_int( $value )
+				&& ( ! is_string( $value ) || 1 !== preg_match( '/\A(?:0|[1-9][0-9]{0,2})\z/', $value ) ) ) {
 				return false;
 			}
-			$count = false === $value ? 0 : $value;
+			$count = false === $value ? 0 : (int) $value;
 			if ( $count >= $limit ) {
 				return false;
 			}
