@@ -12,6 +12,7 @@ namespace Webactueel\WordPressConnector\Security {
     }
 }
 namespace {
+    define('WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256', 'sha256:' . str_repeat('a', 64));
     $GLOBALS['owner_options'] = array();
     $GLOBALS['owner_user_id'] = 7;
     $GLOBALS['owner_can_update'] = true;
@@ -48,6 +49,7 @@ namespace {
         return array(
             'id' => $id,
             'fingerprint' => $fingerprint,
+            'digest' => WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256,
             'owner' => $owner,
             'issued' => $issued,
             'expires' => $expires,
@@ -67,6 +69,10 @@ namespace {
     ensure(! ReleaseApproval::consume($fingerprint), 'Replaying a previously claimed approval id must be denied.');
     $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-601, $now-1);
     ensure(! ReleaseApproval::consume($fingerprint), 'Expired approval must be denied.');
+    $wrongDigest = $make(str_repeat('c', 32), 7, $now-30, $now+570);
+    $wrongDigest['digest'] = 'sha256:' . str_repeat('f', 64);
+    $GLOBALS['owner_options'][$key] = $wrongDigest;
+    ensure(! ReleaseApproval::consume($fingerprint), 'Attestation pin must reject a different package digest.');
     $GLOBALS['owner_options'][$key] = $make(str_repeat('c', 32), 999, $now-30, $now+570);
     ensure(! ReleaseApproval::consume($fingerprint), 'Another WordPress owner cannot authorize this account.');
     $GLOBALS['owner_options'][$key] = $make(str_repeat('d', 32), 7, $now-30, $now+570);
@@ -91,6 +97,7 @@ namespace {
         "wp_generate_uuid4()",
         "hash_equals( \$release['fingerprint'], \$requested )",
         "add_option( self::CLAIM_PREFIX",
+        "WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256",
     ) as $guard) {
         ensure(is_string($source) && strpos($source, $guard) !== false, 'Owner approval guard missing: ' . $guard);
     }
