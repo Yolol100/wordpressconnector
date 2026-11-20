@@ -748,6 +748,9 @@ final class Controller {
 		if ( false === $fingerprint || null === $fingerprint ) {
 			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
 		}
+		if ( ! ReleaseApproval::consume( $fingerprint ) ) {
+			return $this->tool_error( 'The linked owner must approve this exact release through the authenticated WordPress Plugins screen. Approval expires after 10 minutes and can be used once.' );
+		}
 		// A compromised OAuth client cannot approve its own update.
 		// The exact release must first be approved once in the linked owner's
 		// logged-in WordPress Plugins screen (nonce-guarded, ten-minute TTL).
