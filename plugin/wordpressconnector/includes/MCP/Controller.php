@@ -11,7 +11,7 @@ namespace Webactueel\WordPressConnector\MCP;
 
 use RuntimeException;
 use Throwable;
-use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
@@ -734,7 +734,7 @@ final class Controller {
 			if ( array() !== $arguments ) {
 				return $this->tool_error( 'Release preview takes no arguments.' );
 			}
-			$result = $this->run_semantic( $rpc_id, $name, 'connector.update.apply', array(), true, false, null, null, null );
+			$result = $this->run_semantic( $rpc_id, $name, 'connector.update.apply', array(), true, false, null, null, null, true );
 			return $this->tool_result( $result, empty( $result['ok'] ) );
 		}
 		$allowed = array( 'request_id', 'expected_fingerprint', 'confirm' );
@@ -754,12 +754,12 @@ final class Controller {
 		// A compromised OAuth client cannot approve its own update.
 		// The exact release must first be approved once in the linked owner's
 		// logged-in WordPress Plugins screen (nonce-guarded, ten-minute TTL).
-		if ( ! ConnectorUpdateAdapter::consumeOwnerApproval( $fingerprint ) ) {
+		if ( ! ReleaseApproval::consume( $fingerprint ) ) {
 			return $this->tool_error( 'The linked WordPress owner must approve this exact release in wp-admin before ChatGPT can install it.' );
 		}
 		$result = $this->run_semantic(
 			$rpc_id, $name, 'connector.update.apply', array(), false, true,
-			$arguments['request_id'], $fingerprint, null
+			$arguments['request_id'], $fingerprint, null, true
 		);
 		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
@@ -853,7 +853,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token, bool $require_release_provenance = false ): array {
 		if ( null === $request_id ) {
 			$request_id = $this->generated_request_id( $rpc_id, $tool_name, $action, $payload );
 		}
@@ -879,6 +879,7 @@ final class Controller {
 			array(
 				'transport'             => 'mcp',
 				'authenticated_user_id' => get_current_user_id(),
+				'require_release_provenance' => $require_release_provenance,
 			)
 		);
 	}
