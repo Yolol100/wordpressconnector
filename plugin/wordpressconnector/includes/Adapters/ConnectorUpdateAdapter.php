@@ -716,15 +716,35 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
 		}
 
-		if ( ! function_exists( 'download_url' ) ) {
+		if ( ! function_exists( 'wp_tempnam' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 		}
-		$package = download_url( $release['package_url'], 30 );
-		if ( is_wp_error( $package ) ) {
-			throw new RuntimeException( $package->get_error_message() );
+		$package = wp_tempnam( self::PACKAGE_ASSET );
+		if ( ! is_string( $package ) || '' === $package ) {
+			throw new RuntimeException( 'Cannot allocate a temporary Connector release ZIP.' );
 		}
 
 		try {
+			// download_url() has no transfer-size limit: bound the actual streamed
+			// HTTP body before hashing or inspecting the archive.
+			$response = wp_safe_remote_get(
+				$release['package_url'],
+				array(
+					'timeout'             => 30,
+					'redirection'         => 5,
+					'limit_response_size' => self::MAX_PACKAGE_BYTES + 1,
+					'sslverify'           => true,
+					'stream'              => true,
+					'filename'            => $package,
+					'headers'             => array( 'User-Agent' => 'Webactueel-WordPressConnector' ),
+				)
+			);
+			if ( is_wp_error( $response ) ) {
+				throw new RuntimeException( 'Canonical Connector release download failed.' );
+			}
+			if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				throw new RuntimeException( 'Canonical Connector release download returned a non-success status.' );
+			}
 			$size = filesize( $package );
 			if ( false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES ) {
 				throw new RuntimeException( 'Connector release package is empty or exceeds the 20 MiB limit.' );
