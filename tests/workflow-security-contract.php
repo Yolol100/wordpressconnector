@@ -95,15 +95,26 @@ $hasUntrustedPullRequestInline = static function (string $workflow): bool {
         if (null !== $runIndent && '' !== trim($line) && $indent <= $runIndent) {
             $runIndent = null;
         }
-        if (preg_match('/^(\s*)run:\s*[|>][+-]?\s*$/', $line, $matches)) {
-            $runIndent = strlen($matches[1]);
-            continue;
+        $runSource = null;
+        if (preg_match('/^([ \t]*)run:[ \t]*(.*)$/', $line, $matches)) {
+            if (preg_match('/^[|>][+-0-9]*[ \t]*(?:#.*)?$/', $matches[2])) {
+                $runIndent = strlen($matches[1]);
+                continue;
+            }
+            $runIndent = null;
+            $runSource = $matches[2];
+        } elseif (null !== $runIndent) {
+            $runSource = $line;
         }
-        if (null === $runIndent) { continue; }
-        if (! preg_match_all('/\$\{\{\s*([^}]+)\s*\}\}/', $line, $expressions)) { continue; }
+        if (null === $runSource || ! preg_match_all('/\$\{\{\s*([^}]+)\s*\}\}/', $runSource, $expressions)) { continue; }
         foreach ($expressions[1] as $expression) {
-            if (false !== stripos($expression, 'github.event.pull_request.')
-                && ! preg_match('/^\s*github\.event\.pull_request\.(?:base|head)\.sha\s*$/i', $expression)) {
+            // Normalize mixed dot and quoted bracket property access before validating.
+            $normalized = preg_replace('/\[\s*["\x27]([A-Za-z_][A-Za-z0-9_]*)["\x27]\s*\]/', '.$1', $expression);
+            if (! is_string($normalized)) { return true; }
+            $normalized = preg_replace('/\s*\.\s*/', '.', $normalized);
+            if (! is_string($normalized)) { return true; }
+            if (preg_match('/\bgithub\.event\.pull_request\b/i', $normalized)
+                && ! preg_match('/^\s*github\.event\.pull_request\.(?:base|head)\.sha\s*$/i', $normalized)) {
                 return true;
             }
         }
@@ -118,10 +129,38 @@ foreach (array(
     'request_actor="${{ github.event.pull_request.user.login }}"',
     'request_actor="${{ github.event.pull_request.title }}"',
     'request_actor="${{ fromJSON(toJSON(github.event.pull_request.head.ref)) }}"',
+    'request_actor="${{ github.event.pull_request[\'title\'] }}"',
+    'request_actor="${{ github.event[\'pull_request\'][\'title\'] }}"',
+    'request_actor="${{ github[\'event\'][\'pull_request\'][\'title\'] }}"',
+    'request_actor="${{ github.event.pull_request[inputs.property] }}"',
 ) as $unsafeInlineExpression) {
     $tampered = str_replace('request_actor="${PR_REQUEST_ACTOR}"', $unsafeInlineExpression, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
         fwrite(STDERR, "Request workflow contract failed to detect an injected PR expression.\n");
+        exit(1);
+    }
+}
+// Negative fixtures must be valid one-line run steps, not only multiline Bash blocks.
+$inlineRunInsertion = '      - name: Dispatch trusted zero-config WordPress executor';
+foreach (array(
+    '        run: echo "${{ github.event.pull_request.title }}"',
+    '        run: echo "${{ github.event.pull_request[\'title\'] }}"',
+    '        run: echo "${{ github.event[\'pull_request\'][\'title\'] }}"',
+    '        run: echo "${{ github[\'event\'][\'pull_request\'][\'title\'] }}"',
+) as $unsafeOneLineRun) {
+    $tampered = str_replace($inlineRunInsertion, "      - name: injected inline run\n" . $unsafeOneLineRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract missed an unsafe single-line run.\n");
+        exit(1);
+    }
+}
+foreach (array(
+    '        run: echo "${{ github.event.pull_request.base.sha }}"',
+    '        run: echo "${{ github.event.pull_request[\'head\'][\'sha\'] }}"',
+) as $safeOneLineRun) {
+    $tampered = str_replace($inlineRunInsertion, "      - name: trusted SHA inline run\n" . $safeOneLineRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract rejected a pinned SHA expression.\n");
         exit(1);
     }
 }
