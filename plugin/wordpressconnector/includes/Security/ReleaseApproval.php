@@ -156,10 +156,19 @@ final class ReleaseApproval {
 	 * Atomically claim an unexpired, exact owner approval. A second MCP
 	 * request cannot reuse it even with a different idempotency request_id.
 	 */
-	public static function consume( string $fingerprint ): bool {
+	/**
+	 * Read-only availability preflight, called under Runner's mutation lock
+	 * before it writes a pending idempotency record. Approval is NOT consumed.
+	 */
+	public static function available( string $fingerprint ): bool {
+		return null !== self::currentApproval( $fingerprint );
+	}
+
+	/** Check the exact owner, release pin and expiry without claiming consent. */
+	private static function currentApproval( string $fingerprint ): ?array {
 		if ( ! OAuthResourceServer::selfUpdateConfigured() || ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint )
 			|| ! is_user_logged_in() || ! current_user_can( 'update_plugins' ) ) {
-			return false;
+			return null;
 		}
 		$record = get_option( self::OPTION, false );
 		$now = time();
@@ -173,8 +182,21 @@ final class ReleaseApproval {
 			|| ! is_int( $record['issued'] ) || $record['issued'] > $now
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= $now
 			|| $record['expires'] - $record['issued'] !== self::TTL_SECONDS ) {
+			return null;
+		}
+		return $record;
+	}
+
+	/**
+	 * Atomically consume the consent after package verification, update
+	 * preconditions and Runner's lock/replay handling have all succeeded.
+	 */
+	public static function consume( string $fingerprint ): bool {
+		$record = self::currentApproval( $fingerprint );
+		if ( null === $record ) {
 			return false;
 		}
+		$now = time();
 		// Use a single database INSERT against wp_options.option_name's UNIQUE
 		// index. WordPress add_option() may make a cache-based preflight decision;
 		// this security claim must be exclusive across PHP workers and cache nodes.
@@ -197,4 +219,5 @@ final class ReleaseApproval {
 		delete_option( self::OPTION );
 		return true;
 	}
+
 }
