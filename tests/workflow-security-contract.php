@@ -96,6 +96,17 @@ $hasUntrustedPullRequestInline = static function (string $workflow): bool {
         if (preg_match('/^[ \\t]*(?:-[ \\t]+)?"[^"\\r\\n]*\\\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})[^"\\r\\n]*"[ \\t]*:/i', $line)) {
             return true;
         }
+        // GitHub YAML allows flow maps and aliases as executable step keys.
+        // This protected workflow needs neither; reject these alternate
+        // forms fail-closed rather than partially parsing them.
+        if (preg_match('/^[ \t]*-[ \t]*(?:\{|![A-Za-z0-9_-])/', $line)
+            || preg_match('/^[ \t]*steps[ \t]*:[ \t]*[\[\{]/', $line)
+            || preg_match('/^[ \t]*(?:-[ \t]+)?(?:\*[A-Za-z0-9_-]+[ \t]*:|\?[ \t]*\*[A-Za-z0-9_-]+)/', $line)
+            || preg_match('/^[ \t]*(?:-[ \t]+)?(?:[A-Za-z0-9_-]+|"[^"]+"|\x27[^\x27]+\x27)[ \t]*:[ \t]*[&*][A-Za-z0-9_-]+/', $line)
+            || preg_match('/^[ \t]*-[ \t]*&[A-Za-z0-9_-]+/', $line)) {
+            return true;
+        }
+
         $indent = strlen($line) - strlen(ltrim($line, " \t"));
         if (null !== $runIndent && '' !== trim($line) && $indent <= $runIndent) {
             $runIndent = null;
@@ -197,6 +208,20 @@ foreach (array(
     $tampered = str_replace($inlineRunInsertion, "      - name: injected escaped or aliased run\n" . $unsafeYamlRun . "\n" . $inlineRunInsertion, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
         fwrite(STDERR, "Request workflow contract missed a decoded run key or YAML scalar alias.\n");
+        exit(1);
+    }
+}
+// Flow-style step maps and alias-based run keys must fail closed.
+foreach (array(
+    '      - {run: "echo ${{ github.event.pull_request.title }}"}',
+    '      - {"run": "echo ${{ github.event.pull_request.title }}"}',
+    '      - *run_key: echo "${{ github.event.pull_request.title }}"',
+    '      - ? *run_key' . "\n" . '        : echo "${{ github.event.pull_request.title }}"',
+    '      - env: &unsafe_command echo unsafe' . "\n" . '        run: *unsafe_command',
+) as $noncanonicalRun) {
+    $tampered = str_replace($inlineRunInsertion, $noncanonicalRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract missed noncanonical executable YAML syntax.\n");
         exit(1);
     }
 }
