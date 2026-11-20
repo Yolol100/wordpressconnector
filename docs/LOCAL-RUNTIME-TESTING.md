@@ -19,7 +19,7 @@ wp-env run cli wp eval 'if (!defined("WPCONNECTOR_VERSION")) { WP_CLI::error("Co
 wp-env destroy --force
 ```
 
-The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.3 / PHP 8.3 environment. The GitHub workflow checks WordPress 7.1.3, PHP 8.3, a real disposable database query and three expected REST routes. Four unauthenticated HTTP route probes must return 403. With HTTPS simulated **inside the isolated WP-CLI test only**, public `/presence` must return 200 while `/health`, `/assets`, and `/execute` require authentication (401). Simulated HTTPS is not a real network/TLS transport test.
+The configuration mounts only `plugin/wordpressconnector` into a disposable WordPress 7.1.5 / PHP 8.3 environment. The GitHub workflow checks WordPress 7.1.5, PHP 8.3, a real disposable database query and three expected REST routes. Four unauthenticated HTTP route probes must return 403. With HTTPS simulated **inside the isolated WP-CLI test only**, public `/presence` must return 200 while `/health`, `/assets`, and `/execute` require authentication (401). Simulated HTTPS is not a real network/TLS transport test.
 
 The isolated Docker check runs for changes in relevant paths on pull requests, again after those changes land on `main`, or with manual `workflow_dispatch`. Other file-only changes do not trigger this expensive runtime check. The existing main-branch Connector CI and release workflow remain separate; green Docker CI is not production deployment evidence.
 
@@ -43,6 +43,43 @@ Results and a compact `receipt.json` are stored outside the repository under the
 **Protected GitHub governance:** an ordinary PR cannot modify the existing CI or required-gate workflows. This PR uses the unmodified workflows; its documentation change triggers the existing Docker smoke. For a future *script-only* change, run the existing Docker workflow manually as an additional check, because its trusted path filter cannot be changed within an ordinary implementation PR. Inspect the raw log when a failure occurs. These local logs are not automatically uploaded to public GitHub.
 
 **Proof boundary:** this runner executes PHP contract fixtures under Docker, **not** a bootstrapped WordPress site. Use the existing GitHub `docker-runtime-smoke.yml` / `wp-env` for real disposable WordPress + database + plugin activation. A green result cannot establish a target site's OAuth/OIDC, WAF, file permissions, administration, deployment or tested restore. For a real installation or update, use separately authorized staging, an independent backup/restore test and readback; a blocked setup remains `not_run`, never `PASS`.
+
+## Staging acceptance and restoration (mandatory before release)
+
+Use an **owner-approved disposable staging clone**, never the customer's live site. Record exact URL, site UUID,
+WordPress/PHP/WooCommerce/Elementor versions, plugin header version, database prefix, hosting filesystem
+method, current OAuth state, active plugins and baseline file/tree hashes; do not put credentials in GitHub.
+
+1. Make offsite copies of **both files and database** (and any required object-store/hosting configuration).
+   Restore into a **separate disposable staging clone** before attempting any upgrade. Verify expected
+   content/media counts, WP user roles, login, REST auth, cron, active plugin state and source ZIP SHA-256.
+2. Ensure only the signed, post-merge, tested **immutable published** GitHub release ZIP is offered.
+   Verify release tag, exact protected-main source ancestry/tree, ZIP bytes, sha256 asset,
+   SPDX SBOM, GitHub attestation provenance, plugin headers and `Update URI`. Preserve original install.
+3. Stage a normal **Plugins → Update Now** test and a separately approved OAuth-scoped release
+   test, verifying both reject a checksum-matching ZIP whose source differs from protected main.
+   Test interrupted download, corrupt archive, invalid SHA256, wrong plugin identity/version,
+   WordPress Core backup failure, post-install version mismatch, lost activation and failed
+   recovery. Compare prior plugin source hashes and WP REST presence **after** every failure.
+   A PHP worker fatal/kill **cannot** be proven recoverable by the in-process rollback code;
+   use the externally restored staging clone and record downtime and manual steps.
+4. Test owner approval in a live HTTPS admin cookie session, nonce rejection, 10-minute expiry,
+   exact release fingerprint, one-time atomic claim, double-click/replay, simultaneous requests
+   and the request-ID unknown-outcome reconciliation. No automatic retry on an unknown write.
+5. Configure a trusted external OAuth provider only with secrets stored server-side. Confirm
+   authorization code + PKCE S256, provider metadata, exact resource audience, optional pinned
+   authorization client ID (not introspection client), consent, refresh rotation, revocation,
+   user role/capability changes, WAF 429, provider outage 503 and token redaction. Verify real
+   ChatGPT workspace consent, read-only MCP canary and disconnect; do not test a real update
+   until the owner approves the exact release in WordPress.
+6. Re-run WordPress/PHP/WooCommerce HPOS/legacy/Elementor contracts and browser readback after
+   restoring. Require two consecutive green identical-source runs. Preserve sanitized JSON
+   receipts with exact Git SHA, release asset hashes, environment versions, expected/actual
+   outcome and operator approval. **NO-GO** on any unverified restore, lost activation,
+   drifted source, unexpected token access or stale version.
+
+This staging runbook is a checklist, not evidence that any client site was tested.
+The isolated PHP contract mocks and Docker smoke tests do not prove WordPress hosting parity.
 
 ## Evidence and limitations
 

@@ -985,10 +985,10 @@ final class CoreAdapter {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
 		}
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		if ( array_key_exists( 'terms', $payload ) && ! is_array( $payload['terms'] ) ) {
+		if ( ! array_key_exists( 'terms', $payload ) || ! is_array( $payload['terms'] ) ) {
 			throw new RuntimeException( 'terms must be an array of positive term IDs.' );
 		}
-		$terms  = isset( $payload['terms'] ) ? $payload['terms'] : array();
+		$terms  = $payload['terms'];
 		$append = Input::bool( $payload, 'append' );
 		if ( ! taxonomy_exists( $taxonomy ) ) {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );

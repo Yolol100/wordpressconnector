@@ -9,6 +9,7 @@ define( 'WPCONNECTOR_OAUTH_ISSUER', 'https://identity.example.invalid/realms/syn
 define( 'WPCONNECTOR_OAUTH_INTROSPECTION_URL', 'https://identity.example.invalid/realms/synthetic/protocol/openid-connect/token/introspect' );
 define( 'WPCONNECTOR_OAUTH_CLIENT_ID', 'synthetic-introspection-client' );
 define( 'WPCONNECTOR_OAUTH_CLIENT_SECRET', 'synthetic-secret-never-use-on-a-real-site' );
+define( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID', 'synthetic-chatgpt-oauth-client' );
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT', 'synthetic-subject' );
 define( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID', 123 );
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_LINK_APPROVED', true );
@@ -140,6 +141,7 @@ function oauth_base_claims(): array {
 		'active' => true,
 		'iss' => WPCONNECTOR_OAUTH_ISSUER,
 		'sub' => WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT,
+		'client_id' => WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID,
 		'aud' => array( OAuthResourceServer::resource() ),
 		'scope' => 'openid wpconnector:read',
 		'iat' => time() - 60,
@@ -255,6 +257,9 @@ $reject = static function (string $label, array $changes, int $expected_status =
 $reject( 'Inactive token', array( 'active' => false ) );
 $reject( 'Wrong issuer', array( 'iss' => 'https://attacker.example.invalid/' ) );
 $reject( 'Wrong account subject', array( 'sub' => 'other-account' ) );
+$reject( 'Wrong authorized OAuth client', array( 'client_id' => 'other-oauth-client' ) );
+$reject( 'Missing OAuth client binding claim', array( 'client_id' => null ) );
+$reject( 'Invalid OAuth client binding type', array( 'client_id' => array('synthetic-chatgpt-oauth-client') ) );
 $reject( 'Wrong audience', array( 'aud' => array( 'https://another-site.example.invalid/mcp' ) ) );
 $reject( 'Missing audience', array( 'aud' => null ) );
 $reject( 'Multiple audiences including another resource', array( 'aud' => array( OAuthResourceServer::resource(), 'https://other.example.invalid/' ) ) );

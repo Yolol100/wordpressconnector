@@ -322,7 +322,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'The offered connector package is stale or not canonical.' );
 			}
 
-			return $this->download_verified_package( $release );
+			return $this->download_protected_source_package( $release );
 		} catch ( \Throwable $error ) {
 			// Core aborts before replacing any plugin file when given WP_Error.
 			return new \WP_Error( 'wordpressconnector_update_integrity', 'WordPress Connector could not verify this update. No files were changed.' );
@@ -439,13 +439,9 @@ final class ConnectorUpdateAdapter {
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			if ( ! empty( $context['require_release_provenance'] ) ) {
-				$preview_package = $this->download_verified_package( $release );
-				try {
-					$this->verifyProtectedSource( $release, $preview_package );
-				} finally {
-					if ( file_exists( $preview_package ) ) {
-						@unlink( $preview_package );
-					}
+				$preview_package = $this->download_protected_source_package( $release );
+				if ( file_exists( $preview_package ) ) {
+					wp_delete_file( $preview_package );
 				}
 			}
 			return array(
@@ -474,11 +470,8 @@ final class ConnectorUpdateAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-		$package = $this->download_verified_package( $release );
+		$package = $this->download_protected_source_package( $release );
 		try {
-			if ( ! empty( $context['require_release_provenance'] ) ) {
-				$this->verifyProtectedSource( $release, $package );
-			}
 			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
@@ -486,7 +479,8 @@ final class ConnectorUpdateAdapter {
 			$installation = $this->install_with_core_backup(
 				$package,
 				! empty( $context['require_owner_approval'] ) ? $release_fingerprint : null,
-				! empty( $context['require_owner_approval'] ) ? ( $context['owner_approval_id'] ?? null ) : null
+				! empty( $context['require_owner_approval'] ) ? ( $context['owner_approval_id'] ?? null ) : null,
+				$current
 			);
 			wp_clean_plugins_cache( true );
 			$plugins           = get_plugins();
@@ -522,12 +516,13 @@ final class ConnectorUpdateAdapter {
 	 * @param string      $package                    Validated package metadata.
 	 * @param string|null $owner_approval_fingerprint Exact owner consent required by OAuth only.
 	 * @param string|null $owner_approval_id          Exact approval record observed at Runner preflight.
+	 * @param string|null $previous_version           Installed version to verify after a failed install.
 	 *
 	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function install_with_core_backup( string $package, ?string $owner_approval_fingerprint = null, ?string $owner_approval_id = null ): array {
+	private function install_with_core_backup( string $package, ?string $owner_approval_fingerprint = null, ?string $owner_approval_id = null, ?string $previous_version = null ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
 			|| ! is_readable( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE )
 			|| ! method_exists( \Plugin_Upgrader::class, 'restore_temp_backup' ) ) {
@@ -564,6 +559,9 @@ final class ConnectorUpdateAdapter {
 		// inactive after a successful file-version readback.
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'active_before' ), 10, 2 );
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
+		$result          = null;
+		$execution_error = null;
+
 		$this->verified_self_update_package_path = $package;
 		try {
 			// A failure from this point may leave an uncertain file state.
@@ -583,6 +581,10 @@ final class ConnectorUpdateAdapter {
 					),
 				)
 			);
+		} catch ( \Throwable $error ) {
+			// PHP exceptions can occur after the destination was replaced.
+			// Reconcile only after removing the upgrader's temporary hooks.
+			$execution_error = $error;
 		} finally {
 			$this->verified_self_update_package_path = null;
 			remove_filter( 'upgrader_source_selection', array( $upgrader, 'check_package' ) );
@@ -591,24 +593,67 @@ final class ConnectorUpdateAdapter {
 			remove_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10 );
 		}
 
-		if ( is_wp_error( $result ) ) {
-			throw new RuntimeException( 'Connector installation failed; WordPress Core temporary-backup recovery was requested.' );
-		}
-		if ( ! is_array( $result ) ) {
-			throw new RuntimeException( 'Connector installation did not complete; verify WordPress Core backup recovery before retrying.' );
+		if ( null !== $execution_error || is_wp_error( $result ) || ! is_array( $result ) ) {
+			// A returned WP_Error does not prove that Core restored every file.
+			// Compare the old plugin version/activation and use Core's temp backup
+			// when the destination has changed. Never silently retry an unknown
+			// outcome or claim protection against PHP process termination.
+			if ( null !== $previous_version ) {
+				$this->reconcile_failed_installation( $upgrader, $backup, $previous_version, $was_active );
+			}
+			// Do not surface raw upgrader exceptions through a remote MCP response.
+			throw new RuntimeException( 'Connector installation failed or ended with an unknown outcome; prior installation was checked but no automatic retry is allowed.' );
 		}
 		if ( $was_active && ! is_plugin_active( self::PLUGIN_FILE ) ) {
 			// Preserve the activation state held before the guarded upgrade.
 			// Never report a successful install if REST routes will disappear.
 			$activation = activate_plugin( self::PLUGIN_FILE, '', false, true );
 			if ( is_wp_error( $activation ) || ! is_plugin_active( self::PLUGIN_FILE ) ) {
-				throw new RuntimeException( 'Connector upgrade left the plugin inactive; reactivation failed. Manual WP Admin recovery is required.' );
+				if ( null !== $previous_version ) {
+					$this->reconcile_failed_installation( $upgrader, $backup, $previous_version, $was_active );
+				}
+				throw new RuntimeException( 'Connector upgrade left the plugin inactive; reactivation failed. Check the prior-version restore before retrying.' );
 			}
 		}
 		return array(
 			'upgrader' => $upgrader,
 			'backup'   => $backup,
 		);
+	}
+
+	/**
+	 * Reconcile a recoverable synchronous failure without attempting a second
+	 * installation. The original Core backup may already have been restored.
+	 * Process termination and fatal PHP errors still need a tested site restore.
+	 *
+	 * @param \Plugin_Upgrader $upgrader        Original Core upgrader.
+	 * @param array            $backup          Core temporary-backup identity.
+	 * @param string           $expected_version Prior installed plugin version.
+	 * @param bool             $was_active      Whether the Connector was active.
+	 * @return void
+	 * @throws \RuntimeException If Core cannot prove a recoverable prior version.
+	 */
+	private function reconcile_failed_installation( \Plugin_Upgrader $upgrader, array $backup, string $expected_version, bool $was_active ): void {
+		wp_clean_plugins_cache( true );
+		$plugins = get_plugins();
+		$version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
+		if ( ! hash_equals( $expected_version, $version ) ) {
+			$this->restore_after_readback_failure(
+				array(
+					'upgrader' => $upgrader,
+					'backup'   => $backup,
+				),
+				$expected_version
+			);
+		}
+		if ( $was_active && ! is_plugin_active( self::PLUGIN_FILE ) ) {
+			$activation = activate_plugin( self::PLUGIN_FILE, '', false, true );
+			if ( is_wp_error( $activation ) || ! is_plugin_active( self::PLUGIN_FILE ) ) {
+				throw new RuntimeException( 'Connector installation failed; prior-version reactivation was not verified. Restore externally before retrying.' );
+			}
+		}
+		// A version check does not prove every file is intact: staging must
+		// independently verify source hashes and perform a full restore drill.
 	}
 
 	/**
@@ -725,6 +770,28 @@ final class ConnectorUpdateAdapter {
 			'checksum_digest' => $checksum_digest,
 			'source_commit'   => $source_commit,
 		);
+	}
+
+	/**
+	 * Enforce protected-main source provenance for EVERY install path, including
+	 * the native Plugins screen. A matching release checksum alone is insufficient
+	 * if somebody replaces the release ZIP and checksum together.
+	 *
+	 * @param array<string, mixed> $release Canonical GitHub release metadata.
+	 * @return string Verified temporary ZIP path, owned by the caller.
+	 * @throws \Throwable If download, integrity or source provenance fails.
+	 */
+	private function download_protected_source_package( array $release ): string {
+		$package = $this->download_verified_package( $release );
+		try {
+			$this->verifyProtectedSource( $release, $package );
+			return $package;
+		} catch ( \Throwable $error ) {
+			if ( file_exists( $package ) ) {
+				wp_delete_file( $package );
+			}
+			throw $error;
+		}
 	}
 
 	/**

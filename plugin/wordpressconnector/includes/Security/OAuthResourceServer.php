@@ -64,6 +64,18 @@ final class OAuthResourceServer {
 		if ( ! is_int( $data['user_id'] ) || $data['user_id'] <= 0 ) {
 			return null;
 		}
+		// The OAuth authorization client is distinct from the introspection
+		// credentials. Pin it only for providers exposing RFC 7662 client_id;
+		// dynamic client registration must be bound by the issuer's own policy.
+		if ( defined( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID' ) ) {
+			$token_client_id = constant( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID' );
+			if ( ! is_string( $token_client_id ) || '' === $token_client_id
+				|| strlen( $token_client_id ) > 512
+				|| preg_match( '/[\\x00-\\x20\\x7f]/', $token_client_id ) ) {
+				return null;
+			}
+			$data['token_client_id'] = $token_client_id;
+		}
 		$issuer = wp_parse_url( $data['issuer'] );
 		$target = wp_parse_url( $data['introspection'] );
 		foreach ( array( $issuer, $target ) as $url ) {
@@ -164,6 +176,7 @@ final class OAuthResourceServer {
 	 * WordPress must receive the .well-known request from the web server.
 	 */
 	public function serveWellKnown(): void {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Raw request URI is used only in strict canonical path/query comparisons, never output or interpreted as code.
 		$uri = $_SERVER['REQUEST_URI'] ?? '';
 		if ( ! is_string( $uri ) || '' === $uri ) {
 			return;
@@ -174,6 +187,7 @@ final class OAuthResourceServer {
 			|| wp_parse_url( $uri, PHP_URL_QUERY ) !== wp_parse_url( $url, PHP_URL_QUERY ) ) {
 			return;
 		}
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Exact HTTP method literal (GET) comparison; unexpected values are rejected.
 		$method = $_SERVER['REQUEST_METHOD'] ?? '';
 		if ( 'GET' !== $method ) {
 			status_header( 405 );
@@ -205,7 +219,11 @@ final class OAuthResourceServer {
 		return new \WP_REST_Response( $metadata, 200 );
 	}
 
-	/** Exact challenge for the MCP OAuth discovery handshake. */
+	/**
+	 * Exact challenge for the MCP OAuth discovery handshake.
+	 *
+	 * @param bool $include_update Advertise update scope only with explicit opt-in.
+	 */
 	public static function challengeHeader( bool $include_update = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
@@ -219,7 +237,11 @@ final class OAuthResourceServer {
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
 
-	/** Advertise OAuth only for configured sites, never as a substitute for auth. */
+	/**
+	 * Advertise OAuth only for configured sites, never as a substitute for auth.
+	 *
+	 * @param string $reason Optional allowlisted OAuth error reason.
+	 */
 	public static function challenge( string $reason = '' ): void {
 		if ( self::isConfigured() && ! headers_sent() ) {
 			$header = self::challengeHeader();
@@ -234,6 +256,10 @@ final class OAuthResourceServer {
 
 	/**
 	 * Return a sanitized refusal and advertise the OAuth resource challenge.
+	 *
+	 * @param string $code    Internal error code.
+	 * @param string $message Sanitized public failure reason.
+	 * @param int    $status  HTTP status.
 	 */
 	private static function deny( string $code, string $message, int $status ): \WP_Error {
 		$reason = 401 === $status ? 'invalid_token' : ( 'wpconnector_oauth_scope_denied' === $code ? 'insufficient_scope' : '' );
@@ -247,6 +273,7 @@ final class OAuthResourceServer {
 	 * additionally configure an edge/WAF limit for this MCP endpoint.
 	 */
 	private static function canIntrospect(): bool {
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REMOTE_ADDR is validated with FILTER_VALIDATE_IP below; invalid values are assigned the shared unknown bucket.
 		$address = $_SERVER['REMOTE_ADDR'] ?? '';
 		$address = is_string( $address ) && filter_var( $address, FILTER_VALIDATE_IP ) ? $address : 'unknown';
 		$bucket  = (string) floor( time() / 60 );
@@ -355,6 +382,16 @@ final class OAuthResourceServer {
 			|| ( isset( $claims['token_type'] ) && ( ! is_string( $claims['token_type'] )
 				|| 0 !== strcasecmp( $claims['token_type'], 'Bearer' ) ) ) ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+		}
+		// Optional strict authorization-client binding. Never compare the
+		// token's client_id against the *introspection* client credentials.
+		// If the provider omits client_id, a configured pin must fail closed.
+		if ( isset( $config['token_client_id'] ) ) {
+			$token_client_id = $claims['client_id'] ?? null;
+			if ( ! is_string( $token_client_id )
+				|| ! hash_equals( $config['token_client_id'], $token_client_id ) ) {
+				return self::deny( 'wpconnector_oauth_client_denied', 'OAuth token client is not authorized.', 401 );
+			}
 		}
 		$audiences = $claims['aud'] ?? null;
 		$audiences = is_string( $audiences ) ? array( $audiences ) : $audiences;
