@@ -74,6 +74,20 @@ foreach (array(
 $request = (string) file_get_contents($workflowDir . '/wordpress-request.yml');
 $execute = (string) file_get_contents($workflowDir . '/wordpress-zero-config-execute.yml');
 
+// A textual YAML detector cannot safely parse every equivalent Actions syntax
+// (flow sequences, anchors, escaped scalars, custom shells and indirect eval).
+// Freeze the trusted request workflow to the exact reviewed source bytes.
+// Any future change MUST explicitly update this reviewed checksum and undergo
+// its own governance/security review; arbitrary new YAML is denied by default.
+$trustedRequestSha256 = '01892ad9aee29655e28b34fee476652debec7dac96a8f5eda5edb51d1b866f77';
+$trustedRequestIsCanonical = static function (string $source) use ($trustedRequestSha256): bool {
+    return hash_equals($trustedRequestSha256, hash('sha256', $source));
+};
+if (! $trustedRequestIsCanonical($request)) {
+    fwrite(STDERR, "Protected WordPress Request workflow changed without an independently reviewed canonical digest.\n");
+    exit(1);
+}
+
 // PR-controlled event fields must be passed via step env, never interpolated into shell source.
 foreach (array(
     'PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}',
@@ -222,6 +236,49 @@ foreach (array(
     $tampered = str_replace($inlineRunInsertion, $noncanonicalRun . "\n" . $inlineRunInsertion, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
         fwrite(STDERR, "Request workflow contract missed noncanonical executable YAML syntax.\n");
+        exit(1);
+    }
+}
+// Noncanonical YAML and indirect shell execution are rejected by the exact
+// canonical-source gate, even where a textual `run` detector is insufficient.
+foreach (array(
+    '        steps:' . "\n" . '          [' . "\n" . '            {run: "echo ${{ github.event.pull_request.title }}"}' . "\n" . '          ]',
+    '        run: "echo 
+$safeSequenceSibling = '      - run: echo safe' . "\n" . '        env:' . "\n" . '          PR_TITLE: ${{ github.event.pull_request.title }}';
+$safeSibling = str_replace($inlineRunInsertion, $safeSequenceSibling . "\n" . $inlineRunInsertion, $request);
+if ($safeSibling === $request || $hasUntrustedPullRequestInline($safeSibling)) {
+    fwrite(STDERR, "Request workflow contract misclassified sequence-step env as Bash source.\n");
+    exit(1);
+}
+foreach (array(
+    '        run: echo "${{ github.event.pull_request.base.sha }}"',
+    '        run: echo "${{ github.event.pull_request.head.sha }}"',
+    '        run: echo "${{ github.repository_owner }}"',
+    '        run: echo "${{ github.event.repository.private }}"',
+) as $safeOneLineRun) {
+    $tampered = str_replace($inlineRunInsertion, "      - name: trusted SHA inline run\n" . $safeOneLineRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract rejected a pinned trusted expression.\n");
+        exit(1);
+    }
+}
+if (strpos($request, "if: github.actor != 'github-actions[bot]'") === false) { fwrite(STDERR, "Request workflow lacks bot-feedback-loop suppression.\n"); exit(1); }
+if (strpos($request, '100755') !== false || strpos($request, "!= '100644'") === false) { fwrite(STDERR, "Credential-free request guard must accept only regular non-executable 100644 request files.\n"); exit(1); }
+foreach (array('id-token: write','ACTIONS_ID_TOKEN_REQUEST_URL','X-Webactueel-GitHub-OIDC') as $needle) {
+    if (strpos($execute,$needle)===false) { fwrite(STDERR,"Trusted executor lost zero-config OIDC boundary: {$needle}.\n"); exit(1); }
+}
+foreach (array('secrets.','WPCONNECTOR_REST_APPLICATION_PASSWORD','--user ') as $needle) {
+    if (strpos($execute,$needle)!==false) { fwrite(STDERR,"Trusted zero-config executor contains forbidden long-lived credential pattern: {$needle}.\n"); exit(1); }
+}
+echo "workflow zero-config security contract OK\n";
+ . '{\\' . "\n" . '          { github.event.pull_request.title }}"',
+    '        shell: bash -c ' . "\"" . 'echo "'+expr+'"; bash {0}' . "\"",
+    '        run: eval "$PR_REQUEST_ACTOR"',
+) as $noncanonicalSource) {
+    $tampered = str_replace($inlineRunInsertion,
+        "      - name: injected noncanonical action\n" . $noncanonicalSource . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || $trustedRequestIsCanonical($tampered)) {
+        fwrite(STDERR, "Canonical workflow digest failed to reject unreviewed YAML or script execution.\n");
         exit(1);
     }
 }
