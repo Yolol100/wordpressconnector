@@ -32,12 +32,16 @@ define( 'WPCONNECTOR_OAUTH_ISSUER', 'https://identity.example.invalid/realm/word
 define( 'WPCONNECTOR_OAUTH_INTROSPECTION_URL', 'https://identity.example.invalid/realm/wordpress/protocol/openid-connect/token/introspect' );
 define( 'WPCONNECTOR_OAUTH_CLIENT_ID', 'wordpress-connector-private-introspection-client' );
 define( 'WPCONNECTOR_OAUTH_CLIENT_SECRET', 'REPLACE_VIA_SECURE_CONFIGURATION_ONLY' );
+// Optional strict pin to ONE OAuth authorization client when the provider returns RFC 7662 client_id:
+define( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID', 'CHATGPT_CLIENT_ID_FROM_TRUSTED_PROVIDER' );
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT', 'SUBJECT_FROM_TRUSTED_IDENTITY_PROVIDER' );
 define( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID', 123 );
 define( 'WPCONNECTOR_OAUTH_ACCOUNT_LINK_APPROVED', true );
 ```
 
-All seven values are mandatory. Issuer and introspection endpoints must use
+The original seven values are mandatory; `WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID` is optional but recommended for a fixed ChatGPT OAuth client whose provider includes the authorized client ID in RFC 7662 introspection. It must be the **authorization client ID**, not the Connector's private introspection Basic credential. If this pin is enabled, absent/wrong/array client_id is rejected with 401. For dynamic registration/CIMD providers, bind authorized clients, resource, user and consent in the issuer policy; only enable this server-side pin once an actual provider token introspection confirms a stable expected client ID. Never add a default that silently blocks legitimate dynamic clients.
+
+Issuer and introspection endpoints must use
 HTTPS on the same host/port. Localhost or HTTP setups must not be used on a real
 site. Never turn this on for a generic/shared admin identity. Disable it simply
 by removing the approval constant (or setting it to `false`).
@@ -76,6 +80,7 @@ by removing the approval constant (or setting it to `false`).
   during download, disables redirects, verifies TLS and times out after five seconds.
   A network timeout, 4xx/5xx, malformed JSON, missing audience/scope, wrong issuer,
   wrong subject, expired token or reduced WordPress capability **fails closed**.
+- **Operational rate limiting:** enforce HTTPS upstream and a trusted edge/CDN/WAF limit for the exact `/wp-json/webactueel-wordpress-connector/v1/mcp` endpoint (including rewritten `.well-known` discovery). Limit burst and sustained requests by the trusted ingress client key, not unvalidated X-Forwarded-For. Cap payload sizes and introspection traffic separately; use synthetic concurrent clients to verify 429 without leaking tokens. Check 503 handling when the identity provider is down, and forbid caching private bearer responses.
 - A WordPress transient-based guard permits at most 12 introspections per verified
   web-server remote IP and 60 per site per minute. The guard is best-effort under
   concurrency; also configure a trusted CDN/WAF rate limit at the edge, especially
@@ -136,6 +141,8 @@ account must currently possess `update_plugins`, and the access token must
 contain **both** `wpconnector:read` and `wpconnector:update`. Neither scope
 grants broad WordPress updates or arbitrary source-code editing.
 
+**Provider and lifecycle acceptance:** verify the issuer advertises Authorization Code + S256 PKCE, exact allowed redirect URIs, issuer metadata, client registration or CIMD/DCR, audience restriction, user-scoped consent, bounded token lifetime, refresh token rotation/reuse rejection (if refresh is issued), token revocation and immediate 401 after disconnect. Test wrong issuer, wrong client ID, wrong resource, missing scopes, expired/revoked token, privilege removal, multiple concurrent clients and throttling. These provider features are NOT implemented by the WordPress resource server and cannot be established by local PHP-only contracts.
+
 The update procedure in the ChatGPT MCP connection is:
 
 1. Call `wordpress_connector_release_preview` to inspect the **latest published**
@@ -177,7 +184,7 @@ external ZIP URLs or credentials as upgrade inputs. Development happens in
 a GitHub PR; tests, security review, approval and a separately published
 release precede any live installation. This feature installs no draft commit.
 
-**Important:** the OAuth protected-resource code in a draft PR does not
+**Important:** the OAuth protected-resource code is merged on `main`, but that does not
 enable ChatGPT itself. A real provider with OAuth Authorization Code + PKCE,
 approved user consent, site-local confidential introspection settings,
 workspace MCP registration and production-host `.well-known` routing
@@ -188,6 +195,6 @@ unavailable on live WordPress.
 
 Do not merge/publish/deploy based solely on local contracts. Independently review
 OAuth trust boundaries, run WordPress/MySQL integration and exact-provider handshake
-on owner-approved staging, confirm the existing protected-workflow PR #1273,
+on owner-approved staging, confirm the already merged protected workflow from PR #1273 on protected main,
 and preserve rollback. No unapproved provider or credentials are configured by
 this repository change.

@@ -141,7 +141,7 @@ This catalog is generated from the connector action registrations. Security labe
 | `role.list` | privileged | List roles and capabilities. |
 | `role.update` | mutation, privileged | Add or remove capabilities from a role. |
 | `system.doctor` | read-only | Run connector/runtime preflight diagnostics. |
-| `term.assign` | mutation | Assign taxonomy terms to an object. |
+| `term.assign` | mutation | Assign taxonomy terms to an object. Explicit `terms` array is mandatory; omitted values fail closed to prevent clearing associations. Use an explicit empty array only to intentionally clear terms. |
 | `term.create` | mutation | Create a taxonomy term. |
 | `term.delete` | mutation, privileged | Delete a taxonomy term. |
 | `term.get` | read-only | Read one taxonomy term. |
