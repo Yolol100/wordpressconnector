@@ -41,6 +41,26 @@ namespace Webactueel\WordPressConnector\Runtime {
     }
 }
 
+namespace Webactueel\WordPressConnector\Security {
+    // A fake validated resource identity for testing MCP transport authorization.
+    // Real introspection, HTTPS, audience and subject checks run in a separate contract.
+    final class OAuthResourceServer
+    {
+        private bool $authenticated = false;
+        public function authenticate(\WP_REST_Request $request)
+        {
+            if ($request->get_header('authorization') !== 'Bearer accepted-test-token') {
+                return null;
+            }
+            $this->authenticated = true;
+            return true;
+        }
+        public function isAuthenticated(): bool { return $this->authenticated; }
+        public static function isConfigured(): bool { return true; }
+        public static function challenge(): void {}
+    }
+}
+
 namespace {
     // Standalone test has no WordPress bootstrap; forward JSON options including fail-closed flags.
     function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
@@ -413,6 +433,56 @@ namespace {
 
     $assert($initialRuns === count($runner->calls),
         'Prompts/resources must never invoke WordPress action execution.');
+
+    // OAuth bearer scope must not inherit the normal administrator's write API.
+    $oauthRunner = new Runner();
+    $oauthServer = new \Webactueel\WordPressConnector\Security\OAuthResourceServer();
+    $oauthController = new Controller(
+        $oauthRunner,
+        $registry,
+        static function (WP_REST_Request $request): bool { return true; },
+        $oauthServer
+    );
+    $oauthAuth = $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-test-token')
+    ));
+    $assert($oauthAuth === true && $oauthServer->isAuthenticated(), 'A validated OAuth identity is accepted for this MCP request.');
+    $oauthList = $oauthController->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list',
+        'params' => array('_meta' => $modernMeta),
+    ), $modernListHeaders))->get_data()['result']['tools'];
+    foreach ($oauthList as $entry) {
+        $expectedScheme = array(array('type' => 'oauth2', 'scopes' => array('wpconnector:read')));
+        $assert(($entry['securitySchemes'] ?? null) === $expectedScheme
+            && ($entry['_meta']['securitySchemes'] ?? null) === $expectedScheme,
+            'OAuth must advertise the exact least-privilege scope on each MCP tool for compatible ChatGPT clients.');
+    }
+    $oauthCall = static function (array $arguments) use ($oauthController, $executeHeaders, $modernMeta): WP_REST_Response {
+        return $oauthController->handle(new WP_REST_Request(array(
+            'jsonrpc' => '2.0',
+            'id' => 92,
+            'method' => 'tools/call',
+            'params' => array(
+                'name' => 'wordpress_connector_execute',
+                'arguments' => $arguments,
+                '_meta' => $modernMeta,
+            ),
+        ), $executeHeaders));
+    };
+    $denied = $oauthCall(array('action' => 'post.update', 'payload' => array(), 'dry_run' => true));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must refuse mutating actions even when an attacker requests dry-run.');
+    $denied = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array(), 'dry_run' => false, 'confirm' => true, 'request_id' => 'oauth-write-denied'));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must reject confirmed requests even for an otherwise readable action.');
+    $denied = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array('option' => 'secret')));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must reject nonempty payloads for its bounded read actions.');
+    $allowed = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array(), 'dry_run' => true, 'confirm' => false));
+    $assert($allowed->get_data()['result']['isError'] === false && count($oauthRunner->calls) === 1
+        && $oauthRunner->calls[0]['request']['action'] === 'site.identity.inspect',
+        'OAuth may perform precisely the explicitly approved read-only inspection.');
 
     echo "MCP transport contract assertions: {$assertions}\n";
 }

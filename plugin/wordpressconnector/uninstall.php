@@ -34,6 +34,8 @@ $wpconnector_cleanup_current_site = static function (): void {
 		'wpconnector_oidc_replay_',
 		'_transient_wpconnector_oidc_jti_',
 		'_transient_timeout_wpconnector_oidc_jti_',
+		'_transient_wpconnector_oauth_',
+		'_transient_timeout_wpconnector_oauth_',
 	) as $prefix ) {
 		$like = $wpdb->esc_like( $prefix ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall-only prepared options cleanup requires fresh data, not a stale cache.

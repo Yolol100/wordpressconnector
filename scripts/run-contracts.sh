@@ -18,6 +18,8 @@ run_php tests/asset-base-symlink-contract.php
 run_php tests/rest-asset-cleanup-contract.php
 run_php tests/rest-asset-upload-error-contract.php
 run_php tests/github-oidc-contract.php
+run_php tests/oauth-resource-contract.php
+run_php tests/oauth-unconfigured-contract.php
 run_php tests/action-catalog.php
 run_php tests/cli-helper-contract.php
 run_php tests/abilities-catalog-contract.php
