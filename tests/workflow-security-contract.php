@@ -96,13 +96,19 @@ $hasUntrustedPullRequestInline = static function (string $workflow): bool {
             $runIndent = null;
         }
         $runSource = null;
-        if (preg_match('/^([ \t]*)(?:run|"run"|\x27run\x27)[ \t]*:[ \t]*(.*)$/', $line, $matches)) {
+        if (preg_match('/^([ \t]*)(?:-[ \t]+)?(?:run|"run"|\x27run\x27)[ \t]*:[ \t]*(.*)$/', $line, $matches)) {
             $runIndent = strlen($matches[1]);
             $runSource = $matches[2];
         } elseif (null !== $runIndent) {
             $runSource = $line;
         }
-        if (null === $runSource || ! preg_match('/\$\{\{/', $runSource)) { continue; }
+        if (null === $runSource) { continue; }
+        // GitHub Actions decodes YAML hex/Unicode escapes before evaluating templates.
+        // This contract fails closed rather than trying to interpret encoded Bash.
+        if (preg_match('/\\\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})/i', $runSource)) {
+            return true;
+        }
+        if (! preg_match('/\{\{/', $runSource)) { continue; }
         // The protected Bash workflow only needs these four simple typed GitHub expressions.
         // Fail closed on all other template syntax, including format(), fromJSON(),
         // bracket access, nested/quoted braces and YAML continuation lines.
@@ -111,7 +117,7 @@ $hasUntrustedPullRequestInline = static function (string $workflow): bool {
             '',
             $runSource
         );
-        if (! is_string($withoutAllowed) || preg_match('/\$\{\{/', $withoutAllowed)) {
+        if (! is_string($withoutAllowed) || preg_match('/\{\{/', $withoutAllowed)) {
             return true;
         }
     }
@@ -142,6 +148,10 @@ foreach (array(
 $inlineRunInsertion = '      - name: Dispatch trusted zero-config WordPress executor';
 foreach (array(
     '        run: echo "${{ github.event.pull_request.title }}"',
+    '        run: "echo \u0024{{ github.event.pull_request.title }}"',
+    '        run: "echo \x24{{ github.event.pull_request.title }}"',
+    '        run: "echo \U00000024{{ github.event.pull_request.title }}"',
+    '        run: "echo \u0024\u007B\u007B github.event.pull_request.title }}"',
     '        "run": echo "${{ github.event.pull_request.title }}"',
     '        \'run\': echo "${{ github.event.pull_request.title }}"',
     '        run: echo "${{ github.event.pull_request[\'title\'] }}"',
@@ -155,6 +165,16 @@ foreach (array(
     $tampered = str_replace($inlineRunInsertion, "      - name: injected inline run\n" . $unsafeOneLineRun . "\n" . $inlineRunInsertion, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
         fwrite(STDERR, "Request workflow contract missed an unsafe single-line run.\n");
+        exit(1);
+    }
+}
+foreach (array(
+    '      - run: echo "${{ github.event.pull_request.title }}"',
+    '      - "run": echo "${{ github.event.pull_request.title }}"',
+) as $unsafeSequenceRun) {
+    $tampered = str_replace($inlineRunInsertion, $unsafeSequenceRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract missed an unsafe sequence-item run.\n");
         exit(1);
     }
 }
