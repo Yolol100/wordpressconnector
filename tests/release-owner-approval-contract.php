@@ -170,9 +170,13 @@ namespace {
     ensure(is_string($runner) && strpos($runner, 'ReleaseApproval::idForFingerprint(') !== false
         && strpos($runner, 'ReleaseApproval::idForFingerprint(') < strpos($runner, '$this->processed->begin('),
         'Owner preflight must run before reserving a mutation request ID.');
-    ensure(is_string($adapter) && strpos($adapter, 'ReleaseApproval::consume(') !== false
-        && strpos($adapter, 'ReleaseApproval::consume(') > strpos($adapter, 'verifyProtectedSource( $release, $package )'),
-        'Only the verified updater may consume owner approval.');
+    ensure(is_string($adapter)
+        && strpos($adapter, 'ReleaseApproval::consume(') !== false
+        && strpos($adapter, '$package = $this->download_protected_source_package( $release );') !== false
+        && strpos($adapter, '$package = $this->download_protected_source_package( $release );') < strpos($adapter, 'ReleaseApproval::consume(')
+        && strpos($adapter, 'private function download_protected_source_package(') !== false
+        && strpos($adapter, '$this->verifyProtectedSource( $release, $package );') !== false,
+        'Only an already protected-source-verified package may reach owner approval consumption.');
     ensure(is_string($controller) && strpos($controller, 'ReleaseApproval::consume(') === false
         && strpos($controller, "'require_owner_approval' => \$require_owner_approval") !== false,
         'MCP transport must defer owner consent until the guarded runtime.');
