@@ -206,13 +206,17 @@ final class OAuthResourceServer {
 	}
 
 	/** Exact challenge for the MCP OAuth discovery handshake. */
-	public static function challengeHeader(): string {
+	public static function challengeHeader( bool $include_update = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
 			return '';
 		}
-		return 'Bearer resource_metadata="' . $url . '", scope="' . self::SCOPE . '"';
+		$scopes = self::SCOPE;
+		if ( $include_update && self::selfUpdateConfigured() ) {
+			$scopes .= ' ' . self::UPDATE_SCOPE;
+		}
+		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
 
 	/** Advertise OAuth only for configured sites, never as a substitute for auth. */
