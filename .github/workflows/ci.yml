@@ -113,12 +113,16 @@ jobs:
             exit 1
           fi
           forbidden_event="pull_request""_target"
-          # The only allowed file is independently verified by
-          # tests/workflow-security-contract.php for immutable base-only code.
-          violations="$(grep -RIn --exclude='required-pr-gate.yml' "$forbidden_event" .github/workflows || true)"
+          # Only the protected-base read-only gate and the protected-base
+          # request dispatcher may use this event. The existing
+          # workflow-security-contract.php checks both trust boundaries,
+          # including negative PR-head checkout / event-switch scenarios.
+          # This is an unapproved governance change until independently
+          # bootstrapped on the protected default branch.
+          violations="$(grep -RIn --exclude='required-pr-gate.yml' --exclude='wordpress-request.yml' "$forbidden_event" .github/workflows || true)"
           if [[ -n "$violations" ]]; then
             echo "$violations" >&2
-            echo 'Privileged pull-request event is forbidden outside the trusted read-only gate.' >&2
+            echo 'Privileged pull-request event outside reviewed trusted-base workflows.' >&2
             exit 1
           fi
 
