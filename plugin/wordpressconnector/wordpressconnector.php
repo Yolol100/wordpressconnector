@@ -32,6 +32,8 @@ $wpconnector_files = array(
 	'includes/Security/FilesystemPolicy.php',
 	'includes/Security/SitePairing.php',
 	'includes/Security/GitHubOidc.php',
+	'includes/Security/OAuthResourceServer.php',
+	'includes/Security/ReleaseApproval.php',
 	'includes/Runtime/Request.php',
 	'includes/Runtime/Result.php',
 	'includes/Runtime/Diagnostics.php',

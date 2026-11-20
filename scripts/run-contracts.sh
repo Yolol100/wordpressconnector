@@ -18,6 +18,9 @@ run_php tests/asset-base-symlink-contract.php
 run_php tests/rest-asset-cleanup-contract.php
 run_php tests/rest-asset-upload-error-contract.php
 run_php tests/github-oidc-contract.php
+run_php tests/oauth-resource-contract.php
+run_php tests/oauth-unconfigured-contract.php
+run_php tests/release-owner-approval-contract.php
 run_php tests/action-catalog.php
 run_php tests/cli-helper-contract.php
 run_php tests/abilities-catalog-contract.php
@@ -67,6 +70,8 @@ run_php tests/yoast-feature-settings-contract.php
 run_php tests/yoast-native-abilities-contract.php
 run_php tests/plugin-package-contract.php
 run_php tests/connector-update-contract.php
+run_php tests/connector-update-preview-identity-contract.php
+run_php tests/release-protected-source-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php

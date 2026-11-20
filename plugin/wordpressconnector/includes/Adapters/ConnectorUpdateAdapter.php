@@ -11,6 +11,7 @@ namespace Webactueel\WordPressConnector\Adapters;
 
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
 /**
@@ -18,6 +19,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class ConnectorUpdateAdapter {
 	private const RELEASE_API              = 'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest';
+	private const SOURCE_API               = 'https://api.github.com/repos/Yolol100/wordpressconnector';
 	private const PACKAGE_ASSET            = 'wordpressconnector.zip';
 	private const CHECKSUM_ASSET           = 'wordpressconnector.zip.sha256';
 	private const SBOM_ASSET               = 'wordpressconnector.spdx.json';
@@ -33,6 +35,8 @@ final class ConnectorUpdateAdapter {
 	 * @var string|null
 	 */
 	private $verified_self_update_package_path = null;
+	/** True once WordPress Core upgrader may have touched plugin files. */
+	private bool $upgrader_started = false;
 
 	/**
 	 * Register the ConnectorUpdate adapter actions and handlers.
@@ -364,6 +368,26 @@ final class ConnectorUpdateAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function apply( array $payload, array $context ): array {
+		$this->upgrader_started = false;
+		try {
+			return $this->perform_verified_update( $payload, $context );
+		} catch ( \Throwable $error ) {
+			// A release-only failure before Core begins the upgrader is known
+			// to have changed no plugin files. Return a terminal failure so
+			// Runner finalizes the reserved request ID instead of stranding it.
+			if ( ! empty( $context['require_owner_approval'] )
+				&& empty( $context['dry_run'] ) && ! $this->upgrader_started ) {
+				return array(
+					'_terminal_error' => $error->getMessage(),
+					'execution_may_have_started' => false,
+				);
+			}
+			throw $error; // Once Core starts, the outcome must be reconciled.
+		}
+	}
+
+	/** Internal canonical updater; used only behind the guarded entrypoint. */
+	private function perform_verified_update( array $payload, array $context ): array {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to update plugins.' );
 		}
@@ -388,6 +412,16 @@ final class ConnectorUpdateAdapter {
 			'plugin_file' => self::PLUGIN_FILE,
 			'version'     => $current,
 		);
+		// Bind the preview fingerprint to both the installed version and the
+		// exact canonical signed release; a changing release invalidates approval.
+		$release_state = array(
+			'plugin_file'   => self::PLUGIN_FILE,
+			'version'       => $current,
+			'release_tag'   => $release['tag'],
+			'package_digest' => $release['package_digest'],
+			'source_commit'  => $release['source_commit'],
+		);
+		$release_fingerprint = Fingerprint::make( $release_state );
 		$plan   = array(
 			'from_version'                    => $current,
 			'to_version'                      => $release['version'],
@@ -396,6 +430,7 @@ final class ConnectorUpdateAdapter {
 			'checksum_asset'                  => self::CHECKSUM_ASSET,
 			'sbom_asset'                      => self::SBOM_ASSET,
 			'github_asset_digest'             => $release['package_digest'],
+			'source_commit'                  => $release['source_commit'],
 			'rollback_supported'              => false,
 			'installation_failure_recovery'   => 'wordpress_core_temp_backup',
 			'external_restore_required'       => false,
@@ -403,10 +438,36 @@ final class ConnectorUpdateAdapter {
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
+			if ( ! empty( $context['require_release_provenance'] ) ) {
+				$preview_package = $this->download_verified_package( $release );
+				try {
+					$this->verifyProtectedSource( $release, $preview_package );
+				} finally {
+					if ( file_exists( $preview_package ) ) {
+						@unlink( $preview_package );
+					}
+				}
+			}
 			return array(
 				'would_update_connector' => $plan,
-				'_current_fingerprint'   => Fingerprint::make( $before ),
+				// Public release metadata and installed version only; safe for
+				// the MCP preview to return through its normal redaction layer.
+				'release_fingerprint'    => $release_fingerprint,
+				'_current_fingerprint'   => $release_fingerprint,
 			);
+		}
+		// An OAuth release install must come from the approved source-verified preview.
+		if ( ! empty( $context['require_owner_approval'] )
+			&& ( empty( $context['require_release_provenance'] )
+				|| ! isset( $context['expected_prewrite_fingerprint'] )
+				|| ! is_string( $context['expected_prewrite_fingerprint'] )
+				|| ! hash_equals( $release_fingerprint, $context['expected_prewrite_fingerprint'] ) ) ) {
+			throw new RuntimeException( 'An OAuth release install requires a current protected-source preview and exact fingerprint.' );
+		}
+		if ( isset( $context['expected_prewrite_fingerprint'] )
+			&& ( ! is_string( $context['expected_prewrite_fingerprint'] )
+				|| ! hash_equals( $release_fingerprint, $context['expected_prewrite_fingerprint'] ) ) ) {
+			throw new RuntimeException( 'Connector release changed after approval; preview the update again.' );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -415,11 +476,18 @@ final class ConnectorUpdateAdapter {
 
 		$package = $this->download_verified_package( $release );
 		try {
+			if ( ! empty( $context['require_release_provenance'] ) ) {
+				$this->verifyProtectedSource( $release, $package );
+			}
 			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
 			// backup. A later fatal error still has no guaranteed automatic recovery.
-			$installation = $this->install_with_core_backup( $package );
+			$installation = $this->install_with_core_backup(
+				$package,
+				! empty( $context['require_owner_approval'] ) ? $release_fingerprint : null,
+				! empty( $context['require_owner_approval'] ) ? ( $context['owner_approval_id'] ?? null ) : null
+			);
 			wp_clean_plugins_cache( true );
 			$plugins           = get_plugins();
 			$installed_version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
@@ -451,13 +519,15 @@ final class ConnectorUpdateAdapter {
 	 * Plugin_Upgrader::install(... overwrite_package => true), which has no
 	 * hook_extra.temp_backup and cannot restore after an installation failure.
 	 *
-	 * @param string $package Validated package metadata.
+	 * @param string      $package                    Validated package metadata.
+	 * @param string|null $owner_approval_fingerprint Exact owner consent required by OAuth only.
+	 * @param string|null $owner_approval_id          Exact approval record observed at Runner preflight.
 	 *
 	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function install_with_core_backup( string $package ): array {
+	private function install_with_core_backup( string $package, ?string $owner_approval_fingerprint = null, ?string $owner_approval_id = null ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
 			|| ! is_readable( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE )
 			|| ! method_exists( \Plugin_Upgrader::class, 'restore_temp_backup' ) ) {
@@ -469,6 +539,13 @@ final class ConnectorUpdateAdapter {
 		$was_active = is_plugin_active( self::PLUGIN_FILE );
 		if ( ! $was_active ) {
 			throw new RuntimeException( 'Connector self-update requires an active Connector plugin.' );
+		}
+
+		// Runner already holds the mutation lock and checked idempotent replay.
+		// Claim only after verifying source and filesystem/activation prerequisites.
+		if ( null !== $owner_approval_fingerprint
+			&& ( null === $owner_approval_id || ! ReleaseApproval::consume( $owner_approval_fingerprint, $owner_approval_id ) ) ) {
+			throw new RuntimeException( 'The linked owner must approve this exact release in WordPress Plugins. Approval lasts 10 minutes and authorizes one installation attempt.' );
 		}
 
 		$upgrader = new \Plugin_Upgrader( new \Automatic_Upgrader_Skin() );
@@ -489,6 +566,8 @@ final class ConnectorUpdateAdapter {
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
 		$this->verified_self_update_package_path = $package;
 		try {
+			// A failure from this point may leave an uncertain file state.
+			$this->upgrader_started = true;
 			$result = $upgrader->run(
 				array(
 					'package'                     => $package,
@@ -594,6 +673,8 @@ final class ConnectorUpdateAdapter {
 		}
 
 		$tag = (string) $decoded['tag_name'];
+		$source_commit = isset( $decoded['target_commitish'] ) && is_string( $decoded['target_commitish'] )
+			? strtolower( $decoded['target_commitish'] ) : '';
 		if ( ! preg_match( '/^v([0-9]+\.[0-9]+\.[0-9]+)\z/', $tag, $matches ) ) {
 			throw new RuntimeException( 'Canonical release tag must use vMAJOR.MINOR.PATCH.' );
 		}
@@ -642,6 +723,7 @@ final class ConnectorUpdateAdapter {
 			'sbom_url'        => $sbom_url,
 			'package_digest'  => $package_digest,
 			'checksum_digest' => $checksum_digest,
+			'source_commit'   => $source_commit,
 		);
 	}
 
@@ -661,15 +743,35 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'GitHub package asset digest does not match the canonical checksum asset.' );
 		}
 
-		if ( ! function_exists( 'download_url' ) ) {
+		if ( ! function_exists( 'wp_tempnam' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 		}
-		$package = download_url( $release['package_url'], 30 );
-		if ( is_wp_error( $package ) ) {
-			throw new RuntimeException( $package->get_error_message() );
+		$package = wp_tempnam( self::PACKAGE_ASSET );
+		if ( ! is_string( $package ) || '' === $package ) {
+			throw new RuntimeException( 'Cannot allocate a temporary Connector release ZIP.' );
 		}
 
 		try {
+			// download_url() has no transfer-size limit: bound the actual streamed
+			// HTTP body before hashing or inspecting the archive.
+			$response = wp_safe_remote_get(
+				$release['package_url'],
+				array(
+					'timeout'             => 30,
+					'redirection'         => 5,
+					'limit_response_size' => self::MAX_PACKAGE_BYTES + 1,
+					'sslverify'           => true,
+					'stream'              => true,
+					'filename'            => $package,
+					'headers'             => array( 'User-Agent' => 'Webactueel-WordPressConnector' ),
+				)
+			);
+			if ( is_wp_error( $response ) ) {
+				throw new RuntimeException( 'Canonical Connector release download failed.' );
+			}
+			if ( 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+				throw new RuntimeException( 'Canonical Connector release download returned a non-success status.' );
+			}
 			$size = filesize( $package );
 			if ( false === $size || $size <= 0 || $size > self::MAX_PACKAGE_BYTES ) {
 				throw new RuntimeException( 'Connector release package is empty or exceeds the 20 MiB limit.' );
@@ -692,6 +794,135 @@ final class ConnectorUpdateAdapter {
 				@unlink( $package );
 			}
 			throw $error;
+		}
+	}
+
+	/**
+	 * Fetch bounded JSON from only the canonical repository GitHub API.
+	 * A compromised release can never supply a remote URL to this method.
+	 *
+	 * @param string $path API path suffix assembled from validated Git SHA.
+	 * @param int $limit Maximum JSON response bytes.
+	 * @return array Decoded JSON object.
+	 */
+	private function trustedSourceJson( string $path, int $limit = 524288 ): array {
+		if ( ! preg_match( '#^/(compare/[a-f0-9]{40}\.\.\.main\?per_page=1|git/commits/[a-f0-9]{40}|git/trees/[a-f0-9]{40}\?recursive=1)\z#', $path ) ) {
+			throw new RuntimeException( 'Invalid protected-source request path.' );
+		}
+		$response = wp_safe_remote_get(
+			self::SOURCE_API . $path,
+			array(
+				'timeout' => 8,
+				'redirection' => 0,
+				'limit_response_size' => $limit + 1,
+				'sslverify' => true,
+				'headers' => array(
+					'Accept' => 'application/vnd.github+json',
+					'User-Agent' => 'Webactueel-WordPressConnector',
+				),
+			)
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			throw new RuntimeException( 'Cannot verify the GitHub protected-main release source.' );
+		}
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( strlen( $body ) > $limit ) {
+			throw new RuntimeException( 'Protected source response exceeded its size limit.' );
+		}
+		$json = json_decode( $body, true );
+		if ( ! is_array( $json ) ) {
+			throw new RuntimeException( 'Protected source response was not valid JSON.' );
+		}
+		return $json;
+	}
+
+	/**
+	 * Independent release provenance: verify every decompressed plugin file
+	 * against the exact Git tree of a commit already in protected main.
+	 * GitHub release/checksum asset publishers cannot forge this source tree
+	 * without first changing protected main; this is not a claim of locally
+	 * verified Sigstore attestation.
+	 *
+	 * @param array $release Canonical release metadata.
+	 * @param string $package Already checksum/identity validated ZIP.
+	 */
+	private function verifyProtectedSource( array $release, string $package ): void {
+		$commit = $release['source_commit'] ?? '';
+		if ( ! is_string( $commit ) || ! preg_match( '/^[a-f0-9]{40}\z/', $commit ) ) {
+			throw new RuntimeException( 'Release must identify the exact approved protected-main commit.' );
+		}
+		// The authenticated GitHub API controls the protected main ancestry;
+		// the ZIP author cannot affect this proof by replacing release assets.
+		// A paged comparison retains the merge-base proof; bound file patches to 8 MiB.
+		$compare = $this->trustedSourceJson( '/compare/' . $commit . '...main?per_page=1', 8388608 );
+		if ( ! in_array( $compare['status'] ?? '', array( 'ahead', 'identical' ), true )
+			|| ( $compare['merge_base_commit']['sha'] ?? '' ) !== $commit ) {
+			throw new RuntimeException( 'Release commit is not an ancestor of protected main.' );
+		}
+		$git_commit = $this->trustedSourceJson( '/git/commits/' . $commit, 65536 );
+		$tree_sha = $git_commit['tree']['sha'] ?? '';
+		if ( ! is_string( $tree_sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $tree_sha ) ) {
+			throw new RuntimeException( 'Protected release commit has no canonical Git tree.' );
+		}
+		$tree = $this->trustedSourceJson( '/git/trees/' . $tree_sha . '?recursive=1', 2097152 );
+		if ( true === ( $tree['truncated'] ?? null ) || ! isset( $tree['tree'] ) || ! is_array( $tree['tree'] ) ) {
+			throw new RuntimeException( 'Protected release source tree is incomplete.' );
+		}
+		$expected = array();
+		$root = 'plugin/wordpressconnector/';
+		foreach ( $tree['tree'] as $entry ) {
+			if ( ! is_array( $entry ) || ! isset( $entry['path'] ) || ! is_string( $entry['path'] )
+				|| 0 !== strpos( $entry['path'], $root ) ) {
+				continue;
+			}
+			if ( 'tree' === ( $entry['type'] ?? '' ) ) {
+				continue;
+			}
+			$relative = substr( $entry['path'], strlen( $root ) );
+			$sha = $entry['sha'] ?? '';
+			if ( 'blob' !== ( $entry['type'] ?? '' ) || ! in_array( $entry['mode'] ?? '', array( '100644', '100755' ), true )
+				|| ! is_string( $sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $sha )
+				|| ! preg_match( '#^[A-Za-z0-9._/-]+\z#', $relative )
+				|| false !== strpos( '/' . $relative . '/', '/../' )
+				|| false !== strpos( '/' . $relative . '/', '/./' ) ) {
+				throw new RuntimeException( 'Protected source contains an unexpected plugin file or symlink.' );
+			}
+			$path = 'wordpressconnector/' . $relative;
+			if ( isset( $expected[ $path ] ) ) {
+				throw new RuntimeException( 'Protected source has duplicate plugin entries.' );
+			}
+			$expected[ $path ] = $sha;
+		}
+		if ( count( $expected ) < 1 || count( $expected ) > self::MAX_ENTRIES
+			|| ! isset( $expected[ self::PLUGIN_FILE ] ) ) {
+			throw new RuntimeException( 'Protected source has no valid bounded Connector plugin tree.' );
+		}
+		$zip = new \ZipArchive();
+		if ( true !== $zip->open( $package, \ZipArchive::RDONLY ) ) {
+			throw new RuntimeException( 'Cannot open the checksum-validated release ZIP for source verification.' );
+		}
+		try {
+			if ( $zip->count() !== count( $expected ) ) {
+				throw new RuntimeException( 'Release ZIP file set differs from protected main source.' );
+			}
+			foreach ( $expected as $name => $git_sha ) {
+				$index = $zip->locateName( $name, \ZipArchive::FL_UNCHANGED );
+				if ( false === $index ) {
+					throw new RuntimeException( 'Release ZIP is missing a file from protected main.' );
+				}
+				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
+				if ( ! is_array( $stat ) || (int) ( $stat['size'] ?? -1 ) < 0
+					|| (int) $stat['size'] > 20971520 ) {
+					throw new RuntimeException( 'Protected source verification refused an oversized ZIP entry.' );
+				}
+				$bytes = $zip->getFromIndex( $index, 0, \ZipArchive::FL_UNCHANGED );
+				if ( ! is_string( $bytes )
+					|| ! hash_equals( $git_sha, sha1( 'blob ' . strlen( $bytes ) . "\0" . $bytes ) ) ) {
+					throw new RuntimeException( 'Release ZIP bytes differ from the protected main commit.' );
+				}
+			}
+		} finally {
+			$zip->close();
 		}
 	}
 

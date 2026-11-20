@@ -49,6 +49,8 @@ use Webactueel\WordPressConnector\CLI\Command;
 use Webactueel\WordPressConnector\REST\AssetStore;
 use Webactueel\WordPressConnector\REST\Controller;
 use Webactueel\WordPressConnector\MCP\Controller as McpController;
+use Webactueel\WordPressConnector\Security\OAuthResourceServer;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
@@ -120,7 +122,10 @@ final class Plugin {
 		( new ElementorJsonImport() )->register();
 		$rest_controller = new Controller( $runner, new AssetStore() );
 		$rest_controller->register();
-		( new McpController( $runner, $registry, array( $rest_controller, 'authorize' ) ) )->register();
+		$oauth_resource = new OAuthResourceServer();
+		$oauth_resource->register();
+		( new ReleaseApproval() )->register();
+		( new McpController( $runner, $registry, array( $rest_controller, 'authorize' ), $oauth_resource ) )->register();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
 			\WP_CLI::add_command( 'wordpress-connector', new Command( $runner ) );

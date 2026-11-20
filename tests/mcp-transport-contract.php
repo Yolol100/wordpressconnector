@@ -27,16 +27,95 @@ namespace Webactueel\WordPressConnector\Runtime {
     final class Runner
     {
         public array $calls = array();
+        private array $completedReleaseIds = array();
         public function run(Request $request, array $context = array()): array
         {
             $this->calls[] = array('request' => $request->data(), 'context' => $context);
+            $data = array('echo' => $request->payload());
+            // Simulate the real Runner's lock/replay check and adapter's late
+            // release approval. Transport must pass the private guard context.
+            if ($request->action() === 'connector.update.apply' && ! $request->dryRun()) {
+                $fp = $request->data()['expected_fingerprint'] ?? '';
+                if (empty($context['require_release_provenance']) || empty($context['require_owner_approval'])
+                    || ! is_string($fp) || ! preg_match('/^[a-f0-9]{64}$/', $fp)) {
+                    return array('ok' => false, 'error' => 'Missing owner/provenance guard.');
+                }
+                if (! isset($this->completedReleaseIds[$request->id()])
+                    && ! \Webactueel\WordPressConnector\Security\ReleaseApproval::available($fp)) {
+                    return array('ok' => false, 'error' => 'Owner release preflight denied.');
+                }
+                if (isset($this->completedReleaseIds[$request->id()])) {
+                    $data['idempotent_replay'] = true;
+                } elseif (! \Webactueel\WordPressConnector\Security\ReleaseApproval::consume($fp)) {
+                    return array('ok' => false, 'error' => 'Owner has not approved this exact release.');
+                } else {
+                    $this->completedReleaseIds[$request->id()] = true;
+                }
+            }
+            if ($request->action() === 'connector.update.apply' && $request->dryRun()) {
+                $data['release_fingerprint'] = str_repeat('a', 64);
+            }
             return array(
                 'ok' => true,
                 'request_id' => $request->id(),
                 'action' => $request->action(),
                 'dry_run' => $request->dryRun(),
-                'data' => array('echo' => $request->payload()),
+                'data' => $data,
             );
+        }
+    }
+}
+
+namespace Webactueel\WordPressConnector\Security {
+    // A fake validated resource identity for testing MCP transport authorization.
+    // Real introspection, HTTPS, audience and subject checks run in a separate contract.
+    final class OAuthResourceServer
+    {
+        private bool $authenticated = false;
+        private bool $canUpdate = false;
+        public function authenticate(\WP_REST_Request $request)
+        {
+            $header = $request->get_header('authorization');
+            $this->authenticated = false;
+            $this->canUpdate = false;
+            if (! in_array($header, array('Bearer accepted-test-token', 'Bearer accepted-update-token'), true)) {
+                return null;
+            }
+            $this->authenticated = true;
+            $this->canUpdate = $header === 'Bearer accepted-update-token';
+            return true;
+        }
+        public function isAuthenticated(): bool { return $this->authenticated; }
+        public function canSelfUpdate(): bool { return $this->canUpdate; }
+        public static function isConfigured(): bool { return true; }
+        public static function selfUpdateConfigured(): bool { return true; }
+        public static function challengeHeader(bool $includeUpdate = false): string {
+            return 'Bearer resource_metadata="https://example.invalid/.well-known/oauth-protected-resource", scope="' .
+                ($includeUpdate ? 'wpconnector:read wpconnector:update' : 'wpconnector:read') . '"';
+        }
+        public static function challenge(): void {}
+    }
+
+    final class ReleaseApproval
+    {
+        public static ?string $approvedFingerprint = null;
+        public static bool $alreadyConsumed = false;
+        public static function allowOnce(string $fingerprint): void {
+            self::$approvedFingerprint = $fingerprint;
+            self::$alreadyConsumed = false;
+        }
+        public static function available(string $fingerprint): bool {
+            return self::$approvedFingerprint !== null && hash_equals(self::$approvedFingerprint, $fingerprint)
+                && ! self::$alreadyConsumed;
+        }
+        public static function consume(string $fingerprint): bool {
+            if (self::$approvedFingerprint === null
+                || ! hash_equals(self::$approvedFingerprint, $fingerprint)
+                || self::$alreadyConsumed) {
+                return false;
+            }
+            self::$alreadyConsumed = true;
+            return true;
         }
     }
 }
@@ -413,6 +492,157 @@ namespace {
 
     $assert($initialRuns === count($runner->calls),
         'Prompts/resources must never invoke WordPress action execution.');
+
+    // OAuth bearer scope must not inherit the normal administrator's write API.
+    $oauthRunner = new Runner();
+    $oauthServer = new \Webactueel\WordPressConnector\Security\OAuthResourceServer();
+    $oauthController = new Controller(
+        $oauthRunner,
+        $registry,
+        static function (WP_REST_Request $request): bool { return true; },
+        $oauthServer
+    );
+    $oauthAuth = $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-test-token')
+    ));
+    $assert($oauthAuth === true && $oauthServer->isAuthenticated(), 'A validated OAuth identity is accepted for this MCP request.');
+    $oauthList = $oauthController->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list',
+        'params' => array('_meta' => $modernMeta),
+    ), $modernListHeaders))->get_data()['result']['tools'];
+    $assert(count($oauthList) === 5, 'Configured OAuth must expose precisely two dedicated release tools.');
+    foreach ($oauthList as $entry) {
+        $isRelease = in_array($entry['name'], array('wordpress_connector_release_preview', 'wordpress_connector_release_apply'), true);
+        $scopes = $isRelease ? array('wpconnector:read', 'wpconnector:update') : array('wpconnector:read');
+        $expectedScheme = array(array('type' => 'oauth2', 'scopes' => $scopes));
+        $assert(($entry['securitySchemes'] ?? null) === $expectedScheme
+            && ($entry['_meta']['securitySchemes'] ?? null) === $expectedScheme,
+            'OAuth tools must advertise precise read/update scopes without widening generic execute access.');
+    }
+    $oauthCall = static function (array $arguments) use ($oauthController, $executeHeaders, $modernMeta): WP_REST_Response {
+        return $oauthController->handle(new WP_REST_Request(array(
+            'jsonrpc' => '2.0',
+            'id' => 92,
+            'method' => 'tools/call',
+            'params' => array(
+                'name' => 'wordpress_connector_execute',
+                'arguments' => $arguments,
+                '_meta' => $modernMeta,
+            ),
+        ), $executeHeaders));
+    };
+    $denied = $oauthCall(array('action' => 'post.update', 'payload' => array(), 'dry_run' => true));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must refuse mutating actions even when an attacker requests dry-run.');
+    $denied = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array(), 'dry_run' => false, 'confirm' => true, 'request_id' => 'oauth-write-denied'));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must reject confirmed requests even for an otherwise readable action.');
+    $denied = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array('option' => 'secret')));
+    $assert($denied->get_data()['result']['isError'] === true && count($oauthRunner->calls) === 0,
+        'OAuth must reject nonempty payloads for its bounded read actions.');
+    $allowed = $oauthCall(array('action' => 'site.identity.inspect', 'payload' => array(), 'dry_run' => true, 'confirm' => false));
+    $assert($allowed->get_data()['result']['isError'] === false && count($oauthRunner->calls) === 1
+        && $oauthRunner->calls[0]['request']['action'] === 'site.identity.inspect',
+        'OAuth may perform precisely the explicitly approved read-only inspection.');
+
+    // A read-only OAuth token must never run a release update. Only an
+    // explicitly granted second scope unlocks the dedicated release tools.
+    $releaseCall = static function (string $name, array $arguments) use ($oauthController, $modernMeta): WP_REST_Response {
+        return $oauthController->handle(new WP_REST_Request(array(
+            'jsonrpc' => '2.0', 'id' => 101, 'method' => 'tools/call',
+            'params' => array('name' => $name, 'arguments' => $arguments, '_meta' => $modernMeta),
+        ), array(
+            'MCP-Protocol-Version' => '2026-07-28',
+            'Mcp-Method' => 'tools/call',
+            'Mcp-Name' => $name,
+        )));
+    };
+    $beforeUpdate = count($oauthRunner->calls);
+    $noUpdateScope = $releaseCall('wordpress_connector_release_preview', array());
+    $assert($noUpdateScope->get_data()['result']['isError'] === true
+        && false !== strpos($noUpdateScope->get_data()['result']['_meta']['mcp/www_authenticate'] ?? '', 'wpconnector:update')
+        && $beforeUpdate === count($oauthRunner->calls),
+        'A read-only OAuth token must return the update-scope challenge without running any action.');
+
+    $oauthUpdateAuth = $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 102, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-update-token')
+    ));
+    $assert($oauthUpdateAuth === true && $oauthServer->canSelfUpdate(),
+        'An explicitly authorized OAuth update token must become release-scoped.');
+
+    $preview = $releaseCall('wordpress_connector_release_preview', array());
+    $previewFingerprint = $preview->get_data()['result']['structuredContent']['result']['data']['release_fingerprint'] ?? null;
+    $assert($previewFingerprint === str_repeat('a', 64),
+        'The MCP preview must expose the actual approval fingerprint through its normal result envelope.');
+    $assert($preview->get_data()['result']['isError'] === false
+        && count($oauthRunner->calls) === $beforeUpdate + 1
+        && $oauthRunner->calls[$beforeUpdate]['request']['action'] === 'connector.update.apply'
+        && $oauthRunner->calls[$beforeUpdate]['request']['dry_run'] === true,
+        'Release preview must call only the existing canonical updater in dry-run mode.');
+
+    foreach (array(
+        array(),
+        array('request_id' => 'release-123', 'expected_fingerprint' => str_repeat('a', 64)),
+        array('request_id' => 'release-123', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => false),
+        array('request_id' => 'release-123', 'expected_fingerprint' => 'invalid', 'confirm' => true),
+        array('request_id' => 'release-123', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true, 'path' => '/wp-config.php'),
+        array('request_id' => '........', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true),
+        array('request_id' => '_release-id', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true),
+    ) as $unsafeUpdate) {
+        $bad = $releaseCall('wordpress_connector_release_apply', $unsafeUpdate);
+        $assert($bad->get_data()['result']['isError'] === true
+            && count($oauthRunner->calls) === $beforeUpdate + 1,
+            'Missing confirmation, malformed approval or arbitrary file paths must be denied.');
+    }
+    $oauthGenericWrite = $oauthCall(array('action' => 'post.update', 'payload' => array(),
+        'dry_run' => false, 'confirm' => true, 'request_id' => 'release-write-denied'));
+    $assert($oauthGenericWrite->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 1,
+        'Even OAuth release scope must never unlock the generic WordPress write tool.');
+
+    $approval = array('request_id' => 'chatgpt-release-20261120', 'expected_fingerprint' => $previewFingerprint, 'confirm' => true);
+    $beforeOwnerApproval = $releaseCall('wordpress_connector_release_apply', $approval);
+    $assert($beforeOwnerApproval->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 2
+        && \Webactueel\WordPressConnector\Security\ReleaseApproval::$alreadyConsumed === false,
+        'Denied owner approval reaches the protected installer but must not be consumed.');
+    \Webactueel\WordPressConnector\Security\ReleaseApproval::allowOnce($previewFingerprint);
+    $applied = $releaseCall('wordpress_connector_release_apply', $approval);
+    $writeCall = $oauthRunner->calls[$beforeUpdate + 2] ?? array();
+    $write = $writeCall['request'] ?? array();
+    $assert($applied->get_data()['result']['isError'] === false
+        && count($oauthRunner->calls) === $beforeUpdate + 3
+        && $write['action'] === 'connector.update.apply'
+        && $write['dry_run'] === false && $write['confirm'] === true
+        && $write['expected_fingerprint'] === str_repeat('a', 64)
+        && $write['request_id'] === 'chatgpt-release-20261120'
+        && $write['payload'] === array()
+        && ! empty($writeCall['context']['require_owner_approval'])
+        && ! empty($writeCall['context']['require_release_provenance'])
+        && \Webactueel\WordPressConnector\Security\ReleaseApproval::$alreadyConsumed === true,
+        'Only approved release with private context may reach the locked installer.');
+    $replayedApproval = $releaseCall('wordpress_connector_release_apply', $approval);
+    $replayed = $replayedApproval->get_data()['result']['structuredContent']['result']['data'] ?? array();
+    $assert($replayedApproval->get_data()['result']['isError'] === false
+        && ! empty($replayed['idempotent_replay'])
+        && count($oauthRunner->calls) === $beforeUpdate + 4,
+        'Same request ID must replay without spending a second owner approval.');
+    $newAttempt = $approval;
+    $newAttempt['request_id'] = 'another-release-attempt-20261120';
+    $deniedNewAttempt = $releaseCall('wordpress_connector_release_apply', $newAttempt);
+    $assert($deniedNewAttempt->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 5,
+        'Already claimed approval must not authorize a new installation request.');
+    $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 103, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-test-token')
+    ));
+    $downscoped = $releaseCall('wordpress_connector_release_apply', $approval);
+    $assert($downscoped->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 5,
+        'A later read-only token must not inherit earlier update authorization.');
 
     echo "MCP transport contract assertions: {$assertions}\n";
 }
