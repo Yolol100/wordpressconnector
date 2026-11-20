@@ -91,14 +91,24 @@ foreach (array(
 $hasUntrustedPullRequestInline = static function (string $workflow): bool {
     $runIndent = null;
     foreach (preg_split('/\R/', $workflow) as $line) {
+        // Reject YAML-escaped mapping keys rather than letting a decoded
+        // `run` evade textual scanning (e.g. `"r\\u0075n"`).
+        if (preg_match('/^[ \\t]*(?:-[ \\t]+)?"[^"\\r\\n]*\\\\(?:x[0-9a-f]{2}|u[0-9a-f]{4}|U[0-9a-f]{8})[^"\\r\\n]*"[ \\t]*:/i', $line)) {
+            return true;
+        }
         $indent = strlen($line) - strlen(ltrim($line, " \t"));
         if (null !== $runIndent && '' !== trim($line) && $indent <= $runIndent) {
             $runIndent = null;
         }
         $runSource = null;
-        if (preg_match('/^([ \t]*)(?:-[ \t]+)?(?:run|"run"|\x27run\x27)[ \t]*:[ \t]*(.*)$/', $line, $matches)) {
-            $runIndent = strlen($matches[1]);
-            $runSource = $matches[2];
+        if (preg_match('/^([ \t]*)(-[ \t]+)?(?:run|"run"|\x27run\x27)[ \t]*:[ \t]*(.*)$/', $line, $matches)) {
+            $runIndent = strlen($matches[1]) + strlen($matches[2]);
+            $runSource = $matches[3];
+            // YAML aliases resolve to executable shell source after parsing.
+            // No alias is needed by this protected workflow: deny all.
+            if (preg_match('/^\\*[A-Za-z0-9_-]+(?:[ \\t]+#.*)?$/', trim($runSource))) {
+                return true;
+            }
         } elseif (null !== $runIndent) {
             $runSource = $line;
         }
