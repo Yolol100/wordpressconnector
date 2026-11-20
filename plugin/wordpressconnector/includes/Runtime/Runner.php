@@ -199,9 +199,11 @@ final class Runner {
 			$context['registry']   = $this->registry;
 			// Owner-scoped releases were fully previewed above, before begin().
 			// The adapter rechecks the release fingerprint before touching files.
-			$data = ! empty( $context['require_owner_approval'] )
-				? $this->registry->execute( $request->action(), $request->payload(), $context )
-				: $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			if ( ! empty( $context['require_owner_approval'] ) ) {
+				$data = $this->registry->execute( $request->action(), $request->payload(), $context );
+			} else {
+				$data = $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			}
 			if ( isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['fingerprint'] ) ) {
 				$data['state_token'] = Fingerprint::siteTokenFromFingerprint( $data['fingerprint'] );
 			}
