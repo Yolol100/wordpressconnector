@@ -322,7 +322,7 @@ final class ConnectorUpdateAdapter {
 				throw new RuntimeException( 'The offered connector package is stale or not canonical.' );
 			}
 
-			return $this->download_verified_package( $release );
+			return $this->download_protected_source_package( $release );
 		} catch ( \Throwable $error ) {
 			// Core aborts before replacing any plugin file when given WP_Error.
 			return new \WP_Error( 'wordpressconnector_update_integrity', 'WordPress Connector could not verify this update. No files were changed.' );
@@ -439,13 +439,9 @@ final class ConnectorUpdateAdapter {
 
 		if ( ! empty( $context['dry_run'] ) ) {
 			if ( ! empty( $context['require_release_provenance'] ) ) {
-				$preview_package = $this->download_verified_package( $release );
-				try {
-					$this->verifyProtectedSource( $release, $preview_package );
-				} finally {
-					if ( file_exists( $preview_package ) ) {
-						@unlink( $preview_package );
-					}
+				$preview_package = $this->download_protected_source_package( $release );
+				if ( file_exists( $preview_package ) ) {
+					wp_delete_file( $preview_package );
 				}
 			}
 			return array(
@@ -474,11 +470,8 @@ final class ConnectorUpdateAdapter {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';
 		require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
 
-		$package = $this->download_verified_package( $release );
+		$package = $this->download_protected_source_package( $release );
 		try {
-			if ( ! empty( $context['require_release_provenance'] ) ) {
-				$this->verifyProtectedSource( $release, $package );
-			}
 			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
@@ -725,6 +718,28 @@ final class ConnectorUpdateAdapter {
 			'checksum_digest' => $checksum_digest,
 			'source_commit'   => $source_commit,
 		);
+	}
+
+	/**
+	 * Enforce protected-main source provenance for EVERY install path, including
+	 * the native Plugins screen. A matching release checksum alone is insufficient
+	 * if somebody replaces the release ZIP and checksum together.
+	 *
+	 * @param array<string, mixed> $release Canonical GitHub release metadata.
+	 * @return string Verified temporary ZIP path, owned by the caller.
+	 * @throws \Throwable If download, integrity or source provenance fails.
+	 */
+	private function download_protected_source_package( array $release ): string {
+		$package = $this->download_verified_package( $release );
+		try {
+			$this->verifyProtectedSource( $release, $package );
+			return $package;
+		} catch ( \Throwable $error ) {
+			if ( file_exists( $package ) ) {
+				wp_delete_file( $package );
+			}
+			throw $error;
+		}
 	}
 
 	/**
