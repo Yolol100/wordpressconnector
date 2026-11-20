@@ -151,14 +151,18 @@ The update procedure in the ChatGPT MCP connection is:
    and cannot be issued by the OAuth client or inferred from `confirm:true`.
 3. Call `wordpress_connector_release_apply` with a stable `request_id`,
    the exact preview fingerprint as `expected_fingerprint`, and `confirm:true`.
-   Permission, owner-approval and lock/replay preflights run **before** the
-   durable mutation reservation. The database-unique owner claim is consumed
-   only after verified source/package bytes and update prerequisites pass,
-   immediately before the WordPress upgrader attempt. A failed preflight
-   does not consume approval. Repeat the **same** request ID to reconcile a
-   completed result; a new ID requires a fresh approval. If the outcome is
-   unknown, inspect the original request and site state rather than retrying
-   blindly.
+   The mutation lock, replay check, owner-approval **record ID**, and a fresh
+   complete protected-source preview run **before** reserving the request ID.
+   This prevents an unverified network failure from stranding a pending ID.
+   The database-unique claim must still match that exact preflighted approval
+   ID, even if a second approval replaced it while verification ran. The
+   guarded updater streams ZIP bytes with a 20 MiB + 1 byte HTTP transfer cap
+   and verifies checksum, protected source and installation preconditions
+   before consuming approval. Provably pre-upgrader failures are terminal;
+   once WordPress Core begins the upgrader, an uncertain outcome remains
+   pending for manual reconciliation. Repeat the **same** request ID to replay
+   a completed result. A new ID requires fresh owner approval. Never blindly
+   retry an unknown outcome.
 4. The existing `connector.update.apply` rechecks the canonical GitHub
    `releases/latest` metadata, checksum, plugin ZIP identity and exact
    protected-`main` source before the WordPress Core Upgrader runs. The
