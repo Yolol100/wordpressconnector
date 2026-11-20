@@ -698,8 +698,59 @@ final class Controller {
 		if ( 'wordpress_connector_execute' === $name ) {
 			return $this->execute_tool( $rpc_id, $name, $arguments );
 		}
+		if ( in_array( $name, array( 'wordpress_connector_release_preview', 'wordpress_connector_release_apply' ), true ) ) {
+			return $this->release_tool( $rpc_id, $name, $arguments );
+		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+	}
+
+	/**
+	 * The dedicated self-update tools do not expose a general plugin file write.
+	 * WordPress Core and ConnectorUpdateAdapter verify and install the immutable
+	 * GitHub release. OAuth write scope is never inherited by generic execute.
+	 *
+	 * @param mixed $rpc_id JSON-RPC identifier.
+	 * @param string $name Dedicated release action.
+	 * @param array $arguments Exact request arguments.
+	 * @return array MCP response.
+	 */
+	private function release_tool( $rpc_id, string $name, array $arguments ): array {
+		if ( null === $this->oauth_resource || ! OAuthResourceServer::selfUpdateConfigured()
+			|| ! $this->oauth_resource->isAuthenticated() ) {
+			return $this->tool_error( 'An authenticated, owner-enabled OAuth release connection is required.' );
+		}
+		if ( ! $this->oauth_resource->canSelfUpdate() ) {
+			$result = $this->tool_error( 'OAuth update scope and current WordPress update_plugins capability are required.' );
+			$challenge = OAuthResourceServer::challengeHeader( true );
+			if ( '' !== $challenge ) {
+				$result['_meta']['mcp/www_authenticate'] = $challenge . ', error="insufficient_scope"';
+			}
+			return $result;
+		}
+		if ( 'wordpress_connector_release_preview' === $name ) {
+			if ( array() !== $arguments ) {
+				return $this->tool_error( 'Release preview takes no arguments.' );
+			}
+			$result = $this->run_semantic( $rpc_id, $name, 'connector.update.apply', array(), true, false, null, null, null );
+			return $this->tool_result( $result, empty( $result['ok'] ) );
+		}
+		$allowed = array( 'request_id', 'expected_fingerprint', 'confirm' );
+		if ( 3 !== count( $arguments ) || array_diff( array_keys( $arguments ), $allowed )
+			|| ! isset( $arguments['request_id'] ) || ! is_string( $arguments['request_id'] )
+			|| ! preg_match( '/^[A-Za-z0-9._-]{8,100}\z/', $arguments['request_id'] )
+			|| true !== ( $arguments['confirm'] ?? null ) ) {
+			return $this->tool_error( 'Release installation requires stable request_id, fingerprint and confirm=true.' );
+		}
+		$fingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
+		if ( false === $fingerprint || null === $fingerprint ) {
+			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
+		}
+		$result = $this->run_semantic(
+			$rpc_id, $name, 'connector.update.apply', array(), false, true,
+			$arguments['request_id'], $fingerprint, null
+		);
+		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
 
 	/**
