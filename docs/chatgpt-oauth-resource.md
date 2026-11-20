@@ -118,7 +118,9 @@ The update procedure in the ChatGPT MCP connection is:
    plan with the owner. A new version requires a new approval; a general
    "always update" instruction is not consent to future releases.
 3. Call `wordpress_connector_release_apply` with a stable `request_id`,
-   the exact **64-character** SHA-256 `expected_fingerprint` from the preview,
+   the exact **64-character** SHA-256 `release_fingerprint` from
+   `structuredContent.result.data.release_fingerprint` in the preview as
+   `expected_fingerprint`,
    and `confirm:true`. Missing rights/approval, stale installed version or
    changed package digest are rejected.
 4. The existing `connector.update.apply` uses the canonical GitHub
