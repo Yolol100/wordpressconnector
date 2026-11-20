@@ -74,6 +74,25 @@ namespace Webactueel\WordPressConnector\Security {
         }
         public static function challenge(): void {}
     }
+
+    final class ReleaseApproval
+    {
+        public static ?string $approvedFingerprint = null;
+        public static bool $alreadyConsumed = false;
+        public static function allowOnce(string $fingerprint): void {
+            self::$approvedFingerprint = $fingerprint;
+            self::$alreadyConsumed = false;
+        }
+        public static function consume(string $fingerprint): bool {
+            if (self::$approvedFingerprint === null
+                || ! hash_equals(self::$approvedFingerprint, $fingerprint)
+                || self::$alreadyConsumed) {
+                return false;
+            }
+            self::$alreadyConsumed = true;
+            return true;
+        }
+    }
 }
 
 namespace {
@@ -557,6 +576,11 @@ namespace {
         'Even OAuth release scope must never unlock the generic WordPress write tool.');
 
     $approval = array('request_id' => 'chatgpt-release-20261120', 'expected_fingerprint' => $previewFingerprint, 'confirm' => true);
+    $beforeOwnerApproval = $releaseCall('wordpress_connector_release_apply', $approval);
+    $assert($beforeOwnerApproval->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 1,
+        'A valid update token plus confirm:true must NOT replace independent WordPress owner approval.');
+    \Webactueel\WordPressConnector\Security\ReleaseApproval::allowOnce($previewFingerprint);
     $applied = $releaseCall('wordpress_connector_release_apply', $approval);
     $write = $oauthRunner->calls[$beforeUpdate + 1]['request'] ?? array();
     $assert($applied->get_data()['result']['isError'] === false
@@ -567,6 +591,10 @@ namespace {
         && $write['request_id'] === 'chatgpt-release-20261120'
         && $write['payload'] === array(),
         'Only an exact, explicitly approved canonical self-update can reach the Runner.');
+    $replayedApproval = $releaseCall('wordpress_connector_release_apply', $approval);
+    $assert($replayedApproval->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 2,
+        'A once-consumed owner approval must not authorize a second installer request.');
     $oauthController->authorize(new WP_REST_Request(
         array('jsonrpc' => '2.0', 'id' => 103, 'method' => 'tools/list'),
         array('Authorization' => 'Bearer accepted-test-token')
