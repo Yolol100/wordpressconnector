@@ -64,8 +64,8 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     root = Path(directory)
     base_root, candidate_root = root / "base", root / "candidate"
     rel = Path("plugin/wordpressconnector/includes/Auth.php")
-    for source_root, content in ((base_root, "<?php\\nunsafe_old();\\n"),
-                                 (candidate_root, "<?php\\nunsafe_new();\\n")):
+    for source_root, content in ((base_root, "<?php\nunsafe_old();\n"),
+                                 (candidate_root, "<?php\nunsafe_new();\n")):
         target = source_root / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
@@ -80,7 +80,7 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     changed = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if changed.returncode != 1 or "unsafe_new" not in changed.stdout:
         raise AssertionError("New source-line violation must fail even when sniff counts match")
-    (candidate_root / rel).write_text("<?php\\nunsafe_old();\\n", encoding="utf-8")
+    (candidate_root / rel).write_text("<?php\nunsafe_old();\n", encoding="utf-8")
     stable = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if stable.returncode != 0:
         raise AssertionError("Identical source lines should pass exact-file/sniff gate")

@@ -53,7 +53,7 @@ def load_counts(path: Path, source_root: Path | None = None) -> tuple[Counter, d
                 lines = checked_lines[relative]
                 if not isinstance(line_number, int) or line_number <= 0 or line_number > len(lines):
                     raise ValueError(f"Invalid PHPCS source line in {relative}: {line_number}")
-                line_fingerprint = re.sub(r"\\s+", " ", lines[line_number - 1].strip())
+                line_fingerprint = re.sub(r"\s+", " ", lines[line_number - 1].strip())
             counts[(relative, severity, sniff, line_fingerprint)] += 1
             observed[severity] += 1
     if observed["ERROR"] != totals["errors"] or observed["WARNING"] != totals["warnings"]:
