@@ -96,27 +96,23 @@ $hasUntrustedPullRequestInline = static function (string $workflow): bool {
             $runIndent = null;
         }
         $runSource = null;
-        if (preg_match('/^([ \t]*)run:[ \t]*(.*)$/', $line, $matches)) {
-            if (preg_match('/^[|>][+-0-9]*[ \t]*(?:#.*)?$/', $matches[2])) {
-                $runIndent = strlen($matches[1]);
-                continue;
-            }
-            $runIndent = null;
+        if (preg_match('/^([ \t]*)(?:run|"run"|\x27run\x27)[ \t]*:[ \t]*(.*)$/', $line, $matches)) {
+            $runIndent = strlen($matches[1]);
             $runSource = $matches[2];
         } elseif (null !== $runIndent) {
             $runSource = $line;
         }
-        if (null === $runSource || ! preg_match_all('/\$\{\{\s*([^}]+)\s*\}\}/', $runSource, $expressions)) { continue; }
-        foreach ($expressions[1] as $expression) {
-            // Normalize mixed dot and quoted bracket property access before validating.
-            $normalized = preg_replace('/\[\s*["\x27]([A-Za-z_][A-Za-z0-9_]*)["\x27]\s*\]/', '.$1', $expression);
-            if (! is_string($normalized)) { return true; }
-            $normalized = preg_replace('/\s*\.\s*/', '.', $normalized);
-            if (! is_string($normalized)) { return true; }
-            if (preg_match('/\bgithub\.event\.pull_request\b/i', $normalized)
-                && ! preg_match('/^\s*github\.event\.pull_request\.(?:base|head)\.sha\s*$/i', $normalized)) {
-                return true;
-            }
+        if (null === $runSource || ! preg_match('/\$\{\{/', $runSource)) { continue; }
+        // The protected Bash workflow only needs these four simple typed GitHub expressions.
+        // Fail closed on all other template syntax, including format(), fromJSON(),
+        // bracket access, nested/quoted braces and YAML continuation lines.
+        $withoutAllowed = preg_replace(
+            '/\$\{\{\s*(?:github\.repository_owner|github\.event\.repository\.private|github\.event\.pull_request\.(?:base|head)\.sha)\s*\}\}/i',
+            '',
+            $runSource
+        );
+        if (! is_string($withoutAllowed) || preg_match('/\$\{\{/', $withoutAllowed)) {
+            return true;
         }
     }
     return false;
@@ -133,6 +129,8 @@ foreach (array(
     'request_actor="${{ github.event[\'pull_request\'][\'title\'] }}"',
     'request_actor="${{ github[\'event\'][\'pull_request\'][\'title\'] }}"',
     'request_actor="${{ github.event.pull_request[inputs.property] }}"',
+    'request_actor="${{ format(\'{0}\', github.event.pull_request.title) }}"',
+    'request_actor="${{ fromJSON(toJSON(github.event)).pull_request.title }}"',
 ) as $unsafeInlineExpression) {
     $tampered = str_replace('request_actor="${PR_REQUEST_ACTOR}"', $unsafeInlineExpression, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
@@ -144,9 +142,15 @@ foreach (array(
 $inlineRunInsertion = '      - name: Dispatch trusted zero-config WordPress executor';
 foreach (array(
     '        run: echo "${{ github.event.pull_request.title }}"',
+    '        "run": echo "${{ github.event.pull_request.title }}"',
+    '        \'run\': echo "${{ github.event.pull_request.title }}"',
     '        run: echo "${{ github.event.pull_request[\'title\'] }}"',
     '        run: echo "${{ github.event[\'pull_request\'][\'title\'] }}"',
     '        run: echo "${{ github[\'event\'][\'pull_request\'][\'title\'] }}"',
+    '        run: echo "${{ github.event.pull_request[\'head\'][\'sha\'] }}"',
+    '        run: echo "${{ format(\'{0}\', github.event.pull_request.title) }}"',
+    '        run: echo "${{ fromJSON(toJSON(github.event)).pull_request.title }}"',
+    '        run: echo ready' . "\n" . '          "${{ github.event.pull_request.title }}"',
 ) as $unsafeOneLineRun) {
     $tampered = str_replace($inlineRunInsertion, "      - name: injected inline run\n" . $unsafeOneLineRun . "\n" . $inlineRunInsertion, $request);
     if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
@@ -156,11 +160,13 @@ foreach (array(
 }
 foreach (array(
     '        run: echo "${{ github.event.pull_request.base.sha }}"',
-    '        run: echo "${{ github.event.pull_request[\'head\'][\'sha\'] }}"',
+    '        run: echo "${{ github.event.pull_request.head.sha }}"',
+    '        run: echo "${{ github.repository_owner }}"',
+    '        run: echo "${{ github.event.repository.private }}"',
 ) as $safeOneLineRun) {
     $tampered = str_replace($inlineRunInsertion, "      - name: trusted SHA inline run\n" . $safeOneLineRun . "\n" . $inlineRunInsertion, $request);
     if ($tampered === $request || $hasUntrustedPullRequestInline($tampered)) {
-        fwrite(STDERR, "Request workflow contract rejected a pinned SHA expression.\n");
+        fwrite(STDERR, "Request workflow contract rejected a pinned trusted expression.\n");
         exit(1);
     }
 }
