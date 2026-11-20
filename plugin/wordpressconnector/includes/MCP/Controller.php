@@ -620,11 +620,11 @@ final class Controller {
 			);
 			$result['tools'][] = array(
 				'name' => 'wordpress_connector_release_apply',
-				'description' => 'After explicit owner approval, install only the exact previewed signed WordPress Connector release. Requires stable request_id, SHA-256 fingerprint and confirm=true.',
+				'description' => 'After explicit owner approval, install only the exact previewed protected-source-verified and digest-pinned WordPress Connector release. Requires stable request_id, SHA-256 fingerprint and confirm=true.',
 				'inputSchema' => array(
 					'type' => 'object',
 					'properties' => array(
-						'request_id' => array( 'type' => 'string', 'minLength' => 8, 'maxLength' => 100 ),
+						'request_id' => array( 'type' => 'string', 'minLength' => 8, 'maxLength' => 100, 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$' ),
 						'expected_fingerprint' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
 						'confirm' => array( 'type' => 'boolean', 'const' => true ),
 					),
@@ -738,7 +738,7 @@ final class Controller {
 		$allowed = array( 'request_id', 'expected_fingerprint', 'confirm' );
 		if ( 3 !== count( $arguments ) || array_diff( array_keys( $arguments ), $allowed )
 			|| ! isset( $arguments['request_id'] ) || ! is_string( $arguments['request_id'] )
-			|| ! preg_match( '/^[A-Za-z0-9._-]{8,100}\z/', $arguments['request_id'] )
+			|| ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $arguments['request_id'] )
 			|| true !== ( $arguments['confirm'] ?? null ) ) {
 			return $this->tool_error( 'Release installation requires stable request_id, fingerprint and confirm=true.' );
 		}
