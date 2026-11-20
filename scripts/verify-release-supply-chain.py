@@ -68,6 +68,9 @@ def verify(package_path: Path, sbom_path: Path) -> str:
                 parts = Path(name).parts
                 if any(p in FORBIDDEN or p in ("", ".", "..") for p in parts) or "\\" in name:
                     raise ValueError("Invalid or dev-only ZIP path: " + name)
+                # ZIP symlinks must never be extracted or accepted as code files.
+                if ((info.external_attr >> 16) & 0xF000) == 0xA000:
+                    raise ValueError("Symlink entry forbidden in release ZIP: " + name)
                 if info.file_size < 0 or info.file_size > MAX_ZIP:
                     raise ValueError("Oversized ZIP entry: " + name)
                 total += info.file_size
