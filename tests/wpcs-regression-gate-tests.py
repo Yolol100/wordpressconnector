@@ -58,4 +58,30 @@ run_case(base, fixture({
 }), 1, "existing sniff increased")
 run_case(base, {"totals": {"errors": 0, "warnings": 0}, "files": {}}, 2, "missing evidence")
 run_case(base, {"totals": {"errors": 1, "warnings": 0}, "files": base["files"]}, 2, "corrupt totals")
-print("WPCS per-file per-sniff baseline regression and fail-closed parser tests OK")
+# A net-unchanged count must NOT hide an entirely new violation on a
+# different source line. This is the runtime mode used by GitHub Actions.
+with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
+    root = Path(directory)
+    base_root, candidate_root = root / "base", root / "candidate"
+    rel = Path("plugin/wordpressconnector/includes/Auth.php")
+    for source_root, content in ((base_root, "<?php\\nunsafe_old();\\n"),
+                                 (candidate_root, "<?php\\nunsafe_new();\\n")):
+        target = source_root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    report = fixture({"includes/Auth.php": [("ERROR", "Sniff.Untrusted")]})
+    # Fixture source line 1 must be moved to the actual offending source line.
+    report["files"][PREFIX + "includes/Auth.php"]["messages"][0]["line"] = 2
+    basefile, nowfile = root / "before.json", root / "after.json"
+    basefile.write_text(json.dumps(report), encoding="utf-8")
+    nowfile.write_text(json.dumps(report), encoding="utf-8")
+    cmd = [sys.executable, "-B", str(SCRIPT), str(basefile), str(nowfile),
+           "--base-root", str(base_root), "--current-root", str(candidate_root)]
+    changed = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if changed.returncode != 1 or "unsafe_new" not in changed.stdout:
+        raise AssertionError("New source-line violation must fail even when sniff counts match")
+    (candidate_root / rel).write_text("<?php\\nunsafe_old();\\n", encoding="utf-8")
+    stable = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if stable.returncode != 0:
+        raise AssertionError("Identical source lines should pass exact-file/sniff gate")
+print("WPCS per-file/sniff/source-line baseline regression and fail-closed parser tests OK")
