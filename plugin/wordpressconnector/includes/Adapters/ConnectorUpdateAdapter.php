@@ -388,6 +388,14 @@ final class ConnectorUpdateAdapter {
 			'plugin_file' => self::PLUGIN_FILE,
 			'version'     => $current,
 		);
+		// Bind the preview fingerprint to both the installed version and the
+		// exact canonical signed release; a changing release invalidates approval.
+		$release_state = array(
+			'plugin_file'   => self::PLUGIN_FILE,
+			'version'       => $current,
+			'release_tag'   => $release['tag'],
+			'package_digest' => $release['package_digest'],
+		);
 		$plan   = array(
 			'from_version'                    => $current,
 			'to_version'                      => $release['version'],
@@ -405,8 +413,13 @@ final class ConnectorUpdateAdapter {
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'would_update_connector' => $plan,
-				'_current_fingerprint'   => Fingerprint::make( $before ),
+				'_current_fingerprint'   => Fingerprint::make( $release_state ),
 			);
+		}
+		if ( isset( $context['expected_prewrite_fingerprint'] )
+			&& ( ! is_string( $context['expected_prewrite_fingerprint'] )
+				|| ! hash_equals( Fingerprint::make( $release_state ), $context['expected_prewrite_fingerprint'] ) ) ) {
+			throw new RuntimeException( 'Connector release changed after approval; preview the update again.' );
 		}
 
 		require_once ABSPATH . 'wp-admin/includes/file.php';
