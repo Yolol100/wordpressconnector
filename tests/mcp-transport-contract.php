@@ -588,6 +588,8 @@ namespace {
         array('request_id' => 'release-123', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => false),
         array('request_id' => 'release-123', 'expected_fingerprint' => 'invalid', 'confirm' => true),
         array('request_id' => 'release-123', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true, 'path' => '/wp-config.php'),
+        array('request_id' => '........', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true),
+        array('request_id' => '_release-id', 'expected_fingerprint' => str_repeat('a', 64), 'confirm' => true),
     ) as $unsafeUpdate) {
         $bad = $releaseCall('wordpress_connector_release_apply', $unsafeUpdate);
         $assert($bad->get_data()['result']['isError'] === true
