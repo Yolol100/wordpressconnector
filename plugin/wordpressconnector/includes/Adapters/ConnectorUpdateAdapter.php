@@ -35,6 +35,8 @@ final class ConnectorUpdateAdapter {
 	 * @var string|null
 	 */
 	private $verified_self_update_package_path = null;
+	/** True once WordPress Core upgrader may have touched plugin files. */
+	private bool $upgrader_started = false;
 
 	/**
 	 * Register the ConnectorUpdate adapter actions and handlers.
@@ -366,6 +368,26 @@ final class ConnectorUpdateAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function apply( array $payload, array $context ): array {
+		$this->upgrader_started = false;
+		try {
+			return $this->perform_verified_update( $payload, $context );
+		} catch ( \Throwable $error ) {
+			// A release-only failure before Core begins the upgrader is known
+			// to have changed no plugin files. Return a terminal failure so
+			// Runner finalizes the reserved request ID instead of stranding it.
+			if ( ! empty( $context['require_owner_approval'] )
+				&& empty( $context['dry_run'] ) && ! $this->upgrader_started ) {
+				return array(
+					'_terminal_error' => $error->getMessage(),
+					'execution_may_have_started' => false,
+				);
+			}
+			throw $error; // Once Core starts, the outcome must be reconciled.
+		}
+	}
+
+	/** Internal canonical updater; used only behind the guarded entrypoint. */
+	private function perform_verified_update( array $payload, array $context ): array {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to update plugins.' );
 		}
@@ -463,7 +485,8 @@ final class ConnectorUpdateAdapter {
 			// backup. A later fatal error still has no guaranteed automatic recovery.
 			$installation = $this->install_with_core_backup(
 				$package,
-				! empty( $context['require_owner_approval'] ) ? $release_fingerprint : null
+				! empty( $context['require_owner_approval'] ) ? $release_fingerprint : null,
+				! empty( $context['require_owner_approval'] ) ? ( $context['owner_approval_id'] ?? null ) : null
 			);
 			wp_clean_plugins_cache( true );
 			$plugins           = get_plugins();
@@ -498,12 +521,13 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @param string      $package                    Validated package metadata.
 	 * @param string|null $owner_approval_fingerprint Exact owner consent required by OAuth only.
+	 * @param string|null $owner_approval_id          Exact approval record observed at Runner preflight.
 	 *
 	 * @return array{upgrader: \Plugin_Upgrader, backup: array<string,string>}
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	private function install_with_core_backup( string $package, ?string $owner_approval_fingerprint = null ): array {
+	private function install_with_core_backup( string $package, ?string $owner_approval_fingerprint = null, ?string $owner_approval_id = null ): array {
 		if ( ! defined( 'WP_PLUGIN_DIR' ) || ! function_exists( 'get_filesystem_method' ) || 'direct' !== get_filesystem_method()
 			|| ! is_readable( WP_PLUGIN_DIR . '/' . self::PLUGIN_FILE )
 			|| ! method_exists( \Plugin_Upgrader::class, 'restore_temp_backup' ) ) {
@@ -519,7 +543,8 @@ final class ConnectorUpdateAdapter {
 
 		// Runner already holds the mutation lock and checked idempotent replay.
 		// Claim only after verifying source and filesystem/activation prerequisites.
-		if ( null !== $owner_approval_fingerprint && ! ReleaseApproval::consume( $owner_approval_fingerprint ) ) {
+		if ( null !== $owner_approval_fingerprint
+			&& ( null === $owner_approval_id || ! ReleaseApproval::consume( $owner_approval_fingerprint, $owner_approval_id ) ) ) {
 			throw new RuntimeException( 'The linked owner must approve this exact release in WordPress Plugins. Approval lasts 10 minutes and authorizes one installation attempt.' );
 		}
 
@@ -541,6 +566,8 @@ final class ConnectorUpdateAdapter {
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
 		$this->verified_self_update_package_path = $package;
 		try {
+			// A failure from this point may leave an uncertain file state.
+			$this->upgrader_started = true;
 			$result = $upgrader->run(
 				array(
 					'package'                     => $package,
