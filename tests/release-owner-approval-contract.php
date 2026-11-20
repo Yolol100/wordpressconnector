@@ -131,7 +131,7 @@ namespace {
         && strpos($source, 'wp_nonce_url(') !== false,
         'The ordinary Plugins page must defer release downloads to owner-initiated nonce-guarded review.');
     ensure(strpos($source, 'delete_option( self::OPTION )') === false
-        && strpos($source, "get_option( self::CLAIM_PREFIX . \\$record['id'], false )") !== false,
+        && strpos($source, "get_option( self::CLAIM_PREFIX . \$record['id'], false )") !== false,
         'Claiming an old approval must not delete a replacement and claimed records must be unavailable.');
     foreach (array(
         "check_admin_referer( self::NONCE_ACTION )",
