@@ -174,7 +174,13 @@ final class ReleaseApproval {
 	 * before it writes a pending idempotency record. Approval is NOT consumed.
 	 */
 	public static function available( string $fingerprint ): bool {
-		return null !== self::currentApproval( $fingerprint );
+		return null !== self::idForFingerprint( $fingerprint );
+	}
+
+	/** Bind the locked preflight to the exact one-time approval record. */
+	public static function idForFingerprint( string $fingerprint ): ?string {
+		$record = self::currentApproval( $fingerprint );
+		return null === $record ? null : $record['id'];
 	}
 
 	/** Check the exact owner, release pin and expiry without claiming consent. */
@@ -207,9 +213,12 @@ final class ReleaseApproval {
 	 * Atomically consume the consent after package verification, update
 	 * preconditions and Runner's lock/replay handling have all succeeded.
 	 */
-	public static function consume( string $fingerprint ): bool {
+	public static function consume( string $fingerprint, string $expected_approval_id ): bool {
+		if ( 1 !== preg_match( '/^[a-f0-9]{32}\\z/', $expected_approval_id ) ) {
+			return false;
+		}
 		$record = self::currentApproval( $fingerprint );
-		if ( null === $record ) {
+		if ( null === $record || ! hash_equals( $record['id'], $expected_approval_id ) ) {
 			return false;
 		}
 		$now = time();
