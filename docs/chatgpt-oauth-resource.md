@@ -103,6 +103,33 @@ server has been connected, the site owner may separately configure in wp-config.
 define( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE', true );
 ```
 
+Before a release can be approved, the WordPress server administrator must
+**independently verify the release artifact attestation** against the protected
+`Yolol100/wordpressconnector` repository, trusted release workflow,
+and the **exact ZIP bytes** (for example with the official `gh attestation
+verify` workflow), then pin the authenticated ZIP SHA-256 in the site's
+secure `wp-config.php`:
+
+```php
+// EXAMPLE PLACEHOLDER. Replace only after verifying trusted attestation.
+define( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256', 'sha256:YOUR_VERIFIED_64_HEX_DIGEST' );
+```
+
+A GitHub release ZIP/checksum pair alone **does not prove provenance**.
+Without the independently verified, exact pinned digest the WordPress
+approval form remains unavailable and installation is denied. The plugin
+does **not** implement native Sigstore attestation verification; the manual
+attestation verification/pin is an explicit release prerequisite, not proof
+that any current real release was verified.
+
+After the provider is linked and this digest is pinned, the linked owner
+opens **WordPress → Plugins**, reviews the release tag and ZIP digest,
+and clicks **Approve this Connector release** with their real WordPress
+cookie session and nonce. That approval lasts at most 10 minutes and is
+one-use only. A ChatGPT-supplied `confirm:true` without this independent
+server-held browser approval always fails. No arbitrary OAuth client can
+create or renew the approval.
+
 Do not enable it based on a ChatGPT prompt alone. The exact linked WordPress
 account must currently possess `update_plugins`, and the access token must
 contain **both** `wpconnector:read` and `wpconnector:update`. Neither scope
