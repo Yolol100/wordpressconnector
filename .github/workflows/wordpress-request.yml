@@ -1,8 +1,11 @@
 name: WordPress Request
 
+# Load the executable dispatcher exclusively from the protected base branch.
+# PR-controlled Git data is inspected as data; no head workflow code is run.
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened]
+    branches: [main]
     paths:
       - 'requests/**'
       - 'assets/inbox/**'
@@ -29,18 +32,26 @@ jobs:
         id: guard
         env:
           TRUSTED_REQUEST_ACTOR: ${{ vars.WPCONNECTOR_TRUSTED_REQUEST_ACTOR }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
+          PR_REQUEST_ACTOR: ${{ github.event.pull_request.user.login }}
           GH_REPO_TOKEN: ${{ github.token }}
           GIT_TERMINAL_PROMPT: '0'
         shell: bash
         run: |
           set -euo pipefail
 
-          if [[ "${{ github.event.pull_request.head.repo.full_name }}" != "${GITHUB_REPOSITORY}" ]]; then
+          if [[ "${PR_BASE_REF}" != "main" ]]; then
+            echo "Only PRs targeting protected main can submit WordPress runtime requests." >&2
+            exit 1
+          fi
+
+          if [[ "${PR_HEAD_REPO}" != "${GITHUB_REPOSITORY}" ]]; then
             echo 'Fork PRs are not allowed to submit WordPress runtime requests.' >&2
             exit 1
           fi
 
-          request_actor="${{ github.event.pull_request.user.login }}"
+          request_actor="${PR_REQUEST_ACTOR}"
           repository_owner="${{ github.repository_owner }}"
           if [[ "$request_actor" != "$repository_owner" ]]; then
             if [[ -z "${TRUSTED_REQUEST_ACTOR:-}" || "$request_actor" != "$TRUSTED_REQUEST_ACTOR" ]]; then
