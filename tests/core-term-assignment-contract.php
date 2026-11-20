@@ -85,11 +85,11 @@ $cleared = $adapter->termAssign($empty, array('dry_run' => true));
 if (($cleared['after'] ?? null) !== array() || $GLOBALS['term_assign_writes'] !== 1) {
     throw new RuntimeException('Explicit empty taxonomy terms no longer preview a clear operation.');
 }
-// Preserve historical omitted-list preview semantics; a separate public
-// contract change would be required before forbidding implicit empty lists.
+// Omission must fail closed for both previews and confirmed writes, not
+// silently clear all assignments. An explicit [] remains the clear contract.
 $omitted = array('object_id' => 101, 'taxonomy' => 'category');
-$legacy = $adapter->termAssign($omitted, array('dry_run' => true));
-if (($legacy['after'] ?? null) !== array() || $GLOBALS['term_assign_writes'] !== 1) {
-    throw new RuntimeException('Legacy omitted taxonomy terms changed.');
+$assertRejected($omitted, 'terms must be an array of positive term IDs.');
+if ($GLOBALS['term_assign_writes'] !== 1) {
+    throw new RuntimeException('Omitted terms caused an unexpected mutation.');
 }
 echo "Core taxonomy assignment strict-ID and rollback contract OK\n";
