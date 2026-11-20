@@ -65,7 +65,7 @@ by removing the approval constant (or setting it to `false`).
 
 ## Scope and security boundaries
 
-- The first integration grants **read-only MCP access only**.
+- The default integration grants **read-only MCP access only**. A separately approved, opt-in `wpconnector:update` scope allows only the canonical Connector release updater, never general writes.
 - All OAuth bearer `tools/call` requests may execute only `connector.discover`
   or `site.identity.inspect`, `dry_run:true`, `confirm:false`, empty payload.
 - GitHub OIDC and existing WordPress session/Application Password permissions are
@@ -93,6 +93,52 @@ by removing the approval constant (or setting it to `false`).
   mean the provider supports ChatGPT, the OAuth grant succeeded, or the linked
   WordPress user explicitly consented. Real OAuth, multisite and provider tests
   are separate gates.
+
+## Optional, owner-approved Connector self-update from ChatGPT
+
+This capability is **disabled by default**. Once a trusted OAuth 2.1 authorization
+server has been connected, the site owner may separately configure in wp-config.php:
+
+```php
+define( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE', true );
+```
+
+Do not enable it based on a ChatGPT prompt alone. The exact linked WordPress
+account must currently possess `update_plugins`, and the access token must
+contain **both** `wpconnector:read` and `wpconnector:update`. Neither scope
+grants broad WordPress updates or arbitrary source-code editing.
+
+The update procedure in the ChatGPT MCP connection is:
+
+1. Use `wordpress_connector_release_preview` to inspect the **latest published**
+   canonical GitHub release, its verified package SHA-256 and the plugin's
+   installed version. Record the resulting `current_state_token` or current
+   SHA-256 fingerprint. The preview does **not** write files.
+2. Independently confirm the approved release/version and the site's recovery
+   plan with the owner. A new version requires a new approval; a general
+   "always update" instruction is not consent to future releases.
+3. Call `wordpress_connector_release_apply` with a stable `request_id`,
+   the exact **64-character** SHA-256 `expected_fingerprint` from the preview,
+   and `confirm:true`. Missing rights/approval, stale installed version or
+   changed package digest are rejected.
+4. The existing `connector.update.apply` uses the canonical GitHub
+   `releases/latest` API, verifies asset URL, ZIP contents and checksums,
+   then invokes the WordPress Core Upgrader with temporary backup hooks.
+   A failed installation/readback may trigger Core's temporary recovery, but
+   a **post-success rollback is not guaranteed**. Verify plugin version, active
+   status, HTTPS presence and representative read operations independently.
+
+Never allow ChatGPT to submit raw PHP, arbitrary Git branches, file paths,
+external ZIP URLs or credentials as upgrade inputs. Development happens in
+a GitHub PR; tests, security review, approval and a separately published
+release precede any live installation. This feature installs no draft commit.
+
+**Important:** the OAuth protected-resource code in a draft PR does not
+enable ChatGPT itself. A real provider with OAuth Authorization Code + PKCE,
+approved user consent, site-local confidential introspection settings,
+workspace MCP registration and production-host `.well-known` routing
+remain separate prerequisites. Until these pass, the new tools remain
+unavailable on live WordPress.
 
 ## Release decision
 
