@@ -12,6 +12,7 @@ namespace Webactueel\WordPressConnector\Runtime;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -159,6 +160,18 @@ final class Runner {
 						),
 						array( 'request_fingerprint' => $request_fingerprint )
 					);
+				}
+				// An absent owner approval is a preflight denial, not an unknown
+				// provider mutation. Check it under the lock BEFORE reserving this ID;
+				// the adapter claims it only after source and install preconditions.
+				if ( ! empty( $context['require_owner_approval'] ) ) {
+					$fingerprint = $request->expectedFingerprint();
+					if ( 'connector.update.apply' !== $request->action()
+						|| empty( $context['require_release_provenance'] )
+						|| null === $fingerprint
+						|| ! ReleaseApproval::available( $fingerprint ) ) {
+						throw new RuntimeException( 'Owner approval for this verified Connector release is missing, expired or already used.' );
+					}
 				}
 				// Durable reservation precedes every provider write. If PHP
 				// terminates or the result cannot be stored, future retries
