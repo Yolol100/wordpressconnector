@@ -70,6 +70,10 @@ run_php tests/yoast-feature-settings-contract.php
 run_php tests/yoast-native-abilities-contract.php
 run_php tests/plugin-package-contract.php
 run_php tests/connector-update-contract.php
+# Keep new release-supply-chain regressions in the existing CI contract runner,
+# even before protected .github/workflows/ci.yml governance changes are merged.
+python3 -B tests/release-supply-chain-tests.py
+python3 -B tests/wpcs-regression-gate-tests.py
 run_php tests/connector-update-preview-identity-contract.php
 run_php tests/release-protected-source-contract.php
 run_php tests/native-update-contract.php
