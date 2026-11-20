@@ -16,6 +16,7 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 
 /**
  * Implements Controller handling for the connector MCP endpoint.
