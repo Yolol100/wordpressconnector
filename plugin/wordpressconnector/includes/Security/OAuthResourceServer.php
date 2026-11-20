@@ -95,15 +95,19 @@ final class OAuthResourceServer {
 	public static function wellKnownUrl(): string {
 		$parts = wp_parse_url( self::resource() );
 		if ( ! is_array( $parts ) || 'https' !== ( $parts['scheme'] ?? null )
-			|| empty( $parts['host'] ) || ! isset( $parts['path'] )
-			|| ! is_string( $parts['path'] ) || isset( $parts['query'] )
+			|| empty( $parts['host'] )
+			|| ( isset( $parts['path'] ) && ! is_string( $parts['path'] ) )
 			|| isset( $parts['fragment'] ) || isset( $parts['user'] )
 			|| isset( $parts['pass'] ) ) {
 			return '';
 		}
-		$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+		$port  = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+		// RFC 9728 removes the terminating slash after the authority before
+		// inserting the well-known segment, including for query-only REST.
+		$path  = '/' === ( $parts['path'] ?? '' ) ? '' : ( $parts['path'] ?? '' );
+		$query = isset( $parts['query'] ) ? '?' . $parts['query'] : '';
 		return 'https://' . $parts['host'] . $port
-			. '/.well-known/oauth-protected-resource' . $parts['path'];
+			. '/.well-known/oauth-protected-resource' . $path . $query;
 	}
 
 	/** RFC 9728 resource metadata; the authorization server lives elsewhere. */
@@ -149,7 +153,9 @@ final class OAuthResourceServer {
 			return;
 		}
 		$url = self::wellKnownUrl();
-		if ( '' === $url || wp_parse_url( $uri, PHP_URL_PATH ) !== wp_parse_url( $url, PHP_URL_PATH ) ) {
+		if ( '' === $url
+			|| wp_parse_url( $uri, PHP_URL_PATH ) !== wp_parse_url( $url, PHP_URL_PATH )
+			|| wp_parse_url( $uri, PHP_URL_QUERY ) !== wp_parse_url( $url, PHP_URL_QUERY ) ) {
 			return;
 		}
 		$method = $_SERVER['REQUEST_METHOD'] ?? '';
@@ -270,7 +276,7 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_https_required', 'OAuth requires HTTPS.', 403 );
 		}
 		$config = self::config();
-		if ( null === $config || 1 !== preg_match( '/\ABearer ([A-Za-z0-9._~+\/=-]{1,4096})\z/iD', $authorization, $match ) ) {
+		if ( null === $config || 1 !== preg_match( '/\ABearer +([A-Za-z0-9._~+\/=-]{1,4096})\z/iD', $authorization, $match ) ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$access_token = $match[1];

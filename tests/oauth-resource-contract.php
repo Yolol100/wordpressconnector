@@ -66,6 +66,9 @@ function wp_parse_url( string $url, int $component = -1 ) {
 	return -1 === $component ? parse_url( $url ) : parse_url( $url, $component );
 }
 function rest_url( string $path ): string {
+	if ( ! empty( $GLOBALS['oauth_case']['plain_rest'] ) ) {
+		return 'https://example.invalid/?rest_route=%2F' . rawurlencode( $path );
+	}
 	return 'https://example.invalid/wp-json/' . $path;
 }
 function is_ssl(): bool { return $GLOBALS['oauth_case']['ssl']; }
@@ -152,6 +155,15 @@ assert_oauth( array( WPCONNECTOR_OAUTH_ISSUER ) === $metadata['authorization_ser
 assert_oauth( array( 'wpconnector:read' ) === $metadata['scopes_supported'], 'OAuth must expose read scope only.' );
 assert_oauth( false === strpos( json_encode( $metadata ), WPCONNECTOR_OAUTH_CLIENT_SECRET ), 'Never expose the introspection secret through metadata.' );
 assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader(), 'resource_metadata="https://example.invalid/.well-known/oauth-protected-resource/wp-json/webactueel-wordpress-connector/v1/mcp"' ), 'Bearer challenge must advertise the canonical RFC 9728 protected-resource URL.' );
+// WordPress plain permalinks use ?rest_route= instead of /wp-json/... .
+$GLOBALS['oauth_case']['plain_rest'] = true;
+$plainResource = 'https://example.invalid/?rest_route=%2Fwebactueel-wordpress-connector%2Fv1%2Fmcp';
+$plainMetadata = 'https://example.invalid/.well-known/oauth-protected-resource?rest_route=%2Fwebactueel-wordpress-connector%2Fv1%2Fmcp';
+assert_oauth( OAuthResourceServer::resource() === $plainResource, 'Test uses a realistic query-form WordPress REST URL.' );
+assert_oauth( OAuthResourceServer::wellKnownUrl() === $plainMetadata, 'RFC 9728 discovery must preserve the full query-form resource URL.' );
+assert_oauth( OAuthResourceServer::metadata()['resource'] === $plainResource, 'Resource metadata must preserve the exact WordPress query-form audience.' );
+assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader(), 'resource_metadata="' . $plainMetadata . '"' ), 'OAuth challenge must work with plain WordPress permalinks.' );
+$GLOBALS['oauth_case']['plain_rest'] = false;
 
 $resource = new OAuthResourceServer();
 $resource->register();
@@ -190,6 +202,10 @@ assert_oauth( 16385 === $last['args']['limit_response_size'],
 assert_oauth( false === strpos( json_encode( $metadata ), $token ), 'Tokens must not leak into public metadata.' );
 list( $short, $authed ) = oauth_probe( array( 'authorization' => 'Bearer abc' ) );
 assert_oauth( true === $short && $authed, 'RFC 6750 permits opaque bearer tokens shorter than 32 characters.' );
+list( $spaced, $authed ) = oauth_probe( array( 'authorization' => 'Bearer  abc' ) );
+assert_oauth( true === $spaced && $authed, 'RFC 6750 accepts one or more spaces after Bearer.' );
+list( $tabbed, $authed ) = oauth_probe( array( 'authorization' => "Bearer\tabc" ) );
+assert_oauth( $tabbed instanceof WP_Error && ! $authed, 'Bearer token must not permit tab or newline whitespace.' );
 $GLOBALS['oauth_case']['claims'] = array_replace( oauth_base_claims(), array( 'token_type' => 'bearer' ) );
 list( $lower, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
 assert_oauth( true === $lower && $authed, 'RFC 6750 token types are case-insensitive.' );
