@@ -199,12 +199,12 @@ final class ConnectorUpdateAdapter {
 			return;
 		}
 
-		$raw_nonce = wp_unslash( $_GET['wpconnector_notice_nonce'] );
+		$raw_nonce = wp_unslash( $_GET['wpconnector_notice_nonce'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Strict string gate above; compare sanitized bytes to original and verify nonce before accepting.
 		$nonce     = sanitize_text_field( $raw_nonce );
 		if ( $nonce !== $raw_nonce || ! wp_verify_nonce( $nonce, 'wpconnector_checked_notice' ) ) {
 			return;
 		}
-		$raw_notice_result = wp_unslash( $_GET['wpconnector_update_checked'] );
+		$raw_notice_result = wp_unslash( $_GET['wpconnector_update_checked'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Only exact raw '0' or '1' passes, after capability and nonce validation; sanitization follows.
 		// Reject malformed values rather than normalizing markup into a trusted result.
 		if ( ! in_array( $raw_notice_result, array( '0', '1' ), true ) ) {
 			return;
@@ -754,13 +754,14 @@ final class ConnectorUpdateAdapter {
 		}
 
 		try {
-			if ( $zip->numFiles < 1 || $zip->numFiles > self::MAX_ENTRIES ) {
+			$entry_count = $zip->count();
+			if ( $entry_count < 1 || $entry_count > self::MAX_ENTRIES ) {
 				throw new RuntimeException( 'Connector release ZIP has an invalid number of entries.' );
 			}
 
 			$paths              = array();
 			$uncompressed_bytes = 0;
-			for ( $index = 0; $index < $zip->numFiles; ++$index ) {
+			for ( $index = 0; $index < $entry_count; ++$index ) {
 				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
 				if ( ! is_array( $stat ) || ! isset( $stat['name'] ) ) {
 					throw new RuntimeException( 'Connector release ZIP contains an unreadable entry.' );

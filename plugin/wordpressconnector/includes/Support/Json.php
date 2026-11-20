@@ -55,7 +55,7 @@ final class Json {
 		}
 
 		try {
-			return json_encode( $value, $flags | JSON_THROW_ON_ERROR );
+			return json_encode( $value, $flags | JSON_THROW_ON_ERROR ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Native JSON_THROW_ON_ERROR guarantees failure before any atomic file write; the WordPress wrapper changes that behavior.
 		} catch ( \JsonException $error ) {
 			throw new RuntimeException( 'Could not encode JSON: ' . $error->getMessage(), 0, $error );
 		}
@@ -75,7 +75,7 @@ final class Json {
 			throw new RuntimeException( 'JSON file is not readable: ' . $path );
 		}
 
-		$contents = file_get_contents( $path );
+		$contents = file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Validated local readable JSON file; wp_remote_get() only accepts a URL and changes failure semantics.
 		if ( false === $contents ) {
 			throw new RuntimeException( 'Could not read JSON file: ' . $path );
 		}

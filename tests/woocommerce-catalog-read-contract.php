@@ -204,4 +204,79 @@ try {
 if ($wpdb->identifierPrepares < 9) {
     throw new RuntimeException('WooCommerce shipping/tax queries must prepare their table identifiers.');
 }
+
+/**
+ * Attribute identity must be exact before lookup, preview, update or delete.
+ * These provider doubles are isolated from client WordPress installations.
+ */
+$GLOBALS['woo_attribute_lookups'] = 0;
+$GLOBALS['woo_attribute_updates'] = array();
+$GLOBALS['woo_attribute_deletes'] = array();
+function wc_get_attribute_taxonomies(): array {
+    ++$GLOBALS['woo_attribute_lookups'];
+    return array((object) array(
+        'attribute_id' => 12,
+        'attribute_label' => 'Colour',
+        'attribute_name' => 'colour',
+        'attribute_type' => 'select',
+        'attribute_orderby' => 'menu_order',
+        'attribute_public' => 1,
+    ));
+}
+function wc_attribute_taxonomy_name(string $name): string { return 'pa_' . $name; }
+function sanitize_text_field($value): string { return (string) $value; }
+function sanitize_key($value): string { return strtolower((string) $value); }
+function wc_sanitize_taxonomy_name($name): string { return strtolower((string) $name); }
+function is_wp_error($value): bool { return false; }
+function wc_update_attribute(int $id, array $args): int {
+    $GLOBALS['woo_attribute_updates'][] = array($id, $args);
+    return $id;
+}
+function wc_delete_attribute(int $id): bool {
+    $GLOBALS['woo_attribute_deletes'][] = $id;
+    return true;
+}
+function delete_transient(string $key): bool { return true; }
+
+foreach (array('12junk', '12.1', '1.2e1', ' 12', "12\\n", true, false, 12.5, 0, -12, null, array(12), '999999999999999999999999') as $invalidId) {
+    foreach (array('attributeUpdate', 'attributeDelete') as $method) {
+        foreach (array(true, false) as $dryRun) {
+            $lookupsBefore = $GLOBALS['woo_attribute_lookups'];
+            try {
+                $adapter->$method(array('id' => $invalidId, 'name' => 'Updated'), array('dry_run' => $dryRun));
+                throw new RuntimeException('Malformed attribute ID was accepted in ' . $method);
+            } catch (RuntimeException $expected) {
+                if ('Identifier must be a positive integer.' !== $expected->getMessage()) {
+                    throw $expected;
+                }
+            }
+            if ($lookupsBefore !== $GLOBALS['woo_attribute_lookups']
+                || count($GLOBALS['woo_attribute_updates']) !== 0
+                || count($GLOBALS['woo_attribute_deletes']) !== 0) {
+                throw new RuntimeException('Invalid attribute ID reached the WooCommerce provider.');
+            }
+        }
+    }
+}
+foreach (array(12, '12', '000012') as $validId) {
+    $preview = $adapter->attributeUpdate(array('id' => $validId, 'name' => 'Updated'), array('dry_run' => true));
+    $deletePreview = $adapter->attributeDelete(array('id' => $validId), array('dry_run' => true));
+    if (12 !== ($preview['before']['id'] ?? null)
+        || 'Updated' !== ($preview['changes']['name'] ?? null)
+        || 12 !== ($deletePreview['before']['id'] ?? null)
+        || count($GLOBALS['woo_attribute_updates']) !== 0
+        || count($GLOBALS['woo_attribute_deletes']) !== 0) {
+        throw new RuntimeException('Valid attribute preview changed or caused a provider mutation.');
+    }
+}
+$updatedAttribute = $adapter->attributeUpdate(array('id' => '000012', 'name' => 'Updated'), array('dry_run' => false));
+$deletedAttribute = $adapter->attributeDelete(array('id' => '000012'), array('dry_run' => false));
+if (12 !== $GLOBALS['woo_attribute_updates'][0][0]
+    || 12 !== $GLOBALS['woo_attribute_deletes'][0]
+    || 12 !== ($updatedAttribute['_rollback']['payload']['id'] ?? null)
+    || 'woocommerce.attribute.create' !== ($deletedAttribute['_rollback']['action'] ?? null)
+    || 12 !== ($deletedAttribute['_rollback']['payload']['id'] ?? null)) {
+    throw new RuntimeException('Valid attribute mutation or rollback contract changed.');
+}
+
 echo "WooCommerce catalog read contract OK\n";

@@ -103,8 +103,14 @@ final class ElementorJsonImport {
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'You are not allowed to import Elementor JSON here.', 'wordpressconnector' ), '', array( 'response' => 403 ) );
 		}
-		$selected_id = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$posts       = get_posts(
+		try {
+			// phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- This is a read-only selector; the shared parser rejects noncanonical IDs and writes use a checked nonce.
+			$selected_id = $this->exact_import_target_id( isset( $_GET['post_id'] ) ? wp_unslash( $_GET['post_id'] ) : '0' );
+		} catch ( RuntimeException $error ) {
+			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
+		}
+		$posts = get_posts(
 			array(
 				'post_type'      => $post_type,
 				'post_status'    => array( 'publish', 'draft', 'pending', 'private', 'future' ),
@@ -135,7 +141,14 @@ final class ElementorJsonImport {
 	 */
 	public function handleImport(): void {
 		check_admin_referer( self::ACTION );
-		$post_id   = isset( $_POST['post_id'] ) ? absint( wp_unslash( $_POST['post_id'] ) ) : 0;
+		// A malformed or oversized post ID must never be coerced into another target.
+		try {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Shared strict parser rejects malformed ID bytes before any import; nonce checked above.
+			$post_id = $this->exact_import_target_id( isset( $_POST['post_id'] ) ? wp_unslash( $_POST['post_id'] ) : '0' );
+		} catch ( RuntimeException $error ) {
+			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
+		}
 		$post_type = isset( $_POST['post_type'] ) ? sanitize_key( wp_unslash( $_POST['post_type'] ) ) : '';
 		if ( ! $this->supports_post_type( $post_type ) || ! current_user_can( $this->capability_for_post_type( $post_type ) ) ) {
 			wp_die( esc_html__( 'Invalid Elementor JSON import target.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
@@ -208,10 +221,10 @@ final class ElementorJsonImport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function uploaded_payload(): array {
-		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) {
+		if ( ! isset( $_FILES['elementor_json'] ) || ! is_array( $_FILES['elementor_json'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Private upload parser is reached only after handleImport() verifies its action nonce.
 			throw new RuntimeException( 'No Elementor JSON file was uploaded.' );
 		}
-		$file = $_FILES['elementor_json'];
+		$file = $_FILES['elementor_json']; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce-checked private parser validates scalar metadata, sanitizes filename and verifies is_uploaded_file() before reading bytes.
 		// PHP upload metadata must be scalar; reject nested form fields before casting.
 		if ( ! isset( $file['error'], $file['size'], $file['name'], $file['tmp_name'] )
 			|| ! is_int( $file['error'] ) || ! is_int( $file['size'] )
@@ -234,7 +247,7 @@ final class ElementorJsonImport {
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			throw new RuntimeException( 'The Elementor JSON upload is invalid.' );
 		}
-		$raw = file_get_contents( $tmp_name );
+		$raw = file_get_contents( $tmp_name ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- PHP upload temp path verified by is_uploaded_file() and size limits; HTTP requests cannot read local upload bytes.
 		if ( ! is_string( $raw ) || '' === trim( $raw ) || strlen( $raw ) > self::MAX_BYTES ) {
 			throw new RuntimeException( 'The Elementor JSON file is empty or too large.' );
 		}
@@ -452,7 +465,7 @@ final class ElementorJsonImport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function bulk_uploads(): array {
-		$files = $_FILES['elementor_jsons'] ?? null;
+		$files = $_FILES['elementor_jsons'] ?? null; // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- previewBulk() checks action nonce and capability; private parser validates all upload array shapes and paths before reading.
 		if ( ! is_array( $files ) || ! isset( $files['name'] ) || ! is_array( $files['name'] ) ) {
 			throw new RuntimeException( 'No files uploaded.' );
 		}
@@ -490,7 +503,7 @@ final class ElementorJsonImport {
 			if ( ! is_uploaded_file( $tmp ) ) {
 				throw new RuntimeException( 'Invalid uploaded file.' );
 			}
-			$raw = file_get_contents( $tmp );
+			$raw = file_get_contents( $tmp ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- PHP-uploaded local JSON file verified by is_uploaded_file() and bounded before decoding; not a URL.
 			if ( ! is_string( $raw ) || strlen( $raw ) > self::MAX_BYTES ) {
 				throw new RuntimeException( 'Could not read upload.' );
 			}
@@ -711,6 +724,22 @@ final class ElementorJsonImport {
 	 */
 	private function capability_for_post_type( string $post_type ): string {
 		return 'page' === $post_type ? 'edit_pages' : 'edit_posts';
+	}
+
+	/**
+	 * Resolve the same canonical target ID for import form selection and submission.
+	 *
+	 * @param mixed $raw Unsanitized, unslashed request value.
+	 *
+	 * @return int Validated target (zero means create a new draft).
+	 * @throws \RuntimeException When the target is malformed or out of integer range.
+	 */
+	private function exact_import_target_id( $raw ): int {
+		if ( ! is_string( $raw ) || ! preg_match( '/\A(?:0|[1-9][0-9]*)\z/', $raw )
+			|| false === filter_var( $raw, FILTER_VALIDATE_INT ) ) {
+			throw new RuntimeException( 'Invalid Elementor JSON import target.' );
+		}
+		return (int) $raw;
 	}
 
 	/**

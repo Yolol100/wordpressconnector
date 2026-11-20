@@ -649,8 +649,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function postRestoreRevision( array $payload, array $context ): array {
-		$revision_id = isset( $payload['revision_id'] ) ? (int) $payload['revision_id'] : 0;
-		$revision    = wp_get_post_revision( $revision_id );
+		try {
+			$revision_id = Input::positive_id( $payload['revision_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Revision not found.' );
+		}
+		$revision = wp_get_post_revision( $revision_id );
 		if ( ! $revision ) {
 			throw new RuntimeException( 'Revision not found.' );
 		}
@@ -807,12 +811,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termGet( array $payload ): array {
-		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy ? $taxonomy : '' );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
+		$taxonomy        = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
+		$term            = $this->require_term( $payload, $taxonomy );
 		$taxonomy_object = get_taxonomy( (string) $term->taxonomy );
 		if ( Policy::publicRepositoryContext() && ( ! $taxonomy_object || ! $taxonomy_object->public ) ) {
 			throw new RuntimeException( 'Non-public taxonomies cannot be exported in public-repository mode.' );
@@ -847,7 +847,7 @@ final class CoreAdapter {
 			}
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$args['parent'] = (int) $payload['parent'];
+			$args['parent'] = $this->term_parent_id( $payload['parent'] );
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -893,13 +893,10 @@ final class CoreAdapter {
 	 */
 	public function termUpdate( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
-		$before = $this->term_snapshot( $term );
-		$args   = array();
+		$term     = $this->require_term( $payload, $taxonomy );
+		$id       = (int) $term->term_id;
+		$before   = $this->term_snapshot( $term );
+		$args     = array();
 		if ( isset( $payload['name'] ) ) {
 			$args['name'] = sanitize_text_field( (string) $payload['name'] );
 		}
@@ -910,7 +907,7 @@ final class CoreAdapter {
 			$args['description'] = sanitize_textarea_field( (string) $payload['description'] );
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$args['parent'] = (int) $payload['parent'];
+			$args['parent'] = $this->term_parent_id( $payload['parent'] );
 		}
 		$result = array(
 			'before'               => $before,
@@ -950,13 +947,10 @@ final class CoreAdapter {
 	 */
 	public function termDelete( array $payload, array $context ): array {
 		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$term     = get_term( $id, $taxonomy );
-		if ( ! $term instanceof \WP_Term ) {
-			throw new RuntimeException( 'Term not found.' );
-		}
-		$before = $this->term_snapshot( $term );
-		$result = array(
+		$term     = $this->require_term( $payload, $taxonomy );
+		$id       = (int) $term->term_id;
+		$before   = $this->term_snapshot( $term );
+		$result   = array(
 			'before'               => $before,
 			'_current_fingerprint' => Fingerprint::make( $before ),
 		);
@@ -985,19 +979,33 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function termAssign( array $payload, array $context ): array {
-		$object_id = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$taxonomy  = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
-		$terms     = isset( $payload['terms'] ) && is_array( $payload['terms'] ) ? $payload['terms'] : array();
-		$append    = Input::bool( $payload, 'append' );
-		if ( ! $object_id || ! taxonomy_exists( $taxonomy ) ) {
+		try {
+			$object_id = Input::positive_id( $payload['object_id'] ?? null );
+		} catch ( RuntimeException $error ) {
 			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		}
+		$taxonomy = isset( $payload['taxonomy'] ) ? sanitize_key( (string) $payload['taxonomy'] ) : '';
+		if ( array_key_exists( 'terms', $payload ) && ! is_array( $payload['terms'] ) ) {
+			throw new RuntimeException( 'terms must be an array of positive term IDs.' );
+		}
+		$terms  = isset( $payload['terms'] ) ? $payload['terms'] : array();
+		$append = Input::bool( $payload, 'append' );
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			throw new RuntimeException( 'object_id and valid taxonomy are required.' );
+		}
+		$term_ids = array();
+		foreach ( $terms as $key => $term_id ) {
+			try {
+				$term_ids[ $key ] = Input::positive_id( $term_id );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'terms must contain positive term IDs.' );
+			}
 		}
 		$before = wp_get_object_terms( $object_id, $taxonomy, array( 'fields' => 'ids' ) );
 		if ( is_wp_error( $before ) ) {
 			throw new RuntimeException( $before->get_error_message() );
 		}
-		$term_ids = array_map( 'intval', $terms );
-		$result   = array(
+		$result = array(
 			'before'               => $before,
 			'after'                => $append ? array_values( array_unique( array_merge( $before, $term_ids ) ) ) : $term_ids,
 			'_current_fingerprint' => Fingerprint::make( $before ),
@@ -1053,7 +1061,8 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuGet( array $payload ): array {
-		$menu = wp_get_nav_menu_object( $payload['id'] ?? ( $payload['name'] ?? 0 ) );
+		$selector = isset( $payload['id'] ) ? $this->require_menu_id( $payload ) : ( $payload['name'] ?? 0 );
+		$menu     = wp_get_nav_menu_object( $selector );
 		if ( ! $menu ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
@@ -1127,7 +1136,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuUpdate( array $payload, array $context ): array {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id   = $this->require_menu_id( $payload );
 		$menu = wp_get_nav_menu_object( $id );
 		if ( ! $menu ) {
 			throw new RuntimeException( 'Menu not found.' );
@@ -1171,7 +1180,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuDelete( array $payload, array $context ): array {
-		$id       = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id       = $this->require_menu_id( $payload );
 		$snapshot = $this->menuGet( array( 'id' => $id ) );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -1200,8 +1209,27 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuItemUpsert( array $payload, array $context ): array {
-		$menu_id = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
-		$item_id = isset( $payload['item_id'] ) ? (int) $payload['item_id'] : 0;
+		$menu_id = $this->require_menu_id( array( 'id' => $payload['menu_id'] ?? null ) );
+		try {
+			$item_id = isset( $payload['item_id'] ) ? Input::non_negative_id( $payload['item_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'item_id must be a non-negative integer.' );
+		}
+		$numeric_fields = array(
+			'object_id' => 'menu-item-object-id',
+			'parent'    => 'menu-item-parent-id',
+			'position'  => 'menu-item-position',
+		);
+		$numeric_args   = array();
+		foreach ( $numeric_fields as $source => $target ) {
+			if ( isset( $payload[ $source ] ) ) {
+				try {
+					$numeric_args[ $target ] = Input::non_negative_id( $payload[ $source ] );
+				} catch ( RuntimeException $error ) {
+					throw new RuntimeException( 'object_id, parent and position must be non-negative integers.' );
+				}
+			}
+		}
 		if ( ! wp_get_nav_menu_object( $menu_id ) ) {
 			throw new RuntimeException( 'Menu not found.' );
 		}
@@ -1223,14 +1251,8 @@ final class CoreAdapter {
 				$args[ $target ] = sanitize_text_field( (string) $payload[ $source ] );
 			}
 		}
-		if ( isset( $payload['object_id'] ) ) {
-			$args['menu-item-object-id'] = (int) $payload['object_id'];
-		}
-		if ( isset( $payload['parent'] ) ) {
-			$args['menu-item-parent-id'] = (int) $payload['parent'];
-		}
-		if ( isset( $payload['position'] ) ) {
-			$args['menu-item-position'] = (int) $payload['position'];
+		foreach ( $numeric_args as $field => $id ) {
+			$args[ $field ] = $id;
 		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -1263,8 +1285,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function menuLocationSet( array $payload, array $context ): array {
-		$location   = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
-		$menu_id    = isset( $payload['menu_id'] ) ? (int) $payload['menu_id'] : 0;
+		$location = isset( $payload['location'] ) ? sanitize_key( (string) $payload['location'] ) : '';
+		try {
+			$menu_id = isset( $payload['menu_id'] ) ? Input::non_negative_id( $payload['menu_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'menu_id must be a non-negative integer.' );
+		}
 		$registered = get_registered_nav_menus();
 		if ( ! isset( $registered[ $location ] ) ) {
 			throw new RuntimeException( 'Unknown menu location.' );
@@ -1557,11 +1583,18 @@ final class CoreAdapter {
 	 * @param array $payload Request parameters.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When the optional post ID is invalid.
 	 */
 	public function commentList( array $payload ): array {
+		try {
+			$post_id = isset( $payload['post_id'] ) ? Input::non_negative_id( $payload['post_id'] ) : 0;
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'post_id must be a non-negative integer.' );
+		}
 		$comments = get_comments(
 			array(
-				'post_id' => isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0,
+				'post_id' => $post_id,
 				'status'  => isset( $payload['status'] ) ? sanitize_key( (string) $payload['status'] ) : 'all',
 				'number'  => isset( $payload['per_page'] ) ? max( 1, min( 100, (int) $payload['per_page'] ) ) : 50,
 				'offset'  => isset( $payload['offset'] ) ? max( 0, (int) $payload['offset'] ) : 0,
@@ -1580,10 +1613,7 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentGet( array $payload ): array {
-		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
+		$comment = $this->require_comment( $payload );
 		return array( 'comment' => $this->comment_snapshot( $comment ) );
 	}
 
@@ -1598,13 +1628,10 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentUpdate( array $payload, array $context ): array {
-		$comment = get_comment( isset( $payload['id'] ) ? (int) $payload['id'] : 0 );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
-		$before = $this->comment_snapshot( $comment );
-		$fields = array( 'comment_ID' => (int) $comment->comment_ID );
-		$map    = array(
+		$comment = $this->require_comment( $payload );
+		$before  = $this->comment_snapshot( $comment );
+		$fields  = array( 'comment_ID' => (int) $comment->comment_ID );
+		$map     = array(
 			'content'      => 'comment_content',
 			'author'       => 'comment_author',
 			'author_email' => 'comment_author_email',
@@ -1654,12 +1681,9 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	public function commentTrash( array $payload, array $context ): array {
-		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
-		$comment = get_comment( $id );
-		if ( ! $comment instanceof \WP_Comment ) {
-			throw new RuntimeException( 'Comment not found.' );
-		}
-		$before = $this->comment_snapshot( $comment );
+		$comment = $this->require_comment( $payload );
+		$id      = (int) $comment->comment_ID;
+		$before  = $this->comment_snapshot( $comment );
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1676,6 +1700,46 @@ final class CoreAdapter {
 	}
 
 	/**
+	 * Validate an exact classic menu ID before a lookup or mutation.
+	 *
+	 * @param array $payload Requested menu identifier.
+	 *
+	 * @return int Exact positive menu ID.
+	 *
+	 * @throws \RuntimeException If the menu identifier is invalid.
+	 */
+	private function require_menu_id( array $payload ): int {
+		try {
+			return Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Menu not found.' );
+		}
+	}
+
+	/**
+	 * Resolve a comment using its exact positive ID; never cast untrusted
+	 * content into the ID of a different comment.
+	 *
+	 * @param array $payload Request parameters.
+	 *
+	 * @return \WP_Comment Validated comment.
+	 *
+	 * @throws \RuntimeException When the ID is invalid or absent.
+	 */
+	private function require_comment( array $payload ): \WP_Comment {
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
+		$comment = get_comment( $id );
+		if ( ! $comment instanceof \WP_Comment ) {
+			throw new RuntimeException( 'Comment not found.' );
+		}
+		return $comment;
+	}
+
+	/**
 	 * Resolve and validate the requested WordPress post.
 	 *
 	 * @param array $payload Request parameters.
@@ -1685,7 +1749,12 @@ final class CoreAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function require_post( array $payload ): \WP_Post {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			// Keep the historical public error contract for missing/invalid IDs.
+			throw new RuntimeException( 'Post not found.' );
+		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post ) {
 			throw new RuntimeException( 'Post not found.' );
@@ -1700,6 +1769,8 @@ final class CoreAdapter {
 	 * @param bool  $partial Whether partial updates are allowed.
 	 *
 	 * @return array Result of this operation.
+	 *
+	 * @throws \RuntimeException When author or parent identifiers are invalid.
 	 */
 	private function sanitize_post_fields( array $payload, bool $partial ): array {
 		$fields     = array();
@@ -1722,10 +1793,18 @@ final class CoreAdapter {
 			}
 		}
 		if ( isset( $payload['author'] ) ) {
-			$fields['post_author'] = (int) $payload['author'];
+			try {
+				$fields['post_author'] = Input::non_negative_id( $payload['author'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'author must be a non-negative integer.' );
+			}
 		}
 		if ( isset( $payload['parent'] ) ) {
-			$fields['post_parent'] = (int) $payload['parent'];
+			try {
+				$fields['post_parent'] = Input::non_negative_id( $payload['parent'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'parent must be a non-negative integer.' );
+			}
 		}
 		if ( isset( $payload['menu_order'] ) ) {
 			$fields['menu_order'] = (int) $payload['menu_order'];
@@ -1833,12 +1912,56 @@ final class CoreAdapter {
 		if ( ! in_array( $type, array( 'post', 'term', 'user', 'comment' ), true ) ) {
 			throw new RuntimeException( 'object_type must be post, term, user or comment.' );
 		}
-		$id  = isset( $payload['object_id'] ) ? (int) $payload['object_id'] : 0;
-		$key = $this->require_key( $payload, 'key' );
-		if ( ! $id ) {
+		try {
+			$id = Input::positive_id( $payload['object_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			// Keep the established error wording for invalid or missing targets.
 			throw new RuntimeException( 'object_id is required.' );
 		}
+		$key = $this->require_key( $payload, 'key' );
 		return array( $type, $id, $key );
+	}
+
+	/**
+	 * Resolve an existing taxonomy term without coercing an untrusted ID.
+	 *
+	 * @param array  $payload  Requested term identifier.
+	 * @param string $taxonomy Optional taxonomy constraint.
+	 *
+	 * @return \WP_Term Exact target term.
+	 *
+	 * @throws \RuntimeException When the requested term is invalid or absent.
+	 */
+	private function require_term( array $payload, string $taxonomy ): \WP_Term {
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Term not found.' );
+		}
+		$term = get_term( $id, $taxonomy );
+		if ( ! $term instanceof \WP_Term ) {
+			throw new RuntimeException( 'Term not found.' );
+		}
+		return $term;
+	}
+
+	/**
+	 * Validate an explicit taxonomy parent without converting malformed IDs.
+	 *
+	 * Parent zero selects the taxonomy root; other IDs must be exact integers.
+	 *
+	 * @param mixed $parent_id Untrusted parent term ID.
+	 *
+	 * @return int Valid parent term ID.
+	 *
+	 * @throws \RuntimeException When the parent ID is malformed.
+	 */
+	private function term_parent_id( $parent_id ): int {
+		try {
+			return Input::non_negative_id( $parent_id );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'parent must be a non-negative term ID.' );
+		}
 	}
 
 	/**

@@ -542,8 +542,8 @@ final class WooCommerceAdapter {
 			$placeholders = implode( ',', array_fill( 0, count( $rate_ids ), '%d' ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared bounded tax-location count uses live rate IDs.
 			$count_rows = $wpdb->get_results(
-				$wpdb->prepare(
-					'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`',
+				$wpdb->prepare( // phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- %i plus count($rate_ids) trusted %d placeholders; exact arguments supplied by spread.
+					'SELECT `tax_rate_id`, COUNT(*) AS `location_count` FROM %i WHERE `tax_rate_id` IN (' . $placeholders . ') GROUP BY `tax_rate_id`', // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $placeholders contains only internally generated %d markers; all IDs are separately bound by prepare().
 					$locations_table,
 					...array_map( 'intval', $rate_ids )
 				)
@@ -750,8 +750,12 @@ final class WooCommerceAdapter {
 	 */
 	public function variationList( array $payload ): array {
 		$this->assert_woo();
-		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent    = wc_get_product( $parent_id );
+		try {
+			$parent_id = Input::positive_id( $payload['product_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variable product not found.' );
+		}
+		$parent = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable product not found.' );
 		}
@@ -793,8 +797,12 @@ final class WooCommerceAdapter {
 	 */
 	public function variationCreate( array $payload, array $context ): array {
 		$this->assert_woo();
-		$parent_id = isset( $payload['product_id'] ) ? (int) $payload['product_id'] : 0;
-		$parent    = wc_get_product( $parent_id );
+		try {
+			$parent_id = Input::positive_id( $payload['product_id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variable parent product not found.' );
+		}
+		$parent = wc_get_product( $parent_id );
 		if ( ! $parent instanceof \WC_Product_Variable ) {
 			throw new RuntimeException( 'Variable parent product not found.' );
 		}
@@ -930,7 +938,7 @@ final class WooCommerceAdapter {
 	 */
 	public function attributeUpdate( array $payload, array $context ): array {
 		$this->assert_woo();
-		$id         = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id         = Input::positive_id( $payload['id'] ?? null );
 		$before_obj = $this->find_attribute( $id );
 		$before     = $this->attribute_snapshot( $before_obj );
 		$args       = $this->attribute_args( $payload, true );
@@ -967,7 +975,7 @@ final class WooCommerceAdapter {
 	 */
 	public function attributeDelete( array $payload, array $context ): array {
 		$this->assert_woo();
-		$id     = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id     = Input::positive_id( $payload['id'] ?? null );
 		$before = $this->attribute_snapshot( $this->find_attribute( $id ) );
 		$result = array(
 			'before'               => $before,
@@ -1127,7 +1135,11 @@ final class WooCommerceAdapter {
 	 */
 	private function product( array $payload ): \WC_Product {
 		$this->assert_woo();
-		$id      = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Product not found.' );
+		}
 		$product = wc_get_product( $id );
 		if ( ! $product instanceof \WC_Product ) {
 			throw new RuntimeException( 'Product not found.' );
@@ -1146,7 +1158,11 @@ final class WooCommerceAdapter {
 	 */
 	private function variation( array $payload ): \WC_Product_Variation {
 		$this->assert_woo();
-		$id        = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Variation not found.' );
+		}
 		$variation = wc_get_product( $id );
 		if ( ! $variation instanceof \WC_Product_Variation ) {
 			throw new RuntimeException( 'Variation not found.' );

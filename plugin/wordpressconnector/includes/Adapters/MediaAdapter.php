@@ -13,6 +13,7 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\Input;
 
 /**
  * Registers and handles Media connector actions.
@@ -139,10 +140,9 @@ final class MediaAdapter {
 		if ( ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Uploading media requires upload_files permission.' );
 		}
-		$parent = isset( $payload['parent'] ) ? (int) $payload['parent'] : 0;
-		if ( $parent > 0 && ( ! get_post( $parent ) || ! current_user_can( 'edit_post', $parent ) ) ) {
-			throw new RuntimeException( 'You cannot attach media to this parent item.' );
-		}
+		$parent     = isset( $payload['parent'] )
+			? $this->validated_parent_id( $payload['parent'], true )
+			: 0;
 		$asset_root = isset( $context['asset_root'] ) ? (string) $context['asset_root'] : '';
 		if ( '' === $asset_root ) {
 			throw new RuntimeException( 'media.import requires --asset-root in the CLI context.' );
@@ -171,7 +171,7 @@ final class MediaAdapter {
 			'filename'    => basename( $real ),
 			'mime_type'   => $checked['type'],
 			'bytes'       => (int) $size,
-			'parent'      => isset( $payload['parent'] ) ? (int) $payload['parent'] : 0,
+			'parent'      => $parent,
 		);
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
@@ -241,10 +241,13 @@ final class MediaAdapter {
 		}
 		$before = $this->snapshot( $id );
 		$after  = $before;
-		foreach ( array( 'title', 'alt', 'caption', 'description', 'parent' ) as $field ) {
+		foreach ( array( 'title', 'alt', 'caption', 'description' ) as $field ) {
 			if ( array_key_exists( $field, $payload ) ) {
 				$after[ $field ] = $payload[ $field ];
 			}
+		}
+		if ( array_key_exists( 'parent', $payload ) ) {
+			$after['parent'] = $this->validated_parent_id( $payload['parent'], false );
 		}
 		$result = array(
 			'before'               => $before,
@@ -453,7 +456,7 @@ final class MediaAdapter {
 	 */
 	public function mediaAssign( array $payload, array $context ): array {
 		$target_type = isset( $payload['target_type'] ) ? sanitize_key( (string) $payload['target_type'] ) : '';
-		$target_id   = isset( $payload['target_id'] ) ? (int) $payload['target_id'] : 0;
+		$target_id   = 0;
 		// A zero attachment ID can only clear a featured image during a
 		// connector-owned rollback. Normal callers cannot bypass attachment checks.
 		$clear_featured = 'featured_image' === $target_type
@@ -464,6 +467,20 @@ final class MediaAdapter {
 		if ( ! current_user_can( 'upload_files' )
 			|| ( $attachment_id > 0 && ! current_user_can( 'edit_post', $attachment_id ) ) ) {
 			throw new RuntimeException( 'You cannot assign this media attachment.' );
+		}
+
+		// Only featured images and galleries use a post/product target ID.
+		// Validate it without coercion after the existing media permission check.
+		if ( in_array( $target_type, array( 'featured_image', 'product_gallery' ), true ) ) {
+			try {
+				$target_id = Input::positive_id( $payload['target_id'] ?? null );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException(
+					'featured_image' === $target_type
+						? 'You cannot edit the featured-image target.'
+						: 'You cannot edit the product gallery target.'
+				);
+			}
 		}
 
 		switch ( $target_type ) {
@@ -650,12 +667,42 @@ final class MediaAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	private function attachment_id( array $payload ): int {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Attachment not found.' );
+		}
 		$post = get_post( $id );
 		if ( ! $post instanceof \WP_Post || 'attachment' !== $post->post_type ) {
 			throw new RuntimeException( 'Attachment not found.' );
 		}
 		return $id;
+	}
+
+
+	/**
+	 * Validate a media parent before previewing or changing its attachment.
+	 *
+	 * @param mixed $value   Untrusted parent identifier.
+	 * @param bool  $for_import Whether validating the media import action.
+	 *
+	 * @return int Validated parent ID, or zero for a detached attachment.
+	 *
+	 * @throws \RuntimeException When the parent is invalid or not editable.
+	 */
+	private function validated_parent_id( $value, bool $for_import ): int {
+		try {
+			$parent_id = Input::non_negative_id( $value );
+			if ( $parent_id > 0 && ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) {
+				throw new RuntimeException( 'Invalid media parent.' );
+			}
+			return $parent_id;
+		} catch ( RuntimeException $error ) {
+			if ( $for_import ) {
+				throw new RuntimeException( 'You cannot attach media to this parent item.' );
+			}
+			throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
+		}
 	}
 
 	/**
@@ -706,12 +753,7 @@ final class MediaAdapter {
 			$post_fields['post_content'] = (string) $payload['description'];
 		}
 		if ( array_key_exists( 'parent', $payload ) ) {
-			$parent_id = (int) $payload['parent'];
-			if ( $parent_id < 0 || ( $parent_id > 0
-				&& ( ! get_post( $parent_id ) || ! current_user_can( 'edit_post', $parent_id ) ) ) ) {
-				throw new RuntimeException( 'You cannot assign this media attachment to the requested parent.' );
-			}
-			$post_fields['post_parent'] = $parent_id;
+			$post_fields['post_parent'] = $this->validated_parent_id( $payload['parent'], false );
 		}
 		if ( count( $post_fields ) > 1 ) {
 			$updated = wp_update_post( wp_slash( $post_fields ), true );

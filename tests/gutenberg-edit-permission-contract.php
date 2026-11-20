@@ -220,6 +220,45 @@ foreach ( $bad_content_values as $bad_content ) {
 	}
 }
 
+// Reject malformed target IDs before capability checks or get_post(). In
+// particular, "(int) '71extra'" must not silently target post 71.
+$invalid_ids = array(
+	true, false, 71.5, -71, 0, '0', '-71', '71extra', '7.1e1',
+	'71.0', ' 71', "71\n", '999999999999999999999999999999',
+	array( 71 ), (object) array( 'id' => 71 ), null,
+);
+foreach ( $invalid_ids as $bad_id ) {
+	foreach ( array( 'inspect', 'replace', 'patch' ) as $method ) {
+		foreach ( array( true, false ) as $dry_run ) {
+			$payload       = 'replace' === $method ? $replace : $patch;
+			$payload['id'] = $bad_id;
+			$write_count   = $GLOBALS['gutenberg_contract_write_calls'];
+			$post_content  = $GLOBALS['gutenberg_contract_posts'][71]->post_content;
+			try {
+				$adapter->$method( $payload, array( 'dry_run' => $dry_run ) );
+				throw new RuntimeException( 'Malformed Gutenberg target ID was accepted.' );
+			} catch ( RuntimeException $error ) {
+				if ( false === strpos( $error->getMessage(), 'Gutenberg post id' ) ) {
+					throw $error;
+				}
+			}
+			if ( $GLOBALS['gutenberg_contract_write_calls'] !== $write_count
+				|| $GLOBALS['gutenberg_contract_posts'][71]->post_content !== $post_content ) {
+				throw new RuntimeException( 'Rejected Gutenberg target changed post content.' );
+			}
+		}
+	}
+}
+// Keep the JSON string-ID contract and ordinary decimal zero-padding.
+$string_target        = $replace;
+$string_target['id']  = '00071';
+$string_preview       = $adapter->replace( $string_target, array( 'dry_run' => true ) );
+if ( 71 !== ( $string_preview['post_id'] ?? 0 )
+	|| 2 !== $GLOBALS['gutenberg_contract_write_calls']
+	|| 'New B' !== $GLOBALS['gutenberg_contract_posts'][71]->post_content ) {
+	throw new RuntimeException( 'Valid numeric string post IDs no longer resolve to the same post.' );
+}
+
 if ( ! in_array( 71, $GLOBALS['gutenberg_contract_checked_ids'], true ) ) {
 	throw new RuntimeException( 'Gutenberg permission check did not bind to the target post ID.' );
 }

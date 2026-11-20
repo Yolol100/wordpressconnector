@@ -32,6 +32,7 @@ $GLOBALS['wpconnector_elementor_target_can_edit'] = true;
 
 function get_post($id)
 {
+    $GLOBALS['wpconnector_elementor_target_lookups'][] = $id;
     return $GLOBALS['wpconnector_elementor_target_posts'][(int) $id] ?? null;
 }
 
@@ -130,6 +131,68 @@ $privatePatch = $registry->execute('elementor.patch_element', array('id' => 202)
 if (($privatePatch['post_id'] ?? 0) !== 202 || 2 !== $patchCalls) {
     fwrite(STDERR, "Public Elementor target guard leaked into non-public execution.\n");
     exit(1);
+}
+
+
+// Exercise the real Elementor adapter target resolver rather than a registry
+// double. Malformed IDs must fail before WordPress lookup for reads, previews,
+// or confirmed document changes.
+require_once $root . '/plugin/wordpressconnector/includes/Support/Input.php';
+require_once $root . '/plugin/wordpressconnector/includes/Adapters/ElementorAdapter.php';
+$elementorAdapter = new \Webactueel\WordPressConnector\Adapters\ElementorAdapter();
+$postResolver = new ReflectionMethod($elementorAdapter, 'post');
+if (PHP_VERSION_ID < 80100) {
+    $postResolver->setAccessible(true);
+}
+$invalidIds = array(true, false, 201.5, 0, '0', '0000', -201, '201junk',
+    '201.5', '2.01e2', ' 201', "201\n", '999999999999999999999999', array(201), null);
+foreach ($invalidIds as $invalidId) {
+    $checks = array(
+        'inspect' => static function () use ($elementorAdapter, $invalidId): void {
+            $elementorAdapter->inspect(array('id' => $invalidId));
+        },
+        'replace preview' => static function () use ($elementorAdapter, $invalidId): void {
+            $elementorAdapter->replaceDocument(array('id' => $invalidId), array('dry_run' => true));
+        },
+        'replace write' => static function () use ($elementorAdapter, $invalidId): void {
+            $elementorAdapter->replaceDocument(array('id' => $invalidId), array('dry_run' => false));
+        },
+        'patch preview' => static function () use ($elementorAdapter, $invalidId): void {
+            $elementorAdapter->patchElement(array('id' => $invalidId, 'element_id' => 'abc123'), array('dry_run' => true));
+        },
+        'patch write' => static function () use ($elementorAdapter, $invalidId): void {
+            $elementorAdapter->patchElement(array('id' => $invalidId, 'element_id' => 'abc123'), array('dry_run' => false));
+        },
+    );
+    foreach ($checks as $label => $check) {
+        $lookupCount = count($GLOBALS['wpconnector_elementor_target_lookups'] ?? array());
+        try {
+            $check();
+            throw new RuntimeException('Malformed Elementor ID accepted in ' . $label);
+        } catch (RuntimeException $error) {
+            if ('Post not found.' !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+        if ($lookupCount !== count($GLOBALS['wpconnector_elementor_target_lookups'] ?? array())) {
+            throw new RuntimeException('Malformed Elementor ID reached get_post() in ' . $label);
+        }
+    }
+}
+foreach (array(201, '201', '000201') as $validId) {
+    $post = $postResolver->invoke($elementorAdapter, array('id' => $validId));
+    if (! $post instanceof WP_Post || 201 !== $post->ID
+        || 201 !== end($GLOBALS['wpconnector_elementor_target_lookups'])) {
+        throw new RuntimeException('Valid Elementor document ID compatibility changed.');
+    }
+}
+try {
+    $postResolver->invoke($elementorAdapter, array('id' => 999));
+    throw new RuntimeException('Nonexistent Elementor target accepted.');
+} catch (RuntimeException $error) {
+    if ('Post not found.' !== $error->getMessage()) {
+        throw $error;
+    }
 }
 
 echo "public Elementor target boundary contract OK\n";

@@ -10,8 +10,11 @@ set_error_handler(static function ($severity, $message): void {
 // Minimal WooCommerce provider double for the actual production adapter.
 // The repository's separate MySQL/WordPress matrix provides full runtime proof.
 class WooCommerce {}
-class WC_Product_Variable {}
-class WC_Product_Variation
+class WC_Product {}
+class WC_Product_Variable extends WC_Product {
+    public function get_children(): array { return array(); }
+}
+class WC_Product_Variation extends WC_Product
 {
     private $id = 55;
     private $parentId = 11;
@@ -33,8 +36,10 @@ class WC_Product_Variation
 
 $GLOBALS['variation_saved'] = false;
 $GLOBALS['readback_mode'] = 'success';
+$GLOBALS['woo_id_lookups'] = array();
 function wc_get_product($id)
 {
+    $GLOBALS['woo_id_lookups'][] = $id;
     if (11 === (int) $id) {
         return new WC_Product_Variable();
     }
@@ -55,6 +60,7 @@ function wc_get_product($id)
 $root = dirname(__DIR__) . '/plugin/wordpressconnector';
 require_once $root . '/includes/Support/Json.php';
 require_once $root . '/includes/Support/Fingerprint.php';
+require_once $root . '/includes/Support/Input.php';
 require_once $root . '/includes/Adapters/WooCommerceAdapter.php';
 $adapter = new \Webactueel\WordPressConnector\Adapters\WooCommerceAdapter();
 
@@ -91,4 +97,72 @@ foreach (array('create', 'update') as $action) {
     }
 }
 
+// Every public object target must resolve an exact positive ID before WooCommerce
+// is queried. Coerced IDs could otherwise select the wrong product/variation.
+$productResolver = new ReflectionMethod($adapter, 'product');
+$variationResolver = new ReflectionMethod($adapter, 'variation');
+if (PHP_VERSION_ID < 80100) {
+    $productResolver->setAccessible(true);
+    $variationResolver->setAccessible(true);
+}
+$invalidIds = array(true, false, 11.5, -11, 0, '0', '11junk',
+    '1.1e1', ' 11', "11\\n", '999999999999999999999999', array(11), null);
+foreach ($invalidIds as $invalidId) {
+    $cases = array(
+        array('label' => 'product', 'run' => static function () use ($productResolver, $adapter, $invalidId) {
+            $productResolver->invoke($adapter, array('id' => $invalidId));
+        }, 'error' => 'Product not found.'),
+        array('label' => 'variation', 'run' => static function () use ($variationResolver, $adapter, $invalidId) {
+            $variationResolver->invoke($adapter, array('id' => $invalidId));
+        }, 'error' => 'Variation not found.'),
+        array('label' => 'variation.list', 'run' => static function () use ($adapter, $invalidId) {
+            $adapter->variationList(array('product_id' => $invalidId));
+        }, 'error' => 'Variable product not found.'),
+        array('label' => 'variation.create', 'run' => static function () use ($adapter, $invalidId) {
+            $adapter->variationCreate(array('product_id' => $invalidId), array('dry_run' => true));
+        }, 'error' => 'Variable parent product not found.'),
+    );
+    foreach ($cases as $case) {
+        $beforeLookups = count($GLOBALS['woo_id_lookups']);
+        $beforeSaved = $GLOBALS['variation_saved'];
+        try {
+            $case['run']();
+            throw new RuntimeException('Malformed ID accepted for ' . $case['label']);
+        } catch (RuntimeException $error) {
+            if ($case['error'] !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+        if (count($GLOBALS['woo_id_lookups']) !== $beforeLookups
+            || $GLOBALS['variation_saved'] !== $beforeSaved) {
+            throw new RuntimeException('Rejected ID reached WooCommerce: ' . $case['label']);
+        }
+    }
+}
+$GLOBALS['variation_saved'] = false;
+$GLOBALS['readback_mode'] = 'success';
+foreach (array(11, '11', '000011') as $id) {
+    $resolved = $productResolver->invoke($adapter, array('id' => $id));
+    if (! $resolved instanceof WC_Product_Variable) {
+        throw new RuntimeException('Valid product ID compatibility regressed.');
+    }
+    $list = $adapter->variationList(array('product_id' => $id));
+    if (! isset($list['variations']) || ! is_array($list['variations'])) {
+        throw new RuntimeException('Valid variation list contract changed.');
+    }
+}
+foreach (array(55, '55', '000055') as $id) {
+    $resolved = $variationResolver->invoke($adapter, array('id' => $id));
+    if (! $resolved instanceof WC_Product_Variation) {
+        throw new RuntimeException('Valid variation ID compatibility regressed.');
+    }
+}
+$canonicalPreview = $adapter->variationCreate(
+    array('product_id' => '000011'),
+    array('dry_run' => true)
+);
+if (11 !== ($canonicalPreview['would_create']['product_id'] ?? null)
+    || $GLOBALS['variation_saved'] !== false) {
+    throw new RuntimeException('Valid variation creation preview or parent ID changed.');
+}
 echo "WooCommerce variation CRUD readback: missing, wrong type, success, rollback OK\n";

@@ -14,6 +14,7 @@ class WP_Post
 }
 $GLOBALS['posts'] = array(101 => new WP_Post(101, '<p>Tape Solutions</p><p>Tape Solutions</p>'));
 $GLOBALS['can_edit'] = true;
+function sanitize_key($value): string { return strtolower((string) $value); }
 function get_post($id) { return $GLOBALS['posts'][(int) $id] ?? null; }
 function get_post_type_object($type) { return (object) array('public' => in_array($type, array('page','post','product'), true)); }
 function current_user_can($capability, ...$args) { return ! empty($GLOBALS['can_edit']); }
@@ -29,7 +30,7 @@ function wp_update_post($fields, $wp_error = false)
 
 $root = dirname(__DIR__);
 foreach (array(
-    'Support/Json.php','Support/Fingerprint.php','Security/Policy.php',
+    'Support/Json.php','Support/Fingerprint.php','Support/Input.php','Security/Policy.php',
     'Runtime/Registry.php','Adapters/CoreAdapter.php',
 ) as $path) require_once $root . '/plugin/wordpressconnector/includes/' . $path;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -38,6 +39,65 @@ use Webactueel\WordPressConnector\Security\Policy;
 Policy::setPublicRepositoryContext(true);
 $registry = new Registry();
 (new Webactueel\WordPressConnector\Adapters\CoreAdapter())->register($registry);
+// Guard the real CoreAdapter owner, not only the public transport's
+// separate target check, so malformed IDs cannot select another post.
+$core_adapter = new Webactueel\WordPressConnector\Adapters\CoreAdapter();
+foreach ( array( true, 101.5, -101, 0, '101junk', '1.01e2', ' 101', '9999999999999999999999', array( 101 ), null ) as $invalid_id ) {
+	$before_content = $GLOBALS['posts'][101]->post_content;
+	try {
+		$core_adapter->postLiteralReplace(
+			array( 'id' => $invalid_id, 'find' => 'Tape Solutions', 'replace' => 'ISOHULK' ),
+			array( 'dry_run' => true )
+		);
+		throw new RuntimeException( 'Coerced CoreAdapter post ID was accepted.' );
+	} catch ( RuntimeException $error ) {
+		if ( 'Post not found.' !== $error->getMessage() ) {
+			throw $error;
+		}
+	}
+	if ( $GLOBALS['posts'][101]->post_content !== $before_content ) {
+		throw new RuntimeException( 'Malformed ID unexpectedly modified a WordPress post.' );
+	}
+}
+$string_id_preview = $core_adapter->postLiteralReplace(
+	array( 'id' => '000101', 'find' => 'Tape Solutions', 'replace' => 'ISOHULK' ),
+	array( 'dry_run' => true )
+);
+if ( 101 !== ( $string_id_preview['post_id'] ?? 0 ) || 2 !== ( $string_id_preview['match_count'] ?? 0 ) ) {
+	throw new RuntimeException( 'Canonical numeric post ID strings stopped resolving.' );
+}
+
+// Metadata IDs must be validated in CoreAdapter itself before any read,
+// update or delete can resolve a different WordPress object by lossy cast.
+$meta_target = new ReflectionMethod($core_adapter, 'meta_target');
+$meta_target->setAccessible(true);
+foreach (array(101, '101', '000101') as $valid_meta_id) {
+    $meta = $meta_target->invoke($core_adapter, array(
+        'object_type' => 'post', 'object_id' => $valid_meta_id, 'key' => 'sample_key',
+    ));
+    if ($meta !== array('post', 101, 'sample_key')) {
+        throw new RuntimeException('Canonical metadata object IDs changed.');
+    }
+}
+foreach (array(true, false, 101.5, -101, 0, '0', '101junk', '1.01e2', ' 101',
+    "101\n", '9999999999999999999999999999', array(101), null) as $invalid_meta_id) {
+    $unsafe = array('object_type' => 'post', 'object_id' => $invalid_meta_id, 'key' => 'sample_key', 'value' => 'unsafe');
+    foreach (array('metaGet', 'metaUpdate', 'metaDelete') as $method) {
+        try {
+            if ('metaGet' === $method) {
+                $core_adapter->$method($unsafe);
+            } else {
+                $core_adapter->$method($unsafe, array('dry_run' => false));
+            }
+            throw new RuntimeException('Malformed metadata object ID unexpectedly passed validation.');
+        } catch (RuntimeException $error) {
+            if ('object_id is required.' !== $error->getMessage()) {
+                throw $error;
+            }
+        }
+    }
+}
+
 $payload = array('id'=>101,'find'=>'Tape Solutions','replace'=>'ISOHULK');
 $dry = $registry->execute('post.literal_replace', $payload, array('dry_run'=>true,'confirm'=>false));
 if (($dry['match_count'] ?? null) !== 2

@@ -16,6 +16,16 @@ namespace Webactueel\WordPressConnector\REST {
         return \chmod($path, $mode);
     }
 
+    // Simulate a failed directory timestamp refresh without changing the host.
+    function touch(string $path): bool
+    {
+        $GLOBALS['wpconn_touch_paths'][] = $path;
+        if (! empty($GLOBALS['deny_wpconn_touch'])) {
+            return false;
+        }
+        return \touch($path);
+    }
+
     // Model a cleanup permission error without weakening the real filesystem.
     function unlink(string $path): bool
     {
@@ -95,6 +105,54 @@ namespace {
         || (fileperms($root . '/sample.json') & 0077) !== 0) {
         throw new RuntimeException('Successful HTTP upload lost secure file permissions.');
     }
+
+    // A nested upload must not be reported as successfully retained when
+    // its root timestamp cannot be refreshed: cleanupExpired() uses that
+    // timestamp even when a nested upload has just been created.
+    $nested = $root . '/retention-test';
+    if (! mkdir($nested, 0700)) {
+        throw new RuntimeException('Could not set up nested retention fixture.');
+    }
+    \touch($root, time() - 7200);
+    $GLOBALS['wpconn_touch_paths'] = array();
+    $GLOBALS['deny_wpconn_touch'] = true;
+    $temp = tempnam(sys_get_temp_dir(), 'wpconn-retention');
+    file_put_contents($temp, '{"retained":true}');
+    try {
+        $store->put($id, 'retention-test/failed.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $temp));
+        throw new RuntimeException('An upload with failed retention was reported successful.');
+    } catch (RuntimeException $error) {
+        if ('Could not refresh uploaded asset retention; the new upload was removed.' !== $error->getMessage()) {
+            throw $error;
+        }
+    }
+    if (is_file($nested . '/failed.json')
+        || ! in_array($root, $GLOBALS['wpconn_touch_paths'], true)) {
+        throw new RuntimeException('Failed retention left an untracked asset or skipped the expiry refresh.');
+    }
+
+    // If rollback is denied, do not claim that private bytes were removed.
+    $GLOBALS['deny_wpconn_cleanup'] = true;
+    $temp = tempnam(sys_get_temp_dir(), 'wpconn-retention');
+    file_put_contents($temp, '{"retained":true}');
+    try {
+        $store->put($id, 'retention-test/manual.json', array('error' => UPLOAD_ERR_OK, 'tmp_name' => $temp));
+        throw new RuntimeException('Failed retention and cleanup were reported successful.');
+    } catch (RuntimeException $error) {
+        if ('Could not refresh uploaded asset retention or remove the new file; manual cleanup is required.' !== $error->getMessage()) {
+            throw $error;
+        }
+    } finally {
+        $GLOBALS['deny_wpconn_cleanup'] = false;
+        $GLOBALS['deny_wpconn_touch'] = false;
+    }
+    if (! is_file($nested . '/manual.json')
+        || (fileperms($nested . '/manual.json') & 0077) !== 0) {
+        throw new RuntimeException('Failed private cleanup lost the retained file or its permissions.');
+    }
+    \unlink($nested . '/manual.json');
+    \rmdir($nested);
+    \touch($root);
 
     // file_exists() returns false for broken symlinks. Never overwrite them.
     $dangling = $root . '/dangling.json';

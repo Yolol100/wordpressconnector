@@ -114,7 +114,7 @@ final class Controller {
 	 *
 	 * @return mixed Operation result.
 	 */
-	public function allowPresence( \WP_REST_Request $request ) {
+	public function allowPresence( \WP_REST_Request $request ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- REST permission callback receives the request; preserve the public callback signature.
 		if ( ! is_ssl() ) {
 			return new \WP_Error( 'wpconnector_https_required', 'WordPress Connector presence requires HTTPS.', array( 'status' => 403 ) ); }
 		return true;
@@ -160,7 +160,7 @@ final class Controller {
 	 *
 	 * @return \WP_REST_Response Operation result.
 	 */
-	public function presence( \WP_REST_Request $request ): \WP_REST_Response {
+	public function presence( \WP_REST_Request $request ): \WP_REST_Response { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- REST endpoint callback must preserve the request parameter.
 		return new \WP_REST_Response(
 			array(
 				'ok'          => true,
@@ -179,7 +179,7 @@ final class Controller {
 	 *
 	 * @return \WP_REST_Response Operation result.
 	 */
-	public function health( \WP_REST_Request $request ): \WP_REST_Response {
+	public function health( \WP_REST_Request $request ): \WP_REST_Response { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- REST endpoint callback must preserve the request parameter.
 		return new \WP_REST_Response(
 			array(
 				'ok'                     => true,
@@ -238,6 +238,7 @@ final class Controller {
 				in_array(
 					$reason,
 					array(
+						'Invalid asset upload metadata.',
 						'Asset upload is not a valid HTTP upload.',
 						'Asset exceeds the per-file size limit.',
 						'Request asset limit exceeded (max 10 files / 25 MiB total).',
@@ -309,7 +310,7 @@ final class Controller {
 				$this->assets->cleanup( $connector_request->id() );
 			} catch ( Throwable $cleanup_error ) {
 				// Log a constant, never an upload path, request ID or credential.
-				error_log( 'WordPress Connector could not clear private request assets.' );
+				error_log( 'WordPress Connector could not clear private request assets.' ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Constant operational security failure signal with no path, token, or credential; not temporary debugging.
 			}
 		}
 	}

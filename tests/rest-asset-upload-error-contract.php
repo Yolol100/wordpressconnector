@@ -35,15 +35,15 @@ namespace {
     class WP_REST_Request
     {
         private $filename;
-        private $temp;
-        public function __construct(string $filename, string $temp)
+        private $file;
+        public function __construct(string $filename, string $temp, ?array $file = null)
         {
             $this->filename = $filename;
-            $this->temp = $temp;
+            $this->file = $file ?? array('error' => UPLOAD_ERR_OK, 'tmp_name' => $temp);
         }
         public function get_file_params(): array
         {
-            return array('file' => array('error' => UPLOAD_ERR_OK, 'tmp_name' => $this->temp));
+            return array('file' => $this->file);
         }
         public function get_param(string $key)
         {
@@ -82,6 +82,26 @@ namespace {
         || 'wpconnector_asset_rejected' !== $invalid->code
         || 'Asset extension is not an allowed WordPress media type or connector plugin/theme package.' !== $invalid->message) {
         throw new RuntimeException('Invalid upload validation semantics changed unexpectedly.');
+    }
+
+    // PHP creates scalar upload metadata. Reject malformed nested or coerced fields
+    // as a client error before a filesystem write, without leaking private paths.
+    $badUploads = array(
+        array('error' => array(), 'tmp_name' => $temp),
+        array('error' => '0', 'tmp_name' => $temp),
+        array('error' => UPLOAD_ERR_OK, 'tmp_name' => array()),
+        array('error' => UPLOAD_ERR_OK, 'tmp_name' => null),
+        array('error' => UPLOAD_ERR_OK),
+    );
+    foreach ($badUploads as $badFile) {
+        $rejected = $controller->uploadAsset(new WP_REST_Request('sample.json', $temp, $badFile));
+        if (! $rejected instanceof WP_Error || 400 !== ($rejected->data['status'] ?? null)
+            || 'wpconnector_asset_rejected' !== $rejected->code
+            || 'Invalid asset upload metadata.' !== $rejected->message
+            || false !== strpos($rejected->message, $base)
+            || ! is_file($temp)) {
+            throw new RuntimeException('Malformed PHP upload metadata was not safely rejected.');
+        }
     }
 
     // A hosting/storage exception may contain full server paths and must never appear in REST JSON.

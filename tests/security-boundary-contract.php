@@ -38,6 +38,30 @@ if (true !== $catalog['test.secure']['public_repository_safe'] || 'update_plugin
     fwrite(STDERR, "Registry catalog discarded security metadata.\n");
     exit(1);
 }
+// Untrusted action identifiers must not be reflected in exception text.
+// The request already contains the attempted action; no raw identifier is
+// needed in an error that could be displayed or written to a log.
+$unsafe_names = array(
+	array( 'register', "invalid<script>alert(1)</script>\r\n", 'Invalid action name.' ),
+	array( 'descriptor', "unknown<script>alert(1)</script>\r\n", 'Unknown connector action.' ),
+);
+foreach ( $unsafe_names as $case ) {
+	try {
+		if ( 'register' === $case[0] ) {
+			$registry->register( $case[1], static fn(): array => array() );
+		} else {
+			$registry->descriptor( $case[1] );
+		}
+		throw new RuntimeException( 'Untrusted Registry identifier unexpectedly accepted.' );
+	} catch ( RuntimeException $error ) {
+		if ( $error->getMessage() !== $case[2]
+			|| false !== strpos( $error->getMessage(), '<script>' )
+			|| false !== strpos( $error->getMessage(), "\r" )
+			|| false !== strpos( $error->getMessage(), "\n" ) ) {
+			throw new RuntimeException( 'Registry exposed untrusted action data in a user-facing error.' );
+		}
+	}
+}
 $expectFailure(static function (): void {
     $r = new Registry();
     $r->register('test.badcap', static fn(): array => array(), array('capability' => 'Bad Capability'));

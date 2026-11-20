@@ -601,7 +601,14 @@ final class SystemAdapter {
 		if ( 1 === (int) $user->ID ) {
 			throw new RuntimeException( 'Refusing to delete user ID 1.' );
 		}
-		$reassign = isset( $payload['reassign'] ) ? (int) $payload['reassign'] : null;
+		$reassign = null;
+		if ( isset( $payload['reassign'] ) ) {
+			try {
+				$reassign = Input::non_negative_id( $payload['reassign'] );
+			} catch ( RuntimeException $error ) {
+				throw new RuntimeException( 'reassign must be a non-negative user ID.' );
+			}
+		}
 		if ( ! empty( $context['dry_run'] ) ) {
 			return array(
 				'before'               => $before,
@@ -1770,6 +1777,23 @@ final class SystemAdapter {
 	}
 
 	/**
+	 * Reject ambiguous multisite IDs before reading or mutating a site.
+	 *
+	 * @param array $payload Requested site identifier.
+	 *
+	 * @return int Exact positive site ID.
+	 *
+	 * @throws \RuntimeException If the site ID is malformed.
+	 */
+	private function require_site_id( array $payload ): int {
+		try {
+			return Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'Site not found.' );
+		}
+	}
+
+	/**
 	 * Handle the site update connector action.
 	 *
 	 * @param array $payload Request parameters.
@@ -1783,7 +1807,7 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id   = $this->require_site_id( $payload );
 		$site = get_site( $id );
 		if ( ! $site ) {
 			throw new RuntimeException( 'Site not found.' );
@@ -1834,7 +1858,7 @@ final class SystemAdapter {
 		if ( ! is_multisite() ) {
 			throw new RuntimeException( 'Not a multisite installation.' );
 		}
-		$id = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		$id = $this->require_site_id( $payload );
 		if ( get_main_site_id() === $id ) {
 			throw new RuntimeException( 'Refusing to delete the main site.' );
 		}
@@ -1869,7 +1893,11 @@ final class SystemAdapter {
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
 	private function user( array $payload ): \WP_User {
-		$id   = isset( $payload['id'] ) ? (int) $payload['id'] : 0;
+		try {
+			$id = Input::positive_id( $payload['id'] ?? null );
+		} catch ( RuntimeException $error ) {
+			throw new RuntimeException( 'User not found.' );
+		}
 		$user = get_user_by( 'id', $id );
 		if ( ! $user instanceof \WP_User ) {
 			throw new RuntimeException( 'User not found.' );

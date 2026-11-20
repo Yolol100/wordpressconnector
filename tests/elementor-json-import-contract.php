@@ -30,6 +30,33 @@ if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->r
     exit(1);
 }
 
+// The private upload parsers are intentionally not standalone HTTP entrypoints.
+// Keep their only public call paths behind the action-specific nonce checks.
+$singleStart = strpos($source, 'public function handleImport(): void {');
+$singleNonce = false !== $singleStart ? strpos($source, 'check_admin_referer( self::ACTION );', $singleStart) : false;
+$singleParser = false !== $singleNonce ? strpos($source, '$this->uploaded_payload()', $singleNonce) : false;
+$bulkStart = strpos($source, 'public function previewBulk(): void {');
+$bulkNonce = false !== $bulkStart ? strpos($source, 'check_admin_referer( self::BULK_PREVIEW );', $bulkStart) : false;
+$bulkCapability = false !== $bulkNonce ? strpos($source, "current_user_can( 'manage_options' )", $bulkNonce) : false;
+$bulkParser = false !== $bulkCapability ? strpos($source, '$this->bulk_uploads()', $bulkCapability) : false;
+$singleEnd = false !== $singleStart ? strpos($source, 'private function uploaded_payload(): array {', $singleStart) : false;
+$bulkEnd = false !== $bulkStart ? strpos($source, 'public function confirmBulk(): void {', $bulkStart) : false;
+if (false === $singleNonce || false === $singleParser || false === $singleEnd
+    || ! ($singleStart < $singleNonce && $singleNonce < $singleParser && $singleParser < $singleEnd)
+    || false === $bulkNonce || false === $bulkCapability || false === $bulkParser || false === $bulkEnd
+    || ! ($bulkStart < $bulkNonce && $bulkNonce < $bulkCapability && $bulkCapability < $bulkParser && $bulkParser < $bulkEnd)
+    || 1 !== substr_count($source, '$this->uploaded_payload()')
+    || 1 !== substr_count($source, '$this->bulk_uploads()')) {
+    throw new RuntimeException('Upload parser has an unguarded, duplicate or relocated call site.');
+}
+// The raw upload metadata is parsed by type before using PHP temporary paths.
+// Never run sanitize_text_field() on $_FILES tmp_name: that can alter file identity.
+if (false === strpos($source, 'is_uploaded_file( $tmp_name )')
+    || false === strpos($source, 'sanitize_file_name( $file[\'name\'] )')
+    || false === strpos($source, 'array_keys( $files[ $field ] ) !== array_keys( $files[\'name\'] )')) {
+    throw new RuntimeException('Raw upload shape or identity validation is missing.');
+}
+
 // Malformed multipart arrays must fail closed without PHP array-to-string warnings.
 // The standalone contract runner has no WordPress bootstrap.
 if (! function_exists('sanitize_file_name')) {
@@ -38,6 +65,33 @@ if (! function_exists('sanitize_file_name')) {
         return $name;
     }
 }
+// Standalone admin-post stubs: tests may invoke the handler, but never write posts.
+if (! function_exists('check_admin_referer')) {
+    function check_admin_referer(string $action): void {
+        if ('wpconnector_import_elementor_json' !== $action) { throw new LogicException('Unexpected admin action.'); }
+    }
+}
+if (! function_exists('wp_unslash')) {
+    function wp_unslash($value) { return $value; }
+}
+if (! function_exists('sanitize_key')) {
+    function sanitize_key($value): string { return is_string($value) ? strtolower($value) : ''; }
+}
+if (! function_exists('current_user_can')) {
+    function current_user_can(string $capability): bool { return true; }
+}
+if (! function_exists('esc_html__')) {
+    function esc_html__(string $text, string $domain): string { return $text; }
+}
+if (! function_exists('esc_html')) {
+    function esc_html(string $text): string { return $text; }
+}
+if (! function_exists('wp_die')) {
+    function wp_die($message, $title = '', $args = array()): void {
+        throw new DomainException((string) $message, (int) ($args['response'] ?? 0));
+    }
+}
+
 require_once $path;
 $import = new \Webactueel\WordPressConnector\Admin\ElementorJsonImport();
 $single = new ReflectionMethod($import, 'uploaded_payload');
@@ -88,4 +142,112 @@ try {
     $_FILES = $originalFiles;
     restore_error_handler();
 }
+// Exact post identity is required before reading uploads or writing Elementor content.
+$oldPost = $_POST ?? array();
+$oldFiles = $_FILES ?? array();
+try {
+    $_FILES = array();
+    $invalidIds = array(
+        array(1), '-1', '1.5', '1e0', '+1', '01', ' 1',
+        "1\n", str_repeat('9', 40),
+    );
+    foreach ($invalidIds as $invalidId) {
+        $_POST = array('post_id' => $invalidId, 'post_type' => 'page');
+        try {
+            $import->handleImport();
+            throw new LogicException('Malformed import target unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'Invalid Elementor JSON import target.' !== $error->getMessage()) {
+                throw new RuntimeException('Malformed target was not rejected before writes: ' . $error->getMessage());
+            }
+        }
+    }
+    // Canonical zero/create and positive/post targets must pass the ID gate,
+    // then stop at the missing upload check (no Elementor write is possible).
+    foreach (array('0', '23') as $validId) {
+        $_POST = array('post_id' => $validId, 'post_type' => 'page');
+        try {
+            $import->handleImport();
+            throw new LogicException('Missing upload unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'No Elementor JSON file was uploaded.' !== $error->getMessage()) {
+                throw new RuntimeException('Valid canonical target rejected too early: ' . $error->getMessage());
+            }
+        }
+    }
+} finally {
+    $_POST = $oldPost;
+    $_FILES = $oldFiles;
+}
+
+// The import form must not preselect a different document when an incoming
+// GET target is malformed. No file upload or post write occurs in this fixture.
+if (! class_exists('WP_Post')) {
+    class WP_Post {
+        public $ID;
+        public $post_title;
+        public $post_type;
+        public function __construct(int $id) {
+            $this->ID = $id;
+            $this->post_title = 'Existing page';
+            $this->post_type = 'page';
+        }
+    }
+}
+$GLOBALS['wpconnector_import_form_reads'] = 0;
+function get_posts(array $args): array {
+    ++$GLOBALS['wpconnector_import_form_reads'];
+    return array(new WP_Post(23));
+}
+function esc_url(string $value): string { return $value; }
+function esc_attr(string $value): string { return htmlspecialchars($value, ENT_QUOTES); }
+function admin_url(string $path): string { return 'https://example.invalid/wp-admin/' . $path; }
+function wp_nonce_field(string $action): void {}
+function selected($value, $current, bool $echo = true): string {
+    return $value === $current ? ' selected="selected"' : '';
+}
+function submit_button(string $label): void { echo '<button>' . $label . '</button>'; }
+function __(string $value, string $domain): string { return $value; }
+
+$oldGet = $_GET ?? array();
+try {
+    foreach (array('23junk', '23.5', '2.3e1', ' 23', "23\n", '023', '00',
+        true, false, 23.5, -23, array(23), str_repeat('9', 40)) as $invalidId) {
+        $_GET = array('post_id' => $invalidId);
+        $reads = $GLOBALS['wpconnector_import_form_reads'];
+        try {
+            $import->renderImportPage('page');
+            throw new LogicException('Malformed import form target unexpectedly accepted.');
+        } catch (DomainException $error) {
+            if (400 !== $error->getCode() || 'Invalid Elementor JSON import target.' !== $error->getMessage()) {
+                throw new RuntimeException('Malformed form target received wrong rejection: ' . $error->getMessage());
+            }
+        }
+        if ($reads !== $GLOBALS['wpconnector_import_form_reads']) {
+            throw new RuntimeException('Malformed import form target reached the posts provider.');
+        }
+    }
+    foreach (array(
+        array(array(), 0),
+        array(array('post_id' => '0'), 0),
+        array(array('post_id' => '23'), 23),
+    ) as $validCase) {
+        $_GET = $validCase[0];
+        ob_start();
+        try {
+            $import->renderImportPage('page');
+            $html = ob_get_clean();
+        } catch (Throwable $error) {
+            ob_end_clean();
+            throw $error;
+        }
+        $selectedOption = '<option value="' . $validCase[1] . '" selected="selected">';
+        if (! is_string($html) || false === strpos($html, $selectedOption)) {
+            throw new RuntimeException('Canonical import form target did not select the intended item.');
+        }
+    }
+} finally {
+    $_GET = $oldGet;
+}
+
 echo "Elementor JSON import contract OK\n";

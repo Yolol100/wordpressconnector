@@ -71,4 +71,18 @@ foreach (array('eval(','shell_exec(','passthru(','proc_open(','popen(') as $prim
 foreach (array("'includes/REST/Controller.php'","'includes/REST/AssetStore.php'","'includes/Security/GitHubOidc.php'") as $needle) {
     if (strpos($bootstrap,$needle)===false) { fwrite(STDERR,"Bootstrap missing dependency: {$needle}\n"); exit(1); }
 }
+
+// WordPress REST passes WP_REST_Request to endpoint and permission callbacks.
+// Even unused typed arguments are part of these public callback contracts.
+require_once $root . '/plugin/wordpressconnector/includes/REST/Controller.php';
+foreach ( array( 'allowPresence', 'presence', 'health' ) as $callback_name ) {
+    $method = new ReflectionMethod( 'Webactueel\\WordPressConnector\\REST\\Controller', $callback_name );
+    $parameters = $method->getParameters();
+    if ( ! $method->isPublic() || 1 !== count( $parameters )
+        || 'request' !== $parameters[0]->getName()
+        || 'WP_REST_Request' !== (string) $parameters[0]->getType() ) {
+        throw new RuntimeException( 'REST callback ABI drifted: ' . $callback_name );
+    }
+}
+
 echo "REST zero-config transport contract OK\n";

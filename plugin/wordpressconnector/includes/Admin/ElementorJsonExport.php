@@ -11,6 +11,7 @@ namespace Webactueel\WordPressConnector\Admin;
 
 use RuntimeException;
 use Throwable;
+use Webactueel\WordPressConnector\Support\Input;
 /**
  * Supports Elementor Json Export workflows in WordPress administration.
  */
@@ -60,11 +61,15 @@ final class ElementorJsonExport {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
 	public function download(): void {
-		$post_id            = isset( $_GET['post_id'] ) ? absint( wp_unslash( $_GET['post_id'] ) ) : 0;
-		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
-		if ( $post_id < 1 ) {
+		// An export nonce must never authorize a different document via lossy ID coercion.
+		try {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Strict positive_id validation rejects malformed IDs without normalizing them into another target.
+			$post_id = Input::positive_id( isset( $_GET['post_id'] ) ? wp_unslash( $_GET['post_id'] ) : null );
+		} catch ( RuntimeException $error ) {
 			wp_die( esc_html__( 'Invalid Elementor document.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
+			return;
 		}
+		$include_site_parts = isset( $_GET['include_site_parts'] ) && is_string( $_GET['include_site_parts'] ) && '1' === sanitize_text_field( wp_unslash( $_GET['include_site_parts'] ) );
 		check_admin_referer( self::ACTION . '_' . $post_id );
 		$post = get_post( $post_id );
 		if ( ! $post instanceof \WP_Post || ! $this->supports_post_type( (string) $post->post_type ) ) {
@@ -95,6 +100,7 @@ final class ElementorJsonExport {
 		header( 'Content-Disposition: attachment; filename=' . $filename );
 		header( 'Content-Length: ' . strlen( $json ) );
 		header( 'X-Content-Type-Options: nosniff' );
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- This is an application/json download, not HTML; escaping would corrupt the serialized JSON bytes.
 		echo $json;
 		exit;
 	}
@@ -144,7 +150,7 @@ final class ElementorJsonExport {
 		if ( empty( $content ) ) {
 			throw new RuntimeException( 'The Elementor document is empty.' );
 		}
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing export-elements filter must retain its hook name.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound, WordPress.NamingConventions.ValidHookName.UseUnderscores -- Native Elementor filter names are fixed compatibility identifiers.
 		$content = apply_filters( 'elementor/template_library/sources/local/export/elements', $content );
 		if ( ! is_array( $content ) ) {
 			throw new RuntimeException( 'Elementor export filters returned invalid document content.' );
@@ -163,7 +169,7 @@ final class ElementorJsonExport {
 			'title'         => (string) $post->post_title,
 			'type'          => $type,
 		);
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Elementor's existing snapshot filter must retain its hook name.
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound, WordPress.NamingConventions.ValidHookName.UseUnderscores -- Native Elementor filter names are fixed compatibility identifiers.
 		$snapshots = apply_filters( 'elementor/template_library/export/build_snapshots', array(), $content, (int) $post->ID, $payload );
 		if ( is_array( $snapshots ) ) {
 			if ( ! empty( $snapshots['global_classes'] ) ) {
@@ -333,8 +339,8 @@ final class ElementorJsonExport {
 		if ( ! $query->have_posts() ) {
 			throw new RuntimeException( 'The document context could not be prepared for Theme Builder conditions.' );
 		}
-		$wp_query     = $query;
-		$wp_the_query = $query;
+		$wp_query     = $query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Scoped Elementor Theme Builder query context; restored in finally.
+		$wp_the_query = $query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Scoped Elementor Theme Builder query context; restored in finally.
 		try {
 			$query->the_post();
 			return $callback();
@@ -344,9 +350,9 @@ final class ElementorJsonExport {
 			try {
 				$query->reset_postdata();
 			} finally {
-				$wp_query     = $previous_query;
-				$wp_the_query = $previous_the_query;
-				$post         = $previous_post;
+				$wp_query     = $previous_query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of the caller's query, independently tested.
+				$wp_the_query = $previous_the_query; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of the caller's main query, independently tested.
+				$post         = $previous_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Required restoration of caller post after Elementor export, independently tested.
 				if ( $previous_post instanceof \WP_Post ) {
 					setup_postdata( $previous_post );
 				}

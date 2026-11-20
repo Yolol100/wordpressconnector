@@ -34,7 +34,7 @@ final class Registry {
 	 */
 	public function register( string $name, callable $handler, array $metadata = array() ): void {
 		if ( ! preg_match( '/^[a-z0-9][a-z0-9._-]*\z/', $name ) ) {
-			throw new RuntimeException( 'Invalid action name: ' . $name );
+			throw new RuntimeException( 'Invalid action name.' );
 		}
 
 		if ( isset( $this->actions[ $name ] ) ) {
@@ -73,7 +73,7 @@ final class Registry {
 	 */
 	public function descriptor( string $name ): array {
 		if ( ! isset( $this->actions[ $name ] ) ) {
-			throw new RuntimeException( 'Unknown connector action: ' . $name );
+			throw new RuntimeException( 'Unknown connector action.' );
 		}
 
 		return $this->actions[ $name ];

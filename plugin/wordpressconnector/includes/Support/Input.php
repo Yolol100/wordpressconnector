@@ -25,7 +25,7 @@ final class Input {
 	 *
 	 * @return bool Validated boolean value.
 	 */
-	public static function bool( array $input, string $key, bool $default = false ): bool {
+	public static function bool( array $input, string $key, bool $default = false ): bool { // phpcs:ignore Universal.NamingConventions.NoReservedKeywordParameterNames.defaultFound -- Preserve publicly callable PHP 8 named argument `default`.
 		if ( ! array_key_exists( $key, $input ) ) {
 			return $default;
 		}
@@ -48,5 +48,45 @@ final class Input {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Read a non-negative ID without converting malformed values.
+	 * Literal zero (including zero-padded strings) is valid for create/root slots.
+	 *
+	 * @param mixed $value Untrusted identifier.
+	 *
+	 * @return int Validated non-negative ID.
+	 *
+	 * @throws \RuntimeException When the ID is not an exact non-negative integer.
+	 */
+	public static function non_negative_id( $value ): int {
+		if ( 0 === $value || ( is_string( $value ) && 1 === preg_match( '/\A0+\z/', $value ) ) ) {
+			return 0;
+		}
+		return self::positive_id( $value );
+	}
+
+	/**
+	 * Resolve a positive numeric identifier without PHP's lossy casts.
+	 * Clients may pass decimal digit strings with harmless leading zeroes.
+	 *
+	 * @param mixed $value Untrusted identifier.
+	 *
+	 * @return int Validated positive ID.
+	 *
+	 * @throws \RuntimeException When the ID is not an exact decimal integer.
+	 */
+	public static function positive_id( $value ): int {
+		if ( is_int( $value ) && $value > 0 ) {
+			return $value;
+		}
+		if ( is_string( $value ) && preg_match( '/\A[0-9]+\z/', $value ) ) {
+			$digits = ltrim( $value, '0' );
+			if ( '' !== $digits && (string) (int) $digits === $digits ) {
+				return (int) $digits;
+			}
+		}
+		throw new RuntimeException( 'Identifier must be a positive integer.' );
 	}
 }
