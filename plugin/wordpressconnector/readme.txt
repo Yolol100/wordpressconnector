@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.10
+Stable tag: 1.20.11
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,10 @@ For full historic release notes and security boundaries, see https://github.com/
 3. Check the built-in connection diagnostics and verify HTTPS, capabilities and a tested external restore path before updates.
 
 == Changelog ==
+
+= 1.20.11 =
+* Candidate only (not yet published): harden strict input and target-ID validation across WordPress, WooCommerce, Elementor and media operations; fail closed for private upload retention and recovery edge cases. Includes regressions and WPCS improvements. Security workflow PR #1273 and staging/restore acceptance remain unresolved; no live deployment or release approval implied.
+
 
 = 1.20.10 =
 * Prefix internal bootstrap/uninstall globals and document only precisely scoped PHPCS exceptions for intentional atomic/fresh database operations and stable external hooks. No public API changes.
