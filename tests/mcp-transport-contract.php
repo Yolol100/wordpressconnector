@@ -40,6 +40,10 @@ namespace Webactueel\WordPressConnector\Runtime {
                     || ! is_string($fp) || ! preg_match('/^[a-f0-9]{64}$/', $fp)) {
                     return array('ok' => false, 'error' => 'Missing owner/provenance guard.');
                 }
+                if (! isset($this->completedReleaseIds[$request->id()])
+                    && ! \Webactueel\WordPressConnector\Security\ReleaseApproval::available($fp)) {
+                    return array('ok' => false, 'error' => 'Owner release preflight denied.');
+                }
                 if (isset($this->completedReleaseIds[$request->id()])) {
                     $data['idempotent_replay'] = true;
                 } elseif (! \Webactueel\WordPressConnector\Security\ReleaseApproval::consume($fp)) {
@@ -99,6 +103,10 @@ namespace Webactueel\WordPressConnector\Security {
         public static function allowOnce(string $fingerprint): void {
             self::$approvedFingerprint = $fingerprint;
             self::$alreadyConsumed = false;
+        }
+        public static function available(string $fingerprint): bool {
+            return self::$approvedFingerprint !== null && hash_equals(self::$approvedFingerprint, $fingerprint)
+                && ! self::$alreadyConsumed;
         }
         public static function consume(string $fingerprint): bool {
             if (self::$approvedFingerprint === null
