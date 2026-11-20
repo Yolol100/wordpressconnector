@@ -25,11 +25,20 @@ namespace {
     function get_option(string $key, $default = false) {
         return $GLOBALS['owner_options'][$key] ?? $default;
     }
-    function add_option(string $key, $value, string $deprecated = '', string $autoload = 'yes'): bool {
-        if (array_key_exists($key, $GLOBALS['owner_options'])) return false;
-        $GLOBALS['owner_options'][$key] = $value;
-        return true;
+    // Simulate the actual database UNIQUE option_name index across PHP workers.
+    final class OwnerApprovalDatabase {
+        public string $options = 'wp_options';
+        public bool $failInsert = false;
+        public function insert(string $table, array $values, array $formats) {
+            if ($this->failInsert || $table !== $this->options || $formats !== array('%s', '%s', '%s')
+                || ($values['autoload'] ?? null) !== 'no' || ! isset($values['option_name'])) return false;
+            $key = $values['option_name'];
+            if (array_key_exists($key, $GLOBALS['owner_options'])) return false;
+            $GLOBALS['owner_options'][$key] = $values['option_value'];
+            return 1;
+        }
     }
+    $GLOBALS['wpdb'] = new OwnerApprovalDatabase();
     function delete_option(string $key): bool {
         if (! array_key_exists($key, $GLOBALS['owner_options'])) return false;
         unset($GLOBALS['owner_options'][$key]);
@@ -67,6 +76,12 @@ namespace {
 
     $GLOBALS['owner_options'][$key] = $record;
     ensure(! ReleaseApproval::consume($fingerprint), 'Replaying a previously claimed approval id must be denied.');
+    // A database write error must not burn consent or accept an unrecorded claim.
+    $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-30, $now+570);
+    $GLOBALS['wpdb']->failInsert = true;
+    ensure(! ReleaseApproval::consume($fingerprint), 'Database claim failure must fail closed.');
+    ensure(isset($GLOBALS['owner_options'][$key]), 'Failed database claim must preserve owner consent.');
+    $GLOBALS['wpdb']->failInsert = false;
     $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-601, $now-1);
     ensure(! ReleaseApproval::consume($fingerprint), 'Expired approval must be denied.');
     $wrongDigest = $make(str_repeat('c', 32), 7, $now-30, $now+570);
@@ -96,7 +111,8 @@ namespace {
         "current_user_can( 'update_plugins' )",
         "wp_generate_uuid4()",
         "hash_equals( \$release['fingerprint'], \$requested )",
-        "add_option( self::CLAIM_PREFIX",
+        "$wpdb->insert(",
+        "self::CLAIM_PREFIX . $record['id']",
         "WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256",
     ) as $guard) {
         ensure(is_string($source) && strpos($source, $guard) !== false, 'Owner approval guard missing: ' . $guard);
