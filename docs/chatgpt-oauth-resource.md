@@ -137,25 +137,34 @@ grants broad WordPress updates or arbitrary source-code editing.
 
 The update procedure in the ChatGPT MCP connection is:
 
-1. Use `wordpress_connector_release_preview` to inspect the **latest published**
-   canonical GitHub release, its verified package SHA-256 and the plugin's
-   installed version. Record the resulting `current_state_token` or current
-   SHA-256 fingerprint. The preview does **not** write files.
-2. Independently confirm the approved release/version and the site's recovery
-   plan with the owner. A new version requires a new approval; a general
-   "always update" instruction is not consent to future releases.
+1. Call `wordpress_connector_release_preview` to inspect the **latest published**
+   canonical GitHub release, protected-`main` source proof, ZIP SHA-256 and
+   installed version. Copy the exact **64-character** `release_fingerprint` from
+   `structuredContent.result.data.release_fingerprint`; the site state token
+   is **not** a substitute for this field. Preview changes no WordPress files.
+2. Confirm the independent release attestation, pinned ZIP digest, offsite
+   recovery plan and explicit per-release authorization. The **linked owner**
+   must open WordPress **Plugins** in their own authenticated HTTPS browser
+   and click **Approve this Connector release**. Approval lasts 10 minutes
+   and cannot be issued by the OAuth client or inferred from `confirm:true`.
 3. Call `wordpress_connector_release_apply` with a stable `request_id`,
-   the exact **64-character** SHA-256 `release_fingerprint` from
-   `structuredContent.result.data.release_fingerprint` in the preview as
-   `expected_fingerprint`,
-   and `confirm:true`. Missing rights/approval, stale installed version or
-   changed package digest are rejected.
-4. The existing `connector.update.apply` uses the canonical GitHub
-   `releases/latest` API, verifies asset URL, ZIP contents and checksums,
-   then invokes the WordPress Core Upgrader with temporary backup hooks.
-   A failed installation/readback may trigger Core's temporary recovery, but
-   a **post-success rollback is not guaranteed**. Verify plugin version, active
-   status, HTTPS presence and representative read operations independently.
+   the exact preview fingerprint as `expected_fingerprint`, and `confirm:true`.
+   Permission, owner-approval and lock/replay preflights run **before** the
+   durable mutation reservation. The database-unique owner claim is consumed
+   only after verified source/package bytes and update prerequisites pass,
+   immediately before the WordPress upgrader attempt. A failed preflight
+   does not consume approval. Repeat the **same** request ID to reconcile a
+   completed result; a new ID requires a fresh approval. If the outcome is
+   unknown, inspect the original request and site state rather than retrying
+   blindly.
+4. The existing `connector.update.apply` rechecks the canonical GitHub
+   `releases/latest` metadata, checksum, plugin ZIP identity and exact
+   protected-`main` source before the WordPress Core Upgrader runs. The
+   repository ancestry/tree check is **not a replacement** for the separately
+   verified artifact attestation and manual digest pin. Core temporary
+   backups may help with installation/readback failure; **post-success
+   rollback is not guaranteed**. Independently verify installed version,
+   activation, HTTPS presence and representative authenticated read operations.
 
 Never allow ChatGPT to submit raw PHP, arbitrary Git branches, file paths,
 external ZIP URLs or credentials as upgrade inputs. Development happens in
