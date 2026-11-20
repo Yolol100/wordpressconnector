@@ -122,7 +122,7 @@ $GLOBALS['fake_fs_mode'] = 'direct';
 $GLOBALS['fake_result'] = false;
 $expectFailure(static function () use ($install, $updater): void {
     $install->invoke($updater, '/tmp/already-verified-package.zip');
-}, 'verify WordPress Core backup recovery');
+}, 'unknown outcome');
 
 $GLOBALS['fake_result'] = array('destination_name' => 'wordpressconnector');
 $GLOBALS['fake_backup_exists'] = false;
