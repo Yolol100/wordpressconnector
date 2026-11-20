@@ -80,7 +80,7 @@ namespace {
                 || ! is_file($options['filename'])
                 || ($options['limit_response_size'] ?? 0) !== 20971521
                 || true !== ($options['sslverify'] ?? null)) {
-                throw new \\RuntimeException('The native update must require bounded verified HTTP streaming.');
+                throw new \RuntimeException('The native update must require bounded verified HTTP streaming.');
             }
             return new WP_Error('test_no_download', 'Synthetic bounded stream refuses downloads.');
         }
