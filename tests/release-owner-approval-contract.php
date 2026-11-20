@@ -29,12 +29,17 @@ namespace {
     final class OwnerApprovalDatabase {
         public string $options = 'wp_options';
         public bool $failInsert = false;
+        public bool $replaceApprovalOnClaim = false;
         public function insert(string $table, array $values, array $formats) {
             if ($this->failInsert || $table !== $this->options || $formats !== array('%s', '%s', '%s')
                 || ($values['autoload'] ?? null) !== 'no' || ! isset($values['option_name'])) return false;
             $key = $values['option_name'];
             if (array_key_exists($key, $GLOBALS['owner_options'])) return false;
             $GLOBALS['owner_options'][$key] = $values['option_value'];
+            if ($this->replaceApprovalOnClaim) {
+                $this->replaceApprovalOnClaim = false;
+                $GLOBALS['owner_options']['wpconnector_oauth_release_approval_v1'] = $GLOBALS['replacement_approval'];
+            }
             return 1;
         }
     }
@@ -80,6 +85,19 @@ namespace {
 
     $GLOBALS['owner_options'][$key] = $record;
     ensure(! ReleaseApproval::consume($fingerprint), 'Replaying a previously claimed approval id must be denied.');
+    // Simulate a second owner browser approval replacing the shared slot while
+    // the first request atomically claims its own immutable ID.
+    $old = $make(str_repeat('9', 32), 7, $now-30, $now+570);
+    $replacement = $make(str_repeat('8', 32), 7, $now-30, $now+570);
+    $GLOBALS['owner_options'][$key] = $old;
+    $GLOBALS['replacement_approval'] = $replacement;
+    $GLOBALS['wpdb']->replaceApprovalOnClaim = true;
+    ensure(ReleaseApproval::consume($fingerprint), 'Old approval may be claimed once.');
+    ensure(($GLOBALS['owner_options'][$key]['id'] ?? null) === $replacement['id'],
+        'An atomic claim must not delete a newer replacement owner approval.');
+    ensure(ReleaseApproval::available($fingerprint), 'New replacement approval remains available.');
+    ensure(ReleaseApproval::consume($fingerprint), 'The replacement approval is independently claimable.');
+    ensure(! ReleaseApproval::available($fingerprint), 'Claimed replacement consent cannot be reused.');
     // A database write error must not burn consent or accept an unrecorded claim.
     $GLOBALS['owner_options'][$key] = $make(str_repeat('b', 32), 7, $now-30, $now+570);
     $GLOBALS['wpdb']->failInsert = true;
@@ -108,6 +126,13 @@ namespace {
     ensure(! ReleaseApproval::consume($fingerprint), 'Future-issued approval must be denied.');
 
     $source = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/ReleaseApproval.php');
+    ensure(strpos($source, 'wpconnector_review_release') !== false
+        && strpos($source, 'wp_verify_nonce( $nonce, self::NONCE_ACTION )') !== false
+        && strpos($source, 'wp_nonce_url(') !== false,
+        'The ordinary Plugins page must defer release downloads to owner-initiated nonce-guarded review.');
+    ensure(strpos($source, 'delete_option( self::OPTION )') === false
+        && strpos($source, "get_option( self::CLAIM_PREFIX . \\$record['id'], false )") !== false,
+        'Claiming an old approval must not delete a replacement and claimed records must be unavailable.');
     foreach (array(
         "check_admin_referer( self::NONCE_ACTION )",
         "wp_get_session_token()",
