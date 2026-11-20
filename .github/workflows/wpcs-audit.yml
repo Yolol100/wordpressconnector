@@ -17,6 +17,7 @@ jobs:
       - name: Checkout exact event revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Set up audit PHP
@@ -96,6 +97,30 @@ jobs:
           with open(sys.argv[2], "a", encoding="utf-8") as output:
               output.write("\n".join(summary) + "\n")
           PY
+
+      - name: Enforce zero new WPCS findings against exact protected base
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          set -euo pipefail
+          [[ "$BASE_SHA" =~ ^[a-f0-9]{40}$ ]]
+          base_dir="$RUNNER_TEMP/wordpressconnector-wpcs-base"
+          baseline_report="$RUNNER_TEMP/wordpress-coding-standards-trusted-base.json"
+          git worktree add --detach "$base_dir" "$BASE_SHA"
+          # The baseline is scanned with the same pinned PHPCS binary and
+          # original full ruleset. Existing code violations remain visible;
+          # any *new* file/sniff/severity count is a failing gate.
+          "$WPCS_TOOLS/vendor/bin/phpcs" \
+            --standard="$base_dir/phpcs.xml.dist" \
+            --report=json "$base_dir/plugin/wordpressconnector" \
+            > "$baseline_report" || baseline_exit=$?
+          test -s "$baseline_report"
+          python3 -B tests/wpcs-regression-gate-tests.py
+          python3 -B scripts/wpcs-regression-gate.py \
+            "$baseline_report" \
+            "$RUNNER_TEMP/wordpress-coding-standards-report.json" \
+            --summary "$GITHUB_STEP_SUMMARY"
 
       - name: Preserve the complete report for reviewers
         if: always()
