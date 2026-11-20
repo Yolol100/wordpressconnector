@@ -11,7 +11,6 @@ namespace Webactueel\WordPressConnector\MCP;
 
 use RuntimeException;
 use Throwable;
-use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
