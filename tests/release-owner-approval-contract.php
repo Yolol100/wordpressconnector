@@ -111,8 +111,8 @@ namespace {
         "current_user_can( 'update_plugins' )",
         "wp_generate_uuid4()",
         "hash_equals( \$release['fingerprint'], \$requested )",
-        "$wpdb->insert(",
-        "self::CLAIM_PREFIX . $record['id']",
+        "\$wpdb->insert(",
+        "self::CLAIM_PREFIX . \$record['id']",
         "WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256",
     ) as $guard) {
         ensure(is_string($source) && strpos($source, $guard) !== false, 'Owner approval guard missing: ' . $guard);
