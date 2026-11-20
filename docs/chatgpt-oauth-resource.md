@@ -123,8 +123,9 @@ attestation verification/pin is an explicit release prerequisite, not proof
 that any current real release was verified.
 
 After the provider is linked and this digest is pinned, the linked owner
-opens **WordPress → Plugins**, reviews the release tag and ZIP digest,
-and clicks **Approve this Connector release** with their real WordPress
+opens **WordPress → Plugins**, clicks **Review Connector release** to trigger a
+fresh, owner-initiated verification, reviews the release tag and ZIP digest,
+and then clicks **Approve this Connector release** with their real WordPress
 cookie session and nonce. That approval lasts at most 10 minutes and is
 one-use only. A ChatGPT-supplied `confirm:true` without this independent
 server-held browser approval always fails. No arbitrary OAuth client can
@@ -144,8 +145,9 @@ The update procedure in the ChatGPT MCP connection is:
    is **not** a substitute for this field. Preview changes no WordPress files.
 2. Confirm the independent release attestation, pinned ZIP digest, offsite
    recovery plan and explicit per-release authorization. The **linked owner**
-   must open WordPress **Plugins** in their own authenticated HTTPS browser
-   and click **Approve this Connector release**. Approval lasts 10 minutes
+   must open WordPress **Plugins** in their own authenticated HTTPS browser,
+   click **Review Connector release** (a nonce-guarded explicit verification),
+   inspect the release details and then click **Approve this Connector release**. Approval lasts 10 minutes
    and cannot be issued by the OAuth client or inferred from `confirm:true`.
 3. Call `wordpress_connector_release_apply` with a stable `request_id`,
    the exact preview fingerprint as `expected_fingerprint`, and `confirm:true`.
