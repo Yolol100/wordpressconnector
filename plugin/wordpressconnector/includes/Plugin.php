@@ -50,6 +50,7 @@ use Webactueel\WordPressConnector\REST\AssetStore;
 use Webactueel\WordPressConnector\REST\Controller;
 use Webactueel\WordPressConnector\MCP\Controller as McpController;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Runner;
