@@ -604,6 +604,19 @@ final class Controller {
 				),
 			),
 		);
+		// Surface the required OAuth scope to MCP clients only when a trusted
+		// authorization server is explicitly configured. REST permission checks
+		// remain authoritative: these descriptors do not grant access.
+		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
+			$schemes = array(
+				array( 'type' => 'oauth2', 'scopes' => array( 'wpconnector:read' ) ),
+			);
+			foreach ( $result['tools'] as &$tool ) {
+				$tool['securitySchemes']          = $schemes;
+				$tool['_meta']['securitySchemes'] = $schemes;
+			}
+			unset( $tool );
+		}
 		if ( $modern ) {
 			$result['ttlMs']      = 300000;
 			$result['cacheScope'] = 'private';
