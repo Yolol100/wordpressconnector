@@ -27,10 +27,27 @@ namespace Webactueel\WordPressConnector\Runtime {
     final class Runner
     {
         public array $calls = array();
+        private array $completedReleaseIds = array();
         public function run(Request $request, array $context = array()): array
         {
             $this->calls[] = array('request' => $request->data(), 'context' => $context);
             $data = array('echo' => $request->payload());
+            // Simulate the real Runner's lock/replay check and adapter's late
+            // release approval. Transport must pass the private guard context.
+            if ($request->action() === 'connector.update.apply' && ! $request->dryRun()) {
+                $fp = $request->data()['expected_fingerprint'] ?? '';
+                if (empty($context['require_release_provenance']) || empty($context['require_owner_approval'])
+                    || ! is_string($fp) || ! preg_match('/^[a-f0-9]{64}$/', $fp)) {
+                    return array('ok' => false, 'error' => 'Missing owner/provenance guard.');
+                }
+                if (isset($this->completedReleaseIds[$request->id()])) {
+                    $data['idempotent_replay'] = true;
+                } elseif (! \Webactueel\WordPressConnector\Security\ReleaseApproval::consume($fp)) {
+                    return array('ok' => false, 'error' => 'Owner has not approved this exact release.');
+                } else {
+                    $this->completedReleaseIds[$request->id()] = true;
+                }
+            }
             if ($request->action() === 'connector.update.apply' && $request->dryRun()) {
                 $data['release_fingerprint'] = str_repeat('a', 64);
             }
@@ -578,30 +595,43 @@ namespace {
     $approval = array('request_id' => 'chatgpt-release-20261120', 'expected_fingerprint' => $previewFingerprint, 'confirm' => true);
     $beforeOwnerApproval = $releaseCall('wordpress_connector_release_apply', $approval);
     $assert($beforeOwnerApproval->get_data()['result']['isError'] === true
-        && count($oauthRunner->calls) === $beforeUpdate + 1,
-        'A valid update token plus confirm:true must NOT replace independent WordPress owner approval.');
+        && count($oauthRunner->calls) === $beforeUpdate + 2
+        && \Webactueel\WordPressConnector\Security\ReleaseApproval::$alreadyConsumed === false,
+        'Denied owner approval reaches the protected installer but must not be consumed.');
     \Webactueel\WordPressConnector\Security\ReleaseApproval::allowOnce($previewFingerprint);
     $applied = $releaseCall('wordpress_connector_release_apply', $approval);
-    $write = $oauthRunner->calls[$beforeUpdate + 1]['request'] ?? array();
+    $writeCall = $oauthRunner->calls[$beforeUpdate + 2] ?? array();
+    $write = $writeCall['request'] ?? array();
     $assert($applied->get_data()['result']['isError'] === false
-        && count($oauthRunner->calls) === $beforeUpdate + 2
+        && count($oauthRunner->calls) === $beforeUpdate + 3
         && $write['action'] === 'connector.update.apply'
         && $write['dry_run'] === false && $write['confirm'] === true
         && $write['expected_fingerprint'] === str_repeat('a', 64)
         && $write['request_id'] === 'chatgpt-release-20261120'
-        && $write['payload'] === array(),
-        'Only an exact, explicitly approved canonical self-update can reach the Runner.');
+        && $write['payload'] === array()
+        && ! empty($writeCall['context']['require_owner_approval'])
+        && ! empty($writeCall['context']['require_release_provenance'])
+        && \Webactueel\WordPressConnector\Security\ReleaseApproval::$alreadyConsumed === true,
+        'Only approved release with private context may reach the locked installer.');
     $replayedApproval = $releaseCall('wordpress_connector_release_apply', $approval);
-    $assert($replayedApproval->get_data()['result']['isError'] === true
-        && count($oauthRunner->calls) === $beforeUpdate + 2,
-        'A once-consumed owner approval must not authorize a second installer request.');
+    $replayed = $replayedApproval->get_data()['result']['structuredContent']['result']['data'] ?? array();
+    $assert($replayedApproval->get_data()['result']['isError'] === false
+        && ! empty($replayed['idempotent_replay'])
+        && count($oauthRunner->calls) === $beforeUpdate + 4,
+        'Same request ID must replay without spending a second owner approval.');
+    $newAttempt = $approval;
+    $newAttempt['request_id'] = 'another-release-attempt-20261120';
+    $deniedNewAttempt = $releaseCall('wordpress_connector_release_apply', $newAttempt);
+    $assert($deniedNewAttempt->get_data()['result']['isError'] === true
+        && count($oauthRunner->calls) === $beforeUpdate + 5,
+        'Already claimed approval must not authorize a new installation request.');
     $oauthController->authorize(new WP_REST_Request(
         array('jsonrpc' => '2.0', 'id' => 103, 'method' => 'tools/list'),
         array('Authorization' => 'Bearer accepted-test-token')
     ));
     $downscoped = $releaseCall('wordpress_connector_release_apply', $approval);
     $assert($downscoped->get_data()['result']['isError'] === true
-        && count($oauthRunner->calls) === $beforeUpdate + 2,
+        && count($oauthRunner->calls) === $beforeUpdate + 5,
         'A later read-only token must not inherit earlier update authorization.');
 
     echo "MCP transport contract assertions: {$assertions}\n";
