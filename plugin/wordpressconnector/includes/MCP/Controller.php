@@ -14,6 +14,7 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
+use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
 /**
  * Implements Controller handling for the connector MCP endpoint.
@@ -47,6 +48,8 @@ final class Controller {
 	 * @var mixed
 	 */
 	private $authorization_callback;
+	/** @var OAuthResourceServer|null */
+	private ?OAuthResourceServer $oauth_resource;
 
 	/**
 	 * Initialize the MCP controller dependencies.
@@ -55,10 +58,11 @@ final class Controller {
 	 * @param Registry $registry Connector action registry.
 	 * @param callable $authorizationCallback Value used by this operation.
 	 */
-	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback ) {
+	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback, ?OAuthResourceServer $oauth_resource = null ) {
 		$this->runner                 = $runner;
 		$this->registry               = $registry;
 		$this->authorization_callback = $authorizationCallback;
+		$this->oauth_resource        = $oauth_resource;
 	}
 
 	/**
@@ -91,7 +95,17 @@ final class Controller {
 	 * @return mixed Result of the operation.
 	 */
 	public function authorize( \WP_REST_Request $request ) {
-		return call_user_func( $this->authorization_callback, $request );
+		if ( null !== $this->oauth_resource ) {
+			$oauth_result = $this->oauth_resource->authenticate( $request );
+			if ( null !== $oauth_result ) {
+				return $oauth_result;
+			}
+		}
+		$result = call_user_func( $this->authorization_callback, $request );
+		if ( null !== $this->oauth_resource && $result instanceof \WP_Error ) {
+			OAuthResourceServer::challenge();
+		}
+		return $result;
 	}
 
 	/**
@@ -590,6 +604,55 @@ final class Controller {
 				),
 			),
 		);
+		// OAuth-scoped release tools may only install verified GitHub releases.
+		// There is no arbitrary PHP, branch, URL or ZIP write operation.
+		if ( null !== $this->oauth_resource && OAuthResourceServer::selfUpdateConfigured() ) {
+			$result['tools'][] = array(
+				'name' => 'wordpress_connector_release_preview',
+				'description' => 'Preview the verified GitHub release for this Connector and return a state fingerprint. Installs nothing.',
+				'inputSchema' => $this->empty_object_schema(),
+				'annotations' => array(
+					'readOnlyHint' => true,
+					'destructiveHint' => false,
+					'idempotentHint' => true,
+					'openWorldHint' => false,
+				),
+			);
+			$result['tools'][] = array(
+				'name' => 'wordpress_connector_release_apply',
+				'description' => 'After explicit owner approval, install only the exact previewed protected-source-verified and digest-pinned WordPress Connector release. Requires stable request_id, SHA-256 fingerprint and confirm=true.',
+				'inputSchema' => array(
+					'type' => 'object',
+					'properties' => array(
+						'request_id' => array( 'type' => 'string', 'minLength' => 8, 'maxLength' => 100, 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$' ),
+						'expected_fingerprint' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
+						'confirm' => array( 'type' => 'boolean', 'const' => true ),
+					),
+					'required' => array( 'request_id', 'expected_fingerprint', 'confirm' ),
+					'additionalProperties' => false,
+				),
+				'annotations' => array(
+					'readOnlyHint' => false,
+					'destructiveHint' => true,
+					'idempotentHint' => true,
+					'openWorldHint' => false,
+				),
+			);
+		}
+		// Descriptors never override OAuth introspection or Runner policy.
+		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
+			foreach ( $result['tools'] as &$tool ) {
+				$is_update = in_array( $tool['name'], array(
+					'wordpress_connector_release_preview',
+					'wordpress_connector_release_apply',
+				), true );
+				$scopes = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				$schemes = array( array( 'type' => 'oauth2', 'scopes' => $scopes ) );
+				$tool['securitySchemes'] = $schemes;
+				$tool['_meta']['securitySchemes'] = $schemes;
+			}
+			unset( $tool );
+		}
 		if ( $modern ) {
 			$result['ttlMs']      = 300000;
 			$result['cacheScope'] = 'private';
@@ -635,8 +698,59 @@ final class Controller {
 		if ( 'wordpress_connector_execute' === $name ) {
 			return $this->execute_tool( $rpc_id, $name, $arguments );
 		}
+		if ( in_array( $name, array( 'wordpress_connector_release_preview', 'wordpress_connector_release_apply' ), true ) ) {
+			return $this->release_tool( $rpc_id, $name, $arguments );
+		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+	}
+
+	/**
+	 * The dedicated self-update tools do not expose a general plugin file write.
+	 * WordPress Core and ConnectorUpdateAdapter verify and install the immutable
+	 * GitHub release. OAuth write scope is never inherited by generic execute.
+	 *
+	 * @param mixed $rpc_id JSON-RPC identifier.
+	 * @param string $name Dedicated release action.
+	 * @param array $arguments Exact request arguments.
+	 * @return array MCP response.
+	 */
+	private function release_tool( $rpc_id, string $name, array $arguments ): array {
+		if ( null === $this->oauth_resource || ! OAuthResourceServer::selfUpdateConfigured()
+			|| ! $this->oauth_resource->isAuthenticated() ) {
+			return $this->tool_error( 'An authenticated, owner-enabled OAuth release connection is required.' );
+		}
+		if ( ! $this->oauth_resource->canSelfUpdate() ) {
+			$result = $this->tool_error( 'OAuth update scope and current WordPress update_plugins capability are required.' );
+			$challenge = OAuthResourceServer::challengeHeader( true );
+			if ( '' !== $challenge ) {
+				$result['_meta']['mcp/www_authenticate'] = $challenge . ', error="insufficient_scope"';
+			}
+			return $result;
+		}
+		if ( 'wordpress_connector_release_preview' === $name ) {
+			if ( array() !== $arguments ) {
+				return $this->tool_error( 'Release preview takes no arguments.' );
+			}
+			$result = $this->run_semantic( $rpc_id, $name, 'connector.update.apply', array(), true, false, null, null, null, true );
+			return $this->tool_result( $result, empty( $result['ok'] ) );
+		}
+		$allowed = array( 'request_id', 'expected_fingerprint', 'confirm' );
+		if ( 3 !== count( $arguments ) || array_diff( array_keys( $arguments ), $allowed )
+			|| ! isset( $arguments['request_id'] ) || ! is_string( $arguments['request_id'] )
+			|| ! preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $arguments['request_id'] )
+			|| true !== ( $arguments['confirm'] ?? null ) ) {
+			return $this->tool_error( 'Release installation requires stable request_id, fingerprint and confirm=true.' );
+		}
+		$fingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
+		if ( false === $fingerprint || null === $fingerprint ) {
+			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
+		}
+		$result = $this->run_semantic(
+			$rpc_id, $name, 'connector.update.apply', array(), false, true,
+			$arguments['request_id'], $fingerprint, null, true, true
+		);
+		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
 
 	/**
@@ -668,6 +782,13 @@ final class Controller {
 		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
 		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
+		}
+		// OAuth bearer access starts read-only; a browser login or GitHub OIDC
+		// keeps its existing permissions and approval/rollback gates.
+		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated()
+			&& ( ! in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
+				|| true !== $dry_run || false !== $confirm || array() !== $arguments['payload'] ) ) {
+			return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection.' );
 		}
 
 		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
@@ -721,7 +842,7 @@ final class Controller {
 	 *
 	 * @return array Result of the operation.
 	 */
-	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token, bool $require_release_provenance = false, bool $require_owner_approval = false ): array {
 		if ( null === $request_id ) {
 			$request_id = $this->generated_request_id( $rpc_id, $tool_name, $action, $payload );
 		}
@@ -747,6 +868,8 @@ final class Controller {
 			array(
 				'transport'             => 'mcp',
 				'authenticated_user_id' => get_current_user_id(),
+				'require_release_provenance' => $require_release_provenance,
+				'require_owner_approval' => $require_owner_approval,
 			)
 		);
 	}

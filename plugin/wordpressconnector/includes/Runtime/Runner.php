@@ -12,6 +12,7 @@ namespace Webactueel\WordPressConnector\Runtime;
 use RuntimeException;
 use Throwable;
 use Webactueel\WordPressConnector\Security\Policy;
+use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -160,6 +161,33 @@ final class Runner {
 						array( 'request_fingerprint' => $request_fingerprint )
 					);
 				}
+				// Bind this attempt to the specific owner approval observed under
+				// the mutation lock. A replacement approval cannot be consumed by an
+				// older in-flight request.
+				if ( ! empty( $context['require_owner_approval'] ) ) {
+					$fingerprint = $request->expectedFingerprint();
+					$approval_id = null === $fingerprint ? null : ReleaseApproval::idForFingerprint( $fingerprint );
+					if ( 'connector.update.apply' !== $request->action()
+						|| empty( $context['require_release_provenance'] )
+						|| null !== $request->expectedStateToken()
+						|| null === $approval_id ) {
+						throw new RuntimeException( 'Owner approval for this verified Connector release is missing, expired or already used.' );
+					}
+					// The full, network-dependent dry-run provenance check is safe
+					// BEFORE reserving the request ID. A timeout here must not leave
+					// an unretryable pending mutation with no provider write.
+					$preview = $this->registry->execute(
+						$request->action(),
+						$request->payload(),
+						array_merge( $context, array( 'dry_run' => true, 'confirm' => false ) )
+					);
+					if ( ! is_string( $preview['_current_fingerprint'] ?? null )
+						|| ! hash_equals( $fingerprint, $preview['_current_fingerprint'] ) ) {
+						throw new RuntimeException( 'Verified Connector release changed before the request could be reserved.' );
+					}
+					$context['owner_approval_id'] = $approval_id;
+					$context['expected_prewrite_fingerprint'] = $fingerprint;
+				}
 				// Durable reservation precedes every provider write. If PHP
 				// terminates or the result cannot be stored, future retries
 				// must reconcile the original request instead of repeating it.
@@ -169,7 +197,13 @@ final class Runner {
 			$context['confirm']    = $request->confirm();
 			$context['request_id'] = $request->id();
 			$context['registry']   = $this->registry;
-			$data                  = $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			// Owner-scoped releases were fully previewed above, before begin().
+			// The adapter rechecks the release fingerprint before touching files.
+			if ( ! empty( $context['require_owner_approval'] ) ) {
+				$data = $this->registry->execute( $request->action(), $request->payload(), $context );
+			} else {
+				$data = $this->execute_with_state_guards( $request->action(), $request->payload(), $context, $request->expectedFingerprint(), $request->expectedStateToken() );
+			}
 			if ( isset( $data['fingerprint'] ) && is_string( $data['fingerprint'] ) && preg_match( '/^[a-f0-9]{64}\z/', $data['fingerprint'] ) ) {
 				$data['state_token'] = Fingerprint::siteTokenFromFingerprint( $data['fingerprint'] );
 			}
