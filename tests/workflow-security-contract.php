@@ -9,7 +9,8 @@ if (! $files) { fwrite(STDERR, "No GitHub Actions workflows found.\n"); exit(1);
 foreach ($files as $file) {
     $relative = str_replace($root . '/', '', $file);
     $source = (string) file_get_contents($file);
-    if (strpos($source, 'pull_request_target') !== false && basename($file) !== 'required-pr-gate.yml') {
+    if (strpos($source, 'pull_request_target') !== false
+        && ! in_array(basename($file), array('required-pr-gate.yml', 'wordpress-request.yml'), true)) {
         fwrite(STDERR, "Forbidden pull_request_target in {$relative}.\n");
         exit(1);
     }
@@ -20,8 +21,9 @@ foreach ($files as $file) {
         if (! preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+@[a-f0-9]{40}$/D', $uses)) { fwrite(STDERR, "External action is not pinned to a full commit SHA in {$relative}: {$uses}\n"); exit(1); }
     }
 }
-// This is the ONLY allowed pull_request_target workflow. It is safe solely
-// while every executable byte is from the trusted base, never the PR head.
+// Required PR Gate remains a separate strictly read-only trusted-base workflow.
+// The WordPress Request dispatcher is also trusted-base-only; its PR payload
+// remains data. Neither workflow is allowed to execute PR-head source.
 $trustedGate = (string) file_get_contents($workflowDir . '/required-pr-gate.yml');
 $trustedGateIsSafe = static function (string $source): bool {
     foreach (array(
@@ -74,12 +76,55 @@ foreach (array(
 $request = (string) file_get_contents($workflowDir . '/wordpress-request.yml');
 $execute = (string) file_get_contents($workflowDir . '/wordpress-zero-config-execute.yml');
 
-// A textual YAML detector cannot safely parse every equivalent Actions syntax
-// (flow sequences, anchors, escaped scalars, custom shells and indirect eval).
-// Freeze the trusted request workflow to the exact reviewed source bytes.
-// Any future change MUST explicitly update this reviewed checksum and undergo
-// its own governance/security review; arbitrary new YAML is denied by default.
-$trustedRequestSha256 = '01892ad9aee29655e28b34fee476652debec7dac96a8f5eda5edb51d1b866f77';
+// This is the actual runtime trust boundary. pull_request_target loads this
+// workflow from the protected default branch before interpreting PR metadata.
+// The only privileged operation dispatches the separately trusted main executor.
+// Never checkout/execute PR head scripts in this privileged workflow.
+$trustedRequestUsesBase = static function (string $source): bool {
+    foreach (array(
+        "on:\n  pull_request_target:\n",
+        '    branches: [main]',
+        'PR_BASE_REF: ${{ github.event.pull_request.base.ref }}',
+        'if [[ "${PR_BASE_REF}" != "main" ]]; then',
+        'PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}',
+        'git show "trusted-base:scripts/validate-request.php" > ../trusted/scripts/validate-request.php',
+        'git show "request-head:$request_path" > ../request/request.json',
+        'php ../trusted/scripts/validate-request.php ../request/request.json',
+        'dispatch_trusted_execute:',
+        '      actions: write',
+        "'ref': 'main'",
+    ) as $required) {
+        if (false === strpos($source, $required)) {
+            return false;
+        }
+    }
+    return 1 === substr_count($source, 'pull_request_target:')
+        && false === strpos($source, "on:\n  pull_request:\n")
+        && ! preg_match('/(?m)^\s*uses\s*:/', $source)
+        && false === strpos($source, 'actions/checkout')
+        && false === strpos($source, 'secrets.');
+};
+if (! $trustedRequestUsesBase($request)) {
+    fwrite(STDERR, "Request workflow may not load PR-head executable code or dispatch without trusted base.\n");
+    exit(1);
+}
+foreach (array(
+    str_replace('pull_request_target:', 'pull_request:', $request),
+    str_replace('branches: [main]', 'branches: [feature]', $request),
+    str_replace('trusted-base:scripts/validate-request.php', 'request-head:scripts/validate-request.php', $request),
+    str_replace('php ../trusted/scripts/validate-request.php', 'php ../request/scripts/validate-request.php', $request),
+) as $unsafeBoundary) {
+    if ($unsafeBoundary === $request || $trustedRequestUsesBase($unsafeBoundary)) {
+        fwrite(STDERR, "Trusted request workflow boundary accepted an unsafe mutation.\n");
+        exit(1);
+    }
+}
+
+// This SHA-256 is an OFFLINE drift regression, not a runtime security gate.
+// It cannot prevent PR-head code from being loaded by a pull_request trigger.
+// Runtime safety comes from the trusted-main pull_request_target event above;
+// protected-governance review is still required before this can be merged.
+$trustedRequestSha256 = 'd21eb74533c45c0e3d1eefed48e2d2f8aaa8b30653c9f120f6822e15ab91fb3e';
 $trustedRequestIsCanonical = static function (string $source) use ($trustedRequestSha256): bool {
     return hash_equals($trustedRequestSha256, hash('sha256', $source));
 };

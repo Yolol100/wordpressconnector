@@ -5,7 +5,10 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $workflow = (string) file_get_contents($root . '/.github/workflows/wordpress-request.yml');
 $required = array(
-    'pull_request:',
+    'pull_request_target:',
+    'branches: [main]',
+    'PR_BASE_REF: ${{ github.event.pull_request.base.ref }}',
+    'if [[ "${PR_BASE_REF}" != "main" ]]; then',
     "- 'requests/**'",
     "- 'assets/inbox/**'",
     "if: github.actor != 'github-actions[bot]'",
@@ -38,7 +41,7 @@ foreach ($required as $needle) {
     }
 }
 $forbidden = array(
-    'pull_request_target',
+    "on:\n  pull_request:\n",
     'WPCONNECTOR_SITE_URL',
     'WPCONNECTOR_REST_USERNAME',
     'WPCONNECTOR_REST_APPLICATION_PASSWORD',
