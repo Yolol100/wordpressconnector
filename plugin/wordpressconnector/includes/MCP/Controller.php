@@ -604,14 +604,501 @@ final class Controller {
 				),
 			),
 		);
-		// Surface the required OAuth scope to MCP clients only when a trusted
-		// authorization server is explicitly configured. REST permission checks
-		// remain authoritative: these descriptors do not grant access.
-		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
-			$schemes = array(
-				array( 'type' => 'oauth2', 'scopes' => array( 'wpconnector:read' ) ),
+		// A trusted release is the only source for self-updates. Never accept
+		// caller-supplied PHP, a Git branch, URLs, or ZIP file paths.
+		if ( null !== $this->oauth_resource && OAuthResourceServer::selfUpdateConfigured() ) {
+			$result['tools'][] = array(
+				'name'        => 'wordpress_connector_release_preview',
+				'description' => 'Preview the signed GitHub release for this Connector only. Returns the exact state fingerprint; installs nothing.',
+				'inputSchema' => $this->empty_object_schema(),
+				'annotations' => array(
+					'readOnlyHint'    => true,
+					'destructiveHint' => false,
+					'idempotentHint'  => true,
+					'openWorldHint'   => false,
+				),
 			);
+			$result['tools'][] = array(
+				'name'        => 'wordpress_connector_release_apply',
+				'description' => 'After owner approval, install the exact previously previewed signed release of WordPress Connector. Requires confirm=true and a stable request id; no other files may be changed.',
+				'inputSchema' => array(
+					'type'                 => 'object',
+					'properties'           => array(
+						'request_id'           => array( 'type' => 'string', 'minLength' => 8, 'maxLength' => 100 ),
+						'expected_fingerprint' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}
+		if ( $modern ) {
+			$result['ttlMs']      = 300000;
+			$result['cacheScope'] = 'private';
+		}
+		return $result;
+	}
+
+	/**
+	 * Process the call tool operation in the MCP controller.
+	 *
+	 * @param mixed $rpc_id Identifier of the requested object.
+	 * @param array $params Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 */
+	private function call_tool( $rpc_id, array $params ): array {
+		$allowed = array( 'name', 'arguments', '_meta' );
+		foreach ( array_keys( $params ) as $key ) {
+			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
+				throw new RuntimeException( 'tools/call contains an unsupported parameter.' );
+			}
+		}
+
+		$name      = isset( $params['name'] ) && is_string( $params['name'] ) ? $params['name'] : '';
+		$arguments = isset( $params['arguments'] ) ? $params['arguments'] : array();
+		if ( '' === $name || ! is_array( $arguments ) ) {
+			throw new RuntimeException( 'tools/call requires a tool name and object arguments.' );
+		}
+
+		if ( 'wordpress_connector_actions' === $name ) {
+			$this->assert_no_arguments( $arguments, $name );
+			return $this->tool_result( array( 'actions' => $this->registry->catalog() ), false );
+		}
+
+		if ( 'wordpress_connector_discover' === $name ) {
+			$this->assert_no_arguments( $arguments, $name );
+			$result = $this->run_semantic( $rpc_id, $name, 'connector.discover', array(), true, false, null, null, null );
+			return $this->tool_result( $result, empty( $result['ok'] ) );
+		}
+
+		if ( 'wordpress_connector_execute' === $name ) {
+			return $this->execute_tool( $rpc_id, $name, $arguments );
+		}
+
+		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+	}
+
+	/**
+	 * Process the execute tool operation in the MCP controller.
+	 *
+	 * @param mixed  $rpc_id Identifier of the requested object.
+	 * @param string $tool_name Value used by this operation.
+	 * @param array  $arguments Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function execute_tool( $rpc_id, string $tool_name, array $arguments ): array {
+		$allowed = array( 'action', 'payload', 'dry_run', 'confirm', 'request_id', 'expected_fingerprint', 'expected_state_token' );
+		foreach ( array_keys( $arguments ) as $key ) {
+			if ( ! is_string( $key ) || ! in_array( $key, $allowed, true ) ) {
+				return $this->tool_error( 'wordpress_connector_execute contains an unsupported argument.' );
+			}
+		}
+
+		$action = isset( $arguments['action'] ) && is_string( $arguments['action'] ) ? $arguments['action'] : '';
+		if ( ! preg_match( '/^[a-z0-9][a-z0-9._-]*\z/', $action ) ) {
+			return $this->tool_error( 'action is invalid.' );
+		}
+		if ( ! array_key_exists( 'payload', $arguments ) || ! is_array( $arguments['payload'] ) ) {
+			return $this->tool_error( 'payload must be an object.' );
+		}
+
+		$dry_run = array_key_exists( 'dry_run', $arguments ) ? $arguments['dry_run'] : true;
+		$confirm = array_key_exists( 'confirm', $arguments ) ? $arguments['confirm'] : false;
+		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
+			return $this->tool_error( 'dry_run and confirm must be booleans.' );
+		}
+		// OAuth bearer access starts read-only; a browser login or GitHub OIDC
+		// keeps its existing permissions and approval/rollback gates.
+		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated()
+			&& ( ! in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
+				|| true !== $dry_run || false !== $confirm || array() !== $arguments['payload'] ) ) {
+			return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection.' );
+		}
+
+		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
+		if ( ! $dry_run && null === $request_id ) {
+			return $this->tool_error( 'Confirmed execution requires an explicit stable request_id.' );
+		}
+		if ( ! $dry_run && ! $confirm ) {
+			return $this->tool_error( 'Confirmed execution requires confirm=true.' );
+		}
+
+		$expected_fingerprint = $this->optional_hash( $arguments, 'expected_fingerprint' );
+		if ( false === $expected_fingerprint ) {
+			return $this->tool_error( 'expected_fingerprint must be a lowercase SHA-256 hex string.' );
+		}
+		$expected_state_token = $this->optional_hash( $arguments, 'expected_state_token' );
+		if ( false === $expected_state_token ) {
+			return $this->tool_error( 'expected_state_token must be a lowercase SHA-256 hex string.' );
+		}
+
+		try {
+			$result = $this->run_semantic(
+				$rpc_id,
+				$tool_name,
+				$action,
+				$arguments['payload'],
+				$dry_run,
+				$confirm,
+				$request_id,
+				$expected_fingerprint,
+				$expected_state_token
+			);
+		} catch ( RuntimeException $error ) {
+			return $this->tool_error( $this->bounded_message( $error->getMessage() ) );
+		}
+
+		return $this->tool_result( $result, empty( $result['ok'] ) );
+	}
+
+	/**
+	 * Process the run semantic operation in the MCP controller.
+	 *
+	 * @param mixed       $rpc_id Identifier of the requested object.
+	 * @param string      $tool_name Value used by this operation.
+	 * @param string      $action Value used by this operation.
+	 * @param array       $payload Requested action payload.
+	 * @param bool        $dry_run Value used by this operation.
+	 * @param bool        $confirm Value used by this operation.
+	 * @param string|null $request_id Identifier of the requested object.
+	 * @param string|null $expected_fingerprint Value used by this operation.
+	 * @param string|null $expected_state_token Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function run_semantic( $rpc_id, string $tool_name, string $action, array $payload, bool $dry_run, bool $confirm, ?string $request_id, ?string $expected_fingerprint, ?string $expected_state_token ): array {
+		if ( null === $request_id ) {
+			$request_id = $this->generated_request_id( $rpc_id, $tool_name, $action, $payload );
+		}
+
+		$data = array(
+			'version'    => 1,
+			'request_id' => $request_id,
+			'action'     => $action,
+			'dry_run'    => $dry_run,
+			'confirm'    => $confirm,
+			'payload'    => $payload,
+		);
+		if ( null !== $expected_fingerprint ) {
+			$data['expected_fingerprint'] = $expected_fingerprint;
+		}
+		if ( null !== $expected_state_token ) {
+			$data['expected_state_token'] = $expected_state_token;
+		}
+
+		$connector_request = Request::fromArray( $data );
+		return $this->runner->run(
+			$connector_request,
+			array(
+				'transport'             => 'mcp',
+				'authenticated_user_id' => get_current_user_id(),
+			)
+		);
+	}
+
+	/**
+	 * Process the result response operation in the MCP controller.
+	 *
+	 * @param mixed $id Identifier of the requested object.
+	 * @param array $result Value used by this operation.
+	 * @param bool  $modern Value used by this operation.
+	 *
+	 * @return \WP_REST_Response Result of the operation.
+	 */
+	private function result_response( $id, array $result, bool $modern ): \WP_REST_Response {
+		if ( $modern ) {
+			if ( ! isset( $result['resultType'] ) ) {
+				$result = array_merge( array( 'resultType' => 'complete' ), $result );
+			}
+			$meta                                       = isset( $result['_meta'] ) && is_array( $result['_meta'] ) ? $result['_meta'] : array();
+			$meta['io.modelcontextprotocol/serverInfo'] = $this->server_info();
+			$result['_meta']                            = $meta;
+		}
+
+		return new \WP_REST_Response(
+			array(
+				'jsonrpc' => '2.0',
+				'id'      => $id,
+				'result'  => $result,
+			),
+			200
+		);
+	}
+
+	/**
+	 * Process the error response operation in the MCP controller.
+	 *
+	 * @param mixed  $id Identifier of the requested object.
+	 * @param int    $code Value used by this operation.
+	 * @param string $message Value used by this operation.
+	 * @param int    $status Value used by this operation.
+	 *
+	 * @return \WP_REST_Response Result of the operation.
+	 */
+	private function error_response( $id, int $code, string $message, int $status ): \WP_REST_Response {
+		return new \WP_REST_Response(
+			array(
+				'jsonrpc' => '2.0',
+				'id'      => $id,
+				'error'   => array(
+					'code'    => $code,
+					'message' => $this->bounded_message( $message ),
+				),
+			),
+			$status
+		);
+	}
+
+	/**
+	 * Process the tool result operation in the MCP controller.
+	 *
+	 * @param array $value Value used by this operation.
+	 * @param bool  $is_error Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function tool_result( array $value, bool $is_error ): array {
+		return array(
+			'content'           => array(
+				array(
+					'type' => 'text',
+					'text' => $this->encode_for_text( $value ),
+				),
+			),
+			'structuredContent' => array( 'result' => $value ),
+			'isError'           => $is_error,
+		);
+	}
+
+	/**
+	 * Process the tool error operation in the MCP controller.
+	 *
+	 * @param string $message Value used by this operation.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function tool_error( string $message ): array {
+		$value = array(
+			'ok'    => false,
+			'error' => $this->bounded_message( $message ),
+		);
+		return $this->tool_result( $value, true );
+	}
+
+	/**
+	 * Process the encode for text operation in the MCP controller.
+	 *
+	 * @param array $value Value used by this operation.
+	 *
+	 * @return string Result of the operation.
+	 */
+	private function encode_for_text( array $value ): string {
+		try {
+			$json = wp_json_encode( $value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR );
+		} catch ( \JsonException $error ) {
+			return '{"ok":false,"error":"Result could not be encoded."}';
+		}
+		if ( ! is_string( $json ) ) {
+			return '{"ok":false,"error":"Result could not be encoded."}';
+		}
+		return $json;
+	}
+
+	/**
+	 * Process the generated request id operation in the MCP controller.
+	 *
+	 * @param mixed  $rpc_id Identifier of the requested object.
+	 * @param string $tool_name Value used by this operation.
+	 * @param string $action Value used by this operation.
+	 * @param array  $payload Requested action payload.
+	 *
+	 * @return string Result of the operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 */
+	private function generated_request_id( $rpc_id, string $tool_name, string $action, array $payload ): string {
+		try {
+			$json = wp_json_encode(
+				array(
+					'rpc_id'  => $rpc_id,
+					'tool'    => $tool_name,
+					'action'  => $action,
+					'payload' => $payload,
+					'user_id' => get_current_user_id(),
+				),
+				JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+			);
+		} catch ( \JsonException $error ) {
+			throw new RuntimeException( 'Unable to generate a connector request id.' );
+		}
+		if ( ! is_string( $json ) ) {
+			throw new RuntimeException( 'Unable to generate a connector request id.' );
+		}
+		return 'mcp-' . substr( hash( 'sha256', $json ), 0, 48 );
+	}
+
+	/**
+	 * Process the optional hash operation in the MCP controller.
+	 *
+	 * @param array  $arguments Value used by this operation.
+	 * @param string $key Field or lookup key.
+	 *
+	 * @return mixed Result of the operation.
+	 */
+	private function optional_hash( array $arguments, string $key ) {
+		if ( ! array_key_exists( $key, $arguments ) || null === $arguments[ $key ] ) {
+			return null;
+		}
+		if ( ! is_string( $arguments[ $key ] ) || ! preg_match( '/^[a-f0-9]{64}\z/', $arguments[ $key ] ) ) {
+			return false;
+		}
+		return $arguments[ $key ];
+	}
+
+	/**
+	 * Ensure no arguments in the MCP controller.
+	 *
+	 * @param array  $arguments Value used by this operation.
+	 * @param string $tool_name Value used by this operation.
+	 *
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 */
+	private function assert_no_arguments( array $arguments, string $tool_name ): void {
+		if ( array() !== $arguments ) {
+			throw new RuntimeException( $tool_name . ' does not accept arguments.' );
+		}
+	}
+
+	/**
+	 * Process the empty object schema operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function empty_object_schema(): array {
+		return array(
+			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
+			'type'                 => 'object',
+			'properties'           => new \stdClass(),
+			'additionalProperties' => false,
+		);
+	}
+
+	/**
+	 * Process the execute schema operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function execute_schema(): array {
+		return array(
+			'$schema'              => 'https://json-schema.org/draft/2020-12/schema',
+			'type'                 => 'object',
+			'additionalProperties' => false,
+			'properties'           => array(
+				'action'               => array(
+					'type'    => 'string',
+					'pattern' => '^[a-z0-9][a-z0-9._-]*$',
+				),
+				'payload'              => array( 'type' => 'object' ),
+				'dry_run'              => array(
+					'type'    => 'boolean',
+					'default' => true,
+				),
+				'confirm'              => array(
+					'type'    => 'boolean',
+					'default' => false,
+				),
+				'request_id'           => array(
+					'type'    => 'string',
+					'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$',
+				),
+				'expected_fingerprint' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$',
+				),
+				'expected_state_token' => array(
+					'type'    => 'string',
+					'pattern' => '^[a-f0-9]{64}$',
+				),
+			),
+			'required'             => array( 'action', 'payload' ),
+			'allOf'                => array(
+				array(
+					'if'   => array(
+						'properties' => array( 'dry_run' => array( 'const' => false ) ),
+						'required'   => array( 'dry_run' ),
+					),
+					'then' => array(
+						'required'   => array( 'request_id', 'confirm' ),
+						'properties' => array( 'confirm' => array( 'const' => true ) ),
+					),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Process the server info operation in the MCP controller.
+	 *
+	 * @return array Result of the operation.
+	 */
+	private function server_info(): array {
+		return array(
+			'name'        => 'webactueel-wordpress-connector',
+			'title'       => 'WordPress Connector',
+			'version'     => defined( 'WPCONNECTOR_VERSION' ) ? (string) WPCONNECTOR_VERSION : 'unknown',
+			'description' => 'Authenticated WordPress MCP transport over the existing semantic connector action registry.',
+		);
+	}
+
+	/**
+	 * Process the instructions operation in the MCP controller.
+	 *
+	 * @return string Result of the operation.
+	 */
+	private function instructions(): string {
+		return 'Use wordpress_connector_discover and wordpress_connector_actions before execution. '
+			. 'wordpress_connector_execute defaults to dry-run. Real mutations require confirm=true and a stable explicit request_id, '
+			. 'and remain subject to WordPress capabilities, connector policy, stale-state guards, readback, idempotency and rollback.';
+	}
+
+	/**
+	 * Process the bounded message operation in the MCP controller.
+	 *
+	 * @param string $message Value used by this operation.
+	 *
+	 * @return string Result of the operation.
+	 */
+	private function bounded_message( string $message ): string {
+		$message = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $message );
+		$message = is_string( $message ) ? trim( $message ) : '';
+		if ( '' === $message ) {
+			return 'Request failed.';
+		}
+		return strlen( $message ) > 1000 ? substr( $message, 0, 1000 ) : $message;
+	}
+}
+ ),
+						'confirm'              => array( 'type' => 'boolean', 'const' => true ),
+					),
+					'required'             => array( 'request_id', 'expected_fingerprint', 'confirm' ),
+					'additionalProperties' => false,
+				),
+				'annotations' => array(
+					'readOnlyHint'    => false,
+					'destructiveHint' => true,
+					'idempotentHint'  => true,
+					'openWorldHint'   => false,
+				),
+			);
+		}
+		// Tool descriptions are not authorization. The OAuth introspection
+		// and Runner policy gates still decide each requested action.
+		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
 			foreach ( $result['tools'] as &$tool ) {
+				$update_tool = in_array( $tool['name'], array(
+					'wordpress_connector_release_preview',
+					'wordpress_connector_release_apply',
+				), true );
+				$scopes = $update_tool ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				$schemes = array( array( 'type' => 'oauth2', 'scopes' => $scopes ) );
 				$tool['securitySchemes']          = $schemes;
 				$tool['_meta']['securitySchemes'] = $schemes;
 			}
