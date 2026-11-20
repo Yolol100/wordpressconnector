@@ -22,6 +22,9 @@ $GLOBALS['oauth_case'] = array(
 	'error' => false,
 	'claims' => array(),
 	'current_user' => 0,
+	'transients' => array(),
+	'reset_rate_limit' => true,
+	'body_override' => null,
 );
 
 final class WP_Error {
@@ -66,7 +69,16 @@ function rest_url( string $path ): string {
 	return 'https://example.invalid/wp-json/' . $path;
 }
 function is_ssl(): bool { return $GLOBALS['oauth_case']['ssl']; }
-function add_action( string $name, $callback ): void {}
+function add_action( string $name, $callback, int $priority = 10 ): void {
+	$GLOBALS['oauth_case']['hooks'][ $name ] = $callback;
+}
+function get_transient( string $name ) {
+	return $GLOBALS['oauth_case']['transients'][ $name ] ?? false;
+}
+function set_transient( string $name, $value, int $duration ): bool {
+	$GLOBALS['oauth_case']['transients'][ $name ] = $value;
+	return true;
+}
 function register_rest_route( string $namespace, string $route, array $args ): void {
 	$GLOBALS['oauth_case']['route'] = array( $namespace, $route, $args );
 }
@@ -76,7 +88,12 @@ function wp_safe_remote_post( string $url, array $args ) {
 	if ( $GLOBALS['oauth_case']['error'] ) {
 		return new WP_Error( 'http_failure', 'synthetic provider unavailable' );
 	}
-	return array( 'response' => array( 'code' => $GLOBALS['oauth_case']['http'] ), 'body' => json_encode( $GLOBALS['oauth_case']['claims'] ) );
+	return array(
+		'response' => array( 'code' => $GLOBALS['oauth_case']['http'] ),
+		'body' => is_string( $GLOBALS['oauth_case']['body_override'] )
+			? $GLOBALS['oauth_case']['body_override']
+			: json_encode( $GLOBALS['oauth_case']['claims'] ),
+	);
 }
 function wp_remote_retrieve_response_code( array $response ): int {
 	return (int) $response['response']['code'];
@@ -119,6 +136,9 @@ function oauth_base_claims(): array {
 	);
 }
 function oauth_probe( $headers ) {
+	if ( $GLOBALS['oauth_case']['reset_rate_limit'] ) {
+		$GLOBALS['oauth_case']['transients'] = array();
+	}
 	$client = new OAuthResourceServer();
 	$result = $client->authenticate( new WP_REST_Request( $headers ) );
 	return array( $result, $client->isAuthenticated() );
@@ -131,9 +151,11 @@ assert_oauth( OAuthResourceServer::resource() === $metadata['resource'], 'OAuth 
 assert_oauth( array( WPCONNECTOR_OAUTH_ISSUER ) === $metadata['authorization_servers'], 'MCP discovers the issuer, not an assumed OAuth provider.' );
 assert_oauth( array( 'wpconnector:read' ) === $metadata['scopes_supported'], 'OAuth must expose read scope only.' );
 assert_oauth( false === strpos( json_encode( $metadata ), WPCONNECTOR_OAUTH_CLIENT_SECRET ), 'Never expose the introspection secret through metadata.' );
-assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader(), 'resource_metadata="https://example.invalid/wp-json/webactueel-wordpress-connector/v1/oauth-resource"' ), 'Bearer discovery challenge must include resource metadata.' );
+assert_oauth( false !== strpos( OAuthResourceServer::challengeHeader(), 'resource_metadata="https://example.invalid/.well-known/oauth-protected-resource/wp-json/webactueel-wordpress-connector/v1/mcp"' ), 'Bearer challenge must advertise the canonical RFC 9728 protected-resource URL.' );
 
 $resource = new OAuthResourceServer();
+$resource->register();
+assert_oauth( isset( $GLOBALS['oauth_case']['hooks']['init'] ), 'Well-known routing must be registered during WordPress init.' );
 $resource->registerRoutes();
 assert_oauth( 'webactueel-wordpress-connector/v1' === $GLOBALS['oauth_case']['route'][0] && '/oauth-resource' === $GLOBALS['oauth_case']['route'][1], 'Resource metadata belongs to the existing REST namespace.' );
 assert_oauth( 'GET' === $GLOBALS['oauth_case']['route'][2]['methods'], 'Metadata is GET only.' );
@@ -146,7 +168,7 @@ assert_oauth( null === $basic && ! $authed, 'Existing Application Passwords must
 assert_oauth( array() === $GLOBALS['oauth_case']['calls'], 'Non-bearer requests must not call the OAuth provider.' );
 
 $token = str_repeat( 'a', 48 );
-list( $bad, $authed ) = oauth_probe( array( 'authorization' => 'Bearer not-valid' ) );
+list( $bad, $authed ) = oauth_probe( array( 'authorization' => 'Bearer not valid' ) );
 assert_oauth( $bad instanceof WP_Error && 401 === $bad->get_error_data()['status'] && ! $authed, 'Malformed bearer must fail before network.' );
 assert_oauth( array() === $GLOBALS['oauth_case']['calls'], 'Malformed bearer must not make outbound requests.' );
 
@@ -159,8 +181,24 @@ assert_oauth( 1 === count( $calls ), 'OAuth must introspect once.' );
 $last = $calls[0];
 assert_oauth( WPCONNECTOR_OAUTH_INTROSPECTION_URL === $last['url'], 'Introspection endpoint must be pinned.' );
 assert_oauth( true === $last['args']['sslverify'] && 0 === $last['args']['redirection'], 'Introspection must verify TLS and reject redirects.' );
-assert_oauth( $token === $last['args']['body']['token'] && OAuthResourceServer::resource() === $last['args']['body']['resource'], 'Only the exact MCP resource audience may be requested.' );
+assert_oauth( $token === $last['args']['body']['token']
+	&& ! isset( $last['args']['body']['resource'] )
+	&& 'access_token' === $last['args']['body']['token_type_hint'],
+	'Introspection must send only RFC 7662 parameters; exact MCP audience is checked in the response.' );
+assert_oauth( 16385 === $last['args']['limit_response_size'],
+	'WordPress must enforce a response byte cap during HTTP transport, not only after download.' );
 assert_oauth( false === strpos( json_encode( $metadata ), $token ), 'Tokens must not leak into public metadata.' );
+list( $short, $authed ) = oauth_probe( array( 'authorization' => 'Bearer abc' ) );
+assert_oauth( true === $short && $authed, 'RFC 6750 permits opaque bearer tokens shorter than 32 characters.' );
+$GLOBALS['oauth_case']['claims'] = array_replace( oauth_base_claims(), array( 'token_type' => 'bearer' ) );
+list( $lower, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( true === $lower && $authed, 'RFC 6750 token types are case-insensitive.' );
+$GLOBALS['oauth_case']['body_override'] = str_repeat( 'z', 16385 );
+list( $huge, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( $huge instanceof WP_Error && ! $authed
+	&& 'wpconnector_oauth_invalid_token' === $huge->get_error_code(),
+	'An overlarge introspection response must be rejected.' );
+$GLOBALS['oauth_case']['body_override'] = null;
 
 $reject = static function (string $label, array $changes, int $expected_status = 401 ) use ( $token ): void {
 	$GLOBALS['oauth_case']['claims'] = array_replace( oauth_base_claims(), $changes );
@@ -172,6 +210,7 @@ $reject( 'Wrong issuer', array( 'iss' => 'https://attacker.example.invalid/' ) )
 $reject( 'Wrong account subject', array( 'sub' => 'other-account' ) );
 $reject( 'Wrong audience', array( 'aud' => array( 'https://another-site.example.invalid/mcp' ) ) );
 $reject( 'Missing audience', array( 'aud' => null ) );
+$reject( 'Multiple audiences including another resource', array( 'aud' => array( OAuthResourceServer::resource(), 'https://other.example.invalid/' ) ) );
 $reject( 'Missing read scope', array( 'scope' => 'openid profile' ), 403 );
 $reject( 'Scope prefix confusion', array( 'scope' => 'wpconnector:readonly' ), 403 );
 $reject( 'Expired token', array( 'exp' => time() - 10 ) );
@@ -204,4 +243,20 @@ list( $plain, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $to
 assert_oauth( $plain instanceof WP_Error && 403 === $plain->get_error_data()['status'] && ! $authed, 'HTTP bearer authentication must be refused.' );
 assert_oauth( $resource->resourceMetadata() instanceof WP_Error, 'Resource discovery must also require HTTPS.' );
 
+$GLOBALS['oauth_case']['ssl'] = true;
+$GLOBALS['oauth_case']['reset_rate_limit'] = false;
+$GLOBALS['oauth_case']['transients'] = array();
+$GLOBALS['oauth_case']['claims'] = oauth_base_claims();
+$_SERVER['REMOTE_ADDR'] = '192.0.2.12';
+for ( $n = 0; $n < 12; ++$n ) {
+	list( $allowed, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+	assert_oauth( true === $allowed && $authed, 'First twelve requests must pass synthetic rate limit.' );
+}
+$before = count( $GLOBALS['oauth_case']['calls'] );
+list( $blocked, $authed ) = oauth_probe( array( 'authorization' => 'Bearer ' . $token ) );
+assert_oauth( $blocked instanceof WP_Error
+	&& 429 === $blocked->get_error_data()['status']
+	&& ! $authed
+	&& $before === count( $GLOBALS['oauth_case']['calls'] ),
+	'Thirteenth call from the same verified remote address must be denied before provider introspection.' );
 echo "oauth protected resource fail-closed contract OK\n";
