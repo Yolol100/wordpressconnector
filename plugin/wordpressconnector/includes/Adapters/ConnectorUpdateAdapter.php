@@ -600,7 +600,8 @@ final class ConnectorUpdateAdapter {
 			if ( null !== $previous_version ) {
 				$this->reconcile_failed_installation( $upgrader, $backup, $previous_version, $was_active );
 			}
-			throw new RuntimeException( 'Connector installation failed or ended with an unknown outcome; prior installation was checked but no automatic retry is allowed.', 0, $execution_error );
+			// Do not surface raw upgrader exceptions through a remote MCP response.
+			throw new RuntimeException( 'Connector installation failed or ended with an unknown outcome; prior installation was checked but no automatic retry is allowed.' );
 		}
 		if ( $was_active && ! is_plugin_active( self::PLUGIN_FILE ) ) {
 			// Preserve the activation state held before the guarded upgrade.
@@ -637,7 +638,10 @@ final class ConnectorUpdateAdapter {
 		$version = isset( $plugins[ self::PLUGIN_FILE ]['Version'] ) ? (string) $plugins[ self::PLUGIN_FILE ]['Version'] : '';
 		if ( ! hash_equals( $expected_version, $version ) ) {
 			$this->restore_after_readback_failure(
-				array( 'upgrader' => $upgrader, 'backup' => $backup ),
+				array(
+					'upgrader' => $upgrader,
+					'backup'   => $backup,
+				),
 				$expected_version
 			);
 		}
