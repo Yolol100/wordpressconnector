@@ -124,6 +124,7 @@ final class Plugin {
 		$rest_controller->register();
 		$oauth_resource = new OAuthResourceServer();
 		$oauth_resource->register();
+		( new ReleaseApproval() )->register();
 		( new McpController( $runner, $registry, array( $rest_controller, 'authorize' ), $oauth_resource ) )->register();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI' ) ) {
