@@ -19,6 +19,9 @@ final class OAuthResourceServer {
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 	private const SCOPE     = 'wpconnector:read';
 	private const MAX_TOKEN_AGE = 3600;
+	private const MAX_INTROSPECTION_BYTES = 16384;
+	private const RATE_LIMIT_PER_IP = 12;
+	private const RATE_LIMIT_GLOBAL = 60;
 	private bool $authenticated = false;
 
 	/**
@@ -85,6 +88,24 @@ final class OAuthResourceServer {
 		return rest_url( self::NAMESPACE . '/mcp' );
 	}
 
+	/**
+	 * RFC 9728 well-known discovery URL for the exact protected MCP URI.
+	 * The host's web server must forward this route to WordPress.
+	 */
+	public static function wellKnownUrl(): string {
+		$parts = wp_parse_url( self::resource() );
+		if ( ! is_array( $parts ) || 'https' !== ( $parts['scheme'] ?? null )
+			|| empty( $parts['host'] ) || ! isset( $parts['path'] )
+			|| ! is_string( $parts['path'] ) || isset( $parts['query'] )
+			|| isset( $parts['fragment'] ) || isset( $parts['user'] )
+			|| isset( $parts['pass'] ) ) {
+			return '';
+		}
+		$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+		return 'https://' . $parts['host'] . $port
+			. '/.well-known/oauth-protected-resource' . $parts['path'];
+	}
+
 	/** RFC 9728 resource metadata; the authorization server lives elsewhere. */
 	public static function metadata(): array {
 		$config = self::config();
@@ -102,6 +123,7 @@ final class OAuthResourceServer {
 	/** Register only the public resource metadata endpoint. */
 	public function register(): void {
 		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) );
+		add_action( 'init', array( $this, 'serveWellKnown' ), 1 );
 	}
 
 	/** REST routes preserve the plugin's existing canonical namespace. */
@@ -115,6 +137,37 @@ final class OAuthResourceServer {
 				'permission_callback' => '__return_true',
 			)
 		);
+	}
+
+	/**
+	 * Serve the exact RFC 9728 URL early, without an activation-only rewrite.
+	 * WordPress must receive the .well-known request from the web server.
+	 */
+	public function serveWellKnown(): void {
+		$uri = $_SERVER['REQUEST_URI'] ?? '';
+		if ( ! is_string( $uri ) || '' === $uri ) {
+			return;
+		}
+		$url = self::wellKnownUrl();
+		if ( '' === $url || wp_parse_url( $uri, PHP_URL_PATH ) !== wp_parse_url( $url, PHP_URL_PATH ) ) {
+			return;
+		}
+		$method = $_SERVER['REQUEST_METHOD'] ?? '';
+		if ( 'GET' !== $method ) {
+			status_header( 405 );
+			header( 'Allow: GET', true );
+			exit;
+		}
+		$metadata = self::metadata();
+		if ( ! is_ssl() || array() === $metadata ) {
+			status_header( 404 );
+			exit;
+		}
+		nocache_headers();
+		header( 'Content-Type: application/json; charset=utf-8', true );
+		status_header( 200 );
+		echo wp_json_encode( $metadata, JSON_UNESCAPED_SLASHES );
+		exit;
 	}
 
 	/**
@@ -132,7 +185,7 @@ final class OAuthResourceServer {
 
 	/** Exact challenge for the MCP OAuth discovery handshake. */
 	public static function challengeHeader(): string {
-		$url = rest_url( self::NAMESPACE . '/oauth-resource' );
+		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
 			return '';
@@ -141,10 +194,13 @@ final class OAuthResourceServer {
 	}
 
 	/** Advertise OAuth only for configured sites, never as a substitute for auth. */
-	public static function challenge(): void {
+	public static function challenge( string $reason = '' ): void {
 		if ( self::isConfigured() && ! headers_sent() ) {
 			$header = self::challengeHeader();
 			if ( '' !== $header ) {
+				if ( in_array( $reason, array( 'invalid_token', 'insufficient_scope' ), true ) ) {
+					$header .= ', error="' . $reason . '"';
+				}
 				header( 'WWW-Authenticate: ' . $header, true );
 			}
 		}
@@ -154,8 +210,42 @@ final class OAuthResourceServer {
 	 * Return a sanitized refusal and advertise the OAuth resource challenge.
 	 */
 	private static function deny( string $code, string $message, int $status ): \WP_Error {
-		self::challenge();
+		$reason = 401 === $status ? 'invalid_token' : ( 'wpconnector_oauth_scope_denied' === $code ? 'insufficient_scope' : '' );
+		self::challenge( $reason );
 		return new \WP_Error( $code, $message, array( 'status' => $status ) );
+	}
+
+	/**
+	 * Bound introspection load by trusted webserver IP and a site-wide cap.
+	 * Persistent transients are advisory under concurrency; hosts should
+	 * additionally configure an edge/WAF limit for this MCP endpoint.
+	 */
+	private static function canIntrospect(): bool {
+		$address = $_SERVER['REMOTE_ADDR'] ?? '';
+		$address = is_string( $address ) && filter_var( $address, FILTER_VALIDATE_IP ) ? $address : 'unknown';
+		$bucket  = (string) floor( time() / 60 );
+		$limits  = array(
+			'wpconnector_oauth_ip_' . substr( hash( 'sha256', $address ), 0, 24 ) . '_' . $bucket => self::RATE_LIMIT_PER_IP,
+			'wpconnector_oauth_all_' . $bucket => self::RATE_LIMIT_GLOBAL,
+		);
+		$counts = array();
+		foreach ( $limits as $key => $limit ) {
+			$value = get_transient( $key );
+			if ( false !== $value && ( ! is_int( $value ) || $value < 0 ) ) {
+				return false;
+			}
+			$count = false === $value ? 0 : $value;
+			if ( $count >= $limit ) {
+				return false;
+			}
+			$counts[ $key ] = $count + 1;
+		}
+		foreach ( $counts as $key => $count ) {
+			if ( ! set_transient( $key, $count, 70 ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/** Did this request actually authenticate using a valid external bearer? */
@@ -180,17 +270,22 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_https_required', 'OAuth requires HTTPS.', 403 );
 		}
 		$config = self::config();
-		if ( null === $config || 1 !== preg_match( '/\ABearer ([A-Za-z0-9._~+\/=-]{32,4096})\z/iD', $authorization, $match ) ) {
+		if ( null === $config || 1 !== preg_match( '/\ABearer ([A-Za-z0-9._~+\/=-]{1,4096})\z/iD', $authorization, $match ) ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$access_token = $match[1];
+		if ( ! self::canIntrospect() ) {
+			unset( $access_token );
+			return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
+		}
 
 		// Remote validation is mandatory: never decode and trust unsigned JWT claims.
 		$result = wp_safe_remote_post(
 			$config['introspection'],
 			array(
-				'timeout'     => 5,
-				'redirection' => 0,
+				'timeout'             => 5,
+				'redirection'         => 0,
+				'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
 				'sslverify'   => true,
 				'headers'     => array(
 					'Accept'        => 'application/json',
@@ -201,7 +296,6 @@ final class OAuthResourceServer {
 				'body'        => array(
 					'token'           => $access_token,
 					'token_type_hint' => 'access_token',
-					'resource'        => self::resource(),
 				),
 			)
 		);
@@ -210,7 +304,7 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_oauth_provider_unavailable', 'OAuth token validation is unavailable.', 503 );
 		}
 		$body = (string) wp_remote_retrieve_body( $result );
-		if ( strlen( $body ) > 16384 ) {
+		if ( strlen( $body ) > self::MAX_INTROSPECTION_BYTES ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$claims = json_decode( $body, true );
@@ -222,7 +316,8 @@ final class OAuthResourceServer {
 			|| $claims['exp'] <= $now || $claims['exp'] > $now + self::MAX_TOKEN_AGE
 			|| ( isset( $claims['nbf'] ) && ( ! is_int( $claims['nbf'] ) || $claims['nbf'] > $now + 60 ) )
 			|| ( isset( $claims['iat'] ) && ( ! is_int( $claims['iat'] ) || $claims['iat'] > $now + 60 ) )
-			|| ( isset( $claims['token_type'] ) && 'Bearer' !== $claims['token_type'] ) ) {
+			|| ( isset( $claims['token_type'] ) && ( ! is_string( $claims['token_type'] )
+				|| 0 !== strcasecmp( $claims['token_type'], 'Bearer' ) ) ) ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$audiences = $claims['aud'] ?? null;
