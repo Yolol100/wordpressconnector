@@ -11,7 +11,6 @@ namespace Webactueel\WordPressConnector\Adapters;
 
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
-use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
 /**
@@ -29,8 +28,6 @@ final class ConnectorUpdateAdapter {
 	private const MAX_UNCOMPRESSED_BYTES   = 104857600;
 	private const MAX_ENTRIES              = 2500;
 	private const NOTICE_REFRESH_TRANSIENT = 'wpconnector_github_update_notice_v1';
-	private const OWNER_APPROVAL_TRANSIENT = 'wpconnector_mcp_release_owner_approval_v1';
-	private const OWNER_APPROVAL_TTL       = 600;
 	/**
 	 * Verified local ZIP path for the currently guarded REST self-update.
 	 *
@@ -78,113 +75,7 @@ final class ConnectorUpdateAdapter {
 			add_action( 'load-update-core.php', array( $this, 'refreshNativeUpdateNoticeAction' ), 20 );
 			add_action( 'admin_post_wpconnector_check_updates', array( $this, 'forceNativeUpdateCheck' ) );
 			add_action( 'admin_notices', array( $this, 'checkedNotice' ) );
-			add_action( 'admin_notices', array( $this, 'releaseApprovalNotice' ) );
-			add_action( 'admin_post_wpconnector_approve_release', array( $this, 'approveRelease' ) );
 		}
-	}
-
-	/**
-	 * The actual linked WordPress owner must approve each exact update from a
-	 * logged-in wp-admin session. OAuth alone may never create its own approval.
-	 */
-	private static function isOwnerBrowser(): bool {
-		return OAuthResourceServer::selfUpdateConfigured()
-			&& current_user_can( 'manage_options' )
-			&& current_user_can( 'update_plugins' )
-			&& defined( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID' )
-			&& get_current_user_id() === (int) constant( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID' )
-			&& is_user_logged_in()
-			&& function_exists( 'wp_get_session_token' )
-			&& '' !== wp_get_session_token();
-	}
-
-	/**
-	 * WordPress Plugins displays the exact release/version and GitHub checksum
-	 * before the linked owner approves one limited-time ChatGPT install.
-	 * The form posts to a nonce-guarded admin action, never to MCP.
-	 */
-	public function releaseApprovalNotice(): void {
-		global $pagenow;
-		if ( 'plugins.php' !== $pagenow || ! self::isOwnerBrowser() ) {
-			return;
-		}
-		try {
-			$preview = $this->apply( array(), array( 'dry_run' => true ) );
-		} catch ( \Throwable $error ) {
-			return;
-		}
-		$plan = $preview['would_update_connector'] ?? null;
-		$fingerprint = $preview['release_fingerprint'] ?? '';
-		if ( ! is_array( $plan ) || ! is_string( $fingerprint )
-			|| ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
-			return;
-		}
-		$existing = get_transient( self::OWNER_APPROVAL_TRANSIENT );
-		if ( is_array( $existing ) && ( $existing['fingerprint'] ?? '' ) === $fingerprint ) {
-			echo '<div class="notice notice-success"><p>' . esc_html__( 'ChatGPT Connector release approved for one installation within ten minutes.', 'wordpressconnector' ) . '</p></div>';
-			return;
-		}
-		echo '<div class="notice notice-info"><p>';
-		echo esc_html__( 'Approve one ChatGPT update of WordPress Connector only. Verify the GitHub release and backup first.', 'wordpressconnector' ) . ' ';
-		echo esc_html( (string) $plan['from_version'] . ' → ' . (string) $plan['to_version'] . ' | SHA-256: ' . (string) $plan['github_asset_digest'] );
-		echo '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-		echo wp_nonce_field( 'wpconnector_approve_release', '_wpnonce', true, false ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- wp_nonce_field supplies escaped native WordPress form fields.
-		echo '<input type="hidden" name="action" value="wpconnector_approve_release">';
-		echo '<input type="hidden" name="expected_fingerprint" value="' . esc_attr( $fingerprint ) . '">';
-		echo '<button type="submit" class="button button-secondary">' . esc_html__( 'Approve this exact ChatGPT release once', 'wordpressconnector' ) . '</button></form></div>';
-	}
-
-	/**
-	 * Server-side one-shot approval requires a browser session, WP admin nonce,
-	 * pinned WordPress owner and a fresh release fingerprint.
-	 */
-	public function approveRelease(): void {
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! self::isOwnerBrowser() ) {
-			wp_die( esc_html__( 'Authenticated linked WordPress owner approval is required.', 'wordpressconnector' ) );
-		}
-		check_admin_referer( 'wpconnector_approve_release' );
-		$fingerprint = isset( $_POST['expected_fingerprint'] ) && is_string( $_POST['expected_fingerprint'] )
-			? sanitize_text_field( wp_unslash( $_POST['expected_fingerprint'] ) )
-			: '';
-		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint ) ) {
-			wp_die( esc_html__( 'Invalid release fingerprint.', 'wordpressconnector' ) );
-		}
-		try {
-			$preview = $this->apply( array(), array( 'dry_run' => true ) );
-		} catch ( \Throwable $error ) {
-			wp_die( esc_html__( 'Cannot verify the current Connector release.', 'wordpressconnector' ) );
-		}
-		$actual = $preview['release_fingerprint'] ?? '';
-		if ( ! is_string( $actual ) || ! hash_equals( $actual, $fingerprint ) ) {
-			wp_die( esc_html__( 'Release changed after preview. Recheck the release and retry approval.', 'wordpressconnector' ) );
-		}
-		if ( ! set_transient( self::OWNER_APPROVAL_TRANSIENT, array(
-			'fingerprint' => $fingerprint,
-			'user_id'     => get_current_user_id(),
-		), self::OWNER_APPROVAL_TTL ) ) {
-			wp_die( esc_html__( 'Could not store the one-time update approval.', 'wordpressconnector' ) );
-		}
-		wp_safe_redirect( admin_url( 'plugins.php' ) );
-		exit;
-	}
-
-	/**
-	 * Single-use, ten-minute, site-local approval for the exact verified
-	 * release. Called only from the dedicated OAuth tool (never generic MCP).
-	 */
-	public static function consumeOwnerApproval( string $fingerprint ): bool {
-		if ( ! OAuthResourceServer::selfUpdateConfigured()
-			|| ! preg_match( '/^[a-f0-9]{64}\z/', $fingerprint )
-			|| ! defined( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID' ) ) {
-			return false;
-		}
-		$approval = get_transient( self::OWNER_APPROVAL_TRANSIENT );
-		if ( ! is_array( $approval )
-			|| ( $approval['fingerprint'] ?? '' ) !== $fingerprint
-			|| ( $approval['user_id'] ?? 0 ) !== (int) constant( 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID' ) ) {
-			return false;
-		}
-		return delete_transient( self::OWNER_APPROVAL_TRANSIENT );
 	}
 
 	/**
