@@ -66,10 +66,14 @@ namespace {
     };
     $now = time();
     $record = $make(str_repeat('a', 32), 7, $now-30, $now+570);
+    ensure(! ReleaseApproval::available($fingerprint), 'No wp-admin approval may pass preflight initially.');
     ensure(! ReleaseApproval::consume($fingerprint), 'No wp-admin approval exists initially.');
     $GLOBALS['owner_options'][$key] = $record;
+    ensure(ReleaseApproval::available($fingerprint), 'A valid approval passes preflight without consuming it.');
+    ensure(ReleaseApproval::available($fingerprint), 'Repeating read-only preflight must not claim consent.');
     ensure(! ReleaseApproval::consume(str_repeat('b', 64)), 'Another fingerprint cannot borrow approval.');
     ensure(ReleaseApproval::consume($fingerprint), 'One exact, current owner approval may be claimed.');
+    ensure(! ReleaseApproval::available($fingerprint), 'Used approval is absent after the claim.');
     ensure(! ReleaseApproval::consume($fingerprint), 'Used approval must be denied even when replayed.');
     ensure(isset($GLOBALS['owner_options']['wpconnector_oauth_release_claim_' . str_repeat('a', 32)]),
         'Atomic single-use claim must be durably recorded.');
@@ -117,5 +121,17 @@ namespace {
     ) as $guard) {
         ensure(is_string($source) && strpos($source, $guard) !== false, 'Owner approval guard missing: ' . $guard);
     }
-    echo "OAuth one-time browser owner approval and replay denial contract OK\n";
+    $runner = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Runner.php');
+    $adapter = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
+    $controller = file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/MCP/Controller.php');
+    ensure(is_string($runner) && strpos($runner, 'ReleaseApproval::available(') !== false
+        && strpos($runner, 'ReleaseApproval::available(') < strpos($runner, '$this->processed->begin('),
+        'Owner preflight must run before reserving a mutation request ID.');
+    ensure(is_string($adapter) && strpos($adapter, 'ReleaseApproval::consume(') !== false
+        && strpos($adapter, 'ReleaseApproval::consume(') > strpos($adapter, 'verifyProtectedSource( $release, $package )'),
+        'Only the verified updater may consume owner approval.');
+    ensure(is_string($controller) && strpos($controller, 'ReleaseApproval::consume(') === false
+        && strpos($controller, "'require_owner_approval' => $require_owner_approval") !== false,
+        'MCP transport must defer owner consent until the guarded runtime.');
+    echo "OAuth one-time browser owner approval, preflight and replay denial contract OK\n";
 }
