@@ -750,12 +750,6 @@ final class Controller {
 		if ( ! ReleaseApproval::consume( $fingerprint ) ) {
 			return $this->tool_error( 'The linked owner must approve this exact release through the authenticated WordPress Plugins screen. Approval expires after 10 minutes and can be used once.' );
 		}
-		// A compromised OAuth client cannot approve its own update.
-		// The exact release must first be approved once in the linked owner's
-		// logged-in WordPress Plugins screen (nonce-guarded, ten-minute TTL).
-		if ( ! ReleaseApproval::consume( $fingerprint ) ) {
-			return $this->tool_error( 'The linked WordPress owner must approve this exact release in wp-admin before ChatGPT can install it.' );
-		}
 		$result = $this->run_semantic(
 			$rpc_id, $name, 'connector.update.apply', array(), false, true,
 			$arguments['request_id'], $fingerprint, null, true
