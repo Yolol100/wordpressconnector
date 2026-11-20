@@ -175,10 +175,23 @@ final class ReleaseApproval {
 			|| $record['expires'] - $record['issued'] !== self::TTL_SECONDS ) {
 			return false;
 		}
-		// add_option uses the unique option_name database constraint. The
-		// immutable per-approval id prevents concurrent double consumption.
-		$claimed = add_option( self::CLAIM_PREFIX . $record['id'], (string) $now, '', 'no' );
-		if ( ! $claimed ) {
+		// Use a single database INSERT against wp_options.option_name's UNIQUE
+		// index. WordPress add_option() may make a cache-based preflight decision;
+		// this security claim must be exclusive across PHP workers and cache nodes.
+		global $wpdb;
+		if ( ! is_object( $wpdb ) || ! isset( $wpdb->options ) || ! method_exists( $wpdb, 'insert' ) ) {
+			return false;
+		}
+		$claimed = $wpdb->insert(
+			$wpdb->options,
+			array(
+				'option_name'  => self::CLAIM_PREFIX . $record['id'],
+				'option_value' => (string) $now,
+				'autoload'     => 'no',
+			),
+			array( '%s', '%s', '%s' )
+		);
+		if ( 1 !== $claimed ) {
 			return false;
 		}
 		delete_option( self::OPTION );
