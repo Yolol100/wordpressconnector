@@ -10,13 +10,40 @@ const RELEASE_TEST_TREE = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 $GLOBALS['source_case'] = array(
     'mode' => 'valid',
     'calls' => array(),
-    'trusted_body' => "<?php\n/** Protected WordPress Connector plugin source. */\n",
+    'trusted_body' => "<?php\n/**\n * Plugin Name: WordPress Connector\n * Version: 1.20.12\n */\n",
+    'package_fixture' => null,
+    'temporary_downloads' => array(),
+    'deleted_downloads' => array(),
 );
 
 function is_wp_error($value): bool { return false; }
+function wp_tempnam($name) {
+    $path = tempnam(sys_get_temp_dir(), 'source-download-');
+    $GLOBALS['source_case']['temporary_downloads'][] = $path;
+    return $path;
+}
+function wp_delete_file($path) {
+    $GLOBALS['source_case']['deleted_downloads'][] = $path;
+    return !file_exists($path) || unlink($path);
+}
 function wp_remote_retrieve_response_code(array $response): int { return (int) $response['response']['code']; }
 function wp_remote_retrieve_body(array $response): string { return (string) $response['body']; }
 function wp_safe_remote_get(string $url, array $opts): array {
+    $downloadRoot = 'https://github.com/Yolol100/wordpressconnector/releases/download/v1.20.12/';
+    if ($url === $downloadRoot . 'wordpressconnector.zip.sha256') {
+        $sha = hash_file('sha256', $GLOBALS['source_case']['package_fixture']);
+        return array('response' => array('code' => 200), 'body' => $sha . "  wordpressconnector.zip\n");
+    }
+    if ($url === $downloadRoot . 'wordpressconnector.zip') {
+        if (($opts['stream'] ?? false) !== true || ($opts['sslverify'] ?? false) !== true
+            || ! is_string($opts['filename'] ?? null) || ($opts['limit_response_size'] ?? 0) !== 20971521) {
+            throw new RuntimeException('Native package download did not enforce bounded TLS streaming.');
+        }
+        if (! copy($GLOBALS['source_case']['package_fixture'], $opts['filename'])) {
+            throw new RuntimeException('Unable to stream synthetic canonical package.');
+        }
+        return array('response' => array('code' => 200), 'body' => '');
+    }
     if ($opts['redirection'] !== 0 || $opts['sslverify'] !== true
         || ($opts['limit_response_size'] ?? 0) < 1 || ($opts['limit_response_size'] ?? 0) > 8388609) {
         throw new RuntimeException('Untrusted source HTTP settings.');
@@ -134,4 +161,48 @@ try {
     $invalidSourceRejected = true;
 }
 if (!$invalidSourceRejected) { throw new RuntimeException('Must refuse an unpinned release commit.'); }
-echo "protected main origin, exact PHP bytes and ZIP file set proven; tamper cases denied\n";
+// The native Plugins update must not accept a ZIP whose owner-published
+// SHA-256/checksum asset agrees with the ZIP but whose bytes disagree with main.
+$source = (string) file_get_contents(dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php');
+$nativeStart = strpos($source, 'public function verifiedNativeDownload(');
+$nativeEnd = strpos($source, 'public function check(', $nativeStart ?: 0);
+if (false === $nativeStart || false === $nativeEnd
+    || false === strpos(substr($source, $nativeStart, $nativeEnd - $nativeStart), 'download_protected_source_package( $release )')) {
+    throw new RuntimeException('Native Update Now does not use the protected-source verifier.');
+}
+$protectedDownload = new ReflectionMethod(ConnectorUpdateAdapter::class, 'download_protected_source_package');
+$protectedDownload->setAccessible(true);
+$makeRelease = static function() use ($zipPath): array {
+    $checksum = hash_file('sha256', $zipPath) . "  wordpressconnector.zip\n";
+    $prefix = 'https://github.com/Yolol100/wordpressconnector/releases/download/v1.20.12/';
+    return array(
+        'source_commit' => RELEASE_TEST_COMMIT,
+        'version' => '1.20.12',
+        'package_url' => $prefix . 'wordpressconnector.zip',
+        'checksum_url' => $prefix . 'wordpressconnector.zip.sha256',
+        'package_digest' => 'sha256:' . hash_file('sha256', $zipPath),
+        'checksum_digest' => 'sha256:' . hash('sha256', $checksum),
+    );
+};
+$GLOBALS['source_case']['package_fixture'] = $zipPath;
+$makeZip(array('wordpressconnector/wordpressconnector.php' => $GLOBALS['source_case']['trusted_body']));
+$validPackage = $protectedDownload->invoke($adapter, $makeRelease());
+if (!is_file($validPackage) || hash_file('sha256', $validPackage) !== hash_file('sha256', $zipPath)) {
+    throw new RuntimeException('Protected-source native package should be usable for Core.');
+}
+wp_delete_file($validPackage);
+$malicious = str_replace('*/', " * Added unreviewed release bytes\n */", $GLOBALS['source_case']['trusted_body']);
+$makeZip(array('wordpressconnector/wordpressconnector.php' => $malicious));
+$deniedTamper = false;
+$cleanupsBefore = count($GLOBALS['source_case']['deleted_downloads']);
+try {
+    $protectedDownload->invoke($adapter, $makeRelease());
+} catch (RuntimeException $error) {
+    $deniedTamper = str_contains($error->getMessage(), 'protected main') ||
+        str_contains($error->getMessage(), 'protected main commit');
+}
+if (!$deniedTamper || count($GLOBALS['source_case']['deleted_downloads']) !== $cleanupsBefore + 1
+    || is_file(end($GLOBALS['source_case']['deleted_downloads']))) {
+    throw new RuntimeException('Checksum-matching malicious ZIP bypassed native protected-source verification or leaked a temporary file.');
+}
+echo "protected main origin, exact PHP bytes, native source verification and ZIP tamper cases denied\n";
