@@ -26,7 +26,7 @@ For full historic release notes and security boundaries, see https://github.com/
 == Changelog ==
 
 = 1.20.12 =
-* **Unpublished candidate.** Prepare a monotonic version above the already installed 1.20.11 on one managed site. Includes protected-base request workflow, OAuth resource and source-verified update code already merged on main; follow-up security hardening is still pending in PR #1392. No staging restore, external OAuth pairing or release approval is claimed.
+* **Unpublished candidate.** Prepare a monotonic version above the already installed 1.20.11 on one managed site. Includes protected-base request workflow, OAuth resource and source-verified update code already merged on main; the Draft branch now includes the unmerged PR #1392 hardening changes, which must merge into protected main before publication. No staging restore, external OAuth pairing or release approval is claimed.
 
 = 1.20.10 =
 * Prefix internal bootstrap/uninstall globals and document only precisely scoped PHPCS exceptions for intentional atomic/fresh database operations and stable external hooks. No public API changes.
