@@ -131,7 +131,7 @@ namespace {
         && strpos($adapter, 'ReleaseApproval::consume(') > strpos($adapter, 'verifyProtectedSource( $release, $package )'),
         'Only the verified updater may consume owner approval.');
     ensure(is_string($controller) && strpos($controller, 'ReleaseApproval::consume(') === false
-        && strpos($controller, "'require_owner_approval' => $require_owner_approval") !== false,
+        && strpos($controller, "'require_owner_approval' => \$require_owner_approval") !== false,
         'MCP transport must defer owner consent until the guarded runtime.');
     echo "OAuth one-time browser owner approval, preflight and replay denial contract OK\n";
 }
