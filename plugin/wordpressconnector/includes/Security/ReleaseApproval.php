@@ -53,7 +53,7 @@ final class ReleaseApproval {
 	 */
 	private static function preview(): ?array {
 		try {
-			$data = ( new ConnectorUpdateAdapter() )->apply( array(), array( 'dry_run' => true ) );
+			$data = ( new ConnectorUpdateAdapter() )->apply( array(), array( 'dry_run' => true, 'require_release_provenance' => true ) );
 		} catch ( Throwable $error ) {
 			return null;
 		}
