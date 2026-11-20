@@ -188,6 +188,25 @@ foreach (array(
         exit(1);
     }
 }
+// Negative fixtures for decoded YAML run keys and executable scalar aliases.
+foreach (array(
+    '        "r\\u0075n": echo "${{ github.event.pull_request.title }}"',
+    '      - "r\\u0075n": echo "${{ github.event.pull_request.title }}"',
+    "        env:\n          COMMAND: &unsafe_command echo \"${{ github.event.pull_request.title }}\"\n        run: *unsafe_command",
+) as $unsafeYamlRun) {
+    $tampered = str_replace($inlineRunInsertion, "      - name: injected escaped or aliased run\n" . $unsafeYamlRun . "\n" . $inlineRunInsertion, $request);
+    if ($tampered === $request || ! $hasUntrustedPullRequestInline($tampered)) {
+        fwrite(STDERR, "Request workflow contract missed a decoded run key or YAML scalar alias.\n");
+        exit(1);
+    }
+}
+// An env sibling is data, not a continuation of a preceding one-line run.
+$safeSequenceSibling = "      - run: echo safe\n        env:\n          PR_TITLE: ${{ github.event.pull_request.title }}";
+$safeSibling = str_replace($inlineRunInsertion, $safeSequenceSibling . "\n" . $inlineRunInsertion, $request);
+if ($safeSibling === $request || $hasUntrustedPullRequestInline($safeSibling)) {
+    fwrite(STDERR, "Request workflow contract misclassified sequence-step env as Bash source.\n");
+    exit(1);
+}
 foreach (array(
     '        run: echo "${{ github.event.pull_request.base.sha }}"',
     '        run: echo "${{ github.event.pull_request.head.sha }}"',
