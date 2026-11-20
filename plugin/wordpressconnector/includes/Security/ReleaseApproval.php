@@ -98,9 +98,26 @@ final class ReleaseApproval {
 		if ( ! is_object( $screen ) || 'plugins' !== ( $screen->id ?? null ) ) {
 			return;
 		}
+		// The Plugins screen must never download release archives during normal rendering.
+		// Only an owner-initiated, nonce-protected review performs full verification.
+		$review = isset( $_GET['wpconnector_review_release'] ) && '1' === $_GET['wpconnector_review_release'];
+		$nonce = isset( $_GET['_wpnonce'] ) && is_string( $_GET['_wpnonce'] )
+			? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+		if ( ! $review || ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
+			$link = wp_nonce_url( admin_url( 'plugins.php?wpconnector_review_release=1' ), self::NONCE_ACTION );
+			echo '<div class="notice notice-info"><p>';
+			echo esc_html__( 'WordPress Connector: verify an available release before approving it.', 'wordpressconnector' );
+			echo ' <a href="' . esc_url( $link ) . '">';
+			echo esc_html__( 'Review Connector release', 'wordpressconnector' );
+			echo '</a></p></div>';
+			return;
+		}
 		$release = self::preview();
 		if ( null === $release ) {
-			return; // No verified newer release available: no approval action.
+			echo '<div class="notice notice-warning"><p>';
+			echo esc_html__( 'No verified Connector update is available for approval.', 'wordpressconnector' );
+			echo '</p></div>';
+			return;
 		}
 		echo '<div class="notice notice-warning"><p><strong>';
 		echo esc_html__( 'WordPress Connector: approve one verified release', 'wordpressconnector' );
@@ -180,6 +197,9 @@ final class ReleaseApproval {
 			|| $record['expires'] - $record['issued'] !== self::TTL_SECONDS ) {
 			return null;
 		}
+		if ( false !== get_option( self::CLAIM_PREFIX . $record['id'], false ) ) {
+			return null;
+		}
 		return $record;
 	}
 
@@ -212,7 +232,9 @@ final class ReleaseApproval {
 		if ( 1 !== $claimed ) {
 			return false;
 		}
-		delete_option( self::OPTION );
+		// Never delete the shared approval slot here: another owner's newer
+		// approval may have replaced it between our read and the atomic claim.
+		// currentApproval rejects a claimed ID, and the unique claim blocks reuse.
 		return true;
 	}
 
