@@ -17,12 +17,16 @@ function is_wp_error($value): bool { return false; }
 function wp_remote_retrieve_response_code(array $response): int { return (int) $response['response']['code']; }
 function wp_remote_retrieve_body(array $response): string { return (string) $response['body']; }
 function wp_safe_remote_get(string $url, array $opts): array {
-    if ($opts['redirection'] !== 0 || $opts['sslverify'] !== true || ($opts['limit_response_size'] ?? 0) > 524289) {
+    if ($opts['redirection'] !== 0 || $opts['sslverify'] !== true
+        || ($opts['limit_response_size'] ?? 0) < 1 || ($opts['limit_response_size'] ?? 0) > 8388609) {
         throw new RuntimeException('Untrusted source HTTP settings.');
     }
     $base = 'https://api.github.com/repos/Yolol100/wordpressconnector';
     if (strpos($url, $base . '/') !== 0) {
         throw new RuntimeException('Attempted to contact a noncanonical repository API.');
+    }
+    if (strpos($url, '/compare/') !== false && substr($url, -11) !== '?per_page=1') {
+        throw new RuntimeException('GitHub compare request must limit the commit listing.');
     }
     $GLOBALS['source_case']['calls'][] = $url;
     $mode = $GLOBALS['source_case']['mode'];
@@ -33,6 +37,8 @@ function wp_safe_remote_get(string $url, array $opts): array {
                 'sha' => $mode === 'bad_merge_base' ? str_repeat('c', 40) : RELEASE_TEST_COMMIT,
             ),
         );
+        if ($mode === 'large_compare') $payload['files'] = str_repeat('x', 700000);
+        if ($mode === 'oversized_compare') $payload['files'] = str_repeat('x', 8500000);
     } elseif (strpos($url, '/git/commits/') !== false) {
         $payload = array('tree' => array('sha' => RELEASE_TEST_TREE));
     } elseif (strpos($url, '/git/trees/') !== false) {
@@ -53,7 +59,12 @@ function wp_safe_remote_get(string $url, array $opts): array {
     if ($mode === 'network_down') {
         return array('response' => array('code' => 503), 'body' => 'temporary outage');
     }
-    return array('response' => array('code' => 200), 'body' => json_encode($payload));
+    // Match WordPress HTTP API limit_response_size truncation behavior.
+    $body = json_encode($payload);
+    if (strlen($body) > $opts['limit_response_size']) {
+        $body = substr($body, 0, $opts['limit_response_size']);
+    }
+    return array('response' => array('code' => 200), 'body' => $body);
 }
 
 require dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/ConnectorUpdateAdapter.php';
@@ -91,6 +102,13 @@ $pass();
 if (count($GLOBALS['source_case']['calls']) !== 3) {
     throw new RuntimeException('A legitimate protected-source proof must use compare, Git commit and Git tree.');
 }
+$GLOBALS['source_case']['mode'] = 'large_compare';
+$pass(); // A legitimate response above the old 512 KiB cap must still pass.
+$GLOBALS['source_case']['mode'] = 'oversized_compare';
+$oversizedDenied = false;
+try { $pass(); } catch (RuntimeException $error) { $oversizedDenied = true; }
+if (! $oversizedDenied) { throw new RuntimeException('Oversized GitHub API response must fail closed.'); }
+$GLOBALS['source_case']['mode'] = 'valid';
 foreach (array(
     'not_ancestor' => 'release commit not on main',
     'bad_merge_base' => 'release base mismatch',
