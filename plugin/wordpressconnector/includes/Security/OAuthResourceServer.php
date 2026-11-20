@@ -64,6 +64,18 @@ final class OAuthResourceServer {
 		if ( ! is_int( $data['user_id'] ) || $data['user_id'] <= 0 ) {
 			return null;
 		}
+		// The OAuth authorization client is distinct from the introspection
+		// credentials. Pin it only for providers exposing RFC 7662 client_id;
+		// dynamic client registration must be bound by the issuer's own policy.
+		if ( defined( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID' ) ) {
+			$token_client_id = constant( 'WPCONNECTOR_OAUTH_EXPECTED_TOKEN_CLIENT_ID' );
+			if ( ! is_string( $token_client_id ) || '' === $token_client_id
+				|| strlen( $token_client_id ) > 512
+				|| preg_match( '/[\\x00-\\x20\\x7f]/', $token_client_id ) ) {
+				return null;
+			}
+			$data['token_client_id'] = $token_client_id;
+		}
 		$issuer = wp_parse_url( $data['issuer'] );
 		$target = wp_parse_url( $data['introspection'] );
 		foreach ( array( $issuer, $target ) as $url ) {
@@ -355,6 +367,16 @@ final class OAuthResourceServer {
 			|| ( isset( $claims['token_type'] ) && ( ! is_string( $claims['token_type'] )
 				|| 0 !== strcasecmp( $claims['token_type'], 'Bearer' ) ) ) ) {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+		}
+		// Optional strict authorization-client binding. Never compare the
+		// token's client_id against the *introspection* client credentials.
+		// If the provider omits client_id, a configured pin must fail closed.
+		if ( isset( $config['token_client_id'] ) ) {
+			$token_client_id = $claims['client_id'] ?? null;
+			if ( ! is_string( $token_client_id )
+				|| ! hash_equals( $config['token_client_id'], $token_client_id ) ) {
+				return self::deny( 'wpconnector_oauth_client_denied', 'OAuth token client is not authorized.', 401 );
+			}
 		}
 		$audiences = $claims['aud'] ?? null;
 		$audiences = is_string( $audiences ) ? array( $audiences ) : $audiences;
