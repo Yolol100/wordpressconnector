@@ -28,7 +28,7 @@ require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/OAuth
 
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
-if ( OAuthResourceServer::isConfigured() || OAuthResourceServer::metadata() !== array() ) {
+if ( OAuthResourceServer::isConfigured() || OAuthResourceServer::selfUpdateConfigured() || OAuthResourceServer::metadata() !== array() ) {
 	throw new RuntimeException( 'No OAuth provider may be inferred from WordPress or GitHub credentials.' );
 }
 $auth = new OAuthResourceServer();

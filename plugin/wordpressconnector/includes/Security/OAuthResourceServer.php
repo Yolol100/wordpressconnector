@@ -18,11 +18,13 @@ namespace Webactueel\WordPressConnector\Security;
 final class OAuthResourceServer {
 	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
 	private const SCOPE     = 'wpconnector:read';
+	private const UPDATE_SCOPE = 'wpconnector:update';
 	private const MAX_TOKEN_AGE = 3600;
 	private const MAX_INTROSPECTION_BYTES = 16384;
 	private const RATE_LIMIT_PER_IP = 12;
 	private const RATE_LIMIT_GLOBAL = 60;
 	private bool $authenticated = false;
+	private bool $update_authorized = false;
 
 	/**
 	 * Return strictly configured, site-local OAuth settings.
@@ -83,6 +85,16 @@ final class OAuthResourceServer {
 		return null !== self::config();
 	}
 
+	/**
+	 * Site-owner opt-in for ChatGPT-initiated updates of this Connector only.
+	 * This never enables arbitrary PHP/filesystem modifications.
+	 */
+	public static function selfUpdateConfigured(): bool {
+		return self::isConfigured()
+			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' )
+			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' );
+	}
+
 	/** Exact OAuth audience used by this site and its MCP resource. */
 	public static function resource(): string {
 		return rest_url( self::NAMESPACE . '/mcp' );
@@ -116,11 +128,15 @@ final class OAuthResourceServer {
 		if ( null === $config ) {
 			return array();
 		}
+		$scopes = array( self::SCOPE );
+		if ( self::selfUpdateConfigured() ) {
+			$scopes[] = self::UPDATE_SCOPE;
+		}
 		return array(
 			'resource'                 => self::resource(),
 			'authorization_servers'    => array( $config['issuer'] ),
 			'bearer_methods_supported' => array( 'header' ),
-			'scopes_supported'         => array( self::SCOPE ),
+			'scopes_supported'         => $scopes,
 		);
 	}
 
@@ -190,13 +206,17 @@ final class OAuthResourceServer {
 	}
 
 	/** Exact challenge for the MCP OAuth discovery handshake. */
-	public static function challengeHeader(): string {
+	public static function challengeHeader( bool $include_update = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
 			return '';
 		}
-		return 'Bearer resource_metadata="' . $url . '", scope="' . self::SCOPE . '"';
+		$scopes = self::SCOPE;
+		if ( $include_update && self::selfUpdateConfigured() ) {
+			$scopes .= ' ' . self::UPDATE_SCOPE;
+		}
+		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
 
 	/** Advertise OAuth only for configured sites, never as a substitute for auth. */
@@ -255,6 +275,14 @@ final class OAuthResourceServer {
 		return true;
 	}
 
+	/**
+	 * Access to the release updater requires the separate OAuth update scope,
+	 * the owner's explicit opt-in and the linked user's update_plugins right.
+	 */
+	public function canSelfUpdate(): bool {
+		return $this->authenticated && $this->update_authorized;
+	}
+
 	/** Did this request actually authenticate using a valid external bearer? */
 	public function isAuthenticated(): bool {
 		return $this->authenticated;
@@ -269,6 +297,7 @@ final class OAuthResourceServer {
 	 */
 	public function authenticate( \WP_REST_Request $request ) {
 		$this->authenticated = false;
+		$this->update_authorized = false;
 		$authorization = (string) $request->get_header( 'authorization' );
 		if ( '' === $authorization || 0 !== stripos( $authorization, 'bearer' ) ) {
 			return null;
@@ -341,6 +370,9 @@ final class OAuthResourceServer {
 		if ( ! $user || ! user_can( $config['user_id'], 'manage_options' ) ) {
 			return self::deny( 'wpconnector_oauth_account_unavailable', 'Linked WordPress account is unavailable.', 403 );
 		}
+		$this->update_authorized = self::selfUpdateConfigured()
+			&& in_array( self::UPDATE_SCOPE, preg_split( '/ +/', $scope ), true )
+			&& user_can( $config['user_id'], 'update_plugins' );
 		wp_set_current_user( $config['user_id'] );
 		$this->authenticated = true;
 		return true;

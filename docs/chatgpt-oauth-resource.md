@@ -65,7 +65,7 @@ by removing the approval constant (or setting it to `false`).
 
 ## Scope and security boundaries
 
-- The first integration grants **read-only MCP access only**.
+- The default integration grants **read-only MCP access only**. A separately approved, opt-in `wpconnector:update` scope allows only the canonical Connector release updater, never general writes.
 - All OAuth bearer `tools/call` requests may execute only `connector.discover`
   or `site.identity.inspect`, `dry_run:true`, `confirm:false`, empty payload.
 - GitHub OIDC and existing WordPress session/Application Password permissions are
@@ -93,6 +93,96 @@ by removing the approval constant (or setting it to `false`).
   mean the provider supports ChatGPT, the OAuth grant succeeded, or the linked
   WordPress user explicitly consented. Real OAuth, multisite and provider tests
   are separate gates.
+
+## Optional, owner-approved Connector self-update from ChatGPT
+
+This capability is **disabled by default**. Once a trusted OAuth 2.1 authorization
+server has been connected, the site owner may separately configure in wp-config.php:
+
+```php
+define( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE', true );
+```
+
+Before a release can be approved, the WordPress server administrator must
+**independently verify the release artifact attestation** against the protected
+`Yolol100/wordpressconnector` repository, trusted release workflow,
+and the **exact ZIP bytes** (for example with the official `gh attestation
+verify` workflow), then pin the authenticated ZIP SHA-256 in the site's
+secure `wp-config.php`:
+
+```php
+// EXAMPLE PLACEHOLDER. Replace only after verifying trusted attestation.
+define( 'WPCONNECTOR_OAUTH_ATTESTED_RELEASE_SHA256', 'sha256:YOUR_VERIFIED_64_HEX_DIGEST' );
+```
+
+A GitHub release ZIP/checksum pair alone **does not prove provenance**.
+Without the independently verified, exact pinned digest the WordPress
+approval form remains unavailable and installation is denied. The plugin
+does **not** implement native Sigstore attestation verification; the manual
+attestation verification/pin is an explicit release prerequisite, not proof
+that any current real release was verified.
+
+After the provider is linked and this digest is pinned, the linked owner
+opens **WordPress → Plugins**, clicks **Review Connector release** to trigger a
+fresh, owner-initiated verification, reviews the release tag and ZIP digest,
+and then clicks **Approve this Connector release** with their real WordPress
+cookie session and nonce. That approval lasts at most 10 minutes and is
+one-use only. A ChatGPT-supplied `confirm:true` without this independent
+server-held browser approval always fails. No arbitrary OAuth client can
+create or renew the approval.
+
+Do not enable it based on a ChatGPT prompt alone. The exact linked WordPress
+account must currently possess `update_plugins`, and the access token must
+contain **both** `wpconnector:read` and `wpconnector:update`. Neither scope
+grants broad WordPress updates or arbitrary source-code editing.
+
+The update procedure in the ChatGPT MCP connection is:
+
+1. Call `wordpress_connector_release_preview` to inspect the **latest published**
+   canonical GitHub release, protected-`main` source proof, ZIP SHA-256 and
+   installed version. Copy the exact **64-character** `release_fingerprint` from
+   `structuredContent.result.data.release_fingerprint`; the site state token
+   is **not** a substitute for this field. Preview changes no WordPress files.
+2. Confirm the independent release attestation, pinned ZIP digest, offsite
+   recovery plan and explicit per-release authorization. The **linked owner**
+   must open WordPress **Plugins** in their own authenticated HTTPS browser,
+   click **Review Connector release** (a nonce-guarded explicit verification),
+   inspect the release details and then click **Approve this Connector release**. Approval lasts 10 minutes
+   and cannot be issued by the OAuth client or inferred from `confirm:true`.
+3. Call `wordpress_connector_release_apply` with a stable `request_id`,
+   the exact preview fingerprint as `expected_fingerprint`, and `confirm:true`.
+   The mutation lock, replay check, owner-approval **record ID**, and a fresh
+   complete protected-source preview run **before** reserving the request ID.
+   This prevents an unverified network failure from stranding a pending ID.
+   The database-unique claim must still match that exact preflighted approval
+   ID, even if a second approval replaced it while verification ran. The
+   guarded updater streams ZIP bytes with a 20 MiB + 1 byte HTTP transfer cap
+   and verifies checksum, protected source and installation preconditions
+   before consuming approval. Provably pre-upgrader failures are terminal;
+   once WordPress Core begins the upgrader, an uncertain outcome remains
+   pending for manual reconciliation. Repeat the **same** request ID to replay
+   a completed result. A new ID requires fresh owner approval. Never blindly
+   retry an unknown outcome.
+4. The existing `connector.update.apply` rechecks the canonical GitHub
+   `releases/latest` metadata, checksum, plugin ZIP identity and exact
+   protected-`main` source before the WordPress Core Upgrader runs. The
+   repository ancestry/tree check is **not a replacement** for the separately
+   verified artifact attestation and manual digest pin. Core temporary
+   backups may help with installation/readback failure; **post-success
+   rollback is not guaranteed**. Independently verify installed version,
+   activation, HTTPS presence and representative authenticated read operations.
+
+Never allow ChatGPT to submit raw PHP, arbitrary Git branches, file paths,
+external ZIP URLs or credentials as upgrade inputs. Development happens in
+a GitHub PR; tests, security review, approval and a separately published
+release precede any live installation. This feature installs no draft commit.
+
+**Important:** the OAuth protected-resource code in a draft PR does not
+enable ChatGPT itself. A real provider with OAuth Authorization Code + PKCE,
+approved user consent, site-local confidential introspection settings,
+workspace MCP registration and production-host `.well-known` routing
+remain separate prerequisites. Until these pass, the new tools remain
+unavailable on live WordPress.
 
 ## Release decision
 
