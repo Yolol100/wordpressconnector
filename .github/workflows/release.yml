@@ -87,6 +87,13 @@ jobs:
           unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
           unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
           python3 -m json.tool "$RUNNER_TEMP/wordpressconnector.spdx.json" >/dev/null
+          # Independent exact-byte SPDX/ZIP and dependency-manifest acceptance gate.
+          # No packaged Composer/npm manifest currently exists; if one appears,
+          # stop publication until locked vulnerability review is implemented.
+          python3 -B tests/release-supply-chain-tests.py
+          python3 -B scripts/verify-release-supply-chain.py \
+            "$RUNNER_TEMP/wordpressconnector.zip" \
+            "$RUNNER_TEMP/wordpressconnector.spdx.json"
           sha256sum "$RUNNER_TEMP/wordpressconnector.zip" | awk '{print $1 "  wordpressconnector.zip"}' > "$RUNNER_TEMP/wordpressconnector.zip.sha256"
           grep -Eq '^[a-f0-9]{64}  wordpressconnector\.zip$' "$RUNNER_TEMP/wordpressconnector.zip.sha256"
 

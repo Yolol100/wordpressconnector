@@ -55,6 +55,19 @@ class RequiredPrGateTests(unittest.TestCase):
             with self.subTest(mixed=path), self.assertRaises(gate.GateError):
                 gate.classify_paths(["plugin/wordpressconnector/new.php", path])
 
+    def test_quality_and_supply_chain_verifiers_are_immutable_via_normal_pr(self):
+        required = {
+            ".github/workflows/wpcs-audit.yml",
+            "scripts/wpcs-regression-gate.py",
+            "tests/wpcs-regression-gate-tests.py",
+            "scripts/verify-release-supply-chain.py",
+            "scripts/build-release-package.py",
+        }
+        self.assertTrue(required.issubset(gate.PROTECTED_GOVERNANCE_PATHS))
+        for path in sorted(required):
+            with self.subTest(path=path), self.assertRaises(gate.GateError):
+                gate.classify_paths([path])
+
     def test_runtime_transport_is_never_mergeable(self):
         for path in ("requests/temp.json", "results/private.json", "receipts/public.json", "assets/inbox/image.png"):
             with self.subTest(path=path), self.assertRaises(gate.GateError):
