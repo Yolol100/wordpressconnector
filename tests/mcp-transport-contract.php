@@ -56,6 +56,7 @@ namespace Webactueel\WordPressConnector\Security {
             return true;
         }
         public function isAuthenticated(): bool { return $this->authenticated; }
+        public static function isConfigured(): bool { return true; }
         public static function challenge(): void {}
     }
 }
@@ -447,6 +448,16 @@ namespace {
         array('Authorization' => 'Bearer accepted-test-token')
     ));
     $assert($oauthAuth === true && $oauthServer->isAuthenticated(), 'A validated OAuth identity is accepted for this MCP request.');
+    $oauthList = $oauthController->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list',
+        'params' => array('_meta' => $modernMeta),
+    ), $modernListHeaders))->get_data()['result']['tools'];
+    foreach ($oauthList as $entry) {
+        $expectedScheme = array(array('type' => 'oauth2', 'scopes' => array('wpconnector:read')));
+        $assert(($entry['securitySchemes'] ?? null) === $expectedScheme
+            && ($entry['_meta']['securitySchemes'] ?? null) === $expectedScheme,
+            'OAuth must advertise the exact least-privilege scope on each MCP tool for compatible ChatGPT clients.');
+    }
     $oauthCall = static function (array $arguments) use ($oauthController, $executeHeaders, $modernMeta): WP_REST_Response {
         return $oauthController->handle(new WP_REST_Request(array(
             'jsonrpc' => '2.0',
