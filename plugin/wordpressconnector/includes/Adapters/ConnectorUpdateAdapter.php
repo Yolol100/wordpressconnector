@@ -19,6 +19,7 @@ use Webactueel\WordPressConnector\Support\Fingerprint;
  */
 final class ConnectorUpdateAdapter {
 	private const RELEASE_API              = 'https://api.github.com/repos/Yolol100/wordpressconnector/releases/latest';
+	private const SOURCE_API               = 'https://api.github.com/repos/Yolol100/wordpressconnector';
 	private const PACKAGE_ASSET            = 'wordpressconnector.zip';
 	private const CHECKSUM_ASSET           = 'wordpressconnector.zip.sha256';
 	private const SBOM_ASSET               = 'wordpressconnector.spdx.json';
@@ -504,6 +505,7 @@ final class ConnectorUpdateAdapter {
 			'version'       => $current,
 			'release_tag'   => $release['tag'],
 			'package_digest' => $release['package_digest'],
+			'source_commit'  => $release['source_commit'],
 		);
 		$release_fingerprint = Fingerprint::make( $release_state );
 		$plan   = array(
@@ -514,6 +516,7 @@ final class ConnectorUpdateAdapter {
 			'checksum_asset'                  => self::CHECKSUM_ASSET,
 			'sbom_asset'                      => self::SBOM_ASSET,
 			'github_asset_digest'             => $release['package_digest'],
+			'source_commit'                  => $release['source_commit'],
 			'rollback_supported'              => false,
 			'installation_failure_recovery'   => 'wordpress_core_temp_backup',
 			'external_restore_required'       => false,
@@ -521,6 +524,16 @@ final class ConnectorUpdateAdapter {
 		);
 
 		if ( ! empty( $context['dry_run'] ) ) {
+			if ( ! empty( $context['require_release_provenance'] ) ) {
+				$preview_package = $this->download_verified_package( $release );
+				try {
+					$this->verifyProtectedSource( $release, $preview_package );
+				} finally {
+					if ( file_exists( $preview_package ) ) {
+						@unlink( $preview_package );
+					}
+				}
+			}
 			return array(
 				'would_update_connector' => $plan,
 				// Public release metadata and installed version only; safe for
@@ -541,6 +554,9 @@ final class ConnectorUpdateAdapter {
 
 		$package = $this->download_verified_package( $release );
 		try {
+			if ( ! empty( $context['require_release_provenance'] ) ) {
+				$this->verifyProtectedSource( $release, $package );
+			}
 			$actual_sha256 = substr( $release['package_digest'], 7 );
 
 			// WordPress Core can restore installation/readback failures via its temp
@@ -720,6 +736,8 @@ final class ConnectorUpdateAdapter {
 		}
 
 		$tag = (string) $decoded['tag_name'];
+		$source_commit = isset( $decoded['target_commitish'] ) && is_string( $decoded['target_commitish'] )
+			? strtolower( $decoded['target_commitish'] ) : '';
 		if ( ! preg_match( '/^v([0-9]+\.[0-9]+\.[0-9]+)\z/', $tag, $matches ) ) {
 			throw new RuntimeException( 'Canonical release tag must use vMAJOR.MINOR.PATCH.' );
 		}
@@ -768,6 +786,7 @@ final class ConnectorUpdateAdapter {
 			'sbom_url'        => $sbom_url,
 			'package_digest'  => $package_digest,
 			'checksum_digest' => $checksum_digest,
+			'source_commit'   => $source_commit,
 		);
 	}
 
@@ -818,6 +837,134 @@ final class ConnectorUpdateAdapter {
 				@unlink( $package );
 			}
 			throw $error;
+		}
+	}
+
+	/**
+	 * Fetch bounded JSON from only the canonical repository GitHub API.
+	 * A compromised release can never supply a remote URL to this method.
+	 *
+	 * @param string $path API path suffix assembled from validated Git SHA.
+	 * @param int $limit Maximum JSON response bytes.
+	 * @return array Decoded JSON object.
+	 */
+	private function trustedSourceJson( string $path, int $limit = 524288 ): array {
+		if ( ! preg_match( '#^/(compare/[a-f0-9]{40}\.\.\.main|git/commits/[a-f0-9]{40}|git/trees/[a-f0-9]{40}\?recursive=1)\z#', $path ) ) {
+			throw new RuntimeException( 'Invalid protected-source request path.' );
+		}
+		$response = wp_safe_remote_get(
+			self::SOURCE_API . $path,
+			array(
+				'timeout' => 8,
+				'redirection' => 0,
+				'limit_response_size' => $limit + 1,
+				'sslverify' => true,
+				'headers' => array(
+					'Accept' => 'application/vnd.github+json',
+					'User-Agent' => 'Webactueel-WordPressConnector',
+				),
+			)
+		);
+		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
+			throw new RuntimeException( 'Cannot verify the GitHub protected-main release source.' );
+		}
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( strlen( $body ) > $limit ) {
+			throw new RuntimeException( 'Protected source response exceeded its size limit.' );
+		}
+		$json = json_decode( $body, true );
+		if ( ! is_array( $json ) ) {
+			throw new RuntimeException( 'Protected source response was not valid JSON.' );
+		}
+		return $json;
+	}
+
+	/**
+	 * Independent release provenance: verify every decompressed plugin file
+	 * against the exact Git tree of a commit already in protected main.
+	 * GitHub release/checksum asset publishers cannot forge this source tree
+	 * without first changing protected main; this is not a claim of locally
+	 * verified Sigstore attestation.
+	 *
+	 * @param array $release Canonical release metadata.
+	 * @param string $package Already checksum/identity validated ZIP.
+	 */
+	private function verifyProtectedSource( array $release, string $package ): void {
+		$commit = $release['source_commit'] ?? '';
+		if ( ! is_string( $commit ) || ! preg_match( '/^[a-f0-9]{40}\z/', $commit ) ) {
+			throw new RuntimeException( 'Release must identify the exact approved protected-main commit.' );
+		}
+		// The authenticated GitHub API controls the protected main ancestry;
+		// the ZIP author cannot affect this proof by replacing release assets.
+		$compare = $this->trustedSourceJson( '/compare/' . $commit . '...main', 524288 );
+		if ( ! in_array( $compare['status'] ?? '', array( 'ahead', 'identical' ), true )
+			|| ( $compare['merge_base_commit']['sha'] ?? '' ) !== $commit ) {
+			throw new RuntimeException( 'Release commit is not an ancestor of protected main.' );
+		}
+		$git_commit = $this->trustedSourceJson( '/git/commits/' . $commit, 65536 );
+		$tree_sha = $git_commit['tree']['sha'] ?? '';
+		if ( ! is_string( $tree_sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $tree_sha ) ) {
+			throw new RuntimeException( 'Protected release commit has no canonical Git tree.' );
+		}
+		$tree = $this->trustedSourceJson( '/git/trees/' . $tree_sha . '?recursive=1', 524288 );
+		if ( true === ( $tree['truncated'] ?? null ) || ! isset( $tree['tree'] ) || ! is_array( $tree['tree'] ) ) {
+			throw new RuntimeException( 'Protected release source tree is incomplete.' );
+		}
+		$expected = array();
+		$root = 'plugin/wordpressconnector/';
+		foreach ( $tree['tree'] as $entry ) {
+			if ( ! is_array( $entry ) || ! isset( $entry['path'] ) || ! is_string( $entry['path'] )
+				|| 0 !== strpos( $entry['path'], $root ) ) {
+				continue;
+			}
+			if ( 'tree' === ( $entry['type'] ?? '' ) ) {
+				continue;
+			}
+			$relative = substr( $entry['path'], strlen( $root ) );
+			$sha = $entry['sha'] ?? '';
+			if ( 'blob' !== ( $entry['type'] ?? '' ) || ! in_array( $entry['mode'] ?? '', array( '100644', '100755' ), true )
+				|| ! is_string( $sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $sha )
+				|| ! preg_match( '#^[A-Za-z0-9._/-]+\z#', $relative )
+				|| false !== strpos( '/' . $relative . '/', '/../' )
+				|| false !== strpos( '/' . $relative . '/', '/./' ) ) {
+				throw new RuntimeException( 'Protected source contains an unexpected plugin file or symlink.' );
+			}
+			$path = 'wordpressconnector/' . $relative;
+			if ( isset( $expected[ $path ] ) ) {
+				throw new RuntimeException( 'Protected source has duplicate plugin entries.' );
+			}
+			$expected[ $path ] = $sha;
+		}
+		if ( count( $expected ) < 1 || count( $expected ) > self::MAX_ENTRIES
+			|| ! isset( $expected[ self::PLUGIN_FILE ] ) ) {
+			throw new RuntimeException( 'Protected source has no valid bounded Connector plugin tree.' );
+		}
+		$zip = new \ZipArchive();
+		if ( true !== $zip->open( $package, \ZipArchive::RDONLY ) ) {
+			throw new RuntimeException( 'Cannot open the checksum-validated release ZIP for source verification.' );
+		}
+		try {
+			if ( $zip->numFiles !== count( $expected ) ) {
+				throw new RuntimeException( 'Release ZIP file set differs from protected main source.' );
+			}
+			foreach ( $expected as $name => $git_sha ) {
+				$index = $zip->locateName( $name, \ZipArchive::FL_UNCHANGED );
+				if ( false === $index ) {
+					throw new RuntimeException( 'Release ZIP is missing a file from protected main.' );
+				}
+				$stat = $zip->statIndex( $index, \ZipArchive::FL_UNCHANGED );
+				if ( ! is_array( $stat ) || (int) ( $stat['size'] ?? -1 ) < 0
+					|| (int) $stat['size'] > 20971520 ) {
+					throw new RuntimeException( 'Protected source verification refused an oversized ZIP entry.' );
+				}
+				$bytes = $zip->getFromIndex( $index, 0, \ZipArchive::FL_UNCHANGED );
+				if ( ! is_string( $bytes )
+					|| ! hash_equals( $git_sha, sha1( 'blob ' . strlen( $bytes ) . "\0" . $bytes ) ) ) {
+					throw new RuntimeException( 'Release ZIP bytes differ from the protected main commit.' );
+				}
+			}
+		} finally {
+			$zip->close();
 		}
 	}
 
