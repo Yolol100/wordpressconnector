@@ -73,14 +73,23 @@ namespace {
         if (false !== strpos($url, '.sha256')) {
             return array('code' => 200, 'body' => str_repeat('a', 64) . "  wordpressconnector.zip\n");
         }
+        if (preg_match('#^https://github\\.com/Yolol100/wordpressconnector/releases/download/v[0-9]+\\.[0-9]+\\.[0-9]+/wordpressconnector\\.zip$#', $url)) {
+            ++$GLOBALS['download_calls'];
+            if (true !== ($options['stream'] ?? null)
+                || ! is_string($options['filename'] ?? null)
+                || ! is_file($options['filename'])
+                || ($options['limit_response_size'] ?? 0) !== 20971521
+                || true !== ($options['sslverify'] ?? null)) {
+                throw new \\RuntimeException('The native update must require bounded verified HTTP streaming.');
+            }
+            return new WP_Error('test_no_download', 'Synthetic bounded stream refuses downloads.');
+        }
         return new WP_Error('unexpected_url', 'Unexpected request.');
     }
     function wp_remote_retrieve_response_code(array $response): int { return (int) $response['code']; }
     function wp_remote_retrieve_body(array $response): string { return (string) $response['body']; }
-    function download_url(string $url, int $timeout = 30)
-    {
-        ++$GLOBALS['download_calls'];
-        return new WP_Error('test_no_download', 'Fake transport refuses downloads.');
+    function wp_tempnam(string $filename) {
+        return tempnam(sys_get_temp_dir(), 'connector-native-');
     }
 
     $root = dirname(__DIR__);
