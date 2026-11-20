@@ -559,9 +559,10 @@ final class ConnectorUpdateAdapter {
 		// inactive after a successful file-version readback.
 		add_filter( 'upgrader_pre_install', array( $upgrader, 'active_before' ), 10, 2 );
 		add_filter( 'upgrader_post_install', array( $upgrader, 'active_after' ), 10, 2 );
-		$this->verified_self_update_package_path = $package;
-		$result = null;
+		$result          = null;
 		$execution_error = null;
+
+		$this->verified_self_update_package_path = $package;
 		try {
 			// A failure from this point may leave an uncertain file state.
 			$this->upgrader_started = true;
