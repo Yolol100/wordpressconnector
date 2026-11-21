@@ -251,6 +251,20 @@ must( null === internal( 'authorization_params', array( $filesParams ) ),
 define( 'WPCONNECTOR_OAUTH_STAGING_ORIGIN', 'https://example.invalid' );
 must( null !== internal( 'authorization_params', array( $filesParams ) ) && NativeOAuthServer::staging_files_enabled(),
     'Only server opt-in, exact origin and staging environment enable file grants.' );
+must( 'wpconnector:read' === internal( 'consent_scope', array( 'wpconnector:read', 'approve', false ) ),
+    'Normal read-only consent remains available without file-editor permission.' );
+must( 'wpconnector:read' === internal( 'consent_scope', array( $filesParams['scope'], 'approve', false ) ),
+    'A staging file request may be safely downscoped to read-only when WordPress blocks file editors.' );
+must( 'wpconnector:read' === internal( 'consent_scope', array( $filesParams['scope'], 'approve', true ) ),
+    'An editor-capable administrator can still choose a read-only grant.' );
+must( null === internal( 'consent_scope', array( $filesParams['scope'], 'approve_files', false ) ),
+    'Explicit staging file consent is refused without WordPress file-editor permission.' );
+must( $filesParams['scope'] === internal( 'consent_scope', array( $filesParams['scope'], 'approve_files', true ) ),
+    'File scope is issued only after distinct consent and WordPress capabilities.' );
+must( null === internal( 'consent_scope', array( 'wpconnector:read', 'approve_files', true ) ),
+    'An attacker cannot add unrequested file scope using a forged consent decision.' );
+must( null === internal( 'consent_scope', array( $filesParams['scope'], 'deny', true ) ),
+    'Deny never issues a read or file grant.' );
 $GLOBALS['home_origin'] = 'https://other.example.invalid';
 must( null === internal( 'authorization_params', array( $filesParams ) ),
     'Cloned or misdirected origin cannot inherit file editing even when marked staging.' );
@@ -392,6 +406,21 @@ $swapped_body = base_token( 'authorization_code', $swapped_code, $verifier );
 must( 'invalid_grant' === $server->token( token_request( $swapped_body ) )->get_data()['error'], 'Code cannot be exchanged using another registered redirect' );
 delete_option( 'wpconnector_native_oauth_registered_redirect' );
 must( null === internal( 'authorization_params', array( $custom_request ) ), 'Removed callback is denied again' );
+
+// Issue an actual reduced-scope token from an optional file request.
+$GLOBALS['environment'] = 'staging';
+$GLOBALS['file_edit_allowed'] = false;
+$downscopedOwner = $owner;
+$downscopedOwner['scope'] = internal( 'consent_scope', array( $filesParams['scope'], 'approve', false ) );
+$downscopedCode = internal( 'issue', array( 'code', $downscopedOwner, 300 ) );
+$downscopedToken = $server->token( token_request( base_token( 'authorization_code', $downscopedCode, $verifier ) ) );
+must( 200 === $downscopedToken->get_status() && 'wpconnector:read' === $downscopedToken->get_data()['scope'],
+    'OAuth token response reports reduced read-only scope instead of silently granting file rights.' );
+$downscopedResource = new OAuthResourceServer();
+must( true === $downscopedResource->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $downscopedToken->get_data()['access_token'] ) ) )
+    && ! $downscopedResource->can_edit_staging_files(),
+    'Downscoped bearer can authenticate without file-editor rights but cannot access files.' );
+$GLOBALS['environment'] = 'production';
 
 $authenticated = new OAuthResourceServer();
 $GLOBALS['environment'] = 'staging';
