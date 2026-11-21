@@ -71,7 +71,7 @@ final class ReleaseApproval {
 			$data = ( new ConnectorUpdateAdapter() )->apply(
 				array(),
 				array(
-					'dry_run'                   => true,
+					'dry_run'                    => true,
 					'require_release_provenance' => true,
 				)
 			);
