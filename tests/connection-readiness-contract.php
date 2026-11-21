@@ -133,7 +133,9 @@ namespace {
         'render_connection_recovery_guide()',
         'new ConnectionReadinessAdapter()',
         'Not independently verified',
-        'trusted OAuth 2.1 provider',
+        'WordPress-hosted OAuth',
+        'wpconnector_native_oauth_mode',
+        'Disable and revoke all ChatGPT OAuth tokens',
         'database',
         'separate staging site',
     ) as $needle) {

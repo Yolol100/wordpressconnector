@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace Webactueel\WordPressConnector\Admin;
 
 use Webactueel\WordPressConnector\Security\SitePairing;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter;
 
 /**
@@ -336,6 +337,7 @@ final class Settings {
 		$recovery = $status['recovery'];
 
 		echo '<h2>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</h2>';
+		$this->render_native_oauth_controls();
 		echo '<p>' . esc_html__( 'This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector' ) . '</p>';
 		echo '<div class="wpconnector-connection-doctor" style="max-width:900px; margin:16px 0">';
 		echo '<p><label for="wpconnector-mcp-address"><strong>' . esc_html__( 'Your WordPress MCP endpoint', 'wordpressconnector' ) . '</strong></label></p>';
@@ -356,7 +358,7 @@ final class Settings {
 			__( 'GitHub site pairing', 'wordpressconnector' ) =>
 				$site['github_pairing_recorded'] ? __( 'Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector' ) : __( 'Not recorded', 'wordpressconnector' ),
 			__( 'Direct ChatGPT OAuth', 'wordpressconnector' ) =>
-				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : ( ! empty( $oauth['oauth_provider_configured'] ) ? __( 'OAuth resource configured; external login and consent have not been verified', 'wordpressconnector' ) : __( 'Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector' ) ),
+				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : ( ! empty( $oauth['oauth_provider_configured'] ) ? __( 'OAuth resource configured; external login and consent have not been verified', 'wordpressconnector' ) : __( 'Not configured: enable WordPress-hosted OAuth or configure a trusted external provider', 'wordpressconnector' ) ),
 			__( 'Full database and files backup', 'wordpressconnector' ) =>
 				__( 'Not independently verified', 'wordpressconnector' ),
 			__( 'Copy stored outside this hosting account', 'wordpressconnector' ) =>
@@ -377,7 +379,7 @@ final class Settings {
 		}
 
 		echo '<ol>';
-		echo '<li>' . esc_html__( 'First enable a trusted OAuth 2.1 provider or broker with PKCE, token validation and explicit WordPress-account linking. Do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector' ) . '</li>';
+		echo '<li>' . esc_html__( 'Enable the WordPress-hosted OAuth server here, or configure a trusted external OAuth provider. Then use explicit WordPress consent with PKCE. Never share Application Passwords.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'In a ChatGPT workspace that permits custom MCP connections, an admin must add the HTTPS MCP endpoint and approve OAuth linking.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'Configure a full backup with the hosting or backup provider: files plus database, with an independent offsite copy.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'Restore that backup on a separate staging site and confirm that content, files, plugins and the database are intact before high-risk writes.', 'wordpressconnector' ) . '</li>';
@@ -394,6 +396,33 @@ final class Settings {
 	 *
 	 * @return bool Operation result.
 	 */
+	private function render_native_oauth_controls(): void {
+		$enabled = NativeOAuthServer::is_enabled();
+		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (read-only, opt-in)', 'wordpressconnector' ) . '</h3>';
+		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. MCP bearer tokens cannot edit content or install updates. This option is disabled until you explicitly enable it.', 'wordpressconnector' ) . '</p>';
+		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
+			echo '<p>' . esc_html__( 'An external OAuth provider is already configured. Native OAuth cannot be enabled at the same time.', 'wordpressconnector' ) . '</p>';
+			return;
+		}
+		echo '<p><strong>' . esc_html( $enabled ? __( 'Enabled: consent required for each link', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) ) . '</strong></p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'wpconnector_native_oauth_mode' );
+		echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
+		echo '<input type="hidden" name="native_oauth_decision" value="' . esc_attr( $enabled ? 'disable' : 'enable' ) . '" />';
+		submit_button(
+			$enabled
+			? __( 'Disable and revoke all ChatGPT OAuth tokens', 'wordpressconnector' )
+			: __( 'Enable WordPress-hosted OAuth', 'wordpressconnector' ),
+			$enabled ? 'secondary' : 'primary'
+		);
+		echo '</form>';
+		if ( $enabled ) {
+			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::issuer() . '/.well-known/oauth-authorization-server' ) . '</code></p>';
+			echo '<p>' . esc_html__( 'Tokens expire after 15 minutes and rotate on refresh. Disable OAuth here to immediately revoke all previously issued connections. Live ChatGPT consent must be tested separately.', 'wordpressconnector' ) . '</p>';
+		}
+	}
+
+	/** Report whether the legacy OAuth bridge is active. */
 	private function legacy_bridge_active(): bool {
 		if ( class_exists( 'Webactueel\\ElementorJsonBridge\\Plugin' ) ) {
 			return true; }

@@ -50,6 +50,7 @@ use Webactueel\WordPressConnector\REST\AssetStore;
 use Webactueel\WordPressConnector\REST\Controller;
 use Webactueel\WordPressConnector\MCP\Controller as McpController;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Security\ReleaseApproval;
 use Webactueel\WordPressConnector\Runtime\ProcessedStore;
 use Webactueel\WordPressConnector\Runtime\Registry;
@@ -122,6 +123,7 @@ final class Plugin {
 		( new ElementorJsonImport() )->register();
 		$rest_controller = new Controller( $runner, new AssetStore() );
 		$rest_controller->register();
+		( new NativeOAuthServer() )->register();
 		$oauth_resource = new OAuthResourceServer();
 		$oauth_resource->register();
 		( new ReleaseApproval() )->register();
