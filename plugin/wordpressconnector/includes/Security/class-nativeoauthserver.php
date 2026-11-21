@@ -405,6 +405,7 @@ final class NativeOAuthServer {
 			check_admin_referer( self::consent_nonce( $params ) );
 			$decision = isset( $_POST['wpconnector_oauth_decision'] ) && is_string( $_POST['wpconnector_oauth_decision'] )
 				? sanitize_text_field( wp_unslash( $_POST['wpconnector_oauth_decision'] ) ) : '';
+
 			$granted_scope = self::consent_scope( $params['scope'], $decision, $files_permitted );
 			if ( null === $granted_scope ) {
 				self::send_callback( $params, array( 'error' => 'access_denied' ) );
