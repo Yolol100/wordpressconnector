@@ -32,7 +32,7 @@ def run_case(baseline, current, expected, name):
         basefile.write_text(json.dumps(baseline), encoding="utf-8")
         nowfile.write_text(json.dumps(current), encoding="utf-8")
         result = subprocess.run(
-            [sys.executable, "-B", str(SCRIPT), str(basefile), str(nowfile)],
+            [sys.executable, "-I", "-B", str(SCRIPT), str(basefile), str(nowfile)],
             text=True, capture_output=True, check=False,
         )
         if result.returncode != expected:
@@ -75,7 +75,7 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     basefile, nowfile = root / "before.json", root / "after.json"
     basefile.write_text(json.dumps(report), encoding="utf-8")
     nowfile.write_text(json.dumps(report), encoding="utf-8")
-    cmd = [sys.executable, "-B", str(SCRIPT), str(basefile), str(nowfile),
+    cmd = [sys.executable, "-I", "-B", str(SCRIPT), str(basefile), str(nowfile),
            "--base-root", str(base_root), "--current-root", str(candidate_root)]
     changed = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if changed.returncode != 1 or "unsafe_new" not in changed.stdout:
@@ -84,4 +84,31 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     stable = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if stable.returncode != 0:
         raise AssertionError("Identical source lines should pass exact-file/sniff gate")
+
+    # PHPCS is silent about locally suppressed findings. Verify the exact
+    # trusted-base PHP comment lines, even when both JSON reports match.
+    allowed = "<?php\nunsafe_old();\n// phpcs:ignore WordPress.Security.EscapeOutput\n"
+    (base_root / rel).write_text(allowed, encoding="utf-8")
+    (candidate_root / rel).write_text(allowed, encoding="utf-8")
+    baseline_ok = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if baseline_ok.returncode != 0:
+        raise AssertionError("Existing identical suppression must retain baseline acceptance")
+    for added in ("// phpcs:disable\n", "// phpcs:set WordPress.Debug false\n",
+                  "// @codingStandardsIgnoreStart\n", "// @codingStandardsIgnoreLine\n"):
+        (candidate_root / rel).write_text(allowed + added, encoding="utf-8")
+        rejected = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        if rejected.returncode != 1 or "NEW PHP_CodeSniffer suppression" not in rejected.stdout:
+            raise AssertionError("New PHPCS suppression must fail even with identical JSON evidence")
+    (candidate_root / rel).write_text(
+        allowed.replace("phpcs:ignore", "phpcs:ignoreFile"), encoding="utf-8")
+    broadened = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if broadened.returncode != 1:
+        raise AssertionError("Broadening an existing suppression must fail closed")
+    (candidate_root / rel).write_text(
+        "<?php\nunsafe_old();\nnew_code();\n"
+        "// phpcs:ignore WordPress.Security.EscapeOutput\n", encoding="utf-8")
+    relocated = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if relocated.returncode != 1 or "NEW PHP_CodeSniffer suppression" not in relocated.stdout:
+        raise AssertionError("Moving a baseline suppression within one file must fail")
+
 print("WPCS per-file/sniff/source-line baseline regression and fail-closed parser tests OK")
