@@ -20,6 +20,7 @@ final class NativeOAuthServer {
 	private const OPT_REDIRECT     = 'wpconnector_native_oauth_registered_redirect';
 	private const STORE_PREFIX     = 'wpconnector_native_oauth_';
 	private const SCOPE            = 'wpconnector:read';
+	private const FILES_SCOPE      = 'wpconnector:files';
 	private const CODE_TTL         = 300;
 	private const ACCESS_TTL       = 900;
 	private const REFRESH_TTL      = 2592000;
@@ -62,6 +63,25 @@ final class NativeOAuthServer {
 			&& $approval['approved_by'] > 0;
 	}
 
+	/**
+	 * File editing over ChatGPT OAuth is never enabled automatically.
+	 * It requires both an explicit site-owner server constant and WordPress
+	 * identifying this installation as staging. No production fallback.
+	 */
+	public static function staging_files_enabled(): bool {
+		return self::is_enabled()
+			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES' )
+			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES' )
+			&& function_exists( 'wp_get_environment_type' )
+			&& 'staging' === wp_get_environment_type();
+	}
+
+	/** Verify the exact set of OAuth scopes before issuing or renewing a grant. */
+	private static function scope_allowed( string $scope ): bool {
+		return self::SCOPE === $scope
+			|| ( self::SCOPE . ' ' . self::FILES_SCOPE === $scope && self::staging_files_enabled() );
+	}
+
 	/** Issuer. */
 	public static function issuer(): string {
 		return rtrim( home_url( '/' ), '/' );
@@ -84,7 +104,7 @@ final class NativeOAuthServer {
 			'revocation_endpoint_auth_methods_supported' => array( 'none' ),
 			'client_id_metadata_document_supported'      => true,
 			'authorization_response_iss_parameter_supported' => true,
-			'scopes_supported'                           => array( self::SCOPE ),
+			'scopes_supported'                           => self::staging_files_enabled() ? array( self::SCOPE, self::FILES_SCOPE ) : array( self::SCOPE ),
 		);
 	}
 
@@ -262,10 +282,12 @@ final class NativeOAuthServer {
 			|| ! preg_match( '/\A[A-Za-z0-9_-]{43}\z/D', $data['code_challenge'] )
 			|| ! preg_match( '/\A[A-Za-z0-9._~-]{8,1024}\z/D', $data['state'] )
 			|| OAuthResourceServer::resource() !== $data['resource']
-			|| ! in_array( $data['scope'], array( '', self::SCOPE ), true ) ) {
+			|| ! in_array( $data['scope'], self::staging_files_enabled() ? array( '', self::SCOPE, self::SCOPE . ' ' . self::FILES_SCOPE ) : array( '', self::SCOPE ), true ) ) {
 			return null;
 		}
-		$data['scope'] = self::SCOPE;
+		if ( '' === $data['scope'] ) {
+			$data['scope'] = self::SCOPE;
+		}
 		return $data;
 	}
 
@@ -338,11 +360,16 @@ final class NativeOAuthServer {
 		if ( ! self::client_valid( $params['client_id'], $params['redirect_uri'] ) ) {
 			wp_die( 'Untrusted OAuth client metadata.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
+		$files_requested = self::SCOPE . ' ' . self::FILES_SCOPE === $params['scope'];
+		if ( $files_requested && ( ! self::staging_files_enabled()
+			|| ( ! current_user_can( 'edit_plugins' ) && ! current_user_can( 'edit_themes' ) ) ) ) {
+			wp_die( 'Staging file editing is not authorized for this administrator.', 'Access denied', array( 'response' => 403 ) );
+		}
 		if ( 'POST' === $method ) {
 			check_admin_referer( self::consent_nonce( $params ) );
 			$decision = isset( $_POST['wpconnector_oauth_decision'] ) && is_string( $_POST['wpconnector_oauth_decision'] )
 				? sanitize_text_field( wp_unslash( $_POST['wpconnector_oauth_decision'] ) ) : '';
-			if ( 'approve' !== $decision ) {
+			if ( ( $files_requested && 'approve_files' !== $decision ) || ( ! $files_requested && 'approve' !== $decision ) ) {
 				self::send_callback( $params, array( 'error' => 'access_denied' ) );
 			}
 			$code = self::issue(
@@ -353,7 +380,7 @@ final class NativeOAuthServer {
 					'redirect_uri'   => $params['redirect_uri'],
 					'code_challenge' => $params['code_challenge'],
 					'resource'       => $params['resource'],
-					'scope'          => self::SCOPE,
+					'scope'          => $params['scope'],
 				),
 				self::CODE_TTL
 			);
@@ -366,7 +393,11 @@ final class NativeOAuthServer {
 		header( 'Referrer-Policy: no-referrer', true );
 		header( 'X-Frame-Options: DENY', true );
 		$html  = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
-		$html .= '<p>' . esc_html__( 'Allow the verified ChatGPT client to inspect this site with your current administrator permissions. This connection cannot edit content or install updates.', 'wordpressconnector' ) . '</p>';
+		if ( $files_requested ) {
+			$html .= '<p>' . esc_html__( 'Allow staging-only edits to existing CSS, TXT and Markdown files in plugin/theme folders. PHP, JavaScript, WordPress core and Connector files remain blocked. Each change still needs explicit confirmation, original-file checksum and rollback.', 'wordpressconnector' ) . '</p>';
+		} else {
+			$html .= '<p>' . esc_html__( 'Allow the verified ChatGPT client to inspect this site with your current administrator permissions. This connection cannot edit content or install updates.', 'wordpressconnector' ) . '</p>';
+		}
 		$html .= '<p><strong>' . esc_html( home_url( '/' ) ) . '</strong></p>';
 		$html .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		$html .= '<input type="hidden" name="action" value="wpconnector_oauth_authorize" />';
@@ -374,7 +405,7 @@ final class NativeOAuthServer {
 			$html .= '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" />';
 		}
 		$html .= wp_nonce_field( self::consent_nonce( $params ), '_wpnonce', true, false );
-		$html .= '<p><button type="submit" name="wpconnector_oauth_decision" value="approve">' . esc_html__( 'Allow read-only access', 'wordpressconnector' ) . '</button> ';
+		$html .= '<p><button type="submit" name="wpconnector_oauth_decision" value="' . ( $files_requested ? 'approve_files' : 'approve' ) . '">' . esc_html( $files_requested ? __( 'Allow staging file edits', 'wordpressconnector' ) : __( 'Allow read-only access', 'wordpressconnector' ) ) . '</button> ';
 		$html .= '<button type="submit" name="wpconnector_oauth_decision" value="deny">' . esc_html__( 'Deny', 'wordpressconnector' ) . '</button></p></form>';
 		wp_die(
 			wp_kses(
@@ -553,7 +584,7 @@ final class NativeOAuthServer {
 			'user_id'    => (int) $data['user_id'],
 			'client_id'  => self::CLIENT_ID,
 			'aud'        => array( OAuthResourceServer::resource() ),
-			'scope'      => self::SCOPE,
+			'scope'      => $data['scope'],
 			'exp'        => $data['expires_at'],
 			'iat'        => $data['issued_at'],
 			'token_type' => 'Bearer',
@@ -575,7 +606,8 @@ final class NativeOAuthServer {
 			&& ( $grant['user_id'] ?? null ) === ( $owner['user_id'] ?? null )
 			&& ( $grant['client_id'] ?? '' ) === self::CLIENT_ID
 			&& ( $grant['resource'] ?? '' ) === OAuthResourceServer::resource()
-			&& ( $grant['scope'] ?? '' ) === self::SCOPE;
+			&& ( $grant['scope'] ?? '' ) === ( $owner['scope'] ?? '' )
+			&& self::scope_allowed( (string) ( $owner['scope'] ?? '' ) );
 	}
 
 	/**
@@ -601,7 +633,8 @@ final class NativeOAuthServer {
 		return is_int( $id ) && $id > 0
 			&& ( $data['client_id'] ?? '' ) === self::CLIENT_ID
 			&& ( $data['resource'] ?? '' ) === OAuthResourceServer::resource()
-			&& ( $data['scope'] ?? '' ) === self::SCOPE
+			&& self::scope_allowed( (string) ( $data['scope'] ?? '' ) )
+			&& ( self::SCOPE === $data['scope'] || user_can( $id, 'edit_plugins' ) || user_can( $id, 'edit_themes' ) )
 			&& (bool) get_userdata( $id )
 			&& user_can( $id, 'manage_options' );
 	}
@@ -694,7 +727,7 @@ final class NativeOAuthServer {
 			'user_id'             => $owner['user_id'],
 			'client_id'           => self::CLIENT_ID,
 			'resource'            => OAuthResourceServer::resource(),
-			'scope'               => self::SCOPE,
+			'scope'               => $owner['scope'],
 			'_oauth_installation' => $owner['_oauth_installation'],
 			'issued_at'           => $now,
 			'expires_at'          => $now + self::ACCESS_TTL,
@@ -715,7 +748,7 @@ final class NativeOAuthServer {
 				'token_type'    => 'Bearer',
 				'expires_in'    => self::ACCESS_TTL,
 				'refresh_token' => $refresh,
-				'scope'         => self::SCOPE,
+				'scope'         => $owner['scope'],
 			),
 			200
 		);
@@ -765,7 +798,7 @@ final class NativeOAuthServer {
 					'user_id'             => $data['user_id'],
 					'client_id'           => self::CLIENT_ID,
 					'resource'            => OAuthResourceServer::resource(),
-					'scope'               => self::SCOPE,
+					'scope'               => $data['scope'],
 					'_oauth_installation' => $data['_oauth_installation'],
 				),
 				self::REFRESH_TTL
