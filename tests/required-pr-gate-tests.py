@@ -61,9 +61,11 @@ class RequiredPrGateTests(unittest.TestCase):
     def test_quality_and_supply_chain_verifiers_are_immutable_via_normal_pr(self):
         required = {
             ".github/workflows/wpcs-audit.yml",
+            "phpcs.xml.dist",
             "scripts/wpcs-regression-gate.py",
             "tests/wpcs-regression-gate-tests.py",
             "scripts/verify-release-supply-chain.py",
+            "tests/release-supply-chain-tests.py",
             "scripts/build-release-package.py",
         }
         self.assertTrue(required.issubset(gate.PROTECTED_GOVERNANCE_PATHS))
