@@ -14,6 +14,8 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
+use Webactueel\WordPressConnector\Security\FilesystemPolicy;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
 /**
@@ -98,6 +100,22 @@ final class Controller {
 		if ( null !== $this->oauth_resource ) {
 			$oauth_result = $this->oauth_resource->authenticate( $request );
 			if ( null !== $oauth_result ) {
+				// Request a fresh OAuth grant before running a staging file tool.
+				// An insufficient-scope error at the HTTP gate lets MCP clients
+				// invoke their standard authorization step-up flow.
+				if ( true === $oauth_result && $this->oauth_resource->isAuthenticated()
+					&& NativeOAuthServer::staging_files_enabled() && ! $this->oauth_resource->can_edit_staging_files() ) {
+					$message = $request->get_json_params();
+					$params  = is_array( $message ) ? ( $message['params'] ?? null ) : null;
+					$args    = is_array( $params ) ? ( $params['arguments'] ?? null ) : null;
+					$action  = is_array( $args ) ? ( $args['action'] ?? null ) : null;
+					if ( is_array( $message ) && 'tools/call' === ( $message['method'] ?? null )
+						&& is_array( $params ) && 'wordpress_connector_execute' === ( $params['name'] ?? null )
+						&& in_array( $action, array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ), true ) ) {
+						OAuthResourceServer::challenge( 'insufficient_scope', true );
+						return new \WP_Error( 'wpconnector_oauth_scope_denied', 'Staging file access requires separate OAuth approval.', array( 'status' => 403 ) );
+					}
+				}
 				return $oauth_result;
 			}
 		}
@@ -663,7 +681,7 @@ final class Controller {
 				);
 				$scopes    = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
 				if ( 'wordpress_connector_execute' === $tool['name']
-					&& \Webactueel\WordPressConnector\Security\NativeOAuthServer::staging_files_enabled() ) {
+					&& NativeOAuthServer::staging_files_enabled() ) {
 					$scopes = array( 'wpconnector:read', 'wpconnector:files' );
 				}
 				$schemes                          = array(
@@ -753,14 +771,31 @@ final class Controller {
 			return false;
 		}
 		$path = $payload['path'];
-		if ( strlen( $path ) > 240 || ! preg_match( '#\\Awp-content/(plugins|themes)/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_.-]+)+\\z#D', $path )
-			|| false !== strpos( $path, '..' ) || false !== strpos( $path, '/.' ) ) {
+		try {
+			$normalized = FilesystemPolicy::assertListable( $path );
+		} catch ( RuntimeException $error ) {
+			return false;
+		}
+		if ( $path !== $normalized ) {
+			return false;
+		}
+		$segments = explode( '/', $path );
+		if ( count( $segments ) < 2 || 'wp-content' !== $segments[0]
+			|| ! in_array( $segments[1], array( 'plugins', 'themes' ), true ) ) {
 			return false;
 		}
 		if ( 'filesystem.list' === $action ) {
 			return $dry_run && ! $confirm && array_keys( $payload ) === array( 'path' );
 		}
-		if ( ! preg_match( '/\\.(?:css|txt|md)\\z/iD', $path ) ) {
+		// Require a file within an actual plugin/theme folder, never a root
+		// file. Reuse the adapter's canonical path and secret protections.
+		if ( count( $segments ) < 4
+			|| ! in_array( strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ), array( 'css', 'txt', 'md' ), true ) ) {
+			return false;
+		}
+		try {
+			FilesystemPolicy::assertWritableText( $path );
+		} catch ( RuntimeException $error ) {
 			return false;
 		}
 		if ( 'filesystem.read_text' === $action ) {
