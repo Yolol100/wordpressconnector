@@ -129,7 +129,7 @@ function add_action( string $name, $callback, int $priority = 10 ): void { $GLOB
 function wp_unslash( $value ) { return $value; }
 function wp_json_encode( $value, int $flags = 0 ): string { return (string) json_encode( $value, $flags ); }
 
-require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/NativeOAuthServer.php';
+require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/class-nativeoauthserver.php';
 require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/OAuthResourceServer.php';
 
 use Webactueel\WordPressConnector\Security\NativeOAuthServer;
@@ -140,7 +140,9 @@ function must( bool $test, string $why ): void {
 }
 function internal( string $method, array $args = array() ) {
 	$r = new ReflectionMethod( NativeOAuthServer::class, $method );
-	$r->setAccessible( true ); // Required for private method invocation on PHP 7.4/8.0.
+	if ( PHP_VERSION_ID < 80100 ) {
+		$r->setAccessible( true ); // Private reflection requires this before PHP 8.1.
+	}
 	return $r->invokeArgs( null, $args );
 }
 function token_request( array $data, string $content_type = 'application/x-www-form-urlencoded' ): WP_REST_Request {
@@ -157,7 +159,7 @@ function base_token( string $grant, string $token, string $verifier = '' ): arra
 	);
 }
 
-must( ! NativeOAuthServer::isEnabled(), 'Native OAuth is off by default' );
+must( ! NativeOAuthServer::is_enabled(), 'Native OAuth is off by default' );
 must( array() === NativeOAuthServer::metadata(), 'No authorization metadata before consent toggle' );
 must( ! OAuthResourceServer::isConfigured(), 'External mode must remain disabled by default' );
 $server = new NativeOAuthServer();
@@ -166,12 +168,12 @@ foreach ( $GLOBALS['actions']['rest_api_init'] as $callback ) {
 	call_user_func( $callback );
 }
 must( isset( $GLOBALS['routes']['/oauth/token'], $GLOBALS['routes']['/oauth/revoke'] ), 'OAuth routes registered' );
-must( 404 === $server->restMetadata()->get_error_data()['status'], 'Disabled metadata must be 404' );
+must( 404 === $server->rest_metadata()->get_error_data()['status'], 'Disabled metadata must be 404' );
 
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
-must( NativeOAuthServer::isEnabled(), 'Owner opt-in enables HTTPS-native mode' );
+must( NativeOAuthServer::is_enabled(), 'Owner opt-in enables HTTPS-native mode' );
 $GLOBALS['home_origin'] = 'https://cloned-site.example.invalid';
-must( ! NativeOAuthServer::isEnabled(), 'Cloned site must not inherit OAuth approval' );
+must( ! NativeOAuthServer::is_enabled(), 'Cloned site must not inherit OAuth approval' );
 $GLOBALS['home_origin'] = 'https://example.invalid';
 $meta = NativeOAuthServer::metadata();
 must( $meta['issuer'] === 'https://example.invalid', 'Issuer must be exact canonical origin' );
@@ -194,7 +196,7 @@ $params = array(
 	'resource' => $resource,
 	'scope' => 'wpconnector:read',
 );
-must( internal( 'authorizationParams', array( $params ) ) === $params, 'Valid authorization request accepted' );
+must( internal( 'authorization_params', array( $params ) ) === $params, 'Valid authorization request accepted' );
 foreach ( array(
 	array( 'redirect_uri', 'https://evil.invalid/callback' ),
 	array( 'resource', 'https://evil.invalid/mcp' ),
@@ -207,11 +209,11 @@ foreach ( array(
 ) as $change ) {
 	$bad = $params;
 	$bad[$change[0]] = $change[1];
-	must( null === internal( 'authorizationParams', array( $bad ) ), 'Reject invalid ' . $change[0] );
+	must( null === internal( 'authorization_params', array( $bad ) ), 'Reject invalid ' . $change[0] );
 }
-must( ! internal( 'clientValid', array( 'https://evil.invalid/client.json', $params['redirect_uri'] ) ), 'Unknown client denied without fetching' );
-must( ! internal( 'clientValid', array( $params['client_id'], 'https://evil.invalid/redirect' ) ), 'Redirect swap denied' );
-must( internal( 'clientValid', array( $params['client_id'], $params['redirect_uri'] ) ), 'Verified OpenAI CIMD is accepted' );
+must( ! internal( 'client_valid', array( 'https://evil.invalid/client.json', $params['redirect_uri'] ) ), 'Unknown client denied without fetching' );
+must( ! internal( 'client_valid', array( $params['client_id'], 'https://evil.invalid/redirect' ) ), 'Redirect swap denied' );
+must( internal( 'client_valid', array( $params['client_id'], $params['redirect_uri'] ) ), 'Verified OpenAI CIMD is accepted' );
 must( count( $GLOBALS['http_calls'] ) === 1
 	&& $GLOBALS['http_calls'][0]['url'] === $params['client_id']
 	&& $GLOBALS['http_calls'][0]['args']['sslverify'] === true
@@ -315,6 +317,6 @@ must( ! OAuthResourceServer::isConfigured() && array() === OAuthResourceServer::
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Disabled server refuses all token validation' );
 $GLOBALS['ssl_ready'] = false;
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
-must( ! NativeOAuthServer::isEnabled(), 'Plain HTTP never enables OAuth' );
+must( ! NativeOAuthServer::is_enabled(), 'Plain HTTP never enables OAuth' );
 
 echo "WordPress-hosted ChatGPT OAuth contract OK: opt-in, discovery, CIMD, PKCE, expiry, refresh rotation, role downgrade, replay, scope, revocation.\n";

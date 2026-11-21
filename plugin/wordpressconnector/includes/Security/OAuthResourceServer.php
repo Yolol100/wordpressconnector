@@ -35,8 +35,11 @@ final class OAuthResourceServer {
 	 * @return array<string, mixed>|null
 	 */
 	private static function config(): ?array {
-		if ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::isEnabled() ) {
-			return array( 'native' => true, 'issuer' => NativeOAuthServer::issuer() );
+		if ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::is_enabled() ) {
+			return array(
+				'native' => true,
+				'issuer' => NativeOAuthServer::issuer(),
+			);
 		}
 		$names = array(
 			'issuer'        => 'WPCONNECTOR_OAUTH_ISSUER',
@@ -106,7 +109,7 @@ final class OAuthResourceServer {
 	 */
 	public static function selfUpdateConfigured(): bool {
 		return self::isConfigured()
-			&& ! ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::isEnabled() )
+			&& ! ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::is_enabled() )
 			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' )
 			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' );
 	}
@@ -387,7 +390,7 @@ final class OAuthResourceServer {
 			}
 			$claims = json_decode( $body, true );
 		}
-		$now    = time();
+		$now = time();
 		if ( ! is_array( $claims ) || true !== ( $claims['active'] ?? false )
 			|| ( $claims['iss'] ?? null ) !== $config['issuer']
 			|| ( $claims['sub'] ?? null ) !== $config['subject']

@@ -68,7 +68,7 @@ final class ConnectionReadinessAdapter {
 		$paired           = SitePairing::pairedAdministratorId() > 0;
 		$providers        = $this->active_backup_providers();
 		$oauth_configured = class_exists( OAuthResourceServer::class, false ) && OAuthResourceServer::isConfigured();
-		$native_oauth = class_exists( NativeOAuthServer::class, false ) && NativeOAuthServer::isEnabled();
+		$native_oauth     = class_exists( NativeOAuthServer::class, false ) && NativeOAuthServer::is_enabled();
 
 		return array(
 			'read_only'                 => true,
@@ -83,7 +83,7 @@ final class ConnectionReadinessAdapter {
 				'oauth_authorization_verified' => false,
 				'oauth_provider_configured'    => $oauth_configured,
 				'state'                        => $oauth_configured ? 'configured_requires_independent_chatgpt_oauth_handshake' : 'requires_native_or_external_oauth_and_explicit_account_consent',
-				'authorization_server_mode'   => $native_oauth ? 'wordpress_hosted_opt_in' : ( $oauth_configured ? 'external' : 'disabled' ),
+				'authorization_server_mode'    => $native_oauth ? 'wordpress_hosted_opt_in' : ( $oauth_configured ? 'external' : 'disabled' ),
 			),
 			'recovery'                  => array(
 				'active_backup_plugins_detected' => $providers,

@@ -9,32 +9,35 @@ declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Security;
 
+/** Native OAuth authorization server with grant-bound token lifecycle. */
 final class NativeOAuthServer {
-	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
-	private const CLIENT_ID = 'https://chatgpt.com/oauth/client.json';
-	private const REDIRECT = 'https://chatgpt.com/connector_platform_oauth_redirect';
-	private const OPT_ENABLED = 'wpconnector_native_oauth_enabled';
+	private const NAMESPACE    = 'webactueel-wordpress-connector/v1';
+	private const CLIENT_ID    = 'https://chatgpt.com/oauth/client.json';
+	private const REDIRECT     = 'https://chatgpt.com/connector_platform_oauth_redirect';
+	private const OPT_ENABLED  = 'wpconnector_native_oauth_enabled';
 	private const OPT_REVISION = 'wpconnector_native_oauth_revision';
 	private const STORE_PREFIX = 'wpconnector_native_oauth_';
-	private const SCOPE = 'wpconnector:read';
-	private const CODE_TTL = 300;
-	private const ACCESS_TTL = 900;
-	private const REFRESH_TTL = 2592000;
+	private const SCOPE        = 'wpconnector:read';
+	private const CODE_TTL     = 300;
+	private const ACCESS_TTL   = 900;
+	private const REFRESH_TTL  = 2592000;
 
+	/** Register. */
 	public function register(): void {
-		add_action( 'init', array( $this, 'serveDiscovery' ), 1 );
-		add_action( 'rest_api_init', array( $this, 'registerRoutes' ) );
+		add_action( 'init', array( $this, 'serve_discovery' ), 1 );
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 		add_action( 'admin_post_wpconnector_oauth_authorize', array( $this, 'authorize' ) );
 		add_action( 'admin_post_nopriv_wpconnector_oauth_authorize', array( $this, 'authorize' ) );
-		add_action( 'admin_post_wpconnector_native_oauth_mode', array( $this, 'updateMode' ) );
+		add_action( 'admin_post_wpconnector_native_oauth_mode', array( $this, 'update_mode' ) );
 		add_action( 'wpconnector_native_oauth_cleanup', array( $this, 'cleanup' ) );
 	}
 
-	public static function isEnabled(): bool {
+	/** Is enabled. */
+	public static function is_enabled(): bool {
 		$approval = get_option( self::OPT_ENABLED, array() );
-		$home = home_url( '/' );
-		$mcp = rest_url( self::NAMESPACE . '/mcp' );
-		$admin = admin_url( 'admin-post.php' );
+		$home     = home_url( '/' );
+		$mcp      = rest_url( self::NAMESPACE . '/mcp' );
+		$admin    = admin_url( 'admin-post.php' );
 		return is_array( $approval )
 			&& ( $approval['site'] ?? '' ) === self::issuer()
 			&& is_int( $approval['approved_by'] ?? null )
@@ -48,45 +51,49 @@ final class NativeOAuthServer {
 			&& wp_parse_url( $home, PHP_URL_HOST ) === wp_parse_url( $admin, PHP_URL_HOST );
 	}
 
+	/** Issuer. */
 	public static function issuer(): string {
 		return rtrim( home_url( '/' ), '/' );
 	}
 
+	/** Metadata. */
 	public static function metadata(): array {
-		if ( ! self::isEnabled() ) {
+		if ( ! self::is_enabled() ) {
 			return array();
 		}
 		return array(
-			'issuer'                                       => self::issuer(),
-			'authorization_endpoint'                       => admin_url( 'admin-post.php?action=wpconnector_oauth_authorize' ),
-			'token_endpoint'                               => rest_url( self::NAMESPACE . '/oauth/token' ),
-			'revocation_endpoint'                          => rest_url( self::NAMESPACE . '/oauth/revoke' ),
-			'response_types_supported'                     => array( 'code' ),
-			'grant_types_supported'                        => array( 'authorization_code', 'refresh_token' ),
-			'code_challenge_methods_supported'             => array( 'S256' ),
-			'token_endpoint_auth_methods_supported'        => array( 'none' ),
-			'client_id_metadata_document_supported'       => true,
+			'issuer'                                => self::issuer(),
+			'authorization_endpoint'                => admin_url( 'admin-post.php?action=wpconnector_oauth_authorize' ),
+			'token_endpoint'                        => rest_url( self::NAMESPACE . '/oauth/token' ),
+			'revocation_endpoint'                   => rest_url( self::NAMESPACE . '/oauth/revoke' ),
+			'response_types_supported'              => array( 'code' ),
+			'grant_types_supported'                 => array( 'authorization_code', 'refresh_token' ),
+			'code_challenge_methods_supported'      => array( 'S256' ),
+			'token_endpoint_auth_methods_supported' => array( 'none' ),
+			'client_id_metadata_document_supported' => true,
 			'authorization_response_iss_parameter_supported' => true,
-			'scopes_supported'                             => array( self::SCOPE ),
+			'scopes_supported'                      => array( self::SCOPE ),
 		);
 	}
 
-	private static function discoveryPath(): string {
+	/** Discovery path. */
+	private static function discovery_path(): string {
 		// RFC 8414 inserts .well-known between the host and the issuer subpath.
 		$issuer_path = wp_parse_url( self::issuer(), PHP_URL_PATH );
 		$suffix      = is_string( $issuer_path ) ? rtrim( $issuer_path, '/' ) : '';
 		return '/.well-known/oauth-authorization-server' . $suffix;
 	}
 
-	public function serveDiscovery(): void {
+	/** Serve discovery. */
+	public function serve_discovery(): void {
 		// The web server must route this canonical path into WordPress.
-		$uri      = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+		$uri      = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$path     = wp_parse_url( $uri, PHP_URL_PATH );
-		$expected = self::discoveryPath();
+		$expected = self::discovery_path();
 		if ( ! is_string( $path ) || $path !== $expected ) {
 			return;
 		}
-		if ( 'GET' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+		if ( 'GET' !== ( isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_METHOD'] ) ) : '' ) ) {
 			status_header( 405 );
 			header( 'Allow: GET', true );
 			exit;
@@ -103,13 +110,14 @@ final class NativeOAuthServer {
 		exit;
 	}
 
-	public function registerRoutes(): void {
+	/** Register routes. */
+	public function register_routes(): void {
 		register_rest_route(
 			self::NAMESPACE,
 			'/oauth/authorization-server',
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
-				'callback'            => array( $this, 'restMetadata' ),
+				'callback'            => array( $this, 'rest_metadata' ),
 				'permission_callback' => '__return_true',
 			)
 		);
@@ -133,7 +141,8 @@ final class NativeOAuthServer {
 		);
 	}
 
-	public function restMetadata() {
+	/** Rest metadata. */
+	public function rest_metadata() {
 		$metadata = self::metadata();
 		if ( empty( $metadata ) ) {
 			return new \WP_Error( 'wpconnector_native_oauth_disabled', 'OAuth is not enabled.', array( 'status' => 404 ) );
@@ -141,7 +150,13 @@ final class NativeOAuthServer {
 		return new \WP_REST_Response( $metadata, 200 );
 	}
 
-	private static function clientValid( string $client_id, string $redirect ): bool {
+	/**
+	 * Client valid.
+	 *
+	 * @param string $client_id client id.
+	 * @param string $redirect redirect.
+	 */
+	private static function client_valid( string $client_id, string $redirect ): bool {
 		if ( self::CLIENT_ID !== $client_id || self::REDIRECT !== $redirect ) {
 			return false;
 		}
@@ -178,7 +193,12 @@ final class NativeOAuthServer {
 		return true;
 	}
 
-	private static function authorizationParams( array $source ): ?array {
+	/**
+	 * Authorization params.
+	 *
+	 * @param array $source source.
+	 */
+	private static function authorization_params( array $source ): ?array {
 		$keys = array( 'client_id', 'redirect_uri', 'response_type', 'state', 'code_challenge', 'code_challenge_method', 'resource', 'scope' );
 		$data = array();
 		foreach ( $keys as $key ) {
@@ -200,28 +220,51 @@ final class NativeOAuthServer {
 		return $data;
 	}
 
-	private static function consentNonce( array $params ): string {
+	/**
+	 * Consent nonce.
+	 *
+	 * @param array $params params.
+	 */
+	private static function consent_nonce( array $params ): string {
 		return 'wpconnector_native_oauth_consent_' . hash( 'sha256', wp_json_encode( $params ) );
 	}
 
-	private static function sendCallback( array $params, array $values ): void {
+	/**
+	 * Send callback.
+	 *
+	 * @param array $params params.
+	 * @param array $values values.
+	 */
+	private static function send_callback( array $params, array $values ): void {
 		nocache_headers();
 		header( 'Referrer-Policy: no-referrer', true );
-		$url = add_query_arg( array_merge( $values, array( 'state' => $params['state'], 'iss' => self::issuer() ) ), self::REDIRECT );
+		$url = add_query_arg(
+			array_merge(
+				$values,
+				array(
+					'state' => $params['state'],
+					'iss'   => self::issuer(),
+				)
+			),
+			self::REDIRECT
+		);
+		// phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- Redirect is pinned to the exact fixed ChatGPT callback URI; wp_safe_redirect would reject the permitted external callback.
 		wp_redirect( $url, 302, 'WordPress Connector OAuth' );
 		exit;
 	}
 
+	/** Authorize. */
 	public function authorize(): void {
-		if ( ! self::isEnabled() ) {
+		if ( ! self::is_enabled() ) {
 			wp_die( 'OAuth authorization is disabled.', 'OAuth unavailable', array( 'response' => 404 ) );
 		}
-		$method = $_SERVER['REQUEST_METHOD'] ?? '';
+		$method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_METHOD'] ) ) : '';
 		if ( ! in_array( $method, array( 'GET', 'POST' ), true ) ) {
 			wp_die( 'Unsupported HTTP method.', 'Method not allowed', array( 'response' => 405 ) );
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- OAuth GET is public, and POST nonce is checked against canonical request parameters below.
 		$source = 'POST' === $method ? $_POST : $_GET;
-		$params = self::authorizationParams( $source );
+		$params = self::authorization_params( $source );
 		if ( null === $params ) {
 			wp_die( 'Invalid authorization request.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
@@ -236,15 +279,15 @@ final class NativeOAuthServer {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'An administrator account is required.', 'Access denied', array( 'response' => 403 ) );
 		}
-		if ( ! self::clientValid( $params['client_id'], $params['redirect_uri'] ) ) {
+		if ( ! self::client_valid( $params['client_id'], $params['redirect_uri'] ) ) {
 			wp_die( 'Untrusted OAuth client metadata.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
 		if ( 'POST' === $method ) {
-			check_admin_referer( self::consentNonce( $params ) );
+			check_admin_referer( self::consent_nonce( $params ) );
 			$decision = isset( $_POST['wpconnector_oauth_decision'] ) && is_string( $_POST['wpconnector_oauth_decision'] )
-				? wp_unslash( $_POST['wpconnector_oauth_decision'] ) : '';
+				? sanitize_text_field( wp_unslash( $_POST['wpconnector_oauth_decision'] ) ) : '';
 			if ( 'approve' !== $decision ) {
-				self::sendCallback( $params, array( 'error' => 'access_denied' ) );
+				self::send_callback( $params, array( 'error' => 'access_denied' ) );
 			}
 			$code = self::issue(
 				'code',
@@ -261,12 +304,12 @@ final class NativeOAuthServer {
 			if ( null === $code ) {
 				wp_die( 'Unable to issue authorization code.', 'OAuth unavailable', array( 'response' => 503 ) );
 			}
-			self::sendCallback( $params, array( 'code' => $code ) );
+			self::send_callback( $params, array( 'code' => $code ) );
 		}
 		nocache_headers();
 		header( 'Referrer-Policy: no-referrer', true );
 		header( 'X-Frame-Options: DENY', true );
-		$html = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
+		$html  = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
 		$html .= '<p>' . esc_html__( 'Allow the verified ChatGPT client to inspect this site with your current administrator permissions. This connection cannot edit content or install updates.', 'wordpressconnector' ) . '</p>';
 		$html .= '<p><strong>' . esc_html( home_url( '/' ) ) . '</strong></p>';
 		$html .= '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
@@ -274,28 +317,81 @@ final class NativeOAuthServer {
 		foreach ( $params as $name => $value ) {
 			$html .= '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" />';
 		}
-		$html .= wp_nonce_field( self::consentNonce( $params ), '_wpnonce', true, false );
+		$html .= wp_nonce_field( self::consent_nonce( $params ), '_wpnonce', true, false );
 		$html .= '<p><button type="submit" name="wpconnector_oauth_decision" value="approve">' . esc_html__( 'Allow read-only access', 'wordpressconnector' ) . '</button> ';
 		$html .= '<button type="submit" name="wpconnector_oauth_decision" value="deny">' . esc_html__( 'Deny', 'wordpressconnector' ) . '</button></p></form>';
-		wp_die( $html, esc_html__( 'WordPress Connector OAuth consent', 'wordpressconnector' ), array( 'response' => 200, 'back_link' => false ) );
+		wp_die(
+			wp_kses(
+				$html,
+				array(
+					'h1'     => array(),
+					'p'      => array(),
+					'strong' => array(),
+					'form'   => array(
+						'method' => true,
+						'action' => true,
+					),
+					'input'  => array(
+						'type'  => true,
+						'name'  => true,
+						'value' => true,
+					),
+					'button' => array(
+						'type'  => true,
+						'name'  => true,
+						'value' => true,
+					),
+				)
+			),
+			esc_html__( 'WordPress Connector OAuth consent', 'wordpressconnector' ),
+			array(
+				'response'  => 200,
+				'back_link' => false,
+			)
+		);
 	}
 
+	/**
+	 * Encode bytes using the unpadded RFC 4648 URL-safe alphabet.
+	 *
+	 * @param string $bytes Raw bytes to encode.
+	 */
+	private static function base64_url_encode( string $bytes ): string {
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required to encode random opaque OAuth tokens and PKCE digests, not executable code.
+		return rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
+	}
+
+	/** Revision. */
 	private static function revision(): int {
 		return max( 1, (int) get_option( self::OPT_REVISION, 1 ) );
 	}
 
-	private static function optionKey( string $kind, string $token ): string {
+	/**
+	 * Option key.
+	 *
+	 * @param string $kind kind.
+	 * @param string $token token.
+	 */
+	private static function option_key( string $kind, string $token ): string {
 		return self::STORE_PREFIX . $kind . '_' . hash_hmac( 'sha256', home_url( '/' ) . ':' . $token, wp_salt( 'auth' ) );
 	}
 
+	/**
+	 * Issue.
+	 *
+	 * @param string $kind kind.
+	 * @param array  $data data.
+	 * @param int    $ttl ttl.
+	 */
 	private static function issue( string $kind, array $data, int $ttl ): ?string {
 		for ( $i = 0; $i < 3; ++$i ) {
 			try {
-				$token = rtrim( strtr( base64_encode( random_bytes( 32 ) ), '+/', '-_' ), '=' );
+				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- RFC 4648 Base64URL encodes cryptographically random tokens.
+				$token = self::base64_url_encode( random_bytes( 32 ) );
 			} catch ( \Throwable $error ) {
 				return null;
 			}
-			$key = self::optionKey( $kind, $token );
+			$key   = self::option_key( $kind, $token );
 			$value = array(
 				'data'     => $data,
 				'revision' => self::revision(),
@@ -309,11 +405,18 @@ final class NativeOAuthServer {
 		return null;
 	}
 
+	/**
+	 * Stored.
+	 *
+	 * @param string $kind kind.
+	 * @param string $token token.
+	 * @param bool   $consume consume.
+	 */
 	private static function stored( string $kind, string $token, bool $consume = false ): ?array {
 		if ( 1 !== preg_match( '/\A[A-Za-z0-9_-]{43}\z/D', $token ) ) {
 			return null;
 		}
-		$key = self::optionKey( $kind, $token );
+		$key    = self::option_key( $kind, $token );
 		$record = get_option( $key, false );
 		if ( ! is_array( $record ) ) {
 			return null;
@@ -321,6 +424,7 @@ final class NativeOAuthServer {
 		if ( $consume ) {
 			global $wpdb;
 			// A single SQL DELETE decides the winner when two token redemptions race.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Single-use token redemption requires an atomic SQL DELETE.
 			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = %s", $key ) );
 			wp_cache_delete( $key, 'options' );
 			if ( 1 !== $deleted ) {
@@ -329,18 +433,23 @@ final class NativeOAuthServer {
 		}
 		if ( ! isset( $record['expires'], $record['revision'], $record['data'] )
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= time()
-			|| (int) $record['revision'] !== self::revision() || ! is_array( $record['data'] ) ) {
+			|| self::revision() !== (int) $record['revision'] || ! is_array( $record['data'] ) ) {
 			return null;
 		}
 		return $record['data'];
 	}
 
+	/**
+	 * Introspect.
+	 *
+	 * @param string $token token.
+	 */
 	public static function introspect( string $token ): ?array {
-		if ( ! self::isEnabled() ) {
+		if ( ! self::is_enabled() ) {
 			return null;
 		}
 		$data = self::stored( 'access', $token );
-		if ( null === $data || ! self::accountValid( $data ) || ! self::grantActive( $data ) ) {
+		if ( null === $data || ! self::account_valid( $data ) || ! self::grant_active( $data ) ) {
 			return null;
 		}
 		return array(
@@ -357,7 +466,12 @@ final class NativeOAuthServer {
 		);
 	}
 
-	private static function grantActive( array $owner ): bool {
+	/**
+	 * Grant active.
+	 *
+	 * @param array $owner owner.
+	 */
+	private static function grant_active( array $owner ): bool {
 		$id = $owner['grant_id'] ?? '';
 		if ( ! is_string( $id ) || '' === $id ) {
 			return false;
@@ -370,7 +484,12 @@ final class NativeOAuthServer {
 			&& ( $grant['scope'] ?? '' ) === self::SCOPE;
 	}
 
-	private static function revokeGrant( array $owner ): void {
+	/**
+	 * Revoke grant.
+	 *
+	 * @param array $owner owner.
+	 */
+	private static function revoke_grant( array $owner ): void {
 		$id = $owner['grant_id'] ?? '';
 		if ( is_string( $id ) && '' !== $id ) {
 			// Deleting the grant invalidates all its access and refresh tokens immediately.
@@ -378,7 +497,12 @@ final class NativeOAuthServer {
 		}
 	}
 
-	private static function accountValid( array $data ): bool {
+	/**
+	 * Account valid.
+	 *
+	 * @param array $data data.
+	 */
+	private static function account_valid( array $data ): bool {
 		$id = $data['user_id'] ?? 0;
 		return is_int( $id ) && $id > 0
 			&& ( $data['client_id'] ?? '' ) === self::CLIENT_ID
@@ -388,11 +512,17 @@ final class NativeOAuthServer {
 			&& user_can( $id, 'manage_options' );
 	}
 
+	/**
+	 * Throttle.
+	 *
+	 * @param string $operation operation.
+	 * @param int    $limit limit.
+	 */
 	private static function throttle( string $operation, int $limit ): bool {
-		$address = $_SERVER['REMOTE_ADDR'] ?? '';
+		$address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) ) : '';
 		$address = is_string( $address ) && filter_var( $address, FILTER_VALIDATE_IP ) ? $address : 'unknown';
-		$bucket = (string) floor( time() / 60 );
-		$keys = array(
+		$bucket  = (string) floor( time() / 60 );
+		$keys    = array(
 			'wpconnector_nat_oauth_' . $operation . '_' . substr( hash( 'sha256', $address ), 0, 20 ) . '_' . $bucket => $limit,
 			'wpconnector_nat_oauth_all_' . $operation . '_' . $bucket => 300,
 		);
@@ -408,13 +538,24 @@ final class NativeOAuthServer {
 		return true;
 	}
 
-	private static function tokenError( string $code, int $status = 400 ): \WP_REST_Response {
+	/**
+	 * Token error.
+	 *
+	 * @param string $code code.
+	 * @param int    $status status.
+	 */
+	private static function token_error( string $code, int $status = 400 ): \WP_REST_Response {
 		$response = new \WP_REST_Response( array( 'error' => $code ), $status );
 		$response->header( 'Cache-Control', 'no-store' );
 		$response->header( 'Pragma', 'no-cache' );
 		return $response;
 	}
 
+	/**
+	 * Body.
+	 *
+	 * @param \WP_REST_Request $request request.
+	 */
 	private static function body( \WP_REST_Request $request ): ?array {
 		$ctype = (string) $request->get_header( 'content-type' );
 		if ( 0 !== stripos( $ctype, 'application/x-www-form-urlencoded' ) ) {
@@ -432,36 +573,46 @@ final class NativeOAuthServer {
 		return $data;
 	}
 
-	private static function validClientBody( array $body ): bool {
+	/**
+	 * Valid client body.
+	 *
+	 * @param array $body body.
+	 */
+	private static function valid_client_body( array $body ): bool {
 		return ( $body['client_id'] ?? '' ) === self::CLIENT_ID
 			&& ! isset( $body['client_secret'] )
 			&& ! isset( $body['client_assertion'] )
 			&& ( ! isset( $body['resource'] ) || OAuthResourceServer::resource() === $body['resource'] );
 	}
 
-	private static function tokenResponse( array $owner ): \WP_REST_Response {
-		if ( ! self::grantActive( $owner ) ) {
-			return self::tokenError( 'invalid_grant' );
+	/**
+	 * Token response.
+	 *
+	 * @param array $owner owner.
+	 */
+	private static function token_response( array $owner ): \WP_REST_Response {
+		if ( ! self::grant_active( $owner ) ) {
+			return self::token_error( 'invalid_grant' );
 		}
-		$now = time();
+		$now     = time();
 		$payload = array(
-			'grant_id'  => $owner['grant_id'],
-			'user_id'   => $owner['user_id'],
-			'client_id' => self::CLIENT_ID,
-			'resource'  => OAuthResourceServer::resource(),
-			'scope'     => self::SCOPE,
-			'issued_at' => $now,
-			'expires_at'=> $now + self::ACCESS_TTL,
+			'grant_id'   => $owner['grant_id'],
+			'user_id'    => $owner['user_id'],
+			'client_id'  => self::CLIENT_ID,
+			'resource'   => OAuthResourceServer::resource(),
+			'scope'      => self::SCOPE,
+			'issued_at'  => $now,
+			'expires_at' => $now + self::ACCESS_TTL,
 		);
-		$access = self::issue( 'access', $payload, self::ACCESS_TTL );
+		$access  = self::issue( 'access', $payload, self::ACCESS_TTL );
 		if ( null === $access ) {
-			return self::tokenError( 'server_error', 503 );
+			return self::token_error( 'server_error', 503 );
 		}
 		$refresh = self::issue( 'refresh', $owner, self::REFRESH_TTL );
 		if ( null === $refresh ) {
 			// Revoke the issued access token if issuing the pair fails.
 			self::stored( 'access', $access, true );
-			return self::tokenError( 'server_error', 503 );
+			return self::token_error( 'server_error', 503 );
 		}
 		$result = new \WP_REST_Response(
 			array(
@@ -478,17 +629,22 @@ final class NativeOAuthServer {
 		return $result;
 	}
 
+	/**
+	 * Token.
+	 *
+	 * @param \WP_REST_Request $request request.
+	 */
 	public function token( \WP_REST_Request $request ): \WP_REST_Response {
-		if ( ! self::isEnabled() ) {
-			return self::tokenError( 'invalid_request', 404 );
+		if ( ! self::is_enabled() ) {
+			return self::token_error( 'invalid_request', 404 );
 		}
 		if ( ! self::throttle( 'token', 30 ) ) {
-			return self::tokenError( 'temporarily_unavailable', 429 );
+			return self::token_error( 'temporarily_unavailable', 429 );
 		}
 		$body = self::body( $request );
 		if ( '' !== $request->get_header( 'authorization' )
-			|| null === $body || ! self::validClientBody( $body ) ) {
-			return self::tokenError( 'invalid_client' );
+			|| null === $body || ! self::valid_client_body( $body ) ) {
+			return self::token_error( 'invalid_client' );
 		}
 		$grant = $body['grant_type'] ?? '';
 		if ( 'authorization_code' === $grant ) {
@@ -496,17 +652,17 @@ final class NativeOAuthServer {
 				|| ( $body['redirect_uri'] ?? '' ) !== self::REDIRECT
 				|| ! isset( $body['code'], $body['code_verifier'] )
 				|| ! preg_match( '/\A[A-Za-z0-9._~-]{43,128}\z/D', $body['code_verifier'] ) ) {
-				return self::tokenError( 'invalid_request' );
+				return self::token_error( 'invalid_request' );
 			}
 			$data = self::stored( 'code', $body['code'], true );
-			if ( null === $data || ! self::accountValid( $data )
+			if ( null === $data || ! self::account_valid( $data )
 				|| ( $data['redirect_uri'] ?? '' ) !== self::REDIRECT
 				|| ! isset( $data['code_challenge'] )
 				|| ! hash_equals(
 					$data['code_challenge'],
-					rtrim( strtr( base64_encode( hash( 'sha256', $body['code_verifier'], true ) ), '+/', '-_' ), '=' )
+					self::base64_url_encode( hash( 'sha256', $body['code_verifier'], true ) )
 				) ) {
-				return self::tokenError( 'invalid_grant' );
+				return self::token_error( 'invalid_grant' );
 			}
 			$grant_id = self::issue(
 				'grant',
@@ -519,18 +675,18 @@ final class NativeOAuthServer {
 				self::REFRESH_TTL
 			);
 			if ( null === $grant_id ) {
-				return self::tokenError( 'server_error', 503 );
+				return self::token_error( 'server_error', 503 );
 			}
 			$data['grant_id'] = $grant_id;
-			$response         = self::tokenResponse( $data );
+			$response         = self::token_response( $data );
 			if ( 200 !== $response->get_status() ) {
-				self::revokeGrant( $data );
+				self::revoke_grant( $data );
 			}
 			return $response;
 		}
 		if ( 'refresh_token' === $grant ) {
 			if ( ! isset( $body['resource'], $body['refresh_token'] ) ) {
-				return self::tokenError( 'invalid_request' );
+				return self::token_error( 'invalid_request' );
 			}
 			$refresh = $body['refresh_token'];
 			$data    = self::stored( 'refresh', $refresh );
@@ -538,15 +694,15 @@ final class NativeOAuthServer {
 				// Preserve spent-token ancestry to revoke the active grant on reuse.
 				$spent = self::stored( 'spent', $refresh );
 				if ( null !== $spent ) {
-					self::revokeGrant( $spent );
+					self::revoke_grant( $spent );
 				}
-				return self::tokenError( 'invalid_grant' );
+				return self::token_error( 'invalid_grant' );
 			}
-			if ( ! self::accountValid( $data ) || ! self::grantActive( $data ) ) {
-				return self::tokenError( 'invalid_grant' );
+			if ( ! self::account_valid( $data ) || ! self::grant_active( $data ) ) {
+				return self::token_error( 'invalid_grant' );
 			}
 			$now         = time();
-			$spent_key   = self::optionKey( 'spent', $refresh );
+			$spent_key   = self::option_key( 'spent', $refresh );
 			$spent_value = array(
 				'data'     => $data,
 				'revision' => self::revision(),
@@ -556,37 +712,42 @@ final class NativeOAuthServer {
 			// add_option is atomic on option_name: only one worker can rotate.
 			if ( ! add_option( $spent_key, $spent_value, '', false ) ) {
 				if ( null !== self::stored( 'spent', $refresh ) ) {
-					self::revokeGrant( $data );
+					self::revoke_grant( $data );
 				}
-				return self::tokenError( 'invalid_grant' );
+				return self::token_error( 'invalid_grant' );
 			}
 			if ( null === self::stored( 'refresh', $refresh, true ) ) {
-				self::revokeGrant( $data );
-				return self::tokenError( 'invalid_grant' );
+				self::revoke_grant( $data );
+				return self::token_error( 'invalid_grant' );
 			}
-			return self::tokenResponse( $data );
+			return self::token_response( $data );
 		}
-		return self::tokenError( 'unsupported_grant_type' );
+		return self::token_error( 'unsupported_grant_type' );
 	}
 
+	/**
+	 * Revoke.
+	 *
+	 * @param \WP_REST_Request $request request.
+	 */
 	public function revoke( \WP_REST_Request $request ): \WP_REST_Response {
-		if ( ! self::isEnabled() ) {
-			return self::tokenError( 'invalid_request', 404 );
+		if ( ! self::is_enabled() ) {
+			return self::token_error( 'invalid_request', 404 );
 		}
 		if ( ! self::throttle( 'revoke', 30 ) ) {
-			return self::tokenError( 'temporarily_unavailable', 429 );
+			return self::token_error( 'temporarily_unavailable', 429 );
 		}
 		$body = self::body( $request );
 		if ( '' !== $request->get_header( 'authorization' )
-			|| null === $body || ! self::validClientBody( $body )
+			|| null === $body || ! self::valid_client_body( $body )
 			|| ! isset( $body['token'] ) ) {
-			return self::tokenError( 'invalid_request' );
+			return self::token_error( 'invalid_request' );
 		}
 		// RFC 7009: any known token identifies its entire authorization grant.
 		foreach ( array( 'access', 'refresh', 'spent' ) as $kind ) {
 			$owner = self::stored( $kind, $body['token'] );
 			if ( null !== $owner ) {
-				self::revokeGrant( $owner );
+				self::revoke_grant( $owner );
 				break;
 			}
 		}
@@ -595,19 +756,27 @@ final class NativeOAuthServer {
 		return $response;
 	}
 
-	public function updateMode(): void {
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! current_user_can( 'manage_options' ) ) {
+	/** Update mode. */
+	public function update_mode(): void {
+		if ( 'POST' !== ( isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_METHOD'] ) ) : '' ) || ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'Unauthorized OAuth settings operation.', 'Forbidden', array( 'response' => 403 ) );
 		}
 		check_admin_referer( 'wpconnector_native_oauth_mode' );
 		$decision = isset( $_POST['native_oauth_decision'] ) && is_string( $_POST['native_oauth_decision'] )
-			? wp_unslash( $_POST['native_oauth_decision'] ) : '';
+			? sanitize_text_field( wp_unslash( $_POST['native_oauth_decision'] ) ) : '';
 		if ( 'enable' === $decision ) {
 			if ( ! is_ssl() || 'https' !== wp_parse_url( rest_url( self::NAMESPACE . '/mcp' ), PHP_URL_SCHEME )
 				|| defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
 				wp_die( 'HTTPS and a non-conflicting native OAuth setup are required.', 'OAuth blocked', array( 'response' => 403 ) );
 			}
-			update_option( self::OPT_ENABLED, array( 'site' => self::issuer(), 'approved_by' => get_current_user_id() ), false );
+			update_option(
+				self::OPT_ENABLED,
+				array(
+					'site'        => self::issuer(),
+					'approved_by' => get_current_user_id(),
+				),
+				false
+			);
 			if ( ! wp_next_scheduled( 'wpconnector_native_oauth_cleanup' ) ) {
 				wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'wpconnector_native_oauth_cleanup' );
 			}
@@ -621,6 +790,7 @@ final class NativeOAuthServer {
 		exit;
 	}
 
+	/** Cleanup. */
 	public function cleanup(): void {
 		global $wpdb;
 		$cursor_key = self::STORE_PREFIX . 'cleanup_cursor';
@@ -631,13 +801,15 @@ final class NativeOAuthServer {
 			$cursor = isset( $cursors[ $kind ] ) && is_string( $cursors[ $kind ] ) ? $cursors[ $kind ] : '';
 			$like   = $wpdb->esc_like( self::STORE_PREFIX . $kind . '_' ) . '%';
 			// A persisted keyset cursor prevents the first 100 live rows from hiding expired rows.
-			$names  = $wpdb->get_col(
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded, uncached SQL keyset query is necessary for reliable expired-token cleanup.
+			$names = $wpdb->get_col(
 				$wpdb->prepare(
 					"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name > %s ORDER BY option_name LIMIT 100",
 					$like,
 					$cursor
 				)
 			);
+			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			foreach ( (array) $names as $name ) {
 				$record = get_option( $name, false );
 				if ( ! is_array( $record ) || ! is_int( $record['expires'] ?? null )

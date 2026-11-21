@@ -397,7 +397,7 @@ final class Settings {
 	 * @return bool Operation result.
 	 */
 	private function render_native_oauth_controls(): void {
-		$enabled = NativeOAuthServer::isEnabled();
+		$enabled = NativeOAuthServer::is_enabled();
 		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (read-only, opt-in)', 'wordpressconnector' ) . '</h3>';
 		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. MCP bearer tokens cannot edit content or install updates. This option is disabled until you explicitly enable it.', 'wordpressconnector' ) . '</p>';
 		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
@@ -409,9 +409,12 @@ final class Settings {
 		wp_nonce_field( 'wpconnector_native_oauth_mode' );
 		echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
 		echo '<input type="hidden" name="native_oauth_decision" value="' . esc_attr( $enabled ? 'disable' : 'enable' ) . '" />';
-		submit_button( $enabled
+		submit_button(
+			$enabled
 			? __( 'Disable and revoke all ChatGPT OAuth tokens', 'wordpressconnector' )
-			: __( 'Enable WordPress-hosted OAuth', 'wordpressconnector' ), $enabled ? 'secondary' : 'primary' );
+			: __( 'Enable WordPress-hosted OAuth', 'wordpressconnector' ),
+			$enabled ? 'secondary' : 'primary'
+		);
 		echo '</form>';
 		if ( $enabled ) {
 			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::issuer() . '/.well-known/oauth-authorization-server' ) . '</code></p>';
@@ -419,6 +422,7 @@ final class Settings {
 		}
 	}
 
+	/** Report whether the legacy OAuth bridge is active. */
 	private function legacy_bridge_active(): bool {
 		if ( class_exists( 'Webactueel\\ElementorJsonBridge\\Plugin' ) ) {
 			return true; }
