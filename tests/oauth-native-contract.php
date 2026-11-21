@@ -246,8 +246,15 @@ define( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES', true );
 must( null === internal( 'authorization_params', array( $filesParams ) ),
     'A server opt-in alone must never grant file access outside staging.' );
 $GLOBALS['environment'] = 'staging';
+must( null === internal( 'authorization_params', array( $filesParams ) ),
+    'A staging environment without an exact owner-pinned origin still denies file grants.' );
+define( 'WPCONNECTOR_OAUTH_STAGING_ORIGIN', 'https://example.invalid' );
 must( null !== internal( 'authorization_params', array( $filesParams ) ) && NativeOAuthServer::staging_files_enabled(),
-    'Only explicit server opt-in and runtime staging enable the exact file scope.' );
+    'Only server opt-in, exact origin and staging environment enable file grants.' );
+$GLOBALS['home_origin'] = 'https://other.example.invalid';
+must( null === internal( 'authorization_params', array( $filesParams ) ),
+    'Cloned or misdirected origin cannot inherit file editing even when marked staging.' );
+$GLOBALS['home_origin'] = 'https://example.invalid';
 $reversedScopes = $filesParams;
 $reversedScopes['scope'] = 'wpconnector:files wpconnector:read';
 must( internal( 'authorization_params', array( $reversedScopes ) ) === $filesParams,
