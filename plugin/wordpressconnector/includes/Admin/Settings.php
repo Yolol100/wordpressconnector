@@ -354,8 +354,10 @@ final class Settings {
 
 		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'ChatGPT OAuth', 'wordpressconnector' ) . '</h3>';
 		echo '<p class="wpconnector-state">' . esc_html( $oauth ? __( 'Enabled', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) ) . '</p>';
-		if ( NativeOAuthServer::staging_files_enabled() ) {
-			echo '<p>' . esc_html__( 'Read-only by default. Staging file edits are available only after separate OAuth consent; an active ChatGPT grant is not yet verified.', 'wordpressconnector' ) . '</p>';
+		if ( NativeOAuthServer::staging_files_enabled() && ( current_user_can( 'edit_plugins' ) || current_user_can( 'edit_themes' ) ) ) {
+			echo '<p>' . esc_html__( 'Read-only by default. Staging file edits require separate OAuth consent; an active ChatGPT grant is not yet verified.', 'wordpressconnector' ) . '</p>';
+		} elseif ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p>' . esc_html__( 'Read-only ChatGPT access is available. WordPress blocks this account from editing plugin or theme files.', 'wordpressconnector' ) . '</p>';
 		} else {
 			echo '<p>' . esc_html__( 'Grant read-only access with explicit WordPress consent. Staging file editing is not configured.', 'wordpressconnector' ) . '</p>';
 		}
@@ -553,8 +555,10 @@ final class Settings {
 		$revocation_ready = $enabled || $prior_approval;
 		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (explicit consent)', 'wordpressconnector' ) . '</h3>';
 		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. Read-only access is the default; file editing requires an independently approved staging-only scope. OAuth does not authorize content updates or plugin installs.', 'wordpressconnector' ) . '</p>';
-		if ( NativeOAuthServer::staging_files_enabled() ) {
+		if ( NativeOAuthServer::staging_files_enabled() && ( current_user_can( 'edit_plugins' ) || current_user_can( 'edit_themes' ) ) ) {
 			echo '<p><strong>' . esc_html__( 'Staging file-edit scope available', 'wordpressconnector' ) . '</strong>: ' . esc_html__( 'A new ChatGPT OAuth approval must explicitly include wpconnector:files. Existing read-only grants do not gain file-write permissions automatically.', 'wordpressconnector' ) . '</p>';
+		} elseif ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p>' . esc_html__( 'Staging file editing is configured, but your WordPress account has no plugin/theme file-editor permission. ChatGPT can still connect read-only. WordPress security remains enforced.', 'wordpressconnector' ) . '</p>';
 		}
 		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
 			echo '<p>' . esc_html__( 'An external OAuth provider is already configured. Native OAuth cannot be enabled at the same time.', 'wordpressconnector' ) . '</p>';
