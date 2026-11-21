@@ -425,6 +425,16 @@ final class Settings {
 		if ( $enabled ) {
 			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::discovery_url() ) . '</code></p>';
 			echo '<p>' . esc_html__( 'Tokens expire after 15 minutes and rotate on refresh. Disable OAuth here to immediately revoke all previously issued connections. Live ChatGPT consent must be tested separately.', 'wordpressconnector' ) . '</p>';
+			echo '<h4>' . esc_html__( 'Optional pre-registered ChatGPT callback', 'wordpressconnector' ) . '</h4>';
+			echo '<p>' . esc_html__( 'Use only the exact callback URL shown in the ChatGPT plugin settings when your custom plugin uses a user-provided OAuth client. Saving a new callback revokes existing native OAuth tokens.', 'wordpressconnector' ) . '</p>';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			wp_nonce_field( 'wpconnector_native_oauth_mode' );
+			echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
+			echo '<input type="hidden" name="native_oauth_decision" value="register_redirect" />';
+			echo '<p><label for="wpconnector_native_oauth_redirect">' . esc_html__( 'Exact ChatGPT callback URL', 'wordpressconnector' ) . '</label></p>';
+			echo '<p><input type="url" id="wpconnector_native_oauth_redirect" name="native_oauth_redirect" value="' . esc_attr( NativeOAuthServer::registered_redirect() ) . '" size="80" required /></p>';
+			submit_button( __( 'Register callback and revoke existing tokens', 'wordpressconnector' ), 'secondary' );
+			echo '</form>';
 		}
 	}
 

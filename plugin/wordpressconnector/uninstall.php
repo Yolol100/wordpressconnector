@@ -25,6 +25,7 @@ $wpconnector_cleanup_current_site = static function (): void {
 		'wpconnector_native_oauth_enabled',
 		'wpconnector_native_oauth_revision',
 		'wpconnector_native_oauth_installation',
+		'wpconnector_native_oauth_registered_redirect',
 	) as $option ) {
 		delete_option( $option );
 	}

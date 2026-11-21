@@ -17,6 +17,7 @@ final class NativeOAuthServer {
 	private const OPT_ENABLED      = 'wpconnector_native_oauth_enabled';
 	private const OPT_REVISION     = 'wpconnector_native_oauth_revision';
 	private const OPT_INSTALLATION = 'wpconnector_native_oauth_installation';
+	private const OPT_REDIRECT     = 'wpconnector_native_oauth_registered_redirect';
 	private const STORE_PREFIX     = 'wpconnector_native_oauth_';
 	private const SCOPE            = 'wpconnector:read';
 	private const CODE_TTL         = 300;
@@ -173,13 +174,39 @@ final class NativeOAuthServer {
 	}
 
 	/**
+	 * Validate an owner-pre-registered ChatGPT callback with exact URI matching.
+	 *
+	 * @param string $redirect Absolute callback URL.
+	 */
+	private static function is_registered_callback( string $redirect ): bool {
+		return 1 === preg_match( '#\Ahttps://chatgpt\.com/connector/oauth/[A-Za-z0-9_-]{8,128}\z#D', $redirect );
+	}
+
+	/** Read the exact callback approved by the WordPress administrator. */
+	public static function registered_redirect(): string {
+		$value = get_option( self::OPT_REDIRECT, '' );
+		return is_string( $value ) && self::is_registered_callback( $value ) ? $value : '';
+	}
+
+	/**
+	 * Accept the stable ChatGPT callback or one exact pre-registered URI.
+	 *
+	 * @param string $redirect Callback in the OAuth request.
+	 */
+	private static function redirect_valid( string $redirect ): bool {
+		$registered = self::registered_redirect();
+		return self::REDIRECT === $redirect
+			|| ( '' !== $registered && hash_equals( $registered, $redirect ) );
+	}
+
+	/**
 	 * Client valid.
 	 *
 	 * @param string $client_id client id.
 	 * @param string $redirect redirect.
 	 */
 	private static function client_valid( string $client_id, string $redirect ): bool {
-		if ( self::CLIENT_ID !== $client_id || self::REDIRECT !== $redirect ) {
+		if ( self::CLIENT_ID !== $client_id || ! self::redirect_valid( $redirect ) ) {
 			return false;
 		}
 		$cached = get_transient( 'wpconnector_native_oauth_cimd_verified' );
@@ -230,7 +257,7 @@ final class NativeOAuthServer {
 			}
 			$data[ $key ] = wp_unslash( $value );
 		}
-		if ( self::CLIENT_ID !== $data['client_id'] || self::REDIRECT !== $data['redirect_uri']
+		if ( self::CLIENT_ID !== $data['client_id'] || ! self::redirect_valid( $data['redirect_uri'] )
 			|| 'code' !== $data['response_type'] || 'S256' !== $data['code_challenge_method']
 			|| ! preg_match( '/\A[A-Za-z0-9_-]{43}\z/D', $data['code_challenge'] )
 			|| ! preg_match( '/\A[A-Za-z0-9._~-]{8,1024}\z/D', $data['state'] )
@@ -268,7 +295,7 @@ final class NativeOAuthServer {
 					'iss'   => self::issuer(),
 				)
 			),
-			self::REDIRECT
+			$params['redirect_uri']
 		);
 		// Allow only the already-pinned OAuth callback host for this redirect.
 		$allow_callback = static function ( array $hosts ): array {
@@ -706,14 +733,14 @@ final class NativeOAuthServer {
 		$grant = $body['grant_type'] ?? '';
 		if ( 'authorization_code' === $grant ) {
 			if ( ! isset( $body['resource'] )
-				|| ( $body['redirect_uri'] ?? '' ) !== self::REDIRECT
+				|| ! self::redirect_valid( $body['redirect_uri'] ?? '' )
 				|| ! isset( $body['code'], $body['code_verifier'] )
 				|| ! preg_match( '/\A[A-Za-z0-9._~-]{43,128}\z/D', $body['code_verifier'] ) ) {
 				return self::token_error( 'invalid_request' );
 			}
 			$data = self::stored( 'code', $body['code'], true );
 			if ( null === $data || ! self::account_valid( $data )
-				|| ( $data['redirect_uri'] ?? '' ) !== self::REDIRECT
+				|| ( $data['redirect_uri'] ?? '' ) !== $body['redirect_uri']
 				|| ! isset( $data['code_challenge'] )
 				|| ! hash_equals(
 					$data['code_challenge'],
@@ -838,6 +865,8 @@ final class NativeOAuthServer {
 				&& get_option( self::OPT_INSTALLATION, '' ) !== $installation ) {
 				wp_die( 'Unable to store the OAuth installation identity.', 'OAuth unavailable', array( 'response' => 503 ) );
 			}
+			// Never retain a prior connection's callback during a new opt-in.
+			delete_option( self::OPT_REDIRECT );
 			update_option(
 				self::OPT_ENABLED,
 				array(
@@ -849,10 +878,28 @@ final class NativeOAuthServer {
 			if ( ! wp_next_scheduled( 'wpconnector_native_oauth_cleanup' ) ) {
 				wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'wpconnector_native_oauth_cleanup' );
 			}
+		} elseif ( 'register_redirect' === $decision ) {
+			if ( ! self::is_enabled() ) {
+				wp_die( 'Enable native OAuth before registering a callback.', 'OAuth unavailable', array( 'response' => 403 ) );
+			}
+			$redirect = isset( $_POST['native_oauth_redirect'] ) && is_string( $_POST['native_oauth_redirect'] )
+				? sanitize_text_field( wp_unslash( $_POST['native_oauth_redirect'] ) ) : '';
+			if ( ! self::is_registered_callback( $redirect ) ) {
+				wp_die( 'Only an exact ChatGPT callback URL is allowed.', 'Invalid callback', array( 'response' => 400 ) );
+			}
+			if ( self::registered_redirect() !== $redirect ) {
+				if ( ! update_option( self::OPT_REDIRECT, $redirect, false )
+					&& self::registered_redirect() !== $redirect ) {
+					wp_die( 'Unable to save callback registration.', 'OAuth unavailable', array( 'response' => 503 ) );
+				}
+				// Revoke any tokens minted for a previously approved callback.
+				update_option( self::OPT_REVISION, self::revision() + 1, false );
+			}
 		} elseif ( 'disable' === $decision ) {
 			update_option( self::OPT_ENABLED, '0', false );
 			update_option( self::OPT_REVISION, self::revision() + 1, false );
 			delete_option( self::OPT_INSTALLATION );
+			delete_option( self::OPT_REDIRECT );
 		} else {
 			wp_die( 'Unknown OAuth settings operation.', 'Invalid request', array( 'response' => 400 ) );
 		}

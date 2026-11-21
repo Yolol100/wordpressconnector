@@ -256,6 +256,29 @@ must( count( $GLOBALS['http_calls'] ) === 1
 	&& $GLOBALS['http_calls'][0]['args']['sslverify'] === true
 	&& $GLOBALS['http_calls'][0]['args']['redirection'] === 0, 'CIMD fetch must be pinned, HTTPS and no redirects' );
 
+// Pre-registration never enables wildcards or unapproved callback substitutions.
+$registered_callback = 'https://chatgpt.com/connector/oauth/SyntheticCallbackId123';
+$custom_request = $params;
+$custom_request['redirect_uri'] = $registered_callback;
+must( null === internal( 'authorization_params', array( $custom_request ) ), 'Unregistered callback is rejected by default' );
+foreach ( array(
+	'https://chatgpt.com/connector/oauth/small',
+	'https://evil.invalid/connector/oauth/SyntheticCallbackId123',
+	'https://chatgpt.com/connector/oauth/SyntheticCallbackId123/extra',
+	'https://chatgpt.com/connector/oauth/SyntheticCallbackId123?query=1',
+	'https://chatgpt.com.evil.invalid/connector/oauth/SyntheticCallbackId123',
+) as $bad_callback ) {
+	must( ! internal( 'is_registered_callback', array( $bad_callback ) ), 'Malformed and untrusted callback cannot be pre-registered' );
+}
+must( internal( 'is_registered_callback', array( $registered_callback ) ), 'Exact ChatGPT callback format is accepted for registration' );
+update_option( 'wpconnector_native_oauth_registered_redirect', $registered_callback );
+must( NativeOAuthServer::registered_redirect() === $registered_callback, 'Stored registration is an exact URL' );
+must( internal( 'authorization_params', array( $custom_request ) ) === $custom_request, 'Admin-approved pre-registered callback accepted' );
+must( internal( 'client_valid', array( $params['client_id'], $registered_callback ) ), 'CIMD identity verified for the one pre-registered callback' );
+must( ! internal( 'client_valid', array( $params['client_id'], 'https://chatgpt.com/connector/oauth/UnregisteredCallbackId' ) ), 'Other ChatGPT callback identities remain forbidden' );
+delete_option( 'wpconnector_native_oauth_registered_redirect' );
+must( null === internal( 'authorization_params', array( $custom_request ) ), 'Removing registration immediately blocks old callback' );
+
 $owner = array(
 	'user_id' => 123,
 	'client_id' => $params['client_id'],
@@ -276,6 +299,21 @@ must( $issued->get_headers()['Cache-Control'] === 'no-store', 'OAuth response is
 $claims = NativeOAuthServer::introspect( $pair['access_token'] );
 must( is_array( $claims ) && $claims['sub'] === 'wp:123' && $claims['aud'] === array( $resource ), 'Native bearer bound to origin and account' );
 must( $claims['iss'] === NativeOAuthServer::issuer(), 'Token issuer binding' );
+
+// Authorization codes are bound to the exact administrator-registered redirect.
+update_option( 'wpconnector_native_oauth_registered_redirect', $registered_callback );
+$custom_owner = $owner;
+$custom_owner['redirect_uri'] = $registered_callback;
+$custom_code = internal( 'issue', array( 'code', $custom_owner, 300 ) );
+$custom_body = base_token( 'authorization_code', $custom_code, $verifier );
+$custom_body['redirect_uri'] = $registered_callback;
+$custom_pair = $server->token( token_request( $custom_body ) );
+must( 200 === $custom_pair->get_status(), 'Authorization code exchange succeeds for exact pre-registered redirect' );
+$swapped_code = internal( 'issue', array( 'code', $custom_owner, 300 ) );
+$swapped_body = base_token( 'authorization_code', $swapped_code, $verifier );
+must( 'invalid_grant' === $server->token( token_request( $swapped_body ) )->get_data()['error'], 'Code cannot be exchanged using another registered redirect' );
+delete_option( 'wpconnector_native_oauth_registered_redirect' );
+must( null === internal( 'authorization_params', array( $custom_request ) ), 'Removed callback is denied again' );
 
 $authenticated = new OAuthResourceServer();
 $result = $authenticated->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) );
