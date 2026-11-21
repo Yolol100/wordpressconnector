@@ -12,7 +12,7 @@ if (!defined('WPCONNECTOR_FILE')) {
     define('WPCONNECTOR_FILE', dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
 }
 if (!defined('WPCONNECTOR_VERSION')) {
-    define('WPCONNECTOR_VERSION', '1.20.16-test');
+    define('WPCONNECTOR_VERSION', '1.20.17-test');
 }
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
 
@@ -77,6 +77,16 @@ foreach (array(
     $check(strpos($settings, $needle) !== false, 'Security or test form removed: ' . $needle);
 }
 $check(strpos($settings, 'wpconnector-tab-fallback') !== false, 'Functional HTML fallback if React fails.');
+$check(substr_count($settings, 'NativeOAuthServer::staging_files_enabled()') >= 2,
+    'OAuth status and permissions must describe only server-enabled staging grants.');
+$check(strpos($settings, 'Staging file-edit scope available') !== false &&
+    strpos($settings, 'wpconnector:files') !== false, 'Consent-specific file editing status must be visible.');
+$check(strpos($settings, 'This app does not provide a browser configuration URL') !== false &&
+    strpos($settings, 'Updating WordPress alone cannot repair a cached ChatGPT app.') !== false,
+    'Browser configuration error must be explained without a false WordPress fix.');
+$check(strpos($settings, 'add a new custom MCP server') !== false &&
+    strpos($settings, 'verify the new connection before removing the old one') !== false,
+    'Connection recovery must preserve the existing working client during relinking.');
 $check(strpos($settings, '<details class="wpconnector-disclosure">') !== false, 'Advanced technical controls stay collapsible.');
 foreach (array('role: \'tablist\'', "'aria-controls'", 'ArrowRight', 'ArrowLeft', 'Home', 'End', 'hashchange', 'wp.element') as $needle) {
     $check(strpos($js, $needle) !== false, 'WordPress React tab accessibility contract: ' . $needle);
