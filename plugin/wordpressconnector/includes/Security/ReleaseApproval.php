@@ -5,6 +5,7 @@
  *
  * @package WordPressConnector
  */
+
 declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Security;
@@ -19,9 +20,9 @@ use Webactueel\WordPressConnector\Adapters\ConnectorUpdateAdapter;
  * WordPress nonce, a live cookie session and the exact release fingerprint.
  */
 final class ReleaseApproval {
-	private const OPTION = 'wpconnector_oauth_release_approval_v1';
+	private const OPTION       = 'wpconnector_oauth_release_approval_v1';
 	private const CLAIM_PREFIX = 'wpconnector_oauth_release_claim_';
-	private const TTL_SECONDS = 600;
+	private const TTL_SECONDS  = 600;
 	private const NONCE_ACTION = 'wpconnector_oauth_approve_release';
 
 	/**
@@ -67,7 +68,10 @@ final class ReleaseApproval {
 	 */
 	private static function preview(): ?array {
 		try {
-			$data = ( new ConnectorUpdateAdapter() )->apply( array(), array( 'dry_run' => true, 'require_release_provenance' => true ) );
+			$data = ( new ConnectorUpdateAdapter() )->apply( array(), array(
+				'dry_run'                    => true,
+				'require_release_provenance'  => true,
+			) );
 		} catch ( Throwable $error ) {
 			return null;
 		}
@@ -103,7 +107,7 @@ final class ReleaseApproval {
 		// The Plugins screen must never download release archives during normal rendering.
 		// Only an owner-initiated, nonce-protected review performs full verification.
 		$review = isset( $_GET['wpconnector_review_release'] ) && '1' === $_GET['wpconnector_review_release'];
-		$nonce = isset( $_GET['_wpnonce'] ) && is_string( $_GET['_wpnonce'] )
+		$nonce  = isset( $_GET['_wpnonce'] ) && is_string( $_GET['_wpnonce'] )
 			? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
 		if ( ! $review || ! wp_verify_nonce( $nonce, self::NONCE_ACTION ) ) {
 			$link = wp_nonce_url( admin_url( 'plugins.php?wpconnector_review_release=1' ), self::NONCE_ACTION );
@@ -144,7 +148,7 @@ final class ReleaseApproval {
 		}
 		check_admin_referer( self::NONCE_ACTION );
 		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Type checked, wp_unslash+sanitize_text_field and strict hex regex before use.
-		$raw = $_POST['expected_fingerprint'] ?? null;
+		$raw       = $_POST['expected_fingerprint'] ?? null;
 		$requested = is_string( $raw ) ? sanitize_text_field( wp_unslash( $raw ) ) : '';
 		if ( ! preg_match( '/^[a-f0-9]{64}\z/', $requested ) ) {
 			wp_die( esc_html__( 'Invalid release approval request.', 'wordpressconnector' ), '', array( 'response' => 400 ) );
@@ -157,7 +161,7 @@ final class ReleaseApproval {
 		if ( ! preg_match( '/^[a-f0-9]{32}\z/', $approval_id ) ) {
 			wp_die( esc_html__( 'Unable to create a secure approval.', 'wordpressconnector' ), '', array( 'response' => 500 ) );
 		}
-		$now = time();
+		$now      = time();
 		$approval = array(
 			'id'          => $approval_id,
 			'fingerprint' => $release['fingerprint'],
@@ -204,7 +208,7 @@ final class ReleaseApproval {
 			return null;
 		}
 		$record = get_option( self::OPTION, false );
-		$now = time();
+		$now    = time();
 		if ( ! is_array( $record )
 			|| ! isset( $record['id'], $record['fingerprint'], $record['digest'], $record['owner'], $record['issued'], $record['expires'] )
 			|| ! is_string( $record['id'] ) || ! preg_match( '/^[a-f0-9]{32}\z/', $record['id'] )
@@ -214,7 +218,7 @@ final class ReleaseApproval {
 			|| ! is_int( $record['owner'] ) || get_current_user_id() !== $record['owner']
 			|| ! is_int( $record['issued'] ) || $record['issued'] > $now
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= $now
-			|| $record['expires'] - $record['issued'] !== self::TTL_SECONDS ) {
+			|| self::TTL_SECONDS !== $record['expires'] - $record['issued'] ) {
 			return null;
 		}
 		if ( false !== get_option( self::CLAIM_PREFIX . $record['id'], false ) ) {
@@ -239,9 +243,11 @@ final class ReleaseApproval {
 			return false;
 		}
 		$now = time();
-		// Use a single database INSERT against wp_options.option_name's UNIQUE
-		// index. WordPress add_option() may make a cache-based preflight decision;
-		// this security claim must be exclusive across PHP workers and cache nodes.
+		// Use an insert-only write against wp_options.option_name's UNIQUE
+		// index. WordPress add_option() uses ON DUPLICATE KEY UPDATE and can
+		// overwrite an existing claim during a concurrent cache-miss race.
+		// This single-use authorization must fail on duplicate keys across
+		// workers, even with an inconsistent external object cache.
 		global $wpdb;
 		if ( ! is_object( $wpdb ) || ! isset( $wpdb->options ) || ! method_exists( $wpdb, 'insert' ) ) {
 			return false;
@@ -263,5 +269,4 @@ final class ReleaseApproval {
 		// currentApproval rejects a claimed ID, and the unique claim blocks reuse.
 		return true;
 	}
-
 }

@@ -16,15 +16,15 @@ namespace Webactueel\WordPressConnector\Security;
  * endpoint and an explicit WordPress account/subject binding.
  */
 final class OAuthResourceServer {
-	private const NAMESPACE = 'webactueel-wordpress-connector/v1';
-	private const SCOPE     = 'wpconnector:read';
-	private const UPDATE_SCOPE = 'wpconnector:update';
-	private const MAX_TOKEN_AGE = 3600;
+	private const NAMESPACE               = 'webactueel-wordpress-connector/v1';
+	private const SCOPE                   = 'wpconnector:read';
+	private const UPDATE_SCOPE            = 'wpconnector:update';
+	private const MAX_TOKEN_AGE           = 3600;
 	private const MAX_INTROSPECTION_BYTES = 16384;
-	private const RATE_LIMIT_PER_IP = 12;
-	private const RATE_LIMIT_GLOBAL = 60;
-	private bool $authenticated = false;
-	private bool $update_authorized = false;
+	private const RATE_LIMIT_PER_IP       = 12;
+	private const RATE_LIMIT_GLOBAL       = 60;
+	private bool $authenticated           = false;
+	private bool $update_authorized       = false;
 
 	/**
 	 * Return strictly configured, site-local OAuth settings.
@@ -36,14 +36,14 @@ final class OAuthResourceServer {
 	 */
 	private static function config(): ?array {
 		$names = array(
-			'issuer'         => 'WPCONNECTOR_OAUTH_ISSUER',
-			'introspection'  => 'WPCONNECTOR_OAUTH_INTROSPECTION_URL',
-			'client_id'      => 'WPCONNECTOR_OAUTH_CLIENT_ID',
-			'client_secret'  => 'WPCONNECTOR_OAUTH_CLIENT_SECRET',
-			'subject'        => 'WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT',
-			'user_id'        => 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID',
+			'issuer'        => 'WPCONNECTOR_OAUTH_ISSUER',
+			'introspection' => 'WPCONNECTOR_OAUTH_INTROSPECTION_URL',
+			'client_id'     => 'WPCONNECTOR_OAUTH_CLIENT_ID',
+			'client_secret' => 'WPCONNECTOR_OAUTH_CLIENT_SECRET',
+			'subject'       => 'WPCONNECTOR_OAUTH_ACCOUNT_SUBJECT',
+			'user_id'       => 'WPCONNECTOR_OAUTH_WORDPRESS_USER_ID',
 		);
-		$data = array();
+		$data  = array();
 		foreach ( $names as $key => $name ) {
 			if ( ! defined( $name ) ) {
 				return null;
@@ -125,7 +125,7 @@ final class OAuthResourceServer {
 			|| isset( $parts['pass'] ) ) {
 			return '';
 		}
-		$port  = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+		$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
 		// RFC 9728 removes the terminating slash after the authority before
 		// inserting the well-known segment, including for query-only REST.
 		$path  = '/' === ( $parts['path'] ?? '' ) ? '' : ( $parts['path'] ?? '' );
@@ -281,7 +281,7 @@ final class OAuthResourceServer {
 			'wpconnector_oauth_ip_' . substr( hash( 'sha256', $address ), 0, 24 ) . '_' . $bucket => self::RATE_LIMIT_PER_IP,
 			'wpconnector_oauth_all_' . $bucket => self::RATE_LIMIT_GLOBAL,
 		);
-		$counts = array();
+		$counts  = array();
 		foreach ( $limits as $key => $limit ) {
 			$value = get_transient( $key );
 			if ( false !== $value && ! is_int( $value )
@@ -323,9 +323,9 @@ final class OAuthResourceServer {
 	 * @return bool|\WP_Error|null
 	 */
 	public function authenticate( \WP_REST_Request $request ) {
-		$this->authenticated = false;
+		$this->authenticated     = false;
 		$this->update_authorized = false;
-		$authorization = (string) $request->get_header( 'authorization' );
+		$authorization           = (string) $request->get_header( 'authorization' );
 		if ( '' === $authorization || 0 !== stripos( $authorization, 'bearer' ) ) {
 			return null;
 		}
@@ -349,14 +349,14 @@ final class OAuthResourceServer {
 				'timeout'             => 5,
 				'redirection'         => 0,
 				'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
-				'sslverify'   => true,
-				'headers'     => array(
+				'sslverify'           => true,
+				'headers'             => array(
 					'Accept'        => 'application/json',
 					'Authorization' => 'Basic ' . base64_encode(
 						rawurlencode( $config['client_id'] ) . ':' . rawurlencode( $config['client_secret'] )
 					),
 				),
-				'body'        => array(
+				'body'                => array(
 					'token'           => $access_token,
 					'token_type_hint' => 'access_token',
 				),
@@ -371,7 +371,7 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$claims = json_decode( $body, true );
-		$now = time();
+		$now    = time();
 		if ( ! is_array( $claims ) || true !== ( $claims['active'] ?? false )
 			|| ( $claims['iss'] ?? null ) !== $config['issuer']
 			|| ( $claims['sub'] ?? null ) !== $config['subject']

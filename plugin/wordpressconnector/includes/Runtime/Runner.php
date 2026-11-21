@@ -179,13 +179,19 @@ final class Runner {
 					$preview = $this->registry->execute(
 						$request->action(),
 						$request->payload(),
-						array_merge( $context, array( 'dry_run' => true, 'confirm' => false ) )
+						array_merge(
+							$context,
+							array(
+								'dry_run' => true,
+								'confirm' => false,
+							)
+						)
 					);
 					if ( ! is_string( $preview['_current_fingerprint'] ?? null )
 						|| ! hash_equals( $fingerprint, $preview['_current_fingerprint'] ) ) {
 						throw new RuntimeException( 'Verified Connector release changed before the request could be reserved.' );
 					}
-					$context['owner_approval_id'] = $approval_id;
+					$context['owner_approval_id']             = $approval_id;
 					$context['expected_prewrite_fingerprint'] = $fingerprint;
 				}
 				// Durable reservation precedes every provider write. If PHP

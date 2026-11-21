@@ -378,7 +378,7 @@ final class ConnectorUpdateAdapter {
 			if ( ! empty( $context['require_owner_approval'] )
 				&& empty( $context['dry_run'] ) && ! $this->upgrader_started ) {
 				return array(
-					'_terminal_error' => $error->getMessage(),
+					'_terminal_error'            => $error->getMessage(),
 					'execution_may_have_started' => false,
 				);
 			}
@@ -414,15 +414,15 @@ final class ConnectorUpdateAdapter {
 		);
 		// Bind the preview fingerprint to both the installed version and the
 		// exact canonical signed release; a changing release invalidates approval.
-		$release_state = array(
-			'plugin_file'   => self::PLUGIN_FILE,
-			'version'       => $current,
-			'release_tag'   => $release['tag'],
+		$release_state       = array(
+			'plugin_file'    => self::PLUGIN_FILE,
+			'version'        => $current,
+			'release_tag'    => $release['tag'],
 			'package_digest' => $release['package_digest'],
 			'source_commit'  => $release['source_commit'],
 		);
 		$release_fingerprint = Fingerprint::make( $release_state );
-		$plan   = array(
+		$plan                = array(
 			'from_version'                    => $current,
 			'to_version'                      => $release['version'],
 			'tag'                             => $release['tag'],
@@ -430,7 +430,7 @@ final class ConnectorUpdateAdapter {
 			'checksum_asset'                  => self::CHECKSUM_ASSET,
 			'sbom_asset'                      => self::SBOM_ASSET,
 			'github_asset_digest'             => $release['package_digest'],
-			'source_commit'                  => $release['source_commit'],
+			'source_commit'                   => $release['source_commit'],
 			'rollback_supported'              => false,
 			'installation_failure_recovery'   => 'wordpress_core_temp_backup',
 			'external_restore_required'       => false,
@@ -566,7 +566,7 @@ final class ConnectorUpdateAdapter {
 		try {
 			// A failure from this point may leave an uncertain file state.
 			$this->upgrader_started = true;
-			$result = $upgrader->run(
+			$result                 = $upgrader->run(
 				array(
 					'package'                     => $package,
 					'destination'                 => WP_PLUGIN_DIR,
@@ -717,7 +717,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Canonical release metadata has an invalid schema.' );
 		}
 
-		$tag = (string) $decoded['tag_name'];
+		$tag           = (string) $decoded['tag_name'];
 		$source_commit = isset( $decoded['target_commitish'] ) && is_string( $decoded['target_commitish'] )
 			? strtolower( $decoded['target_commitish'] ) : '';
 		if ( ! preg_match( '/^v([0-9]+\.[0-9]+\.[0-9]+)\z/', $tag, $matches ) ) {
@@ -869,7 +869,7 @@ final class ConnectorUpdateAdapter {
 	 * A compromised release can never supply a remote URL to this method.
 	 *
 	 * @param string $path API path suffix assembled from validated Git SHA.
-	 * @param int $limit Maximum JSON response bytes.
+	 * @param int    $limit Maximum JSON response bytes.
 	 * @return array Decoded JSON object.
 	 */
 	private function trustedSourceJson( string $path, int $limit = 524288 ): array {
@@ -879,12 +879,12 @@ final class ConnectorUpdateAdapter {
 		$response = wp_safe_remote_get(
 			self::SOURCE_API . $path,
 			array(
-				'timeout' => 8,
-				'redirection' => 0,
+				'timeout'             => 8,
+				'redirection'         => 0,
 				'limit_response_size' => $limit + 1,
-				'sslverify' => true,
-				'headers' => array(
-					'Accept' => 'application/vnd.github+json',
+				'sslverify'           => true,
+				'headers'             => array(
+					'Accept'     => 'application/vnd.github+json',
 					'User-Agent' => 'Webactueel-WordPressConnector',
 				),
 			)
@@ -910,7 +910,7 @@ final class ConnectorUpdateAdapter {
 	 * without first changing protected main; this is not a claim of locally
 	 * verified Sigstore attestation.
 	 *
-	 * @param array $release Canonical release metadata.
+	 * @param array  $release Canonical release metadata.
 	 * @param string $package Already checksum/identity validated ZIP.
 	 */
 	private function verifyProtectedSource( array $release, string $package ): void {
@@ -927,7 +927,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Release commit is not an ancestor of protected main.' );
 		}
 		$git_commit = $this->trustedSourceJson( '/git/commits/' . $commit, 65536 );
-		$tree_sha = $git_commit['tree']['sha'] ?? '';
+		$tree_sha   = $git_commit['tree']['sha'] ?? '';
 		if ( ! is_string( $tree_sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $tree_sha ) ) {
 			throw new RuntimeException( 'Protected release commit has no canonical Git tree.' );
 		}
@@ -936,7 +936,7 @@ final class ConnectorUpdateAdapter {
 			throw new RuntimeException( 'Protected release source tree is incomplete.' );
 		}
 		$expected = array();
-		$root = 'plugin/wordpressconnector/';
+		$root     = 'plugin/wordpressconnector/';
 		foreach ( $tree['tree'] as $entry ) {
 			if ( ! is_array( $entry ) || ! isset( $entry['path'] ) || ! is_string( $entry['path'] )
 				|| 0 !== strpos( $entry['path'], $root ) ) {
@@ -946,7 +946,7 @@ final class ConnectorUpdateAdapter {
 				continue;
 			}
 			$relative = substr( $entry['path'], strlen( $root ) );
-			$sha = $entry['sha'] ?? '';
+			$sha      = $entry['sha'] ?? '';
 			if ( 'blob' !== ( $entry['type'] ?? '' ) || ! in_array( $entry['mode'] ?? '', array( '100644', '100755' ), true )
 				|| ! is_string( $sha ) || ! preg_match( '/^[a-f0-9]{40}\z/', $sha )
 				|| ! preg_match( '#^[A-Za-z0-9._/-]+\z#', $relative )
