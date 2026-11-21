@@ -90,7 +90,7 @@ namespace Webactueel\WordPressConnector\Security {
         }
         public function isAuthenticated(): bool { return $this->authenticated; }
         public function canSelfUpdate(): bool { return $this->canUpdate; }
-        public function canEditStagingFiles(): bool { return $this->canEditFiles; }
+        public function can_edit_staging_files(): bool { return $this->canEditFiles; }
         public static function isConfigured(): bool { return true; }
         public static function selfUpdateConfigured(): bool { return true; }
         public static function challengeHeader(bool $includeUpdate = false): string {
@@ -562,7 +562,7 @@ namespace {
         array('jsonrpc' => '2.0', 'id' => 151, 'method' => 'tools/list'),
         array('Authorization' => 'Bearer accepted-files-token')
     ));
-    $assert($oauthFilesAuth === true && $oauthServer->canEditStagingFiles(), 'Explicit OAuth staging file grant accepted.');
+    $assert($oauthFilesAuth === true && $oauthServer->can_edit_staging_files(), 'Explicit OAuth staging file grant accepted.');
     $filesTools = $oauthController->handle(new WP_REST_Request(array(
         'jsonrpc' => '2.0', 'id' => 152, 'method' => 'tools/list',
         'params' => array('_meta' => $modernMeta),
