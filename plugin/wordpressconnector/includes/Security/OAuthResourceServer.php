@@ -444,7 +444,7 @@ final class OAuthResourceServer {
 		if ( ! $user || ! user_can( $config['user_id'], 'manage_options' ) ) {
 			return self::deny( 'wpconnector_oauth_account_unavailable', 'Linked WordPress account is unavailable.', 403 );
 		}
-		$this->update_authorized         = self::selfUpdateConfigured()
+		$this->update_authorized        = self::selfUpdateConfigured()
 			&& in_array( self::UPDATE_SCOPE, preg_split( '/ +/', $scope ), true )
 			&& user_can( $config['user_id'], 'update_plugins' );
 		$this->staging_files_authorized = ! empty( $config['native'] )
