@@ -26,6 +26,7 @@ final class OAuthResourceServer {
 	private const RATE_LIMIT_GLOBAL       = 60;
 	private bool $authenticated           = false;
 	private bool $update_authorized       = false;
+	/** @var bool Whether the current bearer has staging file-edit scope. */
 	private bool $staging_files_authorized = false;
 
 	/**
@@ -236,7 +237,7 @@ final class OAuthResourceServer {
 	 *
 	 * @param bool $include_update Advertise update scope only with explicit opt-in.
 	 */
-	public static function challengeHeader( bool $include_update = false, bool $include_files = false ): string {
+	public static function challengeHeader( bool $include_update = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
@@ -245,9 +246,6 @@ final class OAuthResourceServer {
 		$scopes = self::SCOPE;
 		if ( $include_update && self::selfUpdateConfigured() ) {
 			$scopes .= ' ' . self::UPDATE_SCOPE;
-		}
-		if ( $include_files && class_exists( NativeOAuthServer::class ) && NativeOAuthServer::staging_files_enabled() ) {
-			$scopes .= ' ' . self::FILES_SCOPE;
 		}
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
@@ -331,7 +329,7 @@ final class OAuthResourceServer {
 	}
 
 	/** Authorizes ONLY native-OAuth staging file actions under a separate consented scope. */
-	public function canEditStagingFiles(): bool {
+	public function can_edit_staging_files(): bool {
 		return $this->authenticated && $this->staging_files_authorized;
 	}
 
