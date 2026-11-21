@@ -326,7 +326,7 @@ final class Settings {
 		echo '</section>';
 		echo '<section id="wpconnector-chatgpt" class="wpconnector-panel" aria-labelledby="wpconnector-heading-chatgpt">';
 		echo '<h2 id="wpconnector-heading-chatgpt">' . esc_html__( 'ChatGPT connection', 'wordpressconnector' ) . '</h2>';
-		echo '<p class="description">' . esc_html__( 'Use WordPress-hosted OAuth to authorize a read-only ChatGPT connection. No separate identity-provider account is needed.', 'wordpressconnector' ) . '</p>';
+		echo '<p class="description">' . esc_html__( 'Use WordPress-hosted OAuth to connect ChatGPT. Read-only access is the default; staging file edits require separate OAuth consent and server approval.', 'wordpressconnector' ) . '</p>';
 		$this->render_connection_recovery_guide();
 		echo '</section>';
 		echo '<section id="wpconnector-github" class="wpconnector-panel" aria-labelledby="wpconnector-heading-github">';
@@ -354,7 +354,11 @@ final class Settings {
 
 		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'ChatGPT OAuth', 'wordpressconnector' ) . '</h3>';
 		echo '<p class="wpconnector-state">' . esc_html( $oauth ? __( 'Enabled', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) ) . '</p>';
-		echo '<p>' . esc_html__( 'Grant read-only access with explicit WordPress consent.', 'wordpressconnector' ) . '</p>';
+		if ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p>' . esc_html__( 'Read-only by default. Staging file edits are available only after separate OAuth consent; an active ChatGPT grant is not yet verified.', 'wordpressconnector' ) . '</p>';
+		} else {
+			echo '<p>' . esc_html__( 'Grant read-only access with explicit WordPress consent. Staging file editing is not configured.', 'wordpressconnector' ) . '</p>';
+		}
 		echo '<a href="#wpconnector-chatgpt">' . esc_html__( 'Manage ChatGPT connection', 'wordpressconnector' ) . '</a></div>';
 
 		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'GitHub Actions', 'wordpressconnector' ) . '</h3>';
@@ -371,7 +375,7 @@ final class Settings {
 		echo '<div class="wpconnector-card wpconnector-steps"><h3>' . esc_html__( 'Connect in three steps', 'wordpressconnector' ) . '</h3>';
 		echo '<ol>';
 		echo '<li>' . esc_html__( 'Enable WordPress-hosted OAuth in the ChatGPT tab.', 'wordpressconnector' ) . '</li>';
-		echo '<li>' . esc_html__( 'Add this site’s MCP URL in ChatGPT and approve the WordPress consent screen.', 'wordpressconnector' ) . '</li>';
+		echo '<li>' . esc_html__( 'In ChatGPT Plugins, add a custom MCP server with this site’s MCP URL and select OAuth. Approve the WordPress consent screen.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'Run the browser connection check. Test the actual ChatGPT link separately.', 'wordpressconnector' ) . '</li>';
 		echo '</ol></div>';
 	}
@@ -490,6 +494,7 @@ final class Settings {
 		echo '<button type="button" class="button button-secondary" id="wpconnector-test-mcp">' . esc_html__( 'Test MCP connection from this WordPress browser', 'wordpressconnector' ) . '</button></p>';
 		echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
 		echo '<p><small>' . esc_html__( 'This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector' ) . '</small></p>';
+		echo '<p>' . esc_html__( 'ChatGPT error: This app does not provide a browser configuration URL? This is a ChatGPT app/reconnect setting, not the WordPress MCP address. Do not use Configure browser. In ChatGPT Plugins, add a new custom MCP server with the MCP endpoint shown above and OAuth, then verify the new connection before removing the old one. Updating WordPress alone cannot repair a cached ChatGPT app.', 'wordpressconnector' ) . '</p>';
 		echo '</div></div>';
 		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</summary>';
 		echo '<table class="widefat striped wpconnector-table"><thead><tr>';
@@ -546,8 +551,11 @@ final class Settings {
 		$enabled          = NativeOAuthServer::is_enabled();
 		$prior_approval   = NativeOAuthServer::has_prior_approval();
 		$revocation_ready = $enabled || $prior_approval;
-		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (read-only, opt-in)', 'wordpressconnector' ) . '</h3>';
-		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. MCP bearer tokens cannot edit content or install updates. This option is disabled until you explicitly enable it.', 'wordpressconnector' ) . '</p>';
+		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (explicit consent)', 'wordpressconnector' ) . '</h3>';
+		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. Read-only access is the default; file editing requires an independently approved staging-only scope. OAuth does not authorize content updates or plugin installs.', 'wordpressconnector' ) . '</p>';
+		if ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p><strong>' . esc_html__( 'Staging file-edit scope available', 'wordpressconnector' ) . '</strong>: ' . esc_html__( 'A new ChatGPT OAuth approval must explicitly include wpconnector:files. Existing read-only grants do not gain file-write permissions automatically.', 'wordpressconnector' ) . '</p>';
+		}
 		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
 			echo '<p>' . esc_html__( 'An external OAuth provider is already configured. Native OAuth cannot be enabled at the same time.', 'wordpressconnector' ) . '</p>';
 			if ( ! $prior_approval ) {
