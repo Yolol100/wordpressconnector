@@ -24,8 +24,8 @@ final class OAuthResourceServer {
 	private const MAX_INTROSPECTION_BYTES = 16384;
 	private const RATE_LIMIT_PER_IP       = 12;
 	private const RATE_LIMIT_GLOBAL       = 60;
-	private bool $authenticated             = false;
-	private bool $update_authorized         = false;
+	private bool $authenticated           = false;
+	private bool $update_authorized       = false;
 	/**
 	 * Whether the current bearer has staging file-edit scope.
 	 *
@@ -345,8 +345,8 @@ final class OAuthResourceServer {
 	 * @return bool|\WP_Error|null
 	 */
 	public function authenticate( \WP_REST_Request $request ) {
-		$this->authenticated           = false;
-		$this->update_authorized       = false;
+		$this->authenticated            = false;
+		$this->update_authorized        = false;
 		$this->staging_files_authorized = false;
 
 		$authorization = (string) $request->get_header( 'authorization' );
@@ -444,7 +444,7 @@ final class OAuthResourceServer {
 		if ( ! $user || ! user_can( $config['user_id'], 'manage_options' ) ) {
 			return self::deny( 'wpconnector_oauth_account_unavailable', 'Linked WordPress account is unavailable.', 403 );
 		}
-		$this->update_authorized = self::selfUpdateConfigured()
+		$this->update_authorized         = self::selfUpdateConfigured()
 			&& in_array( self::UPDATE_SCOPE, preg_split( '/ +/', $scope ), true )
 			&& user_can( $config['user_id'], 'update_plugins' );
 		$this->staging_files_authorized = ! empty( $config['native'] )
