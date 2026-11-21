@@ -129,6 +129,8 @@ function wp_safe_remote_get( string $url, array $args ) {
 				'client_id' => 'https://chatgpt.com/oauth/client.json',
 				'redirect_uris' => array( 'https://chatgpt.com/connector_platform_oauth_redirect' ),
 				'token_endpoint_auth_methods_supported' => array( 'none', 'private_key_jwt' ),
+				// ChatGPT's singular preference can be private_key_jwt while its plural supported methods include none.
+				'token_endpoint_auth_method' => 'private_key_jwt',
 				'grant_types' => array( 'authorization_code', 'refresh_token' ),
 			)
 		),
