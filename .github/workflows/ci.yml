@@ -130,6 +130,18 @@ jobs:
             exit 1
           fi
 
+      # Unsigned, short-lived candidate for MANUAL staging installation only.
+      # This does not publish a release or modify production.
+      - name: Upload verified staging candidate ZIP
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v4.6.2
+        with:
+          name: wordpressconnector-staging-candidate
+          path: ${{ runner.temp }}/wordpressconnector-a.zip
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
+
   php-compatibility:
     name: PHP ${{ matrix.php }} contracts
     runs-on: ubuntu-latest
