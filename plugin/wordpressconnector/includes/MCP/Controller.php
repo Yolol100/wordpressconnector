@@ -679,11 +679,9 @@ final class Controller {
 					),
 					true
 				);
-				$scopes    = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
-				if ( 'wordpress_connector_execute' === $tool['name']
-					&& NativeOAuthServer::staging_files_enabled() ) {
-					$scopes = array( 'wpconnector:read', 'wpconnector:files' );
-				}
+				// Keep the initial ChatGPT connection read-only. A file action
+				// requests separate consent using the scoped HTTP challenge in authorize().
+				$scopes = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
 				$schemes                          = array(
 					array(
 						'type'   => 'oauth2',
