@@ -51,6 +51,14 @@ final class NativeOAuthServer {
 			&& wp_parse_url( $home, PHP_URL_HOST ) === wp_parse_url( $admin, PHP_URL_HOST );
 	}
 
+	/** Report any prior owner approval, including when external OAuth is now selected. */
+	public static function has_prior_approval(): bool {
+		$approval = get_option( self::OPT_ENABLED, array() );
+		return is_array( $approval )
+			&& is_int( $approval['approved_by'] ?? null )
+			&& $approval['approved_by'] > 0;
+	}
+
 	/** Issuer. */
 	public static function issuer(): string {
 		return rtrim( home_url( '/' ), '/' );
@@ -62,17 +70,18 @@ final class NativeOAuthServer {
 			return array();
 		}
 		return array(
-			'issuer'                                => self::issuer(),
-			'authorization_endpoint'                => admin_url( 'admin-post.php?action=wpconnector_oauth_authorize' ),
-			'token_endpoint'                        => rest_url( self::NAMESPACE . '/oauth/token' ),
-			'revocation_endpoint'                   => rest_url( self::NAMESPACE . '/oauth/revoke' ),
-			'response_types_supported'              => array( 'code' ),
-			'grant_types_supported'                 => array( 'authorization_code', 'refresh_token' ),
-			'code_challenge_methods_supported'      => array( 'S256' ),
-			'token_endpoint_auth_methods_supported' => array( 'none' ),
-			'client_id_metadata_document_supported' => true,
+			'issuer'                                     => self::issuer(),
+			'authorization_endpoint'                     => admin_url( 'admin-post.php?action=wpconnector_oauth_authorize' ),
+			'token_endpoint'                             => rest_url( self::NAMESPACE . '/oauth/token' ),
+			'revocation_endpoint'                        => rest_url( self::NAMESPACE . '/oauth/revoke' ),
+			'response_types_supported'                   => array( 'code' ),
+			'grant_types_supported'                      => array( 'authorization_code', 'refresh_token' ),
+			'code_challenge_methods_supported'           => array( 'S256' ),
+			'token_endpoint_auth_methods_supported'      => array( 'none' ),
+			'revocation_endpoint_auth_methods_supported' => array( 'none' ),
+			'client_id_metadata_document_supported'      => true,
 			'authorization_response_iss_parameter_supported' => true,
-			'scopes_supported'                      => array( self::SCOPE ),
+			'scopes_supported'                           => array( self::SCOPE ),
 		);
 	}
 

@@ -179,6 +179,7 @@ function base_token( string $grant, string $token, string $verifier = '' ): arra
 }
 
 must( ! NativeOAuthServer::is_enabled(), 'Native OAuth is off by default' );
+must( ! NativeOAuthServer::has_prior_approval(), 'No prior native approval by default' );
 must( array() === NativeOAuthServer::metadata(), 'No authorization metadata before consent toggle' );
 must( ! OAuthResourceServer::isConfigured(), 'External mode must remain disabled by default' );
 $server = new NativeOAuthServer();
@@ -191,6 +192,7 @@ must( 404 === $server->rest_metadata()->get_error_data()['status'], 'Disabled me
 
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
 must( NativeOAuthServer::is_enabled(), 'Owner opt-in enables HTTPS-native mode' );
+must( NativeOAuthServer::has_prior_approval(), 'Prior approval is tracked for later revocation' );
 $GLOBALS['home_origin'] = 'https://cloned-site.example.invalid';
 must( ! NativeOAuthServer::is_enabled(), 'Cloned site must not inherit OAuth approval' );
 $GLOBALS['home_origin'] = 'https://example.invalid';
@@ -206,6 +208,7 @@ must( $meta['authorization_response_iss_parameter_supported'] === true, 'Issuer 
 must( $meta['client_id_metadata_document_supported'] === true, 'CIMD required' );
 must( $meta['code_challenge_methods_supported'] === array( 'S256' ), 'No plain PKCE fallback' );
 must( $meta['token_endpoint_auth_methods_supported'] === array( 'none' ), 'No shared client secret required' );
+must( $meta['revocation_endpoint_auth_methods_supported'] === array( 'none' ), 'Public client revocation does not require a shared secret' );
 must( OAuthResourceServer::metadata()['authorization_servers'] === array( $meta['issuer'] ), 'Resource must advertise the matching issuer' );
 
 $resource = OAuthResourceServer::resource();
@@ -354,10 +357,16 @@ must( false !== get_transient( 'wpconnector_native_oauth_fixture_live' ), 'Valid
 update_option( 'wpconnector_native_oauth_revision', 2 );
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Owner revocation generation invalidates tokens' );
 update_option( 'wpconnector_native_oauth_enabled', '0' );
+must( ! NativeOAuthServer::has_prior_approval(), 'Disabling native OAuth removes prior approval' );
 must( ! OAuthResourceServer::isConfigured() && array() === OAuthResourceServer::metadata(), 'Owner disable revokes OAuth discovery' );
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Disabled server refuses all token validation' );
 $GLOBALS['ssl_ready'] = false;
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
 must( ! NativeOAuthServer::is_enabled(), 'Plain HTTP never enables OAuth' );
+must( NativeOAuthServer::has_prior_approval(), 'Stored approval remains visible for revocation even when native mode is blocked' );
+$GLOBALS['ssl_ready'] = true;
+define( 'WPCONNECTOR_OAUTH_ISSUER', 'https://external-issuer.example.invalid' );
+must( ! NativeOAuthServer::is_enabled(), 'External OAuth temporarily suppresses native mode' );
+must( NativeOAuthServer::has_prior_approval(), 'Old native approval remains revocable while external mode is selected' );
 
 echo "WordPress-hosted ChatGPT OAuth contract OK: opt-in, discovery, CIMD, PKCE, expiry, refresh rotation, role downgrade, replay, scope, revocation.\n";

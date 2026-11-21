@@ -397,23 +397,29 @@ final class Settings {
 	 * @return bool Operation result.
 	 */
 	private function render_native_oauth_controls(): void {
-		$enabled = NativeOAuthServer::is_enabled();
+		$enabled          = NativeOAuthServer::is_enabled();
+		$prior_approval   = NativeOAuthServer::has_prior_approval();
+		$revocation_ready = $enabled || $prior_approval;
 		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (read-only, opt-in)', 'wordpressconnector' ) . '</h3>';
 		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. MCP bearer tokens cannot edit content or install updates. This option is disabled until you explicitly enable it.', 'wordpressconnector' ) . '</p>';
 		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
 			echo '<p>' . esc_html__( 'An external OAuth provider is already configured. Native OAuth cannot be enabled at the same time.', 'wordpressconnector' ) . '</p>';
-			return;
+			if ( ! $prior_approval ) {
+				return;
+			}
+			echo '<p>' . esc_html__( 'A previous native OAuth approval is still stored. Revoke it to prevent old grants from becoming active again when external OAuth is removed.', 'wordpressconnector' ) . '</p>';
 		}
-		echo '<p><strong>' . esc_html( $enabled ? __( 'Enabled: consent required for each link', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) ) . '</strong></p>';
+		$state = $enabled ? __( 'Enabled: consent required for each link', 'wordpressconnector' ) : ( $prior_approval ? __( 'Inactive: revoke previous native approval', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) );
+		echo '<p><strong>' . esc_html( $state ) . '</strong></p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
 		wp_nonce_field( 'wpconnector_native_oauth_mode' );
 		echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
-		echo '<input type="hidden" name="native_oauth_decision" value="' . esc_attr( $enabled ? 'disable' : 'enable' ) . '" />';
+		echo '<input type="hidden" name="native_oauth_decision" value="' . esc_attr( $revocation_ready ? 'disable' : 'enable' ) . '" />';
 		submit_button(
-			$enabled
+			$revocation_ready
 			? __( 'Disable and revoke all ChatGPT OAuth tokens', 'wordpressconnector' )
 			: __( 'Enable WordPress-hosted OAuth', 'wordpressconnector' ),
-			$enabled ? 'secondary' : 'primary'
+			$revocation_ready ? 'secondary' : 'primary'
 		);
 		echo '</form>';
 		if ( $enabled ) {
