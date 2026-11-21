@@ -72,6 +72,9 @@ final class NativeOAuthServer {
 		return self::is_enabled()
 			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES' )
 			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES' )
+			&& defined( 'WPCONNECTOR_OAUTH_STAGING_ORIGIN' )
+			&& is_string( constant( 'WPCONNECTOR_OAUTH_STAGING_ORIGIN' ) )
+			&& hash_equals( self::issuer(), constant( 'WPCONNECTOR_OAUTH_STAGING_ORIGIN' ) )
 			&& function_exists( 'wp_get_environment_type' )
 			&& 'staging' === wp_get_environment_type();
 	}
