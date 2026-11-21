@@ -240,9 +240,19 @@ final class OAuthResourceServer {
 	 * Exact challenge for the MCP OAuth discovery handshake.
 	 *
 	 * @param bool $include_update Advertise update scope only with explicit opt-in.
-	 * @param bool $include_files  Advertise staging file scope only with owner opt-in.
 	 */
-	public static function challengeHeader( bool $include_update = false, bool $include_files = false ): string {
+	public static function challengeHeader( bool $include_update = false ): string {
+		return self::build_challenge_header( $include_update, false );
+	}
+
+	/**
+	 * Build a bounded, trusted OAuth challenge for the requested capability.
+	 *
+	 * @param bool $include_update Advertise a release-update scope.
+	 * @param bool $include_files  Advertise a staging file-edit scope.
+	 * @return string HTTP header value.
+	 */
+	private static function build_challenge_header( bool $include_update, bool $include_files ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
@@ -266,7 +276,7 @@ final class OAuthResourceServer {
 	 */
 	public static function challenge( string $reason = '', bool $include_files = false ): void {
 		if ( self::isConfigured() && ! headers_sent() ) {
-			$header = self::challengeHeader( false, $include_files );
+			$header = self::build_challenge_header( false, $include_files );
 			if ( '' !== $header ) {
 				if ( in_array( $reason, array( 'invalid_token', 'insufficient_scope' ), true ) ) {
 					$header .= ', error="' . $reason . '"';
