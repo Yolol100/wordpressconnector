@@ -81,6 +81,12 @@ $check(substr_count($settings, 'NativeOAuthServer::staging_files_enabled()') >= 
     'OAuth status and permissions must describe only server-enabled staging grants.');
 $check(strpos($settings, 'Staging file-edit scope available') !== false &&
     strpos($settings, 'wpconnector:files') !== false, 'Consent-specific file editing status must be visible.');
+$check(strpos($settings, "current_user_can( 'edit_plugins' )") !== false &&
+    strpos($settings, "current_user_can( 'edit_themes' )") !== false,
+    'Staging file editing eligibility must use current WordPress capabilities.');
+$check(strpos($settings, 'WordPress blocks this account from editing plugin or theme files.') !== false &&
+    strpos($settings, 'ChatGPT can still connect read-only.') !== false,
+    'Admin must explain why editing is disabled without blocking read-only OAuth.');
 $check(strpos($settings, 'This app does not provide a browser configuration URL') !== false &&
     strpos($settings, 'Updating WordPress alone cannot repair a cached ChatGPT app.') !== false,
     'Browser configuration error must be explained without a false WordPress fix.');
