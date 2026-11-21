@@ -88,6 +88,11 @@ class RequiredPrGateTests(unittest.TestCase):
         child = (root / "tests/release-supply-chain-tests.py").read_text(encoding="utf-8")
         self.assertIn('[sys.executable, "-I", "-B", str(VERIFY)', child)
 
+    def test_new_workflow_cannot_create_its_own_privileged_gate(self):
+        for path in (".github/workflows/extra-publish.yml", ".github/workflows/attacker.yaml"):
+            with self.subTest(path=path), self.assertRaises(gate.GateError):
+                gate.classify_paths([path])
+
     def test_runtime_transport_is_never_mergeable(self):
         for path in ("requests/temp.json", "results/private.json", "receipts/public.json", "assets/inbox/image.png"):
             with self.subTest(path=path), self.assertRaises(gate.GateError):

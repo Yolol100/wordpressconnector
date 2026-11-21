@@ -64,7 +64,7 @@ def classify_paths(paths):
             "Temporary OIDC request/result/receipt/asset state must remain on "
             "its runtime PR branch and must not be merged into main."
         )
-    if any(p in PROTECTED_GOVERNANCE_PATHS for p in paths):
+    if any(p in PROTECTED_GOVERNANCE_PATHS or p.startswith(".github/workflows/") for p in paths):
         raise GateError(
             "A release or CI trust-control file changed in this PR. "
             "Use a separately validated governance bootstrap before enabling this gate."

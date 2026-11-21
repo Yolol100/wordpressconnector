@@ -22,7 +22,7 @@ ROOT = "plugin/wordpressconnector/"
 # of the exact directive text, not merely a count of emitted sniff messages.
 SUPPRESSION_DIRECTIVE = re.compile(
     r"(?i)\b(?:phpcs\s*:\s*(?:ignorefile|ignore|disable|enable|set)\b|"
-    r"@?codingstandards(?:ignorefile|ignorestart|ignoreend|changesetting)\b)"
+    r"@?codingstandards(?:ignorefile|ignoreline|ignorestart|ignoreend|changesetting)\b)"
 )
 
 
@@ -37,10 +37,20 @@ def source_suppression_directives(root: Path) -> Counter:
             raise ValueError(f"Non-regular PHP file in source tree: {path}")
         scanned += 1
         relative = path.relative_to(root).as_posix()
-        for line in path.read_text(encoding="utf-8").splitlines():
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines):
             if SUPPRESSION_DIRECTIVE.search(line):
                 normalized = re.sub(r"\s+", " ", line.strip())
-                directives[(relative, normalized)] += 1
+                # Bind a suppression to its immediate source surroundings;
+                # moving a previously permitted directive to new code must
+                # not silently reuse an old allowlist slot in the same file.
+                before = next((x.strip() for x in reversed(lines[:number]) if x.strip()), "")
+                after = next((x.strip() for x in lines[number + 1:] if x.strip()), "")
+                context = (
+                    re.sub(r"\s+", " ", before),
+                    re.sub(r"\s+", " ", after),
+                )
+                directives[(relative, normalized, context)] += 1
     if not scanned:
         raise ValueError(f"Empty plugin PHP source in {plugin}")
     return directives
@@ -123,8 +133,8 @@ def compare(
     if base_root is not None:
         base_directives = source_suppression_directives(base_root)
         new_directives = source_suppression_directives(current_root)
-        for (file, directive), count in sorted(new_directives.items()):
-            delta = count - base_directives[(file, directive)]
+        for (file, directive, context), count in sorted(new_directives.items()):
+            delta = count - base_directives[(file, directive, context)]
             if delta > 0:
                 suppression_errors.append(f"{file}: new PHPCS suppression (+{delta}) {directive[:120]}")
     if suppression_errors:

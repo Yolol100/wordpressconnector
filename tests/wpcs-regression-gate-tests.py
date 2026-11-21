@@ -94,7 +94,7 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     if baseline_ok.returncode != 0:
         raise AssertionError("Existing identical suppression must retain baseline acceptance")
     for added in ("// phpcs:disable\n", "// phpcs:set WordPress.Debug false\n",
-                  "// @codingStandardsIgnoreStart\n"):
+                  "// @codingStandardsIgnoreStart\n", "// @codingStandardsIgnoreLine\n"):
         (candidate_root / rel).write_text(allowed + added, encoding="utf-8")
         rejected = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if rejected.returncode != 1 or "NEW PHP_CodeSniffer suppression" not in rejected.stdout:
@@ -104,5 +104,11 @@ with tempfile.TemporaryDirectory(prefix="wpcs-lines-") as directory:
     broadened = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if broadened.returncode != 1:
         raise AssertionError("Broadening an existing suppression must fail closed")
+    (candidate_root / rel).write_text(
+        "<?php\nunsafe_old();\nnew_code();\n"
+        "// phpcs:ignore WordPress.Security.EscapeOutput\n", encoding="utf-8")
+    relocated = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    if relocated.returncode != 1 or "NEW PHP_CodeSniffer suppression" not in relocated.stdout:
+        raise AssertionError("Moving a baseline suppression within one file must fail")
 
 print("WPCS per-file/sniff/source-line baseline regression and fail-closed parser tests OK")
