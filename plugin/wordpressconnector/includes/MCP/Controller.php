@@ -653,7 +653,7 @@ final class Controller {
 		// Descriptors never override OAuth introspection or Runner policy.
 		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
 			foreach ( $result['tools'] as &$tool ) {
-				$is_update                        = in_array(
+				$is_update = in_array(
 					$tool['name'],
 					array(
 						'wordpress_connector_release_preview',
@@ -661,7 +661,7 @@ final class Controller {
 					),
 					true
 				);
-				$scopes                           = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				$scopes    = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
 				if ( 'wordpress_connector_execute' === $tool['name']
 					&& \Webactueel\WordPressConnector\Security\NativeOAuthServer::staging_files_enabled() ) {
 					$scopes = array( 'wpconnector:read', 'wpconnector:files' );
