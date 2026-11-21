@@ -662,6 +662,10 @@ final class Controller {
 					true
 				);
 				$scopes                           = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				if ( 'wordpress_connector_execute' === $tool['name']
+					&& \Webactueel\WordPressConnector\Security\NativeOAuthServer::staging_files_enabled() ) {
+					$scopes = array( 'wpconnector:read', 'wpconnector:files' );
+				}
 				$schemes                          = array(
 					array(
 						'type'   => 'oauth2',
@@ -723,6 +727,62 @@ final class Controller {
 		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+	}
+
+	/**
+	 * Narrow, opt-in OAuth filesystem access. This is not a general admin mode.
+	 * File replacement delegates SHA-256, content validation and rollback to
+	 * the already guarded FilesystemAdapter; all other actions remain denied.
+	 *
+	 * @param string $action Existing semantic action.
+	 * @param array  $payload User-supplied action payload.
+	 * @param bool   $dry_run Dry-run request.
+	 * @param bool   $confirm Explicit write confirmation.
+	 */
+	private function staging_file_action_allowed( string $action, array $payload, bool $dry_run, bool $confirm ): bool {
+		if ( null === $this->oauth_resource || ! $this->oauth_resource->canEditStagingFiles() ) {
+			return false;
+		}
+		if ( ! in_array( $action, array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ), true ) ) {
+			return false;
+		}
+		if ( 'filesystem.inspect' === $action ) {
+			return array() === $payload && $dry_run && ! $confirm;
+		}
+		if ( ! isset( $payload['path'] ) || ! is_string( $payload['path'] ) ) {
+			return false;
+		}
+		$path = $payload['path'];
+		if ( strlen( $path ) > 240 || ! preg_match( '#\\Awp-content/(plugins|themes)/[a-zA-Z0-9_-]+(?:/[a-zA-Z0-9_.-]+)+\\z#D', $path )
+			|| false !== strpos( $path, '..' ) || false !== strpos( $path, '/.' ) ) {
+			return false;
+		}
+		if ( 'filesystem.list' === $action ) {
+			return $dry_run && ! $confirm && array_keys( $payload ) === array( 'path' );
+		}
+		if ( ! preg_match( '/\\.(?:css|txt|md)\\z/iD', $path ) ) {
+			return false;
+		}
+		if ( 'filesystem.read_text' === $action ) {
+			return $dry_run && ! $confirm && array_keys( $payload ) === array( 'path' );
+		}
+		if ( 'filesystem.write_text' === $action ) {
+			$keys = array_keys( $payload );
+			foreach ( $keys as $key ) {
+				if ( ! in_array( $key, array( 'path', 'content', 'expected_sha256', 'acknowledge_active_content' ), true ) ) {
+					return false;
+				}
+			}
+			if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
+				return false;
+			}
+			if ( ! $dry_run ) {
+				return $confirm && isset( $payload['expected_sha256'] ) && is_string( $payload['expected_sha256'] )
+					&& 1 === preg_match( '/\\A[a-f0-9]{64}\\z/D', $payload['expected_sha256'] );
+			}
+			return ! $confirm;
+		}
+		return false;
 	}
 
 	/**
@@ -812,12 +872,14 @@ final class Controller {
 		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
 		}
-		// OAuth bearer access starts read-only; a browser login or GitHub OIDC
-		// keeps its existing permissions and approval/rollback gates.
-		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated()
-			&& ( ! in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
-				|| true !== $dry_run || false !== $confirm || array() !== $arguments['payload'] ) ) {
-			return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection.' );
+		// Native OAuth is read-only unless this token has a separately consented
+		// staging-file scope. Never inherit GitHub or browser permissions.
+		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated() ) {
+			$read_only_probe = in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
+				&& true === $dry_run && false === $confirm && array() === $arguments['payload'];
+			if ( ! $read_only_probe && ! $this->staging_file_action_allowed( $action, $arguments['payload'], $dry_run, $confirm ) ) {
+				return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection or separately approved staging file edits.' );
+			}
 		}
 
 		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;
