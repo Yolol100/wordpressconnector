@@ -140,6 +140,7 @@ function must( bool $test, string $why ): void {
 }
 function internal( string $method, array $args = array() ) {
 	$r = new ReflectionMethod( NativeOAuthServer::class, $method );
+	$r->setAccessible( true ); // Required for private method invocation on PHP 7.4/8.0.
 	return $r->invokeArgs( null, $args );
 }
 function token_request( array $data, string $content_type = 'application/x-www-form-urlencoded' ): WP_REST_Request {
@@ -270,6 +271,12 @@ $rotated_data = $rotated->get_data();
 must( $rotated_data['refresh_token'] !== $pair['refresh_token'], 'Refresh token rotated' );
 $reused = $server->token( token_request( $refresh_request ) );
 must( $reused->get_data()['error'] === 'invalid_grant', 'Old refresh cannot be replayed' );
+must( null === NativeOAuthServer::introspect( $rotated_data['access_token'] ), 'Refresh replay revokes entire active grant, including access token' );
+$after_replay = $server->token( token_request( array(
+	'grant_type' => 'refresh_token', 'client_id' => $params['client_id'],
+	'resource' => $resource, 'refresh_token' => $rotated_data['refresh_token'],
+) ) );
+must( $after_replay->get_data()['error'] === 'invalid_grant', 'Refresh replay revokes rotated descendant' );
 $revoke = $server->revoke( token_request( array(
 	'client_id' => $params['client_id'],
 	'token' => $rotated_data['access_token'],
