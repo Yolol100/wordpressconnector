@@ -85,9 +85,12 @@ python3 -B tests/plan-readonly-audit-tests.py
 python3 -B tests/plan-fleet-release-tests.py
 run_php tests/connection-readiness-contract.php
 run_php tests/mcp-admin-connection-doctor-contract.php
+run_php tests/admin-ui-contract.php
 if command -v node >/dev/null 2>&1; then
   node --check plugin/wordpressconnector/assets/connection-doctor.js
+  node --check plugin/wordpressconnector/assets/admin-ui.js
   node tests/mcp-admin-connection-doctor.js
+  node tests/admin-ui-navigation.js
 fi
 run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php
