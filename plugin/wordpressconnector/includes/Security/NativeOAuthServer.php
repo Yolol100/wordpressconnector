@@ -71,11 +71,18 @@ final class NativeOAuthServer {
 		);
 	}
 
+	private static function discoveryPath(): string {
+		// RFC 8414 inserts .well-known between the host and the issuer subpath.
+		$issuer_path = wp_parse_url( self::issuer(), PHP_URL_PATH );
+		$suffix      = is_string( $issuer_path ) ? rtrim( $issuer_path, '/' ) : '';
+		return '/.well-known/oauth-authorization-server' . $suffix;
+	}
+
 	public function serveDiscovery(): void {
-		// WordPress receives .well-known requests through its normal front controller.
-		$uri = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-		$path = wp_parse_url( $uri, PHP_URL_PATH );
-		$expected = wp_parse_url( home_url( '/.well-known/oauth-authorization-server' ), PHP_URL_PATH );
+		// The web server must route this canonical path into WordPress.
+		$uri      = isset( $_SERVER['REQUEST_URI'] ) && is_string( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+		$path     = wp_parse_url( $uri, PHP_URL_PATH );
+		$expected = self::discoveryPath();
 		if ( ! is_string( $path ) || $path !== $expected ) {
 			return;
 		}
@@ -215,8 +222,8 @@ final class NativeOAuthServer {
 		}
 		$source = 'POST' === $method ? $_POST : $_GET;
 		$params = self::authorizationParams( $source );
-		if ( null === $params || ! self::clientValid( $params['client_id'], $params['redirect_uri'] ) ) {
-			wp_die( 'Invalid authorization request or untrusted OAuth client.', 'OAuth request rejected', array( 'response' => 400 ) );
+		if ( null === $params ) {
+			wp_die( 'Invalid authorization request.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
 		if ( ! is_user_logged_in() ) {
 			if ( 'POST' === $method ) {
@@ -228,6 +235,9 @@ final class NativeOAuthServer {
 		}
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( 'An administrator account is required.', 'Access denied', array( 'response' => 403 ) );
+		}
+		if ( ! self::clientValid( $params['client_id'], $params['redirect_uri'] ) ) {
+			wp_die( 'Untrusted OAuth client metadata.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
 		if ( 'POST' === $method ) {
 			check_admin_referer( self::consentNonce( $params ) );
@@ -330,7 +340,7 @@ final class NativeOAuthServer {
 			return null;
 		}
 		$data = self::stored( 'access', $token );
-		if ( null === $data || ! self::accountValid( $data ) ) {
+		if ( null === $data || ! self::accountValid( $data ) || ! self::grantActive( $data ) ) {
 			return null;
 		}
 		return array(
@@ -345,6 +355,27 @@ final class NativeOAuthServer {
 			'iat'        => $data['issued_at'],
 			'token_type' => 'Bearer',
 		);
+	}
+
+	private static function grantActive( array $owner ): bool {
+		$id = $owner['grant_id'] ?? '';
+		if ( ! is_string( $id ) || '' === $id ) {
+			return false;
+		}
+		$grant = self::stored( 'grant', $id );
+		return is_array( $grant )
+			&& ( $grant['user_id'] ?? null ) === ( $owner['user_id'] ?? null )
+			&& ( $grant['client_id'] ?? '' ) === self::CLIENT_ID
+			&& ( $grant['resource'] ?? '' ) === OAuthResourceServer::resource()
+			&& ( $grant['scope'] ?? '' ) === self::SCOPE;
+	}
+
+	private static function revokeGrant( array $owner ): void {
+		$id = $owner['grant_id'] ?? '';
+		if ( is_string( $id ) && '' !== $id ) {
+			// Deleting the grant invalidates all its access and refresh tokens immediately.
+			self::stored( 'grant', $id, true );
+		}
 	}
 
 	private static function accountValid( array $data ): bool {
@@ -409,8 +440,12 @@ final class NativeOAuthServer {
 	}
 
 	private static function tokenResponse( array $owner ): \WP_REST_Response {
+		if ( ! self::grantActive( $owner ) ) {
+			return self::tokenError( 'invalid_grant' );
+		}
 		$now = time();
 		$payload = array(
+			'grant_id'  => $owner['grant_id'],
 			'user_id'   => $owner['user_id'],
 			'client_id' => self::CLIENT_ID,
 			'resource'  => OAuthResourceServer::resource(),
@@ -473,14 +508,60 @@ final class NativeOAuthServer {
 				) ) {
 				return self::tokenError( 'invalid_grant' );
 			}
-			return self::tokenResponse( $data );
+			$grant_id = self::issue(
+				'grant',
+				array(
+					'user_id'   => $data['user_id'],
+					'client_id' => self::CLIENT_ID,
+					'resource'  => OAuthResourceServer::resource(),
+					'scope'     => self::SCOPE,
+				),
+				self::REFRESH_TTL
+			);
+			if ( null === $grant_id ) {
+				return self::tokenError( 'server_error', 503 );
+			}
+			$data['grant_id'] = $grant_id;
+			$response         = self::tokenResponse( $data );
+			if ( 200 !== $response->get_status() ) {
+				self::revokeGrant( $data );
+			}
+			return $response;
 		}
 		if ( 'refresh_token' === $grant ) {
 			if ( ! isset( $body['resource'], $body['refresh_token'] ) ) {
 				return self::tokenError( 'invalid_request' );
 			}
-			$data = self::stored( 'refresh', $body['refresh_token'], true );
-			if ( null === $data || ! self::accountValid( $data ) ) {
+			$refresh = $body['refresh_token'];
+			$data    = self::stored( 'refresh', $refresh );
+			if ( null === $data ) {
+				// Preserve spent-token ancestry to revoke the active grant on reuse.
+				$spent = self::stored( 'spent', $refresh );
+				if ( null !== $spent ) {
+					self::revokeGrant( $spent );
+				}
+				return self::tokenError( 'invalid_grant' );
+			}
+			if ( ! self::accountValid( $data ) || ! self::grantActive( $data ) ) {
+				return self::tokenError( 'invalid_grant' );
+			}
+			$now         = time();
+			$spent_key   = self::optionKey( 'spent', $refresh );
+			$spent_value = array(
+				'data'     => $data,
+				'revision' => self::revision(),
+				'created'  => $now,
+				'expires'  => $now + self::REFRESH_TTL,
+			);
+			// add_option is atomic on option_name: only one worker can rotate.
+			if ( ! add_option( $spent_key, $spent_value, '', false ) ) {
+				if ( null !== self::stored( 'spent', $refresh ) ) {
+					self::revokeGrant( $data );
+				}
+				return self::tokenError( 'invalid_grant' );
+			}
+			if ( null === self::stored( 'refresh', $refresh, true ) ) {
+				self::revokeGrant( $data );
 				return self::tokenError( 'invalid_grant' );
 			}
 			return self::tokenResponse( $data );
@@ -501,9 +582,14 @@ final class NativeOAuthServer {
 			|| ! isset( $body['token'] ) ) {
 			return self::tokenError( 'invalid_request' );
 		}
-		// RFC 7009: the hint is advisory. Revoke either token type, including when the hint is absent.
-		self::stored( 'access', $body['token'], true );
-		self::stored( 'refresh', $body['token'], true );
+		// RFC 7009: any known token identifies its entire authorization grant.
+		foreach ( array( 'access', 'refresh', 'spent' ) as $kind ) {
+			$owner = self::stored( $kind, $body['token'] );
+			if ( null !== $owner ) {
+				self::revokeGrant( $owner );
+				break;
+			}
+		}
 		$response = new \WP_REST_Response( array(), 200 );
 		$response->header( 'Cache-Control', 'no-store' );
 		return $response;
@@ -537,9 +623,21 @@ final class NativeOAuthServer {
 
 	public function cleanup(): void {
 		global $wpdb;
-		foreach ( array( 'code', 'access', 'refresh' ) as $kind ) {
-			$like = $wpdb->esc_like( self::STORE_PREFIX . $kind . '_' ) . '%';
-			$names = $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100", $like ) );
+		$cursor_key = self::STORE_PREFIX . 'cleanup_cursor';
+		$cursors    = get_option( $cursor_key, array() );
+		$cursors    = is_array( $cursors ) ? $cursors : array();
+		$more       = false;
+		foreach ( array( 'code', 'access', 'refresh', 'spent', 'grant' ) as $kind ) {
+			$cursor = isset( $cursors[ $kind ] ) && is_string( $cursors[ $kind ] ) ? $cursors[ $kind ] : '';
+			$like   = $wpdb->esc_like( self::STORE_PREFIX . $kind . '_' ) . '%';
+			// A persisted keyset cursor prevents the first 100 live rows from hiding expired rows.
+			$names  = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name > %s ORDER BY option_name LIMIT 100",
+					$like,
+					$cursor
+				)
+			);
 			foreach ( (array) $names as $name ) {
 				$record = get_option( $name, false );
 				if ( ! is_array( $record ) || ! is_int( $record['expires'] ?? null )
@@ -547,6 +645,16 @@ final class NativeOAuthServer {
 					delete_option( $name );
 				}
 			}
+			if ( count( (array) $names ) === 100 ) {
+				$cursors[ $kind ] = (string) end( $names );
+				$more             = true;
+			} else {
+				unset( $cursors[ $kind ] );
+			}
+		}
+		update_option( $cursor_key, $cursors, false );
+		if ( $more && ! wp_next_scheduled( 'wpconnector_native_oauth_cleanup', array( 'continuation' ) ) ) {
+			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'wpconnector_native_oauth_cleanup', array( 'continuation' ) );
 		}
 	}
 }
