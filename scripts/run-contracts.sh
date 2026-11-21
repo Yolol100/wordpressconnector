@@ -20,6 +20,7 @@ run_php tests/rest-asset-upload-error-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/oauth-resource-contract.php
 run_php tests/oauth-unconfigured-contract.php
+run_php tests/oauth-native-contract.php
 run_php tests/release-owner-approval-contract.php
 run_php tests/action-catalog.php
 run_php tests/cli-helper-contract.php

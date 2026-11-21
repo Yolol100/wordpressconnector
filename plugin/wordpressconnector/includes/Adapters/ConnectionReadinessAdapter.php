@@ -14,6 +14,7 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\SitePairing;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 
 /**
  * Read-only administrative setup evidence.
@@ -67,6 +68,7 @@ final class ConnectionReadinessAdapter {
 		$paired           = SitePairing::pairedAdministratorId() > 0;
 		$providers        = $this->active_backup_providers();
 		$oauth_configured = class_exists( OAuthResourceServer::class, false ) && OAuthResourceServer::isConfigured();
+		$native_oauth = class_exists( NativeOAuthServer::class, false ) && NativeOAuthServer::isEnabled();
 
 		return array(
 			'read_only'                 => true,
@@ -80,7 +82,8 @@ final class ConnectionReadinessAdapter {
 				'oauth_21_ready'               => false,
 				'oauth_authorization_verified' => false,
 				'oauth_provider_configured'    => $oauth_configured,
-				'state'                        => $oauth_configured ? 'provider_configured_requires_independent_oauth_handshake' : 'requires_trusted_oauth_provider_and_explicit_account_consent',
+				'state'                        => $oauth_configured ? 'configured_requires_independent_chatgpt_oauth_handshake' : 'requires_native_or_external_oauth_and_explicit_account_consent',
+				'authorization_server_mode'   => $native_oauth ? 'wordpress_hosted_opt_in' : ( $oauth_configured ? 'external' : 'disabled' ),
 			),
 			'recovery'                  => array(
 				'active_backup_plugins_detected' => $providers,

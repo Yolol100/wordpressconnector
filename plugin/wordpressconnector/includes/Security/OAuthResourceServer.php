@@ -35,6 +35,9 @@ final class OAuthResourceServer {
 	 * @return array<string, mixed>|null
 	 */
 	private static function config(): ?array {
+		if ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::isEnabled() ) {
+			return array( 'native' => true, 'issuer' => NativeOAuthServer::issuer() );
+		}
 		$names = array(
 			'issuer'        => 'WPCONNECTOR_OAUTH_ISSUER',
 			'introspection' => 'WPCONNECTOR_OAUTH_INTROSPECTION_URL',
@@ -103,6 +106,7 @@ final class OAuthResourceServer {
 	 */
 	public static function selfUpdateConfigured(): bool {
 		return self::isConfigured()
+			&& ! ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::isEnabled() )
 			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' )
 			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' );
 	}
@@ -342,35 +346,47 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
 		}
 
-		// Remote validation is mandatory: never decode and trust unsigned JWT claims.
-		$result = wp_safe_remote_post(
-			$config['introspection'],
-			array(
-				'timeout'             => 5,
-				'redirection'         => 0,
-				'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
-				'sslverify'           => true,
-				'headers'             => array(
-					'Accept'        => 'application/json',
-					'Authorization' => 'Basic ' . base64_encode(
-						rawurlencode( $config['client_id'] ) . ':' . rawurlencode( $config['client_secret'] )
+		if ( ! empty( $config['native'] ) ) {
+			$claims = NativeOAuthServer::introspect( $access_token );
+			unset( $access_token );
+			$user_id = is_array( $claims ) ? ( $claims['user_id'] ?? null ) : null;
+			if ( ! is_int( $user_id ) || $user_id <= 0
+				|| ! is_array( $claims ) || ( $claims['sub'] ?? null ) !== 'wp:' . (string) $user_id ) {
+				return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+			}
+			$config['subject'] = 'wp:' . (string) $user_id;
+			$config['user_id'] = $user_id;
+		} else {
+			// Remote validation is mandatory: never decode and trust unsigned JWT claims.
+			$result = wp_safe_remote_post(
+				$config['introspection'],
+				array(
+					'timeout'             => 5,
+					'redirection'         => 0,
+					'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
+					'sslverify'           => true,
+					'headers'             => array(
+						'Accept'        => 'application/json',
+						'Authorization' => 'Basic ' . base64_encode(
+							rawurlencode( $config['client_id'] ) . ':' . rawurlencode( $config['client_secret'] )
+						),
 					),
-				),
-				'body'                => array(
-					'token'           => $access_token,
-					'token_type_hint' => 'access_token',
-				),
-			)
-		);
-		unset( $access_token );
-		if ( is_wp_error( $result ) || 200 !== (int) wp_remote_retrieve_response_code( $result ) ) {
-			return self::deny( 'wpconnector_oauth_provider_unavailable', 'OAuth token validation is unavailable.', 503 );
+					'body'                => array(
+						'token'           => $access_token,
+						'token_type_hint' => 'access_token',
+					),
+				)
+			);
+			unset( $access_token );
+			if ( is_wp_error( $result ) || 200 !== (int) wp_remote_retrieve_response_code( $result ) ) {
+				return self::deny( 'wpconnector_oauth_provider_unavailable', 'OAuth token validation is unavailable.', 503 );
+			}
+			$body = (string) wp_remote_retrieve_body( $result );
+			if ( strlen( $body ) > self::MAX_INTROSPECTION_BYTES ) {
+				return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+			}
+			$claims = json_decode( $body, true );
 		}
-		$body = (string) wp_remote_retrieve_body( $result );
-		if ( strlen( $body ) > self::MAX_INTROSPECTION_BYTES ) {
-			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
-		}
-		$claims = json_decode( $body, true );
 		$now    = time();
 		if ( ! is_array( $claims ) || true !== ( $claims['active'] ?? false )
 			|| ( $claims['iss'] ?? null ) !== $config['issuer']

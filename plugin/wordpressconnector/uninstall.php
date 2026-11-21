@@ -22,11 +22,15 @@ $wpconnector_cleanup_current_site = static function (): void {
 		'wpconnector_mutation_lock',
 		'wpconnector_github_oidc_site_pairing_v1',
 		'wpconnector_oauth_release_approval_v1',
+		'wpconnector_native_oauth_enabled',
+		'wpconnector_native_oauth_revision',
 	) as $option ) {
 		delete_option( $option );
 	}
 
 	delete_transient( 'wpconnector_github_oidc_jwks_v1' );
+	delete_transient( 'wpconnector_native_oauth_cimd_verified' );
+	wp_clear_scheduled_hook( 'wpconnector_native_oauth_cleanup' );
 
 	global $wpdb;
 	foreach ( array(
@@ -38,6 +42,9 @@ $wpconnector_cleanup_current_site = static function (): void {
 		'_transient_wpconnector_oauth_',
 		'_transient_timeout_wpconnector_oauth_',
 		'wpconnector_oauth_release_claim_',
+		'wpconnector_native_oauth_',
+		'_transient_wpconnector_nat_oauth_',
+		'_transient_timeout_wpconnector_nat_oauth_',
 	) as $prefix ) {
 		$like = $wpdb->esc_like( $prefix ) . '%';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Uninstall-only prepared options cleanup requires fresh data, not a stale cache.

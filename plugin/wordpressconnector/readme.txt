@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.12
+Stable tag: 1.20.13
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,9 @@ For full historic release notes and security boundaries, see https://github.com/
 3. Check the built-in connection diagnostics and verify HTTPS, capabilities and a tested external restore path before updates.
 
 == Changelog ==
+
+= 1.20.13 =
+* Development-only, UNPUBLISHED: opt-in WordPress-hosted OAuth authorization server using the verified ChatGPT CIMD identity, S256 PKCE, explicit administrator consent, one-use authorization codes, 15-minute opaque access tokens, rotating refresh tokens, strict resource binding, and owner revocation. Off by default; no production pairing, release or authorization is claimed.
 
 = 1.20.12 =
 * **Unpublished / NO-GO candidate.** Version 1.20.12 prepares source metadata above 1.20.10. On 21 November 2026, Hostinger reports ACDrive is running 1.20.10; its 60 files match the `v1.20.10` source paths and sizes, but installed file hashes are unavailable and a previous 1.20.11 report remains unreconciled. Security PR #1392 is merged. Protected governance PR #1393, real staging backup/restore and error tests, ChatGPT OAuth account pairing, final ZIP/SPDX/source attestation and explicit publication approval remain outstanding. No production deployment or published 1.20.12 release is claimed.
