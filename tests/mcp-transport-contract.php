@@ -532,6 +532,9 @@ namespace {
         array('Authorization' => 'Bearer accepted-test-token')
     ));
     $assert($oauthAuth === true && $oauthServer->isAuthenticated(), 'A validated OAuth identity is accepted for this MCP request.');
+    // File support being enabled on the site must never force file-edit
+    // permission for initial ChatGPT pairing.
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = true;
     $oauthList = $oauthController->handle(new WP_REST_Request(array(
         'jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list',
         'params' => array('_meta' => $modernMeta),
@@ -545,6 +548,7 @@ namespace {
             && ($entry['_meta']['securitySchemes'] ?? null) === $expectedScheme,
             'OAuth tools must advertise precise read/update scopes without widening generic execute access.');
     }
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = false;
     $oauthCall = static function (array $arguments) use ($oauthController, $executeHeaders, $modernMeta): WP_REST_Response {
         return $oauthController->handle(new WP_REST_Request(array(
             'jsonrpc' => '2.0',
@@ -605,8 +609,8 @@ namespace {
     ), $modernListHeaders))->get_data()['result']['tools'];
     foreach ($filesTools as $entry) {
         if ('wordpress_connector_execute' === $entry['name']) {
-            $assert($entry['securitySchemes'][0]['scopes'] === array('wpconnector:read', 'wpconnector:files'),
-                'Staging execute declares a separate file permission.');
+            $assert($entry['securitySchemes'][0]['scopes'] === array('wpconnector:read'),
+                'Staging execute never requires file-edit permission during initial OAuth pairing.');
         }
     }
     $filePath = 'wp-content/themes/sample-theme/custom.css';
