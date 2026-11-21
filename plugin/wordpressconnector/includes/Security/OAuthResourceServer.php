@@ -26,7 +26,11 @@ final class OAuthResourceServer {
 	private const RATE_LIMIT_GLOBAL       = 60;
 	private bool $authenticated             = false;
 	private bool $update_authorized         = false;
-	/** @var bool Whether the current bearer has staging file-edit scope. */
+	/**
+	 * Whether the current bearer has staging file-edit scope.
+	 *
+	 * @var bool
+	 */
 	private bool $staging_files_authorized = false;
 
 	/**
@@ -341,10 +345,11 @@ final class OAuthResourceServer {
 	 * @return bool|\WP_Error|null
 	 */
 	public function authenticate( \WP_REST_Request $request ) {
-		$this->authenticated             = false;
-		$this->update_authorized         = false;
+		$this->authenticated           = false;
+		$this->update_authorized       = false;
 		$this->staging_files_authorized = false;
-		$authorization           = (string) $request->get_header( 'authorization' );
+
+		$authorization = (string) $request->get_header( 'authorization' );
 		if ( '' === $authorization || 0 !== stripos( $authorization, 'bearer' ) ) {
 			return null;
 		}
