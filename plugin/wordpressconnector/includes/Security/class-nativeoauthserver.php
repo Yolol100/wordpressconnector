@@ -11,16 +11,17 @@ namespace Webactueel\WordPressConnector\Security;
 
 /** Native OAuth authorization server with grant-bound token lifecycle. */
 final class NativeOAuthServer {
-	private const NAMESPACE    = 'webactueel-wordpress-connector/v1';
-	private const CLIENT_ID    = 'https://chatgpt.com/oauth/client.json';
-	private const REDIRECT     = 'https://chatgpt.com/connector_platform_oauth_redirect';
-	private const OPT_ENABLED  = 'wpconnector_native_oauth_enabled';
-	private const OPT_REVISION = 'wpconnector_native_oauth_revision';
-	private const STORE_PREFIX = 'wpconnector_native_oauth_';
-	private const SCOPE        = 'wpconnector:read';
-	private const CODE_TTL     = 300;
-	private const ACCESS_TTL   = 900;
-	private const REFRESH_TTL  = 2592000;
+	private const NAMESPACE        = 'webactueel-wordpress-connector/v1';
+	private const CLIENT_ID        = 'https://chatgpt.com/oauth/client.json';
+	private const REDIRECT         = 'https://chatgpt.com/connector_platform_oauth_redirect';
+	private const OPT_ENABLED      = 'wpconnector_native_oauth_enabled';
+	private const OPT_REVISION     = 'wpconnector_native_oauth_revision';
+	private const OPT_INSTALLATION = 'wpconnector_native_oauth_installation';
+	private const STORE_PREFIX     = 'wpconnector_native_oauth_';
+	private const SCOPE            = 'wpconnector:read';
+	private const CODE_TTL         = 300;
+	private const ACCESS_TTL       = 900;
+	private const REFRESH_TTL      = 2592000;
 
 	/** Register. */
 	public function register(): void {
@@ -42,6 +43,7 @@ final class NativeOAuthServer {
 			&& ( $approval['site'] ?? '' ) === self::issuer()
 			&& is_int( $approval['approved_by'] ?? null )
 			&& $approval['approved_by'] > 0
+			&& null !== self::installation_id()
 			&& ! defined( 'WPCONNECTOR_OAUTH_ISSUER' )
 			&& is_ssl()
 			&& 'https' === wp_parse_url( $home, PHP_URL_SCHEME )
@@ -404,6 +406,15 @@ final class NativeOAuthServer {
 		return $output;
 	}
 
+	/**
+	 * Get the random installation identifier, never a default reusable generation.
+	 * A new value is required after uninstall or re-enabling native OAuth.
+	 */
+	private static function installation_id(): ?string {
+		$value = get_option( self::OPT_INSTALLATION, '' );
+		return is_string( $value ) && 1 === preg_match( '/\A[a-f0-9]{64}\z/D', $value ) ? $value : null;
+	}
+
 	/** Revision. */
 	private static function revision(): int {
 		return max( 1, (int) get_option( self::OPT_REVISION, 1 ) );
@@ -427,6 +438,10 @@ final class NativeOAuthServer {
 	 * @param int    $ttl ttl.
 	 */
 	private static function issue( string $kind, array $data, int $ttl ): ?string {
+		$installation = self::installation_id();
+		if ( null === $installation ) {
+			return null;
+		}
 		for ( $i = 0; $i < 3; ++$i ) {
 			try {
 				$token = self::base64_url_encode( random_bytes( 32 ) );
@@ -435,10 +450,11 @@ final class NativeOAuthServer {
 			}
 			$key   = self::option_key( $kind, $token );
 			$value = array(
-				'data'     => $data,
-				'revision' => self::revision(),
-				'created'  => time(),
-				'expires'  => time() + $ttl,
+				'data'         => $data,
+				'installation' => $installation,
+				'revision'     => self::revision(),
+				'created'      => time(),
+				'expires'      => time() + $ttl,
 			);
 			// Core transients have a real TTL, including external object caches.
 			// A collision is negligible with 256 random bits; still refuse overwrites.
@@ -465,14 +481,16 @@ final class NativeOAuthServer {
 		if ( ! is_array( $record ) ) {
 			return null;
 		}
+		$installation = self::installation_id();
+		if ( null === $installation || ! isset( $record['expires'], $record['revision'], $record['data'], $record['installation'] )
+			|| ! is_string( $record['installation'] ) || ! hash_equals( $installation, $record['installation'] )
+			|| ! is_int( $record['expires'] ) || $record['expires'] <= time()
+			|| self::revision() !== (int) $record['revision'] || ! is_array( $record['data'] ) ) {
+			return null;
+		}
 		// delete_transient returns false for a concurrent losing redeemer.
 		// The result must be checked before trusting a single-use credential.
 		if ( $consume && ! delete_transient( $key ) ) {
-			return null;
-		}
-		if ( ! isset( $record['expires'], $record['revision'], $record['data'] )
-			|| ! is_int( $record['expires'] ) || $record['expires'] <= time()
-			|| self::revision() !== (int) $record['revision'] || ! is_array( $record['data'] ) ) {
 			return null;
 		}
 		return $record['data'];
@@ -743,10 +761,11 @@ final class NativeOAuthServer {
 			$now         = time();
 			$spent_key   = self::option_key( 'spent', $refresh );
 			$spent_value = array(
-				'data'     => $data,
-				'revision' => self::revision(),
-				'created'  => $now,
-				'expires'  => $now + self::REFRESH_TTL,
+				'data'         => $data,
+				'installation' => self::installation_id(),
+				'revision'     => self::revision(),
+				'created'      => $now,
+				'expires'      => $now + self::REFRESH_TTL,
 			);
 			if ( false !== get_transient( $spent_key ) ) {
 				self::revoke_grant( $data );
@@ -808,6 +827,17 @@ final class NativeOAuthServer {
 				|| defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
 				wp_die( 'HTTPS and a non-conflicting native OAuth setup are required.', 'OAuth blocked', array( 'response' => 403 ) );
 			}
+			// Never reuse the previous installation's token generation, even if a
+			// persistent Redis/Memcached transient cache survives uninstall.
+			try {
+				$installation = bin2hex( random_bytes( 32 ) );
+			} catch ( \Throwable $error ) {
+				wp_die( 'Unable to establish a new OAuth installation identity.', 'OAuth unavailable', array( 'response' => 503 ) );
+			}
+			if ( ! update_option( self::OPT_INSTALLATION, $installation, false )
+				&& get_option( self::OPT_INSTALLATION, '' ) !== $installation ) {
+				wp_die( 'Unable to store the OAuth installation identity.', 'OAuth unavailable', array( 'response' => 503 ) );
+			}
 			update_option(
 				self::OPT_ENABLED,
 				array(
@@ -822,6 +852,7 @@ final class NativeOAuthServer {
 		} elseif ( 'disable' === $decision ) {
 			update_option( self::OPT_ENABLED, '0', false );
 			update_option( self::OPT_REVISION, self::revision() + 1, false );
+			delete_option( self::OPT_INSTALLATION );
 		} else {
 			wp_die( 'Unknown OAuth settings operation.', 'Invalid request', array( 'response' => 400 ) );
 		}

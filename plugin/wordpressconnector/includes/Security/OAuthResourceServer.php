@@ -344,11 +344,6 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$access_token = $match[1];
-		if ( ! self::canIntrospect() ) {
-			unset( $access_token );
-			return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
-		}
-
 		if ( ! empty( $config['native'] ) ) {
 			$claims = NativeOAuthServer::introspect( $access_token );
 			unset( $access_token );
@@ -360,6 +355,12 @@ final class OAuthResourceServer {
 			$config['subject'] = 'wp:' . (string) $user_id;
 			$config['user_id'] = $user_id;
 		} else {
+			// Only remote introspection consumes the shared outbound-provider quota.
+			// Native opaque-token checks are local and cannot exhaust it.
+			if ( ! self::canIntrospect() ) {
+				unset( $access_token );
+				return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
+			}
 			// Remote validation is mandatory: never decode and trust unsigned JWT claims.
 			$result = wp_safe_remote_post(
 				$config['introspection'],

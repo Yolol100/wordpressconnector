@@ -193,7 +193,9 @@ must( isset( $GLOBALS['routes']['/oauth/token'], $GLOBALS['routes']['/oauth/revo
 must( 404 === $server->rest_metadata()->get_error_data()['status'], 'Disabled metadata must be 404' );
 
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
-must( NativeOAuthServer::is_enabled(), 'Owner opt-in enables HTTPS-native mode' );
+must( ! NativeOAuthServer::is_enabled(), 'Approval without a fresh installation identifier cannot activate OAuth' );
+update_option( 'wpconnector_native_oauth_installation', str_repeat( 'a', 64 ) );
+must( NativeOAuthServer::is_enabled(), 'Owner opt-in and installation generation enable HTTPS-native mode' );
 must( NativeOAuthServer::has_prior_approval(), 'Prior approval is tracked for later revocation' );
 $GLOBALS['home_origin'] = 'https://cloned-site.example.invalid';
 must( ! NativeOAuthServer::is_enabled(), 'Cloned site must not inherit OAuth approval' );
@@ -279,6 +281,13 @@ $authenticated = new OAuthResourceServer();
 $result = $authenticated->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) );
 must( true === $result && $authenticated->isAuthenticated() && $GLOBALS['current_user'] === 123, 'Existing MCP resource server accepts native token' );
 must( ! $authenticated->canSelfUpdate(), 'Native token cannot update WordPress' );
+// Native local lookups must never consume the shared external-introspection rate quota.
+for ( $i = 0; $i < 75; ++$i ) {
+	$bad_bearer = ( new OAuthResourceServer() )->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . str_repeat( 'z', 43 ) ) ) );
+	must( $bad_bearer instanceof WP_Error && 'wpconnector_oauth_invalid_token' === $bad_bearer->get_error_code(), 'Native invalid bearer stays a 401, not a shared 429' );
+}
+$still_authenticated = new OAuthResourceServer();
+must( true === $still_authenticated->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) ), 'Valid native bearer survives 75 invalid submissions' );
 
 $replay = $server->token( token_request( base_token( 'authorization_code', $code, $verifier ) ) );
 must( 400 === $replay->get_status() && $replay->get_data()['error'] === 'invalid_grant', 'Code replay denied' );
@@ -355,6 +364,35 @@ for ( $i = 0; $i < 225; ++$i ) {
 	must( ! isset( $GLOBALS['transients']['wpconnector_native_oauth_fixture_' . $i] ), 'Expired transient fixture removed' );
 }
 must( false !== get_transient( 'wpconnector_native_oauth_fixture_live' ), 'Valid transient is kept' );
+
+// Simulate uninstall/reinstall with external Redis transients surviving the plugin.
+$before_reinstall_code = internal( 'issue', array( 'code', $owner, 300 ) );
+$before_reinstall = $server->token( token_request( base_token( 'authorization_code', $before_reinstall_code, $verifier ) ) );
+must( 200 === $before_reinstall->get_status(), 'Issue cached grant before simulated reinstall' );
+$cached_pair = $before_reinstall->get_data();
+$cached_access_key = internal( 'option_key', array( 'access', $cached_pair['access_token'] ) );
+$cached_refresh_key = internal( 'option_key', array( 'refresh', $cached_pair['refresh_token'] ) );
+must( isset( $GLOBALS['transients'][ $cached_access_key ], $GLOBALS['transients'][ $cached_refresh_key ] ), 'Opaque token entries exist in synthetic persistent cache' );
+delete_option( 'wpconnector_native_oauth_installation' );
+delete_option( 'wpconnector_native_oauth_revision' );
+update_option( 'wpconnector_native_oauth_enabled', '0' );
+must( ! NativeOAuthServer::is_enabled(), 'Uninstall disables native OAuth even if external cache survives' );
+must( isset( $GLOBALS['transients'][ $cached_access_key ], $GLOBALS['transients'][ $cached_refresh_key ] ), 'Uninstall left external cache token entries in place' );
+update_option( 'wpconnector_native_oauth_installation', str_repeat( 'b', 64 ) );
+update_option( 'wpconnector_native_oauth_enabled', array( 'site' => NativeOAuthServer::issuer(), 'approved_by' => 123 ) );
+must( NativeOAuthServer::is_enabled(), 'Fresh installation generation permits a new opt-in' );
+must( null === NativeOAuthServer::introspect( $cached_pair['access_token'] ), 'Old access token is denied after reinstall despite cached entry and reset revision' );
+$old_refresh = $server->token( token_request( array(
+    'grant_type' => 'refresh_token',
+    'client_id' => $params['client_id'],
+    'resource' => $resource,
+    'refresh_token' => $cached_pair['refresh_token'],
+) ) );
+must( 400 === $old_refresh->get_status() && 'invalid_grant' === $old_refresh->get_data()['error'], 'Old refresh token cannot be replayed after reinstall' );
+must( isset( $GLOBALS['transients'][ $cached_access_key ], $GLOBALS['transients'][ $cached_refresh_key ] ), 'Denial is due to installation identity, not cache removal' );
+$new_install_code = internal( 'issue', array( 'code', $owner, 300 ) );
+$new_install_pair = $server->token( token_request( base_token( 'authorization_code', $new_install_code, $verifier ) ) );
+must( 200 === $new_install_pair->get_status() && is_array( NativeOAuthServer::introspect( $new_install_pair->get_data()['access_token'] ) ), 'New installation issues independent valid tokens' );
 
 update_option( 'wpconnector_native_oauth_revision', 2 );
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Owner revocation generation invalidates tokens' );
