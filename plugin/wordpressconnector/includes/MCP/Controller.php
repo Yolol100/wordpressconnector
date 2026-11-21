@@ -62,7 +62,7 @@ final class Controller {
 		$this->runner                 = $runner;
 		$this->registry               = $registry;
 		$this->authorization_callback = $authorizationCallback;
-		$this->oauth_resource        = $oauth_resource;
+		$this->oauth_resource         = $oauth_resource;
 	}
 
 	/**
@@ -608,47 +608,67 @@ final class Controller {
 		// There is no arbitrary PHP, branch, URL or ZIP write operation.
 		if ( null !== $this->oauth_resource && OAuthResourceServer::selfUpdateConfigured() ) {
 			$result['tools'][] = array(
-				'name' => 'wordpress_connector_release_preview',
+				'name'        => 'wordpress_connector_release_preview',
 				'description' => 'Preview the verified GitHub release for this Connector and return a state fingerprint. Installs nothing.',
 				'inputSchema' => $this->empty_object_schema(),
 				'annotations' => array(
-					'readOnlyHint' => true,
+					'readOnlyHint'    => true,
 					'destructiveHint' => false,
-					'idempotentHint' => true,
-					'openWorldHint' => false,
+					'idempotentHint'  => true,
+					'openWorldHint'   => false,
 				),
 			);
 			$result['tools'][] = array(
-				'name' => 'wordpress_connector_release_apply',
+				'name'        => 'wordpress_connector_release_apply',
 				'description' => 'After explicit owner approval, install only the exact previewed protected-source-verified and digest-pinned WordPress Connector release. Requires stable request_id, SHA-256 fingerprint and confirm=true.',
 				'inputSchema' => array(
-					'type' => 'object',
-					'properties' => array(
-						'request_id' => array( 'type' => 'string', 'minLength' => 8, 'maxLength' => 100, 'pattern' => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$' ),
-						'expected_fingerprint' => array( 'type' => 'string', 'pattern' => '^[a-f0-9]{64}$' ),
-						'confirm' => array( 'type' => 'boolean', 'const' => true ),
+					'type'                 => 'object',
+					'properties'           => array(
+						'request_id'           => array(
+							'type'      => 'string',
+							'minLength' => 8,
+							'maxLength' => 100,
+							'pattern'   => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$',
+						),
+						'expected_fingerprint' => array(
+							'type'    => 'string',
+							'pattern' => '^[a-f0-9]{64}$',
+						),
+						'confirm'              => array(
+							'type'  => 'boolean',
+							'const' => true,
+						),
 					),
-					'required' => array( 'request_id', 'expected_fingerprint', 'confirm' ),
+					'required'             => array( 'request_id', 'expected_fingerprint', 'confirm' ),
 					'additionalProperties' => false,
 				),
 				'annotations' => array(
-					'readOnlyHint' => false,
+					'readOnlyHint'    => false,
 					'destructiveHint' => true,
-					'idempotentHint' => true,
-					'openWorldHint' => false,
+					'idempotentHint'  => true,
+					'openWorldHint'   => false,
 				),
 			);
 		}
 		// Descriptors never override OAuth introspection or Runner policy.
 		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
 			foreach ( $result['tools'] as &$tool ) {
-				$is_update = in_array( $tool['name'], array(
-					'wordpress_connector_release_preview',
-					'wordpress_connector_release_apply',
-				), true );
-				$scopes = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
-				$schemes = array( array( 'type' => 'oauth2', 'scopes' => $scopes ) );
-				$tool['securitySchemes'] = $schemes;
+				$is_update                        = in_array(
+					$tool['name'],
+					array(
+						'wordpress_connector_release_preview',
+						'wordpress_connector_release_apply',
+					),
+					true
+				);
+				$scopes                           = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				$schemes                          = array(
+					array(
+						'type'   => 'oauth2',
+						'scopes' => $scopes,
+					),
+				);
+				$tool['securitySchemes']          = $schemes;
 				$tool['_meta']['securitySchemes'] = $schemes;
 			}
 			unset( $tool );
@@ -710,9 +730,9 @@ final class Controller {
 	 * WordPress Core and ConnectorUpdateAdapter verify and install the immutable
 	 * GitHub release. OAuth write scope is never inherited by generic execute.
 	 *
-	 * @param mixed $rpc_id JSON-RPC identifier.
+	 * @param mixed  $rpc_id JSON-RPC identifier.
 	 * @param string $name Dedicated release action.
-	 * @param array $arguments Exact request arguments.
+	 * @param array  $arguments Exact request arguments.
 	 * @return array MCP response.
 	 */
 	private function release_tool( $rpc_id, string $name, array $arguments ): array {
@@ -721,7 +741,7 @@ final class Controller {
 			return $this->tool_error( 'An authenticated, owner-enabled OAuth release connection is required.' );
 		}
 		if ( ! $this->oauth_resource->canSelfUpdate() ) {
-			$result = $this->tool_error( 'OAuth update scope and current WordPress update_plugins capability are required.' );
+			$result    = $this->tool_error( 'OAuth update scope and current WordPress update_plugins capability are required.' );
 			$challenge = OAuthResourceServer::challengeHeader( true );
 			if ( '' !== $challenge ) {
 				$result['_meta']['mcp/www_authenticate'] = $challenge . ', error="insufficient_scope"';
@@ -747,8 +767,17 @@ final class Controller {
 			return $this->tool_error( 'Release installation requires the SHA-256 fingerprint from a fresh preview.' );
 		}
 		$result = $this->run_semantic(
-			$rpc_id, $name, 'connector.update.apply', array(), false, true,
-			$arguments['request_id'], $fingerprint, null, true, true
+			$rpc_id,
+			$name,
+			'connector.update.apply',
+			array(),
+			false,
+			true,
+			$arguments['request_id'],
+			$fingerprint,
+			null,
+			true,
+			true
 		);
 		return $this->tool_result( $result, empty( $result['ok'] ) );
 	}
@@ -866,10 +895,10 @@ final class Controller {
 		return $this->runner->run(
 			$connector_request,
 			array(
-				'transport'             => 'mcp',
-				'authenticated_user_id' => get_current_user_id(),
+				'transport'                  => 'mcp',
+				'authenticated_user_id'      => get_current_user_id(),
 				'require_release_provenance' => $require_release_provenance,
-				'require_owner_approval' => $require_owner_approval,
+				'require_owner_approval'     => $require_owner_approval,
 			)
 		);
 	}

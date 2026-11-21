@@ -61,11 +61,11 @@ final class ConnectionReadinessAdapter {
 			throw new RuntimeException( 'Connection readiness does not accept parameters.' );
 		}
 
-		$endpoint  = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
-		$https     = is_ssl() && is_string( $endpoint )
+		$endpoint         = rest_url( 'webactueel-wordpress-connector/v1/mcp' );
+		$https            = is_ssl() && is_string( $endpoint )
 			&& 'https' === strtolower( (string) wp_parse_url( $endpoint, PHP_URL_SCHEME ) );
-		$paired    = SitePairing::pairedAdministratorId() > 0;
-		$providers = $this->active_backup_providers();
+		$paired           = SitePairing::pairedAdministratorId() > 0;
+		$providers        = $this->active_backup_providers();
 		$oauth_configured = class_exists( OAuthResourceServer::class, false ) && OAuthResourceServer::isConfigured();
 
 		return array(
