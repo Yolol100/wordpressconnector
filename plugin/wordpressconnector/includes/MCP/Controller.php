@@ -628,11 +628,11 @@ final class Controller {
 							'type'      => 'string',
 							'minLength' => 8,
 							'maxLength' => 100,
-							'pattern'   => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99},,
+							'pattern'   => '^[A-Za-z0-9][A-Za-z0-9._-]{7,99}$',
 						),
 						'expected_fingerprint' => array(
 							'type'    => 'string',
-							'pattern' => '^[a-f0-9]{64},,
+							'pattern' => '^[a-f0-9]{64}$',
 						),
 						'confirm'              => array(
 							'type'  => 'boolean',
