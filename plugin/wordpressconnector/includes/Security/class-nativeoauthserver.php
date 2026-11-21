@@ -344,6 +344,30 @@ final class NativeOAuthServer {
 		exit;
 	}
 
+	/**
+	 * Decide the granted scope after explicit consent. Read-only consent must
+	 * remain available when a client requested optional staging file access
+	 * but the account lacks WordPress file-editor capabilities.
+	 *
+	 * @param string $requested_scope Canonical OAuth request scope.
+	 * @param string $decision        Submitted consent action.
+	 * @param bool   $files_permitted Whether WordPress permits file editing.
+	 * @return string|null Scope to grant, or null to deny.
+	 */
+	private static function consent_scope( string $requested_scope, string $decision, bool $files_permitted ): ?string {
+		if ( ! self::scope_allowed( $requested_scope ) ) {
+			return null;
+		}
+		if ( 'approve' === $decision ) {
+			return self::SCOPE;
+		}
+		if ( 'approve_files' === $decision && self::SCOPE . ' ' . self::FILES_SCOPE === $requested_scope
+			&& $files_permitted && self::staging_files_enabled() ) {
+			return $requested_scope;
+		}
+		return null;
+	}
+
 	/** Authorize. */
 	public function authorize(): void {
 		if ( ! self::is_enabled() ) {
@@ -375,15 +399,14 @@ final class NativeOAuthServer {
 			wp_die( 'Untrusted OAuth client metadata.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
 		$files_requested = self::SCOPE . ' ' . self::FILES_SCOPE === $params['scope'];
-		if ( $files_requested && ( ! self::staging_files_enabled()
-			|| ( ! current_user_can( 'edit_plugins' ) && ! current_user_can( 'edit_themes' ) ) ) ) {
-			wp_die( 'Staging file editing is not authorized for this administrator.', 'Access denied', array( 'response' => 403 ) );
-		}
+		$files_permitted = $files_requested && self::staging_files_enabled()
+			&& ( current_user_can( 'edit_plugins' ) || current_user_can( 'edit_themes' ) );
 		if ( 'POST' === $method ) {
 			check_admin_referer( self::consent_nonce( $params ) );
 			$decision = isset( $_POST['wpconnector_oauth_decision'] ) && is_string( $_POST['wpconnector_oauth_decision'] )
 				? sanitize_text_field( wp_unslash( $_POST['wpconnector_oauth_decision'] ) ) : '';
-			if ( ( $files_requested && 'approve_files' !== $decision ) || ( ! $files_requested && 'approve' !== $decision ) ) {
+			$granted_scope = self::consent_scope( $params['scope'], $decision, $files_permitted );
+			if ( null === $granted_scope ) {
 				self::send_callback( $params, array( 'error' => 'access_denied' ) );
 			}
 			$code = self::issue(
@@ -394,7 +417,7 @@ final class NativeOAuthServer {
 					'redirect_uri'   => $params['redirect_uri'],
 					'code_challenge' => $params['code_challenge'],
 					'resource'       => $params['resource'],
-					'scope'          => $params['scope'],
+					'scope'          => $granted_scope,
 				),
 				self::CODE_TTL
 			);
@@ -407,8 +430,10 @@ final class NativeOAuthServer {
 		header( 'Referrer-Policy: no-referrer', true );
 		header( 'X-Frame-Options: DENY', true );
 		$html = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
-		if ( $files_requested ) {
-			$html .= '<p>' . esc_html__( 'Allow staging-only edits to existing CSS, TXT and Markdown files in plugin/theme folders. PHP, JavaScript, WordPress core and Connector files remain blocked. Each change still needs explicit confirmation, original-file checksum and rollback.', 'wordpressconnector' ) . '</p>';
+		if ( $files_requested && $files_permitted ) {
+			$html .= '<p>' . esc_html__( 'Optional staging file editing is available for this administrator. It is limited to existing CSS, TXT and Markdown files and still requires explicit confirmation, SHA-256 checks and rollback.', 'wordpressconnector' ) . '</p>';
+		} elseif ( $files_requested ) {
+			$html .= '<p>' . esc_html__( 'WordPress does not allow this account to edit plugin or theme files. You can safely connect ChatGPT with read-only access instead. File editing remains blocked.', 'wordpressconnector' ) . '</p>';
 		} else {
 			$html .= '<p>' . esc_html__( 'Allow the verified ChatGPT client to inspect this site with your current administrator permissions. This connection cannot edit content or install updates.', 'wordpressconnector' ) . '</p>';
 		}
@@ -419,7 +444,10 @@ final class NativeOAuthServer {
 			$html .= '<input type="hidden" name="' . esc_attr( $name ) . '" value="' . esc_attr( $value ) . '" />';
 		}
 		$html .= wp_nonce_field( self::consent_nonce( $params ), '_wpnonce', true, false );
-		$html .= '<p><button type="submit" name="wpconnector_oauth_decision" value="' . ( $files_requested ? 'approve_files' : 'approve' ) . '">' . esc_html( $files_requested ? __( 'Allow staging file edits', 'wordpressconnector' ) : __( 'Allow read-only access', 'wordpressconnector' ) ) . '</button> ';
+		$html .= '<p><button type="submit" name="wpconnector_oauth_decision" value="approve">' . esc_html__( 'Allow read-only access', 'wordpressconnector' ) . '</button> ';
+		if ( $files_permitted ) {
+			$html .= '<button type="submit" name="wpconnector_oauth_decision" value="approve_files">' . esc_html__( 'Allow staging file edits', 'wordpressconnector' ) . '</button> ';
+		}
 		$html .= '<button type="submit" name="wpconnector_oauth_decision" value="deny">' . esc_html__( 'Deny', 'wordpressconnector' ) . '</button></p></form>';
 		wp_die(
 			wp_kses(
