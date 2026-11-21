@@ -252,7 +252,7 @@ final class OAuthResourceServer {
 		if ( $include_update && self::selfUpdateConfigured() ) {
 			$scopes .= ' ' . self::UPDATE_SCOPE;
 		}
-		if ( $include_files && NativeOAuthServer::staging_files_enabled() ) {
+		if ( $include_files && class_exists( NativeOAuthServer::class ) && NativeOAuthServer::staging_files_enabled() ) {
 			$scopes .= ' ' . self::FILES_SCOPE;
 		}
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
