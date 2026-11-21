@@ -23,6 +23,13 @@ PROTECTED_GOVERNANCE_PATHS = frozenset({
     ".github/workflows/docker-runtime-smoke.yml",
     ".github/workflows/required-pr-gate.yml",
     ".github/workflows/release.yml",
+    ".github/workflows/wpcs-audit.yml",
+    "phpcs.xml.dist",
+    "scripts/wpcs-regression-gate.py",
+    "tests/wpcs-regression-gate-tests.py",
+    "scripts/verify-release-supply-chain.py",
+    "tests/release-supply-chain-tests.py",
+    "scripts/build-release-package.py",
     ".github/workflows/wordpress-request.yml",
     ".github/workflows/wordpress-zero-config-execute.yml",
     "scripts/verify-required-pr-gate.py",
@@ -57,7 +64,7 @@ def classify_paths(paths):
             "Temporary OIDC request/result/receipt/asset state must remain on "
             "its runtime PR branch and must not be merged into main."
         )
-    if any(p in PROTECTED_GOVERNANCE_PATHS for p in paths):
+    if any(p in PROTECTED_GOVERNANCE_PATHS or p.startswith(".github/workflows/") for p in paths):
         raise GateError(
             "A release or CI trust-control file changed in this PR. "
             "Use a separately validated governance bootstrap before enabling this gate."
@@ -143,7 +150,7 @@ def verify(client, number, head, deadline_seconds=1560, sleep_seconds=15):
     validate_identity(client.repo, number, head)
     verify_head(client, number, head)
     needs_docker = classify_paths(changed_paths(client, number))
-    names = ["ci.yml"] + (["docker-runtime-smoke.yml"] if needs_docker else [])
+    names = ["ci.yml", "wpcs-audit.yml"] + (["docker-runtime-smoke.yml"] if needs_docker else [])
     started = time.monotonic()
     while True:
         unfinished = []
@@ -158,7 +165,7 @@ def verify(client, number, head, deadline_seconds=1560, sleep_seconds=15):
                 raise GateError("%s completed without success (%s)." % (workflow, run.get("conclusion")))
         if not unfinished:
             verify_head(client, number, head)
-            return {"sha": head, "pr": number, "ci": "success", "docker_required": needs_docker}
+            return {"sha": head, "pr": number, "ci": "success", "wpcs": "success", "docker_required": needs_docker}
         if time.monotonic() - started >= deadline_seconds:
             raise GateError("Required workflow verification timed out: " + ", ".join(unfinished))
         time.sleep(sleep_seconds)

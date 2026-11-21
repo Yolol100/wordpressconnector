@@ -16,6 +16,46 @@ import sys
 ROOT = "plugin/wordpressconnector/"
 
 
+
+# PHP_CodeSniffer suppression comments can mask new findings even when
+# candidate report totals match the trusted base. Keep a per-file baseline
+# of the exact directive text, not merely a count of emitted sniff messages.
+SUPPRESSION_DIRECTIVE = re.compile(
+    r"(?i)\b(?:phpcs\s*:\s*(?:ignorefile|ignore|disable|enable|set)\b|"
+    r"@?codingstandards(?:ignorefile|ignoreline|ignorestart|ignoreend|changesetting)\b)"
+)
+
+
+def source_suppression_directives(root: Path) -> Counter:
+    plugin = root / ROOT
+    if not plugin.is_dir():
+        raise ValueError(f"Missing plugin source for suppression baseline: {plugin}")
+    directives: Counter = Counter()
+    scanned = 0
+    for path in sorted(plugin.rglob("*.php")):
+        if path.is_symlink() or not path.is_file():
+            raise ValueError(f"Non-regular PHP file in source tree: {path}")
+        scanned += 1
+        relative = path.relative_to(root).as_posix()
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines):
+            if SUPPRESSION_DIRECTIVE.search(line):
+                normalized = re.sub(r"\s+", " ", line.strip())
+                # Bind a suppression to its immediate source surroundings;
+                # moving a previously permitted directive to new code must
+                # not silently reuse an old allowlist slot in the same file.
+                before = next((x.strip() for x in reversed(lines[:number]) if x.strip()), "")
+                after = next((x.strip() for x in lines[number + 1:] if x.strip()), "")
+                context = (
+                    re.sub(r"\s+", " ", before),
+                    re.sub(r"\s+", " ", after),
+                )
+                directives[(relative, normalized, context)] += 1
+    if not scanned:
+        raise ValueError(f"Empty plugin PHP source in {plugin}")
+    return directives
+
+
 def load_counts(path: Path, source_root: Path | None = None) -> tuple[Counter, dict]:
     report = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(report, dict) or not isinstance(report.get("files"), dict) or not report["files"]:
@@ -89,7 +129,22 @@ def compare(
         ) + "\n"
     else:
         message += "PASS: no new findings compared with the exact trusted base.\n"
-    return [f"{file} {level} {sniff} {source[:80]} +{extra}" for file, level, sniff, source, extra in additions], message
+    suppression_errors = []
+    if base_root is not None:
+        base_directives = source_suppression_directives(base_root)
+        new_directives = source_suppression_directives(current_root)
+        for (file, directive, context), count in sorted(new_directives.items()):
+            delta = count - base_directives[(file, directive, context)]
+            if delta > 0:
+                suppression_errors.append(f"{file}: new PHPCS suppression (+{delta}) {directive[:120]}")
+    if suppression_errors:
+        message += "NEW PHP_CodeSniffer suppression directives (not accepted as a clean scan):\n"
+        message += "\n".join("  " + item for item in suppression_errors) + "\n"
+    return (
+        [f"{file} {level} {sniff} {source[:80]} +{extra}" for file, level, sniff, source, extra in additions]
+        + suppression_errors,
+        message,
+    )
 
 
 def main() -> int:

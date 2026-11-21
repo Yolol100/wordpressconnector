@@ -31,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      PYTHONSAFEPATH: "1"
       GH_TOKEN: ${{ github.token }}
       RELEASE_VERSION_INPUT: ${{ inputs.release_version }}
       RELEASE_SHA_INPUT: ${{ inputs.expected_main_sha }}
@@ -78,7 +79,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/build-release-package.py \
+          python3 -I -B scripts/build-release-package.py \
             --source plugin/wordpressconnector \
             --zip "$RUNNER_TEMP/wordpressconnector.zip" \
             --sbom "$RUNNER_TEMP/wordpressconnector.spdx.json" \
@@ -86,7 +87,14 @@ jobs:
             --source-date-epoch "${{ steps.version.outputs.source_epoch }}"
           unzip -t "$RUNNER_TEMP/wordpressconnector.zip"
           unzip -Z1 "$RUNNER_TEMP/wordpressconnector.zip" | grep -qx 'wordpressconnector/wordpressconnector.php'
-          python3 -m json.tool "$RUNNER_TEMP/wordpressconnector.spdx.json" >/dev/null
+          python3 -I -m json.tool "$RUNNER_TEMP/wordpressconnector.spdx.json" >/dev/null
+          # Independent exact-byte SPDX/ZIP and dependency-manifest acceptance gate.
+          # No packaged Composer/npm manifest currently exists; if one appears,
+          # stop publication until locked vulnerability review is implemented.
+          python3 -I -B tests/release-supply-chain-tests.py
+          python3 -I -B scripts/verify-release-supply-chain.py \
+            "$RUNNER_TEMP/wordpressconnector.zip" \
+            "$RUNNER_TEMP/wordpressconnector.spdx.json"
           sha256sum "$RUNNER_TEMP/wordpressconnector.zip" | awk '{print $1 "  wordpressconnector.zip"}' > "$RUNNER_TEMP/wordpressconnector.zip.sha256"
           grep -Eq '^[a-f0-9]{64}  wordpressconnector\.zip$' "$RUNNER_TEMP/wordpressconnector.zip.sha256"
 
