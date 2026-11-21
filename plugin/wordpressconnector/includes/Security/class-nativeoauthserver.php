@@ -76,7 +76,12 @@ final class NativeOAuthServer {
 			&& 'staging' === wp_get_environment_type();
 	}
 
-	/** Verify the exact set of OAuth scopes before issuing or renewing a grant. */
+	/**
+	 * Verify the exact set of OAuth scopes before issuing or renewing a grant.
+	 *
+	 * @param string $scope Requested exact grant scope.
+	 * @return bool Whether this scope is currently authorized.
+	 */
 	private static function scope_allowed( string $scope ): bool {
 		return self::SCOPE === $scope
 			|| ( self::SCOPE . ' ' . self::FILES_SCOPE === $scope && self::staging_files_enabled() );
