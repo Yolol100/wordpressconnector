@@ -740,7 +740,7 @@ final class Controller {
 	 * @param bool   $confirm Explicit write confirmation.
 	 */
 	private function staging_file_action_allowed( string $action, array $payload, bool $dry_run, bool $confirm ): bool {
-		if ( null === $this->oauth_resource || ! $this->oauth_resource->canEditStagingFiles() ) {
+		if ( null === $this->oauth_resource || ! $this->oauth_resource->can_edit_staging_files() ) {
 			return false;
 		}
 		if ( ! in_array( $action, array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ), true ) ) {
