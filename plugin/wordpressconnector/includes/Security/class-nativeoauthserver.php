@@ -397,7 +397,7 @@ final class NativeOAuthServer {
 		nocache_headers();
 		header( 'Referrer-Policy: no-referrer', true );
 		header( 'X-Frame-Options: DENY', true );
-		$html  = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
+		$html = '<h1>' . esc_html__( 'Connect ChatGPT to this WordPress site', 'wordpressconnector' ) . '</h1>';
 		if ( $files_requested ) {
 			$html .= '<p>' . esc_html__( 'Allow staging-only edits to existing CSS, TXT and Markdown files in plugin/theme folders. PHP, JavaScript, WordPress core and Connector files remain blocked. Each change still needs explicit confirmation, original-file checksum and rollback.', 'wordpressconnector' ) . '</p>';
 		} else {
