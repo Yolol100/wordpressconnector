@@ -286,12 +286,18 @@ final class NativeOAuthServer {
 			|| 'code' !== $data['response_type'] || 'S256' !== $data['code_challenge_method']
 			|| ! preg_match( '/\A[A-Za-z0-9_-]{43}\z/D', $data['code_challenge'] )
 			|| ! preg_match( '/\A[A-Za-z0-9._~-]{8,1024}\z/D', $data['state'] )
-			|| OAuthResourceServer::resource() !== $data['resource']
-			|| ! in_array( $data['scope'], self::staging_files_enabled() ? array( '', self::SCOPE, self::SCOPE . ' ' . self::FILES_SCOPE ) : array( '', self::SCOPE ), true ) ) {
+			|| OAuthResourceServer::resource() !== $data['resource'] ) {
 			return null;
 		}
+		// OAuth scopes are sets, not an ordered phrase. Persist one canonical
+		// representation so PKCE consent, refresh and grant binding stay exact.
 		if ( '' === $data['scope'] ) {
 			$data['scope'] = self::SCOPE;
+		} elseif ( self::FILES_SCOPE . ' ' . self::SCOPE === $data['scope'] ) {
+			$data['scope'] = self::SCOPE . ' ' . self::FILES_SCOPE;
+		}
+		if ( ! self::scope_allowed( $data['scope'] ) ) {
+			return null;
 		}
 		return $data;
 	}
