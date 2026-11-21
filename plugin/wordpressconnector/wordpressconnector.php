@@ -3,7 +3,7 @@
  * Plugin Name: WordPress Connector
  * Plugin URI: https://github.com/Yolol100/wordpressconnector
  * Description: Connect WordPress to the trusted Yolol100 GitHub workflow when an administrator activates this plugin. Manage WordPress, Elementor, WooCommerce and SEO via authenticated REST/MCP; signed releases appear in Plugins as native updates.
- * Version: 1.20.10
+ * Version: 1.20.12
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Webactueel
@@ -21,7 +21,7 @@ namespace Webactueel\WordPressConnector;
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
-define( 'WPCONNECTOR_VERSION', '1.20.10' );
+define( 'WPCONNECTOR_VERSION', '1.20.12' );
 define( 'WPCONNECTOR_FILE', __FILE__ );
 define( 'WPCONNECTOR_PATH', plugin_dir_path( __FILE__ ) );
 $wpconnector_files = array(
