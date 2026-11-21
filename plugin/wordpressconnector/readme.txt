@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.16
+Stable tag: 1.20.17
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,10 @@ For full historic release notes and security boundaries, see https://github.com/
 3. Check the built-in connection diagnostics and verify HTTPS, capabilities and a tested external restore path before updates.
 
 == Changelog ==
+
+= 1.20.17 =
+* Staging development candidate: clarify ChatGPT custom MCP connection recovery, distinguish ChatGPT browser-configuration errors from WordPress OAuth failures and show separately consented wpconnector:files availability in the WordPress admin screen. Does not create a ChatGPT app browser-configuration URL or alter existing OAuth grants.
+* Existing OAuth/file scope enforcement is unchanged. Live ChatGPT relink, file-edit readback and complete restore remain acceptance gates.
 
 = 1.20.16 =
 * Development-only, UNPUBLISHED staging candidate: separately consented native ChatGPT OAuth file scope for existing CSS, TXT and Markdown assets inside plugin/theme directories. File edits require an explicit server opt-in, pinned staging origin, WordPress staging environment, administrator capability, write policy, SHA-256 precondition and confirmation; never enable automatically on production.
