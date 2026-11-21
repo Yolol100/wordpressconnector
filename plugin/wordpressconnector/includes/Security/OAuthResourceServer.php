@@ -19,12 +19,14 @@ final class OAuthResourceServer {
 	private const NAMESPACE               = 'webactueel-wordpress-connector/v1';
 	private const SCOPE                   = 'wpconnector:read';
 	private const UPDATE_SCOPE            = 'wpconnector:update';
+	private const FILES_SCOPE             = 'wpconnector:files';
 	private const MAX_TOKEN_AGE           = 3600;
 	private const MAX_INTROSPECTION_BYTES = 16384;
 	private const RATE_LIMIT_PER_IP       = 12;
 	private const RATE_LIMIT_GLOBAL       = 60;
 	private bool $authenticated           = false;
 	private bool $update_authorized       = false;
+	private bool $staging_files_authorized = false;
 
 	/**
 	 * Return strictly configured, site-local OAuth settings.
@@ -151,6 +153,9 @@ final class OAuthResourceServer {
 		if ( self::selfUpdateConfigured() ) {
 			$scopes[] = self::UPDATE_SCOPE;
 		}
+		if ( ! empty( $config['native'] ) && NativeOAuthServer::staging_files_enabled() ) {
+			$scopes[] = self::FILES_SCOPE;
+		}
 		return array(
 			'resource'                 => self::resource(),
 			'authorization_servers'    => array( $config['issuer'] ),
@@ -231,7 +236,7 @@ final class OAuthResourceServer {
 	 *
 	 * @param bool $include_update Advertise update scope only with explicit opt-in.
 	 */
-	public static function challengeHeader( bool $include_update = false ): string {
+	public static function challengeHeader( bool $include_update = false, bool $include_files = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
@@ -240,6 +245,9 @@ final class OAuthResourceServer {
 		$scopes = self::SCOPE;
 		if ( $include_update && self::selfUpdateConfigured() ) {
 			$scopes .= ' ' . self::UPDATE_SCOPE;
+		}
+		if ( $include_files && class_exists( NativeOAuthServer::class ) && NativeOAuthServer::staging_files_enabled() ) {
+			$scopes .= ' ' . self::FILES_SCOPE;
 		}
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
@@ -322,6 +330,11 @@ final class OAuthResourceServer {
 		return $this->authenticated;
 	}
 
+	/** Authorizes ONLY native-OAuth staging file actions under a separate consented scope. */
+	public function canEditStagingFiles(): bool {
+		return $this->authenticated && $this->staging_files_authorized;
+	}
+
 	/**
 	 * Return null when no bearer is supplied, true on valid bearer, WP_Error
 	 * otherwise. Invalid bearers never fall back to a logged-in browser session.
@@ -332,6 +345,7 @@ final class OAuthResourceServer {
 	public function authenticate( \WP_REST_Request $request ) {
 		$this->authenticated     = false;
 		$this->update_authorized = false;
+		$this->staging_files_authorized = false;
 		$authorization           = (string) $request->get_header( 'authorization' );
 		if ( '' === $authorization || 0 !== stripos( $authorization, 'bearer' ) ) {
 			return null;
@@ -430,6 +444,10 @@ final class OAuthResourceServer {
 		$this->update_authorized = self::selfUpdateConfigured()
 			&& in_array( self::UPDATE_SCOPE, preg_split( '/ +/', $scope ), true )
 			&& user_can( $config['user_id'], 'update_plugins' );
+		$this->staging_files_authorized = ! empty( $config['native'] )
+			&& NativeOAuthServer::staging_files_enabled()
+			&& in_array( self::FILES_SCOPE, preg_split( '/ +/', $scope ), true )
+			&& ( user_can( $config['user_id'], 'edit_plugins' ) || user_can( $config['user_id'], 'edit_themes' ) );
 		wp_set_current_user( $config['user_id'] );
 		$this->authenticated = true;
 		return true;
