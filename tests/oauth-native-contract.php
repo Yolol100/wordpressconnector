@@ -11,6 +11,8 @@ $GLOBALS['transients'] = array();
 $GLOBALS['transient_expires'] = array();
 $GLOBALS['user_allowed'] = true;
 $GLOBALS['ssl_ready'] = true;
+$GLOBALS['environment'] = 'production';
+$GLOBALS['file_edit_allowed'] = false;
 $GLOBALS['home_origin'] = 'https://example.invalid';
 $GLOBALS['client_response_ok'] = true;
 $GLOBALS['http_calls'] = array();
@@ -115,6 +117,7 @@ function home_url( string $path = '' ): string { return $GLOBALS['home_origin'] 
 function rest_url( string $path ): string { return 'https://example.invalid/wp-json/' . ltrim( $path, '/' ); }
 function admin_url( string $path ): string { return 'https://example.invalid/wp-admin/' . $path; }
 function is_ssl(): bool { return $GLOBALS['ssl_ready']; }
+function wp_get_environment_type(): string { return $GLOBALS['environment']; }
 function wp_salt( string $scheme ): string { return 'synthetic-secret-for-tests-only'; }
 function is_wp_error( $result ): bool { return $result instanceof WP_Error; }
 function wp_safe_remote_get( string $url, array $args ) {
@@ -140,7 +143,8 @@ function wp_safe_remote_post(): void { throw new RuntimeException( 'Native valid
 function wp_remote_retrieve_response_code( array $response ): int { return $response['response']['code']; }
 function wp_remote_retrieve_body( array $response ): string { return $response['body']; }
 function get_userdata( int $user_id ) { return 123 === $user_id ? (object) array( 'ID' => $user_id ) : false; }
-function user_can( int $user_id, string $permission ): bool { return 123 === $user_id && $GLOBALS['user_allowed'] && 'manage_options' === $permission; }
+function user_can( int $user_id, string $permission ): bool { return 123 === $user_id && $GLOBALS['user_allowed'] && ( 'manage_options' === $permission || ( 'edit_plugins' === $permission && $GLOBALS['file_edit_allowed'] ) ); }
+function current_user_can( string $permission ): bool { return user_can( 123, $permission ); }
 function wp_set_current_user( int $id ): void { $GLOBALS['current_user'] = $id; }
 function __return_true(): bool { return true; }
 function register_rest_route( string $namespace, string $route, array $args ): void {
@@ -234,6 +238,24 @@ $params = array(
 	'scope' => 'wpconnector:read',
 );
 must( internal( 'authorization_params', array( $params ) ) === $params, 'Valid authorization request accepted' );
+$filesParams = $params;
+$filesParams['scope'] = 'wpconnector:read wpconnector:files';
+must( null === internal( 'authorization_params', array( $filesParams ) ),
+    'Staging file grant must not be requested on a production runtime.' );
+define( 'WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES', true );
+must( null === internal( 'authorization_params', array( $filesParams ) ),
+    'A server opt-in alone must never grant file access outside staging.' );
+$GLOBALS['environment'] = 'staging';
+must( null !== internal( 'authorization_params', array( $filesParams ) ) && NativeOAuthServer::staging_files_enabled(),
+    'Only explicit server opt-in and runtime staging enable the exact file scope.' );
+must( in_array( 'wpconnector:files', NativeOAuthServer::metadata()['scopes_supported'], true ),
+    'Staging metadata advertises a distinct files permission.' );
+must( in_array( 'wpconnector:files', OAuthResourceServer::metadata()['scopes_supported'], true ),
+    'Protected resource metadata advertises the same files permission.' );
+$GLOBALS['environment'] = 'production';
+must( null === internal( 'authorization_params', array( $filesParams ) ) && ! NativeOAuthServer::staging_files_enabled(),
+    'Changing the runtime to production revokes eligibility immediately.' );
+
 foreach ( array(
 	array( 'redirect_uri', 'https://evil.invalid/callback' ),
 	array( 'resource', 'https://evil.invalid/mcp' ),
@@ -340,6 +362,33 @@ delete_option( 'wpconnector_native_oauth_registered_redirect' );
 must( null === internal( 'authorization_params', array( $custom_request ) ), 'Removed callback is denied again' );
 
 $authenticated = new OAuthResourceServer();
+$GLOBALS['environment'] = 'staging';
+$GLOBALS['file_edit_allowed'] = true;
+$filesOwner = $owner;
+$filesOwner['scope'] = 'wpconnector:read wpconnector:files';
+$filesCode = internal( 'issue', array( 'code', $filesOwner, 300 ) );
+$filesPair = $server->token( token_request( base_token( 'authorization_code', $filesCode, $verifier ) ) );
+must( 200 === $filesPair->get_status()
+    && 'wpconnector:read wpconnector:files' === $filesPair->get_data()['scope'],
+    'Opted-in staging admin can issue separately consented file scope.' );
+$fileBearer = $filesPair->get_data()['access_token'];
+$filesResource = new OAuthResourceServer();
+must( true === $filesResource->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $fileBearer ) ) )
+    && $filesResource->canEditStagingFiles(), 'File scope enables ONLY separately consented staging file operations.' );
+$GLOBALS['environment'] = 'production';
+must( null === NativeOAuthServer::introspect( $fileBearer ),
+    'Existing staging file token is revoked immediately when runtime changes to production.' );
+$GLOBALS['environment'] = 'staging';
+$GLOBALS['file_edit_allowed'] = false;
+must( null === NativeOAuthServer::introspect( $fileBearer ),
+    'Removing WordPress file edit permission revokes the file grant.' );
+$GLOBALS['file_edit_allowed'] = true;
+$filesReadOnlyResource = new OAuthResourceServer();
+must( true === $filesReadOnlyResource->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) )
+    && ! $filesReadOnlyResource->canEditStagingFiles(),
+    'An original read-only token cannot inherit staging file permission.' );
+$GLOBALS['environment'] = 'production';
+$GLOBALS['file_edit_allowed'] = false;
 $result = $authenticated->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) );
 must( true === $result && $authenticated->isAuthenticated() && $GLOBALS['current_user'] === 123, 'Existing MCP resource server accepts native token' );
 must( ! $authenticated->canSelfUpdate(), 'Native token cannot update WordPress' );
