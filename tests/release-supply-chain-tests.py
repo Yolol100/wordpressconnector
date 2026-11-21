@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
@@ -73,4 +74,16 @@ run(trusted, 1, "spoofed checksum",
     lambda j: j["packages"][0]["checksums"][0].update(checksumValue="0" * 64))
 run(trusted, 1, "spoofed source hash",
     lambda j: j["files"][0]["checksums"][1].update(checksumValue="0" * 64))
-print("release ZIP/SPDX parity, version, dependency manifest and negative tamper tests OK")
+# Verify that every active WordPress plugin version field agrees.
+plugin_root = ROOT / "plugin" / "wordpressconnector"
+plugin_source = (plugin_root / "wordpressconnector.php").read_text(encoding="utf-8")
+readme_source = (plugin_root / "readme.txt").read_text(encoding="utf-8")
+header_match = re.search(r"(?m)^\s*\* Version: (\d+\.\d+\.\d+)\s*$", plugin_source)
+constant_match = re.search(r"define\( 'WPCONNECTOR_VERSION', '(\d+\.\d+\.\d+)' \);", plugin_source)
+stable_match = re.search(r"(?m)^Stable tag: (\d+\.\d+\.\d+)\s*$", readme_source)
+changelog_match = re.search(r"(?m)^= (\d+\.\d+\.\d+) =$", readme_source)
+versions = [m.group(1) if m else None for m in
+            (header_match, constant_match, stable_match, changelog_match)]
+if not versions[0] or len(set(versions)) != 1:
+    raise AssertionError(f"Active WordPress plugin version metadata mismatch: {versions}")
+print(f"release ZIP/SPDX parity, version {versions[0]} metadata, dependency manifest and negative tamper tests OK")

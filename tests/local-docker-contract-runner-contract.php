@@ -32,6 +32,12 @@ $required = array(
     "'--cap-drop', 'ALL'",
     'log_sha256',
     'no_production_site_or_write_validation',
+    'WPCONNECTOR_LOCAL_DOCKER_SPLIT_PYTHON=1',
+    'LOCAL_PYTHON_DEFERRED',
+    'pythonExitCode',
+    'nodeExitCode',
+    "'python'",
+    "'node'",
 );
 foreach ($required as $fragment) {
     if (false === strpos($script, $fragment)) {
@@ -42,4 +48,9 @@ if (false === strpos($runner, 'tests/local-docker-contract-runner-contract.php')
     false === strpos($runner, 'tests/local-docker-runner-preflight.ps1')) {
     throw new RuntimeException('Windows Docker QA safety tests are not in canonical CI runner.');
 }
-echo "Windows Docker source, SHA, untracked PHP, image and execution-boundary contracts OK\n";
+if (false === strpos($runner, 'run_python tests/release-supply-chain-tests.py') ||
+    false === strpos($runner, 'run_python tests/plan-fleet-release-tests.py') ||
+    false === strpos($runner, 'python3 -B "$@"')) {
+    throw new RuntimeException('Canonical CI must retain native Python execution.');
+}
+echo "Windows Docker source, SHA, untracked PHP, image and split-Python contracts OK\n";

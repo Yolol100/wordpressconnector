@@ -12,7 +12,7 @@ if (!defined('WPCONNECTOR_FILE')) {
     define('WPCONNECTOR_FILE', dirname(__DIR__) . '/plugin/wordpressconnector/wordpressconnector.php');
 }
 if (!defined('WPCONNECTOR_VERSION')) {
-    define('WPCONNECTOR_VERSION', '1.20.13-test');
+    define('WPCONNECTOR_VERSION', '1.20.16-test');
 }
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Admin/Settings.php';
 

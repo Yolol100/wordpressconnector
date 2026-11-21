@@ -27,7 +27,7 @@ The isolated Docker check runs for changes in relevant paths on pull requests, a
 
 Use the existing Docker image and **exact clean Git commit**; this is optional, additional controlled-runtime evidence. It is not a second release runner or an alternative to the existing GitHub-hosted `wp-env` smoke test.
 
-In PowerShell, from the checked-out repository root (with Git and a running Docker Engine):
+In PowerShell, from the checked-out repository root (with Git, Python 3, Node.js and a running Docker Engine):
 
 ```powershell
 # Check out the same commit that GitHub CI tested before running this command.
@@ -36,7 +36,7 @@ docker image inspect wordpress:php8.3-apache
 .\scripts\local-docker-contracts.ps1 -ExpectedSha $sha
 ```
 
-The image must already exist locally; the script never pulls. It requires clean tracked files, checks the full 40-character SHA, runs `scripts/run-contracts.sh` inside the **pre-existing** image with no network, a read-only repository bind mount, a read-only container root, dropped capabilities and a bounded temporary filesystem. A unique container is cleaned up. Only that uniquely named container may be removed; never delete shared Docker volumes, projects or other containers. No site URL, secrets, database, local WordPress installation, live plugin activation or admin credentials are required.
+The image must already exist locally; the script never pulls. It requires clean tracked files, checks the full 40-character SHA, runs `scripts/run-contracts.sh` inside the **pre-existing** image with no network, a read-only repository bind mount, a read-only container root, dropped capabilities and a bounded temporary filesystem. Because the WordPress PHP image has no Python, only the four Python tests are delegated to the SHA-checked host Python interpreter; JavaScript tests run with host Node.js. The runner rejects changes to the deferred list and fails if either host suite fails. GitHub CI still executes Python normally. A unique container is cleaned up. Only that uniquely named container may be removed; never delete shared Docker volumes, projects or other containers. No site URL, secrets, database, local WordPress installation, live plugin activation or admin credentials are required.
 
 Results and a compact `receipt.json` are stored outside the repository under the user's temporary `wordpressconnector-qa/<run-id>/` directory (or the explicit `-EvidenceDirectory`), with exact Git SHA, image ID, Docker version, status, warning count, log name and SHA-256. Fail on non-zero exit, PHP warnings or tracked source changes. A wrong SHA, option-like Docker image, or ignored/untracked PHP input must fail before Docker starts. The script also rechecks the Git HEAD and PHP inputs after Docker finishes. The canonical `run-contracts.sh` exercises the PowerShell parser and negative scenarios whenever `pwsh` is available, and always runs the static contract test.
 
