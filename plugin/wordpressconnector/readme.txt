@@ -26,7 +26,7 @@ For full historic release notes and security boundaries, see https://github.com/
 == Changelog ==
 
 = 1.20.12 =
-* **Unpublished candidate.** Version 1.20.12 is above the already observed 1.20.11 installation. Security PR #1392 has merged into protected main; this Draft PR changes only version metadata and release notes. Governance PR #1393, verified staging backup/restore and update failures, real ChatGPT OAuth account linking, installed 1.20.11 byte reconciliation, ZIP/SPDX/source attestation and explicit release approval remain outstanding. No production deployment or release is claimed.
+* **Unpublished / NO-GO candidate.** Version 1.20.12 prepares source metadata above 1.20.10. On 21 November 2026, Hostinger reports ACDrive is running 1.20.10; its 60 files match the `v1.20.10` source paths and sizes, but installed file hashes are unavailable and a previous 1.20.11 report remains unreconciled. Security PR #1392 is merged. Protected governance PR #1393, real staging backup/restore and error tests, ChatGPT OAuth account pairing, final ZIP/SPDX/source attestation and explicit publication approval remain outstanding. No production deployment or published 1.20.12 release is claimed.
 
 = 1.20.10 =
 * Prefix internal bootstrap/uninstall globals and document only precisely scoped PHPCS exceptions for intentional atomic/fresh database operations and stable external hooks. No public API changes.
