@@ -240,8 +240,9 @@ final class OAuthResourceServer {
 	 * Exact challenge for the MCP OAuth discovery handshake.
 	 *
 	 * @param bool $include_update Advertise update scope only with explicit opt-in.
+	 * @param bool $include_files  Advertise staging file scope only with owner opt-in.
 	 */
-	public static function challengeHeader( bool $include_update = false ): string {
+	public static function challengeHeader( bool $include_update = false, bool $include_files = false ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
@@ -251,17 +252,21 @@ final class OAuthResourceServer {
 		if ( $include_update && self::selfUpdateConfigured() ) {
 			$scopes .= ' ' . self::UPDATE_SCOPE;
 		}
+		if ( $include_files && NativeOAuthServer::staging_files_enabled() ) {
+			$scopes .= ' ' . self::FILES_SCOPE;
+		}
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
 
 	/**
 	 * Advertise OAuth only for configured sites, never as a substitute for auth.
 	 *
-	 * @param string $reason Optional allowlisted OAuth error reason.
+	 * @param string $reason        Optional allowlisted OAuth error reason.
+	 * @param bool   $include_files Advertise staging file scope for step-up.
 	 */
-	public static function challenge( string $reason = '' ): void {
+	public static function challenge( string $reason = '', bool $include_files = false ): void {
 		if ( self::isConfigured() && ! headers_sent() ) {
-			$header = self::challengeHeader();
+			$header = self::challengeHeader( false, $include_files );
 			if ( '' !== $header ) {
 				if ( in_array( $reason, array( 'invalid_token', 'insufficient_scope' ), true ) ) {
 					$header .= ', error="' . $reason . '"';
