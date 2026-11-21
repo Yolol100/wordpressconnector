@@ -374,7 +374,7 @@ must( 200 === $filesPair->get_status()
 $fileBearer = $filesPair->get_data()['access_token'];
 $filesResource = new OAuthResourceServer();
 must( true === $filesResource->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $fileBearer ) ) )
-    && $filesResource->canEditStagingFiles(), 'File scope enables ONLY separately consented staging file operations.' );
+    && $filesResource->can_edit_staging_files(), 'File scope enables ONLY separately consented staging file operations.' );
 $GLOBALS['environment'] = 'production';
 must( null === NativeOAuthServer::introspect( $fileBearer ),
     'Existing staging file token is revoked immediately when runtime changes to production.' );
@@ -385,7 +385,7 @@ must( null === NativeOAuthServer::introspect( $fileBearer ),
 $GLOBALS['file_edit_allowed'] = true;
 $filesReadOnlyResource = new OAuthResourceServer();
 must( true === $filesReadOnlyResource->authenticate( new WP_REST_Request( array( 'authorization' => 'Bearer ' . $pair['access_token'] ) ) )
-    && ! $filesReadOnlyResource->canEditStagingFiles(),
+    && ! $filesReadOnlyResource->can_edit_staging_files(),
     'An original read-only token cannot inherit staging file permission.' );
 $GLOBALS['environment'] = 'production';
 $GLOBALS['file_edit_allowed'] = false;
