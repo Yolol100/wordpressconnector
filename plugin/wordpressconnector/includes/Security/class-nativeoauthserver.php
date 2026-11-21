@@ -466,9 +466,17 @@ final class NativeOAuthServer {
 	 */
 	private static function issue( string $kind, array $data, int $ttl ): ?string {
 		$installation = self::installation_id();
-		if ( null === $installation ) {
+		$original     = $data['_oauth_installation'] ?? $installation;
+		if ( null === $installation || ! is_string( $original ) || ! hash_equals( $installation, $original ) ) {
 			return null;
 		}
+		// Code issuance must not inherit a callback withdrawn during consent.
+		if ( 'code' === $kind && ( ! isset( $data['redirect_uri'] ) || ! self::redirect_valid( $data['redirect_uri'] ) ) ) {
+			return null;
+		}
+		// Preserve the initiating grant epoch across concurrent mode changes.
+		// Never mint a record for an old authorization under the new epoch.
+		$data['_oauth_installation'] = $original;
 		for ( $i = 0; $i < 3; ++$i ) {
 			try {
 				$token = self::base64_url_encode( random_bytes( 32 ) );
@@ -520,7 +528,9 @@ final class NativeOAuthServer {
 		if ( $consume && ! delete_transient( $key ) ) {
 			return null;
 		}
-		return $record['data'];
+		$data                        = $record['data'];
+		$data['_oauth_installation'] = $record['installation'];
+		return $data;
 	}
 
 	/**
@@ -680,13 +690,14 @@ final class NativeOAuthServer {
 		}
 		$now     = time();
 		$payload = array(
-			'grant_id'   => $owner['grant_id'],
-			'user_id'    => $owner['user_id'],
-			'client_id'  => self::CLIENT_ID,
-			'resource'   => OAuthResourceServer::resource(),
-			'scope'      => self::SCOPE,
-			'issued_at'  => $now,
-			'expires_at' => $now + self::ACCESS_TTL,
+			'grant_id'            => $owner['grant_id'],
+			'user_id'             => $owner['user_id'],
+			'client_id'           => self::CLIENT_ID,
+			'resource'            => OAuthResourceServer::resource(),
+			'scope'               => self::SCOPE,
+			'_oauth_installation' => $owner['_oauth_installation'],
+			'issued_at'           => $now,
+			'expires_at'          => $now + self::ACCESS_TTL,
 		);
 		$access  = self::issue( 'access', $payload, self::ACCESS_TTL );
 		if ( null === $access ) {
@@ -751,10 +762,11 @@ final class NativeOAuthServer {
 			$grant_id = self::issue(
 				'grant',
 				array(
-					'user_id'   => $data['user_id'],
-					'client_id' => self::CLIENT_ID,
-					'resource'  => OAuthResourceServer::resource(),
-					'scope'     => self::SCOPE,
+					'user_id'             => $data['user_id'],
+					'client_id'           => self::CLIENT_ID,
+					'resource'            => OAuthResourceServer::resource(),
+					'scope'               => self::SCOPE,
+					'_oauth_installation' => $data['_oauth_installation'],
 				),
 				self::REFRESH_TTL
 			);
@@ -789,7 +801,7 @@ final class NativeOAuthServer {
 			$spent_key   = self::option_key( 'spent', $refresh );
 			$spent_value = array(
 				'data'         => $data,
-				'installation' => self::installation_id(),
+				'installation' => $data['_oauth_installation'],
 				'revision'     => self::revision(),
 				'created'      => $now,
 				'expires'      => $now + self::REFRESH_TTL,
@@ -888,12 +900,27 @@ final class NativeOAuthServer {
 				wp_die( 'Only an exact ChatGPT callback URL is allowed.', 'Invalid callback', array( 'response' => 400 ) );
 			}
 			if ( self::registered_redirect() !== $redirect ) {
+				// Rotate the opaque installation epoch BEFORE saving a new redirect.
+				// Concurrent old-grant exchanges retain their original epoch and fail
+				// validation even if they finish after the option change.
+				try {
+					$next_installation = bin2hex( random_bytes( 32 ) );
+				} catch ( \Throwable $error ) {
+					wp_die( 'Unable to rotate callback generation.', 'OAuth unavailable', array( 'response' => 503 ) );
+				}
+				if ( ! update_option( self::OPT_INSTALLATION, $next_installation, false )
+					&& self::installation_id() !== $next_installation ) {
+					wp_die( 'Unable to persist callback generation.', 'OAuth unavailable', array( 'response' => 503 ) );
+				}
 				if ( ! update_option( self::OPT_REDIRECT, $redirect, false )
 					&& self::registered_redirect() !== $redirect ) {
 					wp_die( 'Unable to save callback registration.', 'OAuth unavailable', array( 'response' => 503 ) );
 				}
-				// Revoke any tokens minted for a previously approved callback.
-				update_option( self::OPT_REVISION, self::revision() + 1, false );
+				$next_revision = self::revision() + 1;
+				if ( ! update_option( self::OPT_REVISION, $next_revision, false )
+					&& self::revision() !== $next_revision ) {
+					wp_die( 'Unable to persist callback revocation.', 'OAuth unavailable', array( 'response' => 503 ) );
+				}
 			}
 		} elseif ( 'disable' === $decision ) {
 			update_option( self::OPT_ENABLED, '0', false );

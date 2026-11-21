@@ -287,6 +287,30 @@ $owner = array(
 	'resource' => $resource,
 	'scope' => 'wpconnector:read',
 );
+
+// Emulate an interleaved admin callback change after a code was consumed
+// but before grant issuance. The new generation must never adopt old codes.
+$original_generation = get_option( 'wpconnector_native_oauth_installation' );
+$race_code            = internal( 'issue', array( 'code', $owner, 300 ) );
+$race_owner           = internal( 'stored', array( 'code', $race_code, true ) );
+must( is_array( $race_owner ) && $race_owner['_oauth_installation'] === $original_generation, 'Consumed code retains original generation' );
+update_option( 'wpconnector_native_oauth_installation', str_repeat( 'b', 64 ) );
+$race_grant = internal( 'issue', array(
+	'grant',
+	array(
+		'user_id' => 123,
+		'client_id' => $params['client_id'],
+		'resource' => $resource,
+		'scope' => 'wpconnector:read',
+		'_oauth_installation' => $race_owner['_oauth_installation'],
+	),
+	300,
+) );
+must( null === $race_grant, 'Consumed old callback code cannot mint a grant in new generation' );
+must( null === internal( 'issue', array( 'refresh', $race_owner, 300 ) ), 'Old exchange cannot mint refresh after callback rotation' );
+update_option( 'wpconnector_native_oauth_installation', $original_generation );
+must( is_string( $original_generation ) && strlen( $original_generation ) === 64, 'Original generation restored for later contract tests' );
+
 $code = internal( 'issue', array( 'code', $owner, 300 ) );
 must( is_string( $code ) && strlen( $code ) === 43, '256-bit code generated' );
 must( ! in_array( $code, array_keys( $GLOBALS['options'] ), true ), 'Bearer secrets never become option names' );
