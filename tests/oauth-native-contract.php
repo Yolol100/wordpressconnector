@@ -248,6 +248,22 @@ must( null === internal( 'authorization_params', array( $filesParams ) ),
 $GLOBALS['environment'] = 'staging';
 must( null !== internal( 'authorization_params', array( $filesParams ) ) && NativeOAuthServer::staging_files_enabled(),
     'Only explicit server opt-in and runtime staging enable the exact file scope.' );
+$reversedScopes = $filesParams;
+$reversedScopes['scope'] = 'wpconnector:files wpconnector:read';
+must( internal( 'authorization_params', array( $reversedScopes ) ) === $filesParams,
+    'OAuth scope ordering does not change permission; persist canonical read-then-files order.' );
+foreach ( array(
+    'wpconnector:files',
+    'wpconnector:read wpconnector:read',
+    'wpconnector:read wpconnector:files wpconnector:files',
+    'wpconnector:read wpconnector:update',
+    'wpconnector:read  wpconnector:files',
+) as $invalidScope ) {
+    $invalidRequest = $filesParams;
+    $invalidRequest['scope'] = $invalidScope;
+    must( null === internal( 'authorization_params', array( $invalidRequest ) ),
+        'Reject duplicate, unknown or malformed staging OAuth scopes.' );
+}
 must( in_array( 'wpconnector:files', NativeOAuthServer::metadata()['scopes_supported'], true ),
     'Staging metadata advertises a distinct files permission.' );
 must( in_array( 'wpconnector:files', OAuthResourceServer::metadata()['scopes_supported'], true ),
