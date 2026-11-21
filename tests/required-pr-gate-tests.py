@@ -73,6 +73,21 @@ class RequiredPrGateTests(unittest.TestCase):
             with self.subTest(path=path), self.assertRaises(gate.GateError):
                 gate.classify_paths([path])
 
+    def test_privileged_release_uses_isolated_python(self):
+        root = pathlib.Path(__file__).resolve().parents[1]
+        workflow = (root / ".github/workflows/release.yml").read_text(encoding="utf-8")
+        self.assertIn('PYTHONSAFEPATH: "1"', workflow)
+        for invocation in (
+            "python3 -I -B scripts/build-release-package.py",
+            "python3 -I -B tests/release-supply-chain-tests.py",
+            "python3 -I -B scripts/verify-release-supply-chain.py",
+            "python3 -I -m json.tool",
+        ):
+            with self.subTest(invocation=invocation):
+                self.assertIn(invocation, workflow)
+        child = (root / "tests/release-supply-chain-tests.py").read_text(encoding="utf-8")
+        self.assertIn('[sys.executable, "-I", "-B", str(VERIFY)', child)
+
     def test_runtime_transport_is_never_mergeable(self):
         for path in ("requests/temp.json", "results/private.json", "receipts/public.json", "assets/inbox/image.png"):
             with self.subTest(path=path), self.assertRaises(gate.GateError):

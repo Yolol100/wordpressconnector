@@ -52,7 +52,7 @@ def run(files: dict[str, bytes], expected: int, reason: str, modify_sbom=None):
             modify_sbom(j)
             sbom.write_text(json.dumps(j))
         result = subprocess.run(
-            [sys.executable, "-B", str(VERIFY), str(package), str(sbom)],
+            [sys.executable, "-I", "-B", str(VERIFY), str(package), str(sbom)],
             capture_output=True, text=True, check=False)
         if result.returncode != expected:
             raise AssertionError(f"{reason}: expected {expected} got {result.returncode}: {result.stdout} {result.stderr}")
