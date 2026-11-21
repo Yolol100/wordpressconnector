@@ -187,6 +187,12 @@ jobs:
             storage: 'core'
             hpos: 'none'
             elementor: 'none'
+          # Match the ACDrive staging WordPress version before release acceptance.
+          - wordpress: '6.8.13'
+            woocommerce: 'none'
+            storage: 'core'
+            hpos: 'none'
+            elementor: 'none'
           - wordpress: '6.9.10'
             woocommerce: 'none'
             storage: 'abilities'
