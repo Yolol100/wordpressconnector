@@ -491,7 +491,7 @@ final class Settings {
 		echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
 		echo '<p><small>' . esc_html__( 'This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector' ) . '</small></p>';
 		echo '</div></div>';
-		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'Backups, recovery, and detailed connection evidence', 'wordpressconnector' ) . '</summary>';
+		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</summary>';
 		echo '<table class="widefat striped wpconnector-table"><thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'Setup step', 'wordpressconnector' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Current evidence', 'wordpressconnector' ) . '</th>';
