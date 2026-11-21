@@ -275,6 +275,15 @@ must( in_array( 'wpconnector:files', NativeOAuthServer::metadata()['scopes_suppo
     'Staging metadata advertises a distinct files permission.' );
 must( in_array( 'wpconnector:files', OAuthResourceServer::metadata()['scopes_supported'], true ),
     'Protected resource metadata advertises the same files permission.' );
+$oauthChallengeBuilder = new ReflectionMethod( OAuthResourceServer::class, 'build_challenge_header' );
+if ( PHP_VERSION_ID < 80100 ) {
+    $oauthChallengeBuilder->setAccessible( true );
+}
+$filesChallenge = $oauthChallengeBuilder->invoke( null, false, true );
+must( false !== strpos( $filesChallenge, 'scope="wpconnector:read wpconnector:files"' )
+    && false !== strpos( $filesChallenge, 'resource_metadata="' ),
+    'OAuth 403 step-up advertises the exact read and staging-file scopes.' );
+
 $GLOBALS['environment'] = 'production';
 must( null === internal( 'authorization_params', array( $filesParams ) ) && ! NativeOAuthServer::staging_files_enabled(),
     'Changing the runtime to production revokes eligibility immediately.' );
