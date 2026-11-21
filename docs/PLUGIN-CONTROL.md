@@ -116,6 +116,21 @@ Filesystem actions intentionally have a narrower blast radius than the File Mana
 - Real writes require the normal write gate plus the dedicated filesystem-write gate, `confirm:true`, and a matching `expected_sha256`.
 - PHP/INC replacements are parser-validated, JSON replacements are decoded before write, the written bytes are verified by SHA-256 readback, and rollback stores the previous file contents.
 
+### Optional native ChatGPT OAuth staging-file access
+
+This is a separate, **off-by-default** authorization path. The existing read-only OAuth connection stays read-only. To authorize a new ChatGPT connection to **replace existing** CSS, TXT or Markdown files only:
+
+1. Confirm this is a non-production test installation and configure WordPress with `WP_ENVIRONMENT_TYPE` set to `staging` using the host's approved site configuration process.
+2. After taking a tested backup, set the server-side constant `WPCONNECTOR_OAUTH_ALLOW_STAGING_FILES` to literal `true` in the staging-only configuration. Do not apply it to production.
+3. The WordPress administrator must have `manage_options` and appropriate WordPress `edit_plugins` or `edit_themes` capability, and WordPress file changes must be permitted.
+4. Reconnect ChatGPT to the exact staging MCP resource and authorize the separate `wpconnector:files` permission together with `wpconnector:read`. The new WordPress consent page explicitly identifies staging-file edits.
+5. Before each edit, preview using `filesystem.write_text` with `dry_run:true`, capture the current `sha256`, then confirm the specific change with `request_id`, `expected_sha256`, and `acknowledge_active_content:true` for CSS. Verify SHA-256 readback and keep rollback evidence.
+
+The OAuth file scope allows only `filesystem.inspect`, scoped `filesystem.list`, scoped `filesystem.read_text` and scoped `filesystem.write_text` for existing CSS/TXT/MD files under `wp-content/plugins/<slug>/` or `wp-content/themes/<slug>/`. It does **not** allow PHP, JavaScript, creation, deletion, WordPress-core edits, connector self-edits, uploads, plugin updates, posts or general backend mutations. Existing `FilesystemPolicy` and `WPCONNECTOR_ALLOW_FILESYSTEM_WRITES` gates still apply; filesystem access is not a permission bypass. When WordPress stops reporting `staging` or site-owner opt-in is disabled, file-scoped bearer access stops immediately. Revoke the OAuth connection when work is complete.
+
+This is a source-code feature until a verified connector release is installed and a real staging write, readback and restore test has passed. Green CI is not proof of live editing.
+
+
 ## Fast-path execution and access diagnosis
 
 Call `plugin.settings.catalog` once per installed plugin inventory and reuse its proven action/profile mapping. Public GitHub `plugin.audit.inspect` receipts contain aggregate counts only; named plugin listings and plugin-specific checks require a private, separately authorized REST/MCP client. Do not infer a full private plugin inventory from public receipts. Prefer `connector.read_batch` (1-25 read-only actions with complete permission preflight and no mutation gates) for independent reads in one direct REST/MCP request or single GitHub request. Keep `connector.batch` for confirmed writes that need compensation; never mix an unsupported read into a write batch. Writes still require their own fingerprints, confirmations, compensations, readbacks and permission gates; not every action may be batched safely.
