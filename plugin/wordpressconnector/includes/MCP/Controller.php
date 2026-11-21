@@ -682,6 +682,7 @@ final class Controller {
 				// Keep the initial ChatGPT connection read-only. A file action
 				// requests separate consent using the scoped HTTP challenge in authorize().
 				$scopes = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+
 				$schemes                          = array(
 					array(
 						'type'   => 'oauth2',
