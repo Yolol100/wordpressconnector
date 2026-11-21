@@ -84,6 +84,17 @@ final class NativeOAuthServer {
 		return '/.well-known/oauth-authorization-server' . $suffix;
 	}
 
+	/** Return the canonical RFC 8414 discovery URL, including issuer subpaths. */
+	public static function discovery_url(): string {
+		$parts = wp_parse_url( self::issuer() );
+		if ( ! is_array( $parts ) || empty( $parts['scheme'] ) || empty( $parts['host'] )
+			|| isset( $parts['user'] ) || isset( $parts['pass'] ) ) {
+			return '';
+		}
+		$port = isset( $parts['port'] ) ? ':' . (int) $parts['port'] : '';
+		return $parts['scheme'] . '://' . $parts['host'] . $port . self::discovery_path();
+	}
+
 	/** Serve discovery. */
 	public function serve_discovery(): void {
 		// The web server must route this canonical path into WordPress.
@@ -248,8 +259,14 @@ final class NativeOAuthServer {
 			),
 			self::REDIRECT
 		);
-		// phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- Redirect is pinned to the exact fixed ChatGPT callback URI; wp_safe_redirect would reject the permitted external callback.
-		wp_redirect( $url, 302, 'WordPress Connector OAuth' );
+		// Allow only the already-pinned OAuth callback host for this redirect.
+		$allow_callback = static function ( array $hosts ): array {
+			$hosts[] = 'chatgpt.com';
+			return $hosts;
+		};
+		add_filter( 'allowed_redirect_hosts', $allow_callback );
+		wp_safe_redirect( $url, 302, 'WordPress Connector OAuth' );
+		remove_filter( 'allowed_redirect_hosts', $allow_callback );
 		exit;
 	}
 
@@ -262,9 +279,10 @@ final class NativeOAuthServer {
 		if ( ! in_array( $method, array( 'GET', 'POST' ), true ) ) {
 			wp_die( 'Unsupported HTTP method.', 'Method not allowed', array( 'response' => 405 ) );
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- OAuth GET is public, and POST nonce is checked against canonical request parameters below.
-		$source = 'POST' === $method ? $_POST : $_GET;
-		$params = self::authorization_params( $source );
+		// OAuth's initial GET request intentionally has no WordPress nonce.
+		// Read HTTP input without bypassing authentication or POST consent checks.
+		$source = filter_input_array( 'POST' === $method ? INPUT_POST : INPUT_GET, FILTER_UNSAFE_RAW );
+		$params = is_array( $source ) ? self::authorization_params( $source ) : null;
 		if ( null === $params ) {
 			wp_die( 'Invalid authorization request.', 'OAuth request rejected', array( 'response' => 400 ) );
 		}
@@ -357,8 +375,24 @@ final class NativeOAuthServer {
 	 * @param string $bytes Raw bytes to encode.
 	 */
 	private static function base64_url_encode( string $bytes ): string {
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Required to encode random opaque OAuth tokens and PKCE digests, not executable code.
-		return rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
+		// RFC 4648 encoding is not encryption. Avoid optional PHP extensions.
+		$alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+		$output   = '';
+		$length   = strlen( $bytes );
+		for ( $i = 0; $i < $length; $i += 3 ) {
+			$a       = ord( $bytes[ $i ] );
+			$b       = $i + 1 < $length ? ord( $bytes[ $i + 1 ] ) : 0;
+			$c       = $i + 2 < $length ? ord( $bytes[ $i + 2 ] ) : 0;
+			$output .= $alphabet[ $a >> 2 ];
+			$output .= $alphabet[ ( ( $a & 3 ) << 4 ) | ( $b >> 4 ) ];
+			if ( $i + 1 < $length ) {
+				$output .= $alphabet[ ( ( $b & 15 ) << 2 ) | ( $c >> 6 ) ];
+			}
+			if ( $i + 2 < $length ) {
+				$output .= $alphabet[ $c & 63 ];
+			}
+		}
+		return $output;
 	}
 
 	/** Revision. */
@@ -386,7 +420,6 @@ final class NativeOAuthServer {
 	private static function issue( string $kind, array $data, int $ttl ): ?string {
 		for ( $i = 0; $i < 3; ++$i ) {
 			try {
-				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- RFC 4648 Base64URL encodes cryptographically random tokens.
 				$token = self::base64_url_encode( random_bytes( 32 ) );
 			} catch ( \Throwable $error ) {
 				return null;
@@ -398,7 +431,9 @@ final class NativeOAuthServer {
 				'created'  => time(),
 				'expires'  => time() + $ttl,
 			);
-			if ( add_option( $key, $value, '', false ) ) {
+			// Core transients have a real TTL, including external object caches.
+			// A collision is negligible with 256 random bits; still refuse overwrites.
+			if ( false === get_transient( $key ) && set_transient( $key, $value, $ttl ) ) {
 				return $token;
 			}
 		}
@@ -417,19 +452,14 @@ final class NativeOAuthServer {
 			return null;
 		}
 		$key    = self::option_key( $kind, $token );
-		$record = get_option( $key, false );
+		$record = get_transient( $key );
 		if ( ! is_array( $record ) ) {
 			return null;
 		}
-		if ( $consume ) {
-			global $wpdb;
-			// A single SQL DELETE decides the winner when two token redemptions race.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Single-use token redemption requires an atomic SQL DELETE.
-			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM {$wpdb->options} WHERE option_name = %s", $key ) );
-			wp_cache_delete( $key, 'options' );
-			if ( 1 !== $deleted ) {
-				return null;
-			}
+		// delete_transient returns false for a concurrent losing redeemer.
+		// The result must be checked before trusting a single-use credential.
+		if ( $consume && ! delete_transient( $key ) ) {
+			return null;
 		}
 		if ( ! isset( $record['expires'], $record['revision'], $record['data'] )
 			|| ! is_int( $record['expires'] ) || $record['expires'] <= time()
@@ -642,7 +672,7 @@ final class NativeOAuthServer {
 			return self::token_error( 'temporarily_unavailable', 429 );
 		}
 		$body = self::body( $request );
-		if ( '' !== $request->get_header( 'authorization' )
+		if ( '' !== (string) $request->get_header( 'authorization' )
 			|| null === $body || ! self::valid_client_body( $body ) ) {
 			return self::token_error( 'invalid_client' );
 		}
@@ -709,12 +739,12 @@ final class NativeOAuthServer {
 				'created'  => $now,
 				'expires'  => $now + self::REFRESH_TTL,
 			);
-			// add_option is atomic on option_name: only one worker can rotate.
-			if ( ! add_option( $spent_key, $spent_value, '', false ) ) {
-				if ( null !== self::stored( 'spent', $refresh ) ) {
-					self::revoke_grant( $data );
-				}
+			if ( false !== get_transient( $spent_key ) ) {
+				self::revoke_grant( $data );
 				return self::token_error( 'invalid_grant' );
+			}
+			if ( ! set_transient( $spent_key, $spent_value, self::REFRESH_TTL ) ) {
+				return self::token_error( 'server_error', 503 );
 			}
 			if ( null === self::stored( 'refresh', $refresh, true ) ) {
 				self::revoke_grant( $data );
@@ -738,7 +768,7 @@ final class NativeOAuthServer {
 			return self::token_error( 'temporarily_unavailable', 429 );
 		}
 		$body = self::body( $request );
-		if ( '' !== $request->get_header( 'authorization' )
+		if ( '' !== (string) $request->get_header( 'authorization' )
 			|| null === $body || ! self::valid_client_body( $body )
 			|| ! isset( $body['token'] ) ) {
 			return self::token_error( 'invalid_request' );
@@ -790,43 +820,11 @@ final class NativeOAuthServer {
 		exit;
 	}
 
-	/** Cleanup. */
+	/**
+	 * Purge expired native token transients using WordPress's own storage API.
+	 * Core removes the full expired set (not just the first 100 keys).
+	 */
 	public function cleanup(): void {
-		global $wpdb;
-		$cursor_key = self::STORE_PREFIX . 'cleanup_cursor';
-		$cursors    = get_option( $cursor_key, array() );
-		$cursors    = is_array( $cursors ) ? $cursors : array();
-		$more       = false;
-		foreach ( array( 'code', 'access', 'refresh', 'spent', 'grant' ) as $kind ) {
-			$cursor = isset( $cursors[ $kind ] ) && is_string( $cursors[ $kind ] ) ? $cursors[ $kind ] : '';
-			$like   = $wpdb->esc_like( self::STORE_PREFIX . $kind . '_' ) . '%';
-			// A persisted keyset cursor prevents the first 100 live rows from hiding expired rows.
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Bounded, uncached SQL keyset query is necessary for reliable expired-token cleanup.
-			$names = $wpdb->get_col(
-				$wpdb->prepare(
-					"SELECT option_name FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name > %s ORDER BY option_name LIMIT 100",
-					$like,
-					$cursor
-				)
-			);
-			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			foreach ( (array) $names as $name ) {
-				$record = get_option( $name, false );
-				if ( ! is_array( $record ) || ! is_int( $record['expires'] ?? null )
-					|| $record['expires'] <= time() || (int) ( $record['revision'] ?? 0 ) !== self::revision() ) {
-					delete_option( $name );
-				}
-			}
-			if ( count( (array) $names ) === 100 ) {
-				$cursors[ $kind ] = (string) end( $names );
-				$more             = true;
-			} else {
-				unset( $cursors[ $kind ] );
-			}
-		}
-		update_option( $cursor_key, $cursors, false );
-		if ( $more && ! wp_next_scheduled( 'wpconnector_native_oauth_cleanup', array( 'continuation' ) ) ) {
-			wp_schedule_single_event( time() + MINUTE_IN_SECONDS, 'wpconnector_native_oauth_cleanup', array( 'continuation' ) );
-		}
+		delete_expired_transients();
 	}
 }

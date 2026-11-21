@@ -417,7 +417,7 @@ final class Settings {
 		);
 		echo '</form>';
 		if ( $enabled ) {
-			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::issuer() . '/.well-known/oauth-authorization-server' ) . '</code></p>';
+			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::discovery_url() ) . '</code></p>';
 			echo '<p>' . esc_html__( 'Tokens expire after 15 minutes and rotate on refresh. Disable OAuth here to immediately revoke all previously issued connections. Live ChatGPT consent must be tested separately.', 'wordpressconnector' ) . '</p>';
 		}
 	}

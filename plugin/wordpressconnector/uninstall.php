@@ -43,6 +43,8 @@ $wpconnector_cleanup_current_site = static function (): void {
 		'_transient_timeout_wpconnector_oauth_',
 		'wpconnector_oauth_release_claim_',
 		'wpconnector_native_oauth_',
+		'_transient_wpconnector_native_oauth_',
+		'_transient_timeout_wpconnector_native_oauth_',
 		'_transient_wpconnector_nat_oauth_',
 		'_transient_timeout_wpconnector_nat_oauth_',
 	) as $prefix ) {

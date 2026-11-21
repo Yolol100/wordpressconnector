@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 $GLOBALS['options'] = array();
 $GLOBALS['transients'] = array();
+$GLOBALS['transient_expires'] = array();
 $GLOBALS['user_allowed'] = true;
 $GLOBALS['ssl_ready'] = true;
 $GLOBALS['home_origin'] = 'https://example.invalid';
@@ -47,7 +48,7 @@ final class WP_REST_Request {
 		$this->headers = array_change_key_case( $headers, CASE_LOWER );
 		$this->body = $body;
 	}
-	public function get_header( string $key ): string { return (string) ( $this->headers[strtolower( $key )] ?? '' ); }
+	public function get_header( string $key ): ?string { return isset( $this->headers[strtolower( $key )] ) ? (string) $this->headers[strtolower( $key )] : null; }
 	public function get_body_params(): array { return $this->body; }
 }
 final class FakeWpdb {
@@ -85,9 +86,27 @@ function add_option( string $name, $value, string $deprecated = '', $autoload = 
 function update_option( string $name, $value, $autoload = false ): bool { $GLOBALS['options'][$name] = $value; return true; }
 function delete_option( string $name ): bool { unset( $GLOBALS['options'][$name] ); return true; }
 function wp_cache_delete( string $name, string $group ): void {}
-function get_transient( string $name ) { return $GLOBALS['transients'][$name] ?? false; }
+function get_transient( string $name ) {
+	if ( isset( $GLOBALS['transient_expires'][$name] ) && $GLOBALS['transient_expires'][$name] <= time() ) {
+		unset( $GLOBALS['transients'][$name], $GLOBALS['transient_expires'][$name] );
+	}
+	return $GLOBALS['transients'][$name] ?? false;
+}
 function set_transient( string $name, $value, int $seconds ): bool {
-	$GLOBALS['transients'][$name] = $value; return true;
+	$GLOBALS['transients'][$name] = $value;
+	$GLOBALS['transient_expires'][$name] = time() + $seconds;
+	return true;
+}
+function delete_transient( string $name ): bool {
+	if ( false === get_transient( $name ) ) { return false; }
+	unset( $GLOBALS['transients'][$name], $GLOBALS['transient_expires'][$name] );
+	++$GLOBALS['stored_deletions'];
+	return true;
+}
+function delete_expired_transients(): void {
+	foreach ( array_keys( $GLOBALS['transient_expires'] ) as $name ) {
+		get_transient( $name );
+	}
 }
 function wp_parse_url( string $url, int $component = -1 ) {
 	return -1 === $component ? parse_url( $url ) : parse_url( $url, $component );
@@ -177,6 +196,12 @@ must( ! NativeOAuthServer::is_enabled(), 'Cloned site must not inherit OAuth app
 $GLOBALS['home_origin'] = 'https://example.invalid';
 $meta = NativeOAuthServer::metadata();
 must( $meta['issuer'] === 'https://example.invalid', 'Issuer must be exact canonical origin' );
+must( NativeOAuthServer::discovery_url() === 'https://example.invalid/.well-known/oauth-authorization-server', 'Root issuer metadata discovery' );
+$GLOBALS['home_origin'] = 'https://example.invalid/blog';
+update_option( 'wpconnector_native_oauth_enabled', array( 'site' => NativeOAuthServer::issuer(), 'approved_by' => 123 ) );
+must( NativeOAuthServer::discovery_url() === 'https://example.invalid/.well-known/oauth-authorization-server/blog', 'Issuer subpath follows RFC 8414' );
+$GLOBALS['home_origin'] = 'https://example.invalid';
+update_option( 'wpconnector_native_oauth_enabled', array( 'site' => NativeOAuthServer::issuer(), 'approved_by' => 123 ) );
 must( $meta['authorization_response_iss_parameter_supported'] === true, 'Issuer response must be protected' );
 must( $meta['client_id_metadata_document_supported'] === true, 'CIMD required' );
 must( $meta['code_challenge_methods_supported'] === array( 'S256' ), 'No plain PKCE fallback' );
@@ -184,6 +209,11 @@ must( $meta['token_endpoint_auth_methods_supported'] === array( 'none' ), 'No sh
 must( OAuthResourceServer::metadata()['authorization_servers'] === array( $meta['issuer'] ), 'Resource must advertise the matching issuer' );
 
 $resource = OAuthResourceServer::resource();
+// Regression vectors prevent custom Base64URL encoding drift.
+foreach ( array( '', 'f', 'fo', 'foo', "\0\xff", random_bytes( 32 ), random_bytes( 64 ) ) as $bytes ) {
+	$expected = rtrim( strtr( base64_encode( $bytes ), '+/', '-_' ), '=' );
+	must( internal( 'base64_url_encode', array( $bytes ) ) === $expected, 'RFC 4648 URL-safe encoding vector' );
+}
 $verifier = str_repeat( 'v', 50 );
 $challenge = rtrim( strtr( base64_encode( hash( 'sha256', $verifier, true ) ), '+/', '-_' ), '=' );
 $params = array(
@@ -309,6 +339,17 @@ must( $server->token( token_request( array( 'client_id' => 'https://evil.invalid
 must( $server->token( token_request( array(
 	'grant_type' => 'client_credentials', 'client_id' => $params['client_id'],
 ) ) )->get_data()['error'] === 'unsupported_grant_type', 'Machine-to-machine grant rejected' );
+
+// Cleanup must remove more than 100 expired token rows in one pass.
+for ( $i = 0; $i < 225; ++$i ) {
+	set_transient( 'wpconnector_native_oauth_fixture_' . $i, array( 'expired' => true ), -5 );
+}
+set_transient( 'wpconnector_native_oauth_fixture_live', array( 'live' => true ), 600 );
+$server->cleanup();
+for ( $i = 0; $i < 225; ++$i ) {
+	must( ! isset( $GLOBALS['transients']['wpconnector_native_oauth_fixture_' . $i] ), 'Expired transient fixture removed' );
+}
+must( false !== get_transient( 'wpconnector_native_oauth_fixture_live' ), 'Valid transient is kept' );
 
 update_option( 'wpconnector_native_oauth_revision', 2 );
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Owner revocation generation invalidates tokens' );
