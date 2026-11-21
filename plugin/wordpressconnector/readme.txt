@@ -26,7 +26,7 @@ For full historic release notes and security boundaries, see https://github.com/
 == Changelog ==
 
 = 1.20.12 =
-* **Unpublished candidate.** Prepare a monotonic version above the already installed 1.20.11 on one managed site. Includes protected-base request workflow, OAuth resource and source-verified update code already merged on main; the Draft branch now includes the unmerged PR #1392 hardening changes, which must merge into protected main before publication. No staging restore, external OAuth pairing or release approval is claimed.
+* **Unpublished candidate.** Version 1.20.12 is above the already observed 1.20.11 installation. Security PR #1392 has merged into protected main; this Draft PR changes only version metadata and release notes. Governance PR #1393, verified staging backup/restore and update failures, real ChatGPT OAuth account linking, installed 1.20.11 byte reconciliation, ZIP/SPDX/source attestation and explicit release approval remain outstanding. No production deployment or release is claimed.
 
 = 1.20.10 =
 * Prefix internal bootstrap/uninstall globals and document only precisely scoped PHPCS exceptions for intentional atomic/fresh database operations and stable external hooks. No public API changes.
