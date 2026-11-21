@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.17
+Stable tag: 1.20.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,11 @@ For full historic release notes and security boundaries, see https://github.com/
 3. Check the built-in connection diagnostics and verify HTTPS, capabilities and a tested external restore path before updates.
 
 == Changelog ==
+
+= 1.20.18 =
+* OAuth pairing uses read-only scope by default even when optional staging file editing is configured. Only a specific file action can request separate file-scope consent.
+* If the WordPress administrator cannot edit plugin/theme files, consent now offers read-only access instead of a 403. A file-editing grant still requires exact staging host, explicit opt-in, separate consent and current WordPress capabilities.
+* WordPress dashboard reports actual account-level file-editor eligibility. No WordPress capabilities, file security or production authorization are bypassed.
 
 = 1.20.17 =
 * Staging development candidate: clarify ChatGPT custom MCP connection recovery, distinguish ChatGPT browser-configuration errors from WordPress OAuth failures and show separately consented wpconnector:files availability in the WordPress admin screen. Does not create a ChatGPT app browser-configuration URL or alter existing OAuth grants.
