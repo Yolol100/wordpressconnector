@@ -296,3 +296,19 @@
         padding-block: 8px;
     }
 }
+
+@media (forced-colors: active) {
+    .wpconnector-admin .wpconnector-tabs .wpconnector-tab.is-active.components-button {
+        border-bottom-color: Highlight;
+    }
+    .wpconnector-admin .wpconnector-tabs .wpconnector-tab.components-button:focus-visible,
+    .wpconnector-admin .wpconnector-tab-fallback a:focus-visible,
+    .wpconnector-admin .wpconnector-disclosure summary:focus-visible {
+        outline-color: Highlight;
+    }
+    .wpconnector-admin .wpconnector-summary-card,
+    .wpconnector-admin .wpconnector-card,
+    .wpconnector-admin .wpconnector-disclosure {
+        border-color: CanvasText;
+    }
+}
