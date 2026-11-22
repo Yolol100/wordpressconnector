@@ -2,18 +2,20 @@
 /**
  * OAuth 2.1 protected-resource authentication for direct MCP clients.
  *
- * The authorization server is operated independently. WordPress never
- * issues OAuth tokens or treats an arbitrary JWT as a site administrator.
+ * The owner-approved native server may issue site-bound OAuth tokens.
+ * Otherwise a separately configured external issuer is introspected.
+ * Neither mode treats an arbitrary JWT as a WordPress administrator.
  *
  * @package WordPressConnector
  */
+
 declare(strict_types=1);
 
 namespace Webactueel\WordPressConnector\Security;
 
 /**
- * Validate remote OAuth bearer tokens through a pinned, trusted introspection
- * endpoint and an explicit WordPress account/subject binding.
+ * Authenticate native site-bound OAuth grants or externally issued bearers
+ * through trusted introspection and explicit WordPress account binding.
  */
 final class OAuthResourceServer {
 	private const NAMESPACE               = 'webactueel-wordpress-connector/v1';
@@ -24,8 +26,18 @@ final class OAuthResourceServer {
 	private const MAX_INTROSPECTION_BYTES = 16384;
 	private const RATE_LIMIT_PER_IP       = 12;
 	private const RATE_LIMIT_GLOBAL       = 60;
-	private bool $authenticated           = false;
-	private bool $update_authorized       = false;
+	/**
+	 * Whether the current bearer completed protected-resource authentication.
+	 *
+	 * @var bool
+	 */
+	private bool $authenticated = false;
+	/**
+	 * Whether the current bearer also has plugin-update permission.
+	 *
+	 * @var bool
+	 */
+	private bool $update_authorized = false;
 	/**
 	 * Whether the current bearer has staging file-edit scope.
 	 *

@@ -35,7 +35,11 @@ final class ConnectorUpdateAdapter {
 	 * @var string|null
 	 */
 	private $verified_self_update_package_path = null;
-	/** True once WordPress Core upgrader may have touched plugin files. */
+	/**
+	 * True once WordPress Core upgrader may have touched plugin files.
+	 *
+	 * @var bool
+	 */
 	private bool $upgrader_started = false;
 
 	/**
@@ -365,7 +369,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @return array Operation result.
 	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 * @throws \Throwable If the operation fails or an upgrader error must be reconciled.
 	 */
 	public function apply( array $payload, array $context ): array {
 		$this->upgrader_started = false;
@@ -386,7 +390,14 @@ final class ConnectorUpdateAdapter {
 		}
 	}
 
-	/** Internal canonical updater; used only behind the guarded entrypoint. */
+	/**
+	 * Internal canonical updater used only behind the guarded entrypoint.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If any update precondition or source check fails.
+	 */
 	private function perform_verified_update( array $payload, array $context ): array {
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			throw new RuntimeException( 'Current user is not allowed to update plugins.' );
@@ -871,6 +882,7 @@ final class ConnectorUpdateAdapter {
 	 * @param string $path API path suffix assembled from validated Git SHA.
 	 * @param int    $limit Maximum JSON response bytes.
 	 * @return array Decoded JSON object.
+	 * @throws \RuntimeException If the bounded trusted-source request fails validation.
 	 */
 	private function trustedSourceJson( string $path, int $limit = 524288 ): array {
 		if ( ! preg_match( '#^/(compare/[a-f0-9]{40}\.\.\.main\?per_page=1|git/commits/[a-f0-9]{40}|git/trees/[a-f0-9]{40}\?recursive=1)\z#', $path ) ) {
@@ -912,6 +924,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @param array  $release Canonical release metadata.
 	 * @param string $package Already checksum/identity validated ZIP.
+	 * @throws \RuntimeException If source commit ancestry or file integrity cannot be verified.
 	 */
 	private function verifyProtectedSource( array $release, string $package ): void {
 		$commit = $release['source_commit'] ?? '';
