@@ -56,10 +56,10 @@ final class Controller {
 	/**
 	 * Initialize the MCP controller dependencies.
 	 *
-	 * @param Runner                    $runner Value used by this operation.
-	 * @param Registry                  $registry Connector action registry.
-	 * @param callable                  $authorizationCallback Value used by this operation.
-	 * @param OAuthResourceServer|null $oauth_resource Optional protected resource authenticator.
+	 * @param Runner   $runner Value used by this operation.
+	 * @param Registry $registry Connector action registry.
+	 * @param callable $authorizationCallback Value used by this operation.
+	 * @param mixed    $oauth_resource Optional OAuthResourceServer instance or null.
 	 */
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback, ?OAuthResourceServer $oauth_resource = null ) {
 		$this->runner                 = $runner;
