@@ -654,16 +654,23 @@ final class NativeOAuthServer {
 	}
 
 	/**
-	 * Revoke grant.
+	 * Revoke a grant and verify that the persisted grant is no longer active.
 	 *
-	 * @param array $owner owner.
+	 * @param array $owner Grant-bound token owner.
+	 * @return bool Whether the grant is no longer stored.
 	 */
-	private static function revoke_grant( array $owner ): void {
+	private static function revoke_grant( array $owner ): bool {
 		$id = $owner['grant_id'] ?? '';
-		if ( is_string( $id ) && '' !== $id ) {
-			// Deleting the grant invalidates all its access and refresh tokens immediately.
-			self::stored( 'grant', $id, true );
+		if ( ! is_string( $id ) || '' === $id ) {
+			return false;
 		}
+		// Absence is already revoked. A failed transient deletion must not
+		// silently report success while existing access tokens still work.
+		if ( null === self::stored( 'grant', $id ) ) {
+			return true;
+		}
+		self::stored( 'grant', $id, true );
+		return null === self::stored( 'grant', $id );
 	}
 
 	/**
@@ -920,7 +927,9 @@ final class NativeOAuthServer {
 		foreach ( array( 'access', 'refresh', 'spent' ) as $kind ) {
 			$owner = self::stored( $kind, $body['token'] );
 			if ( null !== $owner ) {
-				self::revoke_grant( $owner );
+				if ( ! self::revoke_grant( $owner ) ) {
+					return self::token_error( 'server_error', 503 );
+				}
 				break;
 			}
 		}
