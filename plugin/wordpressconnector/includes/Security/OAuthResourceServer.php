@@ -30,13 +30,13 @@ final class OAuthResourceServer {
 	 *
 	 * @var bool
 	 */
-	private bool $authenticated           = false;
+	private bool $authenticated = false;
 	/**
 	 * Whether the current bearer also has plugin-update permission.
 	 *
 	 * @var bool
 	 */
-	private bool $update_authorized       = false;
+	private bool $update_authorized = false;
 	/**
 	 * Whether the current bearer has staging file-edit scope.
 	 *
