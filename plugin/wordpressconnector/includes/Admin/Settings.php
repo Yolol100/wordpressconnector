@@ -552,9 +552,7 @@ final class Settings {
 	}
 
 	/**
-	 * Process the legacy bridge active operation in the Settings component.
-	 *
-	 * @return bool Operation result.
+	 * Render the opt-in native OAuth status and administrator controls.
 	 */
 	private function render_native_oauth_controls(): void {
 		$enabled          = NativeOAuthServer::is_enabled();
