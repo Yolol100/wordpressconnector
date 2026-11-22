@@ -12,7 +12,7 @@ export default defineConfig({
       MCP_SERVER_URL: bindings.text('https://webactueel-central-mcp.andrew-baeten.workers.dev/mcp'),
       TENANT_ID: bindings.text('team-webactueel'),
       GITHUB_ALLOWED_USER_ID: bindings.text('22932777'),
-      GITHUB_CLIENT_ID: bindings.secret(),
+      GITHUB_CLIENT_ID: bindings.text('Ov23li4w6NyZWDQ5kEa0'),
       GITHUB_CLIENT_SECRET: bindings.secret(),
     },
   },
