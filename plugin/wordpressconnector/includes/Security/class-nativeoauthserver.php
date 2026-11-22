@@ -955,14 +955,14 @@ final class NativeOAuthServer {
 			}
 			// Never retain a prior connection's callback during a new opt-in.
 			delete_option( self::OPT_REDIRECT );
-			update_option(
-				self::OPT_ENABLED,
-				array(
-					'site'        => self::issuer(),
-					'approved_by' => get_current_user_id(),
-				),
-				false
+			$approval = array(
+				'site'        => self::issuer(),
+				'approved_by' => get_current_user_id(),
 			);
+			update_option( self::OPT_ENABLED, $approval, false );
+			if ( ! self::is_enabled() || get_option( self::OPT_ENABLED, null ) !== $approval ) {
+				wp_die( 'Unable to persist native OAuth approval.', 'OAuth unavailable', array( 'response' => 503 ) );
+			}
 			if ( ! wp_next_scheduled( 'wpconnector_native_oauth_cleanup' ) ) {
 				wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', 'wpconnector_native_oauth_cleanup' );
 			}
@@ -1000,6 +1000,9 @@ final class NativeOAuthServer {
 			}
 		} elseif ( 'disable' === $decision ) {
 			update_option( self::OPT_ENABLED, '0', false );
+			if ( '0' !== get_option( self::OPT_ENABLED, null ) ) {
+				wp_die( 'Unable to revoke native OAuth approval.', 'OAuth unavailable', array( 'response' => 503 ) );
+			}
 			update_option( self::OPT_REVISION, self::revision() + 1, false );
 			delete_option( self::OPT_INSTALLATION );
 			delete_option( self::OPT_REDIRECT );
