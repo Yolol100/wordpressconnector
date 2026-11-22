@@ -18,6 +18,7 @@ $GLOBALS['client_response_ok'] = true;
 $GLOBALS['http_calls'] = array();
 $GLOBALS['methods'] = array();
 $GLOBALS['stored_deletions'] = 0;
+$GLOBALS['blocked_option_write'] = '';
 
 final class WP_Error {
 	private string $code;
@@ -85,7 +86,11 @@ function add_option( string $name, $value, string $deprecated = '', $autoload = 
 	$GLOBALS['options'][$name] = $value;
 	return true;
 }
-function update_option( string $name, $value, $autoload = false ): bool { $GLOBALS['options'][$name] = $value; return true; }
+function update_option( string $name, $value, $autoload = false ): bool {
+	if ( $name === $GLOBALS['blocked_option_write'] ) { return false; }
+	$GLOBALS['options'][$name] = $value;
+	return true;
+}
 function delete_option( string $name ): bool { unset( $GLOBALS['options'][$name] ); return true; }
 function wp_cache_delete( string $name, string $group ): void {}
 function get_transient( string $name ) {
@@ -152,6 +157,14 @@ function register_rest_route( string $namespace, string $route, array $args ): v
 }
 function add_action( string $name, $callback, int $priority = 10 ): void { $GLOBALS['actions'][$name][] = $callback; }
 function wp_unslash( $value ) { return $value; }
+function sanitize_text_field( $value ): string { return (string) $value; }
+function get_current_user_id(): int { return 123; }
+function check_admin_referer( string $action ): void {
+	if ( 'wpconnector_native_oauth_mode' !== $action ) { throw new RuntimeException( 'Unexpected OAuth settings nonce action.' ); }
+}
+function wp_die( string $message, string $title = '', array $args = array() ): void {
+	throw new RuntimeException( $message, (int) ( $args['response'] ?? 0 ) );
+}
 function wp_json_encode( $value, int $flags = 0 ): string { return (string) json_encode( $value, $flags ); }
 
 require dirname( __DIR__ ) . '/plugin/wordpressconnector/includes/Security/class-nativeoauthserver.php';
@@ -572,6 +585,43 @@ update_option( 'wpconnector_native_oauth_enabled', '0' );
 must( ! NativeOAuthServer::has_prior_approval(), 'Disabling native OAuth removes prior approval' );
 must( ! OAuthResourceServer::isConfigured() && array() === OAuthResourceServer::metadata(), 'Owner disable revokes OAuth discovery' );
 must( null === NativeOAuthServer::introspect( $pair['access_token'] ), 'Disabled server refuses all token validation' );
+// A failed WordPress option write must never look like successful OAuth setup or revocation.
+$saved_options = $GLOBALS['options'];
+$saved_method  = $_SERVER['REQUEST_METHOD'] ?? null;
+$saved_post    = $_POST;
+$_SERVER['REQUEST_METHOD'] = 'POST';
+$GLOBALS['ssl_ready'] = true;
+$_POST = array( 'native_oauth_decision' => 'enable' );
+$GLOBALS['blocked_option_write'] = 'wpconnector_native_oauth_enabled';
+try {
+	$server->update_mode();
+	throw new RuntimeException( 'Failed OAuth enable unexpectedly returned.', 599 );
+} catch ( RuntimeException $error ) {
+	must( 503 === $error->getCode() && false !== strpos( $error->getMessage(), 'Unable to persist native OAuth approval.' ),
+		'Failed native OAuth enable must return a 503 instead of announcing success.' );
+}
+must( ! NativeOAuthServer::is_enabled(), 'Rejected activation must not enable a new OAuth grant.' );
+$GLOBALS['options'] = $saved_options;
+$_POST = array( 'native_oauth_decision' => 'disable' );
+update_option( 'wpconnector_native_oauth_enabled', array( 'site' => NativeOAuthServer::issuer(), 'approved_by' => 123 ) );
+must( NativeOAuthServer::is_enabled(), 'Existing OAuth grant is active before simulated revocation failure.' );
+try {
+	$server->update_mode();
+	throw new RuntimeException( 'Failed OAuth disable unexpectedly returned.', 599 );
+} catch ( RuntimeException $error ) {
+	must( 503 === $error->getCode() && false !== strpos( $error->getMessage(), 'Unable to revoke native OAuth approval.' ),
+		'Failed native OAuth revocation must return a 503, not a success redirect.' );
+}
+must( NativeOAuthServer::is_enabled(), 'Mocked failed revocation leaves OAuth active and cannot be reported as success.' );
+$GLOBALS['blocked_option_write'] = '';
+$GLOBALS['options'] = $saved_options;
+$_POST = $saved_post;
+if ( null === $saved_method ) {
+	unset( $_SERVER['REQUEST_METHOD'] );
+} else {
+	$_SERVER['REQUEST_METHOD'] = $saved_method;
+}
+
 $GLOBALS['ssl_ready'] = false;
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => 'https://example.invalid', 'approved_by' => 123 ) );
 must( ! NativeOAuthServer::is_enabled(), 'Plain HTTP never enables OAuth' );
