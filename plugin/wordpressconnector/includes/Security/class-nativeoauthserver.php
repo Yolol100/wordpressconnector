@@ -669,8 +669,8 @@ final class NativeOAuthServer {
 		if ( null === self::stored( 'grant', $id ) ) {
 			return true;
 		}
-		self::stored( 'grant', $id, true );
-		return null === self::stored( 'grant', $id );
+		$removed = self::stored( 'grant', $id, true );
+		return null !== $removed && null === self::stored( 'grant', $id );
 	}
 
 	/**
@@ -872,8 +872,8 @@ final class NativeOAuthServer {
 			if ( null === $data ) {
 				// Preserve spent-token ancestry to revoke the active grant on reuse.
 				$spent = self::stored( 'spent', $refresh );
-				if ( null !== $spent ) {
-					self::revoke_grant( $spent );
+				if ( null !== $spent && ! self::revoke_grant( $spent ) ) {
+					return self::token_error( 'server_error', 503 );
 				}
 				return self::token_error( 'invalid_grant' );
 			}
@@ -890,14 +890,18 @@ final class NativeOAuthServer {
 				'expires'      => $now + self::REFRESH_TTL,
 			);
 			if ( false !== get_transient( $spent_key ) ) {
-				self::revoke_grant( $data );
+				if ( ! self::revoke_grant( $data ) ) {
+					return self::token_error( 'server_error', 503 );
+				}
 				return self::token_error( 'invalid_grant' );
 			}
 			if ( ! set_transient( $spent_key, $spent_value, self::REFRESH_TTL ) ) {
 				return self::token_error( 'server_error', 503 );
 			}
 			if ( null === self::stored( 'refresh', $refresh, true ) ) {
-				self::revoke_grant( $data );
+				if ( ! self::revoke_grant( $data ) ) {
+					return self::token_error( 'server_error', 503 );
+				}
 				return self::token_error( 'invalid_grant' );
 			}
 			return self::token_response( $data );
