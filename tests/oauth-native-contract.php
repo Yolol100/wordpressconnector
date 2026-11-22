@@ -603,7 +603,9 @@ try {
 must( ! NativeOAuthServer::is_enabled(), 'Rejected activation must not enable a new OAuth grant.' );
 $GLOBALS['options'] = $saved_options;
 $_POST = array( 'native_oauth_decision' => 'disable' );
+$GLOBALS['blocked_option_write'] = '';
 update_option( 'wpconnector_native_oauth_enabled', array( 'site' => NativeOAuthServer::issuer(), 'approved_by' => 123 ) );
+$GLOBALS['blocked_option_write'] = 'wpconnector_native_oauth_enabled';
 must( NativeOAuthServer::is_enabled(), 'Existing OAuth grant is active before simulated revocation failure.' );
 try {
 	$server->update_mode();
