@@ -58,7 +58,8 @@ final class Controller {
 	 *
 	 * @param Runner   $runner Value used by this operation.
 	 * @param Registry $registry Connector action registry.
-	 * @param callable $authorizationCallback Value used by this operation.
+	 * @param callable                 $authorizationCallback Value used by this operation.
+	 * @param OAuthResourceServer|null $oauth_resource Optional protected resource authenticator.
 	 */
 	public function __construct( Runner $runner, Registry $registry, callable $authorizationCallback, ?OAuthResourceServer $oauth_resource = null ) {
 		$this->runner                 = $runner;
@@ -964,6 +965,8 @@ final class Controller {
 	 * @param string|null $request_id Identifier of the requested object.
 	 * @param string|null $expected_fingerprint Value used by this operation.
 	 * @param string|null $expected_state_token Value used by this operation.
+	 * @param bool        $require_release_provenance Require protected release provenance.
+	 * @param bool        $require_owner_approval Require administrator approval.
 	 *
 	 * @return array Result of the operation.
 	 */
