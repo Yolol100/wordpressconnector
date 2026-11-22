@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "site_url": "https://acdrive.concept-webactueel-7.com",
+  "request_id": "mcp-central-readcanary-20261122-c2",
+  "action": "site.identity.inspect",
+  "payload": {},
+  "dry_run": true,
+  "confirm": false
+}
