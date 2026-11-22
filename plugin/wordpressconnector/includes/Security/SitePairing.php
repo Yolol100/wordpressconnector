@@ -109,7 +109,9 @@ final class SitePairing {
 	}
 
 	/**
-	 * Process the disable operation in the SitePairing component.
+	 * Revoke the stored GitHub OIDC pairing; never report a failed delete as success.
+	 *
+	 * @throws \RuntimeException If the approval is still stored.
 	 */
 	public static function disable(): void {
 		delete_option( self::OPTION );
