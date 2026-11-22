@@ -29,6 +29,7 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm run build
+          npm install --prefix auth --no-audit --no-fund
           npm run build:auth
       - name: SQLite tenant isolation
         run: |
