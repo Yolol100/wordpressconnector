@@ -1,0 +1,21 @@
+{
+  "name": "webactueel-central-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "cf build",
+    "build:auth": "cd auth && cf build"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.4",
+    "@modelcontextprotocol/server": "2.4.0",
+    "agents": "0.34.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "cf": "1.0.0-rc.1",
+    "wrangler": "4.166.0"
+  }
+}
