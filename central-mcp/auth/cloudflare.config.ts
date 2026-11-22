@@ -15,7 +15,7 @@ export default defineConfig({
       GITHUB_CLIENT_ID: bindings.text('Ov23li4w6NyZWDQ5kEa0'),
       GITHUB_CLIENT_SECRET: bindings.secretsStoreSecret({
         storeId: '7a6cddd59ea6486380347454d35f98f4',
-        secretName: 'webactueel-central-auth-github-oauth-secret',
+        secretName: 'central-auth-github-oauth-secret',
       }),
     },
   },
