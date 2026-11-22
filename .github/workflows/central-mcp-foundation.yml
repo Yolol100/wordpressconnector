@@ -22,9 +22,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify central MCP source exists or is not yet bootstrapped
+        id: source
+        shell: bash
+        run: |
+          if test -f central-mcp/package.json && test -f central-mcp/auth/package.json; then
+            echo 'present=true' >> "$GITHUB_OUTPUT"
+          elif test ! -e central-mcp; then
+            echo 'present=false' >> "$GITHUB_OUTPUT"
+            echo 'Bootstrap-only PR: central MCP source has not been merged yet.'
+          else
+            echo '::error::Partial or invalid central MCP source tree.'
+            exit 1
+          fi
       - name: Node policy and registry contracts
+        if: steps.source.outputs.present == 'true'
         run: node --test central-mcp/test/*.test.mjs
       - name: Compile OAuth-protected stateless MCP Worker without deployment
+        if: steps.source.outputs.present == 'true'
         working-directory: central-mcp
         run: |
           npm install --no-audit --no-fund
@@ -32,6 +47,7 @@ jobs:
           npm install --prefix auth --no-audit --no-fund
           npm run build:auth
       - name: SQLite tenant isolation
+        if: steps.source.outputs.present == 'true'
         run: |
           python - <<'PY'
           import sqlite3
