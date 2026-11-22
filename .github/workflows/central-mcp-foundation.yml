@@ -48,6 +48,9 @@ jobs:
           npm run build
           npm install --prefix auth --no-audit --no-fund
           npm run build:auth
+          # Cloudflare CLI dry-run sends no API requests, has no credentials and deploys nothing.
+          ./node_modules/.bin/cf deploy --dry-run --no-provision
+          (cd auth && ../node_modules/.bin/cf deploy --dry-run --no-provision)
       - name: SQLite tenant isolation
         if: steps.source.outputs.present == 'true'
         run: |
