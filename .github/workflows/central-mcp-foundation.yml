@@ -1,0 +1,82 @@
+name: Central MCP foundation
+
+on:
+  push:
+    paths:
+      - 'central-mcp/**'
+      - '.github/workflows/central-mcp-foundation.yml'
+  pull_request:
+    paths:
+      - 'central-mcp/**'
+      - '.github/workflows/central-mcp-foundation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-security-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node policy and registry contracts
+        run: node --test central-mcp/test/*.test.mjs
+      - name: Compile OAuth-protected stateless MCP Worker without deployment
+        working-directory: central-mcp
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: Compile isolated OAuth authorization Worker without deployment
+        working-directory: central-mcp/auth
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+      - name: SQLite tenant isolation
+        run: |
+          python - <<'PY'
+          import sqlite3
+          from pathlib import Path
+          connection = sqlite3.connect(":memory:")
+          connection.executescript(Path("central-mcp/schema.sql").read_text())
+          connection.execute(
+              "INSERT INTO central_sites(id,tenant_id,canonical_origin,label,status,origin_verified) VALUES (?,?,?,?,?,?)",
+              ("site-acdrive","team-webactueel","https://example.com","ACDrive","active",1),
+          )
+          connection.execute(
+              "INSERT INTO central_site_grants(site_id,tenant_id,subject,read_granted) VALUES (?,?,?,?)",
+              ("site-acdrive","team-webactueel","user-admin",1),
+          )
+          try:
+              connection.execute(
+                  "INSERT INTO central_site_grants(site_id,tenant_id,subject,read_granted) VALUES (?,?,?,?)",
+                  ("site-acdrive","other-tenant","user-other",1),
+              )
+          except sqlite3.IntegrityError:
+              print("Cross-tenant foreign key guard PASS")
+          else:
+              raise AssertionError("Cross-tenant grant accepted")
+
+          # Execute the actual registry SQL against SQLite: approval and
+          # revocation must affect visibility on the very next read.
+          import re
+          registry = Path("central-mcp/src/registry.mjs").read_text()
+          match = re.search(r"const SELECT_SITES = `(.*?)`;", registry, re.S)
+          assert match, "Registry SQL not found"
+          sql = match.group(1)
+          args = ("team-webactueel", "user-admin")
+          assert not connection.execute(sql, args).fetchall(), "Unlinked user received access"
+          connection.execute(
+              "INSERT INTO central_identity_links(provider,provider_subject,tenant_id,subject,status,approved_at) VALUES(?,?,?,?,?,?)",
+              ("github","22932777","team-webactueel","user-admin","active","2026-11-22T00:00:00Z"),
+          )
+          assert len(connection.execute(sql, args).fetchall()) == 1, "Approved user could not list their site"
+          connection.execute(
+              "UPDATE central_identity_links SET revoked_at = ? WHERE provider = ? AND provider_subject = ?",
+              ("2026-11-22T01:00:00Z","github","22932777"),
+          )
+          assert not connection.execute(sql, args).fetchall(), "Revoked user still has access"
+          print("Verified GitHub member and immediate revocation PASS")
+          PY

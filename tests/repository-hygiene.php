@@ -6,6 +6,7 @@ $root = dirname(__DIR__);
 $allowedRootDirectories = array(
     '.github',
     'assets',
+    'central-mcp',
     'docs',
     'examples',
     'plugin',
