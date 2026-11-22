@@ -16,6 +16,8 @@ test('queries only the exact tenant and subject in D1 using bind parameters', as
   const db = {
     prepare(sql) {
       assert.match(sql, /s\.tenant_id = \? AND g\.subject = \?/);
+      assert.match(sql, /JOIN central_identity_links AS l/);
+      assert.match(sql, /l\.revoked_at IS NULL/);
       return {bind(...params) {calls.push(params); return {async all(){ return {results:[row]}; }}; }};
     },
   };

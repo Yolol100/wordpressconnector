@@ -29,6 +29,11 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           npm run build
+      - name: Compile isolated OAuth authorization Worker without deployment
+        working-directory: central-mcp/auth
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
       - name: SQLite tenant isolation
         run: |
           python - <<'PY'
@@ -53,4 +58,25 @@ jobs:
               print("Cross-tenant foreign key guard PASS")
           else:
               raise AssertionError("Cross-tenant grant accepted")
+
+          # Execute the actual registry SQL against SQLite: approval and
+          # revocation must affect visibility on the very next read.
+          import re
+          registry = Path("central-mcp/src/registry.mjs").read_text()
+          match = re.search(r"const SELECT_SITES = `(.*?)`;", registry, re.S)
+          assert match, "Registry SQL not found"
+          sql = match.group(1)
+          args = ("team-webactueel", "user-admin")
+          assert not connection.execute(sql, args).fetchall(), "Unlinked user received access"
+          connection.execute(
+              "INSERT INTO central_identity_links(provider,provider_subject,tenant_id,subject,status,approved_at) VALUES(?,?,?,?,?,?)",
+              ("github","22932777","team-webactueel","user-admin","active","2026-11-22T00:00:00Z"),
+          )
+          assert len(connection.execute(sql, args).fetchall()) == 1, "Approved user could not list their site"
+          connection.execute(
+              "UPDATE central_identity_links SET revoked_at = ? WHERE provider = ? AND provider_subject = ?",
+              ("2026-11-22T01:00:00Z","github","22932777"),
+          )
+          assert not connection.execute(sql, args).fetchall(), "Revoked user still has access"
+          print("Verified GitHub member and immediate revocation PASS")
           PY

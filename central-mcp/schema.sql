@@ -42,3 +42,20 @@ CREATE TABLE IF NOT EXISTS central_pairing_challenges (
   FOREIGN KEY(site_id, tenant_id) REFERENCES central_sites(id, tenant_id)
 );
 CREATE INDEX IF NOT EXISTS idx_pairing_expiry ON central_pairing_challenges(expires_at);
+
+-- Identity enrollment is administrator-controlled. OAuth login never creates a
+-- tenant, subject or site grant. Multiple active memberships for the same
+-- upstream identity are rejected until an authenticated tenant picker exists.
+CREATE TABLE IF NOT EXISTS central_identity_links (
+  provider TEXT NOT NULL CHECK(provider = 'github'),
+  provider_subject TEXT NOT NULL,
+  tenant_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'active')),
+  approved_at TEXT,
+  revoked_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY(provider, provider_subject, tenant_id),
+  UNIQUE(tenant_id, subject)
+);
+CREATE INDEX IF NOT EXISTS idx_identity_provider ON central_identity_links(provider, provider_subject, status, revoked_at);

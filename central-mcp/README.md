@@ -18,7 +18,10 @@ This is the first, fail-closed security layer for a single ChatGPT app controlli
 - src/registry.mjs: parameter-bound D1 lookups by OAuth tenant and subject, filtered again before returning results.
 - schema.sql: normalized registry/grants with cross-tenant foreign-key enforcement; pairing challenges store a SHA-256 digest, **not** a bearer secret or WordPress credential.
 - src/pairing-challenge.mjs: isolated storage-only 256-bit random, five-minute, one-use pairing challenge reservation and atomic consumption. This code has **no public endpoint**, does not authenticate WordPress administrators, and never activates a site. Only wire it after independent per-site administrator authentication, consent, exact-origin verification, and a trusted caller boundary are implemented.
-- test/: 34 Node security tests, including pairing misuse, expiry, revocation and replay; SQLite foreign-key isolation is also covered by CI.
+- src/identity-registry.mjs: fetches identity only from GitHub's pinned authenticated /user endpoint; D1 allows only separately approved and non-revoked tenant/subject links. No automatic tenant registration.
+- src/authorization-server.mjs and auth/: un-deployed OAuth 2.1 candidate with PKCE/CIMD, consent bound to the browser, a separate GitHub upstream sign-in, and encrypted authorization state in EU KV. GitHub client credentials have NOT been configured; the Worker denies login until they exist.
+- Resource Worker: D1 and authorization-server service bindings are declared, but the separate service and login require independent runtime verification.
+- test/: 40 Node security tests, including provider/membership denial and pairing replay; SQLite foreign-key isolation is covered by CI.
 
 Run: node --test central-mcp/test/*.test.mjs
 
