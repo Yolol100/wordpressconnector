@@ -16,9 +16,12 @@ function fakeDb() {
           return {
             async first() {
               if (sql.includes('INSERT INTO central_pairing_challenges')) {
-                const [subject, secretHash, expiry, siteId, tenantId] = args;
-                if (!state.pending || state.revoked || state.challenge ||
+                const [subject, secretHash, expiry, siteId, tenantId, now] = args;
+                if (!state.pending || state.revoked ||
                     siteId !== base.siteId || tenantId !== base.tenantId) return null;
+                const previous = state.challenge;
+                if (previous && (previous.tenantId !== tenantId ||
+                    (!previous.consumed && previous.expiry > now))) return null;
                 state.challenge = {subject, secretHash, expiry, siteId, tenantId, consumed: false};
                 return {site_id: siteId};
               }
@@ -58,6 +61,46 @@ test('rejects duplicate reservation and mismatched tenant', async () => {
   await assert.rejects(reservePairingChallenge(db, base, webcrypto), AccessDenied);
   const other = fakeDb();
   await assert.rejects(reservePairingChallenge(other.db, {...base, tenantId: 'other-tenant'}, webcrypto), AccessDenied);
+});
+
+test('allows a fresh code after exact expiry but never replaces an active code', async () => {
+  const {db, state} = fakeDb();
+  const first = await reservePairingChallenge(db, base, webcrypto);
+  await assert.rejects(reservePairingChallenge(db, {...base, now: 1299}, webcrypto), AccessDenied);
+  const second = await reservePairingChallenge(db, {...base, now: 1300}, webcrypto);
+  assert.notEqual(second.secret, first.secret);
+  assert.equal(second.expires_at, 1600);
+  assert.equal(state.challenge.expiry, 1600);
+  assert.equal(state.challenge.consumed, false);
+  await assert.rejects(consumePairingChallenge(db, {...base, secret: first.secret, now: 1301}, webcrypto), AccessDenied);
+  assert.deepEqual(await consumePairingChallenge(db, {...base, secret: second.secret, now: 1301}, webcrypto), {consumed: true});
+  const sql = state.calls.find(c => c.sql.includes('INSERT INTO central_pairing_challenges')).sql;
+  assert.match(sql, /ON CONFLICT\(site_id\) DO UPDATE/);
+  assert.match(sql, /expires_at <= \?/);
+  assert.match(sql, /consumed_at = NULL/);
+});
+
+test('reissues after single use without reviving the previous secret', async () => {
+  const {db, state} = fakeDb();
+  const first = await reservePairingChallenge(db, base, webcrypto);
+  await consumePairingChallenge(db, {...base, secret: first.secret, now: 1001}, webcrypto);
+  const second = await reservePairingChallenge(db, {...base, now: 1002}, webcrypto);
+  assert.notEqual(second.secret, first.secret);
+  assert.equal(state.challenge.consumed, false);
+  await assert.rejects(consumePairingChallenge(db, {...base, secret: first.secret, now: 1003}, webcrypto), AccessDenied);
+  await consumePairingChallenge(db, {...base, secret: second.secret, now: 1003}, webcrypto);
+  await assert.rejects(consumePairingChallenge(db, {...base, secret: second.secret, now: 1004}, webcrypto), AccessDenied);
+});
+
+test('never renews expired codes when the site is suspended or revoked', async () => {
+  const {db, state} = fakeDb();
+  await reservePairingChallenge(db, base, webcrypto);
+  state.pending = false;
+  await assert.rejects(reservePairingChallenge(db, {...base, now: 1301}, webcrypto), AccessDenied);
+  state.pending = true;
+  state.revoked = true;
+  await assert.rejects(reservePairingChallenge(db, {...base, now: 1302}, webcrypto), AccessDenied);
+  assert.equal(state.challenge.expiry, 1300);
 });
 
 test('consumes exactly once for matching identity and challenge', async () => {
