@@ -18,6 +18,8 @@ class WP_REST_Request
 $GLOBALS['wpconnector_base_url'] = 'https://example.com';
 $GLOBALS['wpconnector_blog_id'] = 1;
 $GLOBALS['wpconnector_site_options'] = array();
+$GLOBALS['block_pairing_option_write'] = false;
+$GLOBALS['block_pairing_option_delete'] = false;
 function rest_url($path = ''): string { return $GLOBALS['wpconnector_base_url'] . '/wp-json/' . ltrim((string) $path, '/'); }
 function get_option($key, $default = false) {
     if ($GLOBALS['wpconnector_oidc_claim_read_fail'] && 0 === strpos((string) $key, 'wpconnector_oidc_replay_')) return $default;
@@ -29,8 +31,17 @@ function add_option($key, $value, $deprecated = '', $autoload = false): bool {
     $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][(string) $key] = $value;
     return true;
 }
-function update_option($key, $value, $autoload = null) { $old=get_option($key,null); $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]=$value; return $old!==$value; }
-function delete_option($key) { unset($GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]); return true; }
+function update_option($key, $value, $autoload = null) {
+    if ($GLOBALS['block_pairing_option_write'] && $key === 'wpconnector_github_oidc_site_pairing_v1') return false;
+    $old = get_option($key, null);
+    $GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key] = $value;
+    return $old !== $value;
+}
+function delete_option($key) {
+    if ($GLOBALS['block_pairing_option_delete'] && $key === 'wpconnector_github_oidc_site_pairing_v1') return false;
+    unset($GLOBALS['wpconnector_site_options'][$GLOBALS['wpconnector_blog_id']][$key]);
+    return true;
+}
 function get_transient($key) { return $GLOBALS['wpconnector_transients'][$key] ?? false; }
 function set_transient($key, $value, $ttl): bool { $GLOBALS['wpconnector_transients'][$key] = $value; return true; }
 function wp_safe_remote_get($url, $args = array()) { return array('response'=>array('code'=>200),'body'=>json_encode(array('keys'=>$GLOBALS['wpconnector_jwks']))); }
@@ -102,6 +113,32 @@ if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Miss
 $GLOBALS['admin_activation_user_id'] = 1;
 SitePairing::enableForAdministrator(1);
 if (SitePairing::pairedAdministratorId() !== 1) throw new RuntimeException('Site approval not retained.');
+
+// An option write failure must not falsely report administrator approval.
+SitePairing::disable();
+$GLOBALS['block_pairing_option_write'] = true;
+$blockedWriteReported = false;
+try {
+    SitePairing::enableForAdministrator(1);
+} catch (RuntimeException $error) {
+    $blockedWriteReported = strpos($error->getMessage(), 'Could not store site-specific') !== false;
+}
+$GLOBALS['block_pairing_option_write'] = false;
+if (!$blockedWriteReported || SitePairing::pairedAdministratorId() !== 0) {
+    throw new RuntimeException('Failed pairing write incorrectly reported success.');
+}
+SitePairing::enableForAdministrator(1);
+$GLOBALS['block_pairing_option_delete'] = true;
+$blockedDeleteReported = false;
+try {
+    SitePairing::disable();
+} catch (RuntimeException $error) {
+    $blockedDeleteReported = strpos($error->getMessage(), 'Could not revoke site-specific') !== false;
+}
+$GLOBALS['block_pairing_option_delete'] = false;
+if (!$blockedDeleteReported || SitePairing::pairedAdministratorId() !== 1) {
+    throw new RuntimeException('Failed pairing deletion incorrectly reported revocation.');
+}
 $GLOBALS['wpconnector_blog_id'] = 2;
 if (SitePairing::pairedAdministratorId() !== 0) throw new RuntimeException('Pairing crossed multisite blog boundary.');
 $GLOBALS['wpconnector_blog_id'] = 1;

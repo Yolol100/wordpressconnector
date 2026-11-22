@@ -19,6 +19,7 @@ $GLOBALS['http_calls'] = array();
 $GLOBALS['methods'] = array();
 $GLOBALS['stored_deletions'] = 0;
 $GLOBALS['blocked_option_write'] = '';
+$GLOBALS['blocked_grant_delete'] = false;
 
 final class WP_Error {
 	private string $code;
@@ -105,6 +106,7 @@ function set_transient( string $name, $value, int $seconds ): bool {
 	return true;
 }
 function delete_transient( string $name ): bool {
+	if ( $GLOBALS['blocked_grant_delete'] && 0 === strpos( $name, 'wpconnector_native_oauth_grant_' ) ) { return false; }
 	if ( false === get_transient( $name ) ) { return false; }
 	unset( $GLOBALS['transients'][$name], $GLOBALS['transient_expires'][$name] );
 	++$GLOBALS['stored_deletions'];
@@ -404,6 +406,29 @@ must( $issued->get_headers()['Cache-Control'] === 'no-store', 'OAuth response is
 $claims = NativeOAuthServer::introspect( $pair['access_token'] );
 must( is_array( $claims ) && $claims['sub'] === 'wp:123' && $claims['aud'] === array( $resource ), 'Native bearer bound to origin and account' );
 must( $claims['iss'] === NativeOAuthServer::issuer(), 'Token issuer binding' );
+
+// Emulate a transient backend that refuses grant deletion. Never claim a
+// successful RFC 7009 revocation while a known grant remains active.
+$failure_code = internal( 'issue', array( 'code', $owner, 300 ) );
+$failure_issued = $server->token( token_request( base_token( 'authorization_code', $failure_code, $verifier ) ) );
+must( 200 === $failure_issued->get_status(), 'Independent grant issued for failed revocation fixture' );
+$failure_pair = $failure_issued->get_data();
+$GLOBALS['blocked_grant_delete'] = true;
+$failure_revoke = $server->revoke( token_request( array(
+	'client_id' => $params['client_id'],
+	'token' => $failure_pair['access_token'],
+) ) );
+must( 503 === $failure_revoke->get_status() && 'server_error' === $failure_revoke->get_data()['error'],
+	'Failed grant deletion must return 503, not false successful revocation' );
+must( null !== NativeOAuthServer::introspect( $failure_pair['access_token'] ),
+	'Transient deletion failure leaves token active and must be observable' );
+$GLOBALS['blocked_grant_delete'] = false;
+$recovered_revoke = $server->revoke( token_request( array(
+	'client_id' => $params['client_id'],
+	'token' => $failure_pair['access_token'],
+) ) );
+must( 200 === $recovered_revoke->get_status() && null === NativeOAuthServer::introspect( $failure_pair['access_token'] ),
+	'Subsequent verified grant deletion revokes the token' );
 
 // Authorization codes are bound to the exact administrator-registered redirect.
 update_option( 'wpconnector_native_oauth_registered_redirect', $registered_callback );

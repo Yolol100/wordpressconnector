@@ -99,19 +99,25 @@ final class SitePairing {
 			'audience_sha256'  => self::fingerprint(),
 			'administrator_id' => $administratorId,
 		);
-		if ( ! update_option( self::OPTION, $state, false ) ) {
-			// WordPress returns false for unchanged values: confirm the saved
-			// state rather than treating that harmless no-op as a failure.
-			if ( self::pairedAdministratorId() !== $administratorId ) {
-				throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
-			}
+		update_option( self::OPTION, $state, false );
+		// A WordPress option update can be unchanged, fail, or be filtered.
+		// Only the exact stored approval and current administrator rights count.
+		if ( get_option( self::OPTION, null ) !== $state
+			|| self::pairedAdministratorId() !== $state['administrator_id'] ) {
+			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
 		}
 	}
 
 	/**
-	 * Process the disable operation in the SitePairing component.
+	 * Revoke the stored GitHub OIDC pairing; never report a failed delete as success.
+	 *
+	 * @throws \RuntimeException If the approval is still stored.
 	 */
 	public static function disable(): void {
 		delete_option( self::OPTION );
+		// A failed option deletion must never report a successful revocation.
+		if ( null !== get_option( self::OPTION, null ) ) {
+			throw new RuntimeException( 'Could not revoke site-specific GitHub OIDC approval.' );
+		}
 	}
 }

@@ -90,6 +90,20 @@ final class Settings {
 	}
 
 	/**
+	 * Canonical navigation shared by the server-rendered fallback and React tabs.
+	 *
+	 * @return array<string, string> Human-readable tab labels by stable ID.
+	 */
+	private static function navigation_tabs(): array {
+		return array(
+			'overview' => __( 'Overview', 'wordpressconnector' ),
+			'chatgpt'  => __( 'ChatGPT', 'wordpressconnector' ),
+			'github'   => __( 'GitHub', 'wordpressconnector' ),
+			'advanced' => __( 'Advanced', 'wordpressconnector' ),
+		);
+	}
+
+	/**
 	 * Load the WordPress-native admin presentation only on this settings screen.
 	 * React handles navigation; existing nonce-protected PHP forms remain canonical.
 	 *
@@ -112,50 +126,72 @@ final class Settings {
 			WPCONNECTOR_VERSION,
 			true
 		);
+		$tab_config = array();
+		foreach ( self::navigation_tabs() as $name => $title ) {
+			$tab_config[] = array(
+				'name'  => $name,
+				'title' => $title,
+			);
+		}
 		wp_localize_script(
 			'wpconnector-admin-ui',
 			'WPConnectorAdminUI',
 			array(
-				'tabs'     => array(
-					array(
-						'name'  => 'overview',
-						'title' => __( 'Overview', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'chatgpt',
-						'title' => __( 'ChatGPT', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'github',
-						'title' => __( 'GitHub', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'advanced',
-						'title' => __( 'Advanced', 'wordpressconnector' ),
-					),
-				),
+				'tabs'     => $tab_config,
 				'navLabel' => __( 'WordPress Connector sections', 'wordpressconnector' ),
 			)
 		);
 	}
 
 	/**
+	 * Read a validated request method for administration-only write handlers.
+	 */
+	private static function request_method(): string {
+		return isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+			: '';
+	}
+
+	/**
 	 * Process the save site pairing operation in the Settings component.
 	 */
 	public function saveSitePairing(): void {
+		if ( 'POST' !== self::request_method() ) {
+			wp_die(
+				esc_html__( 'Use the WordPress Connector settings form to change GitHub site authorization.', 'wordpressconnector' ),
+				esc_html__( 'Method not allowed', 'wordpressconnector' ),
+				array( 'response' => 405 )
+			);
+		}
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Only a site administrator can authorize the Connector.', 'wordpressconnector' ) );
+			wp_die(
+				esc_html__( 'Only a site administrator can authorize the Connector.', 'wordpressconnector' ),
+				esc_html__( 'Permission denied', 'wordpressconnector' ),
+				array( 'response' => 403 )
+			);
 		}
 		check_admin_referer( 'wpconnector_site_pairing' );
 		$decision = isset( $_POST['pairing_decision'] ) && is_string( $_POST['pairing_decision'] )
 			? sanitize_key( wp_unslash( $_POST['pairing_decision'] ) )
 			: '';
-		if ( 'enable' === $decision ) {
-			SitePairing::enableForAdministrator( get_current_user_id() );
-		} elseif ( 'disable' === $decision ) {
-			SitePairing::disable();
-		} else {
-			wp_die( esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ) );
+		try {
+			if ( 'enable' === $decision ) {
+				SitePairing::enableForAdministrator( get_current_user_id() );
+			} elseif ( 'disable' === $decision ) {
+				SitePairing::disable();
+			} else {
+				wp_die(
+					esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ),
+					esc_html__( 'Invalid request', 'wordpressconnector' ),
+					array( 'response' => 400 )
+				);
+			}
+		} catch ( \RuntimeException $error ) {
+			wp_die(
+				esc_html__( 'Could not save GitHub site authorization. Please review the WordPress storage configuration.', 'wordpressconnector' ),
+				esc_html__( 'Site authorization unavailable', 'wordpressconnector' ),
+				array( 'response' => 503 )
+			);
 		}
 		wp_safe_redirect( add_query_arg( 'pairing_saved', '1', admin_url( 'options-general.php?page=' . self::PAGE ) ) );
 		exit;
@@ -168,10 +204,7 @@ final class Settings {
 	 * contains the plaintext credential; GitHub OIDC never uses it.
 	 */
 	public function createApplicationPassword(): void {
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
-			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
-			: '';
-		if ( 'POST' !== $request_method ) {
+		if ( 'POST' !== self::request_method() ) {
 			wp_die(
 				esc_html__( 'Use the WordPress Connector settings form to create a credential.', 'wordpressconnector' ),
 				esc_html__( 'Method not allowed', 'wordpressconnector' ),
@@ -307,12 +340,7 @@ final class Settings {
 			echo esc_html__( 'Keep the legacy plugin until the staging parity and rollback checklist passes, then deactivate it.', 'wordpressconnector' ) . '</p></div>';
 		}
 
-		$tabs = array(
-			'overview' => __( 'Overview', 'wordpressconnector' ),
-			'chatgpt'  => __( 'ChatGPT', 'wordpressconnector' ),
-			'github'   => __( 'GitHub', 'wordpressconnector' ),
-			'advanced' => __( 'Advanced', 'wordpressconnector' ),
-		);
+		$tabs = self::navigation_tabs();
 		echo '<div class="wpconnector-admin-tabs" id="wpconnector-admin-tabs">';
 		echo '<nav class="wpconnector-tab-fallback" aria-label="' . esc_attr__( 'WordPress Connector sections', 'wordpressconnector' ) . '">';
 		foreach ( $tabs as $name => $title ) {
@@ -545,9 +573,7 @@ final class Settings {
 	}
 
 	/**
-	 * Process the legacy bridge active operation in the Settings component.
-	 *
-	 * @return bool Operation result.
+	 * Render the opt-in native OAuth status and administrator controls.
 	 */
 	private function render_native_oauth_controls(): void {
 		$enabled          = NativeOAuthServer::is_enabled();
