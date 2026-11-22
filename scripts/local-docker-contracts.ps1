@@ -67,6 +67,8 @@ if (-not (Test-Path -LiteralPath (Join-Path $root 'scripts/run-contracts.sh'))) 
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is unavailable.' }
+if (-not (Get-Command python -ErrorAction SilentlyContinue)) { throw 'Host Python is required to run the deferred contracts.' }
+if (-not (Get-Command node -ErrorAction SilentlyContinue)) { throw 'Host Node.js is required to run JavaScript contracts.' }
 $dockerVersion = (& docker info --format '{{.ServerVersion}}' 2>$null).Trim()
 if ($LASTEXITCODE -ne 0 -or -not $dockerVersion) { throw 'Docker Engine is unavailable.' }
 $imageId = (& docker image inspect --format '{{.Id}}' $Image 2>$null).Trim()
@@ -90,6 +92,7 @@ $arguments = @(
     'run', '--rm', '--pull', 'never', '--name', $container,
     '--label', "webactueel.wpconnector.qa-run=$runId",
     '--network', 'none', '--read-only',
+    '--env', 'WPCONNECTOR_LOCAL_DOCKER_SPLIT_PYTHON=1',
     '--tmpfs', '/tmp:rw,nosuid,size=64m',
     '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges',
     '--mount', "type=bind,source=$root,target=/repo,readonly",
@@ -127,6 +130,58 @@ try {
     $ErrorActionPreference = $priorPreference
 }
 
+# Host-only Python and Node tests complete the SHA-checked local Docker suite.
+$pythonScripts = @('tests/release-supply-chain-tests.py',
+    'tests/wpcs-regression-gate-tests.py',
+    'tests/plan-readonly-audit-tests.py',
+    'tests/plan-fleet-release-tests.py')
+$pythonExitCode = 125
+$nodeExitCode = 125
+if ($exitCode -eq 0) {
+    $deferred = @(Get-Content -LiteralPath $logPath | Where-Object { $_ -like 'LOCAL_PYTHON_DEFERRED *' })
+    $expectedDeferred = @($pythonScripts | ForEach-Object { 'LOCAL_PYTHON_DEFERRED ' + $_ })
+    if (($deferred -join [char]10) -ne ($expectedDeferred -join [char]10)) {
+        Add-Content -LiteralPath $logPath -Value 'FAIL: deferred Python test list drift.'
+        $pythonExitCode = 126
+    } else {
+        function Invoke-HostQATest {
+            param([string] $Executable, [string[]] $Arguments)
+            $prior = $ErrorActionPreference
+            $ErrorActionPreference = 'Continue'
+            try {
+                & $Executable @Arguments 2>&1 | ForEach-Object { $_.ToString() } | Add-Content -LiteralPath $logPath
+                $code = $LASTEXITCODE
+            } finally {
+                $ErrorActionPreference = $prior
+            }
+            return $code
+        }
+        Push-Location -LiteralPath $root
+        try {
+            $pythonExitCode = 0
+            foreach ($path in $pythonScripts) {
+                $pythonExitCode = Invoke-HostQATest -Executable 'python' -Arguments @('-I', '-B', $path)
+                if ($pythonExitCode -ne 0) { break }
+            }
+            if ($pythonExitCode -eq 0) {
+                $nodeExitCode = 0
+                foreach ($path in @('plugin/wordpressconnector/assets/connection-doctor.js',
+                                     'plugin/wordpressconnector/assets/admin-ui.js')) {
+                    $nodeExitCode = Invoke-HostQATest -Executable 'node' -Arguments @('--check', $path)
+                    if ($nodeExitCode -ne 0) { break }
+                }
+                if ($nodeExitCode -eq 0) {
+                    foreach ($path in @('tests/mcp-admin-connection-doctor.js', 'tests/admin-ui-navigation.js')) {
+                        $nodeExitCode = Invoke-HostQATest -Executable 'node' -Arguments @($path)
+                        if ($nodeExitCode -ne 0) { break }
+                    }
+                }
+            }
+        } finally {
+            Pop-Location
+        }
+    }
+}
 $log = Get-Content -LiteralPath $logPath -Raw
 $warnings = [regex]::Matches($log, '(?m)^(?:PHP\s+)?(?:Warning|Notice|Deprecated|Fatal error):').Count
 $headAfter = ((& git -C $root rev-parse HEAD 2>$null) -join '').Trim().ToLowerInvariant()
@@ -138,7 +193,7 @@ try {
 } catch {
     $postflightError = $_.Exception.Message
 }
-$pass = $exitCode -eq 0 -and $warnings -eq 0 -and $headStable -and $postflightOk
+$pass = $exitCode -eq 0 -and $pythonExitCode -eq 0 -and $nodeExitCode -eq 0 -and $warnings -eq 0 -and $headStable -and $postflightOk
 $receipt = [ordered]@{
     schema_version = '1.0'
     run_id = $runId
@@ -153,6 +208,8 @@ $receipt = [ordered]@{
     evidence_level = 'controlled_runtime_contracts_only'
     result = $(if ($pass) { 'PASS' } else { 'FAIL' })
     exit_code = $exitCode
+    python_exit_code = $pythonExitCode
+    node_exit_code = $nodeExitCode
     php_warning_count = $warnings
     tracked_source_unchanged = $postflightOk
     postflight_error = $(if ($postflightOk) { $null } else { $postflightError })

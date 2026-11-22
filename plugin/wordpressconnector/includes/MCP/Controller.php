@@ -14,6 +14,8 @@ use Throwable;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Runtime\Request;
 use Webactueel\WordPressConnector\Runtime\Runner;
+use Webactueel\WordPressConnector\Security\FilesystemPolicy;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Security\OAuthResourceServer;
 
 /**
@@ -98,6 +100,22 @@ final class Controller {
 		if ( null !== $this->oauth_resource ) {
 			$oauth_result = $this->oauth_resource->authenticate( $request );
 			if ( null !== $oauth_result ) {
+				// Request a fresh OAuth grant before running a staging file tool.
+				// An insufficient-scope error at the HTTP gate lets MCP clients
+				// invoke their standard authorization step-up flow.
+				if ( true === $oauth_result && $this->oauth_resource->isAuthenticated()
+					&& NativeOAuthServer::staging_files_enabled() && ! $this->oauth_resource->can_edit_staging_files() ) {
+					$message = $request->get_json_params();
+					$params  = is_array( $message ) ? ( $message['params'] ?? null ) : null;
+					$args    = is_array( $params ) ? ( $params['arguments'] ?? null ) : null;
+					$action  = is_array( $args ) ? ( $args['action'] ?? null ) : null;
+					if ( is_array( $message ) && 'tools/call' === ( $message['method'] ?? null )
+						&& is_array( $params ) && 'wordpress_connector_execute' === ( $params['name'] ?? null )
+						&& in_array( $action, array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ), true ) ) {
+						OAuthResourceServer::challenge( 'insufficient_scope', true );
+						return new \WP_Error( 'wpconnector_oauth_scope_denied', 'Staging file access requires separate OAuth approval.', array( 'status' => 403 ) );
+					}
+				}
 				return $oauth_result;
 			}
 		}
@@ -653,7 +671,7 @@ final class Controller {
 		// Descriptors never override OAuth introspection or Runner policy.
 		if ( null !== $this->oauth_resource && OAuthResourceServer::isConfigured() ) {
 			foreach ( $result['tools'] as &$tool ) {
-				$is_update                        = in_array(
+				$is_update = in_array(
 					$tool['name'],
 					array(
 						'wordpress_connector_release_preview',
@@ -661,7 +679,10 @@ final class Controller {
 					),
 					true
 				);
-				$scopes                           = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+				// Keep the initial ChatGPT connection read-only. A file action
+				// requests separate consent using the scoped HTTP challenge in authorize().
+				$scopes = $is_update ? array( 'wpconnector:read', 'wpconnector:update' ) : array( 'wpconnector:read' );
+
 				$schemes                          = array(
 					array(
 						'type'   => 'oauth2',
@@ -723,6 +744,79 @@ final class Controller {
 		}
 
 		throw new RuntimeException( 'Unknown MCP tool: ' . $name . '.' );
+	}
+
+	/**
+	 * Narrow, opt-in OAuth filesystem access. This is not a general admin mode.
+	 * File replacement delegates SHA-256, content validation and rollback to
+	 * the already guarded FilesystemAdapter; all other actions remain denied.
+	 *
+	 * @param string $action Existing semantic action.
+	 * @param array  $payload User-supplied action payload.
+	 * @param bool   $dry_run Dry-run request.
+	 * @param bool   $confirm Explicit write confirmation.
+	 */
+	private function staging_file_action_allowed( string $action, array $payload, bool $dry_run, bool $confirm ): bool {
+		if ( null === $this->oauth_resource || ! $this->oauth_resource->can_edit_staging_files() ) {
+			return false;
+		}
+		if ( ! in_array( $action, array( 'filesystem.inspect', 'filesystem.list', 'filesystem.read_text', 'filesystem.write_text' ), true ) ) {
+			return false;
+		}
+		if ( 'filesystem.inspect' === $action ) {
+			return array() === $payload && $dry_run && ! $confirm;
+		}
+		if ( ! isset( $payload['path'] ) || ! is_string( $payload['path'] ) ) {
+			return false;
+		}
+		$path = $payload['path'];
+		try {
+			$normalized = FilesystemPolicy::assertListable( $path );
+		} catch ( RuntimeException $error ) {
+			return false;
+		}
+		if ( $path !== $normalized ) {
+			return false;
+		}
+		$segments = explode( '/', $path );
+		if ( count( $segments ) < 2 || 'wp-content' !== $segments[0]
+			|| ! in_array( $segments[1], array( 'plugins', 'themes' ), true ) ) {
+			return false;
+		}
+		if ( 'filesystem.list' === $action ) {
+			return $dry_run && ! $confirm && array_keys( $payload ) === array( 'path' );
+		}
+		// Require a file within an actual plugin/theme folder, never a root
+		// file. Reuse the adapter's canonical path and secret protections.
+		if ( count( $segments ) < 4
+			|| ! in_array( strtolower( (string) pathinfo( $path, PATHINFO_EXTENSION ) ), array( 'css', 'txt', 'md' ), true ) ) {
+			return false;
+		}
+		try {
+			FilesystemPolicy::assertWritableText( $path );
+		} catch ( RuntimeException $error ) {
+			return false;
+		}
+		if ( 'filesystem.read_text' === $action ) {
+			return $dry_run && ! $confirm && array_keys( $payload ) === array( 'path' );
+		}
+		if ( 'filesystem.write_text' === $action ) {
+			$keys = array_keys( $payload );
+			foreach ( $keys as $key ) {
+				if ( ! in_array( $key, array( 'path', 'content', 'expected_sha256', 'acknowledge_active_content' ), true ) ) {
+					return false;
+				}
+			}
+			if ( ! isset( $payload['content'] ) || ! is_string( $payload['content'] ) ) {
+				return false;
+			}
+			if ( ! $dry_run ) {
+				return $confirm && isset( $payload['expected_sha256'] ) && is_string( $payload['expected_sha256'] )
+					&& 1 === preg_match( '/\\A[a-f0-9]{64}\\z/D', $payload['expected_sha256'] );
+			}
+			return ! $confirm;
+		}
+		return false;
 	}
 
 	/**
@@ -812,12 +906,14 @@ final class Controller {
 		if ( ! is_bool( $dry_run ) || ! is_bool( $confirm ) ) {
 			return $this->tool_error( 'dry_run and confirm must be booleans.' );
 		}
-		// OAuth bearer access starts read-only; a browser login or GitHub OIDC
-		// keeps its existing permissions and approval/rollback gates.
-		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated()
-			&& ( ! in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
-				|| true !== $dry_run || false !== $confirm || array() !== $arguments['payload'] ) ) {
-			return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection.' );
+		// Native OAuth is read-only unless this token has a separately consented
+		// staging-file scope. Never inherit GitHub or browser permissions.
+		if ( null !== $this->oauth_resource && $this->oauth_resource->isAuthenticated() ) {
+			$read_only_probe = in_array( $action, array( 'connector.discover', 'site.identity.inspect' ), true )
+				&& true === $dry_run && false === $confirm && array() === $arguments['payload'];
+			if ( ! $read_only_probe && ! $this->staging_file_action_allowed( $action, $arguments['payload'], $dry_run, $confirm ) ) {
+				return $this->tool_error( 'OAuth bearer access is restricted to read-only site inspection or separately approved staging file edits.' );
+			}
 		}
 
 		$request_id = isset( $arguments['request_id'] ) && is_string( $arguments['request_id'] ) ? $arguments['request_id'] : null;

@@ -4,7 +4,7 @@ Tags: rest-api, github, automation, elementor, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.20.12
+Stable tag: 1.20.18
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,22 @@ For full historic release notes and security boundaries, see https://github.com/
 3. Check the built-in connection diagnostics and verify HTTPS, capabilities and a tested external restore path before updates.
 
 == Changelog ==
+
+= 1.20.18 =
+* OAuth pairing uses read-only scope by default even when optional staging file editing is configured. Only a specific file action can request separate file-scope consent.
+* If the WordPress administrator cannot edit plugin/theme files, consent now offers read-only access instead of a 403. A file-editing grant still requires exact staging host, explicit opt-in, separate consent and current WordPress capabilities.
+* WordPress dashboard reports actual account-level file-editor eligibility. No WordPress capabilities, file security or production authorization are bypassed.
+
+= 1.20.17 =
+* Staging development candidate: clarify ChatGPT custom MCP connection recovery, distinguish ChatGPT browser-configuration errors from WordPress OAuth failures and show separately consented wpconnector:files availability in the WordPress admin screen. Does not create a ChatGPT app browser-configuration URL or alter existing OAuth grants.
+* Existing OAuth/file scope enforcement is unchanged. Live ChatGPT relink, file-edit readback and complete restore remain acceptance gates.
+
+= 1.20.16 =
+* Development-only, UNPUBLISHED staging candidate: separately consented native ChatGPT OAuth file scope for existing CSS, TXT and Markdown assets inside plugin/theme directories. File edits require an explicit server opt-in, pinned staging origin, WordPress staging environment, administrator capability, write policy, SHA-256 precondition and confirmation; never enable automatically on production.
+* WordPress-native React dashboard and WordPress 6.8.13 / PHP 8.4 compatibility coverage. Installation, real staging write/readback and full backup restore require separate acceptance.
+
+= 1.20.13 =
+* Development-only, UNPUBLISHED: opt-in WordPress-hosted OAuth authorization server using the verified ChatGPT CIMD identity, S256 PKCE, explicit administrator consent, one-use authorization codes, 15-minute opaque access tokens, rotating refresh tokens, strict resource binding, and owner revocation. Off by default; no production pairing, release or authorization is claimed.
 
 = 1.20.12 =
 * **Unpublished / NO-GO candidate.** Version 1.20.12 prepares source metadata above 1.20.10. On 21 November 2026, Hostinger reports ACDrive is running 1.20.10; its 60 files match the `v1.20.10` source paths and sizes, but installed file hashes are unavailable and a previous 1.20.11 report remains unreconciled. Security PR #1392 is merged. Protected governance PR #1393, real staging backup/restore and error tests, ChatGPT OAuth account pairing, final ZIP/SPDX/source attestation and explicit publication approval remain outstanding. No production deployment or published 1.20.12 release is claimed.

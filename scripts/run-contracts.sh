@@ -6,6 +6,15 @@ compat="$root/tests/php-compat.php"
 run_php() {
   php -d "auto_prepend_file=$compat" "$@"
 }
+# Local Docker has PHP only. The SHA-checked Windows runner must execute
+# deferred Python tests on the host. CI never enables this alternate mode.
+run_python() {
+  if [[ "${WPCONNECTOR_LOCAL_DOCKER_SPLIT_PYTHON:-}" == "1" ]]; then
+    printf 'LOCAL_PYTHON_DEFERRED %s\n' "$1"
+  else
+    python3 -B "$@"
+  fi
+}
 
 find plugin/wordpressconnector tests scripts -name '*.php' -print0 | xargs -0 -n1 php -l
 run_php tests/policy-contract.php
@@ -20,6 +29,7 @@ run_php tests/rest-asset-upload-error-contract.php
 run_php tests/github-oidc-contract.php
 run_php tests/oauth-resource-contract.php
 run_php tests/oauth-unconfigured-contract.php
+run_php tests/oauth-native-contract.php
 run_php tests/release-owner-approval-contract.php
 run_php tests/action-catalog.php
 run_php tests/cli-helper-contract.php
@@ -72,21 +82,24 @@ run_php tests/plugin-package-contract.php
 run_php tests/connector-update-contract.php
 # Keep new release-supply-chain regressions in the existing CI contract runner,
 # even before protected .github/workflows/ci.yml governance changes are merged.
-python3 -B tests/release-supply-chain-tests.py
-python3 -B tests/wpcs-regression-gate-tests.py
+run_python tests/release-supply-chain-tests.py
+run_python tests/wpcs-regression-gate-tests.py
 run_php tests/connector-update-preview-identity-contract.php
 run_php tests/release-protected-source-contract.php
 run_php tests/native-update-contract.php
 run_php tests/connector-self-update-activation-contract.php
 run_php tests/direct-mcp-credential-admin-contract.php
 run_php tests/direct-mcp-admin-runtime.php
-python3 -B tests/plan-readonly-audit-tests.py
-python3 -B tests/plan-fleet-release-tests.py
+run_python tests/plan-readonly-audit-tests.py
+run_python tests/plan-fleet-release-tests.py
 run_php tests/connection-readiness-contract.php
 run_php tests/mcp-admin-connection-doctor-contract.php
+run_php tests/admin-ui-contract.php
 if command -v node >/dev/null 2>&1; then
   node --check plugin/wordpressconnector/assets/connection-doctor.js
+  node --check plugin/wordpressconnector/assets/admin-ui.js
   node tests/mcp-admin-connection-doctor.js
+  node tests/admin-ui-navigation.js
 fi
 run_php tests/strict-input-contract.php
 run_php tests/payload-boolean-contract.php

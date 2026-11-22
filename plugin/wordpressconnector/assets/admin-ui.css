@@ -1,0 +1,298 @@
+/**
+ * WordPress Connector settings: familiar WordPress admin patterns, not a
+ * replacement dashboard. Scoped to this page to avoid global admin changes.
+ */
+.wpconnector-admin {
+    --wpconnector-surface: var(--wpds-color-bg-surface, #fff);
+    --wpconnector-stroke: var(--wpds-color-stroke-surface, #dcdcde);
+    --wpconnector-muted: var(--wpds-color-fg-secondary, #646970);
+    --wpconnector-text: var(--wpds-color-fg-primary, #1e1e1e);
+    --wpconnector-accent: var(--wp-admin-theme-color, #2271b1);
+    max-width: 1120px;
+    color: var(--wpconnector-text);
+}
+
+.wpconnector-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 28px;
+    justify-content: space-between;
+    align-items: center;
+    margin: 16px 0 24px;
+}
+
+.wpconnector-header h1 {
+    font-size: 26px;
+    line-height: 1.2;
+    margin: 0 0 10px;
+    padding: 0;
+}
+
+.wpconnector-header p {
+    max-width: 660px;
+    margin: 0;
+    color: var(--wpconnector-muted);
+    line-height: 1.5;
+}
+
+.wpconnector-header .wpconnector-eyebrow {
+    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .025em;
+    color: var(--wpconnector-muted);
+}
+
+.wpconnector-header .button {
+    flex: none;
+}
+
+.wpconnector-admin-tabs {
+    border-bottom: 1px solid var(--wpconnector-stroke);
+    margin-bottom: 20px;
+}
+
+.wpconnector-tabs,
+.wpconnector-tab-fallback {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    align-items: center;
+}
+
+.wpconnector-tab-fallback a,
+.wpconnector-admin .wpconnector-tabs .wpconnector-tab.components-button {
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    box-shadow: none;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 9px 14px;
+    color: var(--wpconnector-muted);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    background: transparent;
+}
+
+.wpconnector-tab-fallback a:hover,
+.wpconnector-admin .wpconnector-tabs .wpconnector-tab.components-button:hover,
+.wpconnector-admin .wpconnector-tabs .wpconnector-tab.is-active.components-button {
+    color: var(--wpconnector-text);
+    background: transparent;
+}
+
+.wpconnector-admin .wpconnector-tabs .wpconnector-tab.is-active.components-button {
+    border-bottom-color: var(--wpconnector-accent);
+}
+
+.wpconnector-admin .wpconnector-tabs .wpconnector-tab.components-button:focus-visible,
+.wpconnector-tab-fallback a:focus-visible,
+.wpconnector-admin a:focus-visible {
+    outline: 2px solid var(--wpconnector-accent);
+    outline-offset: 2px;
+}
+
+.wpconnector-panel {
+    padding: 4px 0 36px;
+}
+
+.wpconnector-panel[hidden] {
+    display: none;
+}
+
+.wpconnector-panel > h2 {
+    font-size: 20px;
+    line-height: 1.3;
+    margin: 4px 0 8px;
+}
+
+.wpconnector-panel > .description {
+    max-width: 760px;
+    margin: 0 0 22px;
+    line-height: 1.5;
+}
+
+.wpconnector-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+}
+
+.wpconnector-summary-card,
+.wpconnector-card,
+.wpconnector-disclosure {
+    border: 1px solid var(--wpconnector-stroke);
+    border-radius: 6px;
+    background: var(--wpconnector-surface);
+}
+
+.wpconnector-summary-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 20px;
+}
+
+.wpconnector-summary-card h3,
+.wpconnector-card h3 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.wpconnector-summary-card p {
+    margin: 0 0 10px;
+    line-height: 1.5;
+}
+
+.wpconnector-summary-card .wpconnector-state,
+.wpconnector-card .wpconnector-state {
+    font-weight: 600;
+    color: var(--wpconnector-text);
+}
+
+.wpconnector-summary-card a {
+    margin-top: auto;
+    padding-top: 8px;
+}
+
+.wpconnector-card {
+    margin: 18px 0;
+    padding: 24px;
+}
+
+.wpconnector-card > :first-child {
+    margin-top: 0;
+}
+
+.wpconnector-card > :last-child {
+    margin-bottom: 0;
+}
+
+.wpconnector-card p {
+    line-height: 1.55;
+}
+
+.wpconnector-steps ol {
+    margin: 12px 0 0 20px;
+}
+
+.wpconnector-steps li {
+    margin: 0 0 10px;
+    padding-inline-start: 2px;
+    line-height: 1.6;
+}
+
+.wpconnector-disclosure {
+    margin: 16px 0;
+    padding: 0;
+}
+
+.wpconnector-disclosure summary {
+    cursor: pointer;
+    padding: 15px 20px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.wpconnector-disclosure summary:focus-visible {
+    outline: 2px solid var(--wpconnector-accent);
+    outline-offset: -3px;
+}
+
+.wpconnector-disclosure[open] {
+    padding-bottom: 18px;
+}
+
+.wpconnector-disclosure[open] > :not(summary) {
+    margin-inline: 20px;
+}
+
+.wpconnector-disclosure[open] > .wpconnector-table {
+    width: calc(100% - 40px);
+}
+
+.wpconnector-panel .wpconnector-table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
+    margin: 16px 0;
+}
+
+.wpconnector-panel .wpconnector-table th {
+    width: 40%;
+}
+
+.wpconnector-panel .wpconnector-table code,
+.wpconnector-panel code,
+.wpconnector-panel input.regular-text {
+    overflow-wrap: anywhere;
+    max-width: 100%;
+}
+
+.wpconnector-panel input.regular-text,
+.wpconnector-connection-doctor input[type="url"] {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 680px;
+}
+
+.wpconnector-panel .wpconnector-connection-doctor {
+    margin: 12px 0 0;
+}
+
+.wpconnector-panel .wpconnector-connection-doctor p {
+    margin-bottom: 12px;
+}
+
+.wpconnector-panel .wpconnector-connection-doctor .button {
+    margin-block-end: 6px;
+    white-space: normal;
+    height: auto;
+    min-height: 32px;
+}
+
+.wpconnector-panel #wpconnector-mcp-doctor-result:not(:empty) {
+    border-inline-start: 3px solid var(--wpconnector-accent);
+    padding-inline-start: 10px;
+}
+
+.wpconnector-panel form .submit {
+    margin: 12px 0 0;
+    padding: 0;
+}
+
+.wpconnector-panel .notice.inline {
+    margin-inline: 0;
+}
+
+@media (max-width: 960px) {
+    .wpconnector-summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 782px) {
+    .wpconnector-admin {
+        margin-inline-end: 10px;
+    }
+    .wpconnector-header {
+        align-items: flex-start;
+    }
+    .wpconnector-summary-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .wpconnector-card {
+        padding: 18px;
+    }
+    .wpconnector-panel .wpconnector-table th,
+    .wpconnector-panel .wpconnector-table td {
+        display: block;
+        width: auto;
+        padding-block: 8px;
+    }
+}

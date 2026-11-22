@@ -61,7 +61,7 @@ The native MCP route reuses the existing REST authorization callback. It does no
 - Delegated Elementor Ability mutations do not receive a fabricated rollback or stale-state guarantee. Their response reports `rollback_supported=false`. A completed mutation with over-budget output becomes a bounded terminal success; a provider exception or `WP_Error` becomes a bounded terminal failure stored before replay, so the same request ID cannot blindly execute again.
 - MCP adds no arbitrary shell, SQL, PHP eval, unrestricted filesystem write or generic HTTP proxy.
 - `connector.rest_catalog` is a private authenticated administrator-only discovery action. It only returns bounded sanitized route patterns and HTTP methods, not endpoint arguments, credentials or callbacks, and never dispatches REST endpoint/permission callbacks. WordPress Core route filters may run while the registry is inspected. GET method presence does not prove an endpoint is safe to invoke.
-- Hosted account/site registries, OAuth brokerage, billing/quotas and background-job orchestration are outside this plugin's trust boundary.
+- Hosted account/site registries, general-purpose OAuth brokerage, billing/quotas and background-job orchestration are outside this plugin's trust boundary. An optional, owner-enabled **site-local** ChatGPT-only OAuth authorization server is introduced in the unpublished 1.20.13 candidate, with no general identity-provider or client-registration capability.
 
 ## Public presence endpoint
 

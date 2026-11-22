@@ -10,6 +10,7 @@ declare( strict_types = 1 );
 namespace Webactueel\WordPressConnector\Admin;
 
 use Webactueel\WordPressConnector\Security\SitePairing;
+use Webactueel\WordPressConnector\Security\NativeOAuthServer;
 use Webactueel\WordPressConnector\Adapters\ConnectionReadinessAdapter;
 
 /**
@@ -30,6 +31,7 @@ final class Settings {
 		add_action( 'admin_post_wpconnector_site_pairing', array( $this, 'saveSitePairing' ) );
 		add_action( 'admin_post_wpconnector_create_application_password', array( $this, 'createApplicationPassword' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueConnectionDoctor' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_interface' ) );
 	}
 
 	/**
@@ -37,6 +39,12 @@ final class Settings {
 	 */
 	public function unpairedNotice(): void {
 		if ( ! current_user_can( 'manage_options' ) || SitePairing::pairedAdministratorId() ) {
+			return;
+		}
+		// The settings overview already displays pairing state and its action.
+		// Avoid repeating the global notice inside this screen's page heading.
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		if ( $screen && isset( $screen->id ) && 'settings_page_' . self::PAGE === $screen->id ) {
 			return;
 		}
 		$url = admin_url( 'options-general.php?page=' . self::PAGE );
@@ -77,6 +85,56 @@ final class Settings {
 				'failed'     => __( 'This browser could not reach the authenticated MCP endpoint.', 'wordpressconnector' ),
 				'copied'     => __( 'Endpoint copied. Do not paste application passwords into chats.', 'wordpressconnector' ),
 				'copyFailed' => __( 'Copy unavailable; select the address above and copy it manually.', 'wordpressconnector' ),
+			)
+		);
+	}
+
+	/**
+	 * Load the WordPress-native admin presentation only on this settings screen.
+	 * React handles navigation; existing nonce-protected PHP forms remain canonical.
+	 *
+	 * @param string $hook Current admin screen.
+	 */
+	public function enqueue_admin_interface( string $hook ): void {
+		if ( 'settings_page_' . self::PAGE !== $hook || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		wp_enqueue_style(
+			'wpconnector-admin-ui',
+			plugins_url( 'assets/admin-ui.css', WPCONNECTOR_FILE ),
+			array( 'wp-components' ),
+			WPCONNECTOR_VERSION
+		);
+		wp_enqueue_script(
+			'wpconnector-admin-ui',
+			plugins_url( 'assets/admin-ui.js', WPCONNECTOR_FILE ),
+			array( 'wp-element', 'wp-components' ),
+			WPCONNECTOR_VERSION,
+			true
+		);
+		wp_localize_script(
+			'wpconnector-admin-ui',
+			'WPConnectorAdminUI',
+			array(
+				'tabs'     => array(
+					array(
+						'name'  => 'overview',
+						'title' => __( 'Overview', 'wordpressconnector' ),
+					),
+					array(
+						'name'  => 'chatgpt',
+						'title' => __( 'ChatGPT', 'wordpressconnector' ),
+					),
+					array(
+						'name'  => 'github',
+						'title' => __( 'GitHub', 'wordpressconnector' ),
+					),
+					array(
+						'name'  => 'advanced',
+						'title' => __( 'Advanced', 'wordpressconnector' ),
+					),
+				),
+				'navLabel' => __( 'WordPress Connector sections', 'wordpressconnector' ),
 			)
 		);
 	}
@@ -223,67 +281,12 @@ final class Settings {
 	 */
 	public function renderPage(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			return; }
-
-		$presence_url  = rest_url( 'webactueel-wordpress-connector/v1/presence' );
-		$health_url    = rest_url( 'webactueel-wordpress-connector/v1/health' );
-		$legacy_active = $this->legacy_bridge_active();
-
-		echo '<div class="wrap">';
-		echo '<h1>' . esc_html__( 'WordPress Connector', 'wordpressconnector' ) . '</h1>';
-		echo '<p>' . esc_html__( 'After a WordPress administrator clicks Activate, this plugin connects to the pinned Yolol100/wordpressconnector GitHub Actions workflow automatically. No separate permission screen is needed. Remote actions retain authenticated WordPress capability and request safety checks.', 'wordpressconnector' ) . '</p>';
-
-		if ( $legacy_active ) {
-			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Legacy Elementor JSON Bridge detected.', 'wordpressconnector' ) . '</strong> ';
-			echo esc_html__( 'WordPress Connector is the canonical bridge. Keep the legacy plugin only until the staging parity and rollback checklist has passed, then deactivate it.', 'wordpressconnector' );
-			echo '</p></div>';
+			return;
 		}
 
-		$paired_administrator = SitePairing::pairedAdministratorId();
-		echo '<h2>' . esc_html__( 'GitHub connection', 'wordpressconnector' ) . '</h2>';
-		echo '<p><strong>' . esc_html( $paired_administrator ? __( 'Connected to trusted GitHub Actions', 'wordpressconnector' ) : __( 'Not connected', 'wordpressconnector' ) ) . '</strong></p>';
-		echo '<p>' . esc_html__( 'Activating this plugin as a WordPress administrator authorizes the pinned GitHub Actions workflow to manage this website with administrator permissions. A separate setup click is normally unnecessary. Keep this installed only on websites you manage. Access can be revoked here; a cloned or moved site must be reconnected.', 'wordpressconnector' ) . '</p>';
-		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-		wp_nonce_field( 'wpconnector_site_pairing' );
-		echo '<input type="hidden" name="action" value="wpconnector_site_pairing" />';
-		if ( $paired_administrator ) {
-			echo '<input type="hidden" name="pairing_decision" value="disable" />';
-			submit_button( __( 'Revoke GitHub Actions access for this site', 'wordpressconnector' ), 'secondary' );
-		} else {
-			echo '<input type="hidden" name="pairing_decision" value="enable" />';
-			submit_button( __( 'Reconnect trusted GitHub Actions', 'wordpressconnector' ), 'primary' );
-		}
-		echo '</form>';
-
-		echo '<h2>' . esc_html__( 'Direct AI / MCP connection', 'wordpressconnector' ) . '</h2>';
-		echo '<p>' . esc_html__( 'Connect a trusted direct REST/MCP client using an Application Password. This does not change the GitHub Actions connection, which already uses password-free OIDC.', 'wordpressconnector' ) . '</p>';
-		echo '<p><strong>' . esc_html__( 'MCP endpoint', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( rest_url( 'webactueel-wordpress-connector/v1/mcp' ) ) . '</code></p>';
-		echo '<p>' . esc_html__( 'The currently signed-in WordPress administrator is used. No first-user search, automatic administrator selection or password sharing with GitHub takes place.', 'wordpressconnector' ) . '</p>';
-		$current_id = get_current_user_id();
-		$can_issue  = $current_id > 0 && current_user_can( 'create_app_password', $current_id )
-		&& is_ssl()
-		&& 'https' === strtolower( (string) wp_parse_url( rest_url( 'webactueel-wordpress-connector/v1/mcp' ), PHP_URL_SCHEME ) )
-		&& function_exists( 'wp_is_application_passwords_available_for_user' )
-		&& wp_is_application_passwords_available_for_user( $current_id );
-		if ( $can_issue ) {
-			$exists = \WP_Application_Passwords::application_name_exists_for_user( $current_id, self::DIRECT_MCP_PASSWORD_LABEL );
-			if ( $exists ) {
-				echo '<p>' . esc_html__( 'A direct MCP Application Password already exists for your account. WordPress cannot show its value again; revoke it in your profile before requesting another.', 'wordpressconnector' ) . '</p>';
-			} else {
-				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
-				wp_nonce_field( 'wpconnector_create_application_password' );
-				echo '<input type="hidden" name="action" value="wpconnector_create_application_password" />';
-				echo '<p><label><input type="checkbox" name="confirm_direct_access" value="1" required="required" /> ';
-				echo esc_html__( 'I understand this password grants the same WordPress rights as my account and will only be shown once.', 'wordpressconnector' ) . '</label></p>';
-				submit_button( __( 'Generate my direct MCP password', 'wordpressconnector' ), 'secondary' );
-				echo '</form>';
-			}
-		} else {
-			echo '<p>' . esc_html__( 'Direct Application Password setup is unavailable: check HTTPS, your account permissions and WordPress Application Password settings.', 'wordpressconnector' ) . '</p>';
-		}
-		echo '<p><a href="' . esc_url( admin_url( 'profile.php' ) ) . '">' . esc_html__( 'Manage or revoke Application Passwords', 'wordpressconnector' ) . '</a></p>';
-
-		echo '<h2>' . esc_html__( 'Installation readiness', 'wordpressconnector' ) . '</h2>';
+		$paired = (bool) SitePairing::pairedAdministratorId();
+		$oauth  = NativeOAuthServer::is_enabled();
+		$legacy = $this->legacy_bridge_active();
 		$checks = array(
 			__( 'WordPress 6.4 or newer', 'wordpressconnector' ) => version_compare( get_bloginfo( 'version' ), '6.4', '>=' ),
 			__( 'PHP 7.4 or newer', 'wordpressconnector' ) => version_compare( PHP_VERSION, '7.4', '>=' ),
@@ -291,38 +294,184 @@ final class Settings {
 			__( 'WordPress sees HTTPS', 'wordpressconnector' ) => is_ssl(),
 			__( 'REST endpoint uses HTTPS', 'wordpressconnector' ) => 'https' === strtolower( (string) wp_parse_url( rest_url( 'webactueel-wordpress-connector/v1/presence' ), PHP_URL_SCHEME ) ),
 		);
-		echo '<table class="widefat striped" style="max-width:900px"><tbody>';
-		foreach ( $checks as $label => $ready ) {
-			echo '<tr><td>' . esc_html( $label ) . '</td><td>' . esc_html( $ready ? __( 'Ready', 'wordpressconnector' ) : __( 'Needs attention', 'wordpressconnector' ) ) . '</td></tr>';
-		}
-		if ( is_multisite() ) {
-			echo '<tr><td>' . esc_html__( 'WordPress multisite blog ID', 'wordpressconnector' ) . '</td><td><code>' . esc_html( (string) get_current_blog_id() ) . '</code></td></tr>';
-		}
-		echo '</tbody></table>';
-		echo '<p>' . esc_html__( 'Hosting/WAF blocks (401/403/429), outbound GitHub JWKS access, permalinks and third-party plugin compatibility still require a real end-to-end test. An installed plugin alone cannot fix a firewall, missing user permissions or absent dependencies.', 'wordpressconnector' ) . '</p>';
 
+		echo '<div class="wrap wpconnector-admin">';
+		echo '<header class="wpconnector-header"><div>';
+		echo '<p class="wpconnector-eyebrow">' . esc_html__( 'Connections and site access', 'wordpressconnector' ) . '</p>';
+		echo '<h1>' . esc_html__( 'WordPress Connector', 'wordpressconnector' ) . '</h1>';
+		echo '<p>' . esc_html__( 'Manage ChatGPT and GitHub access without leaving your WordPress dashboard.', 'wordpressconnector' ) . '</p>';
+		echo '</div><a class="button button-primary" href="#wpconnector-chatgpt">' . esc_html__( 'Manage ChatGPT', 'wordpressconnector' ) . '</a></header>';
+
+		if ( $legacy ) {
+			echo '<div class="notice notice-warning inline"><p><strong>' . esc_html__( 'Legacy Elementor JSON Bridge detected.', 'wordpressconnector' ) . '</strong> ';
+			echo esc_html__( 'Keep the legacy plugin until the staging parity and rollback checklist passes, then deactivate it.', 'wordpressconnector' ) . '</p></div>';
+		}
+
+		$tabs = array(
+			'overview' => __( 'Overview', 'wordpressconnector' ),
+			'chatgpt'  => __( 'ChatGPT', 'wordpressconnector' ),
+			'github'   => __( 'GitHub', 'wordpressconnector' ),
+			'advanced' => __( 'Advanced', 'wordpressconnector' ),
+		);
+		echo '<div class="wpconnector-admin-tabs" id="wpconnector-admin-tabs">';
+		echo '<nav class="wpconnector-tab-fallback" aria-label="' . esc_attr__( 'WordPress Connector sections', 'wordpressconnector' ) . '">';
+		foreach ( $tabs as $name => $title ) {
+			echo '<a href="#wpconnector-' . esc_attr( $name ) . '">' . esc_html( $title ) . '</a>';
+		}
+		echo '</nav></div>';
+
+		echo '<div class="wpconnector-panels">';
+		echo '<section id="wpconnector-overview" class="wpconnector-panel" aria-labelledby="wpconnector-heading-overview">';
+		$this->render_overview( $paired, $oauth, $checks );
+		echo '</section>';
+		echo '<section id="wpconnector-chatgpt" class="wpconnector-panel" aria-labelledby="wpconnector-heading-chatgpt">';
+		echo '<h2 id="wpconnector-heading-chatgpt">' . esc_html__( 'ChatGPT connection', 'wordpressconnector' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Use WordPress-hosted OAuth to connect ChatGPT. Read-only access is the default; staging file edits require separate OAuth consent and server approval.', 'wordpressconnector' ) . '</p>';
 		$this->render_connection_recovery_guide();
-
-		echo '<h2>' . esc_html__( 'GitHub plugin updates', 'wordpressconnector' ) . '</h2>';
-		echo '<p>' . esc_html__( 'The Plugins screen checks the canonical GitHub release at most once every two minutes while a plugin administrator views it. If a verified newer release exists, WordPress shows its standard Update Now action. Use the Check GitHub update now link beside this plugin for an immediate manual refresh. A commit on GitHub main is not an installable update until CI passes and the versioned release ZIP is published.', 'wordpressconnector' ) . '</p>';
-		echo '<h2>' . esc_html__( 'Connection', 'wordpressconnector' ) . '</h2>';
-		echo '<table class="widefat striped" style="max-width:900px"><tbody>';
-		echo '<tr><td><strong>' . esc_html__( 'Connector version', 'wordpressconnector' ) . '</strong></td><td><code>' . esc_html( defined( 'WPCONNECTOR_VERSION' ) ? WPCONNECTOR_VERSION : '' ) . '</code></td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'Presence endpoint', 'wordpressconnector' ) . '</strong></td><td><code>' . esc_html( $presence_url ) . '</code></td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'REST health endpoint', 'wordpressconnector' ) . '</strong></td><td><code>' . esc_html( $health_url ) . '</code></td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'GitHub authentication', 'wordpressconnector' ) . '</strong></td><td>' . esc_html__( 'Short-lived GitHub Actions OIDC token, normally enabled upon administrator activation', 'wordpressconnector' ) . '</td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'Persistent connector secrets', 'wordpressconnector' ) . '</strong></td><td>' . esc_html__( 'None required', 'wordpressconnector' ) . '</td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'Execution safety', 'wordpressconnector' ) . '</strong></td><td>' . esc_html__( 'Capability checks, dry-run, request confirmation, stale-state guards, idempotency, readback and rollback remain active.', 'wordpressconnector' ) . '</td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'Runtime coverage', 'wordpressconnector' ) . '</strong></td><td>' . esc_html__( 'WordPress · Elementor · Gutenberg · WooCommerce · ACF · Yoast SEO · Media · Plugin settings · Controlled filesystem', 'wordpressconnector' ) . '</td></tr>';
-		echo '<tr><td><strong>' . esc_html__( 'Legacy bridge', 'wordpressconnector' ) . '</strong></td><td>' . esc_html( $legacy_active ? __( 'Active — staging removal check still required', 'wordpressconnector' ) : __( 'Not active', 'wordpressconnector' ) ) . '</td></tr>';
-		echo '</tbody></table>';
-
-		echo '<h2>' . esc_html__( 'First test', 'wordpressconnector' ) . '</h2>';
-		echo '<p><code>' . esc_html__( 'presence -> OIDC health -> connector.discover -> system.doctor -> dry-run mutation -> confirmed staging write + rollback', 'wordpressconnector' ) . '</code></p>';
-		echo '<p>' . esc_html__( 'Optional emergency policy overrides can disable connector actions. WordPress-native REST/MCP needs an authenticated WordPress user; GitHub OIDC is automatically paired on ordinary administrator activation, and never bypasses policy gates.', 'wordpressconnector' ) . '</p>';
-		echo '</div>';
+		echo '</section>';
+		echo '<section id="wpconnector-github" class="wpconnector-panel" aria-labelledby="wpconnector-heading-github">';
+		$this->render_github_panel( $paired );
+		echo '</section>';
+		echo '<section id="wpconnector-advanced" class="wpconnector-panel" aria-labelledby="wpconnector-heading-advanced">';
+		$this->render_advanced_panel( $checks, $legacy );
+		echo '</section>';
+		echo '</div></div>';
 	}
 
+	/**
+	 * Show only the core decisions and local-state evidence first.
+	 *
+	 * @param bool  $paired Whether GitHub approval is locally recorded.
+	 * @param bool  $oauth  Whether native OAuth is enabled.
+	 * @param array $checks Installation prerequisite results.
+	 */
+	private function render_overview( bool $paired, bool $oauth, array $checks ): void {
+		$ready = count( array_filter( $checks ) );
+		$total = count( $checks );
+		echo '<h2 id="wpconnector-heading-overview">' . esc_html__( 'At a glance', 'wordpressconnector' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Settings shown here are local WordPress status, not proof of a remote ChatGPT or GitHub login.', 'wordpressconnector' ) . '</p>';
+		echo '<div class="wpconnector-summary-grid">';
+
+		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'ChatGPT OAuth', 'wordpressconnector' ) . '</h3>';
+		echo '<p class="wpconnector-state">' . esc_html( $oauth ? __( 'Enabled', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) ) . '</p>';
+		if ( NativeOAuthServer::staging_files_enabled() && ( current_user_can( 'edit_plugins' ) || current_user_can( 'edit_themes' ) ) ) {
+			echo '<p>' . esc_html__( 'Read-only by default. Staging file edits require separate OAuth consent; an active ChatGPT grant is not yet verified.', 'wordpressconnector' ) . '</p>';
+		} elseif ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p>' . esc_html__( 'Read-only ChatGPT access is available. WordPress blocks this account from editing plugin or theme files.', 'wordpressconnector' ) . '</p>';
+		} else {
+			echo '<p>' . esc_html__( 'Grant read-only access with explicit WordPress consent. Staging file editing is not configured.', 'wordpressconnector' ) . '</p>';
+		}
+		echo '<a href="#wpconnector-chatgpt">' . esc_html__( 'Manage ChatGPT connection', 'wordpressconnector' ) . '</a></div>';
+
+		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'GitHub Actions', 'wordpressconnector' ) . '</h3>';
+		echo '<p class="wpconnector-state">' . esc_html( $paired ? __( 'Site authorization recorded', 'wordpressconnector' ) : __( 'Not connected', 'wordpressconnector' ) ) . '</p>';
+		echo '<p>' . esc_html__( 'Remote workflow access still requires an independent check.', 'wordpressconnector' ) . '</p>';
+		echo '<a href="#wpconnector-github">' . esc_html__( 'Manage GitHub access', 'wordpressconnector' ) . '</a></div>';
+
+		echo '<div class="wpconnector-summary-card"><h3>' . esc_html__( 'Site readiness', 'wordpressconnector' ) . '</h3>';
+		echo '<p class="wpconnector-state">' . esc_html( sprintf( '%1$d / %2$d', $ready, $total ) ) . '</p>';
+		echo '<p>' . esc_html__( 'Basic requirements checked within this WordPress request.', 'wordpressconnector' ) . '</p>';
+		echo '<a href="#wpconnector-advanced">' . esc_html__( 'View technical checks', 'wordpressconnector' ) . '</a></div>';
+		echo '</div>';
+
+		echo '<div class="wpconnector-card wpconnector-steps"><h3>' . esc_html__( 'Connect in three steps', 'wordpressconnector' ) . '</h3>';
+		echo '<ol>';
+		echo '<li>' . esc_html__( 'Enable WordPress-hosted OAuth in the ChatGPT tab.', 'wordpressconnector' ) . '</li>';
+		echo '<li>' . esc_html__( 'In ChatGPT Plugins, add a custom MCP server with this site’s MCP URL and select OAuth. Approve the WordPress consent screen.', 'wordpressconnector' ) . '</li>';
+		echo '<li>' . esc_html__( 'Run the browser connection check. Test the actual ChatGPT link separately.', 'wordpressconnector' ) . '</li>';
+		echo '</ol></div>';
+	}
+
+	/**
+	 * Render the original GitHub pairing and release controls.
+	 *
+	 * @param bool $paired Whether site approval is recorded.
+	 */
+	private function render_github_panel( bool $paired ): void {
+		echo '<h2 id="wpconnector-heading-github">' . esc_html__( 'GitHub connection', 'wordpressconnector' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'This connection uses short-lived GitHub Actions OIDC tokens, not a stored API key.', 'wordpressconnector' ) . '</p>';
+		echo '<div class="wpconnector-card"><h3>' . esc_html__( 'Site authorization', 'wordpressconnector' ) . '</h3>';
+		echo '<p class="wpconnector-state">' . esc_html( $paired ? __( 'Trusted workflow authorized on this site', 'wordpressconnector' ) : __( 'Not connected', 'wordpressconnector' ) ) . '</p>';
+		echo '<p>' . esc_html__( 'Administrator activation normally pairs this site with the pinned Yolol100/wordpressconnector workflow. Only sites you manage should be paired. A moved or cloned site needs new authorization.', 'wordpressconnector' ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'wpconnector_site_pairing' );
+		echo '<input type="hidden" name="action" value="wpconnector_site_pairing" />';
+		if ( $paired ) {
+			echo '<input type="hidden" name="pairing_decision" value="disable" />';
+			submit_button( __( 'Revoke GitHub Actions access for this site', 'wordpressconnector' ), 'secondary' );
+		} else {
+			echo '<input type="hidden" name="pairing_decision" value="enable" />';
+			submit_button( __( 'Reconnect trusted GitHub Actions', 'wordpressconnector' ), 'primary' );
+		}
+		echo '</form></div>';
+		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'Plugin updates through GitHub', 'wordpressconnector' ) . '</summary>';
+		echo '<p>' . esc_html__( 'The Plugins screen checks verified GitHub releases when an administrator views it. Use Check GitHub update now for a manual refresh. A commit on main is not an installable update until CI and the versioned release ZIP are published.', 'wordpressconnector' ) . '</p>';
+		echo '</details>';
+	}
+
+	/**
+	 * Keep credential creation secondary and preserve security prerequisites.
+	 *
+	 * @param array $checks Installation prerequisite results.
+	 * @param bool  $legacy Whether the old Elementor bridge is active.
+	 */
+	private function render_advanced_panel( array $checks, bool $legacy ): void {
+		echo '<h2 id="wpconnector-heading-advanced">' . esc_html__( 'Advanced settings', 'wordpressconnector' ) . '</h2>';
+		echo '<p class="description">' . esc_html__( 'Technical checks and sensitive alternatives. Most sites do not need to change anything here.', 'wordpressconnector' ) . '</p>';
+
+		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'Direct MCP Application Password (advanced)', 'wordpressconnector' ) . '</summary>';
+		echo '<p>' . esc_html__( 'A trusted direct REST/MCP client may use an Application Password. This is not needed for WordPress-hosted ChatGPT OAuth or GitHub OIDC. A password grants the same permissions as your WordPress account.', 'wordpressconnector' ) . '</p>';
+		$current_id = get_current_user_id();
+		$can_issue  = $current_id > 0 && current_user_can( 'create_app_password', $current_id )
+			&& is_ssl()
+			&& 'https' === strtolower( (string) wp_parse_url( rest_url( 'webactueel-wordpress-connector/v1/mcp' ), PHP_URL_SCHEME ) )
+			&& function_exists( 'wp_is_application_passwords_available_for_user' )
+			&& wp_is_application_passwords_available_for_user( $current_id );
+		if ( $can_issue ) {
+			$exists = \WP_Application_Passwords::application_name_exists_for_user( $current_id, self::DIRECT_MCP_PASSWORD_LABEL );
+			if ( $exists ) {
+				echo '<p>' . esc_html__( 'A direct MCP Application Password already exists for your account. Revoke it in your profile before requesting another; its value cannot be shown again.', 'wordpressconnector' ) . '</p>';
+			} else {
+				echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+				wp_nonce_field( 'wpconnector_create_application_password' );
+				echo '<input type="hidden" name="action" value="wpconnector_create_application_password" />';
+				echo '<p><label><input type="checkbox" name="confirm_direct_access" value="1" required="required" /> ';
+				echo esc_html__( 'I understand this password grants my WordPress account permissions and will only be displayed once.', 'wordpressconnector' ) . '</label></p>';
+				submit_button( __( 'Generate my direct MCP password', 'wordpressconnector' ), 'secondary' );
+				echo '</form>';
+			}
+		} else {
+			echo '<p>' . esc_html__( 'Direct Application Password setup is unavailable: check HTTPS, account capabilities, and WordPress settings.', 'wordpressconnector' ) . '</p>';
+		}
+		echo '<p><a href="' . esc_url( admin_url( 'profile.php' ) ) . '">' . esc_html__( 'Manage or revoke Application Passwords', 'wordpressconnector' ) . '</a></p></details>';
+
+		echo '<div class="wpconnector-card"><h3>' . esc_html__( 'Installation readiness', 'wordpressconnector' ) . '</h3>';
+		echo '<table class="widefat striped wpconnector-table"><tbody>';
+		foreach ( $checks as $label => $ready ) {
+			echo '<tr><th scope="row">' . esc_html( $label ) . '</th><td>' . esc_html( $ready ? __( 'Ready', 'wordpressconnector' ) : __( 'Needs attention', 'wordpressconnector' ) ) . '</td></tr>';
+		}
+		if ( is_multisite() ) {
+			echo '<tr><th scope="row">' . esc_html__( 'WordPress multisite blog ID', 'wordpressconnector' ) . '</th><td><code>' . esc_html( (string) get_current_blog_id() ) . '</code></td></tr>';
+		}
+		echo '</tbody></table>';
+		echo '<p class="description">' . esc_html__( 'Firewall rules, outbound GitHub JWKS, permalinks, and compatibility still need a separate end-to-end test.', 'wordpressconnector' ) . '</p></div>';
+
+		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'Connection details', 'wordpressconnector' ) . '</summary>';
+		echo '<p>' . esc_html__( 'After a WordPress administrator clicks Activate, this plugin records authorization for the pinned GitHub workflow. Remote OIDC validation remains a separate check.', 'wordpressconnector' ) . '</p>';
+		echo '<p>' . esc_html__( 'Optional emergency policy overrides can disable connector actions without changing this connection status.', 'wordpressconnector' ) . '</p>';
+		echo '<table class="widefat striped wpconnector-table"><tbody>';
+		echo '<tr><th scope="row">' . esc_html__( 'Connector version', 'wordpressconnector' ) . '</th><td><code>' . esc_html( defined( 'WPCONNECTOR_VERSION' ) ? WPCONNECTOR_VERSION : '' ) . '</code></td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Presence endpoint', 'wordpressconnector' ) . '</th><td><code>' . esc_html( rest_url( 'webactueel-wordpress-connector/v1/presence' ) ) . '</code></td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'REST health endpoint', 'wordpressconnector' ) . '</th><td><code>' . esc_html( rest_url( 'webactueel-wordpress-connector/v1/health' ) ) . '</code></td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'GitHub authentication', 'wordpressconnector' ) . '</th><td>' . esc_html__( 'Short-lived GitHub Actions OIDC token, normally enabled on administrator activation', 'wordpressconnector' ) . '</td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Persistent connector secrets', 'wordpressconnector' ) . '</th><td>' . esc_html__( 'None required', 'wordpressconnector' ) . '</td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Execution safety', 'wordpressconnector' ) . '</th><td>' . esc_html__( 'Capability checks, dry-run, confirmation, stale-state protection, readback, and rollback', 'wordpressconnector' ) . '</td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Supported integrations', 'wordpressconnector' ) . '</th><td>' . esc_html__( 'WordPress, Elementor, Gutenberg, WooCommerce, ACF, Yoast SEO, media, plugin settings', 'wordpressconnector' ) . '</td></tr>';
+		echo '<tr><th scope="row">' . esc_html__( 'Legacy bridge', 'wordpressconnector' ) . '</th><td>' . esc_html( $legacy ? __( 'Active — stage removal check required', 'wordpressconnector' ) : __( 'Not active', 'wordpressconnector' ) ) . '</td></tr>';
+		echo '</tbody></table>';
+		echo '<p>' . esc_html__( 'Suggested test sequence: presence → OIDC health → connector.discover → system.doctor → dry-run → approved staging write and rollback.', 'wordpressconnector' ) . '</p>';
+		echo '</details>';
+	}
 
 	/**
 	 * Guided setup does not create OAuth credentials, trigger backups,
@@ -335,17 +484,22 @@ final class Settings {
 		$oauth    = $status['chatgpt'];
 		$recovery = $status['recovery'];
 
-		echo '<h2>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</h2>';
-		echo '<p>' . esc_html__( 'This guide checks only evidence available inside WordPress. It cannot log in to ChatGPT or your hosting company, create an offsite backup, or prove a restore. Nothing here changes your website.', 'wordpressconnector' ) . '</p>';
-		echo '<div class="wpconnector-connection-doctor" style="max-width:900px; margin:16px 0">';
+		echo '<div class="wpconnector-card wpconnector-oauth-card">';
+		$this->render_native_oauth_controls();
+		echo '</div>';
+		echo '<div class="wpconnector-card"><h3>' . esc_html__( 'MCP address and browser check', 'wordpressconnector' ) . '</h3>';
+		echo '<p>' . esc_html__( 'This page tests only WordPress data; it cannot log in to ChatGPT or prove that an offsite backup can be restored.', 'wordpressconnector' ) . '</p>';
+		echo '<div class="wpconnector-connection-doctor">';
 		echo '<p><label for="wpconnector-mcp-address"><strong>' . esc_html__( 'Your WordPress MCP endpoint', 'wordpressconnector' ) . '</strong></label></p>';
-		echo '<input id="wpconnector-mcp-address" readonly="readonly" type="url" style="width:100%" value="' . esc_attr( rest_url( 'webactueel-wordpress-connector/v1/mcp' ) ) . '" />';
+		echo '<input id="wpconnector-mcp-address" class="regular-text" readonly="readonly" type="url" value="' . esc_attr( rest_url( 'webactueel-wordpress-connector/v1/mcp' ) ) . '" />';
 		echo '<p><button type="button" class="button button-secondary" id="wpconnector-copy-mcp">' . esc_html__( 'Copy endpoint', 'wordpressconnector' ) . '</button> ';
 		echo '<button type="button" class="button button-secondary" id="wpconnector-test-mcp">' . esc_html__( 'Test MCP connection from this WordPress browser', 'wordpressconnector' ) . '</button></p>';
 		echo '<p role="status" aria-live="polite" id="wpconnector-mcp-doctor-result"></p>';
 		echo '<p><small>' . esc_html__( 'This test only uses your current signed-in WordPress session. It does NOT connect ChatGPT, authorize OAuth, test public access from ChatGPT, or make changes.', 'wordpressconnector' ) . '</small></p>';
-		echo '</div>';
-		echo '<table class="widefat striped" style="max-width:900px"><thead><tr>';
+		echo '<p>' . esc_html__( 'ChatGPT error: This app does not provide a browser configuration URL? This is a ChatGPT app/reconnect setting, not the WordPress MCP address. Do not use Configure browser. In ChatGPT Plugins, add a new custom MCP server with the MCP endpoint shown above and OAuth, then verify the new connection before removing the old one. Updating WordPress alone cannot repair a cached ChatGPT app.', 'wordpressconnector' ) . '</p>';
+		echo '</div></div>';
+		echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'ChatGPT connection and recovery setup', 'wordpressconnector' ) . '</summary>';
+		echo '<table class="widefat striped wpconnector-table"><thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'Setup step', 'wordpressconnector' ) . '</th>';
 		echo '<th scope="col">' . esc_html__( 'Current evidence', 'wordpressconnector' ) . '</th>';
 		echo '</tr></thead><tbody>';
@@ -356,7 +510,7 @@ final class Settings {
 			__( 'GitHub site pairing', 'wordpressconnector' ) =>
 				$site['github_pairing_recorded'] ? __( 'Recorded in WordPress (remote OIDC requires its own test)', 'wordpressconnector' ) : __( 'Not recorded', 'wordpressconnector' ),
 			__( 'Direct ChatGPT OAuth', 'wordpressconnector' ) =>
-				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : ( ! empty( $oauth['oauth_provider_configured'] ) ? __( 'OAuth resource configured; external login and consent have not been verified', 'wordpressconnector' ) : __( 'Not configured: separate trusted OAuth provider and user consent required', 'wordpressconnector' ) ),
+				$oauth['oauth_21_ready'] ? __( 'Verified', 'wordpressconnector' ) : ( ! empty( $oauth['oauth_provider_configured'] ) ? __( 'OAuth resource configured; external login and consent have not been verified', 'wordpressconnector' ) : __( 'Not configured: enable WordPress-hosted OAuth or configure a trusted external provider', 'wordpressconnector' ) ),
 			__( 'Full database and files backup', 'wordpressconnector' ) =>
 				__( 'Not independently verified', 'wordpressconnector' ),
 			__( 'Copy stored outside this hosting account', 'wordpressconnector' ) =>
@@ -377,7 +531,7 @@ final class Settings {
 		}
 
 		echo '<ol>';
-		echo '<li>' . esc_html__( 'First enable a trusted OAuth 2.1 provider or broker with PKCE, token validation and explicit WordPress-account linking. Do not paste an Application Password into ChatGPT or GitHub.', 'wordpressconnector' ) . '</li>';
+		echo '<li>' . esc_html__( 'Enable the WordPress-hosted OAuth server here, or configure a trusted external OAuth provider. Then use explicit WordPress consent with PKCE. Never share Application Passwords.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'In a ChatGPT workspace that permits custom MCP connections, an admin must add the HTTPS MCP endpoint and approve OAuth linking.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'Configure a full backup with the hosting or backup provider: files plus database, with an independent offsite copy.', 'wordpressconnector' ) . '</li>';
 		echo '<li>' . esc_html__( 'Restore that backup on a separate staging site and confirm that content, files, plugins and the database are intact before high-risk writes.', 'wordpressconnector' ) . '</li>';
@@ -387,6 +541,7 @@ final class Settings {
 		echo '<a href="' . esc_url( 'https://developer.wordpress.org/advanced-administration/security/backup/' ) . '">' . esc_html__( 'WordPress full-site backup guidance', 'wordpressconnector' ) . '</a></p>';
 		echo '<p><strong>' . esc_html__( 'High-risk actions must remain on a tested staging and backup path.', 'wordpressconnector' ) . '</strong> ';
 		echo esc_html__( 'An installed backup plugin, the WordPress temporary update backup, or a green CI run are not proof that a complete site can be restored.', 'wordpressconnector' ) . '</p>';
+		echo '</details>';
 	}
 
 	/**
@@ -394,6 +549,54 @@ final class Settings {
 	 *
 	 * @return bool Operation result.
 	 */
+	private function render_native_oauth_controls(): void {
+		$enabled          = NativeOAuthServer::is_enabled();
+		$prior_approval   = NativeOAuthServer::has_prior_approval();
+		$revocation_ready = $enabled || $prior_approval;
+		echo '<h3>' . esc_html__( 'WordPress-hosted ChatGPT OAuth (explicit consent)', 'wordpressconnector' ) . '</h3>';
+		echo '<p>' . esc_html__( 'No additional provider account or API key is needed. Only your signed-in administrator account can approve a ChatGPT connection. Read-only access is the default; file editing requires an independently approved staging-only scope. OAuth does not authorize content updates or plugin installs.', 'wordpressconnector' ) . '</p>';
+		if ( NativeOAuthServer::staging_files_enabled() && ( current_user_can( 'edit_plugins' ) || current_user_can( 'edit_themes' ) ) ) {
+			echo '<p><strong>' . esc_html__( 'Staging file-edit scope available', 'wordpressconnector' ) . '</strong>: ' . esc_html__( 'A new ChatGPT OAuth approval must explicitly include wpconnector:files. Existing read-only grants do not gain file-write permissions automatically.', 'wordpressconnector' ) . '</p>';
+		} elseif ( NativeOAuthServer::staging_files_enabled() ) {
+			echo '<p>' . esc_html__( 'Staging file editing is configured, but your WordPress account has no plugin/theme file-editor permission. ChatGPT can still connect read-only. WordPress security remains enforced.', 'wordpressconnector' ) . '</p>';
+		}
+		if ( defined( 'WPCONNECTOR_OAUTH_ISSUER' ) ) {
+			echo '<p>' . esc_html__( 'An external OAuth provider is already configured. Native OAuth cannot be enabled at the same time.', 'wordpressconnector' ) . '</p>';
+			if ( ! $prior_approval ) {
+				return;
+			}
+			echo '<p>' . esc_html__( 'A previous native OAuth approval is still stored. Revoke it to prevent old grants from becoming active again when external OAuth is removed.', 'wordpressconnector' ) . '</p>';
+		}
+		$state = $enabled ? __( 'Enabled: consent required for each link', 'wordpressconnector' ) : ( $prior_approval ? __( 'Inactive: revoke previous native approval', 'wordpressconnector' ) : __( 'Disabled', 'wordpressconnector' ) );
+		echo '<p><strong>' . esc_html( $state ) . '</strong></p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+		wp_nonce_field( 'wpconnector_native_oauth_mode' );
+		echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
+		echo '<input type="hidden" name="native_oauth_decision" value="' . esc_attr( $revocation_ready ? 'disable' : 'enable' ) . '" />';
+		submit_button(
+			$revocation_ready
+			? __( 'Disable and revoke all ChatGPT OAuth tokens', 'wordpressconnector' )
+			: __( 'Enable WordPress-hosted OAuth', 'wordpressconnector' ),
+			$revocation_ready ? 'secondary' : 'primary'
+		);
+		echo '</form>';
+		if ( $enabled ) {
+			echo '<p><strong>' . esc_html__( 'Authorization server', 'wordpressconnector' ) . ':</strong> <code>' . esc_html( NativeOAuthServer::discovery_url() ) . '</code></p>';
+			echo '<p>' . esc_html__( 'Tokens expire after 15 minutes and rotate on refresh. Disable OAuth here to immediately revoke all previously issued connections. Live ChatGPT consent must be tested separately.', 'wordpressconnector' ) . '</p>';
+			echo '<details class="wpconnector-disclosure"><summary>' . esc_html__( 'Custom ChatGPT callback (advanced)', 'wordpressconnector' ) . '</summary>';
+			echo '<p>' . esc_html__( 'Use only the exact callback URL shown in the ChatGPT plugin settings when your custom plugin uses a user-provided OAuth client. Saving a new callback revokes existing native OAuth tokens.', 'wordpressconnector' ) . '</p>';
+			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			wp_nonce_field( 'wpconnector_native_oauth_mode' );
+			echo '<input type="hidden" name="action" value="wpconnector_native_oauth_mode" />';
+			echo '<input type="hidden" name="native_oauth_decision" value="register_redirect" />';
+			echo '<p><label for="wpconnector_native_oauth_redirect">' . esc_html__( 'Exact ChatGPT callback URL', 'wordpressconnector' ) . '</label></p>';
+			echo '<p><input class="regular-text" type="url" id="wpconnector_native_oauth_redirect" name="native_oauth_redirect" value="' . esc_attr( NativeOAuthServer::registered_redirect() ) . '" required /></p>';
+			submit_button( __( 'Register callback and revoke existing tokens', 'wordpressconnector' ), 'secondary' );
+			echo '</form></details>';
+		}
+	}
+
+	/** Report whether the legacy OAuth bridge is active. */
 	private function legacy_bridge_active(): bool {
 		if ( class_exists( 'Webactueel\\ElementorJsonBridge\\Plugin' ) ) {
 			return true; }

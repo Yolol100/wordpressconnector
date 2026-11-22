@@ -73,27 +73,40 @@ namespace Webactueel\WordPressConnector\Security {
     {
         private bool $authenticated = false;
         private bool $canUpdate = false;
+        private bool $canEditFiles = false;
         public function authenticate(\WP_REST_Request $request)
         {
             $header = $request->get_header('authorization');
             $this->authenticated = false;
             $this->canUpdate = false;
-            if (! in_array($header, array('Bearer accepted-test-token', 'Bearer accepted-update-token'), true)) {
+            $this->canEditFiles = false;
+            if (! in_array($header, array('Bearer accepted-test-token', 'Bearer accepted-update-token', 'Bearer accepted-files-token'), true)) {
                 return null;
             }
             $this->authenticated = true;
             $this->canUpdate = $header === 'Bearer accepted-update-token';
+            $this->canEditFiles = $header === 'Bearer accepted-files-token';
             return true;
         }
         public function isAuthenticated(): bool { return $this->authenticated; }
         public function canSelfUpdate(): bool { return $this->canUpdate; }
+        public function can_edit_staging_files(): bool { return $this->canEditFiles; }
         public static function isConfigured(): bool { return true; }
         public static function selfUpdateConfigured(): bool { return true; }
         public static function challengeHeader(bool $includeUpdate = false): string {
             return 'Bearer resource_metadata="https://example.invalid/.well-known/oauth-protected-resource", scope="' .
                 ($includeUpdate ? 'wpconnector:read wpconnector:update' : 'wpconnector:read') . '"';
         }
-        public static function challenge(): void {}
+        public static ?array $lastChallenge = null;
+        public static function challenge(string $reason = '', bool $includeFiles = false): void {
+            self::$lastChallenge = array($reason, $includeFiles);
+        }
+    }
+
+    final class NativeOAuthServer
+    {
+        public static bool $filesEnabled = false;
+        public static function staging_files_enabled(): bool { return self::$filesEnabled; }
     }
 
     final class ReleaseApproval
@@ -125,6 +138,17 @@ namespace {
     function wp_json_encode($value, $options = 0, $depth = 512) { return json_encode($value, $options, $depth); }
 
     final class WP_REST_Server { public const CREATABLE = 'POST'; }
+    final class WP_Error
+    {
+        private string $code;
+        private array $data;
+        public function __construct(string $code, string $message, array $data = array()) {
+            $this->code = $code;
+            $this->data = $data;
+        }
+        public function get_error_code(): string { return $this->code; }
+        public function get_error_data(): array { return $this->data; }
+    }
 
     final class WP_REST_Request
     {
@@ -161,6 +185,7 @@ namespace {
 
     define('WPCONNECTOR_VERSION', '1.16.0-test');
 
+    require __DIR__ . '/../plugin/wordpressconnector/includes/Security/FilesystemPolicy.php';
     require __DIR__ . '/../plugin/wordpressconnector/includes/MCP/Controller.php';
 
     use Webactueel\WordPressConnector\MCP\Controller;
@@ -507,6 +532,9 @@ namespace {
         array('Authorization' => 'Bearer accepted-test-token')
     ));
     $assert($oauthAuth === true && $oauthServer->isAuthenticated(), 'A validated OAuth identity is accepted for this MCP request.');
+    // File support being enabled on the site must never force file-edit
+    // permission for initial ChatGPT pairing.
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = true;
     $oauthList = $oauthController->handle(new WP_REST_Request(array(
         'jsonrpc' => '2.0', 'id' => 91, 'method' => 'tools/list',
         'params' => array('_meta' => $modernMeta),
@@ -520,6 +548,7 @@ namespace {
             && ($entry['_meta']['securitySchemes'] ?? null) === $expectedScheme,
             'OAuth tools must advertise precise read/update scopes without widening generic execute access.');
     }
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = false;
     $oauthCall = static function (array $arguments) use ($oauthController, $executeHeaders, $modernMeta): WP_REST_Response {
         return $oauthController->handle(new WP_REST_Request(array(
             'jsonrpc' => '2.0',
@@ -545,6 +574,96 @@ namespace {
     $assert($allowed->get_data()['result']['isError'] === false && count($oauthRunner->calls) === 1
         && $oauthRunner->calls[0]['request']['action'] === 'site.identity.inspect',
         'OAuth may perform precisely the explicitly approved read-only inspection.');
+
+    // Staging file operations must trigger a real HTTP 403 and OAuth
+    // insufficient-scope challenge before any Runner invocation.
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = true;
+    $beforeStepUp = count($oauthRunner->calls);
+    $stepUpRequest = new WP_REST_Request(array(
+        'jsonrpc' => '2.0', 'id' => 149, 'method' => 'tools/call',
+        'params' => array(
+            'name' => 'wordpress_connector_execute',
+            'arguments' => array('action' => 'filesystem.read_text',
+                'payload' => array('path' => 'wp-content/themes/sample-theme/custom.css')),
+        ),
+    ), array('Authorization' => 'Bearer accepted-test-token'));
+    $stepUp = $oauthController->authorize($stepUpRequest);
+    $assert($stepUp instanceof WP_Error
+        && $stepUp->get_error_data()['status'] === 403
+        && $stepUp->get_error_code() === 'wpconnector_oauth_scope_denied'
+        && \Webactueel\WordPressConnector\Security\OAuthResourceServer::$lastChallenge === array('insufficient_scope', true)
+        && count($oauthRunner->calls) === $beforeStepUp,
+        'OAuth read-only file access must return an HTTP 403 scope challenge before execution.');
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = false;
+
+    // Separate consented staging-file grant: no arbitrary PHP or WordPress edits.
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = true;
+    $oauthFilesAuth = $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 151, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-files-token')
+    ));
+    $assert($oauthFilesAuth === true && $oauthServer->can_edit_staging_files(), 'Explicit OAuth staging file grant accepted.');
+    $filesTools = $oauthController->handle(new WP_REST_Request(array(
+        'jsonrpc' => '2.0', 'id' => 152, 'method' => 'tools/list',
+        'params' => array('_meta' => $modernMeta),
+    ), $modernListHeaders))->get_data()['result']['tools'];
+    foreach ($filesTools as $entry) {
+        if ('wordpress_connector_execute' === $entry['name']) {
+            $assert($entry['securitySchemes'][0]['scopes'] === array('wpconnector:read'),
+                'Staging execute never requires file-edit permission during initial OAuth pairing.');
+        }
+    }
+    $filePath = 'wp-content/themes/sample-theme/custom.css';
+    $safeRoot = $oauthCall(array('action' => 'filesystem.list', 'payload' => array('path' => 'wp-content/themes')));
+    $assert($safeRoot->get_data()['result']['isError'] === false,
+        'Scoped WordPress theme-root enumeration supports file discovery.');
+    $dottedSlug = $oauthCall(array('action' => 'filesystem.read_text',
+        'payload' => array('path' => 'wp-content/themes/sample.theme/custom.css')));
+    $assert($dottedSlug->get_data()['result']['isError'] === false,
+        'Existing filesystem policy, rather than a duplicate regex, validates safe theme slugs.');
+
+    $fileSha = str_repeat('a', 64);
+    $fileRead = $oauthCall(array('action' => 'filesystem.read_text', 'payload' => array('path' => $filePath)));
+    $assert($fileRead->get_data()['result']['isError'] === false, 'A file-scoped token can read only a bounded theme text file.');
+    $filePreview = $oauthCall(array('action' => 'filesystem.write_text',
+        'payload' => array('path' => $filePath, 'content' => 'body { color: red; }'),
+        'dry_run' => true));
+    $assert($filePreview->get_data()['result']['isError'] === false, 'Staging text edit preview is permitted.');
+    $fileEdit = $oauthCall(array('action' => 'filesystem.write_text',
+        'payload' => array('path' => $filePath, 'content' => 'body { color: red; }',
+            'expected_sha256' => $fileSha, 'acknowledge_active_content' => true),
+        'dry_run' => false, 'confirm' => true, 'request_id' => 'staging-file-test-20261122'));
+    $assert($fileEdit->get_data()['result']['isError'] === false
+        && end($oauthRunner->calls)['request']['action'] === 'filesystem.write_text',
+        'Explicit file replacement reaches the existing checksum/rollback-aware Runner.');
+    $fileCalls = count($oauthRunner->calls);
+    foreach (array(
+        array('action' => 'filesystem.write_text', 'payload' => array('path' => 'wp-config.php', 'content' => 'x')),
+        array('action' => 'filesystem.write_text', 'payload' => array('path' => 'wp-content/themes/sample-theme/hack.php', 'content' => '<?php ?>')),
+        array('action' => 'filesystem.write_text', 'payload' => array('path' => 'wp-content/themes/sample-theme/main.js', 'content' => 'x')),
+        array('action' => 'filesystem.write_text', 'payload' => array('path' => 'wp-content/themes/sample-theme/../secret.css', 'content' => 'x')),
+        array('action' => 'filesystem.read_text', 'payload' => array('path' => 'wp-content/plugins/wordpressconnector/includes/secret.css')),
+        array('action' => 'filesystem.read_text', 'payload' => array('path' => 'wp-content/plugins/readme.txt')),
+        array('action' => 'filesystem.list', 'payload' => array('path' => 'wp-content/ai1wm-backups')),
+        array('action' => 'filesystem.create_text', 'payload' => array('path' => $filePath, 'content' => 'x')),
+        array('action' => 'plugin.update', 'payload' => array()),
+        array('action' => 'post.update', 'payload' => array()),
+        array('action' => 'filesystem.write_text', 'payload' => array('path' => $filePath, 'content' => 'x'),
+            'dry_run' => false, 'confirm' => true, 'request_id' => 'missing-sha-denied'),
+    ) as $badFileAction) {
+        $blocked = $oauthCall($badFileAction);
+        $assert($blocked->get_data()['result']['isError'] === true
+            && $fileCalls === count($oauthRunner->calls),
+            'File-scoped OAuth must fail closed on paths, actions and missing hashes.');
+    }
+    $oauthController->authorize(new WP_REST_Request(
+        array('jsonrpc' => '2.0', 'id' => 153, 'method' => 'tools/list'),
+        array('Authorization' => 'Bearer accepted-test-token')
+    ));
+    $readOnlyFile = $oauthCall(array('action' => 'filesystem.read_text', 'payload' => array('path' => $filePath)));
+    $assert($readOnlyFile->get_data()['result']['isError'] === true && count($oauthRunner->calls) === $fileCalls,
+        'A new read-only token cannot inherit the prior staging grant.');
+    \Webactueel\WordPressConnector\Security\NativeOAuthServer::$filesEnabled = false;
 
     // A read-only OAuth token must never run a release update. Only an
     // explicitly granted second scope unlocks the dedicated release tools.

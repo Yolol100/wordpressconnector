@@ -19,12 +19,19 @@ final class OAuthResourceServer {
 	private const NAMESPACE               = 'webactueel-wordpress-connector/v1';
 	private const SCOPE                   = 'wpconnector:read';
 	private const UPDATE_SCOPE            = 'wpconnector:update';
+	private const FILES_SCOPE             = 'wpconnector:files';
 	private const MAX_TOKEN_AGE           = 3600;
 	private const MAX_INTROSPECTION_BYTES = 16384;
 	private const RATE_LIMIT_PER_IP       = 12;
 	private const RATE_LIMIT_GLOBAL       = 60;
 	private bool $authenticated           = false;
 	private bool $update_authorized       = false;
+	/**
+	 * Whether the current bearer has staging file-edit scope.
+	 *
+	 * @var bool
+	 */
+	private bool $staging_files_authorized = false;
 
 	/**
 	 * Return strictly configured, site-local OAuth settings.
@@ -35,6 +42,12 @@ final class OAuthResourceServer {
 	 * @return array<string, mixed>|null
 	 */
 	private static function config(): ?array {
+		if ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::is_enabled() ) {
+			return array(
+				'native' => true,
+				'issuer' => NativeOAuthServer::issuer(),
+			);
+		}
 		$names = array(
 			'issuer'        => 'WPCONNECTOR_OAUTH_ISSUER',
 			'introspection' => 'WPCONNECTOR_OAUTH_INTROSPECTION_URL',
@@ -103,6 +116,7 @@ final class OAuthResourceServer {
 	 */
 	public static function selfUpdateConfigured(): bool {
 		return self::isConfigured()
+			&& ! ( class_exists( NativeOAuthServer::class ) && NativeOAuthServer::is_enabled() )
 			&& defined( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' )
 			&& true === constant( 'WPCONNECTOR_OAUTH_ALLOW_SELF_UPDATE' );
 	}
@@ -143,6 +157,9 @@ final class OAuthResourceServer {
 		$scopes = array( self::SCOPE );
 		if ( self::selfUpdateConfigured() ) {
 			$scopes[] = self::UPDATE_SCOPE;
+		}
+		if ( ! empty( $config['native'] ) && NativeOAuthServer::staging_files_enabled() ) {
+			$scopes[] = self::FILES_SCOPE;
 		}
 		return array(
 			'resource'                 => self::resource(),
@@ -225,6 +242,17 @@ final class OAuthResourceServer {
 	 * @param bool $include_update Advertise update scope only with explicit opt-in.
 	 */
 	public static function challengeHeader( bool $include_update = false ): string {
+		return self::build_challenge_header( $include_update, false );
+	}
+
+	/**
+	 * Build a bounded, trusted OAuth challenge for the requested capability.
+	 *
+	 * @param bool $include_update Advertise a release-update scope.
+	 * @param bool $include_files  Advertise a staging file-edit scope.
+	 * @return string HTTP header value.
+	 */
+	private static function build_challenge_header( bool $include_update, bool $include_files ): string {
 		$url = self::wellKnownUrl();
 		if ( ! is_string( $url ) || 'https' !== wp_parse_url( $url, PHP_URL_SCHEME )
 			|| preg_match( '/[\r\n"]/', $url ) ) {
@@ -234,17 +262,21 @@ final class OAuthResourceServer {
 		if ( $include_update && self::selfUpdateConfigured() ) {
 			$scopes .= ' ' . self::UPDATE_SCOPE;
 		}
+		if ( $include_files && class_exists( NativeOAuthServer::class ) && NativeOAuthServer::staging_files_enabled() ) {
+			$scopes .= ' ' . self::FILES_SCOPE;
+		}
 		return 'Bearer resource_metadata="' . $url . '", scope="' . $scopes . '"';
 	}
 
 	/**
 	 * Advertise OAuth only for configured sites, never as a substitute for auth.
 	 *
-	 * @param string $reason Optional allowlisted OAuth error reason.
+	 * @param string $reason        Optional allowlisted OAuth error reason.
+	 * @param bool   $include_files Advertise staging file scope for step-up.
 	 */
-	public static function challenge( string $reason = '' ): void {
+	public static function challenge( string $reason = '', bool $include_files = false ): void {
 		if ( self::isConfigured() && ! headers_sent() ) {
-			$header = self::challengeHeader();
+			$header = self::build_challenge_header( false, $include_files );
 			if ( '' !== $header ) {
 				if ( in_array( $reason, array( 'invalid_token', 'insufficient_scope' ), true ) ) {
 					$header .= ', error="' . $reason . '"';
@@ -315,6 +347,11 @@ final class OAuthResourceServer {
 		return $this->authenticated;
 	}
 
+	/** Authorizes ONLY native-OAuth staging file actions under a separate consented scope. */
+	public function can_edit_staging_files(): bool {
+		return $this->authenticated && $this->staging_files_authorized;
+	}
+
 	/**
 	 * Return null when no bearer is supplied, true on valid bearer, WP_Error
 	 * otherwise. Invalid bearers never fall back to a logged-in browser session.
@@ -323,9 +360,11 @@ final class OAuthResourceServer {
 	 * @return bool|\WP_Error|null
 	 */
 	public function authenticate( \WP_REST_Request $request ) {
-		$this->authenticated     = false;
-		$this->update_authorized = false;
-		$authorization           = (string) $request->get_header( 'authorization' );
+		$this->authenticated            = false;
+		$this->update_authorized        = false;
+		$this->staging_files_authorized = false;
+
+		$authorization = (string) $request->get_header( 'authorization' );
 		if ( '' === $authorization || 0 !== stripos( $authorization, 'bearer' ) ) {
 			return null;
 		}
@@ -337,41 +376,54 @@ final class OAuthResourceServer {
 			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
 		}
 		$access_token = $match[1];
-		if ( ! self::canIntrospect() ) {
+		if ( ! empty( $config['native'] ) ) {
+			$claims = NativeOAuthServer::introspect( $access_token );
 			unset( $access_token );
-			return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
-		}
-
-		// Remote validation is mandatory: never decode and trust unsigned JWT claims.
-		$result = wp_safe_remote_post(
-			$config['introspection'],
-			array(
-				'timeout'             => 5,
-				'redirection'         => 0,
-				'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
-				'sslverify'           => true,
-				'headers'             => array(
-					'Accept'        => 'application/json',
-					'Authorization' => 'Basic ' . base64_encode(
-						rawurlencode( $config['client_id'] ) . ':' . rawurlencode( $config['client_secret'] )
+			$user_id = is_array( $claims ) ? ( $claims['user_id'] ?? null ) : null;
+			if ( ! is_int( $user_id ) || $user_id <= 0
+				|| ! is_array( $claims ) || ( $claims['sub'] ?? null ) !== 'wp:' . (string) $user_id ) {
+				return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+			}
+			$config['subject'] = 'wp:' . (string) $user_id;
+			$config['user_id'] = $user_id;
+		} else {
+			// Only remote introspection consumes the shared outbound-provider quota.
+			// Native opaque-token checks are local and cannot exhaust it.
+			if ( ! self::canIntrospect() ) {
+				unset( $access_token );
+				return self::deny( 'wpconnector_oauth_rate_limited', 'OAuth validation is rate limited.', 429 );
+			}
+			// Remote validation is mandatory: never decode and trust unsigned JWT claims.
+			$result = wp_safe_remote_post(
+				$config['introspection'],
+				array(
+					'timeout'             => 5,
+					'redirection'         => 0,
+					'limit_response_size' => self::MAX_INTROSPECTION_BYTES + 1,
+					'sslverify'           => true,
+					'headers'             => array(
+						'Accept'        => 'application/json',
+						'Authorization' => 'Basic ' . base64_encode(
+							rawurlencode( $config['client_id'] ) . ':' . rawurlencode( $config['client_secret'] )
+						),
 					),
-				),
-				'body'                => array(
-					'token'           => $access_token,
-					'token_type_hint' => 'access_token',
-				),
-			)
-		);
-		unset( $access_token );
-		if ( is_wp_error( $result ) || 200 !== (int) wp_remote_retrieve_response_code( $result ) ) {
-			return self::deny( 'wpconnector_oauth_provider_unavailable', 'OAuth token validation is unavailable.', 503 );
+					'body'                => array(
+						'token'           => $access_token,
+						'token_type_hint' => 'access_token',
+					),
+				)
+			);
+			unset( $access_token );
+			if ( is_wp_error( $result ) || 200 !== (int) wp_remote_retrieve_response_code( $result ) ) {
+				return self::deny( 'wpconnector_oauth_provider_unavailable', 'OAuth token validation is unavailable.', 503 );
+			}
+			$body = (string) wp_remote_retrieve_body( $result );
+			if ( strlen( $body ) > self::MAX_INTROSPECTION_BYTES ) {
+				return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
+			}
+			$claims = json_decode( $body, true );
 		}
-		$body = (string) wp_remote_retrieve_body( $result );
-		if ( strlen( $body ) > self::MAX_INTROSPECTION_BYTES ) {
-			return self::deny( 'wpconnector_oauth_invalid_token', 'OAuth access token is invalid.', 401 );
-		}
-		$claims = json_decode( $body, true );
-		$now    = time();
+		$now = time();
 		if ( ! is_array( $claims ) || true !== ( $claims['active'] ?? false )
 			|| ( $claims['iss'] ?? null ) !== $config['issuer']
 			|| ( $claims['sub'] ?? null ) !== $config['subject']
@@ -407,9 +459,13 @@ final class OAuthResourceServer {
 		if ( ! $user || ! user_can( $config['user_id'], 'manage_options' ) ) {
 			return self::deny( 'wpconnector_oauth_account_unavailable', 'Linked WordPress account is unavailable.', 403 );
 		}
-		$this->update_authorized = self::selfUpdateConfigured()
+		$this->update_authorized        = self::selfUpdateConfigured()
 			&& in_array( self::UPDATE_SCOPE, preg_split( '/ +/', $scope ), true )
 			&& user_can( $config['user_id'], 'update_plugins' );
+		$this->staging_files_authorized = ! empty( $config['native'] )
+			&& NativeOAuthServer::staging_files_enabled()
+			&& in_array( self::FILES_SCOPE, preg_split( '/ +/', $scope ), true )
+			&& ( user_can( $config['user_id'], 'edit_plugins' ) || user_can( $config['user_id'], 'edit_themes' ) );
 		wp_set_current_user( $config['user_id'] );
 		$this->authenticated = true;
 		return true;
