@@ -52,9 +52,19 @@ export async function reservePairingChallenge(db, {siteId, tenantId, subject, no
     SELECT id, tenant_id, ?, ?, ?
     FROM central_sites
     WHERE id = ? AND tenant_id = ? AND status = 'pending' AND revoked_at IS NULL
-    ON CONFLICT(site_id) DO NOTHING
+    ON CONFLICT(site_id) DO UPDATE SET
+      subject = excluded.subject,
+      secret_hash = excluded.secret_hash,
+      expires_at = excluded.expires_at,
+      consumed_at = NULL,
+      created_at = CURRENT_TIMESTAMP
+    WHERE central_pairing_challenges.tenant_id = excluded.tenant_id
+      AND (
+        central_pairing_challenges.consumed_at IS NOT NULL OR
+        central_pairing_challenges.expires_at <= ?
+      )
     RETURNING site_id
-  `).bind(subject, secretHash, expiry, siteId, tenantId).first();
+  `).bind(subject, secretHash, expiry, siteId, tenantId, now).first();
   if (result?.site_id !== siteId) {
     throw new AccessDenied('Pairing unavailable');
   }
