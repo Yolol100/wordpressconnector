@@ -39,9 +39,9 @@ jobs:
       - name: Compile OAuth-protected stateless MCP Worker without deployment
         working-directory: central-mcp
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run build
-          npm install --prefix auth --no-audit --no-fund
+          npm ci --prefix auth --no-audit --no-fund
           npm run build:auth
           # Cloudflare CLI dry-run sends no API requests, has no credentials and deploys nothing.
           ./node_modules/.bin/cf deploy --dry-run --no-provision
