@@ -369,8 +369,7 @@ final class ConnectorUpdateAdapter {
 	 *
 	 * @return array Operation result.
 	 *
-	 * @throws \RuntimeException If the operation cannot be completed safely.
-	 * @throws \Throwable If an underlying upgrader error must be reconciled.
+	 * @throws \Throwable If the operation fails or an upgrader error must be reconciled.
 	 */
 	public function apply( array $payload, array $context ): array {
 		$this->upgrader_started = false;
