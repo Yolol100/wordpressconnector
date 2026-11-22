@@ -1,0 +1,12 @@
+{
+  "name": "webactueel-central-mcp-auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.2.4"
+  },
+  "devDependencies": {
+    "wrangler": "4.166.0"
+  }
+}
