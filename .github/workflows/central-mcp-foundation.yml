@@ -1,0 +1,51 @@
+name: Central MCP foundation
+
+on:
+  push:
+    paths:
+      - 'central-mcp/**'
+      - '.github/workflows/central-mcp-foundation.yml'
+  pull_request:
+    paths:
+      - 'central-mcp/**'
+      - '.github/workflows/central-mcp-foundation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-security-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Node policy and registry contracts
+        run: node --test central-mcp/test/*.test.mjs
+      - name: SQLite tenant isolation
+        run: |
+          python - <<'PY'
+          import sqlite3
+          from pathlib import Path
+          connection = sqlite3.connect(":memory:")
+          connection.executescript(Path("central-mcp/schema.sql").read_text())
+          connection.execute(
+              "INSERT INTO central_sites(id,tenant_id,canonical_origin,label,status,origin_verified) VALUES (?,?,?,?,?,?)",
+              ("site-acdrive","team-webactueel","https://example.com","ACDrive","active",1),
+          )
+          connection.execute(
+              "INSERT INTO central_site_grants(site_id,tenant_id,subject,read_granted) VALUES (?,?,?,?)",
+              ("site-acdrive","team-webactueel","user-admin",1),
+          )
+          try:
+              connection.execute(
+                  "INSERT INTO central_site_grants(site_id,tenant_id,subject,read_granted) VALUES (?,?,?,?)",
+                  ("site-acdrive","other-tenant","user-other",1),
+              )
+          except sqlite3.IntegrityError:
+              print("Cross-tenant foreign key guard PASS")
+          else:
+              raise AssertionError("Cross-tenant grant accepted")
+          PY
