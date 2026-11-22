@@ -90,6 +90,20 @@ final class Settings {
 	}
 
 	/**
+	 * Canonical navigation shared by the server-rendered fallback and React tabs.
+	 *
+	 * @return array<string, string> Human-readable tab labels by stable ID.
+	 */
+	private static function navigation_tabs(): array {
+		return array(
+			'overview' => __( 'Overview', 'wordpressconnector' ),
+			'chatgpt'  => __( 'ChatGPT', 'wordpressconnector' ),
+			'github'   => __( 'GitHub', 'wordpressconnector' ),
+			'advanced' => __( 'Advanced', 'wordpressconnector' ),
+		);
+	}
+
+	/**
 	 * Load the WordPress-native admin presentation only on this settings screen.
 	 * React handles navigation; existing nonce-protected PHP forms remain canonical.
 	 *
@@ -112,28 +126,18 @@ final class Settings {
 			WPCONNECTOR_VERSION,
 			true
 		);
+		$tab_config = array();
+		foreach ( self::navigation_tabs() as $name => $title ) {
+			$tab_config[] = array(
+				'name'  => $name,
+				'title' => $title,
+			);
+		}
 		wp_localize_script(
 			'wpconnector-admin-ui',
 			'WPConnectorAdminUI',
 			array(
-				'tabs'     => array(
-					array(
-						'name'  => 'overview',
-						'title' => __( 'Overview', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'chatgpt',
-						'title' => __( 'ChatGPT', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'github',
-						'title' => __( 'GitHub', 'wordpressconnector' ),
-					),
-					array(
-						'name'  => 'advanced',
-						'title' => __( 'Advanced', 'wordpressconnector' ),
-					),
-				),
+				'tabs'     => $tab_config,
 				'navLabel' => __( 'WordPress Connector sections', 'wordpressconnector' ),
 			)
 		);
@@ -150,12 +154,20 @@ final class Settings {
 		$decision = isset( $_POST['pairing_decision'] ) && is_string( $_POST['pairing_decision'] )
 			? sanitize_key( wp_unslash( $_POST['pairing_decision'] ) )
 			: '';
-		if ( 'enable' === $decision ) {
-			SitePairing::enableForAdministrator( get_current_user_id() );
-		} elseif ( 'disable' === $decision ) {
-			SitePairing::disable();
-		} else {
-			wp_die( esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ) );
+		try {
+			if ( 'enable' === $decision ) {
+				SitePairing::enableForAdministrator( get_current_user_id() );
+			} elseif ( 'disable' === $decision ) {
+				SitePairing::disable();
+			} else {
+				wp_die( esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ) );
+			}
+		} catch ( \RuntimeException $error ) {
+			wp_die(
+				esc_html__( 'Could not save GitHub site authorization. Please review the WordPress storage configuration.', 'wordpressconnector' ),
+				esc_html__( 'Site authorization unavailable', 'wordpressconnector' ),
+				array( 'response' => 503 )
+			);
 		}
 		wp_safe_redirect( add_query_arg( 'pairing_saved', '1', admin_url( 'options-general.php?page=' . self::PAGE ) ) );
 		exit;
@@ -307,12 +319,7 @@ final class Settings {
 			echo esc_html__( 'Keep the legacy plugin until the staging parity and rollback checklist passes, then deactivate it.', 'wordpressconnector' ) . '</p></div>';
 		}
 
-		$tabs = array(
-			'overview' => __( 'Overview', 'wordpressconnector' ),
-			'chatgpt'  => __( 'ChatGPT', 'wordpressconnector' ),
-			'github'   => __( 'GitHub', 'wordpressconnector' ),
-			'advanced' => __( 'Advanced', 'wordpressconnector' ),
-		);
+		$tabs = self::navigation_tabs();
 		echo '<div class="wpconnector-admin-tabs" id="wpconnector-admin-tabs">';
 		echo '<nav class="wpconnector-tab-fallback" aria-label="' . esc_attr__( 'WordPress Connector sections', 'wordpressconnector' ) . '">';
 		foreach ( $tabs as $name => $title ) {
