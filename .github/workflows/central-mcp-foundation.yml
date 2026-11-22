@@ -24,6 +24,11 @@ jobs:
           node-version: '22'
       - name: Node policy and registry contracts
         run: node --test central-mcp/test/*.test.mjs
+      - name: Compile OAuth-protected stateless MCP Worker without deployment
+        working-directory: central-mcp
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
       - name: SQLite tenant isolation
         run: |
           python - <<'PY'
