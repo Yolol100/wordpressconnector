@@ -41,6 +41,15 @@ export function loginConfig(env) {
   };
 }
 
+// Cloudflare Secrets Store bindings expose an asynchronous get() method.
+// Keep the secret inside the Worker and fail closed when not provisioned.
+export async function loadLoginConfig(env) {
+  if (!env || typeof env.GITHUB_CLIENT_SECRET?.get !== 'function') deny();
+  let secret;
+  try { secret = await env.GITHUB_CLIENT_SECRET.get(); } catch { deny(); }
+  return loginConfig({...env, GITHUB_CLIENT_SECRET: secret});
+}
+
 export function newPkceVerifier(cryptoProvider = globalThis.crypto) {
   if (!cryptoProvider || typeof cryptoProvider.getRandomValues !== 'function') deny();
   const bytes = cryptoProvider.getRandomValues(new Uint8Array(32));

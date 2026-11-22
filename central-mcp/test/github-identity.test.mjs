@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 import {
-  loginConfig, newPkceVerifier, githubAuthorizeUrl, verifiedGithubPrincipal,
+  loginConfig, loadLoginConfig, newPkceVerifier, githubAuthorizeUrl, verifiedGithubPrincipal,
 } from '../auth/src/github-identity.mjs';
 
 const env = {
@@ -90,4 +90,16 @@ test('Malformed API responses and missing bearer token fail closed', async () =>
   await assert.rejects(verifiedGithubPrincipal(config,'authcode-abcdefgh',verifier,fetchFn),/unavailable/);
   const huge=async()=>({ok:true,async text(){return 'x'.repeat(20000);}});
   await assert.rejects(verifiedGithubPrincipal(config,'authcode-abcdefgh',verifier,huge),/unavailable/);
+});
+
+
+test('Cloudflare Secrets Store binding loads only inside Worker and fails closed', async () => {
+  const storedSecret = 'test-only-value-that-must-not-leak';
+  const valid = {...env, GITHUB_CLIENT_SECRET: {async get() { return storedSecret; }}};
+  const config = await loadLoginConfig(valid);
+  assert.equal(config.clientSecret, storedSecret);
+  await assert.rejects(loadLoginConfig(env), /unavailable/);
+  await assert.rejects(loadLoginConfig({...env, GITHUB_CLIENT_SECRET: null}), /unavailable/);
+  await assert.rejects(loadLoginConfig({...env, GITHUB_CLIENT_SECRET: {async get() { throw new Error('internal secret details'); }}}), /unavailable/);
+  await assert.rejects(loadLoginConfig({...env, GITHUB_CLIENT_SECRET: {async get() { return 'short'; }}}), /unavailable/);
 });

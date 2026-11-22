@@ -5,7 +5,7 @@ import {
 } from '@cloudflare/workers-oauth-provider';
 import {env as workerBindings, WorkerEntrypoint} from 'cloudflare:workers';
 import {
-  loginConfig, newPkceVerifier, githubAuthorizeUrl, verifiedGithubPrincipal,
+  loadLoginConfig, newPkceVerifier, githubAuthorizeUrl, verifiedGithubPrincipal,
   READ_SCOPE,
 } from './github-identity.mjs';
 
@@ -76,7 +76,7 @@ async function consent(request, env) {
     data: {verifier},
     headers: approved.headers,
   });
-  const authUrl = await githubAuthorizeUrl(loginConfig(env), pending.state, verifier);
+  const authUrl = await githubAuthorizeUrl(await loadLoginConfig(env), pending.state, verifier);
   pending.headers.set('Location', authUrl);
   return new Response(null, {status: 302, headers: pending.headers});
 }
@@ -94,7 +94,7 @@ async function finishGithub(request, env) {
   }
   let principal;
   try {
-    principal = await verifiedGithubPrincipal(loginConfig(env), code, pending.data?.verifier);
+    principal = await verifiedGithubPrincipal(await loadLoginConfig(env), code, pending.data?.verifier);
   } catch {
     pending.headers.set('Location', authorizationErrorRedirect(original, 'access_denied'));
     return new Response(null, {status: 302, headers: pending.headers});
@@ -115,7 +115,7 @@ export default class AuthServer extends WorkerEntrypoint {
     try {
       // Fail-closed even for discovery when the operator has not installed
       // the encrypted GitHub OAuth credentials, or if the KV binding is absent.
-      loginConfig(this.env);
+      await loadLoginConfig(this.env);
       const path = new URL(request.url).pathname;
       if (path === '/authorize') return await consent(request, this.env);
       if (path === '/callback') return await finishGithub(request, this.env);
@@ -130,8 +130,8 @@ export default class AuthServer extends WorkerEntrypoint {
     }
   }
 
-  validateToken(resource, token) {
-    loginConfig(this.env);
+  async validateToken(resource, token) {
+    await loadLoginConfig(this.env);
     return provider.validateToken(resource, token, this.env);
   }
 }
