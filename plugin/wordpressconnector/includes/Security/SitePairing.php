@@ -103,6 +103,7 @@ final class SitePairing {
 		// A WordPress option update can be unchanged, fail, or be filtered.
 		// Only the exact stored approval and current administrator rights count.
 		if ( get_option( self::OPTION, null ) !== $state
+			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.VariableNotSnakeCase -- Legacy public parameter name is preserved for PHP 8 named-argument compatibility.
 			|| self::pairedAdministratorId() !== $administratorId ) {
 			throw new RuntimeException( 'Could not store site-specific GitHub OIDC approval.' );
 		}
