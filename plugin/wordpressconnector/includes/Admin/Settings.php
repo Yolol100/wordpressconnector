@@ -144,11 +144,31 @@ final class Settings {
 	}
 
 	/**
+	 * Read a validated request method for administration-only write handlers.
+	 */
+	private static function request_method(): string {
+		return isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
+			: '';
+	}
+
+	/**
 	 * Process the save site pairing operation in the Settings component.
 	 */
 	public function saveSitePairing(): void {
+		if ( 'POST' !== self::request_method() ) {
+			wp_die(
+				esc_html__( 'Use the WordPress Connector settings form to change GitHub site authorization.', 'wordpressconnector' ),
+				esc_html__( 'Method not allowed', 'wordpressconnector' ),
+				array( 'response' => 405 )
+			);
+		}
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Only a site administrator can authorize the Connector.', 'wordpressconnector' ) );
+			wp_die(
+				esc_html__( 'Only a site administrator can authorize the Connector.', 'wordpressconnector' ),
+				esc_html__( 'Permission denied', 'wordpressconnector' ),
+				array( 'response' => 403 )
+			);
 		}
 		check_admin_referer( 'wpconnector_site_pairing' );
 		$decision = isset( $_POST['pairing_decision'] ) && is_string( $_POST['pairing_decision'] )
@@ -160,7 +180,11 @@ final class Settings {
 			} elseif ( 'disable' === $decision ) {
 				SitePairing::disable();
 			} else {
-				wp_die( esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ) );
+				wp_die(
+					esc_html__( 'Unsupported GitHub authorization decision.', 'wordpressconnector' ),
+					esc_html__( 'Invalid request', 'wordpressconnector' ),
+					array( 'response' => 400 )
+				);
 			}
 		} catch ( \RuntimeException $error ) {
 			wp_die(
@@ -180,10 +204,7 @@ final class Settings {
 	 * contains the plaintext credential; GitHub OIDC never uses it.
 	 */
 	public function createApplicationPassword(): void {
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) && is_string( $_SERVER['REQUEST_METHOD'] )
-			? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) )
-			: '';
-		if ( 'POST' !== $request_method ) {
+		if ( 'POST' !== self::request_method() ) {
 			wp_die(
 				esc_html__( 'Use the WordPress Connector settings form to create a credential.', 'wordpressconnector' ),
 				esc_html__( 'Method not allowed', 'wordpressconnector' ),
