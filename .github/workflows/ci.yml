@@ -187,13 +187,6 @@ jobs:
             storage: 'core'
             hpos: 'none'
             elementor: 'none'
-          # Match the ACDrive staging WordPress version before release acceptance.
-          - wordpress: '6.8.13'
-            woocommerce: 'none'
-            storage: 'core'
-            hpos: 'none'
-            elementor: 'none'
-            php: '8.4'
           - wordpress: '6.9.10'
             woocommerce: 'none'
             storage: 'abilities'
@@ -252,7 +245,7 @@ jobs:
       - name: Set up PHP and WP-CLI
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
-          php-version: ${{ matrix.php || '8.2' }}
+          php-version: '8.2'
           extensions: mysqli
           coverage: none
           tools: wp-cli:2.12.0
