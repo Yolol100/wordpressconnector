@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "cf build"
+    "build": "cf build",
+    "build:auth": "cd auth && cf build"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "1.2.4",

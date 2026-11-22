@@ -42,3 +42,11 @@ Cloudflare account currently has no Workers, and no OAuth identity provider or c
 - https://developers.cloudflare.com/agents/model-context-protocol/protocol/transport/
 - https://developers.cloudflare.com/agents/model-context-protocol/protocol/authorization/
 - https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/
+
+## Central authorization server integration (draft, no deploy)
+
+- `auth/src/worker.mjs` is a separate `OAuthAuthorizationServer` service. It requests browser consent before redirecting to GitHub using an S256 PKCE challenge and state bound by Workers OAuth Provider.
+- GitHub identity is checked against a single server-side allowlisted numeric GitHub user ID. The GitHub access token is not persisted in OAuth grant props or sent to WordPress; the verified ID is bound to tenant `team-webactueel`.
+- The authorization server supports Client ID Metadata Documents, Dynamic Client Registration and `offline_access` refresh tokens. Resource Worker validates tokens over the private `AUTH_SERVER` service binding.
+- The authorization server is deliberately **fail-closed** without an independently created GitHub OAuth application, its client ID + secret in Cloudflare encrypted Worker secrets, and an exact callback `https://webactueel-central-auth.andrew-baeten.workers.dev/callback`.
+- The standalone `main`-based PR contains no change to the existing WordPress Connector and does not expose or activate any site. Administrator consent, origin proof, read-only WordPress delegation and ChatGPT plugin installation still require runtime acceptance.
