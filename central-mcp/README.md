@@ -16,8 +16,9 @@ This is the first, fail-closed security layer for a single ChatGPT app controlli
 
 - src/site-policy.mjs: strict HTTPS root-origin validation, per-tenant grants, two explicitly allowlisted read plans, no active write transport.
 - src/registry.mjs: parameter-bound D1 lookups by OAuth tenant and subject, filtered again before returning results.
-- schema.sql: normalized registry/grants with cross-tenant foreign-key enforcement and **no token or password columns**.
-- test/: 26 Node security tests; SQLite foreign-key isolation was also checked locally.
+- schema.sql: normalized registry/grants with cross-tenant foreign-key enforcement; pairing challenges store a SHA-256 digest, **not** a bearer secret or WordPress credential.
+- src/pairing-challenge.mjs: isolated storage-only 256-bit random, five-minute, one-use pairing challenge reservation and atomic consumption. This code has **no public endpoint**, does not authenticate WordPress administrators, and never activates a site. Only wire it after independent per-site administrator authentication, consent, exact-origin verification, and a trusted caller boundary are implemented.
+- test/: 34 Node security tests, including pairing misuse, expiry, revocation and replay; SQLite foreign-key isolation is also covered by CI.
 
 Run: node --test central-mcp/test/*.test.mjs
 

@@ -29,3 +29,16 @@ CREATE TABLE IF NOT EXISTS central_site_grants (
 
 CREATE INDEX IF NOT EXISTS idx_sites_tenant ON central_sites(tenant_id, status, revoked_at);
 CREATE INDEX IF NOT EXISTS idx_grants_subject ON central_site_grants(tenant_id, subject, revoked_at);
+
+-- A hashed, short-lived, one-use challenge; does not authorize or activate a site.
+CREATE TABLE IF NOT EXISTS central_pairing_challenges (
+  site_id TEXT PRIMARY KEY NOT NULL,
+  tenant_id TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  secret_hash TEXT NOT NULL CHECK(length(secret_hash) = 64),
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(site_id, tenant_id) REFERENCES central_sites(id, tenant_id)
+);
+CREATE INDEX IF NOT EXISTS idx_pairing_expiry ON central_pairing_challenges(expires_at);
