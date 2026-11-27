@@ -212,4 +212,11 @@ trait ConnectorUpdateAdapterActions {
 			return false;
 		}
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 */
+	private function checked_notice_compat(): void {
+		$this->checked_notice();
+	}
 }

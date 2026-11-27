@@ -22,6 +22,7 @@ require_once __DIR__ . '/trait-mediaadapteractions.php';
  */
 final class MediaAdapter {
 	use MediaAdapterActions {
+		media_rename_compat as public mediaRename;
 		media_list as mediaList;
 		media_get as mediaGet;
 		media_import as mediaImport;
@@ -91,7 +92,7 @@ final class MediaAdapter {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public function mediaRename( array $payload, array $context ): array {
+	public function media_rename( array $payload, array $context ): array {
 		$id = $this->attachment_id( $payload );
 		if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'edit_post', $id ) || ! current_user_can( 'upload_files' ) ) {
 			throw new RuntimeException( 'Administrator media permissions are required.' );

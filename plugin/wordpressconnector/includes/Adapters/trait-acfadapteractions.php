@@ -543,4 +543,17 @@ trait AcfAdapterActions {
 		);
 		return $result;
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Result of the operation.
+	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
+	 * @throws \Throwable When the guarded operation cannot be completed safely.
+	 */
+	private function ensure_fields_compat( array $payload, array $context ): array {
+		return $this->ensure_fields( $payload, $context );
+	}
 }

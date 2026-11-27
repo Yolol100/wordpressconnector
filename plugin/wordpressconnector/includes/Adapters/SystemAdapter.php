@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-systemadapteractions.php';
  */
 final class SystemAdapter {
 	use SystemAdapterActions {
+		cron_run_compat as public cronRun;
 		plugin_directory_search as pluginDirectorySearch;
 		user_list as userList;
 		user_get as userGet;
@@ -459,7 +460,7 @@ final class SystemAdapter {
 	 *
 	 * @throws \RuntimeException When validation or the requested operation fails.
 	 */
-	public function cronRun( array $payload, array $context ): array {
+	public function cron_run( array $payload, array $context ): array {
 		$hook = isset( $payload['hook'] ) ? sanitize_key( (string) $payload['hook'] ) : '';
 		$args = isset( $payload['args'] ) && is_array( $payload['args'] ) ? $payload['args'] : array();
 		if ( '' === $hook ) {

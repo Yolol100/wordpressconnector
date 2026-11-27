@@ -15,10 +15,16 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+require_once __DIR__ . '/trait-portfoliostatsadapteractions.php';
+
 /**
  * Registers and handles Portfolio Stats connector actions.
  */
 final class PortfolioStatsAdapter {
+	use PortfolioStatsAdapterActions {
+		update_case_text_compat as public updateCaseText;
+	}
+
 	private const ALLOWED_FIELD_NAMES = array(
 		'portfolio_stat_1_value',
 		'portfolio_stat_1_label',
@@ -70,7 +76,7 @@ final class PortfolioStatsAdapter {
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 * @throws \Throwable If the operation cannot be completed safely.
 	 */
-	public function updateCaseText( array $payload, array $context ): array {
+	public function update_case_text( array $payload, array $context ): array {
 		foreach ( array_keys( $payload ) as $key ) {
 			if ( ! in_array( (string) $key, array( 'post_id', 'content', 'description_1', 'description_2' ), true ) ) {
 				throw new RuntimeException( 'Portfolio case text update contains unsupported payload key.' );

@@ -85,4 +85,15 @@ trait RunnerMethods {
 			'guidance'                       => 'Verify the exact site state and original request receipt before any new write or rollback. This inspection makes no changes.',
 		);
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Validated action payload.
+	 * @param array $context Authorized execution context.
+	 * @throws \RuntimeException When the requested operation cannot be completed safely.
+	 */
+	private function read_batch_compat( array $payload, array $context ): array {
+		return $this->read_batch( $payload, $context );
+	}
 }

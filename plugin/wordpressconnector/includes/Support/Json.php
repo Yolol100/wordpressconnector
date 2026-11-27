@@ -11,10 +11,17 @@ namespace Webactueel\WordPressConnector\Support;
 
 use RuntimeException;
 
+require_once __DIR__ . '/trait-jsonmethods.php';
+
 /**
  * Provides Json utilities shared by connector services.
  */
 final class Json {
+	use JsonMethods {
+		read_file_compat as public readFile;
+		write_file_atomic_compat as public writeFileAtomic;
+	}
+
 	/**
 	 * Process the decode operation in the Json component.
 	 *
@@ -70,7 +77,7 @@ final class Json {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public static function readFile( string $path ): array {
+	public static function read_file( string $path ): array {
 		if ( ! is_file( $path ) || ! is_readable( $path ) ) {
 			throw new RuntimeException( 'JSON file is not readable.' );
 		}
@@ -92,7 +99,7 @@ final class Json {
 	 *
 	 * @throws \RuntimeException If the operation cannot be completed safely.
 	 */
-	public static function writeFileAtomic( string $path, array $data ): void {
+	public static function write_file_atomic( string $path, array $data ): void {
 		// Encode before any side effects; never overwrite after partial writes.
 		$encoded   = self::encode( $data ) . PHP_EOL;
 		$directory = dirname( $path );

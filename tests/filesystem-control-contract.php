@@ -36,8 +36,8 @@ $adapter .= $filesystemImplementation;
 foreach (array('mk_file_folder_manager_action_callback','elFinderConnector','shell_exec(','exec(','passthru(','proc_open(','popen(') as $forbidden) { if (strpos($adapter, $forbidden) !== false) { fwrite(STDERR, "Forbidden filesystem adapter primitive/protocol found: {$forbidden}\n"); exit(1); } }
 // The same WordPress Filesystem backend must read back both successful
 // writes and attempted recovery; raw PHP reads can bypass the write API.
-$writeStart = strpos($adapter, 'public function writeText(');
-$writeEnd = false !== $writeStart ? strpos($adapter, 'public function createText(', $writeStart) : false;
+$writeStart = strpos($adapter, 'public function write_text(');
+$writeEnd = false !== $writeStart ? strpos($adapter, 'public function create_text(', $writeStart) : false;
 if (false === $writeStart || false === $writeEnd) {
     fwrite(STDERR, "Filesystem write method boundaries are missing.\n");
     exit(1);

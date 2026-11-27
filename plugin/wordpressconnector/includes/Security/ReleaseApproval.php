@@ -23,6 +23,7 @@ require_once __DIR__ . '/trait-releaseapprovalmethods.php';
  */
 final class ReleaseApproval {
 	use ReleaseApprovalMethods {
+		render_form_compat as public renderForm;
 		id_for_fingerprint as idForFingerprint;
 	}
 
@@ -105,7 +106,7 @@ final class ReleaseApproval {
 	}
 
 	/** Display exactly which published release the linked owner would approve. */
-	public function renderForm(): void {
+	public function render_form(): void {
 		if ( ! function_exists( 'get_current_screen' ) || ! self::ownerBrowser() ) {
 			return;
 		}

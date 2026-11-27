@@ -21,6 +21,7 @@ require_once __DIR__ . '/trait-acfadapteractions.php';
  */
 final class AcfAdapter {
 	use AcfAdapterActions {
+		ensure_fields_compat as public ensureFields;
 		field_groups as fieldGroups;
 		ensure_text_fields as ensureTextFields;
 		remove_text_fields as removeTextFields;
@@ -278,7 +279,7 @@ final class AcfAdapter {
 	 * @throws \RuntimeException When the guarded operation cannot be completed safely.
 	 * @throws \Throwable When the guarded operation cannot be completed safely.
 	 */
-	public function ensureFields( array $payload, array $context ): array {
+	public function ensure_fields( array $payload, array $context ): array {
 		$this->assert_acf_complex_schema();
 		$post_id   = isset( $payload['post_id'] ) ? (int) $payload['post_id'] : 0;
 		$group_key = isset( $payload['group_key'] ) ? (string) $payload['group_key'] : '';

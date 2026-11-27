@@ -25,4 +25,11 @@ trait ReleaseApprovalMethods {
 		$record = self::current_approval( $fingerprint );
 		return null === $record ? null : $record['id'];
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 */
+	private function render_form_compat(): void {
+		$this->render_form();
+	}
 }

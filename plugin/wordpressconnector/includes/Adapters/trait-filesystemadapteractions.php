@@ -80,4 +80,52 @@ trait FilesystemAdapterActions {
 			'max_entries' => self::MAX_LIST_ENTRIES,
 		);
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function read_text_compat( array $payload, array $context = array() ): array {
+		return $this->read_text( $payload, $context );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function write_text_compat( array $payload, array $context ): array {
+		return $this->write_text( $payload, $context );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function create_text_compat( array $payload, array $context ): array {
+		return $this->create_text( $payload, $context );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Requested action payload.
+	 * @param array $context Authorized execution context.
+	 * @return array Operation result.
+	 * @throws \RuntimeException If the operation cannot be completed safely.
+	 */
+	private function delete_text_compat( array $payload, array $context ): array {
+		return $this->delete_text( $payload, $context );
+	}
 }

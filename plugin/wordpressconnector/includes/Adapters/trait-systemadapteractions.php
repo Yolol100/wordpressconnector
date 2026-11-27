@@ -1425,4 +1425,16 @@ trait SystemAdapterActions {
 			'read_only'     => true,
 		);
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @param array $context Execution context, including dry-run state.
+	 * @return array Result of this operation.
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
+	private function cron_run_compat( array $payload, array $context ): array {
+		return $this->cron_run( $payload, $context );
+	}
 }

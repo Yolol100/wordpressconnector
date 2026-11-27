@@ -646,4 +646,48 @@ trait WooCommerceAdapterActions {
 		);
 		return $result;
 	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @return array Result of this operation.
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
+	private function customer_get_compat( array $payload ): array {
+		return $this->customer_get( $payload );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @return array Result of this operation.
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
+	private function shipping_zone_list_compat( array $payload = array() ): array {
+		return $this->shipping_zone_list( $payload );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @return array Result of this operation.
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
+	private function shipping_zone_get_compat( array $payload ): array {
+		return $this->shipping_zone_get( $payload );
+	}
+
+	/**
+	 * Preserve the legacy PHP entrypoint; delegate to the canonical implementation.
+	 *
+	 * @param array $payload Request parameters.
+	 * @return array Result of this operation.
+	 * @throws \RuntimeException When validation or the requested operation fails.
+	 */
+	private function tax_rate_list_compat( array $payload ): array {
+		return $this->tax_rate_list( $payload );
+	}
 }

@@ -30,6 +30,7 @@ require_once __DIR__ . '/trait-runnermethods.php';
  */
 final class Runner {
 	use RunnerMethods {
+		read_batch_compat as public readBatch;
 		mutation_status as mutationStatus;
 	}
 
@@ -315,7 +316,7 @@ final class Runner {
 	 *
 	 * @throws \RuntimeException When the requested operation cannot be completed safely.
 	 */
-	public function readBatch( array $payload, array $context ): array {
+	public function read_batch( array $payload, array $context ): array {
 		$operations = isset( $payload['operations'] ) && is_array( $payload['operations'] ) ? $payload['operations'] : array();
 		if ( ! $operations || count( $operations ) > 25 || array_keys( $payload ) !== array( 'operations' ) ) {
 			throw new RuntimeException( 'connector.read_batch requires 1-25 operations.' );
