@@ -28,7 +28,7 @@ foreach (array(
     'Image rename aborted and original WordPress attachment state could not be verified.',
     'New image copies have been retained to prevent broken references',
     'wp_get_attachment_metadata($id, true)',
-    "fopen(\$new_path, 'xb')",
+    "new \\SplFileObject(\$new_path, 'xb')",
 ) as $needle) {
     if (false === strpos($compactSource, preg_replace('/\\s+/', '', $needle))) {
         throw new RuntimeException('Media assignment/rename safety guard missing: ' . $needle);

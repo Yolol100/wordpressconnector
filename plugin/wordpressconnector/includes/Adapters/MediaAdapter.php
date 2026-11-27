@@ -173,28 +173,53 @@ final class MediaAdapter {
 			foreach ( $copies as $from => $to ) {
 				$old_path = $directory . DIRECTORY_SEPARATOR . $from;
 				$new_path = $directory . DIRECTORY_SEPARATOR . $to;
-				$input    = @fopen( $old_path, 'rb' );
-				if ( ! is_resource( $input ) ) {
+				try {
+					$input = new \SplFileObject( $old_path, 'rb' );
+				} catch ( \Throwable $error ) {
 					throw new RuntimeException( 'Image copy source is unavailable.' );
 				}
-				// Open the destination only after the source; otherwise a failed
-				// source read could leave an untracked empty compatibility file.
-				// 'xb' prevents clobbering a concurrent upload or other rename.
-				$output = @fopen( $new_path, 'xb' );
-				if ( ! is_resource( $output ) ) {
-					fclose( $input );
-					throw new RuntimeException( 'New filename already exists or cannot be created.' );
-				}
-				$created[] = $new_path;
 				try {
-					$expected_size = filesize( $old_path );
-					$copied        = stream_copy_to_stream( $input, $output );
-					if ( false === $expected_size || $expected_size !== $copied ) {
+					$stat = $input->fstat();
+					if ( ! is_array( $stat ) || ( $stat['mode'] & 0170000 ) !== 0100000 || is_link( $old_path ) ) {
+						throw new RuntimeException( 'Image copy source is unavailable.' );
+					}
+					// Open exclusively after validating the source, never clobbering
+					// another upload or leaving an untracked empty destination.
+					try {
+						$output = new \SplFileObject( $new_path, 'xb' );
+					} catch ( \Throwable $error ) {
+						throw new RuntimeException( 'New filename already exists or cannot be created.' );
+					}
+					$created[] = $new_path;
+					try {
+						$remaining = $stat['size'];
+						while ( $remaining > 0 ) {
+							$chunk = $input->fread( min( 65536, $remaining ) );
+							if ( ! is_string( $chunk ) || '' === $chunk ) {
+								throw new RuntimeException( 'Image file copy was incomplete.' );
+							}
+							$length = strlen( $chunk );
+							$offset = 0;
+							while ( $offset < $length ) {
+								$written = $output->fwrite( substr( $chunk, $offset ) );
+								if ( ! is_int( $written ) || $written <= 0 ) {
+									throw new RuntimeException( 'Image file copy was incomplete.' );
+								}
+								$offset += $written;
+							}
+							$remaining -= $length;
+						}
+						// Detect growth as well as truncation and buffered write failure.
+						if ( '' !== $input->fread( 1 ) || ! $output->fflush() ) {
+							throw new RuntimeException( 'Image file copy was incomplete.' );
+						}
+					} catch ( \Throwable $error ) {
 						throw new RuntimeException( 'Image file copy was incomplete.' );
+					} finally {
+						unset( $output );
 					}
 				} finally {
-					fclose( $input );
-					fclose( $output );
+					unset( $input );
 				}
 			}
 			$after_metadata         = $metadata;
