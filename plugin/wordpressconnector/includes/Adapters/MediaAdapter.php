@@ -11,11 +11,14 @@ namespace Webactueel\WordPressConnector\Adapters;
 
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
 use Webactueel\WordPressConnector\Support\LocalFileIdentity;
 use Webactueel\WordPressConnector\Support\LocalFilesystem;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 require_once __DIR__ . '/trait-mediaadapteractions.php';
 require_once __DIR__ . '/../Support/class-localfileidentity.php';
@@ -275,17 +278,18 @@ final class MediaAdapter {
 				&& is_array( $restored_metadata )
 				&& hash_equals( Fingerprint::make( $metadata ), Fingerprint::make( $restored_metadata ) );
 			if ( ! $restored ) {
-				throw new RuntimeException(
+				$failure = ChainedFailure::create(
 					'Image rename aborted and original WordPress attachment state could not be verified. '
 					. 'New image copies have been retained to prevent broken references; restore from backup.',
-					0,
 					$error
 				);
+				throw $failure;
 			}
 			if ( ! $this->remove_created_copies( $created ) ) {
 				throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored, but a new path changed or could not be removed; manual recovery required.' );
 			}
-			throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored: ' . $error->getMessage(), 0, $error );
+			$failure = ChainedFailure::create( 'Image rename aborted; original attachment state verified as restored: ' . $error->getMessage(), $error );
+			throw $failure;
 		} finally {
 			// Retain exclusive handles until the final identity/cleanup checks.
 			$created = array();

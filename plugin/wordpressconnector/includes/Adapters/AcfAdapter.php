@@ -11,8 +11,11 @@ namespace Webactueel\WordPressConnector\Adapters;
 
 use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
+use Webactueel\WordPressConnector\Support\ChainedFailure;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+
+require_once __DIR__ . '/../Support/class-chainedfailure.php';
 
 require_once __DIR__ . '/trait-acfadapteractions.php';
 
@@ -388,11 +391,11 @@ final class AcfAdapter {
 		} catch ( \Throwable $error ) {
 			$cleanup_failures = $this->cleanup_created_field_nodes( $created_nodes );
 			if ( $cleanup_failures ) {
-				throw new RuntimeException(
+				$failure = ChainedFailure::create(
 					'Compensation failed for created ACF fields: ' . esc_html( implode( ', ', $cleanup_failures ) ),
-					0,
 					$error
 				);
+				throw $failure;
 			}
 			throw $error;
 		}
