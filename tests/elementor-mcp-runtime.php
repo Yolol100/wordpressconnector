@@ -382,9 +382,44 @@ try {
     if (! isset($mediaDryRun['would_rename']) || file_exists($newMediaPath)) {
         throw new RuntimeException('Media rename dry-run unexpectedly changed the uploads folder.');
     }
+    // Simulate a competing upload after destination preflight but before
+    // the exclusive open. A strict host error handler must not expose
+    // native paths or cause deletion of the competing file.
+    $collision = 'competing upload fixture';
+    $metadataReads = 0;
+    $injectCollision = static function ($metadata, $attachmentId) use ($mediaPostId, $newMediaPath, $collision, &$metadataReads) {
+        if ((int) $attachmentId === (int) $mediaPostId && ++$metadataReads === 2) {
+            if (file_put_contents($newMediaPath, $collision) !== strlen($collision)) {
+                throw new RuntimeException('Could not inject media copy collision.');
+            }
+        }
+        return $metadata;
+    };
+    add_filter('wp_get_attachment_metadata', $injectCollision, 10, 2);
+    set_error_handler(static function ($severity, $message) {
+        throw new ErrorException($message, 0, $severity);
+    });
+    $collisionError = null;
+    try {
+        $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => false));
+    } catch (RuntimeException $error) {
+        $collisionError = $error->getMessage();
+    } finally {
+        restore_error_handler();
+        remove_filter('wp_get_attachment_metadata', $injectCollision, 10);
+    }
+    if ($metadataReads < 2 || $collisionError !== 'Image rename aborted; original attachment state verified as restored: New filename already exists or cannot be created.'
+        || ! is_file($newMediaPath) || file_get_contents($newMediaPath) !== $collision
+        || file_get_contents($oldMediaPath) !== $tinyPng
+        || realpath((string) get_attached_file((int) $mediaPostId)) !== realpath($oldMediaPath)) {
+        throw new RuntimeException('Media copy collision was not handled without native diagnostics or competing-file loss.');
+    }
+    unlink($newMediaPath);
+    clearstatcache(true, $newMediaPath);
+
     $mediaResult = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => false));
     if (empty($mediaResult['old_urls_preserved']) || ! file_exists($oldMediaPath)
-        || ! file_exists($newMediaPath)
+        || ! file_exists($newMediaPath) || file_get_contents($newMediaPath) !== $tinyPng
         || realpath((string) get_attached_file((int) $mediaPostId)) !== realpath($newMediaPath)
         || basename((string) (wp_get_attachment_metadata((int) $mediaPostId)['file'] ?? '')) !== basename($newMediaPath)) {
         throw new RuntimeException('Media rename did not persist while retaining the original filename.');
