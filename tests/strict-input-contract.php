@@ -134,6 +134,9 @@ $adapterSource .= (string) file_get_contents($root . '/plugin/wordpressconnector
 $assetSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/AssetStore.php');
 $requestSource = file_get_contents($root . '/plugin/wordpressconnector/includes/Runtime/class-request.php');
 $controllerSource = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/Controller.php');
+$controllerImplementation = file_get_contents($root . '/plugin/wordpressconnector/includes/REST/trait-restcontrollermethods.php');
+if (!is_string($controllerSource) || !is_string($controllerImplementation)) { throw new RuntimeException('Missing canonical REST validator source.'); }
+$controllerSource .= $controllerImplementation;
 foreach (array('adapter' => $adapterSource, 'asset store' => $assetSource, 'request' => $requestSource, 'controller' => $controllerSource) as $name => $source) {
     if (false === $source || strpos($source, '\\z') === false) {
         fwrite(STDERR, "Strict absolute-end validation is missing from {$name}.\n");

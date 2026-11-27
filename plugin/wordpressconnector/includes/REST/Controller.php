@@ -23,6 +23,7 @@ require_once __DIR__ . '/trait-restcontrollermethods.php';
  */
 final class Controller {
 	use RESTControllerMethods {
+		validate_request_id as validateRequestId;
 		register_routes as registerRoutes;
 		upload_asset as uploadAsset;
 		validate_asset_path as validateAssetPath;
@@ -209,15 +210,4 @@ final class Controller {
 			}
 		}
 	}
-
-	/**
-	 * Validate request id for the Controller component.
-	 *
-	 * @param mixed $value Input for the operation.
-	 *
-	 * @return bool Operation result.
-	 */
-	public function validateRequestId( $value ): bool {
-		return is_string( $value ) && (bool) preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value ); }
-
 }

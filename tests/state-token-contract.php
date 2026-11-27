@@ -58,6 +58,7 @@ $serviceAliases = array(
         'registerRoutes' => 'Webactueel\WordPressConnector\MCP\MCPControllerMethods::register_routes',
     ),
     'Webactueel\WordPressConnector\REST\Controller' => array(
+        'validateRequestId' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_request_id',
         'registerRoutes' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::register_routes',
         'uploadAsset' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::upload_asset',
         'validateAssetPath' => 'Webactueel\WordPressConnector\REST\RESTControllerMethods::validate_asset_path',

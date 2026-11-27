@@ -149,4 +149,15 @@ trait RESTControllerMethods {
 		}
 		return true;
 	}
+
+	/**
+	 * Validate request id for the Controller component.
+	 *
+	 * @param mixed $value Input for the operation.
+	 *
+	 * @return bool Operation result.
+	 */
+	public function validate_request_id( $value ): bool {
+		return is_string( $value ) && (bool) preg_match( '/^[A-Za-z0-9][A-Za-z0-9._-]{7,99}\z/', $value );
+	}
 }
