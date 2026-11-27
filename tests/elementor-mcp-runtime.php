@@ -417,6 +417,58 @@ try {
     unlink($newMediaPath);
     clearstatcache(true, $newMediaPath);
 
+    // Verify real metadata-provider rollback after exclusive file creation.
+    // An owned copy must be removed; a replacement (even identical bytes)
+    // must survive and must not be accepted as this operation's copy.
+    foreach (array('owned_failure', 'replaced_failure', 'same_bytes_success') as $mode) {
+        $replacement = 'same_bytes_success' === $mode ? $tinyPng : 'unrelated writer bytes';
+        $originalCopy = $newMediaPath . '.original';
+        $injected = false;
+        $injectReplacement = static function ($metadata, $attachmentId) use ($mediaPostId, $newMediaPath, $originalCopy, $replacement, $mode, &$injected) {
+            if ((int) $attachmentId === (int) $mediaPostId && basename((string)($metadata['file'] ?? '')) === basename($newMediaPath) && !$injected) {
+                if ('owned_failure' !== $mode && (!rename($newMediaPath, $originalCopy) || file_put_contents($newMediaPath, $replacement) !== strlen($replacement))) {
+                    throw new LogicException('Could not inject replacement.');
+                }
+                $injected = true;
+                if ('same_bytes_success' !== $mode) {
+                    throw new RuntimeException('Injected metadata failure.');
+                }
+            }
+            return $metadata;
+        };
+        add_filter('wp_update_attachment_metadata', $injectReplacement, 10, 2);
+        $failure = null;
+        try {
+            $mediaAdapter->mediaRename($mediaPayload, array('dry_run'=>false));
+        } catch (RuntimeException $error) {
+            $failure = $error->getMessage();
+        } finally {
+            remove_filter('wp_update_attachment_metadata', $injectReplacement, 10);
+        }
+        try {
+            clearstatcache(true, $newMediaPath);
+            $oldRestored = realpath((string)get_attached_file((int)$mediaPostId,true)) === realpath($oldMediaPath)
+                && basename((string)(wp_get_attachment_metadata((int)$mediaPostId,true)['file'] ?? '')) === basename($oldMediaPath);
+            if (!$injected || !is_string($failure) || !$oldRestored || file_get_contents($oldMediaPath) !== $tinyPng) {
+                throw new LogicException('Media failure did not restore original attachment state.');
+            }
+            if ('owned_failure' === $mode) {
+                if (file_exists($newMediaPath) || is_link($newMediaPath)
+                    || false !== strpos($failure,'manual recovery required')) {
+                    throw new LogicException('Owned media copy was not removed and verified.');
+                }
+            } elseif (!is_file($newMediaPath) || file_get_contents($newMediaPath) !== $replacement
+                || !is_file($originalCopy) || file_get_contents($originalCopy) !== $tinyPng
+                || false === strpos($failure,'manual recovery required')) {
+                throw new LogicException('Media cleanup removed or accepted a competing replacement.');
+            }
+        } finally {
+            if (is_file($originalCopy)) unlink($originalCopy);
+            if (is_file($newMediaPath)) unlink($newMediaPath);
+            clearstatcache(true, $newMediaPath);
+        }
+    }
+
     $mediaResult = $mediaAdapter->mediaRename($mediaPayload, array('dry_run' => false));
     if (empty($mediaResult['old_urls_preserved']) || ! file_exists($oldMediaPath)
         || ! file_exists($newMediaPath) || file_get_contents($newMediaPath) !== $tinyPng

@@ -14,8 +14,10 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 use Webactueel\WordPressConnector\Support\Input;
+use Webactueel\WordPressConnector\Support\LocalFileIdentity;
 
 require_once __DIR__ . '/trait-mediaadapteractions.php';
+require_once __DIR__ . '/../Support/class-localfileidentity.php';
 
 /**
  * Registers and handles Media connector actions.
@@ -190,8 +192,17 @@ final class MediaAdapter {
 					} catch ( \Throwable $error ) {
 						throw new RuntimeException( 'New filename already exists or cannot be created.' );
 					}
-					$created[] = $new_path;
+					$created[ $new_path ] = array(
+						'handle' => $output,
+						'stat'   => null,
+					);
 					try {
+						$created_stat = $output->fstat();
+						if ( ! is_array( $created_stat ) || 0 === $created_stat['ino'] ) {
+							throw new RuntimeException( 'New image file identity could not be verified.' );
+						}
+						$created[ $new_path ]['stat'] = $created_stat;
+
 						$remaining = $stat['size'];
 						while ( $remaining > 0 ) {
 							$chunk = $input->fread( min( 65536, $remaining ) );
@@ -222,6 +233,7 @@ final class MediaAdapter {
 					unset( $input );
 				}
 			}
+			$this->assert_created_copies( $created );
 			$after_metadata         = $metadata;
 			$after_metadata['file'] = dirname( $metadata['file'] ) === '.' ? $requested : dirname( $metadata['file'] ) . '/' . $requested;
 			foreach ( ( $after_metadata['sizes'] ?? array() ) as $size_name => $size ) {
@@ -235,6 +247,7 @@ final class MediaAdapter {
 			}
 			clean_post_cache( $id );
 			$readback = $this->snapshot( $id );
+			$this->assert_created_copies( $created );
 			if ( realpath( (string) $readback['file'] ) !== realpath( $directory . DIRECTORY_SEPARATOR . $requested ) ||
 				Fingerprint::make( $readback['metadata'] ) !== Fingerprint::make( $after_metadata ) ||
 				! is_file( $source_real ) ) {
@@ -267,13 +280,71 @@ final class MediaAdapter {
 					$error
 				);
 			}
-			foreach ( array_reverse( $created ) as $created_file ) {
-				if ( is_file( $created_file ) ) {
-					@unlink( $created_file );
-				}
+			if ( ! $this->remove_created_copies( $created ) ) {
+				throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored, but a new path changed or could not be removed; manual recovery required.' );
 			}
 			throw new RuntimeException( 'Image rename aborted; original attachment state verified as restored: ' . $error->getMessage(), 0, $error );
+		} finally {
+			// Retain exclusive handles until the final identity/cleanup checks.
+			$created = array();
 		}
+	}
+
+	/**
+	 * Verify that all new image paths still refer to the created files.
+	 *
+	 * @param array $created Exclusive handles and their original identities.
+	 * @throws \RuntimeException When a destination identity has changed.
+	 */
+	private function assert_created_copies( array $created ): void {
+		foreach ( $created as $path => $entry ) {
+			if ( ! LocalFileIdentity::matches( $path, $entry['stat'] ) ) {
+				throw new RuntimeException( 'New image file identity changed before verification.' );
+			}
+		}
+	}
+
+	/**
+	 * Remove only the copies still owned by this failed operation.
+	 *
+	 * Use the direct core backend, never a path-filtered or recursive delete.
+	 * Refuse POSIX filenames that the backend would reinterpret as separators.
+	 *
+	 * @param array $created Exclusive handles and identities.
+	 * @return bool Whether every intended destination is now absent.
+	 */
+	private function remove_created_copies( array &$created ): bool {
+		$filesystem = null;
+		$clean      = true;
+		foreach ( array_reverse( array_keys( $created ) ) as $created_file ) {
+			clearstatcache( true, $created_file );
+			if ( ! file_exists( $created_file ) && ! is_link( $created_file ) ) {
+				$created[ $created_file ]['handle'] = null;
+				continue;
+			}
+			if ( ! LocalFileIdentity::matches( $created_file, $created[ $created_file ]['stat'] ) ||
+				( '/' === DIRECTORY_SEPARATOR && false !== strpos( $created_file, '\\' ) ) ) {
+				$clean = false;
+				continue;
+			}
+			try {
+				if ( null === $filesystem ) {
+					require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+					require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+					$filesystem = new \WP_Filesystem_Direct( null );
+				}
+				$filesystem->delete( $created_file, false, 'f' );
+			} catch ( \Throwable $cleanup_error ) {
+				// Reset a failed backend before considering the next owned path.
+				$filesystem = null;
+			}
+			$created[ $created_file ]['handle'] = null;
+			clearstatcache( true, $created_file );
+			if ( file_exists( $created_file ) || is_link( $created_file ) ) {
+				$clean = false;
+			}
+		}
+		return $clean;
 	}
 
 	/**

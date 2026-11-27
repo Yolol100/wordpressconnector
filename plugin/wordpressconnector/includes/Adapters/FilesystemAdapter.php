@@ -16,8 +16,10 @@ use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 use Webactueel\WordPressConnector\Security\Policy;
 use Webactueel\WordPressConnector\Support\Fingerprint;
+use Webactueel\WordPressConnector\Support\LocalFileIdentity;
 
 require_once __DIR__ . '/trait-filesystemadapteractions.php';
+require_once __DIR__ . '/../Support/class-localfileidentity.php';
 
 /**
  * Registers and handles Filesystem connector actions.
@@ -376,7 +378,7 @@ final class FilesystemAdapter {
 				$this->remove_failed_create( $filesystem, $absolute, is_array( $created_stat ) ? $created_stat : null, $handle );
 				throw new RuntimeException( 'New file write failed; partial content was removed.' );
 			}
-			if ( ! $this->matches_created_file( $absolute, $created_stat ) ) {
+			if ( ! LocalFileIdentity::matches( $absolute, $created_stat ) ) {
 				throw new RuntimeException( 'New file identity changed before permissions could be set; manual recovery required.' );
 			}
 			try {
@@ -391,7 +393,7 @@ final class FilesystemAdapter {
 			clearstatcache( true, $absolute );
 			$readback = $this->read_bounded_local_text( $absolute );
 			if ( ! is_string( $readback ) || ! hash_equals( hash( 'sha256', $content ), hash( 'sha256', $readback ) ) ||
-				! $this->matches_created_file( $absolute, $created_stat ) ) {
+				! LocalFileIdentity::matches( $absolute, $created_stat ) ) {
 				$this->remove_failed_create( $filesystem, $absolute, is_array( $created_stat ) ? $created_stat : null, $handle );
 				throw new RuntimeException( 'New file readback failed; incomplete file was removed.' );
 			}
@@ -458,40 +460,6 @@ final class FilesystemAdapter {
 	}
 
 	/**
-	 * Check the identity of the inode created by this operation.
-	 *
-	 * Native stat warnings must not escape with a server path if a file
-	 * disappears between path validation and the local stat call.
-	 *
-	 * @param string     $absolute Previously resolved local file path.
-	 * @param array|null $created_stat Identity captured from the exclusive handle.
-	 * @return bool Whether the current regular non-link path matches.
-	 */
-	private function matches_created_file( string $absolute, ?array $created_stat ): bool {
-		if ( null === $created_stat || 0 === $created_stat['ino'] ) {
-			return false;
-		}
-		clearstatcache( true, $absolute );
-		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
-			return false;
-		}
-		try {
-			$current_handle = new \SplFileObject( $absolute, 'rb' );
-			$current        = $current_handle->fstat();
-			clearstatcache( true, $absolute );
-			return is_array( $current )
-				&& 0100000 === ( $current['mode'] & 0170000 )
-				&& $current['dev'] === $created_stat['dev']
-				&& $current['ino'] === $created_stat['ino']
-				&& ! is_link( $absolute )
-				&& realpath( $absolute ) === $absolute
-				&& ( new \SplFileInfo( $absolute ) )->getInode() === $current['ino'];
-		} catch ( Throwable $error ) {
-			return false;
-		}
-	}
-
-	/**
 	 * Verify cleanup of a failed exclusive file creation.
 	 *
 	 * @param \WP_Filesystem_Base $filesystem Initialized direct filesystem backend.
@@ -508,7 +476,7 @@ final class FilesystemAdapter {
 		if ( ! is_file( $absolute ) || is_link( $absolute ) ) {
 			throw new RuntimeException( 'Failed create target is no longer a regular file; manual recovery required.' );
 		}
-		if ( ! $this->matches_created_file( $absolute, $created_stat ) ) {
+		if ( ! LocalFileIdentity::matches( $absolute, $created_stat ) ) {
 			throw new RuntimeException( 'Failed create target identity changed; manual recovery required.' );
 		}
 
