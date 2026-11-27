@@ -157,7 +157,10 @@ foreach ($aliases as $legacy => $canonical) {
     }
     $old = new ReflectionMethod($adapter, $legacy);
     $new = new ReflectionMethod($adapter, $canonical);
-    if ($old->getName() !== $legacy || $old->getDeclaringClass()->getName() !== $class->getName() ||
+    // PHP 7.4 reports the original trait method name when reflecting an alias.
+    // The alias must still exist, be callable and retain its complete signature.
+    $reflectedName = PHP_VERSION_ID < 80000 ? $canonical : $legacy;
+    if ($old->getName() !== $reflectedName || $old->getDeclaringClass()->getName() !== $class->getName() ||
         !$old->isPublic() || $old->isStatic() !== $new->isStatic() ||
         (string)$old->getReturnType() !== (string)$new->getReturnType() ||
         count($old->getParameters()) !== count($new->getParameters())) {
