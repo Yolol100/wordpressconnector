@@ -16,8 +16,28 @@ class WP_Filesystem_Base
 {
     public array $writeBehaviors = array();
     public int $writeCalls = 0;
+    public string $chmodBehavior = '';
+    public string $deleteBehavior = '';
+    public int $deleteCalls = 0;
+    public function chmod($path, $mode = false, $recursive = false): bool {
+        if ($recursive) return false;
+        if ('false' === $this->chmodBehavior) return false;
+        if ('throw' === $this->chmodBehavior) throw new RuntimeException('Injected permission failure.');
+        if ('corrupt_true' === $this->chmodBehavior) {
+            file_put_contents($path, 'corrupted fixture bytes');
+            return true;
+        }
+        return chmod($path, $mode);
+    }
     public function delete($path, $recursive = false, $type = false): bool {
-        return $recursive ? false : unlink($path);
+        ++$this->deleteCalls;
+        if ($recursive || 'false' === $this->deleteBehavior) return false;
+        if ('true_without_delete' === $this->deleteBehavior) return true;
+        if ('throw' === $this->deleteBehavior) throw new RuntimeException('Injected cleanup failure.');
+        $deleted = unlink($path);
+        if ('false_after_delete' === $this->deleteBehavior) return false;
+        if ('throw_after_delete' === $this->deleteBehavior) throw new RuntimeException('Injected failure after cleanup.');
+        return $deleted;
     }
     // Mirror WordPress's direct filesystem reader. The adapter must verify
     // successful writes and recovery using the same backend that wrote them.
@@ -297,6 +317,42 @@ if (!is_file($root . $path) || file_get_contents($root.$path)!==$content ||
 $fail(static function()use($fs,$path,$content) {
     $fs->createText(array('path'=>$path,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
 }, 'overwrite by create');
+// A failed create must not be reported as cleaned up without actual readback.
+$failurePath = 'wp-content/themes/fixture/assets/failing-create.html';
+$failureCases = array(
+    array('false', '', true, 'permissions'),
+    array('throw', '', true, 'permissions'),
+    array('false', 'false', false, 'manual recovery required'),
+    array('false', 'true_without_delete', false, 'manual recovery required'),
+    array('false', 'throw', false, 'manual recovery required'),
+    array('false', 'false_after_delete', true, 'permissions'),
+    array('false', 'throw_after_delete', true, 'permissions'),
+    array('corrupt_true', '', true, 'readback'),
+);
+foreach ($failureCases as $case) {
+    list($chmodBehavior, $deleteBehavior, $absent, $expectedMessage) = $case;
+    $GLOBALS['wp_filesystem']->chmodBehavior = $chmodBehavior;
+    $GLOBALS['wp_filesystem']->deleteBehavior = $deleteBehavior;
+    $GLOBALS['wp_filesystem']->deleteCalls = 0;
+    $message = '';
+    try {
+        $fs->createText(array('path'=>$failurePath,'content'=>$content,'acknowledge_active_content'=>true),array('dry_run'=>false));
+    } catch (RuntimeException $error) {
+        $message = $error->getMessage();
+    }
+    clearstatcache(true, $root.$failurePath);
+    if ('' === $message || false === strpos($message, $expectedMessage)
+        || $absent === file_exists($root.$failurePath)
+        || 1 !== $GLOBALS['wp_filesystem']->deleteCalls
+        || (!$absent && false !== strpos($message, 'file was removed'))) {
+        throw new LogicException('Create failure/cleanup readback did not match case: ' . $chmodBehavior . '/' . $deleteBehavior);
+    }
+    if (file_exists($root.$failurePath)) {
+        unlink($root.$failurePath);
+    }
+}
+$GLOBALS['wp_filesystem']->chmodBehavior = '';
+$GLOBALS['wp_filesystem']->deleteBehavior = '';
 $replacement = '<div>Updated QA content, rollback required</div>';
 $writePlan = $fs->writeText(array('path'=>$path,'content'=>$replacement),array('dry_run'=>true));
 if (empty($writePlan['requires_active_content_acknowledgement']) ||
