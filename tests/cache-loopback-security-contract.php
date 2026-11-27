@@ -96,9 +96,14 @@ namespace {
         throw new LoopbackTestResponse(true, $status, $payload);
     }
 
-    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/CacheMaintenanceAdapter.php';
+    require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Adapters/class-cachemaintenanceadapter.php';
 
     $adapter = new CacheMaintenanceAdapter();
+    $aliases = (new ReflectionClass(CacheMaintenanceAdapter::class))->getTraitAliases();
+    if (($aliases['handleAssetCleanupLoopback'] ?? null) !== 'Webactueel\\WordPressConnector\\Adapters\\CacheMaintenanceAdapterMethods::handle_asset_cleanup_loopback') {
+        throw new RuntimeException('Legacy loopback callback identity was not preserved.');
+    }
+
     $token = str_repeat('ab12', 16);
     $key = substr(hash('sha256', $token), 0, 32);
     $transient = 'wpconnector_ac_flush_' . $key;
@@ -133,6 +138,9 @@ namespace {
     $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_TOKEN' => array($token))), 403);
     $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_TOKEN' => '\\' . $token)), 403);
     $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_KEY' => $key . "\n")), 403);
+    $reject(array_merge($validHeaders, array('REQUEST_METHOD' => "POST\n")), 405);
+    $reject(array_merge($validHeaders, array('REQUEST_METHOD' => ' POST')), 405);
+    $reject(array_merge($validHeaders, array('HTTP_X_WPCONNECTOR_CACHE_TOKEN' => $token . ' ')), 403);
     if (($GLOBALS['wpc_loopback_transients'][$transient] ?? null) !== $digest || $GLOBALS['wpc_loopback_flush_count'] !== 0) {
         throw new \RuntimeException('Invalid request consumed the loopback authorization or flushed cache.');
     }

@@ -13,10 +13,16 @@ use RuntimeException;
 use Webactueel\WordPressConnector\Runtime\Registry;
 use Webactueel\WordPressConnector\Support\Fingerprint;
 
+require_once __DIR__ . '/trait-cachemaintenanceadaptermethods.php';
+
 /**
  * Registers and handles Cache Maintenance connector actions.
  */
 final class CacheMaintenanceAdapter {
+	use CacheMaintenanceAdapterMethods {
+		handle_asset_cleanup_loopback as handleAssetCleanupLoopback;
+	}
+
 	private const LAYERS                        = array( 'elementor', 'wp_rocket', 'asset_cleanup' );
 	private const ASSET_CLEANUP_LOOPBACK_ACTION = 'wpconnector_asset_cleanup_flush';
 	private const ASSET_CLEANUP_TOKEN_PREFIX    = 'wpconnector_ac_flush_';
@@ -356,56 +362,6 @@ final class CacheMaintenanceAdapter {
 	}
 
 	/**
-	 * Process the handle asset cleanup loopback operation in the CacheMaintenance adapter.
-	 */
-	public function handleAssetCleanupLoopback(): void {
-		$method = $_SERVER['REQUEST_METHOD'] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP method is checked case-insensitively against POST and revalidated after sanitization; token authorization is separate.
-		if ( ! is_string( $method ) || 'POST' !== strtoupper( $method )
-			|| 'POST' !== strtoupper( sanitize_text_field( wp_unslash( $method ) ) ) ) {
-			wp_send_json_error( array( 'code' => 'method_not_allowed' ), 405 );
-			return;
-		}
-
-		$key   = $this->loopback_hex_header( 'HTTP_X_WPCONNECTOR_CACHE_KEY', 32 );
-		$token = $this->loopback_hex_header( 'HTTP_X_WPCONNECTOR_CACHE_TOKEN', 64 );
-
-		if ( '' === $key || '' === $token ) {
-			wp_send_json_error( array( 'code' => 'invalid_authorization' ), 403 );
-			return;
-		}
-
-		$transient = self::ASSET_CLEANUP_TOKEN_PREFIX . $key;
-		$expected  = get_transient( $transient );
-		delete_transient( $transient );
-
-		if ( ! is_string( $expected ) || ! hash_equals( $expected, hash( 'sha256', $token ) ) ) {
-			wp_send_json_error( array( 'code' => 'invalid_authorization' ), 403 );
-			return;
-		}
-
-		try {
-			$verified = $this->flush_asset_cleanup_direct();
-		} catch ( \Throwable $error ) {
-			wp_send_json_error( array( 'code' => 'asset_cleanup_flush_failed' ), 500 );
-			return;
-		}
-
-		if ( ! $verified ) {
-			wp_send_json_error( array( 'code' => 'asset_cleanup_verification_failed' ), 500 );
-			return;
-		}
-
-		nocache_headers();
-		wp_send_json_success(
-			array(
-				'verified' => true,
-				'provider' => 'Asset CleanUp',
-				'version'  => defined( 'WPACU_PLUGIN_VERSION' ) ? (string) WPACU_PLUGIN_VERSION : '',
-			)
-		);
-	}
-
-	/**
 	 * Process the loopback hex header operation in the CacheMaintenance adapter.
 	 *
 	 * @param string $header_name Input for the operation.
@@ -414,14 +370,29 @@ final class CacheMaintenanceAdapter {
 	 * @return string Operation result.
 	 */
 	private function loopback_hex_header( string $header_name, int $length ): string {
-		$raw = $_SERVER[ $header_name ] ?? null; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Reject invalid raw header bytes with exact-size hex regex before sanitization; verified by negative loopback auth tests.
+		return strtolower( $this->validated_server_text( $header_name, '/\A[a-f0-9]{' . $length . '}\z/i' ) );
+	}
 
-		// Check the original bytes before lowercasing: malformed headers must not become valid tokens.
-		if ( ! is_string( $raw ) || ! preg_match( '/\A[a-f0-9]{' . $length . '}\z/i', $raw ) ) {
+	/**
+	 * Validate exact protocol bytes without normalizing malformed input.
+	 *
+	 * @param string $header_name Trusted server variable name.
+	 * @param string $pattern     Exact validation expression.
+	 * @return string Validated text or an empty string.
+	 */
+	private function validated_server_text( string $header_name, string $pattern ): string {
+		if ( ! isset( $_SERVER[ $header_name ] ) || ! is_string( $_SERVER[ $header_name ] ) ) {
 			return '';
 		}
-
-		return strtolower( sanitize_text_field( wp_unslash( $raw ) ) );
+		$validated = filter_var(
+			wp_unslash( $_SERVER[ $header_name ] ),
+			FILTER_VALIDATE_REGEXP,
+			array( 'options' => array( 'regexp' => $pattern ) )
+		);
+		if ( false === $validated || $_SERVER[ $header_name ] !== $validated ) {
+			return '';
+		}
+		return $validated;
 	}
 
 	/**
