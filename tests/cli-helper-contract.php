@@ -34,7 +34,7 @@ foreach (array(
     'Runtime/Registry.php',
     'Runtime/SnapshotStore.php',
     'Runtime/ProcessedStore.php',
-    'Runtime/Result.php',
+    'Runtime/class-result.php',
     'Runtime/Runner.php',
     'CLI/Command.php',
 ) as $file) {

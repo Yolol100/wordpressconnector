@@ -72,7 +72,7 @@ require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Jso
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Support/Fingerprint.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Security/Policy.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Request.php';
-require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Result.php';
+require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/class-result.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/SnapshotStore.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/ProcessedStore.php';
 require_once dirname(__DIR__) . '/plugin/wordpressconnector/includes/Runtime/Registry.php';

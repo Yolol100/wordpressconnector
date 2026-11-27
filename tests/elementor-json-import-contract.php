@@ -24,7 +24,7 @@ if (
     fwrite(STDERR,"Elementor JSON import must not write _elementor_data directly.\n");
     exit(1);
 }
-$plugin=file_get_contents(__DIR__.'/../plugin/wordpressconnector/includes/Plugin.php');
+$plugin=file_get_contents(__DIR__.'/../plugin/wordpressconnector/includes/class-plugin.php');
 if(!is_string($plugin)||false===strpos($plugin,'( new ElementorJsonImport() )->register();')) {
     fwrite(STDERR,"ElementorJsonImport is not registered by Plugin::boot().\n");
     exit(1);

@@ -7,7 +7,7 @@ require_once $root . '/plugin/wordpressconnector/includes/Security/FilesystemPol
 use Webactueel\WordPressConnector\Security\FilesystemPolicy;
 $mustContain = array(
     'plugin/wordpressconnector/wordpressconnector.php' => array('includes/Security/FilesystemPolicy.php', 'includes/Adapters/FilesystemAdapter.php'),
-    'plugin/wordpressconnector/includes/Plugin.php' => array('new FilesystemAdapter()'),
+    'plugin/wordpressconnector/includes/class-plugin.php' => array('new FilesystemAdapter()'),
     'plugin/wordpressconnector/includes/Security/Policy.php' => array('WPCONNECTOR_ALLOW_FILESYSTEM_WRITES', 'AUTO_ENABLED_FLAGS'),
     'plugin/wordpressconnector/includes/Admin/Settings.php' => array('After a WordPress administrator clicks Activate,', 'Optional emergency policy overrides', 'Reconnect trusted GitHub Actions'),
     'plugin/wordpressconnector/includes/REST/Controller.php' => array('filesystem_writes', 'WPCONNECTOR_ALLOW_FILESYSTEM_WRITES'),

@@ -36,8 +36,8 @@ $wpconnector_files = array(
 	'includes/Security/OAuthResourceServer.php',
 	'includes/Security/ReleaseApproval.php',
 	'includes/Runtime/Request.php',
-	'includes/Runtime/Result.php',
-	'includes/Runtime/Diagnostics.php',
+	'includes/Runtime/class-result.php',
+	'includes/Runtime/class-diagnostics.php',
 	'includes/Runtime/SnapshotStore.php',
 	'includes/Runtime/ProcessedStore.php',
 	'includes/Runtime/Registry.php',
@@ -82,7 +82,7 @@ $wpconnector_files = array(
 	'includes/Admin/ElementorJsonExport.php',
 	'includes/Admin/ElementorJsonImport.php',
 	'includes/CLI/Command.php',
-	'includes/Plugin.php',
+	'includes/class-plugin.php',
 );
 foreach ( $wpconnector_files as $wpconnector_file ) {
 	require_once WPCONNECTOR_PATH . $wpconnector_file;
