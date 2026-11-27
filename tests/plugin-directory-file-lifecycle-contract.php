@@ -90,6 +90,7 @@ function is_plugin_active_for_network($file): bool { return false; }
 function get_plugins(): array { return $GLOBALS['wpconn_plugins']; }
 function wp_clean_plugins_cache($clear = false): void {}
 function activate_plugin($file, $redirect = '', $network = false, $silent = false) {
+    if (array_key_exists('wpconn_activation_result', $GLOBALS)) return $GLOBALS['wpconn_activation_result'];
     if (! $silent) $GLOBALS['wpconn_activation_hooks'][] = $file;
     $GLOBALS['wpconn_active'][$file] = true;
     return null;
@@ -98,6 +99,7 @@ function deactivate_plugins($file, $silent = false, $network = false): void {
     unset($GLOBALS['wpconn_active'][$file]);
 }
 function delete_plugins($files) {
+    if (array_key_exists('wpconn_delete_result', $GLOBALS)) return $GLOBALS['wpconn_delete_result'];
     foreach ($files as $file) unset($GLOBALS['wpconn_plugins'][$file]);
     return true;
 }
@@ -113,12 +115,14 @@ function wp_update_plugins(): void {
 class Automatic_Upgrader_Skin {}
 class Plugin_Upgrader {
     public function __construct($skin) {}
-    public function install($url): bool {
+    public function install($url) {
+        if (array_key_exists('wpconn_install_result', $GLOBALS)) return $GLOBALS['wpconn_install_result'];
         $GLOBALS['wpconn_plugins']['new-plugin/new-plugin.php']=array('Name'=>'New Plugin','Version'=>'2.4');
         return true;
     }
-    public function upgrade($file): bool {
+    public function upgrade($file) {
         ++$GLOBALS['wpconn_plugin_upgrade_calls'];
+        if (array_key_exists('wpconn_upgrade_result', $GLOBALS)) return $GLOBALS['wpconn_upgrade_result'];
         $GLOBALS['wpconn_plugins'][$file]['Version']='2.0.0';
         return true;
     }
@@ -129,6 +133,7 @@ function get_site_transient($key) {
         'response'=>array('sample/sample.php'=>(object) array('new_version'=>$GLOBALS['wpconn_offer_version'])));
 }
 function plugins_api($action, $args = array()) {
+    if (!empty($GLOBALS['wpconn_directory_error'])) return new WP_Error();
     if ($action === 'plugin_information') return (object) array('slug'=>'new-plugin', 'download_link'=>$GLOBALS['wpconn_plugin_download_link']);
     if ($action !== 'query_plugins') return new WP_Error();
     return (object) array(
@@ -143,7 +148,7 @@ function plugins_api($action, $args = array()) {
         ),
     );
 }
-class WP_Error { public function get_error_message(): string { return 'Test failure'; } }
+class WP_Error { public function get_error_message(): string { return 'qa_private_provider_detail_758e'; } }
 function is_wp_error($value): bool { return $value instanceof WP_Error; }
 
 foreach (array('Support/Json.php', 'Support/Fingerprint.php', 'Support/Input.php', 'Runtime/Diagnostics.php', 'Security/Policy.php',
@@ -180,6 +185,37 @@ $fail(static function()use($system){$system->pluginDirectorySearch(array('search
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','token'=>'test'));},'unknown query');
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','per_page'=>1000));},'unbounded query');
 $fail(static function()use($system){$system->pluginDirectorySearch(array('search'=>'theme','page'=>0));},'invalid page');
+
+// Errors from external providers may contain paths, tokens or private data.
+$providerFailure = static function(callable $fn, string $expected): void {
+    try { $fn(); }
+    catch (RuntimeException $e) {
+        if ($expected === $e->getMessage()) return;
+        throw new LogicException('Incorrect provider failure diagnostic for ' . $expected);
+    }
+    throw new LogicException('Provider failure incorrectly reported as success.');
+};
+$GLOBALS['wpconn_directory_error'] = true;
+$providerFailure(static function() use($system) { $system->pluginDirectorySearch(array('search'=>'sample')); }, 'WordPress.org plugin directory could not be queried.');
+$providerFailure(static function() use($system) { $system->pluginInstall(array('slug'=>'new-plugin'), array('dry_run'=>true)); }, 'Official WordPress.org plugin package not found.');
+unset($GLOBALS['wpconn_directory_error']);
+$GLOBALS['wpconn_activation_result'] = new WP_Error();
+$providerFailure(static function() use($system) { $system->pluginActivate(array('file'=>'hello-dolly/hello.php'), array('dry_run'=>false)); }, 'Plugin activation failed; check plugin requirements or security restrictions.');
+unset($GLOBALS['wpconn_activation_result']);
+if (is_plugin_active('hello-dolly/hello.php')) throw new LogicException('Failed activation changed state.');
+$GLOBALS['wpconn_delete_result'] = new WP_Error();
+$providerFailure(static function() use($system) { $system->pluginDelete(array('file'=>'hello-dolly/hello.php'), array('dry_run'=>false)); }, 'WordPress could not complete plugin deletion; filesystem credentials or server permission may be required.');
+unset($GLOBALS['wpconn_delete_result']);
+if (!isset(get_plugins()['hello-dolly/hello.php'])) throw new LogicException('Failed deletion changed state.');
+$GLOBALS['wpconn_install_result'] = new WP_Error();
+$providerFailure(static function() use($system) { $system->pluginInstall(array('slug'=>'new-plugin'), array('dry_run'=>false)); }, 'WordPress plugin installation failed; check filesystem permissions or existing destination.');
+unset($GLOBALS['wpconn_install_result']);
+foreach (array(new WP_Error(), null, 0, 'true', array()) as $badResult) {
+    $GLOBALS['wpconn_upgrade_result'] = $badResult;
+    $providerFailure(static function() use($system) { $system->pluginUpdate(array('file'=>'sample/sample.php'), array('dry_run'=>false)); }, 'Plugin update failed or no update is available.');
+    if ('1.0.0' !== get_plugins()['sample/sample.php']['Version']) throw new LogicException('Failed upgrade changed state.');
+}
+unset($GLOBALS['wpconn_upgrade_result']);
 
 $activate = $system->pluginActivate(array('file'=>'hello-dolly/hello.php'),array('dry_run'=>false));
 if (!in_array('hello-dolly/hello.php', $GLOBALS['wpconn_activation_hooks'], true)) {
@@ -221,7 +257,7 @@ $GLOBALS['wpconn_plugin_download_link'] = 'https://downloads.wordpress.org/plugi
 // Both plugin and theme directory packages must match the requested slug,
  // not merely share a plausible domain.
 $origin = new ReflectionMethod(SystemAdapter::class, 'official_directory_package_url');
-$origin->setAccessible(true);
+if (PHP_VERSION_ID < 80100) { $origin->setAccessible(true); }
 $officialTheme = 'https://downloads.wordpress.org/theme/qa-theme.1.2.3.zip';
 if ($origin->invoke($system, $officialTheme, 'qa-theme', 'theme') !== $officialTheme) {
     throw new RuntimeException('Canonical WordPress theme package was rejected.');
